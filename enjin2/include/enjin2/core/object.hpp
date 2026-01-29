@@ -1,0 +1,279 @@
+#pragma once
+
+#include "types.hpp"
+#include <array>
+#include <memory>
+#include <functional>
+#include <type_traits>
+
+namespace enjin2 {
+
+// Forward declarations
+class Component;
+class C_Position;
+class C_Drawable;
+
+/**
+ * @brief Anchor point enumeration for positioning
+ */
+enum class Anchor {
+    TOP_LEFT,      ///< Top-left corner
+    TOP_CENTER,    ///< Top center
+    TOP_RIGHT,     ///< Top-right corner
+    CENTER_LEFT,   ///< Center left
+    CENTER,        ///< Center
+    CENTER_RIGHT,  ///< Center right
+    BOTTOM_LEFT,   ///< Bottom-left corner
+    BOTTOM_CENTER, ///< Bottom center
+    BOTTOM_RIGHT   ///< Bottom-right corner
+};
+
+/**
+ * @brief Object base class for game entities
+ * 
+ * The Object class is the base class for all game entities in the Enjin system.
+ * It manages components using static allocation and provides lifecycle methods.
+ */
+class Object {
+private:
+    static constexpr size_t MAX_COMPONENTS = 16;    ///< Maximum components per object
+    
+    std::array<std::unique_ptr<Component>, MAX_COMPONENTS> components;
+    size_t componentCount;
+    bool awoken;        ///< Whether Awake() has been called
+    bool started;       ///< Whether Start() has been called
+    bool active;        ///< Whether object is active
+    
+    // Cache frequently accessed components
+    C_Position* position;
+    std::array<C_Drawable*, MAX_COMPONENTS> drawables;
+    size_t drawableCount;
+    
+public:
+    /**
+     * @brief Constructor
+     */
+    Object();
+    
+    /**
+     * @brief Virtual destructor
+     */
+    virtual ~Object() = default;
+    
+    /**
+     * @brief Awake is called when object is created
+     * 
+     * Use this to ensure required components are present and
+     * initialize component relationships.
+     */
+    virtual void awake();
+    
+    /**
+     * @brief Start is called before the first frame update
+     * 
+     * Use this for initialization that depends on other objects
+     * being fully set up.
+     */
+    virtual void start();
+    
+    /**
+     * @brief Update is called once per frame
+     * @param deltaTime Time since last frame in milliseconds
+     */
+    virtual void update(uint16_t deltaTime);
+    
+    /**
+     * @brief LateUpdate is called after all Update calls
+     * @param deltaTime Time since last frame in milliseconds
+     */
+    virtual void lateUpdate(uint16_t deltaTime);
+    
+    /**
+     * @brief Check if object is queued for removal (matches original Enjin)
+     * @return True if object should be removed
+     */
+    bool isQueuedForRemoval() const { return queued_for_removal; }
+    
+    /**
+     * @brief Add a component to this object
+     * @tparam T Component type (must derive from Component)
+     * @tparam Args Constructor argument types
+     * @param args Constructor arguments
+     * @return Pointer to the created component or nullptr if failed
+     */
+    template<typename T, typename... Args>
+    T* addComponent(Args&&... args) {
+        static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
+        
+        if (componentCount >= MAX_COMPONENTS) {
+            return nullptr;
+        }
+        
+        // Create component and store in array
+        std::unique_ptr<T> component(new T(this, std::forward<Args>(args)...));
+        T* componentPtr = component.get();
+        components[componentCount++] = std::move(component);
+        
+        // Cache position component using template specialization helper
+        cachePositionIfType<T>(componentPtr);
+        
+        // Cache drawable components
+        if (auto drawable = dynamic_cast<C_Drawable*>(componentPtr)) {
+            if (drawableCount < MAX_COMPONENTS) {
+                drawables[drawableCount++] = drawable;
+            }
+        }
+        
+        // Call awake if object has already been awoken
+        if (awoken) {
+            componentPtr->awake();
+        }
+        
+        // Call start if object has already been started
+        if (started) {
+            componentPtr->start();
+        }
+        
+        return componentPtr;
+    }
+    
+    /**
+     * @brief Get a component of specified type
+     * @tparam T Component type
+     * @return Pointer to component or nullptr if not found
+     */
+    template<typename T>
+    T* getComponent() {
+        static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
+        
+        for (size_t i = 0; i < componentCount; ++i) {
+            if (auto component = dynamic_cast<T*>(components[i].get())) {
+                return component;
+            }
+        }
+        return nullptr;
+    }
+    
+    /**
+     * @brief Check if object has a component of specified type
+     * @tparam T Component type
+     * @return True if component exists
+     */
+    template<typename T>
+    bool hasComponent() const {
+        return getComponent<T>() != nullptr;
+    }
+    
+    /**
+     * @brief Remove a component of specified type
+     * @tparam T Component type
+     * @return True if component was removed
+     */
+    template<typename T>
+    bool removeComponent() {
+        static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
+        
+        for (size_t i = 0; i < componentCount; ++i) {
+            if (auto component = dynamic_cast<T*>(components[i].get())) {
+                // Remove from drawable cache if needed
+                if (auto drawable = dynamic_cast<C_Drawable*>(component)) {
+                    for (size_t j = 0; j < drawableCount; ++j) {
+                        if (drawables[j] == drawable) {
+                            // Shift remaining drawables
+                            for (size_t k = j; k < drawableCount - 1; ++k) {
+                                drawables[k] = drawables[k + 1];
+                            }
+                            drawableCount--;
+                            break;
+                        }
+                    }
+                }
+                
+                // Clear position cache if needed
+                if (component == position) {
+                    position = nullptr;
+                }
+                
+                // Shift remaining components
+                for (size_t j = i; j < componentCount - 1; ++j) {
+                    components[j] = std::move(components[j + 1]);
+                }
+                componentCount--;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * @brief Get position component (cached for performance)
+     * @return Position component pointer or nullptr
+     */
+    C_Position* getPosition() const { return position; }
+    
+    /**
+     * @brief Get all drawable components
+     * @return Array of drawable component pointers
+     */
+    const C_Drawable* const* getDrawables() const { 
+        return reinterpret_cast<const C_Drawable* const*>(drawables.data()); 
+    }
+    
+    /**
+     * @brief Get number of drawable components
+     * @return Number of drawable components
+     */
+    size_t getDrawableCount() const { return drawableCount; }
+    
+    /**
+     * @brief Get drawable component by index
+     * @param index Index of drawable component
+     * @return Pointer to drawable component or nullptr if invalid index
+     */
+    C_Drawable* getDrawable(size_t index) const {
+        if (index >= drawableCount) return nullptr;
+        return drawables[index];
+    }
+    
+    /**
+     * @brief Check if object is active
+     * @return True if active
+     */
+    bool isActive() const { return active; }
+    
+    /**
+     * @brief Set object active state
+     * @param isActive New active state
+     */
+    void setActive(bool isActive) { active = isActive; }
+    
+    /**
+     * @brief Get total number of components
+     * @return Component count
+     */
+    size_t getComponentCount() const { return componentCount; }
+
+private:
+    /**
+     * @brief Helper to cache position component only if T is C_Position using SFINAE
+     */
+    template<typename T>
+    typename std::enable_if<std::is_same<T, C_Position>::value>::type
+    cachePositionIfType(T* componentPtr) {
+        position = componentPtr;
+    }
+    
+    template<typename T>
+    typename std::enable_if<!std::is_same<T, C_Position>::value>::type
+    cachePositionIfType(T* componentPtr) {
+        // Do nothing for non-position components
+    }
+    bool queued_for_removal = false;  ///< Flag for object removal
+    
+    /**
+     * @brief Initialize cached component pointers
+     */
+    void initializeComponentCache();
+};
+
+} // namespace enjin2

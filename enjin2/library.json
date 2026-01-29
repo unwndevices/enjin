@@ -1,0 +1,32 @@
+{
+  "name": "enjin2",
+  "version": "1.0.0",
+  "description": "Enjin2 library",
+  "keywords": "planet, happiness, people",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unwndevices/unwn.git"
+  },
+  "authors": [
+    {
+      "name": "Ciro Caputo",
+      "email": "ciro@unwn.dev",
+      "url": "https://www.unwn.dev"
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://www.unwn.dev",
+  "dependencies": {},
+  "frameworks": "*",
+  "platforms": "*",
+  "build": {
+    "srcFilter": [
+      "+<*>",
+      "-<bindings/emscripten_bindings.cpp>",
+      "-<components/lua_script.cpp>",
+      "-<scripting/>",
+      "-<ui/widget.cpp>",
+      "-<ui/layout.cpp>"
+    ]
+  }
+}
