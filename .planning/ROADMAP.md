@@ -45,12 +45,12 @@ Plans:
   3. enjin1 component lifecycle (Awake/Start) maps to enjin2 lifecycle (awake/start) with consistent behavior
   4. Scene management system including SceneStateMachine and transitions works in enjin2
   5. Strangler Fig pattern enables incremental replacement via compatibility seams at component and scene boundaries
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md — Create compatibility headers for type aliases
+- [ ] 02-02-PLAN.md — Implement Strangler Fig seams for incremental migration
+- [ ] 02-03-PLAN.md — Document memory mapping strategy (shared_ptr → unique_ptr)
 
 ### Phase 3: Feature Support
 **Goal**: Enable feature migration with abstraction layers
@@ -96,10 +96,10 @@ Plans:
 **Execution Order:**
 Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
- | Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Dependency Analysis | 3/3 | Complete | 2026-01-30 |
-| 2. Core Migration | 0/0 | Not started | - |
-| 3. Feature Support | 0/0 | Not started | - |
-| 4. Validation | 0/0 | Not started | - |
-| 5. Final Cleanup | 0/0 | Not started | - |
+  | Phase | Plans Complete | Status | Completed |
+  |-------|----------------|--------|-----------|
+  | 1. Dependency Analysis | 3/3 | Complete | 2026-01-30 |
+  | 2. Core Migration | 0/3 | Not started | - |
+  | 3. Feature Support | 0/0 | Not started | - |
+  | 4. Validation | 0/0 | Not started | - |
+  | 5. Final Cleanup | 0/0 | Not started | - |
