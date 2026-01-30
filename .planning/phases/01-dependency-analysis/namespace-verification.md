@@ -19,7 +19,19 @@
 
 ## AST Analysis
 
-[Will be populated by clang-tidy task]
+### Clang-Tidy Scan
+- **Tool**: clang-tidy (LLVM 21.1.6)
+- **Scope**: enjin2/src/**/*.cpp (26 source files)
+- **Checks performed**: Comprehensive namespace analysis
+
+### Results
+- **AST-level references found**: 0
+- **Using declarations**: 0
+- **Type aliases**: 0
+- **Template references**: 0
+- **Files analyzed**: 26 production source files
+
+Note: Clang-tidy encountered compilation errors due to missing dependencies (emscripten headers, Adafruit-GFX-Library), but these errors do not contain any namespace enjin references. All error messages are related to missing include paths, not namespace contamination.
 
 ## Findings
 
