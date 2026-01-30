@@ -26,7 +26,11 @@ target_sources(enjin2_core PRIVATE
     src/core/scene.cpp
     src/animation/keyframe.cpp
 )
-target_include_directories(enjin2_core PUBLIC include)
+# Private include directories for strict isolation
+target_include_directories(enjin2_core
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
 target_compile_definitions(enjin2_core PUBLIC VCV_RACK)
 
 # Graphics library
@@ -36,7 +40,11 @@ target_sources(enjin2_graphics PRIVATE
     src/graphics/primitives.cpp
     src/graphics/effects.cpp
 )
-target_include_directories(enjin2_graphics PUBLIC include)
+# Private include directories for strict isolation
+target_include_directories(enjin2_graphics
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
 target_compile_definitions(enjin2_graphics PUBLIC VCV_RACK)
 target_link_libraries(enjin2_graphics PRIVATE enjin2_core)
 
@@ -46,8 +54,12 @@ target_sources(enjin2_ui PRIVATE
     src/components/drawable.cpp
     src/utils/polar.cpp
 )
-target_include_directories(enjin2_ui PUBLIC include)
-target_include_directories(enjin2_ui PRIVATE ${CMAKE_SOURCE_DIR}/../Libs/Adafruit-GFX-Library)
+# Private include directories for strict isolation
+target_include_directories(enjin2_ui
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${CMAKE_SOURCE_DIR}/../Libs/Adafruit-GFX-Library
+)
 target_compile_definitions(enjin2_ui PUBLIC VCV_RACK)
 target_link_libraries(enjin2_ui PRIVATE enjin2_graphics)
 
@@ -99,11 +111,15 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/lua_platform.cpp
         src/scripting/bindings.cpp
     )
-    target_include_directories(enjin2_lua PUBLIC include)
-    target_include_directories(enjin2_lua PRIVATE ${LUA_INCLUDE_DIRS})
-    target_link_libraries(enjin2_lua PRIVATE 
-        enjin2_graphics 
-        enjin2_ui 
+    # Private include directories for strict isolation
+    target_include_directories(enjin2_lua
+        PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            ${LUA_INCLUDE_DIRS}
+    )
+    target_link_libraries(enjin2_lua PRIVATE
+        enjin2_graphics
+        enjin2_ui
         ${LUA_LIBRARIES}
     )
     
