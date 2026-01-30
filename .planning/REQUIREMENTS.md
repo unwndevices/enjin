@@ -9,9 +9,9 @@ Requirements for complete migration from enjin to enjin2. Each maps to roadmap p
 
 ### Foundation
 
-- [ ] **FND-01**: Map all enjin1 → enjin2 dependencies across infrastructure, utilities, and feature code
-- [ ] **FND-02**: Create separate build targets for enjin1 and enjin2 with independent compilation
-- [ ] **FND-03**: Verify no `namespace enjin` references exist in enjin2 codebase
+- [x] **FND-01**: Map all enjin1 → enjin2 dependencies across infrastructure, utilities, and feature code
+- [x] **FND-02**: Create separate build targets for enjin1 and enjin2 with independent compilation
+- [x] **FND-03**: Verify no `namespace enjin` references exist in enjin2 codebase
 - [ ] **FND-04**: Create compatibility headers aliasing enjin1 types to enjin2 equivalents
 - [ ] **FND-05**: Map enjin1 shared_ptr usage to enjin2 static allocation patterns with equivalent lifetime semantics
 - [ ] **FND-06**: Map enjin1 component lifecycle (Awake/Start) to enjin2 lifecycle (awake/start)
@@ -64,9 +64,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
+ | FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
 | FND-04 | Phase 2 | Pending |
 | FND-05 | Phase 2 | Pending |
 | FND-06 | Phase 2 | Pending |
