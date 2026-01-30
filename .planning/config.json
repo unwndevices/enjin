@@ -5,8 +5,10 @@
   "commit_docs": true,
   "model_profile": "custom",
   "custom_models": {
-    "research": "glm-4.7",
-    "agents": "glm-4.7"
+    "research": "glm-4.7-flash",
+    "plan_checker": "glm-4.7-flash",
+    "executor": "glm-4.7-flashx",
+    "verifier": "glm-4.7-flash"
   },
   "workflow": {
     "research": true,
