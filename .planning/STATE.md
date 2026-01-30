@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 
 ## Current Position
 
-Phase: 2 of 5 (Core Migration)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-30 — Completed 02-03-PLAN.md (Memory mapping guide) - Phase 2 complete
+Phase: 3 of 5 (Feature Support)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-30 — Completed 03-01-PLAN.md (CMake backend selection)
 
-Progress: [████░░░░░░░] 40%
+Progress: [█████░░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 5 min
-- Total execution time: 0.5 hours
+- Total execution time: 0.6 hours
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [████░░░░░░░] 40%
 |-------|-------|-------|----------|
 | 01-dependency-analysis | 3 | 3 | 5 min |
 | 02-core-migration | 3 | 3 | 4 min |
+| 03-feature-support | 1 | 1 | 3 min |
 
 **Recent Trend:**
-- Last 3 plans: 3 min, 4 min, 2 min
+- Last 3 plans: 2 min, 3 min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -56,6 +57,8 @@ Recent decisions affecting current work:
 - Lifecycle mapping: PascalCase wrappers (Awake, Start, Update) map to camelCase enjin2 methods (awake, start, update) (02-01)
 - Seam API alignment: Seams must only expose methods that exist in underlying implementations (e.g., SceneSeam doesn't have initialize() because SceneStateMachine doesn't) (02-02)
 - Memory mapping: shared_ptr to unique_ptr conversion requires scene-based ownership and runtime null checks during migration (02-03)
+- Backend selection: CMake option USE_ENJIN1 controls compile-time backend with USE_ENJIN1_BACKEND macro for conditional compilation (03-01)
+- INTERFACE library scope: INTERFACE targets must use target_compile_definitions with INTERFACE scope to propagate to dependent targets (03-01)
 
 ### Pending Todos
 
@@ -72,5 +75,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 02-03-PLAN.md (Memory mapping guide) - Phase 2 complete
+Stopped at: Completed 03-01-PLAN.md (CMake backend selection)
 Resume file: None
