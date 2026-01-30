@@ -6,9 +6,9 @@
   "model_profile": "custom",
   "custom_models": {
     "research": "glm-4.7-flash",
-    "plan_checker": "glm-4.7-flash",
-    "executor": "glm-4.7-flashx",
-    "verifier": "glm-4.7-flash"
+    "plan_checker": "glm-4.7",
+    "executor": "glm-4.7",
+    "verifier": "glm-4.7"
   },
   "workflow": {
     "research": true,
