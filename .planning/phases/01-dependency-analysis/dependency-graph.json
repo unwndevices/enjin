@@ -1,0 +1,11 @@
+{
+  "metadata": {
+    "generated_date": "2026-01-30T15:10:45Z",
+    "source_analysis": "CMake graphviz + compiler -MMD + source scanning",
+    "analysis_scope": "enjin2 source files (excluding tests and examples)",
+    "cmake_graph_file": "enjin2/build/graph.dot",
+    "compiler_deps_enabled": true,
+    "compiler_flags": "-MMD -MP"
+  },
+  "dependencies": []
+}

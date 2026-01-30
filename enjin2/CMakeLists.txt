@@ -5,6 +5,10 @@ project(enjin2 VERSION 2.0.0 LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Add compiler dependency tracking
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -MMD -MP")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -MMD -MP")
+
 # Options
 option(ENJIN2_BUILD_TESTS "Build tests" ON)
 option(ENJIN2_BUILD_EXAMPLES "Build examples" ON)
