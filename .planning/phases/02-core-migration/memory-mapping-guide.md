@@ -1,0 +1,426 @@
+# Memory Mapping Guide: enjin1 → enjin2
+
+## Overview
+
+enjin1 uses `std::shared_ptr` for dynamic ownership with `std::vector` storage. enjin2 uses `std::unique_ptr` for exclusive ownership with `std::array` fixed-capacity storage. This guide documents how to port code from one model to the other.
+
+## Ownership Strategy
+
+### enjin1 Pattern
+```cpp
+// enjin1: Dynamic ownership with shared_ptr
+std::shared_ptr<MyComponent> comp = object->AddComponent<MyComponent>();
+```
+
+### enjin2 Pattern
+```cpp
+// enjin2: Scene-based ownership with unique_ptr
+MyComponent* comp = object->addComponent<MyComponent>();
+// Object owns the component via unique_ptr, returns raw pointer for access
+```
+
+### Scene-Based Ownership
+
+**Key principle:** In enjin2, Scenes own Objects, Objects own Components. There is no shared ownership between multiple owners.
+
+- Scenes manage object lifetime (objects are owned by scenes)
+- Objects manage component lifetime (components are owned by objects)
+- No `std::shared_ptr` - ownership is exclusive and hierarchical
+- Use raw pointers for access after creation (ownership is clear from context)
+
+## Migration Patterns
+
+### Pattern 1: Adding Components
+
+**enjin1:**
+```cpp
+auto drawable = object->AddComponent<C_Drawable>();
+// drawable is std::shared_ptr<C_Drawable>
+```
+
+**enjin2:**
+```cpp
+auto drawable = object->addComponent<C_Drawable>();
+// drawable is C_Drawable* (raw pointer)
+// Returns nullptr if MAX_COMPONENTS limit reached
+```
+
+**Migration steps:**
+1. Remove `std::shared_ptr<>` wrapper from return type
+2. Use raw pointer directly
+3. Add null check: `if (!drawable) { /* handle capacity limit */ }`
+
+### Pattern 2: Getting Components
+
+**enjin1:**
+```cpp
+auto position = object->GetComponent<C_Position>();
+// position is std::shared_ptr<C_Position>
+```
+
+**enjin2:**
+```cpp
+auto position = object->getComponent<C_Position>();
+// position is C_Position* (raw pointer)
+// Returns nullptr if component not found
+```
+
+**Migration steps:**
+1. Remove `std::shared_ptr<>` wrapper
+2. Use raw pointer directly
+3. Add null check before use: `if (position) { position->setX(10); }`
+
+### Pattern 3: Scene Management
+
+**enjin1:**
+```cpp
+// enjin1: Shared ownership with unordered_map
+std::shared_ptr<Scene> scene = std::make_shared<MyScene>();
+uint8_t id = stateMachine.Add(scene);
+```
+
+**enjin2:**
+```cpp
+// enjin2: Exclusive ownership with array
+MyScene* scene = stateMachine.addScene<MyScene>(sceneId);
+// SceneStateMachine owns the scene via unique_ptr
+```
+
+**Migration steps:**
+1. Replace `std::make_shared<T>()` with `addScene<T>(id)`
+2. Use raw pointer for access
+3. Add null check: `if (!scene) { /* handle MAX_SCENES limit */ }`
+
+### Pattern 4: Multiple Owners (Design Change Required)
+
+**enjin1 (problematic for enjin2):**
+```cpp
+// Multiple objects share the same component
+std::shared_ptr<SharedResource> resource = std::make_shared<SharedResource>();
+obj1->AddComponent(resource);
+obj2->AddComponent(resource); // Same instance
+```
+
+**enjin2 solution - scene-level ownership:**
+```cpp
+// Resource owned by scene, referenced by objects
+auto resource = scene->addObject<ResourceObject>();
+auto ref1 = obj1->addComponent<ResourceReference>(resource);
+auto ref2 = obj2->addComponent<ResourceReference>(resource);
+// Reference components point to scene-owned object
+```
+
+**Migration steps:**
+1. Identify shared ownership patterns in enjin1 code
+2. Restructure: move shared resource to scene ownership
+3. Create reference components that point to scene-owned object
+4. Eliminate shared_ptr dependencies
+
+## Null Safety
+
+### Migration Phase: Runtime Checks
+
+During migration, use runtime checks for graceful degradation:
+
+```cpp
+// enjin2 component addition with runtime check
+MyComponent* comp = object->addComponent<MyComponent>();
+if (!comp) {
+    // Handle gracefully - maybe log warning, return error, or use fallback
+    // Do NOT crash during migration
+    return false;
+}
+```
+
+### Production Phase: Assertions
+
+After migration is complete, use assertions to catch bugs early:
+
+```cpp
+// enjin2 production code
+MyComponent* comp = object->addComponent<MyComponent>();
+assert(comp && "Component limit exceeded - increase MAX_COMPONENTS");
+```
+
+## Capacity Limits
+
+enjin2 uses fixed-capacity arrays for predictable memory usage:
+
+| Container | enjin1 | enjin2 | Limit |
+|-----------|---------|---------|-------|
+| Components per object | `std::vector` (dynamic) | `std::array<unique_ptr<>, 16>` | MAX_COMPONENTS = 16 |
+| Scenes per state machine | `std::unordered_map` (dynamic) | `std::array<unique_ptr<>, 32>` | MAX_SCENES = 32 |
+| Objects per scene | `std::vector` (dynamic) | `std::array<unique_ptr<>, 256>` | MAX_OBJECTS = 256 |
+
+**If limits are exceeded during migration:**
+1. Increase `constexpr size_t MAX_*` constants in enjin2 source
+2. Or implement overflow detection with error handling
+3. Profile actual usage to determine safe limits
+
+## Code Examples
+
+### Example 1: Simple Component Port
+
+**enjin1:**
+```cpp
+void CreatePlayer(enjin::Object* obj) {
+    auto sprite = obj->AddComponent<C_Sprite>("player.png");
+    auto position = obj->AddComponent<C_Position>();
+    auto collider = obj->AddComponent<C_Collider>();
+
+    // Use components
+    position->setX(100);
+}
+```
+
+**enjin2:**
+```cpp
+void CreatePlayer(enjin2::Object* obj) {
+    auto sprite = obj->addComponent<C_Sprite>("player.png");
+    if (!sprite) { /* handle error */ }
+
+    auto position = obj->addComponent<C_Position>();
+    if (!position) { /* handle error */ }
+
+    auto collider = obj->addComponent<C_Collider>();
+    if (!collider) { /* handle error */ }
+
+    // Use components
+    position->setX(100);
+}
+```
+
+### Example 2: Scene Creation Port
+
+**enjin1:**
+```cpp
+void SetupScenes(enjin::SceneStateMachine& sm) {
+    auto menuScene = std::make_shared<MenuScene>();
+    sm.Add(menuScene);
+
+    auto gameScene = std::make_shared<GameScene>();
+    sm.Add(gameScene);
+
+    sm.SwitchTo(menuScene->GetId());
+}
+```
+
+**enjin2:**
+```cpp
+void SetupScenes(enjin2::SceneStateMachine& sm) {
+    auto menuScene = sm.addScene<MenuScene>(0);
+    if (!menuScene) { /* handle error */ }
+
+    auto gameScene = sm.addScene<GameScene>(1);
+    if (!gameScene) { /* handle error */ }
+
+    sm.changeScene(0);
+}
+```
+
+### Example 3: Component Storage in Member Variables
+
+**enjin1:**
+```cpp
+class MyComponent : public enjin::Component {
+    std::shared_ptr<C_Position> target; // Store shared_ptr
+public:
+    void Start() override {
+        target = object->GetComponent<C_Position>();
+    }
+};
+```
+
+**enjin2:**
+```cpp
+class MyComponent : public enjin2::Component {
+    C_Position* target; // Store raw pointer
+public:
+    void start() override {
+        target = object->getComponent<C_Position>();
+    }
+};
+```
+
+### Example 4: Position Component Access
+
+**enjin1:**
+```cpp
+// enjin1 stores position as public shared_ptr member
+class Object {
+public:
+    std::shared_ptr<C_Position> position;
+};
+
+// Access anywhere
+if (obj->position) {
+    obj->position->setX(100);
+}
+```
+
+**enjin2:**
+```cpp
+// enjin2 caches position as private raw pointer, provides accessor
+class Object {
+private:
+    C_Position* position; // Cached pointer
+public:
+    C_Position* getPosition() const { return position; }
+};
+
+// Access via getter
+if (auto pos = obj->getPosition()) {
+    pos->setX(100);
+}
+```
+
+## Common Pitfalls
+
+### Pitfall 1: Storing shared_ptr in member variables
+
+**Wrong:**
+```cpp
+class MyComponent {
+    std::shared_ptr<OtherComponent> other; // Don't do this in enjin2
+};
+```
+
+**Right:**
+```cpp
+class MyComponent {
+    OtherComponent* other; // Raw pointer
+    // Lifetime managed by scene/object hierarchy
+};
+```
+
+### Pitfall 2: Copying unique_ptr
+
+**Wrong:**
+```cpp
+auto comp = object->addComponent<MyComponent>();
+auto copy = comp; // Copies raw pointer (OK), but don't expect ownership transfer
+```
+
+**Right:**
+```cpp
+auto comp = object->addComponent<MyComponent>();
+// comp is a raw pointer - use it, don't try to own it
+// Object owns the component
+```
+
+### Pitfall 3: Not checking nullptr
+
+**Wrong:**
+```cpp
+auto comp = object->addComponent<MyComponent>();
+comp->doSomething(); // May crash if capacity exceeded
+```
+
+**Right:**
+```cpp
+auto comp = object->addComponent<MyComponent>();
+if (!comp) { return false; }
+comp->doSomething();
+```
+
+### Pitfall 4: Mixing casing conventions
+
+**Wrong:**
+```cpp
+// Don't mix enjin1 PascalCase with enjin2 APIs
+auto comp = object->GetComponent<C_Position>(); // Wrong method name
+```
+
+**Right:**
+```cpp
+auto comp = object->getComponent<C_Position>(); // Correct camelCase
+```
+
+## Migration Checklist
+
+For each enjin1 file being ported:
+
+- [ ] Replace all `std::shared_ptr<T>` with `T*` (raw pointers)
+- [ ] Replace `AddComponent` with `addComponent` (camelCase)
+- [ ] Replace `GetComponent` with `getComponent` (camelCase)
+- [ ] Replace `SwitchTo` with `changeScene` (camelCase)
+- [ ] Add null checks after `addComponent`/`getComponent`
+- [ ] Add null checks after `addScene`
+- [ ] Identify shared ownership patterns, restructure to scene-based ownership
+- [ ] Verify no `std::make_shared` calls in enjin2 code
+- [ ] Verify no `std::shared_ptr` in enjin2 headers
+- [ ] Test with capacity limits (add 17 components to test MAX_COMPONENTS=16)
+- [ ] Update member variable types from shared_ptr to raw pointers
+- [ ] Use `getPosition()` accessor instead of direct `position` member access
+
+## API Reference
+
+### Object (enjin2/include/enjin2/core/object.hpp)
+
+**Adding components:**
+```cpp
+template<typename T, typename... Args>
+T* addComponent(Args&&... args);
+// Returns: Raw pointer to component, or nullptr if MAX_COMPONENTS exceeded
+```
+
+**Getting components:**
+```cpp
+template<typename T>
+T* getComponent();
+// Returns: Raw pointer to component, or nullptr if not found
+```
+
+**Checking for components:**
+```cpp
+template<typename T>
+bool hasComponent() const;
+```
+
+**Cached position accessor:**
+```cpp
+C_Position* getPosition() const;
+```
+
+### Scene (enjin2/include/enjin2/core/scene.hpp)
+
+**Adding objects:**
+```cpp
+template<typename T, typename... Args>
+T* addObject(Args&&... args);
+// Returns: Raw pointer to object, or nullptr if capacity exceeded
+```
+
+### SceneStateMachine (enjin2/include/enjin2/core/scene_state_machine.hpp)
+
+**Adding scenes:**
+```cpp
+template<typename T, typename... Args>
+T* addScene(uint32_t sceneId, Args&&... args);
+// Returns: Raw pointer to scene, or nullptr if MAX_SCENES exceeded or ID already exists
+```
+
+**Changing scenes:**
+```cpp
+bool changeScene(uint32_t sceneId, TransitionType transition = TransitionType::IMMEDIATE,
+                uint16_t duration = 0);
+// Returns: true if transition started successfully
+```
+
+## Summary of Changes
+
+| Concept | enjin1 | enjin2 |
+|---------|---------|---------|
+| Component ownership | `std::shared_ptr` | `std::unique_ptr` (object owns) |
+| Component storage | `std::vector` | `std::array` (fixed capacity) |
+| Return type | `std::shared_ptr<T>` | `T*` (raw pointer) |
+| Method naming | PascalCase (`AddComponent`) | camelCase (`addComponent`) |
+| Position access | Public member `position` | Method `getPosition()` |
+| Scene storage | `std::unordered_map<uint8_t, shared_ptr>` | `std::array<unique_ptr, 32>` |
+| Scene addition | `Add(shared_ptr<Scene>)` | `addScene<T>(id)` |
+| Scene switching | `SwitchTo(id)` | `changeScene(id)` |
+
+---
+
+*Created: Phase 2 Core Migration*
+*Context: Documenting memory model conversion for incremental migration*
