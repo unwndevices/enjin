@@ -13,7 +13,7 @@ Migrate enjin2 to complete independence by mapping dependencies, migrating core 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Dependency Analysis** - Map enjin1→enjin2 dependencies and establish compilation isolation
-- [i] **Phase 2: Core Migration** - Migrate core infrastructure with compatibility layer (1/3 plans complete)
+- [i] **Phase 2: Core Migration** - Migrate core infrastructure with compatibility layer (2/3 plans complete)
 - [ ] **Phase 3: Feature Support** - Enable feature migration with abstraction layers
 - [ ] **Phase 4: Validation** - Validate behavior through manual testing and shadow mode
 - [ ] **Phase 5: Final Cleanup** - Complete enjin2-only build system
@@ -49,7 +49,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Create compatibility headers for type aliases
-- [ ] 02-02-PLAN.md — Implement Strangler Fig seams for incremental migration
+- [x] 02-02-PLAN.md — Implement Strangler Fig seams for incremental migration
 - [ ] 02-03-PLAN.md — Document memory mapping strategy (shared_ptr → unique_ptr)
 
 ### Phase 3: Feature Support
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
   | Phase | Plans Complete | Status | Completed |
   |-------|----------------|--------|-----------|
   | 1. Dependency Analysis | 3/3 | Complete | 2026-01-30 |
-  | 2. Core Migration | 0/3 | Not started | - |
+  | 2. Core Migration | 2/3 | In progress | - |
   | 3. Feature Support | 0/0 | Not started | - |
   | 4. Validation | 0/0 | Not started | - |
   | 5. Final Cleanup | 0/0 | Not started | - |
