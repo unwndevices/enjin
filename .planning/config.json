@@ -6,7 +6,7 @@
   "model_profile": "custom",
   "custom_models": {
     "research": "glm-4.7",
-    "agents": "glm-4.7-flash"
+    "agents": "glm-4.7"
   },
   "workflow": {
     "research": true,
