@@ -28,12 +28,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Dependency graph exists showing all enjin1 references in enjin2 across infrastructure, utilities, and features
   2. enjin2 compiles with separate build target and include paths from enjin1
   3. No `namespace enjin` references exist in enjin2 codebase
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md — Generate dependency graph mapping all enjin1→enjin2 dependencies
+- [ ] 01-02-PLAN.md — Verify no namespace enjin references in enjin2 codebase
+- [ ] 01-03-PLAN.md — Establish compilation isolation with separate CMake targets
 
 ### Phase 2: Core Migration
 **Goal**: Migrate core infrastructure with compatibility layer
