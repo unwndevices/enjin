@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Phase 2: Core Migration
+**Current focus:** Phase 3: Feature Support
 
 ## Current Position
 
 Phase: 2 of 5 (Core Migration)
 Plan: 3 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-30 — Completed 02-03-PLAN.md (Memory mapping guide)
+Status: Phase complete
+Last activity: 2026-01-30 — Completed 02-03-PLAN.md (Memory mapping guide) - Phase 2 complete
 
-Progress: [██████████] 100%
+Progress: [████░░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Recent decisions affecting current work:
 - Compatibility namespace: Use `namespace enjin` for compatibility layer wrapping enjin2 types (02-01)
 - Lifecycle mapping: PascalCase wrappers (Awake, Start, Update) map to camelCase enjin2 methods (awake, start, update) (02-01)
 - Seam API alignment: Seams must only expose methods that exist in underlying implementations (e.g., SceneSeam doesn't have initialize() because SceneStateMachine doesn't) (02-02)
+- Memory mapping: shared_ptr to unique_ptr conversion requires scene-based ownership and runtime null checks during migration (02-03)
 
 ### Pending Todos
 
@@ -71,5 +72,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 02-03-PLAN.md (Memory mapping guide)
+Stopped at: Completed 02-03-PLAN.md (Memory mapping guide) - Phase 2 complete
 Resume file: None
