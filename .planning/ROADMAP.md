@@ -38,8 +38,8 @@ Plans:
 - [x] 02-02-PLAN.md — Implement Strangler Fig seams for incremental migration
 - [x] 02-03-PLAN.md — Document memory mapping strategy (shared_ptr → unique_ptr)
 - [x] 03-01-PLAN.md — Configure CMake build system for compile-time backend selection
-- [ ] 03-02-PLAN.md — Create abstraction interfaces (ICanvas, IComponent, IScene)
-- [ ] 03-03-PLAN.md — Update seams for compile-time routing with interface implementation
+- [x] 03-02-PLAN.md — Create abstraction interfaces (ICanvas, IComponent, IScene)
+- [x] 03-03-PLAN.md — Update seams for compile-time routing with interface implementation
 
 ### Phase 4: Validation
 **Goal**: Validate behavior through manual testing and shadow mode
@@ -74,6 +74,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
   |-------|----------------|--------|-----------|
   | 1. Dependency Analysis | 3/3 | Complete | 2026-01-30 |
   | 2. Core Migration | 3/3 | Complete | 2026-01-30 |
-  | 3. Feature Support | 1/3 | In progress | 2026-01-30 |
+  | 3. Feature Support | 3/3 | Complete | 2026-01-30 |
   | 4. Validation | 0/0 | Not started | - |
   | 5. Final Cleanup | 0/0 | Not started | - |

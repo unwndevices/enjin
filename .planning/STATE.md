@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 3 of 5 (Feature Support)
-Plan: 2 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-30 — Completed 03-02-PLAN.md (Abstraction interfaces)
+Last activity: 2026-01-30 — Completed 03-03-PLAN.md (Compile-time seam routing)
 
-Progress: [███████░░░░░░] 57%
+Progress: [██████████░░] 63%
 
 ## Performance Metrics
 
@@ -62,6 +62,8 @@ Recent decisions affecting current work:
 - Template abstraction: ICanvas and IScene templated on pixel type, IComponent non-templated (03-02)
 - Minimal interface scope: Only methods that exist in enjin2 implementations exposed (03-02)
 - Forward declarations: Abstract headers use forward declarations to avoid implementation dependencies (03-02)
+- Compile-time routing: Use #if USE_ENJIN1_BACKEND (not #ifdef) to allow CMake to set 0 or 1 and work correctly (03-03)
+- Deprecated runtime switching: Keep legacy methods with [[deprecated]] attributes for backward compatibility during migration (03-03)
 
 ### Pending Todos
 
@@ -78,5 +80,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 03-02-PLAN.md (Abstraction interfaces)
+Stopped at: Completed 03-03-PLAN.md (Compile-time seam routing)
 Resume file: None
