@@ -60,12 +60,12 @@ Plans:
   1. All enjin2 headers compile independently without enjin1 includes
   2. Legacy seams at component and scene boundaries enable testing in isolation
   3. Canvas abstraction layer enables both enjin1 and enjin2 implementations to target the same interface
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md — Configure CMake build system for compile-time backend selection
+- [ ] 03-02-PLAN.md — Create abstraction interfaces (ICanvas, IComponent, IScene)
+- [ ] 03-03-PLAN.md — Update seams for compile-time routing with interface implementation
 
 ### Phase 4: Validation
 **Goal**: Validate behavior through manual testing and shadow mode
