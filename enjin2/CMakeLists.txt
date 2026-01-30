@@ -131,6 +131,14 @@ endif()
 
 # Main library
 add_library(enjin2 INTERFACE)
+
+# Backend compile definitions
+if(USE_ENJIN1)
+    target_compile_definitions(enjin2 INTERFACE USE_ENJIN1_BACKEND=1)
+else()
+    target_compile_definitions(enjin2 INTERFACE USE_ENJIN1_BACKEND=0)
+endif()
+
 target_link_libraries(enjin2 INTERFACE
     enjin2_core
     enjin2_graphics
