@@ -104,4 +104,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
   | 2. Core Migration | 3/3 | Complete | 2026-01-30 |
   | 3. Feature Support | 3/3 | Complete | 2026-01-30 |
   | 4. Validation | 4/4 | Complete | 2026-01-31 |
-  | 5. Final Cleanup | 0/0 | Not started | - |
+  | 5. Final Cleanup | 0/1 | Not started | - |
