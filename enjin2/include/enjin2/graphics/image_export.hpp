@@ -4,6 +4,7 @@
 #include "../core/types.hpp"
 #include <string>
 #include <fstream>
+#include <iostream>
 
 namespace enjin2 {
 

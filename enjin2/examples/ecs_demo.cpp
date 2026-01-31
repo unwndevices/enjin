@@ -1,9 +1,9 @@
 /**
  * @file ecs_demo.cpp
- * @brief Demonstration of the Enjin2 ECS system
+ * @brief Demonstration of Enjin2 ECS system
  * 
  * Shows how to create objects, components, scenes, and manage
- * the complete lifecycle of an Enjin2 application.
+ * complete lifecycle of an Enjin2 application.
  */
 
 #include <iostream>
@@ -25,32 +25,14 @@ using namespace enjin2;
  */
 class RectangleDrawable : public C_Drawable {
 private:
-    Pixel4 color;
+    uint8_t grayscale;
     
 public:
     /**
      * @brief Constructor
      */
-    RectangleDrawable(Object* owner, uint16_t width, uint16_t height, Pixel4 rectColor)
-        : C_Drawable(owner, width, height), color(rectColor) {}
-    
-    /**
-     * @brief Draw to 4-bit canvas
-     */
-    void draw(ICanvas<Pixel4>& canvas) override {
-        if (!isVisible()) return;
-        
-        Point pos = getRenderPosition();
-        Size sz = getSize();
-        
-        
-        // Draw filled rectangle
-        for (uint16_t y = 0; y < sz.height; ++y) {
-            for (uint16_t x = 0; x < sz.width; ++x) {
-                canvas.setPixel(pos.x + x, pos.y + y, color);
-            }
-        }
-    }
+    RectangleDrawable(Object* owner, uint8_t width, uint8_t height, uint8_t gray)
+        : C_Drawable(owner, width, height), grayscale(gray) {}
     
     /**
      * @brief Draw to 8-bit canvas
@@ -58,30 +40,35 @@ public:
     void draw(ICanvas<uint8_t>& canvas) override {
         if (!isVisible()) return;
         
-        Point pos = getRenderPosition();
-        Size sz = getSize();
-        
-        // Convert 4-bit color to 8-bit
-        uint8_t color8 = color.value * 17; // Scale 0-15 to 0-255
+        Point pos = GetOffsetPosition();
+        uint8_t w = GetWidth();
+        uint8_t h = GetHeight();
         
         // Draw filled rectangle
-        for (uint16_t y = 0; y < sz.height; ++y) {
-            for (uint16_t x = 0; x < sz.width; ++x) {
-                canvas.setPixel(pos.x + x, pos.y + y, color8);
+        for (uint16_t y = 0; y < h; ++y) {
+            for (uint16_t x = 0; x < w; ++x) {
+                canvas.setPixel(pos.x + x, pos.y + y, grayscale);
             }
         }
     }
     
     /**
-     * @brief Set rectangle color
+     * @brief Set rectangle grayscale value
      */
-    void setColor(Pixel4 newColor) {
-        color = newColor;
+    void setGrayscale(uint8_t gray) {
+        grayscale = gray;
+    }
+    
+    /**
+     * @brief Get rectangle grayscale value
+     */
+    uint8_t getGrayscale() const {
+        return grayscale;
     }
 };
 
 /**
- * @brief Moving object that bounces around the screen
+ * @brief Moving object that bounces around screen
  */
 class BouncingObject : public Object {
 private:
@@ -92,7 +79,7 @@ public:
     /**
      * @brief Constructor
      */
-    BouncingObject(int16_t x, int16_t y, Pixel4 color, const Rect& screenBounds)
+    BouncingObject(int16_t x, int16_t y, uint8_t gray, const Rect& screenBounds)
         : velocity(2, 1), bounds(screenBounds) {
         
         // Set initial position
@@ -102,7 +89,7 @@ public:
         }
         
         // Add rectangle drawable
-        addComponent<RectangleDrawable>(20, 15, color);
+        addComponent<RectangleDrawable>(20, 15, gray);
     }
     
     /**
@@ -116,21 +103,22 @@ public:
         if (!pos || !drawable) return;
         
         Point currentPos = pos->getPosition();
-        Size size = drawable->getSize();
+        uint8_t width = drawable->GetWidth();
+        uint8_t height = drawable->GetHeight();
         
         // Update position
         currentPos.x += velocity.x;
         currentPos.y += velocity.y;
         
         // Bounce off walls
-        if (currentPos.x <= bounds.x || currentPos.x + static_cast<int16_t>(size.width) >= bounds.x + static_cast<int16_t>(bounds.width)) {
+        if (currentPos.x <= bounds.x || currentPos.x + static_cast<int16_t>(width) >= bounds.x + static_cast<int16_t>(bounds.width)) {
             velocity.x = -velocity.x;
-            currentPos.x = std::max(bounds.x, std::min(currentPos.x, static_cast<int16_t>(bounds.x + bounds.width - size.width)));
+            currentPos.x = std::max(bounds.x, std::min(currentPos.x, static_cast<int16_t>(bounds.x + bounds.width - width)));
         }
         
-        if (currentPos.y <= bounds.y || currentPos.y + static_cast<int16_t>(size.height) >= bounds.y + static_cast<int16_t>(bounds.height)) {
+        if (currentPos.y <= bounds.y || currentPos.y + static_cast<int16_t>(height) >= bounds.y + static_cast<int16_t>(bounds.height)) {
             velocity.y = -velocity.y;
-            currentPos.y = std::max(bounds.y, std::min(currentPos.y, static_cast<int16_t>(bounds.y + bounds.height - size.height)));
+            currentPos.y = std::max(bounds.y, std::min(currentPos.y, static_cast<int16_t>(bounds.y + bounds.height - height)));
         }
         
         pos->setPosition(currentPos.x, currentPos.y);
@@ -159,11 +147,11 @@ protected:
     void onCreate() override {
         std::cout << "DemoScene: Creating scene objects...\n";
         
-        // Create several bouncing objects with different colors
-        addObject<BouncingObject>(10, 10, Pixel4(15), screenBounds);   // White
-        addObject<BouncingObject>(50, 30, Pixel4(10), screenBounds);   // Light gray
-        addObject<BouncingObject>(80, 20, Pixel4(5), screenBounds);    // Dark gray
-        addObject<BouncingObject>(30, 50, Pixel4(12), screenBounds);   // Another shade
+        // Create several bouncing objects with different gray levels
+        addObject<BouncingObject>(10, 10, static_cast<uint8_t>(255), screenBounds);   // White
+        addObject<BouncingObject>(50, 30, static_cast<uint8_t>(170), screenBounds);   // Light gray
+        addObject<BouncingObject>(80, 20, static_cast<uint8_t>(85), screenBounds);    // Dark gray
+        addObject<BouncingObject>(30, 50, static_cast<uint8_t>(200), screenBounds);   // Another shade
         
         std::cout << "DemoScene: Created " << getObjects().size() << " objects\n";
     }
@@ -197,17 +185,10 @@ protected:
     }
     
     /**
-     * @brief Render 4-bit background
-     */
-    void onRender(ICanvas<Pixel4>& canvas) override {
-        canvas.clear(Pixel4(1)); // Dark background
-    }
-    
-    /**
      * @brief Render 8-bit background
      */
     void onRender(ICanvas<uint8_t>& canvas) override {
-        canvas.clear(static_cast<uint8_t>(17)); // Dark 8-bit background
+        canvas.clear(static_cast<uint8_t>(20)); // Dark background
     }
 };
 
@@ -220,7 +201,7 @@ int main() {
     // Create canvas for rendering
     constexpr uint16_t CANVAS_WIDTH = 128;
     constexpr uint16_t CANVAS_HEIGHT = 64;
-    Canvas4<CANVAS_WIDTH, CANVAS_HEIGHT> canvas;
+    Canvas8<CANVAS_WIDTH, CANVAS_HEIGHT> canvas;
     
     // Create scene state machine
     SceneStateMachine sceneManager;
@@ -233,16 +214,7 @@ int main() {
         return 1;
     }
     
-    // Set up scene transition callbacks
-    auto onSceneChange = sceneManager.connectOnSceneChangeComplete(
-        [](Scene* from, Scene* to) {
-            std::cout << "Scene transition complete: " 
-                      << (from ? std::to_string(from->getId()) : "null")
-                      << " -> " 
-                      << (to ? std::to_string(to->getId()) : "null") << "\n";
-        });
-    
-    // Start the demo scene
+    // Start demo scene
     if (!sceneManager.changeScene(1)) {
         std::cerr << "Failed to start demo scene!\n";
         return 1;
@@ -286,10 +258,10 @@ int main() {
                     
                     for (int y = 0; y < 12; ++y) {
                         for (int x = 0; x < 20; ++x) {
-                            Pixel4 pixel = canvas.getPixel(sampleX + x, sampleY + y);
-                            if (pixel.value == 1) {
+                            uint8_t pixel = canvas.getPixel(sampleX + x, sampleY + y);
+                            if (pixel < 30) {
                                 std::cout << ". ";  // Background
-                            } else if (pixel.value >= 10) {
+                            } else if (pixel >= 200) {
                                 std::cout << "█ ";  // Object (bright)
                             } else {
                                 std::cout << "▓ ";  // Object (dim)

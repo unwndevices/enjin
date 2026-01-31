@@ -12,7 +12,8 @@ provides:
   - CMake build system with USE_ENJIN1 option for compile-time backend selection
   - Compile-time macro definitions (USE_ENJIN1_BACKEND) for conditional compilation
   - Foundation for backend-independent code builds
-affects: [03-02, 03-03, abstraction-interface-implementation, seam-layer-routing]
+affects:
+  [03-02, 03-03, abstraction-interface-implementation, seam-layer-routing]
 
 # Tech tracking
 tech-stack:
@@ -81,14 +82,16 @@ None - plan executed exactly as written.
 ## Issues Encountered
 
 **Issue: INTERFACE library compile definition scope error**
+
 - **Problem:** Initial implementation used `target_compile_definitions(enjin2 PRIVATE ...)` which failed because enjin2 is an INTERFACE library
 - **Resolution:** Changed to `target_compile_definitions(enjin2 INTERFACE ...)` which is required for INTERFACE targets
 - **Impact:** This is the correct CMake pattern - INTERFACE targets should use INTERFACE scope for properties to propagate correctly to dependent targets
 
 **Issue: Missing Adafruit-GFX-Library blocking build**
+
 - **Problem:** Build failed with "fatal error: ../../Libs/Adafruit-GFX-Library/gfxfont.h: No such file or directory"
-- **Resolution:** Created symlink from enjin/Libs to unwn/Libs to resolve missing dependency
-- **Impact:** This is a pre-existing build configuration issue; the symlink enables verification that compile definitions work correctly
+- **Resolution:** Created copy of gfxfont.h to enjin2/include/enjin2/graphics/gfxfont.h
+- **Impact:** This is a pre-existing build configuration issue; the copy enables verification that compile definitions work correctly
 
 ## User Setup Required
 
@@ -101,5 +104,6 @@ None - no external service configuration required.
 - Separate enjin1 and enjin2 builds can now be created using `-DUSE_ENJIN1=ON/OFF`
 
 ---
-*Phase: 03-feature-support*
-*Completed: 2026-01-30*
+
+_Phase: 03-feature-support_
+_Completed: 2026-01-30_

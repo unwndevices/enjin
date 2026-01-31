@@ -1,5 +1,5 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../vendor/stb_image_write.h"
+#include "../../vendor/stb_image_write.h"
 
 #include <vector>
 
@@ -26,5 +26,9 @@ void Canvas8<WIDTH, HEIGHT>::exportToBMP(const char *filename) const
     // Write BMP using stb_image_write
     stbi_write_bmp(filename, WIDTH, HEIGHT, 3, rgbBuffer.data());
 }
+
+// Explicit template instantiations for common canvas sizes
+template void Canvas8<128, 64>::exportToBMP(const char *filename) const;
+template void Canvas8<128, 128>::exportToBMP(const char *filename) const;
 
 } // namespace enjin2
