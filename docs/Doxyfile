@@ -1,0 +1,45 @@
+# Doxyfile - minimal XML generation config for enjin2
+# Source: https://www.doxygen.nl/manual/config.html
+
+# Project identification
+PROJECT_NAME           = "enjin2"
+PROJECT_NUMBER         = "2.0.0"
+PROJECT_BRIEF          = "Lightweight C++ game engine"
+
+# Output settings
+OUTPUT_DIRECTORY       = docs/xml
+GENERATE_XML          = YES
+GENERATE_HTML         = NO
+XML_OUTPUT             = xml
+
+# Input settings
+INPUT                  = include/enjin2
+FILE_PATTERNS         = *.hpp
+RECURSIVE             = YES
+EXCLUDE_PATTERNS       = */test/* */tests/* */examples/*
+
+# Extraction settings
+EXTRACT_ALL            = NO   # Only document what has comments
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+EXTRACT_LOCAL_CLASSES  = NO
+
+# Warning settings
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO   # Allow undocumented params temporarily
+
+# C++ specific
+OPTIMIZE_OUTPUT_JAVA   = NO   # Use C++ settings
+BUILTIN_STL_SUPPORT    = YES   # Better std:: documentation
+
+# Preprocessor
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+
+# Graphs (disabled for performance, enable if needed)
+HAVE_DOT               = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+CLASS_GRAPH            = NO

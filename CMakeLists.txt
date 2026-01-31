@@ -9,6 +9,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -MMD -MP")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -MMD -MP")
 
+# Documentation generation
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile)
+    set(DOXYGEN_OUT ${CMAKE_CURRENT_SOURCE_DIR}/docs/xml)
+
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_IN}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        BYPRODUCTS ${DOXYGEN_OUT}/index.xml
+    )
+
+    message(STATUS "Doxygen found - documentation target available: cmake --build . --target docs")
+else()
+    message(WARNING "Doxygen not found - documentation generation unavailable")
+endif()
+
 # Options
 option(ENJIN2_BUILD_TESTS "Build tests" ON)
 option(ENJIN2_BUILD_EXAMPLES "Build examples" ON)
