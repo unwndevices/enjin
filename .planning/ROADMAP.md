@@ -74,11 +74,13 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Manual testing baseline covers component lifecycle, rendering, scene transitions, and Lua scripting
   2. Shadow mode execution runs both enjin1 and enjin2 in parallel with output comparison for behavioral verification
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — Add BMP export capability using stb_image_write library
+- [ ] 04-02-PLAN.md — Create image comparison utility and manual testing infrastructure
+- [ ] 04-03-PLAN.md — Implement shadow mode execution for automated comparison
+- [ ] 04-04-PLAN.md — Create terminal output formatter for test results
 
 ### Phase 5: Final Cleanup
 **Goal**: Complete enjin2-only build system
@@ -101,5 +103,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
   | 1. Dependency Analysis | 3/3 | Complete | 2026-01-30 |
   | 2. Core Migration | 3/3 | Complete | 2026-01-30 |
   | 3. Feature Support | 3/3 | Complete | 2026-01-30 |
-  | 4. Validation | 0/0 | Not started | - |
+  | 4. Validation | 0/4 | Planned | - |
   | 5. Final Cleanup | 0/0 | Not started | - |
