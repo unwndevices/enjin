@@ -10,3 +10,15 @@ target_include_directories(image_comparison_test PRIVATE
 target_link_libraries(image_comparison_test PRIVATE
     enjin2
 )
+
+# Shadow mode test for parallel execution of both backends
+add_executable(shadow_mode_test
+    shadow_mode_test.cpp
+)
+target_include_directories(shadow_mode_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(shadow_mode_test PRIVATE
+    enjin2
+)
