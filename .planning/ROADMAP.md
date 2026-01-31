@@ -15,8 +15,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Dependency Analysis** - Map enjin1→enjin2 dependencies and establish compilation isolation
 - [x] **Phase 2: Core Migration** - Migrate core infrastructure with compatibility layer
 - [x] **Phase 3: Feature Support** - Enable feature migration with abstraction layers
-- [x] **Phase 4: Validation** - Validate behavior through manual testing and shadow mode
-- [ ] **Phase 5: Final Cleanup** - Complete enjin2-only build system
+ - [x] **Phase 4: Validation** - Validate behavior through manual testing and shadow mode
+ - [x] **Phase 5: Final Cleanup** - Complete enjin2-only build system
+ - [ ] **Phase 6: Create library docs, using doxygen + Docusaurus**
 
 ## Phase Details
 
@@ -93,10 +94,24 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Remove CMake options, compile definitions, and conditional compilation for enjin1 backend
 
+### Phase 6: Create library docs, using doxygen + Docusaurus
+**Goal:** Create comprehensive library documentation using Doxygen for API extraction and Docusaurus for modern web presentation, deployed to GitHub Pages
+**Depends on:** Phase 5
+**Plans:** 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Configure Doxygen for XML generation
+- [ ] 06-02-PLAN.md — Initialize Docusaurus site
+- [ ] 06-03-PLAN.md — Create documentation content
+- [ ] 06-04-PLAN.md — Set up CI/CD deployment
+
+**Details:**
+Setup automated documentation pipeline with Doxygen 1.15+ extracting XML from C++ headers and Docusaurus 3.9+ rendering as modern web site. Deploy to GitHub Pages via GitHub Actions workflow on main branch pushes.
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
   | Phase | Plans Complete | Status | Completed |
   |-------|----------------|--------|-----------|
@@ -105,3 +120,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
   | 3. Feature Support | 3/3 | Complete | 2026-01-30 |
 | 4. Validation | 4/4 | Complete | 2026-01-31 |
 | 5. Final Cleanup | 1/1 | Complete | 2026-01-31 |
+| 6. Create library docs, using doxygen + Docusaurus | 0/4 | Planned | 2026-01-31 |
