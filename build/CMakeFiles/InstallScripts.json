@@ -1,0 +1,13 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/unwn/dev/enjin/build/cmake_install.cmake",
+		"/home/unwn/dev/enjin/build/enjin2/cmake_install.cmake",
+		"/home/unwn/dev/enjin/build/enjin2/tests/cmake_install.cmake",
+		"/home/unwn/dev/enjin/build/enjin2/examples/cmake_install.cmake",
+		"/home/unwn/dev/enjin/build/enjin2/examples/basic_drawing/cmake_install.cmake",
+		"/home/unwn/dev/enjin/build/enjin2/examples/ecs_demo/cmake_install.cmake",
+		"/home/unwn/dev/enjin/build/enjin2/examples/lua_scripting/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
