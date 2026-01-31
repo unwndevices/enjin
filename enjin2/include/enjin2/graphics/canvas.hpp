@@ -915,6 +915,12 @@ namespace enjin2
 
             fclose(file);
         }
+
+        /**
+         * @brief Export canvas to BMP format (24-bit RGB, grayscale as gray=R=G=B)
+         * @param filename Output filename
+         */
+        void exportToBMP(const char *filename) const;
         
         /**
          * @brief Set GFX font for text rendering
