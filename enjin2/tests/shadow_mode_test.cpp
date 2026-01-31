@@ -113,12 +113,8 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(backend, "enjin2") == 0) {
         output_file = "output-enjin2.bmp";
     } else {
-        // Default: check USE_ENJIN1_BACKEND compile-time macro
-#if USE_ENJIN1_BACKEND
-        output_file = "output-enjin1.bmp";
-#else
+        // Default: use enjin2 output
         output_file = "output-enjin2.bmp";
-#endif
     }
 
     // Export canvas to BMP

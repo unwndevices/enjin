@@ -7,103 +7,57 @@
 namespace enjin2 {
 
 /**
- * SceneSeam - Strangler Fig pattern seam for scene boundaries
+ * SceneSeam - Scene boundary seam for enjin2
  *
- * Allows enjin1 and enjin2 implementations to coexist during incremental migration.
- * Uses compile-time backend selection via USE_ENJIN1_BACKEND macro.
+ * Provides clean interface between scene system and enjin2 implementation.
+ * All enjin1 backend infrastructure removed - enjin2-only implementation.
  *
  * @tparam PixelType Pixel type for rendering (e.g., Pixel4, uint8_t)
  */
 template <typename PixelType>
 class SceneSeam : public IScene<PixelType> {
-public:
-    /// Backend type selector (deprecated - kept for backward compatibility)
-    [[deprecated("Use compile-time USE_ENJIN1_BACKEND macro instead")]]
-    enum class Backend {
-        ENJIN1,  ///< Use enjin1 legacy backend
-        ENJIN2   ///< Use enjin2 new backend
-    };
-
 private:
-    Backend currentBackend;      ///< Current backend type (deprecated)
     SceneStateMachine* enjin2SM; ///< Pointer to enjin2 scene state machine
-    void* enjin1SM;             ///< Pointer to enjin1 scene manager (opaque)
-    uint32_t id;               ///< Scene ID
-    bool active;                ///< Scene active state
-    bool initialized;           ///< Scene initialized state
+    uint32_t id;                ///< Scene ID
+    bool active;                 ///< Scene active state
+    bool initialized;            ///< Scene initialized state
 
 public:
     /**
-     * Construct scene seam with specified backend type
-     * @param backend Which backend to use (deprecated)
+     * Construct scene seam
      * @param sceneId Scene identifier
      */
-    explicit SceneSeam(Backend backend = Backend::ENJIN2, uint32_t sceneId = 0)
-        : currentBackend(backend), enjin2SM(nullptr), enjin1SM(nullptr),
-          id(sceneId), active(false), initialized(false) {}
+    explicit SceneSeam(uint32_t sceneId = 0)
+        : enjin2SM(nullptr), id(sceneId), active(false), initialized(false) {}
 
     /**
      * Called when scene is created
      */
     void onCreate() override {
-#if USE_ENJIN1_BACKEND
-        #error "enjin1 backend not yet integrated"
-        // When enjin1 is integrated:
-        // if (currentBackend == Backend::ENJIN1 && enjin1SM != nullptr) {
-        //     // Route to enjin1 implementation
-        // }
-#else
         // Scene creation handled by scene state machine
         // This is a no-op for the seam itself
-#endif
     }
 
     /**
      * Called when scene becomes active
      */
     void onActivate() override {
-#if USE_ENJIN1_BACKEND
-        #error "enjin1 backend not yet integrated"
-        // When enjin1 is integrated:
-        // if (currentBackend == Backend::ENJIN1 && enjin1SM != nullptr) {
-        //     // Route to enjin1 implementation
-        // }
-#else
-        if (currentBackend == Backend::ENJIN2 && enjin2SM != nullptr) {
-            active = true;
-        }
-#endif
+        active = true;
     }
 
     /**
      * Called when scene becomes inactive
      */
     void onDeactivate() override {
-#if USE_ENJIN1_BACKEND
-        #error "enjin1 backend not yet integrated"
-        // When enjin1 is integrated:
-        // if (currentBackend == Backend::ENJIN1 && enjin1SM != nullptr) {
-        //     // Route to enjin1 implementation
-        // }
-#else
         active = false;
-#endif
     }
 
     /**
      * Called when scene is destroyed
      */
     void onDestroy() override {
-#if USE_ENJIN1_BACKEND
-        #error "enjin1 backend not yet integrated"
-        // When enjin1 is integrated:
-        // if (currentBackend == Backend::ENJIN1 && enjin1SM != nullptr) {
-        //     // Route to enjin1 implementation
-        // }
-#else
         // Scene cleanup handled by scene state machine
         // This is a no-op for the seam itself
-#endif
     }
 
     /**
@@ -111,17 +65,9 @@ public:
      * @param deltaTime Time since last frame (in milliseconds)
      */
     void onUpdate(uint16_t deltaTime) override {
-#if USE_ENJIN1_BACKEND
-        #error "enjin1 backend not yet integrated"
-        // When enjin1 is integrated:
-        // if (currentBackend == Backend::ENJIN1 && enjin1SM != nullptr) {
-        //     // Route to enjin1 implementation
-        // }
-#else
-        if (currentBackend == Backend::ENJIN2 && enjin2SM != nullptr) {
+        if (enjin2SM != nullptr) {
             enjin2SM->update(deltaTime);
         }
-#endif
     }
 
     /**
@@ -129,17 +75,9 @@ public:
      * @param canvas Canvas to render to
      */
     void onRender(ICanvas<PixelType>& canvas) override {
-#if USE_ENJIN1_BACKEND
-        #error "enjin1 backend not yet integrated"
-        // When enjin1 is integrated:
-        // if (currentBackend == Backend::ENJIN1 && enjin1SM != nullptr) {
-        //     // Route to enjin1 implementation
-        // }
-#else
-        if (currentBackend == Backend::ENJIN2 && enjin2SM != nullptr) {
+        if (enjin2SM != nullptr) {
             enjin2SM->render(canvas);
         }
-#endif
     }
 
     /**
@@ -164,25 +102,6 @@ public:
      */
     bool isInitialized() const override {
         return initialized;
-    }
-
-    /**
-     * Switch to enjin2 backend (deprecated - kept for backward compatibility)
-     * @param newSM Pointer to enjin2 scene state machine to use
-     */
-    [[deprecated("Use compile-time USE_ENJIN1_BACKEND macro for backend selection")]]
-    void switchToEnjin2(SceneStateMachine* newSM) {
-        enjin2SM = newSM;
-        currentBackend = Backend::ENJIN2;
-    }
-
-    /**
-     * Get current backend type (deprecated - kept for backward compatibility)
-     * @return Current backend being used
-     */
-    [[deprecated("Use compile-time USE_ENJIN1_BACKEND macro for backend selection")]]
-    Backend getBackend() const {
-        return currentBackend;
     }
 
     /**
