@@ -1,0 +1,216 @@
+#!/bin/bash
+#
+# Manual Test Execution Script for enjin2
+# Phase: 04-Validation
+#
+# This script executes manual test scenarios from manual-test-checklist.md
+# and collects artifacts (BMP files, logs) in a timestamped directory.
+#
+
+set -e  # Exit on error
+
+# Color output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+CHECKLIST_FILE=".planning/phases/04-validation/manual-test-checklist.md"
+RESULTS_BASE_DIR="test-results-manual"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+RESULTS_DIR="${RESULTS_BASE_DIR}-${TIMESTAMP}"
+TEST_EXECUTABLE="../../enjin2/build/tests/manual_test_runner"  # Will be implemented in future plan
+
+# Test counters
+TESTS_PASSED=0
+TESTS_FAILED=0
+TESTS_TOTAL=0
+
+# Initialize test results directory
+function init_tests() {
+    echo -e "${BLUE}Initializing manual test environment...${NC}"
+    mkdir -p "${RESULTS_DIR}"
+
+    # Create subdirectories for each test scenario
+    for i in {1..8}; do
+        mkdir -p "${RESULTS_DIR}/test-${i}"
+    done
+
+    echo -e "${GREEN}Test results directory: ${RESULTS_DIR}${NC}"
+    echo ""
+}
+
+# Run a single test scenario
+function run_test_scenario() {
+    local test_num=$1
+    local test_name=$2
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+
+    echo -e "${BLUE}Running Test ${test_num}: ${test_name}${NC}"
+
+    local test_dir="${RESULTS_DIR}/test-${test_num}"
+    local log_file="${test_dir}/test.log"
+    local bmp_file="${test_dir}/output.bmp"
+
+    # Note: This is a placeholder for actual test execution
+    # In future plans, we will implement test programs that can be run here
+    # For now, we simulate test execution
+
+    if [[ -f "${TEST_EXECUTABLE}" ]]; then
+        # Run the test executable (will be implemented in future plan)
+        if "${TEST_EXECUTABLE}" "${test_num}" > "${log_file}" 2>&1; then
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+            echo -e "${GREEN}Test ${test_num}: PASSED${NC} (output.bmp)"
+        else
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            echo -e "${RED}Test ${test_num}: FAILED${NC} (see ${log_file})"
+        fi
+    else
+        # Placeholder: Test runner not yet implemented
+        echo -e "${YELLOW}Test ${test_num}: SKIPPED${NC} (test runner not yet implemented)"
+        echo -e "${YELLOW}  This test will be implemented in a future plan${NC}"
+    fi
+
+    echo ""
+}
+
+# Extract test scenarios from checklist and execute them
+function extract_and_run_tests() {
+    echo -e "${BLUE}Extracting test scenarios from ${CHECKLIST_FILE}${NC}"
+    echo ""
+
+    # Parse test scenarios from the checklist
+    # This section handles Test 1-8 as documented in manual-test-checklist.md
+
+    # Component Lifecycle Tests
+    run_test_scenario 1 "Awake Order Verification"
+    run_test_scenario 2 "Start Order Verification"
+    run_test_scenario 3 "Update Execution"
+
+    # Rendering Tests
+    run_test_scenario 4 "Basic Shape Rendering"
+    run_test_scenario 5 "Layer Ordering"
+
+    # Scene Transition Tests
+    run_test_scenario 6 "Scene Push Behavior"
+    run_test_scenario 7 "Scene Pop Behavior"
+
+    # Lua Scripting Tests
+    run_test_scenario 8 "Basic Script Execution"
+}
+
+# Export canvas output to BMP (placeholder for future implementation)
+function export_output() {
+    # This function will be used by test programs to export canvas output
+    # For now, it's a placeholder
+    echo "Export function placeholder - will be used by test programs"
+}
+
+# Generate summary report
+function summarize_results() {
+    local summary_file="${RESULTS_DIR}/summary.md"
+
+    echo -e "${BLUE}Generating summary report...${NC}"
+
+    cat > "${summary_file}" <<EOF
+# Manual Test Summary Report
+
+**Execution Date:** $(date)
+**Results Directory:** ${RESULTS_DIR}
+
+## Overall Results
+
+| Metric | Count |
+|--------|-------|
+| Total Tests | ${TESTS_TOTAL} |
+| Passed | ${TESTS_PASSED} |
+| Failed | ${TESTS_FAILED} |
+| Skipped | $((TESTS_TOTAL - TESTS_PASSED - TESTS_FAILED)) |
+
+## Test Results
+
+### Component Lifecycle Tests
+
+| Test | Status | Output |
+|------|--------|--------|
+| Test 1: Awake Order | TBD | test-1/output.bmp |
+| Test 2: Start Order | TBD | test-2/output.bmp |
+| Test 3: Update Execution | TBD | test-3/output.bmp |
+
+### Rendering Tests
+
+| Test | Status | Output |
+|------|--------|--------|
+| Test 4: Basic Shape Rendering | TBD | test-4/output.bmp |
+| Test 5: Layer Ordering | TBD | test-5/output.bmp |
+
+### Scene Transition Tests
+
+| Test | Status | Output |
+|------|--------|--------|
+| Test 6: Scene Push | TBD | test-6/output.bmp |
+| Test 7: Scene Pop | TBD | test-7/output.bmp |
+
+### Lua Scripting Tests
+
+| Test | Status | Output |
+|------|--------|--------|
+| Test 8: Basic Script Execution | TBD | test-8/output.bmp |
+
+## Notes
+
+- Test runner executable not yet implemented (will be added in future plan)
+- Once test runner is available, this script will execute actual tests
+- BMP artifacts will be generated by test programs using Canvas8::exportToBMP()
+
+---
+
+**Generated by:** manual-test.sh
+**Phase:** 04-Validation
+EOF
+
+    echo -e "${GREEN}Summary report: ${summary_file}${NC}"
+}
+
+# Print terminal summary
+function print_terminal_summary() {
+    echo ""
+    echo -e "${BLUE}==================== Test Summary ====================${NC}"
+    echo -e "Total Tests:  ${TESTS_TOTAL}"
+    echo -e "${GREEN}Passed:       ${TESTS_PASSED}${NC}"
+    echo -e "${RED}Failed:       ${TESTS_FAILED}${NC}"
+    echo -e "${YELLOW}Skipped:      $((TESTS_TOTAL - TESTS_PASSED - TESTS_FAILED))${NC}"
+    echo -e "${BLUE}======================================================${NC}"
+    echo ""
+    echo -e "Results saved to: ${RESULTS_DIR}/"
+    echo -e "Summary report:    ${RESULTS_DIR}/summary.md"
+    echo ""
+    echo -e "${YELLOW}Note: Test runner not yet implemented.${NC}"
+    echo -e "This script will execute actual tests when test programs are added."
+}
+
+# Main execution
+function main() {
+    echo -e "${BLUE}========================================${NC}"
+    echo -e "${BLUE}enjin2 Manual Test Execution${NC}"
+    echo -e "${BLUE}Phase: 04-Validation${NC}"
+    echo -e "${BLUE}========================================${NC}"
+    echo ""
+
+    init_tests
+    extract_and_run_tests
+    summarize_results
+    print_terminal_summary
+
+    # Exit code: 0 if all tests passed, 1 otherwise
+    if [[ ${TESTS_FAILED} -eq 0 ]]; then
+        exit 0
+    else
+        exit 1
+    fi
+}
+
+# Run main function
+main "$@"
