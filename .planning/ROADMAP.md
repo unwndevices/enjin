@@ -88,10 +88,10 @@ Plans:
 **Requirements**: FND-10
 **Success Criteria** (what must be TRUE):
   1. CMakeLists.txt supports clean enjin2-only builds without any enjin1 paths or references
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md — Remove CMake options, compile definitions, and conditional compilation for enjin1 backend
 
 ## Progress
 
