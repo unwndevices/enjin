@@ -18,7 +18,7 @@ Requirements for complete migration from enjin to enjin2. Each maps to roadmap p
 - [x] **FND-07**: Port scene management system including SceneStateMachine and transitions
 - [x] **FND-08**: Establish manual testing baseline for component lifecycle, rendering, scene transitions, and Lua scripting
 - [x] **FND-09**: Ensure all enjin2 headers compile independently without enjin1 includes
-- [ ] **FND-10**: Update CMakeLists.txt to support clean enjin2-only builds without enjin1 paths
+- [x] **FND-10**: Update CMakeLists.txt to support clean enjin2-only builds without enjin1 paths
 
 ### Migration Strategy
 
@@ -73,7 +73,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FND-07 | Phase 2 | Complete |
   | FND-08 | Phase 4 | Complete |
 | FND-09 | Phase 3 | Complete |
-| FND-10 | Phase 5 | Pending |
+| FND-10 | Phase 5 | Complete |
 | STR-01 | Phase 2 | Complete |
 | STR-02 | Phase 3 | Complete |
   | STR-03 | Phase 4 | Complete |
@@ -86,4 +86,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-30*
-*Last updated: 2026-01-30 after initial definition*
+*Last updated: 2026-01-31 after Phase 5 completion*

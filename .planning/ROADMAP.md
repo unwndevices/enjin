@@ -91,7 +91,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md — Remove CMake options, compile definitions, and conditional compilation for enjin1 backend
+- [x] 05-01-PLAN.md — Remove CMake options, compile definitions, and conditional compilation for enjin1 backend
 
 ## Progress
 
