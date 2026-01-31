@@ -5,15 +5,6 @@ project(EnjinMigration CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Backend selection option
-option(USE_ENJIN1 "Use enjin1 legacy backend" OFF)
-
-if(USE_ENJIN1)
-    message(STATUS "Building with enjin1 backend")
-else()
-    message(STATUS "Building with enjin2 backend")
-endif()
-
 # External libraries (shared, but linked independently)
 set(EXTERNAL_LIBRARIES
     # Common external dependencies that both enjin and enjin2 might need
