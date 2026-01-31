@@ -16,7 +16,7 @@ Requirements for complete migration from enjin to enjin2. Each maps to roadmap p
 - [x] **FND-05**: Map enjin1 shared_ptr usage to enjin2 static allocation patterns with equivalent lifetime semantics
 - [x] **FND-06**: Map enjin1 component lifecycle (Awake/Start) to enjin2 lifecycle (awake/start)
 - [x] **FND-07**: Port scene management system including SceneStateMachine and transitions
-- [ ] **FND-08**: Establish manual testing baseline for component lifecycle, rendering, scene transitions, and Lua scripting
+- [x] **FND-08**: Establish manual testing baseline for component lifecycle, rendering, scene transitions, and Lua scripting
 - [x] **FND-09**: Ensure all enjin2 headers compile independently without enjin1 includes
 - [ ] **FND-10**: Update CMakeLists.txt to support clean enjin2-only builds without enjin1 paths
 
@@ -24,7 +24,7 @@ Requirements for complete migration from enjin to enjin2. Each maps to roadmap p
 
 - [x] **STR-01**: Implement Strangler Fig pattern with compatibility seams for incremental replacement
 - [x] **STR-02**: Extract legacy seams at component and scene boundaries for testing in isolation
-- [ ] **STR-03**: Implement shadow mode execution running both enjin1 and enjin2 in parallel with output comparison
+- [x] **STR-03**: Implement shadow mode execution running both enjin1 and enjin2 in parallel with output comparison
 - [x] **STR-04**: Create canvas abstraction layer enabling both implementations to target same interface
 
 ## v2 Requirements
@@ -71,12 +71,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FND-05 | Phase 2 | Complete |
 | FND-06 | Phase 2 | Complete |
 | FND-07 | Phase 2 | Complete |
-| FND-08 | Phase 4 | Pending |
+  | FND-08 | Phase 4 | Complete |
 | FND-09 | Phase 3 | Complete |
 | FND-10 | Phase 5 | Pending |
 | STR-01 | Phase 2 | Complete |
 | STR-02 | Phase 3 | Complete |
-| STR-03 | Phase 4 | Pending |
+  | STR-03 | Phase 4 | Complete |
 | STR-04 | Phase 3 | Complete |
 
 **Coverage:**
