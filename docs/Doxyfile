@@ -7,10 +7,9 @@ PROJECT_NUMBER         = "2.0.0"
 PROJECT_BRIEF          = "Lightweight C++ game engine"
 
 # Output settings
-OUTPUT_DIRECTORY       = docs/xml
+OUTPUT_DIRECTORY       = docs
 GENERATE_XML          = YES
 GENERATE_HTML         = NO
-XML_OUTPUT             = xml
 
 # Input settings
 INPUT                  = include/enjin2
