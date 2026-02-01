@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 6 of 6 (Create library docs, using doxygen + Docusaurus)
-Plan: 5 of 5 in current phase
-Status: Phase complete
-Last activity: 2026-02-01 — Completed 06-05: Set up CI/CD deployment
+Plan: 6 of 6 in current phase
+Status: Gap closure - MDX syntax errors remain
+Last activity: 2026-02-01 — Partially completed 06-06: Enable API navigation (infrastructure complete, MDX errors block build)
 
-Progress: [██████████████] 100% (Phase 5 complete, Phase 6: 100% complete)
+Progress: [████████████░] 90% (Phase 5 complete, Phase 6: 90% complete - MDX syntax errors)
 
 ## Performance Metrics
 
@@ -92,6 +92,8 @@ Recent decisions affecting current work:
  - GitHub Pages deployment method: Use actions/deploy-pages@v4 with GitHub Actions source instead of gh-pages branch for better integration (06-05)
  - Local preview testing: Single deploy-docs.sh script handles full build process and serves with python3 http.server for dependency-free testing (06-05)
  - Deployment documentation: Comprehensive troubleshooting section in deployment.md covers common GitHub Pages issues and configuration steps (06-05)
+ - Docusaurus dual-plugin setup: Separate plugins for guides (classic preset) and API (@docusaurus/plugin-content-docs with id: 'api') with exclude: ['api/**'] in classic preset to prevent document ID conflicts (06-06)
+ - API navigation configuration: Module-based sidebar (docs/api-sidebar.js) with paths without 'api/' prefix (e.g., 'core/Object' not 'api/core/Object') to match plugin's document ID generation (06-06)
 
 ### Roadmap Evolution
 
@@ -107,6 +109,7 @@ None yet.
 
 [Issues that affect future work]
 
+- **MDX syntax errors in API files**: All 59 generated API markdown files have malformed code blocks causing Docusaurus build failures. Code blocks have incorrect backtick syntax (e.g., ````javascript\n```void fill(...)=0```````). The `generate-api-docs.js` script from plan 06-04 needs to be fixed and all API files regenerated.
 - 210 Doxygen warnings during XML generation indicate incomplete documentation in some headers (acceptable for initial setup, to be addressed in later phase)
 
 ## Session Continuity

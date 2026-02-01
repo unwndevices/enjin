@@ -99,13 +99,13 @@ Plans:
 **Depends on:** Phase 5
 **Plans:** 6 plans
 
-Plans:
-- [ ] 06-01-PLAN.md — Configure Doxygen for XML generation
-- [ ] 06-02-PLAN.md — Initialize Docusaurus site
-- [ ] 06-03-PLAN.md — Create core documentation content
-- [ ] 06-04-PLAN.md — Create guides and API reference
-- [ ] 06-05-PLAN.md — Set up CI/CD deployment
-- [ ] 06-06-PLAN.md — Enable API navigation (gap closure)
+ Plans:
+- [x] 06-01-PLAN.md — Configure Doxygen for XML generation
+- [x] 06-02-PLAN.md — Initialize Docusaurus site
+- [x] 06-03-PLAN.md — Create core documentation content
+- [x] 06-04-PLAN.md — Create guides and API reference
+- [x] 06-05-PLAN.md — Set up CI/CD deployment
+- [~] 06-06-PLAN.md — Enable API navigation (partial - infrastructure complete, MDX errors remain)
 
 **Details:**
 Setup automated documentation pipeline with Doxygen 1.15+ extracting XML from C++ headers and Docusaurus 3.9+ rendering as modern web site. Deploy to GitHub Pages via GitHub Actions workflow on main branch pushes.
