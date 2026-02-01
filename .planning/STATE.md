@@ -2,19 +2,18 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-30)
+See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Phase 6: Create library docs, using doxygen + Docusaurus
+**Current focus:** v1.0 milestone complete - ready for next milestone planning
 
 ## Current Position
 
-Phase: 6 of 6 (Create library docs, using doxygen + Docusaurus)
-Plan: 6 of 6 in current phase
-Status: Gap closure - MDX formatting errors block build
-Last activity: 2026-02-01 — Partially completed 06-06: API navigation configured, build blocked by MDX errors
+Milestone: v1.0 Migration + Documentation (shipped 2026-02-01)
+Status: Complete
+Last activity: 2026-02-01 — v1.0 milestone archived
 
-Progress: [████████████░] 95% (Phase 5 complete, Phase 6: 95% complete - MDX formatting issues remain)
+Progress: [███████████] 100% (6 phases, 21 plans, all complete)
 
 ## Performance Metrics
 
@@ -42,10 +41,19 @@ Progress: [████████████░] 95% (Phase 5 complete, Phase
 
 ## Accumulated Context
 
+### Recent Milestone Summary
+
+**v1.0 Milestone (2026-02-01):**
+- Shipped enjin2 as fully independent library
+- Comprehensive documentation with Doxygen + Docusaurus (59 API pages)
+- All 14 v1 requirements satisfied
+- 6 phases completed: Dependency Analysis, Core Migration, Feature Support, Validation, Final Cleanup, Documentation
+- Technical debt noted: compat headers, examples cleanup
+
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Recent decisions:
 
 - Production vs test/examples separation: Analysis limited to src/ and include/ directories, excluding tests/ and examples/ (01-02)
 - Verification methodology: Multi-pattern grep + AST-level analysis using clang-tidy for comprehensive dependency checking (01-02)
@@ -97,7 +105,8 @@ Recent decisions affecting current work:
 
 ### Roadmap Evolution
 
-- Phase 6 added: Create library docs, using doxygen + Docusaurus
+- v1.0 milestone complete (2026-02-01)
+- Ready for next milestone planning
 
 ### Pending Todos
 
@@ -109,8 +118,14 @@ None yet.
 
 [Issues that affect future work]
 
-- **MDX syntax errors in API files**: All 59 generated API markdown files have malformed code blocks causing Docusaurus build failures. Code blocks have incorrect backtick syntax (e.g., ````javascript\n```void fill(...)=0```````). The `generate-api-docs.js` script from plan 06-04 needs to be fixed and all API files regenerated.
-- 210 Doxygen warnings during XML generation indicate incomplete documentation in some headers (acceptable for initial setup, to be addressed in later phase)
+None - v1.0 milestone complete
+
+### Technical Debt
+
+Deferred items for future milestones:
+- Compat headers cleanup (enjin2/compat/ - minimal usage)
+- Examples cleanup (examples/enjin_comparison_benchmark.cpp has enjin1 references)
+- Doxygen warnings (210 warnings during XML generation - minor documentation gaps)
 
 ## Session Continuity
 

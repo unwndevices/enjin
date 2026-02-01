@@ -2,125 +2,41 @@
 
 ## Overview
 
-Migrate enjin2 to complete independence by mapping dependencies, migrating core infrastructure, enabling feature support through abstraction layers, validating behavior through manual testing, and completing enjin2-only builds. The journey moves from understanding dependencies (Phase 1) through foundational migration (Phase 2) to feature enablement (Phase 3), validation (Phase 4), and final cleanup (Phase 5).
+Complete migration from enjin to enjin2 with full independence, validation, and comprehensive documentation. enjin2 is now a self-contained library with Lua/WASM integration, non-dynamic memory allocation, and clean intelligent structure.
+
+## Milestones
+
+- ✅ **v1.0 Migration + Documentation** — Phases 1-6 (shipped 2026-02-01)
+- 📋 **v1.1** — Not started (run `/gsd-new-milestone` to plan)
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+<details>
+<summary>✅ v1.0 Migration + Documentation (Phases 1-6) — SHIPPED 2026-02-01</summary>
 
-Decimal phases appear between their surrounding integers in numeric order.
+**See full details:** [.planning/milestones/v1.0-ROADMAP.md](.planning/milestones/v1.0-ROADMAP.md)
 
-- [x] **Phase 1: Dependency Analysis** - Map enjin1→enjin2 dependencies and establish compilation isolation
-- [x] **Phase 2: Core Migration** - Migrate core infrastructure with compatibility layer
-- [x] **Phase 3: Feature Support** - Enable feature migration with abstraction layers
- - [x] **Phase 4: Validation** - Validate behavior through manual testing and shadow mode
- - [x] **Phase 5: Final Cleanup** - Complete enjin2-only build system
- - [ ] **Phase 6: Create library docs, using doxygen + Docusaurus**
+- [x] Phase 1: Dependency Analysis (3/3 plans) — completed 2026-01-30
+- [x] Phase 2: Core Migration (3/3 plans) — completed 2026-01-30
+- [x] Phase 3: Feature Support (3/3 plans) — completed 2026-01-30
+- [x] Phase 4: Validation (4/4 plans) — completed 2026-01-31
+- [x] Phase 5: Final Cleanup (1/1 plan) — completed 2026-01-31
+- [x] Phase 6: Create library docs, using doxygen + Docusaurus (7/7 plans) — completed 2026-02-01
 
-## Phase Details
+**Total:** 6 phases, 21 plans, all complete
+</details>
 
-### Phase 1: Dependency Analysis
-**Goal**: Understand enjin1→enjin2 dependencies and establish compilation isolation
-**Depends on**: Nothing (first phase)
-**Requirements**: FND-01, FND-02, FND-03
-**Success Criteria** (what must be TRUE):
-  1. Dependency graph exists showing all enjin1 references in enjin2 across infrastructure, utilities, and features
-  2. enjin2 compiles with separate build target and include paths from enjin1
-  3. No `namespace enjin` references exist in enjin2 codebase
-**Plans**: 3 plans
+### 📋 Next Milestone (Not Started)
 
-Plans:
-- [x] 01-01-PLAN.md — Generate dependency graph mapping all enjin1→enjin2 dependencies
-- [x] 01-02-PLAN.md — Verify no namespace enjin references in enjin2 codebase
-- [x] 01-03-PLAN.md — Establish compilation isolation with separate CMake targets
-
-### Phase 2: Core Migration
-**Goal**: Migrate core infrastructure with compatibility layer
-**Depends on**: Phase 1
-**Requirements**: FND-04, FND-05, FND-06, FND-07, STR-01
-**Success Criteria** (what must be TRUE):
-  1. Compatibility headers alias enjin1 types to enjin2 equivalents allowing gradual code migration
-  2. enjin1 shared_ptr usage maps to enjin2 static allocation patterns with equivalent lifetime semantics
-  3. enjin1 component lifecycle (Awake/Start) maps to enjin2 lifecycle (awake/start) with consistent behavior
-  4. Scene management system including SceneStateMachine and transitions works in enjin2
-  5. Strangler Fig pattern enables incremental replacement via compatibility seams at component and scene boundaries
-**Plans**: 3 plans
-
-Plans:
-- [x] 02-01-PLAN.md — Create compatibility headers for type aliases
-- [x] 02-02-PLAN.md — Implement Strangler Fig seams for incremental migration
-- [x] 02-03-PLAN.md — Document memory mapping strategy (shared_ptr → unique_ptr)
-
-### Phase 3: Feature Support
-**Goal**: Enable feature migration with abstraction layers
-**Depends on**: Phase 2
-**Requirements**: FND-09, STR-02, STR-04
-**Success Criteria** (what must be TRUE):
-  1. All enjin2 headers compile independently without enjin1 includes
-  2. Legacy seams at component and scene boundaries enable testing in isolation
-  3. Canvas abstraction layer enables both enjin1 and enjin2 implementations to target the same interface
-**Plans**: 3 plans
-
-Plans:
-- [x] 03-01-PLAN.md — Configure CMake build system for compile-time backend selection
-- [x] 03-02-PLAN.md — Create abstraction interfaces (ICanvas, IComponent, IScene)
-- [x] 03-03-PLAN.md — Update seams for compile-time routing with interface implementation
-
-### Phase 4: Validation
-**Goal**: Validate behavior through manual testing and shadow mode
-**Depends on**: Phase 3
-**Requirements**: FND-08, STR-03
-**Success Criteria** (what must be TRUE):
-  1. Manual testing baseline covers component lifecycle, rendering, scene transitions, and Lua scripting
-  2. Shadow mode execution runs both enjin1 and enjin2 in parallel with output comparison for behavioral verification
-**Plans**: 4 plans
-
-Plans:
-- [x] 04-01-PLAN.md — Add BMP export capability using stb_image_write library
-- [x] 04-02-PLAN.md — Create image comparison utility and manual testing infrastructure
-- [x] 04-03-PLAN.md — Implement shadow mode execution for automated comparison
-- [x] 04-04-PLAN.md — Create terminal output formatter for test results
-
-### Phase 5: Final Cleanup
-**Goal**: Complete enjin2-only build system
-**Depends on**: Phase 4
-**Requirements**: FND-10
-**Success Criteria** (what must be TRUE):
-  1. CMakeLists.txt supports clean enjin2-only builds without any enjin1 paths or references
-**Plans**: 1 plan
-
-Plans:
-- [x] 05-01-PLAN.md — Remove CMake options, compile definitions, and conditional compilation for enjin1 backend
-
-### Phase 6: Create library docs, using doxygen + Docusaurus
-**Goal:** Create comprehensive library documentation using Doxygen for API extraction and Docusaurus for modern web presentation, deployed to GitHub Pages
-**Depends on:** Phase 5
-**Plans:** 7 plans
-
- Plans:
-- [x] 06-01-PLAN.md — Configure Doxygen for XML generation
-- [x] 06-02-PLAN.md — Initialize Docusaurus site
-- [x] 06-03-PLAN.md — Create core documentation content
-- [x] 06-04-PLAN.md — Create guides and API reference
-- [x] 06-05-PLAN.md — Set up CI/CD deployment
-- [~] 06-06-PLAN.md — Enable API navigation (partial - infrastructure complete, needs sidebar fix)
-- [ ] 06-07-PLAN.md — Fix API sidebar navigation (gap closure)
-
-**Details:**
-Setup automated documentation pipeline with Doxygen 1.15+ extracting XML from C++ headers and Docusaurus 3.9+ rendering as modern web site. Deploy to GitHub Pages via GitHub Actions workflow on main branch pushes.
+*Run `/gsd-new-milestone` to plan next milestone*
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
-
-  | Phase | Plans Complete | Status | Completed |
-  |-------|----------------|--------|-----------|
-  | 1. Dependency Analysis | 3/3 | Complete | 2026-01-30 |
-  | 2. Core Migration | 3/3 | Complete | 2026-01-30 |
-  | 3. Feature Support | 3/3 | Complete | 2026-01-30 |
+| Phase | Plans | Status | Completed |
+|-------|-------|--------|-----------|
+| 1. Dependency Analysis | 3/3 | Complete | 2026-01-30 |
+| 2. Core Migration | 3/3 | Complete | 2026-01-30 |
+| 3. Feature Support | 3/3 | Complete | 2026-01-30 |
 | 4. Validation | 4/4 | Complete | 2026-01-31 |
 | 5. Final Cleanup | 1/1 | Complete | 2026-01-31 |
- | 6. Create library docs, using doxygen + Docusaurus | 5/7 | Gap Closure - Sidebar ID mismatch | 2026-02-01 |
+| 6. Create library docs | 7/7 | Complete | 2026-02-01 |
