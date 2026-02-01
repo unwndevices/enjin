@@ -87,4 +87,10 @@ Scene transitions are managed by the state machine (see [Scene Transitions](./sc
 
 Common pattern: create a "Scene" base class with shared setup, then derive specific scenes.
 
-See [API Reference](/api) for complete scene API.
+See *Note: API Reference documentation will be available in next phase.* for complete scene API.
+
+## See Also
+
+- [API: Scene](/api/core/Scene)
+- [API: SceneStateMachine](/api/core/SceneStateMachine)
+- [API: SceneTransition](/api/core/SceneStateMachine)

@@ -91,4 +91,8 @@ Use monospaced fonts for predictable layout.
 
 Avoid frequent `setFont()` and `setTextSize()` calls.
 
-See [API Reference](/api) for complete text API.
+See *Note: API Reference documentation will be available in next phase.* for complete text API.
+
+## See Also
+
+- [API: TextRenderer](/api/graphics/TextRenderer)

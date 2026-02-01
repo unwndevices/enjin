@@ -64,4 +64,8 @@ Use matte to skip transparent pixels efficiently.
 
 Avoid frequent `setTexture()` calls: cache texture pointers.
 
-See [API Reference](/api) for complete sprite API.
+See *Note: API Reference documentation will be available in next phase.* for complete sprite API.
+
+## See Also
+
+- [API: Sprite](/api/graphics/Sprite)

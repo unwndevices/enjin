@@ -19,7 +19,7 @@ Provides drawing functions that work across different canvas types and can be im
 
 ## Public Methods
 
-### `virtual  ~IScriptGraphics()=default`
+### ``virtual  ~IScriptGraphics()=default``
 
 Virtual destructor. 
 
@@ -28,7 +28,7 @@ Virtual destructor.
 
 ---
 
-### `uint16_t getWidth() const =0 const`
+### ``uint16_t getWidth() const =0 const``
 
 Get canvas width. 
 
@@ -36,7 +36,7 @@ returnCanvas width in pixels
 
 ---
 
-### `uint16_t getHeight() const =0 const`
+### ``uint16_t getHeight() const =0 const``
 
 Get canvas height. 
 
@@ -44,7 +44,7 @@ returnCanvas height in pixels
 
 ---
 
-### `void clear(uint8_t color)=0`
+### ``void clear(uint8_t color)=0``
 
 Clear canvas with specified color. 
 
@@ -52,7 +52,7 @@ paramcolorClear color
 
 ---
 
-### `void setPixel(int16_t x, int16_t y, uint8_t color)=0`
+### ``void setPixel(int16_t x, int16_t y, uint8_t color)=0``
 
 Set pixel at coordinates. 
 
@@ -60,7 +60,7 @@ paramxX coordinate yY coordinate colorPixel color
 
 ---
 
-### `uint8_t getPixel(int16_t x, int16_t y) const =0 const`
+### ``uint8_t getPixel(int16_t x, int16_t y) const =0 const``
 
 Get pixel at coordinates. 
 
@@ -68,7 +68,7 @@ paramxX coordinate yY coordinate returnPixel color value
 
 ---
 
-### `void drawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color)=0`
+### ``void drawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color)=0``
 
 Draw line. 
 
@@ -76,7 +76,7 @@ paramx1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordi
 
 ---
 
-### `void drawRect(int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t color)=0`
+### ``void drawRect(int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t color)=0``
 
 Draw rectangle outline. 
 
@@ -84,7 +84,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 ---
 
-### `void fillRect(int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t color)=0`
+### ``void fillRect(int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t color)=0``
 
 Fill rectangle. 
 
@@ -92,7 +92,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 ---
 
-### `void drawCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color)=0`
+### ``void drawCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color)=0``
 
 Draw circle outline. 
 
@@ -100,7 +100,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle c
 
 ---
 
-### `void fillCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color)=0`
+### ``void fillCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color)=0``
 
 Fill circle. 
 

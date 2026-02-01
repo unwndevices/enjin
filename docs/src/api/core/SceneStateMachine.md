@@ -19,7 +19,7 @@ Provides a centralized system for managing multiple scenes, handling transitions
 
 ## Public Methods
 
-### ` SceneStateMachine()`
+### `` SceneStateMachine()``
 
 Constructor. 
 
@@ -28,7 +28,7 @@ Constructor.
 
 ---
 
-### ` ~SceneStateMachine()=default`
+### `` ~SceneStateMachine()=default``
 
 Destructor. 
 
@@ -37,7 +37,7 @@ Destructor.
 
 ---
 
-### `T * addScene(uint32_t sceneId, Args &&... args)`
+### ``T * addScene(uint32_t sceneId, Args &&... args)``
 
 Add a scene to the state machine. 
 
@@ -45,7 +45,7 @@ templateparamT type (must derive from ) Sceneclassenjin2_1_1ScenecompoundScenecl
 
 ---
 
-### `bool removeScene(uint32_t sceneId)`
+### ``bool removeScene(uint32_t sceneId)``
 
 Remove a scene from the state machine. 
 
@@ -53,7 +53,7 @@ paramsceneId identifier to remove Sceneclassenjin2_1_1ScenecompoundreturnTrue if
 
 ---
 
-### `bool changeScene(uint32_t sceneId, TransitionType transition=TransitionType::IMMEDIATE, uint16_t duration=0)`
+### ``bool changeScene(uint32_t sceneId, TransitionType transition=TransitionType::IMMEDIATE, uint16_t duration=0)``
 
 Change to a different scene. 
 
@@ -61,7 +61,7 @@ paramsceneIdTarget scene identifier transitionTransition type to use durationTra
 
 ---
 
-### `void update(uint16_t deltaTime)`
+### ``void update(uint16_t deltaTime)``
 
 Update the state machine. 
 
@@ -69,7 +69,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### `void render(ICanvas< PixelType > &canvas)`
+### ``void render(ICanvas&lt; PixelType &gt; &canvas)``
 
 Render the current scene with transition effects. 
 
@@ -77,7 +77,7 @@ paramcanvasTarget canvas for rendering
 
 ---
 
-### ` *Sceneclassenjin2_1_1Scenecompound getCurrentScene()`
+### `` *Sceneclassenjin2_1_1Scenecompound getCurrentScene()``
 
 Get current scene. 
 
@@ -85,7 +85,7 @@ returnPointer to current scene or nullptr
 
 ---
 
-### ` *Sceneclassenjin2_1_1Scenecompound getScene(uint32_t sceneId)`
+### `` *Sceneclassenjin2_1_1Scenecompound getScene(uint32_t sceneId)``
 
 Get scene by ID. 
 
@@ -93,7 +93,7 @@ paramsceneId identifier Sceneclassenjin2_1_1ScenecompoundreturnPointer to scene 
 
 ---
 
-### `bool isTransitioning() const const`
+### ``bool isTransitioning() const const``
 
 Check if a transition is currently active. 
 
@@ -101,7 +101,7 @@ returnTrue if transitioning
 
 ---
 
-### `float getTransitionProgress() const const`
+### ``float getTransitionProgress() const const``
 
 Get current transition progress. 
 
@@ -109,7 +109,7 @@ returnProgress value from 0.0 to 1.0
 
 ---
 
-### `<  *,  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1ScenecompoundSceneclassenjin2_1_1Scenecompound connectOnSceneChangeStart(std::function< void(Scene *, Scene *)> callback)`
+### ``<  *,  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1ScenecompoundSceneclassenjin2_1_1Scenecompound connectOnSceneChangeStart(std::function&lt; void(Scene *, Scene *)&gt; callback)``
 
 Connect to transition events. 
 
@@ -118,7 +118,7 @@ Connect to transition events.
 
 ---
 
-### `<  *,  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1ScenecompoundSceneclassenjin2_1_1Scenecompound connectOnSceneChangeComplete(std::function< void(Scene *, Scene *)> callback)`
+### ``<  *,  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1ScenecompoundSceneclassenjin2_1_1Scenecompound connectOnSceneChangeComplete(std::function&lt; void(Scene *, Scene *)&gt; callback)``
 
 
         
@@ -128,7 +128,7 @@ Connect to transition events.
 
 ---
 
-### `<  >SignalConnectionclassenjin2_1_1SignalConnectioncompoundTransitionTypeclassenjin2_1_1SceneStateMachine_1ac0494c42046b4b5aad9d77883aee936amember connectOnTransitionStart(std::function< void(TransitionType)> callback)`
+### ``<  >SignalConnectionclassenjin2_1_1SignalConnectioncompoundTransitionTypeclassenjin2_1_1SceneStateMachine_1ac0494c42046b4b5aad9d77883aee936amember connectOnTransitionStart(std::function&lt; void(TransitionType)&gt; callback)``
 
 
         
@@ -138,7 +138,7 @@ Connect to transition events.
 
 ---
 
-### `< float >SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnTransitionProgress(std::function< void(float)> callback)`
+### ``< float >SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnTransitionProgress(std::function&lt; void(float)&gt; callback)``
 
 
         
@@ -150,7 +150,7 @@ Connect to transition events.
 
 ## Private Methods
 
-### `void startTransition()`
+### ``void startTransition()``
 
 Start a transition. 
 
@@ -159,7 +159,7 @@ Start a transition.
 
 ---
 
-### `void updateTransition(uint16_t deltaTime)`
+### ``void updateTransition(uint16_t deltaTime)``
 
 Update transition state. 
 
@@ -167,7 +167,7 @@ paramdeltaTimeTime since last frame
 
 ---
 
-### `void completeTransition()`
+### ``void completeTransition()``
 
 Complete the current transition. 
 
@@ -176,7 +176,7 @@ Complete the current transition.
 
 ---
 
-### `void renderWithTransition(ICanvas< PixelType > &canvas)`
+### ``void renderWithTransition(ICanvas&lt; PixelType &gt; &canvas)``
 
 Render scenes with transition effects. 
 
@@ -184,7 +184,7 @@ paramcanvasTarget canvas
 
 ---
 
-### `void renderFadeTransition(ICanvas< PixelType > &canvas)`
+### ``void renderFadeTransition(ICanvas&lt; PixelType &gt; &canvas)``
 
 Render fade transition. 
 
@@ -192,7 +192,7 @@ paramcanvasTarget canvas
 
 ---
 
-### `void renderSlideTransition(ICanvas< PixelType > &canvas)`
+### ``void renderSlideTransition(ICanvas&lt; PixelType &gt; &canvas)``
 
 Render slide transition. 
 

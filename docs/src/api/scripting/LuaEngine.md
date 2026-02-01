@@ -19,7 +19,7 @@ Provides a lightweight Lua scripting environment optimized for embedded systems.
 
 ## Public Methods
 
-### ` LuaEngine()`
+### `` LuaEngine()``
 
 Constructor initializes Lua state. 
 
@@ -28,7 +28,7 @@ Constructor initializes Lua state.
 
 ---
 
-### ` ~LuaEngine()`
+### `` ~LuaEngine()``
 
 Destructor cleans up Lua state. 
 
@@ -37,7 +37,7 @@ Destructor cleans up Lua state.
 
 ---
 
-### `bool initialize()`
+### ``bool initialize()``
 
 Initialize the Lua engine. 
 
@@ -45,7 +45,7 @@ returnTrue if initialization successful
 
 ---
 
-### `void shutdown()`
+### ``void shutdown()``
 
 Shutdown the Lua engine. 
 
@@ -54,7 +54,7 @@ Shutdown the Lua engine.
 
 ---
 
-### `bool isInitialized() const const`
+### ``bool isInitialized() const const``
 
 Check if engine is initialized. 
 
@@ -62,7 +62,7 @@ returnTrue if initialized
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound executeString(const std::string &code)`
+### ``LuaResultstructenjin2_1_1LuaResultcompound executeString(const std::string &code)``
 
 Execute Lua code string. 
 
@@ -70,7 +70,7 @@ paramcodeLua code to execute returnExecution result
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound executeFile(const std::string &filename)`
+### ``LuaResultstructenjin2_1_1LuaResultcompound executeFile(const std::string &filename)``
 
 Load and execute Lua script file. 
 
@@ -78,7 +78,7 @@ paramfilenamePath to Lua script file returnExecution result
 
 ---
 
-### `void registerFunction(const std::string &name, LuaCallback callback)`
+### ``void registerFunction(const std::string &name, LuaCallback callback)``
 
 Register C function with Lua. 
 
@@ -86,7 +86,7 @@ paramnameFunction name in Lua callbackC function callback
 
 ---
 
-### `void registerFunction(const std::string &name, lua_CFunction func)`
+### ``void registerFunction(const std::string &name, lua_CFunction func)``
 
 Register C function with Lua (C-style). 
 
@@ -94,7 +94,7 @@ paramnameFunction name in Lua funcC function pointer
 
 ---
 
-### `void createTable(const std::string &name)`
+### ``void createTable(const std::string &name)``
 
 Create Lua table. 
 
@@ -102,7 +102,7 @@ paramnameTable name
 
 ---
 
-### `void setGlobal(const std::string &name, double value)`
+### ``void setGlobal(const std::string &name, double value)``
 
 Set global variable in Lua. 
 
@@ -110,7 +110,7 @@ paramnameVariable name valueVariable value
 
 ---
 
-### `void setGlobal(const std::string &name, const std::string &value)`
+### ``void setGlobal(const std::string &name, const std::string &value)``
 
 
         
@@ -120,7 +120,7 @@ paramnameVariable name valueVariable value
 
 ---
 
-### `void setGlobal(const std::string &name, bool value)`
+### ``void setGlobal(const std::string &name, bool value)``
 
 
         
@@ -130,7 +130,7 @@ paramnameVariable name valueVariable value
 
 ---
 
-### `double getGlobalNumber(const std::string &name, double defaultValue=0.0)`
+### ``double getGlobalNumber(const std::string &name, double defaultValue=0.0)``
 
 Get global variable from Lua. 
 
@@ -138,7 +138,7 @@ paramnameVariable name returnVariable value (or default if not found)
 
 ---
 
-### `std::string getGlobalString(const std::string &name, const std::string &defaultValue="")`
+### ``std::string getGlobalString(const std::string &name, const std::string &defaultValue="")``
 
 
         
@@ -148,7 +148,7 @@ paramnameVariable name returnVariable value (or default if not found)
 
 ---
 
-### `bool getGlobalBool(const std::string &name, bool defaultValue=false)`
+### ``bool getGlobalBool(const std::string &name, bool defaultValue=false)``
 
 
         
@@ -158,7 +158,7 @@ paramnameVariable name returnVariable value (or default if not found)
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound callFunction(const std::string &functionName, Args... args)`
+### ``LuaResultstructenjin2_1_1LuaResultcompound callFunction(const std::string &functionName, Args... args)``
 
 Call Lua function. 
 
@@ -166,7 +166,7 @@ paramfunctionNameName of Lua function argsFunction arguments returnExecution res
 
 ---
 
-### `size_t getMemoryUsage() const const`
+### ``size_t getMemoryUsage() const const``
 
 Get current memory usage. 
 
@@ -174,7 +174,7 @@ returnMemory usage in bytes
 
 ---
 
-### `const std::vector< std::string > & getLoadedScripts() const const`
+### ``const std::vector< std::string > & getLoadedScripts() const const``
 
 Get list of loaded scripts. 
 
@@ -182,7 +182,7 @@ returnVector of script names
 
 ---
 
-### `void clearScripts()`
+### ``void clearScripts()``
 
 Clear all loaded scripts. 
 
@@ -191,7 +191,7 @@ Clear all loaded scripts.
 
 ---
 
-### `lua_State * getState()`
+### ``lua_State * getState()``
 
 Get Lua state (for advanced operations). 
 
@@ -201,7 +201,7 @@ returnLua state pointer
 
 ## Private Methods
 
-### `static void * luaAllocator(void *ud, void *ptr, size_t osize, size_t nsize)`
+### ``static void * luaAllocator(void *ud, void *ptr, size_t osize, size_t nsize)``
 
 Custom Lua allocator using static memory pool. 
 
@@ -209,7 +209,7 @@ paramudUser data ( instance) LuaEngineclassenjin2_1_1LuaEnginecompoundptrPointer
 
 ---
 
-### `static int luaPanic(lua_State *L)`
+### ``static int luaPanic(lua_State *L)``
 
  Lua panic. Handlestructenjin2_1_1Handlecompound
 
@@ -217,7 +217,7 @@ paramLLua state returnNever returns
 
 ---
 
-### `void pushArg(T &&arg)`
+### ``void pushArg(T &&arg)``
 
 Push arguments to Lua stack. 
 
@@ -225,7 +225,7 @@ paramargsArguments to push
 
 ---
 
-### `void pushArgs(T &&arg)`
+### ``void pushArgs(T &&arg)``
 
 Push multiple arguments to Lua stack. 
 
@@ -233,7 +233,7 @@ paramfirstFirst argument restRemaining arguments
 
 ---
 
-### `void pushArgs(T &&first, Args &&... rest)`
+### ``void pushArgs(T &&first, Args &&... rest)``
 
 
         
@@ -243,7 +243,7 @@ paramfirstFirst argument restRemaining arguments
 
 ---
 
-### `void pushArgs()`
+### ``void pushArgs()``
 
 Base case for pushArgs (no arguments). 
 
@@ -252,7 +252,7 @@ Base case for pushArgs (no arguments).
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound checkResult(int result)`
+### ``LuaResultstructenjin2_1_1LuaResultcompound checkResult(int result)``
 
 Check Lua execution result. 
 

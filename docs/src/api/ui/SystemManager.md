@@ -20,7 +20,7 @@ Manages system lifecycle and provides ordered updating. Systems are automaticall
 
 ## Public Methods
 
-### ` SystemManager()`
+### `` SystemManager()``
 
 Constructor initializes empty system manager. 
 
@@ -29,7 +29,7 @@ Constructor initializes empty system manager.
 
 ---
 
-### `bool addSystem(T *system)`
+### ``bool addSystem(T *system)``
 
 Add system to manager. 
 
@@ -37,7 +37,7 @@ templateparamT type Systemclassenjin2_1_1Systemcompoundparamsystem instance Syst
 
 ---
 
-### `T * removeSystem()`
+### ``T * removeSystem()``
 
 Remove system from manager. 
 
@@ -45,7 +45,7 @@ templateparamT type Systemclassenjin2_1_1SystemcompoundreturnPointer to removed 
 
 ---
 
-### `T * getSystem()`
+### ``T * getSystem()``
 
 Get system by type. 
 
@@ -53,7 +53,7 @@ templateparamT type Systemclassenjin2_1_1SystemcompoundreturnPointer to system, 
 
 ---
 
-### `void update(float deltaTime)`
+### ``void update(float deltaTime)``
 
 Update all systems in priority order. 
 
@@ -61,7 +61,7 @@ paramdeltaTimeTime since last update
 
 ---
 
-### `size_t getSystemCount() const const`
+### ``size_t getSystemCount() const const``
 
 Get number of active systems. 
 
@@ -71,7 +71,7 @@ return count Systemclassenjin2_1_1Systemcompound
 
 ## Private Methods
 
-### `void sortSystems()`
+### ``void sortSystems()``
 
 Sort systems by priority (bubble sort for small arrays). 
 

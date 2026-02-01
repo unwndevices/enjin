@@ -19,7 +19,7 @@ Efficiently stores two  values in one byte, achieving 50% memory savings compare
 
 ## Public Methods
 
-### ` PackedPixel4()`
+### `` PackedPixel4()``
 
 Default constructor initializes both pixels to 0. 
 
@@ -28,7 +28,7 @@ Default constructor initializes both pixels to 0.
 
 ---
 
-### ` PackedPixel4(uint8_t byte)`
+### `` PackedPixel4(uint8_t byte)``
 
 Constructor from raw byte data. 
 
@@ -36,7 +36,7 @@ parambyteRaw byte containing packed pixel data
 
 ---
 
-### `Pixel4structenjin2_1_1Pixel4compound getLow() const const`
+### ``Pixel4structenjin2_1_1Pixel4compound getLow() const const``
 
 Get the low nibble pixel (bits 0-3). 
 
@@ -44,7 +44,7 @@ returnPixel stored in lower 4 bits
 
 ---
 
-### `Pixel4structenjin2_1_1Pixel4compound getHigh() const const`
+### ``Pixel4structenjin2_1_1Pixel4compound getHigh() const const``
 
 Get the high nibble pixel (bits 4-7). 
 
@@ -52,7 +52,7 @@ returnPixel stored in upper 4 bits
 
 ---
 
-### `void setLow(Pixel4 pixel)`
+### ``void setLow(Pixel4 pixel)``
 
 Set the low nibble pixel (bits 0-3). 
 
@@ -60,7 +60,7 @@ parampixelPixel value to store in lower 4 bits
 
 ---
 
-### `void setHigh(Pixel4 pixel)`
+### ``void setHigh(Pixel4 pixel)``
 
 Set the high nibble pixel (bits 4-7). 
 
@@ -68,7 +68,7 @@ parampixelPixel value to store in upper 4 bits
 
 ---
 
-### `uint8_t getByte() const const`
+### ``uint8_t getByte() const const``
 
 Get raw byte containing both pixels. 
 

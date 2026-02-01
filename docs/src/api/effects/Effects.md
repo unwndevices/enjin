@@ -21,7 +21,7 @@ sidebar_label: Effects
 
 ## Public Methods
 
-### `static void ditherPattern(ICanvas< TPixel > &canvas, const Rect &rect, TPixel color1, TPixel color2, uint8_t pattern=0xAA)`
+### ``static void ditherPattern(ICanvas&lt; TPixel &gt; &canvas, const Rect &rect, TPixel color1, TPixel color2, uint8_t pattern=0xAA)``
 
 
         
@@ -31,7 +31,7 @@ sidebar_label: Effects
 
 ---
 
-### `static void blur(ICanvas< TPixel > &canvas, const Rect &rect, uint8_t radius=1)`
+### ``static void blur(ICanvas&lt; TPixel &gt; &canvas, const Rect &rect, uint8_t radius=1)``
 
 
         
@@ -41,7 +41,7 @@ sidebar_label: Effects
 
 ---
 
-### `static void invert(ICanvas< TPixel > &canvas, const Rect &rect)`
+### ``static void invert(ICanvas&lt; TPixel &gt; &canvas, const Rect &rect)``
 
 
         

@@ -21,7 +21,7 @@ sidebar_label: Canvas8
 
 ## Public Methods
 
-### ` Canvas8()`
+### `` Canvas8()``
 
 
         
@@ -31,7 +31,7 @@ sidebar_label: Canvas8
 
 ---
 
-### `virtual uint16_t getWidth() const override const`
+### ``virtual uint16_t getWidth() const override const``
 
 Get canvas width in pixels. 
 
@@ -39,7 +39,7 @@ returnWidth in pixels
 
 ---
 
-### `virtual uint16_t getHeight() const override const`
+### ``virtual uint16_t getHeight() const override const``
 
 Get canvas height in pixels. 
 
@@ -47,7 +47,7 @@ returnHeight in pixels
 
 ---
 
-### `virtual void setPixel(int16_t x, int16_t y, uint8_t color) override`
+### ``virtual void setPixel(int16_t x, int16_t y, uint8_t color) override``
 
 Set pixel color at specified coordinates. 
 
@@ -55,7 +55,7 @@ paramxX coordinate yY coordinate colorPixel color to set
 
 ---
 
-### `virtual uint8_t getPixel(int16_t x, int16_t y) const override const`
+### ``virtual uint8_t getPixel(int16_t x, int16_t y) const override const``
 
 Get pixel color at specified coordinates. 
 
@@ -63,7 +63,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 ---
 
-### `virtual void clear(uint8_t color=0) override`
+### ``virtual void clear(uint8_t color=0) override``
 
 Clear entire canvas to specified color. 
 
@@ -71,7 +71,7 @@ paramcolorColor to fill canvas with (default: black/zero)
 
 ---
 
-### `virtual void fill(const Rect &rect, uint8_t color) override`
+### ``virtual void fill(const Rect &rect, uint8_t color) override``
 
 Fill rectangular region with specified color. 
 
@@ -79,7 +79,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `void convertTo4bit(Canvas4< WIDTH, HEIGHT > &dst) const const`
+### ``void convertTo4bit(Canvas4&lt; WIDTH, HEIGHT &gt; &dst) const const``
 
 
         
@@ -89,7 +89,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `const uint8_t * getBuffer() const const`
+### ``const uint8_t * getBuffer() const const``
 
 
         
@@ -99,7 +99,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `uint8_t * getBuffer()`
+### ``uint8_t * getBuffer()``
 
 
         
@@ -109,7 +109,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `void fillScreen(uint8_t color)`
+### ``void fillScreen(uint8_t color)``
 
 Fill entire canvas (Adafruit_GFX compatibility). 
 
@@ -118,7 +118,7 @@ Fill entire canvas (Adafruit_GFX compatibility).
 
 ---
 
-### `void drawPixel(int16_t x, int16_t y, uint8_t color)`
+### ``void drawPixel(int16_t x, int16_t y, uint8_t color)``
 
 Draw single pixel (Adafruit_GFX compatibility). 
 
@@ -127,7 +127,7 @@ Draw single pixel (Adafruit_GFX compatibility).
 
 ---
 
-### `uint16_t width() const const`
+### ``uint16_t width() const const``
 
 Get canvas width (Adafruit_GFX compatibility). 
 
@@ -136,7 +136,7 @@ Get canvas width (Adafruit_GFX compatibility).
 
 ---
 
-### `uint16_t height() const const`
+### ``uint16_t height() const const``
 
 Get canvas height (Adafruit_GFX compatibility). 
 
@@ -145,7 +145,7 @@ Get canvas height (Adafruit_GFX compatibility).
 
 ---
 
-### `void setTextColor(uint16_t color)`
+### ``void setTextColor(uint16_t color)``
 
 Set text color. 
 
@@ -154,7 +154,7 @@ Set text color.
 
 ---
 
-### `void setTextColor(uint16_t color, uint16_t bg)`
+### ``void setTextColor(uint16_t color, uint16_t bg)``
 
 Set text color with background. 
 
@@ -163,7 +163,7 @@ Set text color with background.
 
 ---
 
-### `void setCursor(int16_t x, int16_t y)`
+### ``void setCursor(int16_t x, int16_t y)``
 
 Set cursor position. 
 
@@ -172,7 +172,7 @@ Set cursor position.
 
 ---
 
-### `int16_t getCursorX() const const`
+### ``int16_t getCursorX() const const``
 
 Get cursor X position. 
 
@@ -181,7 +181,7 @@ Get cursor X position.
 
 ---
 
-### `int16_t getCursorY() const const`
+### ``int16_t getCursorY() const const``
 
 Get cursor Y position. 
 
@@ -190,7 +190,7 @@ Get cursor Y position.
 
 ---
 
-### `size_t write(uint8_t c)`
+### ``size_t write(uint8_t c)``
 
 Write a single character (Adafruit_GFX compatible). 
 
@@ -199,7 +199,7 @@ Write a single character (Adafruit_GFX compatible).
 
 ---
 
-### `void print(const char *text)`
+### ``void print(const char *text)``
 
 Print text at cursor position (Adafruit_GFX compatible). 
 
@@ -208,7 +208,7 @@ Print text at cursor position (Adafruit_GFX compatible).
 
 ---
 
-### `void println(const char *text)`
+### ``void println(const char *text)``
 
 Print text with newline (basic implementation). 
 
@@ -217,7 +217,7 @@ Print text with newline (basic implementation).
 
 ---
 
-### `void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size_x, uint8_t size_y)`
+### ``void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size_x, uint8_t size_y)``
 
 Draw a single character (Adafruit_GFX compatible). 
 
@@ -226,7 +226,7 @@ Draw a single character (Adafruit_GFX compatible).
 
 ---
 
-### `void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size)`
+### ``void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size)``
 
 
         
@@ -236,7 +236,7 @@ Draw a single character (Adafruit_GFX compatible).
 
 ---
 
-### `virtual void setTextSize(uint8_t s)`
+### ``virtual void setTextSize(uint8_t s)``
 
 Set text size scaling. 
 
@@ -245,7 +245,7 @@ Set text size scaling.
 
 ---
 
-### `void setTextSize(uint8_t s_x, uint8_t s_y)`
+### ``void setTextSize(uint8_t s_x, uint8_t s_y)``
 
 
         
@@ -255,7 +255,7 @@ Set text size scaling.
 
 ---
 
-### `void setTextWrap(bool w)`
+### ``void setTextWrap(bool w)``
 
 Set text wrap mode. 
 
@@ -264,7 +264,7 @@ Set text wrap mode.
 
 ---
 
-### `int16_t getTextWidth(const char *text)`
+### ``int16_t getTextWidth(const char *text)``
 
 Get text width (6 pixels per character times size). 
 
@@ -273,7 +273,7 @@ Get text width (6 pixels per character times size).
 
 ---
 
-### `virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color)`
+### ``virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color)``
 
 Fill rectangle. 
 
@@ -282,7 +282,7 @@ Fill rectangle.
 
 ---
 
-### `virtual void drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color)`
+### ``virtual void drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color)``
 
 Draw rectangle outline. 
 
@@ -291,7 +291,7 @@ Draw rectangle outline.
 
 ---
 
-### `virtual void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint8_t color)`
+### ``virtual void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint8_t color)``
 
 Draw a line using Bresenham's algorithm. 
 
@@ -300,7 +300,7 @@ Draw a line using Bresenham's algorithm.
 
 ---
 
-### `virtual void fillCircle(int16_t x0, int16_t y0, int16_t radius, uint8_t color)`
+### ``virtual void fillCircle(int16_t x0, int16_t y0, int16_t radius, uint8_t color)``
 
 Draw a filled circle using midpoint circle algorithm. 
 
@@ -309,7 +309,7 @@ Draw a filled circle using midpoint circle algorithm.
 
 ---
 
-### `virtual void drawCircle(int16_t x0, int16_t y0, int16_t radius, uint8_t color)`
+### ``virtual void drawCircle(int16_t x0, int16_t y0, int16_t radius, uint8_t color)``
 
 Draw circle outline using midpoint circle algorithm. 
 
@@ -318,7 +318,7 @@ Draw circle outline using midpoint circle algorithm.
 
 ---
 
-### `void drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, uint8_t color)`
+### ``void drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, uint8_t color)``
 
 Draw rounded rectangle outline. 
 
@@ -327,7 +327,7 @@ Draw rounded rectangle outline.
 
 ---
 
-### `void fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, uint8_t color)`
+### ``void fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, uint8_t color)``
 
 Fill rounded rectangle. 
 
@@ -336,7 +336,7 @@ Fill rounded rectangle.
 
 ---
 
-### `void fillRectWithPattern(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pattern, int16_t patternWidth, int16_t patternHeight)`
+### ``void fillRectWithPattern(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pattern, int16_t patternWidth, int16_t patternHeight)``
 
 Fill rectangle with repeating pattern. 
 
@@ -345,7 +345,7 @@ Fill rectangle with repeating pattern.
 
 ---
 
-### `void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h)`
+### ``void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h)``
 
 Draw grayscale bitmap with basic parameters. 
 
@@ -354,7 +354,7 @@ Draw grayscale bitmap with basic parameters.
 
 ---
 
-### `void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, uint8_t matte, uint8_t w, uint8_t h)`
+### ``void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, uint8_t matte, uint8_t w, uint8_t h)``
 
 Draw grayscale bitmap with matte threshold. 
 
@@ -363,7 +363,7 @@ Draw grayscale bitmap with matte threshold.
 
 ---
 
-### `void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, const uint8_t *mask, uint8_t w, uint8_t h)`
+### ``void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, const uint8_t *mask, uint8_t w, uint8_t h)``
 
 Draw grayscale bitmap with mask. 
 
@@ -372,7 +372,7 @@ Draw grayscale bitmap with mask.
 
 ---
 
-### `void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, uint8_t matte, uint8_t w, uint8_t h, uint8_t opacity_divisor)`
+### ``void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, uint8_t matte, uint8_t w, uint8_t h, uint8_t opacity_divisor)``
 
 Draw grayscale bitmap with opacity. 
 
@@ -381,7 +381,7 @@ Draw grayscale bitmap with opacity.
 
 ---
 
-### `void add(Canvas8 *over)`
+### ``void add(Canvas8 *over)``
 
 Add blending operation with another canvas. 
 
@@ -390,7 +390,7 @@ Add blending operation with another canvas.
 
 ---
 
-### `void add(const uint8_t *texture)`
+### ``void add(const uint8_t *texture)``
 
 Add blending operation with texture data. 
 
@@ -399,7 +399,7 @@ Add blending operation with texture data.
 
 ---
 
-### `void subtract(Canvas8 *over)`
+### ``void subtract(Canvas8 *over)``
 
 Subtract blending operation with another canvas. 
 
@@ -408,7 +408,7 @@ Subtract blending operation with another canvas.
 
 ---
 
-### `void subtract(const uint8_t *texture)`
+### ``void subtract(const uint8_t *texture)``
 
 Subtract blending operation with texture data. 
 
@@ -417,7 +417,7 @@ Subtract blending operation with texture data.
 
 ---
 
-### `void difference(int16_t x, int16_t y, const uint8_t *texture, uint8_t w, uint8_t h)`
+### ``void difference(int16_t x, int16_t y, const uint8_t *texture, uint8_t w, uint8_t h)``
 
 Difference blending operation with texture data. 
 
@@ -426,7 +426,7 @@ Difference blending operation with texture data.
 
 ---
 
-### `void exportToPGM(const char *filename) const const`
+### ``void exportToPGM(const char *filename) const const``
 
 Export canvas to PGM format with proper color scaling. 
 
@@ -434,7 +434,7 @@ paramfilenameOutput filename
 
 ---
 
-### `void exportToBMP(const char *filename) const const`
+### ``void exportToBMP(const char *filename) const const``
 
 Export canvas to BMP format (24-bit RGB, grayscale as gray=R=G=B). 
 
@@ -442,7 +442,7 @@ paramfilenameOutput filename
 
 ---
 
-### `void setFont(const GFXfont *font=nullptr)`
+### ``void setFont(const GFXfont *font=nullptr)``
 
 Set GFX font for text rendering. 
 
@@ -450,7 +450,7 @@ paramfontPointer to  structure (nullptr for built-in font) GFXfontstructenjin2_1
 
 ---
 
-### `void charBounds(unsigned char c, int16_t *x, int16_t *y, int16_t *minx, int16_t *miny, int16_t *maxx, int16_t *maxy)`
+### ``void charBounds(unsigned char c, int16_t *x, int16_t *y, int16_t *minx, int16_t *miny, int16_t *maxx, int16_t *maxy)``
 
 Helper to determine character bounds (Adafruit_GFX compatible). 
 
@@ -459,7 +459,7 @@ Helper to determine character bounds (Adafruit_GFX compatible).
 
 ---
 
-### `void getTextBounds(const char *str, int16_t x, int16_t y, int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h)`
+### ``void getTextBounds(const char *str, int16_t x, int16_t y, int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h)``
 
 Get text bounds (Adafruit_GFX compatible). 
 
@@ -468,7 +468,7 @@ Get text bounds (Adafruit_GFX compatible).
 
 ---
 
-### `void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color)`
+### ``void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color)``
 
 Fill triangle (basic implementation). 
 

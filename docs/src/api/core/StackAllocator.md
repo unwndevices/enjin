@@ -21,7 +21,7 @@ sidebar_label: StackAllocator
 
 ## Public Methods
 
-### ` StackAllocator(uint8_t *mem, size_t cap)`
+### `` StackAllocator(uint8_t *mem, size_t cap)``
 
 
         
@@ -31,7 +31,7 @@ sidebar_label: StackAllocator
 
 ---
 
-### `void * allocate(size_t size, size_t alignment=sizeof(void *))`
+### ``void * allocate(size_t size, size_t alignment=sizeof(void *))``
 
 
         
@@ -41,7 +41,7 @@ sidebar_label: StackAllocator
 
 ---
 
-### `void reset()`
+### ``void reset()``
 
 
         
@@ -51,7 +51,7 @@ sidebar_label: StackAllocator
 
 ---
 
-### `size_t getUsed() const const`
+### ``size_t getUsed() const const``
 
 
         
@@ -61,7 +61,7 @@ sidebar_label: StackAllocator
 
 ---
 
-### `size_t getRemaining() const const`
+### ``size_t getRemaining() const const``
 
 
         

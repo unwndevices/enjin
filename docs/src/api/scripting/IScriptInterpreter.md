@@ -19,7 +19,7 @@ Abstract interface for script interpreters to allow platform-specific implementa
 
 ## Public Methods
 
-### `virtual  ~IScriptInterpreter()=default`
+### ``virtual  ~IScriptInterpreter()=default``
 
 Virtual destructor. 
 
@@ -28,7 +28,7 @@ Virtual destructor.
 
 ---
 
-### `bool initialize()=0`
+### ``bool initialize()=0``
 
 Initialize the interpreter. 
 
@@ -36,7 +36,7 @@ returnTrue if initialization successful
 
 ---
 
-### `void shutdown()=0`
+### ``void shutdown()=0``
 
 Shutdown the interpreter. 
 
@@ -45,7 +45,7 @@ Shutdown the interpreter.
 
 ---
 
-### `bool isInitialized() const =0 const`
+### ``bool isInitialized() const =0 const``
 
 Check if interpreter is initialized. 
 
@@ -53,7 +53,7 @@ returnTrue if initialized
 
 ---
 
-### `ScriptResultstructenjin2_1_1ScriptResultcompound executeString(const std::string &code)=0`
+### ``ScriptResultstructenjin2_1_1ScriptResultcompound executeString(const std::string &code)=0``
 
 Execute script code string. 
 
@@ -61,7 +61,7 @@ paramcodeScript code to execute returnExecution result
 
 ---
 
-### `ScriptResultstructenjin2_1_1ScriptResultcompound executeFile(const std::string &filename)=0`
+### ``ScriptResultstructenjin2_1_1ScriptResultcompound executeFile(const std::string &filename)=0``
 
 Load and execute script file. 
 
@@ -69,7 +69,7 @@ paramfilenamePath to script file returnExecution result
 
 ---
 
-### `ScriptResultstructenjin2_1_1ScriptResultcompound callFunction(const std::string &functionName)=0`
+### ``ScriptResultstructenjin2_1_1ScriptResultcompound callFunction(const std::string &functionName)=0``
 
 Call script function. 
 
@@ -77,7 +77,7 @@ paramfunctionNameName of function to call returnExecution result
 
 ---
 
-### `void setGlobal(const std::string &name, double value)=0`
+### ``void setGlobal(const std::string &name, double value)=0``
 
 Set global variable. 
 
@@ -85,7 +85,7 @@ paramnameVariable name valueVariable value
 
 ---
 
-### `void setGlobal(const std::string &name, const std::string &value)=0`
+### ``void setGlobal(const std::string &name, const std::string &value)=0``
 
 
         
@@ -95,7 +95,7 @@ paramnameVariable name valueVariable value
 
 ---
 
-### `void setGlobal(const std::string &name, bool value)=0`
+### ``void setGlobal(const std::string &name, bool value)=0``
 
 
         
@@ -105,7 +105,7 @@ paramnameVariable name valueVariable value
 
 ---
 
-### `double getGlobalNumber(const std::string &name, double defaultValue=0.0)=0`
+### ``double getGlobalNumber(const std::string &name, double defaultValue=0.0)=0``
 
 Get global variable. 
 
@@ -113,7 +113,7 @@ paramnameVariable name defaultValueDefault value if not found returnVariable val
 
 ---
 
-### `std::string getGlobalString(const std::string &name, const std::string &defaultValue="")=0`
+### ``std::string getGlobalString(const std::string &name, const std::string &defaultValue="")=0``
 
 
         
@@ -123,7 +123,7 @@ paramnameVariable name defaultValueDefault value if not found returnVariable val
 
 ---
 
-### `bool getGlobalBool(const std::string &name, bool defaultValue=false)=0`
+### ``bool getGlobalBool(const std::string &name, bool defaultValue=false)=0``
 
 
         
@@ -133,7 +133,7 @@ paramnameVariable name defaultValueDefault value if not found returnVariable val
 
 ---
 
-### `size_t getMemoryUsage() const =0 const`
+### ``size_t getMemoryUsage() const =0 const``
 
 Get current memory usage. 
 
@@ -141,7 +141,7 @@ returnMemory usage in bytes
 
 ---
 
-### `const char * getTypeName() const =0 const`
+### ``const char * getTypeName() const =0 const``
 
 Get interpreter type name. 
 

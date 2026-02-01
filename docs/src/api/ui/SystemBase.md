@@ -19,7 +19,7 @@ Systems contain the logic and operate on components. They are stateless and proc
 
 ## Public Methods
 
-### `virtual  ~SystemBase()=default`
+### ``virtual  ~SystemBase()=default``
 
 Virtual destructor. 
 
@@ -28,7 +28,7 @@ Virtual destructor.
 
 ---
 
-### `void update(float deltaTime)=0`
+### ``void update(float deltaTime)=0``
 
 Update system with delta time. 
 
@@ -36,7 +36,7 @@ paramdeltaTimeTime since last update in seconds
 
 ---
 
-### `virtual int getPriority() const const`
+### ``virtual int getPriority() const const``
 
 Get system priority for update ordering. 
 
@@ -44,7 +44,7 @@ returnPriority value (lower = earlier execution)
 
 ---
 
-### `SystemID getSystemID() const =0 const`
+### ``SystemID getSystemID() const =0 const``
 
 Get unique system ID. 
 
@@ -54,7 +54,7 @@ return identifier Systemclassenjin2_1_1Systemcompound
 
 ## Protected Methods
 
-### `static SystemID getSystemTypeID()`
+### ``static SystemID getSystemTypeID()``
 
 Generate unique system type ID. 
 

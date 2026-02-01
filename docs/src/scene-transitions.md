@@ -73,4 +73,9 @@ if (stateMachine.isTransitioning()) {
 }
 ```
 
-See [API Reference](/api) for complete transition API.
+See *Note: API Reference documentation will be available in next phase.* for complete transition API.
+
+## See Also
+
+- [API: SceneStateMachine](/api/core/SceneStateMachine)
+- [API: Scene](/api/core/Scene)

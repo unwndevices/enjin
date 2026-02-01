@@ -63,4 +63,10 @@ obj->removeComponent<C_Drawable>();
 
 Common components include: `C_Position` (position), `C_Drawable` (rendering), `Sprite` (sprite rendering), `TextRenderer` (text), `Label` (UI labels), `Animation` (frame animation).
 
-See [API Reference](/api) for complete component list.
+See *Note: API Reference documentation will be available in next phase.* for complete component list.
+
+## See Also
+
+- [API: Component](/api/core/Component)
+- [API: Object](/api/core/Object)
+- [API: SceneObject](/api/core/Object)

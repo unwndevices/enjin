@@ -20,7 +20,7 @@ Efficient storage for components with O(1) allocation/deallocation. Uses packed 
 
 ## Public Methods
 
-### ` ComponentStorage()`
+### `` ComponentStorage()``
 
 Constructor initializes empty storage. 
 
@@ -29,7 +29,7 @@ Constructor initializes empty storage.
 
 ---
 
-### `T * addComponent(Entity entity, Args &&... args)`
+### ``T * addComponent(Entity entity, Args &&... args)``
 
 Add component for entity. 
 
@@ -37,7 +37,7 @@ paramentity to add component to Entitystructenjin2_1_1EntitycompoundargsConstruc
 
 ---
 
-### `T * getComponent(Entity entity) const const`
+### ``T * getComponent(Entity entity) const const``
 
 Get component for entity. 
 
@@ -45,7 +45,7 @@ paramentity to get component for Entitystructenjin2_1_1EntitycompoundreturnPoint
 
 ---
 
-### `bool removeComponent(Entity entity)`
+### ``bool removeComponent(Entity entity)``
 
 Remove component for entity. 
 
@@ -53,7 +53,7 @@ paramentity to remove component from Entitystructenjin2_1_1Entitycompoundreturnt
 
 ---
 
-### `bool hasComponent(Entity entity) const const`
+### ``bool hasComponent(Entity entity) const const``
 
 Check if entity has component. 
 
@@ -61,7 +61,7 @@ paramentity to check Entitystructenjin2_1_1Entitycompoundreturntrue if entity ha
 
 ---
 
-### `size_t size() const const`
+### ``size_t size() const const``
 
 Get number of active components. 
 
@@ -69,7 +69,7 @@ return count Componentclassenjin2_1_1Componentcompound
 
 ---
 
-### `bool empty() const const`
+### ``bool empty() const const``
 
 Check if storage is empty. 
 
@@ -77,7 +77,7 @@ returntrue if no components
 
 ---
 
-### `Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompound begin() const const`
+### ``Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompound begin() const const``
 
 Get iterator to beginning. 
 
@@ -86,7 +86,7 @@ Get iterator to beginning.
 
 ---
 
-### `Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompound end() const const`
+### ``Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompound end() const const``
 
 Get iterator to end. 
 

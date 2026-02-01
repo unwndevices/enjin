@@ -19,7 +19,7 @@ Components are pure data containers without behavior. This base class provides R
 
 ## Public Methods
 
-### `ComponentID getComponentID() const =0 const`
+### ``ComponentID getComponentID() const =0 const``
 
 Get unique component type ID. 
 
@@ -27,7 +27,7 @@ return type identifier Componentclassenjin2_1_1Componentcompound
 
 ---
 
-### `virtual  ~ComponentBase()=default`
+### ``virtual  ~ComponentBase()=default``
 
 Virtual destructor for proper cleanup. 
 
@@ -38,7 +38,7 @@ Virtual destructor for proper cleanup.
 
 ## Protected Methods
 
-### `static ComponentID getComponentTypeID()`
+### ``static ComponentID getComponentTypeID()``
 
 Generate unique component type ID. 
 

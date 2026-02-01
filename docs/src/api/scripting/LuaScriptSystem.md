@@ -19,7 +19,7 @@ Combines  and  for easy script execution with graphics and UI capabilities. LuaE
 
 ## Public Methods
 
-### ` LuaScriptSystem()`
+### `` LuaScriptSystem()``
 
 Constructor. 
 
@@ -28,7 +28,7 @@ Constructor.
 
 ---
 
-### `bool initialize()`
+### ``bool initialize()``
 
 Initialize the script system. 
 
@@ -36,7 +36,7 @@ returnTrue if successful
 
 ---
 
-### `void shutdown()`
+### ``void shutdown()``
 
 Shutdown the script system. 
 
@@ -45,7 +45,7 @@ Shutdown the script system.
 
 ---
 
-### `void setCanvas(LuaCanvas *canvas)`
+### ``void setCanvas(LuaCanvas *canvas)``
 
 Set canvas for drawing operations. 
 
@@ -53,7 +53,7 @@ paramcanvasCanvas to use
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound executeScript(const std::string &code)`
+### ``LuaResultstructenjin2_1_1LuaResultcompound executeScript(const std::string &code)``
 
 Execute Lua script string. 
 
@@ -61,7 +61,7 @@ paramcodeLua code to execute returnExecution result
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound loadScript(const std::string &filename)`
+### ``LuaResultstructenjin2_1_1LuaResultcompound loadScript(const std::string &filename)``
 
 Load and execute Lua script file. 
 
@@ -69,7 +69,7 @@ paramfilenameScript file path returnExecution result
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound callFunction(const std::string &functionName, Args... args)`
+### ``LuaResultstructenjin2_1_1LuaResultcompound callFunction(const std::string &functionName, Args... args)``
 
 Call Lua function. 
 
@@ -77,7 +77,7 @@ paramfunctionNameFunction name argsFunction arguments returnExecution result
 
 ---
 
-### `size_t getMemoryUsage() const const`
+### ``size_t getMemoryUsage() const const``
 
 Get script system memory usage. 
 
@@ -85,7 +85,7 @@ returnMemory usage in bytes
 
 ---
 
-### ` &LuaEngineclassenjin2_1_1LuaEnginecompound getEngine()`
+### `` &LuaEngineclassenjin2_1_1LuaEnginecompound getEngine()``
 
 Get Lua engine reference. 
 
@@ -93,7 +93,7 @@ returnLua engine
 
 ---
 
-### ` &LuaBindingsclassenjin2_1_1LuaBindingscompound getBindings()`
+### `` &LuaBindingsclassenjin2_1_1LuaBindingscompound getBindings()``
 
 Get bindings reference. 
 

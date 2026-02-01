@@ -21,7 +21,7 @@ sidebar_label: Canvas4
 
 ## Public Methods
 
-### ` Canvas4()`
+### `` Canvas4()``
 
 
         
@@ -31,7 +31,7 @@ sidebar_label: Canvas4
 
 ---
 
-### `virtual uint16_t getWidth() const override const`
+### ``virtual uint16_t getWidth() const override const``
 
 Get canvas width in pixels. 
 
@@ -39,7 +39,7 @@ returnWidth in pixels
 
 ---
 
-### `virtual uint16_t getHeight() const override const`
+### ``virtual uint16_t getHeight() const override const``
 
 Get canvas height in pixels. 
 
@@ -47,7 +47,7 @@ returnHeight in pixels
 
 ---
 
-### `virtual void setPixel(int16_t x, int16_t y, Pixel4 color) override`
+### ``virtual void setPixel(int16_t x, int16_t y, Pixel4 color) override``
 
 Set pixel color at specified coordinates. 
 
@@ -55,7 +55,7 @@ paramxX coordinate yY coordinate colorPixel color to set
 
 ---
 
-### `virtual Pixel4structenjin2_1_1Pixel4compound getPixel(int16_t x, int16_t y) const override const`
+### ``virtual Pixel4structenjin2_1_1Pixel4compound getPixel(int16_t x, int16_t y) const override const``
 
 Get pixel color at specified coordinates. 
 
@@ -63,7 +63,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 ---
 
-### `virtual void clear(Pixel4 color=Pixel4(0)) override`
+### ``virtual void clear(Pixel4 color=Pixel4(0)) override``
 
 Clear entire canvas to specified color. 
 
@@ -71,7 +71,7 @@ paramcolorColor to fill canvas with (default: black/zero)
 
 ---
 
-### `void drawHLine(int16_t x, int16_t y, int16_t width, Pixel4 color)`
+### ``void drawHLine(int16_t x, int16_t y, int16_t width, Pixel4 color)``
 
 Optimized horizontal line drawing with batch operations. 
 
@@ -79,7 +79,7 @@ paramxStarting x coordinate yY coordinate widthLine width in pixels colorLine co
 
 ---
 
-### `void drawVLine(int16_t x, int16_t y, int16_t height, Pixel4 color)`
+### ``void drawVLine(int16_t x, int16_t y, int16_t height, Pixel4 color)``
 
 Optimized vertical line drawing. 
 
@@ -87,7 +87,7 @@ paramxX coordinate yStarting y coordinate heightLine height in pixels colorLine 
 
 ---
 
-### `virtual void fillRect(int16_t x, int16_t y, int16_t width, int16_t height, Pixel4 color)`
+### ``virtual void fillRect(int16_t x, int16_t y, int16_t width, int16_t height, Pixel4 color)``
 
 Optimized rectangle filling with batch operations. 
 
@@ -95,7 +95,7 @@ paramxStarting x coordinate yStarting y coordinate widthRectangle width heightRe
 
 ---
 
-### `void setPixelBatch(int16_t x, int16_t y, const Pixel4 *pixels, int16_t count)`
+### ``void setPixelBatch(int16_t x, int16_t y, const Pixel4 *pixels, int16_t count)``
 
 Batch pixel setting for arrays of data. 
 
@@ -103,7 +103,7 @@ paramxStarting x coordinate yY coordinate pixelsArray of pixel values countNumbe
 
 ---
 
-### `virtual void fill(const Rect &rect, Pixel4 color) override`
+### ``virtual void fill(const Rect &rect, Pixel4 color) override``
 
 Fill rectangular region with specified color. 
 
@@ -111,7 +111,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `const  *PackedPixel4classenjin2_1_1PackedPixel4compound getBuffer() const const`
+### ``const  *PackedPixel4classenjin2_1_1PackedPixel4compound getBuffer() const const``
 
 
         
@@ -121,7 +121,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### ` *PackedPixel4classenjin2_1_1PackedPixel4compound getBuffer()`
+### `` *PackedPixel4classenjin2_1_1PackedPixel4compound getBuffer()``
 
 
         
@@ -131,7 +131,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `size_t getBufferSize() const const`
+### ``size_t getBufferSize() const const``
 
 
         
@@ -141,7 +141,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `void copyFrom(const Canvas4 &other, int16_t dst_x=0, int16_t dst_y=0)`
+### ``void copyFrom(const Canvas4 &other, int16_t dst_x=0, int16_t dst_y=0)``
 
 
         
@@ -151,7 +151,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `void blit(const Canvas4 &sprite, int16_t x, int16_t y, Pixel4 transparent=Pixel4(0))`
+### ``void blit(const Canvas4 &sprite, int16_t x, int16_t y, Pixel4 transparent=Pixel4(0))``
 
 
         
@@ -163,7 +163,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ## Private Methods
 
-### `size_t getIndex(int16_t x, int16_t y) const const`
+### ``size_t getIndex(int16_t x, int16_t y) const const``
 
 
         
@@ -173,7 +173,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### `bool isLowPixel(int16_t x) const const`
+### ``bool isLowPixel(int16_t x) const const``
 
 
         

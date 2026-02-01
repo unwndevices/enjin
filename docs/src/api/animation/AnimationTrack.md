@@ -19,7 +19,7 @@ templateparamTValue type (, float, , etc.) Pointstructenjin2_1_1PointcompoundPix
 
 ## Public Methods
 
-### ` AnimationTrack()`
+### `` AnimationTrack()``
 
 Constructor. 
 
@@ -28,7 +28,7 @@ Constructor.
 
 ---
 
-### `bool addKeyframe(const KeyframeType &keyframe)`
+### ``bool addKeyframe(const KeyframeType &keyframe)``
 
 Add a keyframe to the track. 
 
@@ -36,7 +36,7 @@ paramkeyframeKeyframe to add returnTrue if keyframe was added successfully
 
 ---
 
-### `void clearKeyframes()`
+### ``void clearKeyframes()``
 
 Clear all keyframes. 
 
@@ -45,7 +45,7 @@ Clear all keyframes.
 
 ---
 
-### `void play()`
+### ``void play()``
 
 Start animation playback. 
 
@@ -54,7 +54,7 @@ Start animation playback.
 
 ---
 
-### `void pause()`
+### ``void pause()``
 
 Pause animation playback. 
 
@@ -63,7 +63,7 @@ Pause animation playback.
 
 ---
 
-### `void stop()`
+### ``void stop()``
 
 Stop animation playback and reset to beginning. 
 
@@ -72,7 +72,7 @@ Stop animation playback and reset to beginning.
 
 ---
 
-### `void setLoopMode(LoopMode mode)`
+### ``void setLoopMode(LoopMode mode)``
 
 Set loop mode. 
 
@@ -80,7 +80,7 @@ parammodeLoop mode to set
 
 ---
 
-### `void update(uint16_t deltaTime)`
+### ``void update(uint16_t deltaTime)``
 
 Update animation by time delta. 
 
@@ -88,7 +88,7 @@ paramdeltaTimeTime elapsed since last update in milliseconds
 
 ---
 
-### `T getCurrentValue() const const`
+### ``T getCurrentValue() const const``
 
 Get current animation value. 
 
@@ -96,7 +96,7 @@ returnCurrent interpolated value
 
 ---
 
-### `AnimationState getState() const const`
+### ``AnimationState getState() const const``
 
 Get animation state. 
 
@@ -104,7 +104,7 @@ returnCurrent animation state
 
 ---
 
-### `uint16_t getCurrentTime() const const`
+### ``uint16_t getCurrentTime() const const``
 
 Get current time. 
 
@@ -112,7 +112,7 @@ returnCurrent playback time in milliseconds
 
 ---
 
-### `uint16_t getDuration() const const`
+### ``uint16_t getDuration() const const``
 
 Get animation duration. 
 
@@ -120,7 +120,7 @@ returnTotal duration in milliseconds
 
 ---
 
-### `float getProgress() const const`
+### ``float getProgress() const const``
 
 Get normalized progress (0.0 to 1.0). 
 
@@ -128,7 +128,7 @@ returnAnimation progress
 
 ---
 
-### `SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnStart(std::function< void()> callback)`
+### ``SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnStart(std::function&lt; void()&gt; callback)``
 
 Connect to animation events. 
 
@@ -137,7 +137,7 @@ Connect to animation events.
 
 ---
 
-### `SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnComplete(std::function< void()> callback)`
+### ``SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnComplete(std::function&lt; void()&gt; callback)``
 
 
         
@@ -147,7 +147,7 @@ Connect to animation events.
 
 ---
 
-### `< T >SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnUpdate(std::function< void(T)> callback)`
+### ``< T >SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnUpdate(std::function&lt; void(T)&gt; callback)``
 
 
         
@@ -159,7 +159,7 @@ Connect to animation events.
 
 ## Private Methods
 
-### `void handleLoopBoundary()`
+### ``void handleLoopBoundary()``
 
  reaching loop boundary. Handlestructenjin2_1_1Handlecompound
 
@@ -168,7 +168,7 @@ Connect to animation events.
 
 ---
 
-### `T evaluateAtTime(uint16_t time) const const`
+### ``T evaluateAtTime(uint16_t time) const const``
 
 Evaluate animation value at specific time. 
 
@@ -176,7 +176,7 @@ paramtimeTime to evaluate at returnInterpolated value at time
 
 ---
 
-### `T getValue(const KeyframeType &keyframe) const const`
+### ``T getValue(const KeyframeType &keyframe) const const``
 
 Get value from keyframe (specialized for each keyframe type). 
 
@@ -185,7 +185,7 @@ Get value from keyframe (specialized for each keyframe type).
 
 ---
 
-### `T interpolateBetween(const KeyframeType &from, const KeyframeType &to, uint16_t time) const const`
+### ``T interpolateBetween(const KeyframeType &from, const KeyframeType &to, uint16_t time) const const``
 
 Interpolate between two keyframes. 
 
@@ -194,7 +194,7 @@ Interpolate between two keyframes.
 
 ---
 
-### `Pointstructenjin2_1_1Pointcompound getValue(const PositionKeyframe &keyframe) const const`
+### ``Pointstructenjin2_1_1Pointcompound getValue(const PositionKeyframe &keyframe) const const``
 
 
         
@@ -204,7 +204,7 @@ Interpolate between two keyframes.
 
 ---
 
-### `float getValue(const FloatKeyframe &keyframe) const const`
+### ``float getValue(const FloatKeyframe &keyframe) const const``
 
 
         
@@ -214,7 +214,7 @@ Interpolate between two keyframes.
 
 ---
 
-### `Pixel4structenjin2_1_1Pixel4compound getValue(const ColorKeyframe &keyframe) const const`
+### ``Pixel4structenjin2_1_1Pixel4compound getValue(const ColorKeyframe &keyframe) const const``
 
 
         

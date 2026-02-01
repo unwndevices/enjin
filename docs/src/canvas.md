@@ -74,4 +74,10 @@ canvas.add(overlay); // Add colors
 canvas.subtract(overlay); // Subtract colors
 ```
 
-See [API Reference](/api) for complete canvas API.
+See *Note: API Reference documentation will be available in next phase.* for complete canvas API.
+
+## See Also
+
+- [API: Canvas](/api/graphics/Canvas8)
+- [API: CanvasExtended](/api/graphics/CanvasExtended)
+- [API: CanvasGraphicsAdapter](/api/graphics/CanvasGraphicsAdapter)

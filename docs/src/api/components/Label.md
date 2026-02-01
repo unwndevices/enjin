@@ -20,7 +20,7 @@ Custom fonts (GFX-style fonts)Text wrapping and alignmentBackground colors and b
 
 ## Public Methods
 
-### ` Label(Object *owner, uint16_t w, uint16_t h, const GFXfont *textFont=nullptr, uint8_t fontSize=1, uint8_t textColor=14, uint8_t backgroundColor=0, uint8_t pointerHeight=0)`
+### `` Label(Object *owner, uint16_t w, uint16_t h, const GFXfont *textFont=nullptr, uint8_t fontSize=1, uint8_t textColor=14, uint8_t backgroundColor=0, uint8_t pointerHeight=0)``
 
 Construct a new  component. Labelclassenjin2_1_1Labelcompound
 
@@ -28,7 +28,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ---
 
-### `void draw(ICanvas< uint8_t > &canvas)`
+### ``void draw(ICanvas&lt; uint8_t &gt; &canvas)``
 
 Draw the label to the canvas. 
 
@@ -36,7 +36,7 @@ paramcanvasThe canvas to draw to
 
 ---
 
-### `void setText(const std::string &newText)`
+### ``void setText(const std::string &newText)``
 
 Set the label text. 
 
@@ -44,7 +44,7 @@ paramnewTextText to display
 
 ---
 
-### `const std::string & getText() const const`
+### ``const std::string & getText() const const``
 
 Get the current text. 
 
@@ -52,7 +52,7 @@ returnCurrent text string
 
 ---
 
-### `void setTextColor(uint8_t color)`
+### ``void setTextColor(uint8_t color)``
 
 Set text color. 
 
@@ -60,7 +60,7 @@ paramcolorNew text color (0-15)
 
 ---
 
-### `void setBackgroundColor(uint8_t color)`
+### ``void setBackgroundColor(uint8_t color)``
 
 Set background color. 
 
@@ -68,7 +68,7 @@ paramcolorBackground color (0 for transparent)
 
 ---
 
-### `void setAlignment(LabelAlign align)`
+### ``void setAlignment(LabelAlign align)``
 
 Set text alignment. 
 
@@ -76,7 +76,7 @@ paramalignText alignment mode
 
 ---
 
-### `void setMargins(int16_t left, int16_t right=-1)`
+### ``void setMargins(int16_t left, int16_t right=-1)``
 
 Set margins. 
 
@@ -84,7 +84,7 @@ paramleftLeft margin in pixels rightRight margin in pixels (defaults to left mar
 
 ---
 
-### `void setWordWrap(bool wrap)`
+### ``void setWordWrap(bool wrap)``
 
 Enable or disable word wrapping. 
 
@@ -92,7 +92,7 @@ paramwrapTrue to enable word wrapping
 
 ---
 
-### `void setFontSize(uint8_t size)`
+### ``void setFontSize(uint8_t size)``
 
 Set font size. 
 
@@ -100,7 +100,7 @@ paramsizeFont size multiplier (1 = normal, 2 = double, etc.)
 
 ---
 
-### `void setPointerHeight(uint8_t height)`
+### ``void setPointerHeight(uint8_t height)``
 
 Set pointer height for tooltip-style labels. 
 
@@ -110,7 +110,7 @@ paramheightHeight of pointer in pixels (0 for no pointer)
 
 ## Private Methods
 
-### `std::vector< std::string > split(const std::string &s, char delimiter) const const`
+### ``std::vector< std::string > split(const std::string &s, char delimiter) const const``
 
 
         
@@ -120,7 +120,7 @@ paramheightHeight of pointer in pixels (0 for no pointer)
 
 ---
 
-### `void layoutText()`
+### ``void layoutText()``
 
 Layout and render text to internal canvas. 
 
@@ -129,7 +129,7 @@ Layout and render text to internal canvas.
 
 ---
 
-### `void renderText(int16_t padding, int16_t line_spacing, int16_t box_height)`
+### ``void renderText(int16_t padding, int16_t line_spacing, int16_t box_height)``
 
 Render text with word wrapping and alignment. 
 
@@ -138,7 +138,7 @@ Render text with word wrapping and alignment.
 
 ---
 
-### `int16_t calculateLineX(const std::string &line, int16_t padding)`
+### ``int16_t calculateLineX(const std::string &line, int16_t padding)``
 
 Calculate X position for a line based on alignment. 
 

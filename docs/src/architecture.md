@@ -45,3 +45,9 @@ Signals provide a type-safe callback mechanism for decoupled systems.
 Components connect to scene lifecycle events, input events, and custom notifications.
 
 Signals support multiple listeners and automatic connection management.
+
+## See Also
+
+- [API: SceneStateMachine](/api/core/SceneStateMachine)
+- [API: Signal](/api/core/Signal)
+- [API: ICanvas](/api/abstract/ICanvas)

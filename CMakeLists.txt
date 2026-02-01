@@ -17,8 +17,9 @@ if(DOXYGEN_FOUND)
 
     add_custom_target(docs
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_IN}
+        COMMAND node ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-api-docs.js
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Generating API documentation with Doxygen"
+        COMMENT "Generating API documentation with Doxygen and Docusaurus"
         BYPRODUCTS ${DOXYGEN_OUT}/index.xml
     )
 

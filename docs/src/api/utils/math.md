@@ -21,7 +21,7 @@ sidebar_label: math
 
 ## Functions
 
-### `uint16_t isqrt(uint32_t n)`
+### ``uint16_t isqrt(uint32_t n)``
 
 
         
@@ -31,7 +31,7 @@ sidebar_label: math
 
 ---
 
-### `constexpr T abs(T value)`
+### ``constexpr T abs(T value)``
 
 
         
@@ -41,7 +41,7 @@ sidebar_label: math
 
 ---
 
-### `constexpr T clamp(T value, T min_val, T max_val)`
+### ``constexpr T clamp(T value, T min_val, T max_val)``
 
 
         
@@ -51,7 +51,7 @@ sidebar_label: math
 
 ---
 
-### `constexpr T lerp(T a, T b, float t)`
+### ``constexpr T lerp(T a, T b, float t)``
 
 
         
@@ -61,7 +61,7 @@ sidebar_label: math
 
 ---
 
-### `constexpr T map(T value, T in_min, T in_max, T out_min, T out_max)`
+### ``constexpr T map(T value, T in_min, T in_max, T out_min, T out_max)``
 
 
         
@@ -71,7 +71,7 @@ sidebar_label: math
 
 ---
 
-### `uint16_t distance(int16_t x1, int16_t y1, int16_t x2, int16_t y2)`
+### ``uint16_t distance(int16_t x1, int16_t y1, int16_t x2, int16_t y2)``
 
 
         
