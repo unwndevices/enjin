@@ -59,21 +59,18 @@ const config = {
         src: 'img/logo.svg',
       },
       items: [
-        {
+         {
           type: 'docSidebar',
           sidebarId: 'guidesSidebar',
           position: 'left',
           label: 'Guides',
         },
-        // TODO: Re-enable API Reference when API docs are fixed
-        /*
         {
           type: 'docSidebar',
           sidebarId: 'apiSidebar',
           position: 'left',
           label: 'API Reference',
         },
-        */
         {
           href: 'https://github.com/unwndevices/enjin',
           label: 'GitHub',
@@ -85,12 +82,11 @@ const config = {
     footer: {
       style: 'dark',
       links: [
-        {
+         {
           title: 'Documentation',
           items: [
             { label: 'Getting Started', to: '/getting-started' },
-            // TODO: Re-enable API Reference when API docs are fixed
-            // { label: 'API Reference', to: '/api/core/Object' },
+            { label: 'API Reference', to: '/api/core/Object' },
           ],
         },
         {
