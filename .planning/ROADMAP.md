@@ -97,7 +97,7 @@ Plans:
 ### Phase 6: Create library docs, using doxygen + Docusaurus
 **Goal:** Create comprehensive library documentation using Doxygen for API extraction and Docusaurus for modern web presentation, deployed to GitHub Pages
 **Depends on:** Phase 5
-**Plans:** 6 plans
+**Plans:** 7 plans
 
  Plans:
 - [x] 06-01-PLAN.md — Configure Doxygen for XML generation
@@ -105,7 +105,8 @@ Plans:
 - [x] 06-03-PLAN.md — Create core documentation content
 - [x] 06-04-PLAN.md — Create guides and API reference
 - [x] 06-05-PLAN.md — Set up CI/CD deployment
-- [~] 06-06-PLAN.md — Enable API navigation (partial - infrastructure complete, MDX errors remain)
+- [~] 06-06-PLAN.md — Enable API navigation (partial - infrastructure complete, needs sidebar fix)
+- [ ] 06-07-PLAN.md — Fix API sidebar navigation (gap closure)
 
 **Details:**
 Setup automated documentation pipeline with Doxygen 1.15+ extracting XML from C++ headers and Docusaurus 3.9+ rendering as modern web site. Deploy to GitHub Pages via GitHub Actions workflow on main branch pushes.
@@ -122,4 +123,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
   | 3. Feature Support | 3/3 | Complete | 2026-01-30 |
 | 4. Validation | 4/4 | Complete | 2026-01-31 |
 | 5. Final Cleanup | 1/1 | Complete | 2026-01-31 |
- | 6. Create library docs, using doxygen + Docusaurus | 5/6 | Gap Closure - MDX errors | 2026-02-01 |
+  | 6. Create library docs, using doxygen + Docusaurus | 5/7 | Gap Closure - Sidebar ID mismatch | 2026-02-01 |
