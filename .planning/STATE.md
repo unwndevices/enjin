@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 6 of 6 (Create library docs, using doxygen + Docusaurus)
-Plan: 1 of 5 in current phase
+Plan: 2 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-31 — Completed 06-01: Configure Doxygen and CMake for XML Generation
+Last activity: 2026-02-01 — Completed 06-02: Initialize Docusaurus site
 
-Progress: [███████████░░░] 100% (Phase 5 complete, Phase 6: 20% complete)
+Progress: [██████████░░░] 100% (Phase 5 complete, Phase 6: 40% complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 5.9 min
-- Total execution time: 1.8 hours
+- Total plans completed: 19
+- Average duration: 6.2 min
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [███████████░░░] 100% (Phase 5 complete, P
 | 03-feature-support | 3 | 3 | 3 min |
 | 04-validation | 4 | 4 | 8.5 min |
 | 05-final-cleanup | 1 | 1 | 7 min |
-| 06-create-library-docs | 1 | 5 | 5 min |
+| 06-create-library-docs | 2 | 5 | 10 min |
 
 **Recent Trend:**
-- Last 3 plans: 8 min, 7 min, 5 min
-- Trend: Improving
+- Last 3 plans: 15 min, 5 min, 5 min
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -78,6 +78,10 @@ Recent decisions affecting current work:
 - Final cleanup: Removed all conditional compilation and CMake options for enjin1 backend - enjin2-only build system (05-01)
 - Doxygen XML structure: Standard Doxygen output creates individual class/namespace files (class*.xml, namespace*.xml) instead of aggregate files (classes.xml, namespaces.xml) - index.xml provides master reference (06-01)
 - Documentation generation: CMake docs target with find_package(Doxygen) enables automated XML generation via cmake --build . --target docs (06-01)
+- Docusaurus root routing: Changed routeBasePath from '/docs' to '/' to serve docs from root path (/enjin/) - provides cleaner URLs and avoids broken logo links (06-02)
+- Home page requirement: Created index.md as Docusaurus home page since navbar logo links to root path, which requires valid content (06-02)
+- API sidebar organization: Structured by module (Core, Graphics, Utils) instead of alphabetical A-Z to match project header organization (06-02)
+- CSS branding variables: Used Docusaurus CSS custom properties (--ifm-color-primary-*) instead of swizzling theme components for easier theme updates (06-02)
 
 ### Roadmap Evolution
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31
-Stopped at: Completed 06-01-PLAN.md (Doxygen XML generation configured)
+Last session: 2026-02-01
+Stopped at: Completed Plan 02 (Initialize Docusaurus site)
 Resume file: None
