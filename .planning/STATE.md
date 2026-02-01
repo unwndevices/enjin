@@ -5,15 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** v1.0 milestone complete - ready for next milestone planning
+**Current focus:** v1.1 Project Infrastructure & Documentation Enhancement
 
 ## Current Position
 
-Milestone: v1.0 Migration + Documentation (shipped 2026-02-01)
-Status: Complete
-Last activity: 2026-02-01 — v1.0 milestone archived
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-01 — Milestone v1.1 started
 
-Progress: [███████████] 100% (6 phases, 21 plans, all complete)
+Milestone: v1.1 Project Infrastructure & Documentation Enhancement
+Previous: v1.0 Migration + Documentation (shipped 2026-02-01)
 
 ## Performance Metrics
 
@@ -41,7 +43,7 @@ Progress: [███████████] 100% (6 phases, 21 plans, all comp
 
 ## Accumulated Context
 
-### Recent Milestone Summary
+### Previous Milestone Summary
 
 **v1.0 Milestone (2026-02-01):**
 - Shipped enjin2 as fully independent library

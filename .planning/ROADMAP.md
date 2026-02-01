@@ -7,7 +7,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 ## Milestones
 
 - ✅ **v1.0 Migration + Documentation** — Phases 1-6 (shipped 2026-02-01)
-- 📋 **v1.1** — Not started (run `/gsd-new-milestone` to plan)
+- 📋 **v1.1 Project Infrastructure & Documentation Enhancement** — Phases 7+ (not started)
 
 ## Phases
 

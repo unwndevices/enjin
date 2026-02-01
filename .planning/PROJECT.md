@@ -17,9 +17,16 @@ enjin2 works independently without any enjin1 dependencies.
 - All 14 v1 requirements validated
 - 6 phases completed: Dependency Analysis, Core Migration, Feature Support, Validation, Final Cleanup, Documentation
 
-## Next Milestone Goals
+## Current Milestone: v1.1 Project Infrastructure & Documentation Enhancement
 
-*Run `/gsd-new-milestone` to plan next milestone*
+**Goal:** Improve project accessibility with comprehensive README, fix build dependencies, and enhance documentation coverage.
+
+**Target features:**
+- Professional README with project description, features, and links to documentation
+- Fixed build system (Lua dependency resolved)
+- Comprehensive Doxygen documentation (reduced warnings, complete coverage)
+- Usage examples in API documentation
+- Filled documentation gaps
 
 ## Requirements
 
@@ -79,4 +86,4 @@ enjin2 is a fully independent, self-contained library with:
 | Docusaurus dual-plugin setup | Separate guides and API reference | ✓ Working - Phase 6 |
 
 ---
-*Last updated: 2026-02-01 after v1.0 milestone*
+*Last updated: 2026-02-01 after v1.1 milestone planning*
