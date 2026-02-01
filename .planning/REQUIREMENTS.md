@@ -1,62 +1,39 @@
 # Requirements: Enjin Migration
 
-**Defined:** 2026-01-30
+**Defined:** 2026-02-01
 **Core Value:** enjin2 works independently without any enjin1 dependencies
 
-## v1 Requirements
+## v1.1 Requirements
 
-Requirements for complete migration from enjin to enjin2. Each maps to roadmap phases.
+Requirements for Project Infrastructure & Documentation Enhancement. Each maps to roadmap phases.
 
-### Foundation
+### README
 
-- [x] **FND-01**: Map all enjin1 → enjin2 dependencies across infrastructure, utilities, and feature code
-- [x] **FND-02**: Create separate build targets for enjin1 and enjin2 with independent compilation
-- [x] **FND-03**: Verify no `namespace enjin` references exist in enjin2 codebase
-- [x] **FND-04**: Create compatibility headers aliasing enjin1 types to enjin2 equivalents
-- [x] **FND-05**: Map enjin1 shared_ptr usage to enjin2 static allocation patterns with equivalent lifetime semantics
-- [x] **FND-06**: Map enjin1 component lifecycle (Awake/Start) to enjin2 lifecycle (awake/start)
-- [x] **FND-07**: Port scene management system including SceneStateMachine and transitions
-- [x] **FND-08**: Establish manual testing baseline for component lifecycle, rendering, scene transitions, and Lua scripting
-- [x] **FND-09**: Ensure all enjin2 headers compile independently without enjin1 includes
-- [x] **FND-10**: Update CMakeLists.txt to support clean enjin2-only builds without enjin1 paths
+- [ ] **RDME-01**: README provides clear project description explaining enjin2's purpose and capabilities
+- [ ] **RDME-02**: README includes features list highlighting key enjin2 capabilities (static allocation, Lua/WASM integration, multi-platform support)
+- [ ] **RDME-03**: README includes links to API documentation, guides, and GitHub Pages
 
-### Migration Strategy
+### Build System
 
-- [x] **STR-01**: Implement Strangler Fig pattern with compatibility seams for incremental replacement
-- [x] **STR-02**: Extract legacy seams at component and scene boundaries for testing in isolation
-- [x] **STR-03**: Implement shadow mode execution running both enjin1 and enjin2 in parallel with output comparison
-- [x] **STR-04**: Create canvas abstraction layer enabling both implementations to target same interface
+- [ ] **BLD-01**: Lua dependency is resolved - CMake configuration handles Lua properly (not optional, must work)
+- [ ] **BLD-02**: All dependencies are documented in README or separate DEPENDENCIES.md file
 
-## v2 Requirements
+### Documentation Coverage
 
-Deferred to future release. Tracked but not in current roadmap.
-
-### Performance Optimization
-
-- **PERF-01**: Benchmark framework comparing enjin1 and enjin2 performance
-- **PERF-02**: Performance regression guardrails ensuring enjin2 matches or exceeds enjin1 metrics
-
-### Advanced Migration
-
-- **ADV-01**: Incremental dependency inversion to break remaining circular dependencies
-- **ADV-02**: API stability guarantees with deprecation warnings for public interfaces
-- **ADV-03**: Rollback capability through Git branches until deprecation complete
+- [ ] **DOC-01**: Doxygen warnings are reduced from 210 to < 20 (addressing actual missing documentation issues)
+- [ ] **DOC-02**: All public APIs are documented with Doxygen comments (complete coverage)
+- [ ] **DOC-03**: Documentation follows consistent style (formatting, parameter descriptions, return values)
+- [ ] **DOC-04**: Module overviews added for each module (Core, Graphics, UI, Utils, etc.) explaining purpose and usage
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
-
 | Feature | Reason |
 |---------|--------|
-| "Big bang" complete rewrite | Extremely high risk, impossible to validate behavior mid-project |
-| Feature parity with enjin1 bugs | Fix bugs during migration, don't replicate broken behavior |
-| Shared namespace during migration | Breaks name lookup rules, impossible to track dependencies |
-| Copy-paste implementation from enjin1 | Violates enjin2 static allocation constraints |
-| Automated mass refactoring | C++ refactoring tools are error-prone, manual migration required |
-| Temporary global state | Undermines enjin2 architecture goals of no global state |
-| Dynamic allocation quick fixes | Violates non-dynamic memory constraint |
-| Parallel binary incompatibility | Linker conflicts, impossible to verify which code runs |
-| Transitional code permanence | Technical debt accumulation, mark for deletion |
+| Build/installation instructions in README | Not in scope - focus on project description, features, links |
+| Quick start examples in README | Defer to future milestone - examples not priority currently |
+| Usage examples in API documentation | Not in scope - focus on coverage and quality first |
+| Getting started guide | Defer to future milestone |
+| Optional Lua support | User confirmed Lua is NOT optional - must work |
 
 ## Traceability
 
@@ -64,26 +41,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-  | FND-01 | Phase 1 | Complete |
-| FND-02 | Phase 1 | Complete |
-| FND-03 | Phase 1 | Complete |
-| FND-04 | Phase 2 | Complete |
-| FND-05 | Phase 2 | Complete |
-| FND-06 | Phase 2 | Complete |
-| FND-07 | Phase 2 | Complete |
-  | FND-08 | Phase 4 | Complete |
-| FND-09 | Phase 3 | Complete |
-| FND-10 | Phase 5 | Complete |
-| STR-01 | Phase 2 | Complete |
-| STR-02 | Phase 3 | Complete |
-  | STR-03 | Phase 4 | Complete |
-| STR-04 | Phase 3 | Complete |
+| RDME-01 | Phase 7 | Pending |
+| RDME-02 | Phase 7 | Pending |
+| RDME-03 | Phase 7 | Pending |
+| BLD-01 | Phase 8 | Pending |
+| BLD-02 | Phase 8 | Pending |
+| DOC-01 | Phase 9 | Pending |
+| DOC-02 | Phase 9 | Pending |
+| DOC-03 | Phase 9 | Pending |
+| DOC-04 | Phase 9 | Pending |
 
 **Coverage:**
-- v1 requirements: 14 total
-- Mapped to phases: 14
-- Unmapped: 0 ✓
+- v1.1 requirements: 9 total
+- Mapped to phases: 0 (will be mapped during roadmap creation)
+- Unmapped: 9 ⚠️
 
 ---
-*Requirements defined: 2026-01-30*
-*Last updated: 2026-01-31 after Phase 5 completion*
+*Requirements defined: 2026-02-01*
+*Last updated: 2026-02-01 after initial definition*
