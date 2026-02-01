@@ -19,7 +19,7 @@ Provides basic image export functionality to visualize the canvas content as act
 
 ## Public Methods
 
-### ``static bool exportToPGM(const Canvas4&lt; WIDTH, HEIGHT &gt; &canvas, const std::string &filename, int scale=4)``
+### `static bool exportToPGM(const Canvas4< WIDTH, HEIGHT > &canvas, const std::string &filename, int scale=4)`
 
 Export 4-bit canvas to PGM (Portable Graymap) format. 
 
@@ -27,7 +27,7 @@ paramcanvasCanvas to export filenameOutput filename scaleScale factor for output
 
 ---
 
-### ``static bool exportToPGM(const Canvas8&lt; WIDTH, HEIGHT &gt; &canvas, const std::string &filename, int scale=4)``
+### `static bool exportToPGM(const Canvas8< WIDTH, HEIGHT > &canvas, const std::string &filename, int scale=4)`
 
 Export 8-bit canvas to PGM format. 
 
@@ -35,7 +35,7 @@ paramcanvasCanvas to export filenameOutput filename scaleScale factor for output
 
 ---
 
-### ``static void printVisual(const Canvas4&lt; WIDTH, HEIGHT &gt; &canvas, const std::string &title="")``
+### `static void printVisual(const Canvas4< WIDTH, HEIGHT > &canvas, const std::string &title="")`
 
 Export 4-bit canvas to simple visual ASCII format (better than before). 
 
@@ -43,7 +43,7 @@ paramcanvasCanvas to export titleTitle to display above the visualization
 
 ---
 
-### ``static void printColorVisual(const Canvas4&lt; WIDTH, HEIGHT &gt; &canvas, const std::string &title="")``
+### `static void printColorVisual(const Canvas4< WIDTH, HEIGHT > &canvas, const std::string &title="")`
 
 Create a color-coded terminal visualization using ANSI colors. 
 

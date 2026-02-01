@@ -20,7 +20,7 @@ Easing function utilities.
 
 ## Public Methods
 
-### ``static float ease(float t, EaseType easeType)``
+### `static float ease(float t, EaseType easeType)`
 
 Apply easing function to normalized time (0.0 to 1.0). 
 
@@ -28,7 +28,7 @@ paramtNormalized time (0.0 to 1.0) easeTypeType of easing to apply returnEased v
 
 ---
 
-### ``static float lerp(float a, float b, float t)``
+### `static float lerp(float a, float b, float t)`
 
 Linear interpolation between two values. 
 
@@ -36,7 +36,7 @@ paramaStart value bEnd value tInterpolation factor (0.0 to 1.0) returnInterpolat
 
 ---
 
-### ``static Pointstructenjin2_1_1Pointcompound lerp(const Point &a, const Point &b, float t)``
+### `static Pointstructenjin2_1_1Pointcompound lerp(const Point &a, const Point &b, float t)`
 
 Linear interpolation between two points. 
 
@@ -44,7 +44,7 @@ paramaStart point bEnd point tInterpolation factor (0.0 to 1.0) returnInterpolat
 
 ---
 
-### ``static Pixel4structenjin2_1_1Pixel4compound lerp(const Pixel4 &a, const Pixel4 &b, float t)``
+### `static Pixel4structenjin2_1_1Pixel4compound lerp(const Pixel4 &a, const Pixel4 &b, float t)`
 
 Linear interpolation between two colors. 
 
@@ -54,7 +54,7 @@ paramaStart color bEnd color tInterpolation factor (0.0 to 1.0) returnInterpolat
 
 ## Private Methods
 
-### ``static float clamp01(float t)``
+### `static float clamp01(float t)`
 
 Clamp value between 0.0 and 1.0. 
 

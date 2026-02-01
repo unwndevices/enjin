@@ -20,7 +20,7 @@ Renders all visible entities with  to the target canvas. Handles z-ordering and 
 
 ## Public Methods
 
-### `` RenderSystem(TCanvas *targetCanvas)``
+### ` RenderSystem(TCanvas *targetCanvas)`
 
 Constructor with target canvas. 
 
@@ -28,7 +28,7 @@ paramtargetCanvasCanvas to render to
 
 ---
 
-### ``virtual void update(float deltaTime) override``
+### `virtual void update(float deltaTime) override`
 
 Update rendering. 
 
@@ -36,7 +36,7 @@ paramdeltaTimeTime since last update
 
 ---
 
-### ``virtual int getPriority() const override const``
+### `virtual int getPriority() const override const`
 
 Get system priority (rendering should run last). 
 
@@ -46,7 +46,7 @@ returnPriority value
 
 ## Private Methods
 
-### ``void renderEntity(Entity entity)``
+### `void renderEntity(Entity entity)`
 
 Render individual entity. 
 
@@ -54,7 +54,7 @@ paramentity to render Entitystructenjin2_1_1Entitycompound
 
 ---
 
-### ``void renderShape(const PositionComponent &pos, const SizeComponent *size, const RenderComponent &render, const ShapeComponent &shape)``
+### `void renderShape(const PositionComponent &pos, const SizeComponent *size, const RenderComponent &render, const ShapeComponent &shape)`
 
 Render shape component. 
 
@@ -62,7 +62,7 @@ paramposPosition component size component (may be null) Sizestructenjin2_1_1Size
 
 ---
 
-### ``void renderRectangle(const PositionComponent &pos, const SizeComponent &size, const RenderComponent &render)``
+### `void renderRectangle(const PositionComponent &pos, const SizeComponent &size, const RenderComponent &render)`
 
 Render simple rectangle. 
 

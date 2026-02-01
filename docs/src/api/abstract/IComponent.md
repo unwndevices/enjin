@@ -19,7 +19,7 @@ Both enjin1 and enjin2 can implement this interface for compile-time polymorphis
 
 ## Public Methods
 
-### ``virtual  ~IComponent()=default``
+### `virtual  ~IComponent()=default`
 
 Virtual destructor for proper cleanup through base pointer. 
 
@@ -28,7 +28,7 @@ Virtual destructor for proper cleanup through base pointer.
 
 ---
 
-### ``void awake()=0``
+### `void awake()=0`
 
 Awake is called when component is created. 
 
@@ -36,7 +36,7 @@ Use this for initialization that doesn't depend on other components. This is cal
 
 ---
 
-### ``void start()=0``
+### `void start()=0`
 
 Start is called before first frame update. 
 
@@ -44,7 +44,7 @@ Use this for initialization that depends on other components or objects being fu
 
 ---
 
-### ``void update(uint16_t deltaTime)=0``
+### `void update(uint16_t deltaTime)=0`
 
 Update is called once per frame. 
 
@@ -52,7 +52,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### ``void lateUpdate(uint16_t deltaTime)=0``
+### `void lateUpdate(uint16_t deltaTime)=0`
 
 LateUpdate is called after all Update calls. 
 
@@ -60,7 +60,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### ``void onEnable()=0``
+### `void onEnable()=0`
 
 Called when component is enabled. 
 
@@ -69,7 +69,7 @@ Called when component is enabled.
 
 ---
 
-### ``void onDisable()=0``
+### `void onDisable()=0`
 
 Called when component is disabled. 
 
@@ -78,7 +78,7 @@ Called when component is disabled.
 
 ---
 
-### `` *Objectclassenjin2_1_1Objectcompound getOwner() const =0 const``
+### ` *Objectclassenjin2_1_1Objectcompound getOwner() const =0 const`
 
 Get owner object. 
 
@@ -86,7 +86,7 @@ returnPointer to owner object
 
 ---
 
-### ``bool isEnabled() const =0 const``
+### `bool isEnabled() const =0 const`
 
 Check if component is enabled. 
 
@@ -94,7 +94,7 @@ returnTrue if enabled
 
 ---
 
-### ``void setEnabled(bool isEnabled)=0``
+### `void setEnabled(bool isEnabled)=0`
 
 Set component enabled state. 
 

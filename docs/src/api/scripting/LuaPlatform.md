@@ -20,7 +20,7 @@ Platform abstraction for Lua initialization.
 
 ## Public Methods
 
-### ``static lua_State * createState(lua_Alloc allocator=nullptr, void *ud=nullptr)``
+### `static lua_State * createState(lua_Alloc allocator=nullptr, void *ud=nullptr)`
 
 Create platform-appropriate Lua state. 
 
@@ -28,7 +28,7 @@ paramallocatorCustom allocator function (nullptr for default) udUser data for al
 
 ---
 
-### ``static void openLibraries(lua_State *L)``
+### `static void openLibraries(lua_State *L)`
 
 Open platform-appropriate standard libraries. 
 
@@ -36,7 +36,7 @@ paramLLua state
 
 ---
 
-### ``static void configureSecurityRestrictions(lua_State *L)``
+### `static void configureSecurityRestrictions(lua_State *L)`
 
 Configure platform-specific security restrictions. 
 
@@ -44,7 +44,7 @@ paramLLua state
 
 ---
 
-### ``static size_t getMemoryUsage(lua_State *L)``
+### `static size_t getMemoryUsage(lua_State *L)`
 
 Get platform memory statistics. 
 
@@ -52,7 +52,7 @@ paramLLua state returnMemory usage in bytes
 
 ---
 
-### ``static void tuneGarbageCollector(lua_State *L)``
+### `static void tuneGarbageCollector(lua_State *L)`
 
 Platform-specific garbage collection tuning. 
 

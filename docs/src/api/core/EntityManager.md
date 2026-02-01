@@ -19,7 +19,7 @@ Manages entity lifecycle and component associations. Uses generation counters to
 
 ## Public Methods
 
-### `` EntityManager()``
+### ` EntityManager()`
 
 Constructor initializes entity manager. 
 
@@ -28,7 +28,7 @@ Constructor initializes entity manager.
 
 ---
 
-### ``Entitystructenjin2_1_1Entitycompound createEntity()``
+### `Entitystructenjin2_1_1Entitycompound createEntity()`
 
 Create new entity. 
 
@@ -36,7 +36,7 @@ return handle, invalid if no slots available Entitystructenjin2_1_1Entitycompoun
 
 ---
 
-### ``void destroyEntity(Entity entity)``
+### `void destroyEntity(Entity entity)`
 
 Destroy entity and free its slot. 
 
@@ -44,7 +44,7 @@ paramentity to destroy Entitystructenjin2_1_1Entitycompound
 
 ---
 
-### ``bool isValid(Entity entity) const const``
+### `bool isValid(Entity entity) const const`
 
 Check if entity is valid. 
 
@@ -52,7 +52,7 @@ paramentity to validate Entitystructenjin2_1_1Entitycompoundreturntrue if entity
 
 ---
 
-### ``size_t getEntityCount() const const``
+### `size_t getEntityCount() const const`
 
 Get total number of active entities. 
 
@@ -60,7 +60,7 @@ return count Entitystructenjin2_1_1Entitycompound
 
 ---
 
-### ``size_t getMaxEntities() const const``
+### `size_t getMaxEntities() const const`
 
 Get maximum entity capacity. 
 

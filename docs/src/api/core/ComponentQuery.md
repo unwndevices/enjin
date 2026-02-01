@@ -20,7 +20,7 @@ Provides efficient iteration over entities with specific component combinations.
 
 ## Public Methods
 
-### `` ComponentQuery(std::function&lt; bool(Entity)&gt; entityFilter)``
+### ` ComponentQuery(std::function< bool(Entity)> entityFilter)`
 
 Constructor with entity filter. 
 
@@ -28,7 +28,7 @@ paramentityFilterFunction to test if entity matches query
 
 ---
 
-### ``Iteratorclassenjin2_1_1ComponentQuery_1_1Iteratorcompound begin() const const``
+### `Iteratorclassenjin2_1_1ComponentQuery_1_1Iteratorcompound begin() const const`
 
 Get iterator to beginning of query results. 
 
@@ -37,7 +37,7 @@ Get iterator to beginning of query results.
 
 ---
 
-### ``Iteratorclassenjin2_1_1ComponentQuery_1_1Iteratorcompound end() const const``
+### `Iteratorclassenjin2_1_1ComponentQuery_1_1Iteratorcompound end() const const`
 
 Get iterator to end of query results. 
 

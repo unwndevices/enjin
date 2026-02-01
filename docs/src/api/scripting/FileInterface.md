@@ -19,7 +19,7 @@ Allows ImageCache to work with different file systems (embedded flash, SD card, 
 
 ## Public Methods
 
-### ``virtual  ~FileInterface()=default``
+### `virtual  ~FileInterface()=default`
 
 
         
@@ -29,7 +29,7 @@ Allows ImageCache to work with different file systems (embedded flash, SD card, 
 
 ---
 
-### ``bool open()=0``
+### `bool open()=0`
 
 
         
@@ -39,7 +39,7 @@ Allows ImageCache to work with different file systems (embedded flash, SD card, 
 
 ---
 
-### ``void close()=0``
+### `void close()=0`
 
 
         
@@ -49,7 +49,7 @@ Allows ImageCache to work with different file systems (embedded flash, SD card, 
 
 ---
 
-### ``size_t read(uint8_t *buffer, size_t length)=0``
+### `size_t read(uint8_t *buffer, size_t length)=0`
 
 
         
@@ -59,7 +59,7 @@ Allows ImageCache to work with different file systems (embedded flash, SD card, 
 
 ---
 
-### ``bool seek(size_t position)=0``
+### `bool seek(size_t position)=0`
 
 
         
@@ -69,7 +69,7 @@ Allows ImageCache to work with different file systems (embedded flash, SD card, 
 
 ---
 
-### ``size_t size() const =0 const``
+### `size_t size() const =0 const`
 
 
         

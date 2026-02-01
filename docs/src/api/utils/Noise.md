@@ -19,7 +19,7 @@ Provides Perlin noise and various noise functions for procedural generation and 
 
 ## Functions
 
-### ``float grad(int hash, float x, float y)``
+### `float grad(int hash, float x, float y)`
 
 Gradient function for Perlin noise. 
 
@@ -27,7 +27,7 @@ paramhashHash value xX coordinate yY coordinate returnGradient value
 
 ---
 
-### ``float pnoise(float x, float y, int px, int py)``
+### `float pnoise(float x, float y, int px, int py)`
 
 2D Perlin noise function 
 
@@ -35,7 +35,7 @@ paramxX coordinate yY coordinate pxPeriod in X direction (for tiling) pyPeriod i
 
 ---
 
-### ``uint8_t warped_pnoise(float nx, float ny, int px, int py, int seed, float warp_strength=0.5f)``
+### `uint8_t warped_pnoise(float nx, float ny, int px, int py, int seed, float warp_strength=0.5f)`
 
 Warped Perlin noise for more organic patterns. 
 
@@ -43,7 +43,7 @@ paramnxX coordinate nyY coordinate pxPeriod in X direction pyPeriod in Y directi
 
 ---
 
-### ``uint8_t value_noise(float x, float y, uint32_t seed)``
+### `uint8_t value_noise(float x, float y, uint32_t seed)`
 
 Simple value noise. 
 
@@ -51,7 +51,7 @@ paramxX coordinate yY coordinate seedRandom seed return value in range [0, 255] 
 
 ---
 
-### ``uint8_t fbm_noise(float x, float y, int octaves=4, float persistence=0.5f, float lacunarity=2.0f)``
+### `uint8_t fbm_noise(float x, float y, int octaves=4, float persistence=0.5f, float lacunarity=2.0f)`
 
 Fractal Brownian Motion (FBM) noise. 
 
@@ -59,7 +59,7 @@ paramxX coordinate yY coordinate octavesNumber of octaves persistenceAmplitude m
 
 ---
 
-### ``uint8_t cellular_noise(float x, float y, float scale=10.0f)``
+### `uint8_t cellular_noise(float x, float y, float scale=10.0f)`
 
 Cellular/Worley noise. 
 
@@ -67,7 +67,7 @@ paramxX coordinate yY coordinate scaleGrid scale returnDistance to nearest featu
 
 ---
 
-### ``uint8_t to_4bit(uint8_t noise_value)``
+### `uint8_t to_4bit(uint8_t noise_value)`
 
 Convert noise to 4-bit range. 
 
@@ -75,7 +75,7 @@ paramnoise_value8-bit noise value return4-bit noise value (0-15)
 
 ---
 
-### ``void generate_noise_texture(uint8_t *buffer, int width, int height, float scale, float offset_x, float offset_y, int noise_type=0)``
+### `void generate_noise_texture(uint8_t *buffer, int width, int height, float scale, float offset_x, float offset_y, int noise_type=0)`
 
 Generate noise texture into buffer. 
 

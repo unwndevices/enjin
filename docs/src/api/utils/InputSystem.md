@@ -19,7 +19,7 @@ Processes input events and updates  states. Handles hit testing against entity b
 
 ## Public Methods
 
-### `` InputSystem()``
+### ` InputSystem()`
 
 Constructor initializes input state. 
 
@@ -28,7 +28,7 @@ Constructor initializes input state.
 
 ---
 
-### ``virtual void update(float deltaTime) override``
+### `virtual void update(float deltaTime) override`
 
 Update input processing. 
 
@@ -36,7 +36,7 @@ paramdeltaTimeTime since last update
 
 ---
 
-### ``void onMouseMove(Point pos)``
+### `void onMouseMove(Point pos)`
 
  mouse move event. Handlestructenjin2_1_1Handlecompound
 
@@ -44,7 +44,7 @@ paramposNew mouse position
 
 ---
 
-### ``void onMousePress(Point pos)``
+### `void onMousePress(Point pos)`
 
  mouse button press. Handlestructenjin2_1_1Handlecompound
 
@@ -52,7 +52,7 @@ paramposMouse position
 
 ---
 
-### ``void onMouseRelease(Point pos)``
+### `void onMouseRelease(Point pos)`
 
  mouse button release. Handlestructenjin2_1_1Handlecompound
 
@@ -60,7 +60,7 @@ paramposMouse position
 
 ---
 
-### ``virtual int getPriority() const override const``
+### `virtual int getPriority() const override const`
 
 Get system priority (input should run first). 
 

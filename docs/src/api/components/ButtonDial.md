@@ -19,7 +19,7 @@ A drawable dial component with multiple buttons arranged in a circle. Used for s
 
 ## Public Methods
 
-### `` ButtonDial(Object *owner, uint8_t outerRadius, uint8_t innerRadius, uint8_t buttonCount)``
+### ` ButtonDial(Object *owner, uint8_t outerRadius, uint8_t innerRadius, uint8_t buttonCount)`
 
 Construct a new  component. ButtonDialclassenjin2_1_1ButtonDialcompound
 
@@ -27,7 +27,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ---
 
-### ``void onCreate() override``
+### `void onCreate() override`
 
 
         
@@ -37,7 +37,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ---
 
-### ``void onUpdate(float deltaTime) override``
+### `void onUpdate(float deltaTime) override`
 
 
         
@@ -47,7 +47,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ---
 
-### ``void draw(ICanvas&lt; uint8_t &gt; &canvas)``
+### `void draw(ICanvas< uint8_t > &canvas)`
 
 Draw the button dial to the canvas. 
 
@@ -55,7 +55,7 @@ paramcanvasThe canvas to draw to
 
 ---
 
-### ``void setSelectedButton(int id)``
+### `void setSelectedButton(int id)`
 
 Set the selected button. 
 
@@ -63,7 +63,7 @@ paramidButton ID (0 to buttonCount-1, -1 for no selection)
 
 ---
 
-### ``int getSelectedButton() const const``
+### `int getSelectedButton() const const`
 
 Get the currently selected button. 
 
@@ -71,7 +71,7 @@ returnButton ID (-1 if no selection)
 
 ---
 
-### ``void setColor(uint8_t newColor)``
+### `void setColor(uint8_t newColor)`
 
 Set the dial color. 
 
@@ -79,7 +79,7 @@ paramnewColorColor value (0-15 for 4-bit grayscale)
 
 ---
 
-### ``uint8_t getButtonCount() const const``
+### `uint8_t getButtonCount() const const`
 
 Get the number of buttons. 
 

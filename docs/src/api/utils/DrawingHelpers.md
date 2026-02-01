@@ -19,7 +19,7 @@ Provides optimized drawing functions for complex shapes that aren't covered by t
 
 ## Functions
 
-### ``void drawCircleStroke(ICanvas&lt; uint8_t &gt; &canvas, int16_t x0, int16_t y0, int16_t radius, uint8_t color, uint8_t strokeWidth)``
+### `void drawCircleStroke(ICanvas< uint8_t > &canvas, int16_t x0, int16_t y0, int16_t radius, uint8_t color, uint8_t strokeWidth)`
 
 Draw a circle with a stroke of specified width (matches original Enjin). 
 
@@ -27,7 +27,7 @@ paramcanvasThe canvas to draw on x0The x-coordinate of the center of the circle 
 
 ---
 
-### ``void drawArcStroke(ICanvas&lt; uint8_t &gt; &canvas, int16_t x0, int16_t y0, int16_t radius, float startAngle, float endAngle, uint8_t color, uint8_t strokeWidth)``
+### `void drawArcStroke(ICanvas< uint8_t > &canvas, int16_t x0, int16_t y0, int16_t radius, float startAngle, float endAngle, uint8_t color, uint8_t strokeWidth)`
 
 Draw an arc with stroke. 
 
@@ -35,7 +35,7 @@ paramcanvasThe canvas to draw on x0Center X coordinate y0Center Y coordinate rad
 
 ---
 
-### ``void drawPolygon(ICanvas&lt; uint8_t &gt; &canvas, const Point *points, uint8_t numPoints, uint8_t color, bool filled=false)``
+### `void drawPolygon(ICanvas< uint8_t > &canvas, const Point *points, uint8_t numPoints, uint8_t color, bool filled=false)`
 
 Draw a polygon from a set of points. 
 
@@ -43,7 +43,7 @@ paramcanvasThe canvas to draw on pointsArray of points defining the polygon numP
 
 ---
 
-### ``void drawRoundedRect(ICanvas&lt; uint8_t &gt; &canvas, int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t radius, uint8_t color, bool filled=false)``
+### `void drawRoundedRect(ICanvas< uint8_t > &canvas, int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t radius, uint8_t color, bool filled=false)`
 
 Draw a rounded rectangle. 
 
@@ -51,7 +51,7 @@ paramcanvasThe canvas to draw on xX coordinate of top-left corner yY coordinate 
 
 ---
 
-### ``void drawThickLine(ICanvas&lt; uint8_t &gt; &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint8_t color, uint8_t thickness)``
+### `void drawThickLine(ICanvas< uint8_t > &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint8_t color, uint8_t thickness)`
 
 Draw a thick line with rounded end caps. 
 
@@ -59,7 +59,7 @@ paramcanvasThe canvas to draw on x0Start X coordinate y0Start Y coordinate x1End
 
 ---
 
-### ``void drawBezierCurve(ICanvas&lt; uint8_t &gt; &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3, uint8_t color, uint8_t segments=20)``
+### `void drawBezierCurve(ICanvas< uint8_t > &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3, uint8_t color, uint8_t segments=20)`
 
 Draw a bezier curve. 
 
@@ -67,7 +67,7 @@ paramcanvasThe canvas to draw on x0Start point X y0Start point Y x1Control point
 
 ---
 
-### ``void drawStar(ICanvas&lt; uint8_t &gt; &canvas, int16_t centerX, int16_t centerY, uint8_t outerRadius, uint8_t innerRadius, uint8_t numPoints, uint8_t color, bool filled=false)``
+### `void drawStar(ICanvas< uint8_t > &canvas, int16_t centerX, int16_t centerY, uint8_t outerRadius, uint8_t innerRadius, uint8_t numPoints, uint8_t color, bool filled=false)`
 
 Draw a star shape. 
 

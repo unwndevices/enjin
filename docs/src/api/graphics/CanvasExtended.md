@@ -9,7 +9,7 @@ sidebar_label: CanvasExtended
 Extended canvas functionality for advanced graphics operations. 
 
 
-templateparamTCanvasCanvas type that implements  ICanvas&lt;TPixel&gt;classenjin2_1_1ICanvascompound
+templateparamTCanvasCanvas type that implements  ICanvas<TPixel>classenjin2_1_1ICanvascompound
 
 ---
 
@@ -19,7 +19,7 @@ templateparamTCanvasCanvas type that implements  ICanvas&lt;TPixel&gt;classenjin
 
 ## Public Methods
 
-### ``static void drawLine(TCanvas &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, PixelType color)``
+### `static void drawLine(TCanvas &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, PixelType color)`
 
 Draw a line using Bresenham's algorithm. 
 
@@ -28,7 +28,7 @@ Draw a line using Bresenham's algorithm.
 
 ---
 
-### ``static void drawHLine(TCanvas &canvas, int16_t x, int16_t y, int16_t w, PixelType color)``
+### `static void drawHLine(TCanvas &canvas, int16_t x, int16_t y, int16_t w, PixelType color)`
 
 Draw a horizontal line. 
 
@@ -37,7 +37,7 @@ Draw a horizontal line.
 
 ---
 
-### ``static void drawVLine(TCanvas &canvas, int16_t x, int16_t y, int16_t h, PixelType color)``
+### `static void drawVLine(TCanvas &canvas, int16_t x, int16_t y, int16_t h, PixelType color)`
 
 Draw a vertical line. 
 
@@ -46,7 +46,7 @@ Draw a vertical line.
 
 ---
 
-### ``static void drawRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, PixelType color)``
+### `static void drawRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, PixelType color)`
 
 Draw a rectangle outline. 
 
@@ -55,7 +55,7 @@ Draw a rectangle outline.
 
 ---
 
-### ``static void fillRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, PixelType color)``
+### `static void fillRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, PixelType color)`
 
 Fill a rectangle. 
 
@@ -64,7 +64,7 @@ Fill a rectangle.
 
 ---
 
-### ``static void drawCircle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, PixelType color)``
+### `static void drawCircle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, PixelType color)`
 
 Draw a circle using midpoint circle algorithm. 
 
@@ -73,7 +73,7 @@ Draw a circle using midpoint circle algorithm.
 
 ---
 
-### ``static void fillCircle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, PixelType color)``
+### `static void fillCircle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, PixelType color)`
 
 Fill a circle. 
 
@@ -82,7 +82,7 @@ Fill a circle.
 
 ---
 
-### ``static void fillCircleHelper(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, uint8_t corners, int16_t delta, PixelType color)``
+### `static void fillCircleHelper(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, uint8_t corners, int16_t delta, PixelType color)`
 
 Circle helper for fill operations. 
 
@@ -91,7 +91,7 @@ Circle helper for fill operations.
 
 ---
 
-### ``static void drawCircleHelper(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, uint8_t cornername, PixelType color)``
+### `static void drawCircleHelper(TCanvas &canvas, int16_t x0, int16_t y0, int16_t r, uint8_t cornername, PixelType color)`
 
 Draw circle helper for rounded rectangles. 
 
@@ -100,7 +100,7 @@ Draw circle helper for rounded rectangles.
 
 ---
 
-### ``static void drawTriangle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, PixelType color)``
+### `static void drawTriangle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, PixelType color)`
 
 Draw a triangle outline. 
 
@@ -109,7 +109,7 @@ Draw a triangle outline.
 
 ---
 
-### ``static void fillTriangle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, PixelType color)``
+### `static void fillTriangle(TCanvas &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, PixelType color)`
 
 Fill a triangle with scanline algorithm. 
 
@@ -118,7 +118,7 @@ Fill a triangle with scanline algorithm.
 
 ---
 
-### ``static void drawRoundRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, PixelType color)``
+### `static void drawRoundRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, PixelType color)`
 
 Draw a rounded rectangle. 
 
@@ -127,7 +127,7 @@ Draw a rounded rectangle.
 
 ---
 
-### ``static void fillRoundRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, PixelType color)``
+### `static void fillRoundRect(TCanvas &canvas, int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, PixelType color)`
 
 Fill a rounded rectangle. 
 
@@ -136,7 +136,7 @@ Fill a rounded rectangle.
 
 ---
 
-### ``static void drawBitmap(TCanvas &canvas, int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, PixelType color)``
+### `static void drawBitmap(TCanvas &canvas, int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, PixelType color)`
 
 Draw bitmap at specified location. 
 
@@ -145,7 +145,7 @@ Draw bitmap at specified location.
 
 ---
 
-### ``static void drawGrayscaleBitmap(TCanvas &canvas, int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h)``
+### `static void drawGrayscaleBitmap(TCanvas &canvas, int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h)`
 
 Draw grayscale bitmap (Enjin-style). 
 
@@ -154,7 +154,7 @@ Draw grayscale bitmap (Enjin-style).
 
 ---
 
-### ``static void drawGrayscaleBitmap(TCanvas &canvas, int16_t x, int16_t y, const uint8_t *bitmap, const uint8_t *mask, int16_t w, int16_t h)``
+### `static void drawGrayscaleBitmap(TCanvas &canvas, int16_t x, int16_t y, const uint8_t *bitmap, const uint8_t *mask, int16_t w, int16_t h)`
 
 Draw grayscale bitmap with mask. 
 
@@ -163,7 +163,7 @@ Draw grayscale bitmap with mask.
 
 ---
 
-### ``static void blit(TCanvas &dst, const TSrcCanvas &src, int16_t dx, int16_t dy)``
+### `static void blit(TCanvas &dst, const TSrcCanvas &src, int16_t dx, int16_t dy)`
 
 Blit (copy) from one canvas to another. 
 
@@ -172,7 +172,7 @@ Blit (copy) from one canvas to another.
 
 ---
 
-### ``static void blit(TCanvas &dst, const TSrcCanvas &src, int16_t dx, int16_t dy, int16_t w, int16_t h, int16_t sx=0, int16_t sy=0)``
+### `static void blit(TCanvas &dst, const TSrcCanvas &src, int16_t dx, int16_t dy, int16_t w, int16_t h, int16_t sx=0, int16_t sy=0)`
 
 Blit with specified dimensions and source offset. 
 

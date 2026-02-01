@@ -21,7 +21,7 @@ sidebar_label: HandlePool
 
 ## Public Methods
 
-### `` HandlePool()``
+### ` HandlePool()`
 
 
         
@@ -31,7 +31,7 @@ sidebar_label: HandlePool
 
 ---
 
-### ``< T >Handlestructenjin2_1_1Handlecompound create()``
+### `< T >Handlestructenjin2_1_1Handlecompound create()`
 
 
         
@@ -41,7 +41,7 @@ sidebar_label: HandlePool
 
 ---
 
-### ``void destroy(Handle&lt; T &gt; handle)``
+### `void destroy(Handle< T > handle)`
 
 
         
@@ -51,7 +51,7 @@ sidebar_label: HandlePool
 
 ---
 
-### ``T * get(Handle&lt; T &gt; handle)``
+### `T * get(Handle< T > handle)`
 
 
         
@@ -61,7 +61,7 @@ sidebar_label: HandlePool
 
 ---
 
-### ``const T * get(Handle&lt; T &gt; handle) const const``
+### `const T * get(Handle< T > handle) const const`
 
 
         
@@ -71,7 +71,7 @@ sidebar_label: HandlePool
 
 ---
 
-### ``bool isValid(Handle&lt; T &gt; handle) const const``
+### `bool isValid(Handle< T > handle) const const`
 
 
         

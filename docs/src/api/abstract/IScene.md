@@ -20,7 +20,7 @@ Both enjin1 and enjin2 can implement this interface for compile-time polymorphis
 
 ## Public Methods
 
-### ``virtual  ~IScene()=default``
+### `virtual  ~IScene()=default`
 
 Virtual destructor for proper cleanup through base pointer. 
 
@@ -29,7 +29,7 @@ Virtual destructor for proper cleanup through base pointer.
 
 ---
 
-### ``void onCreate()=0``
+### `void onCreate()=0`
 
 Called when scene is created. 
 
@@ -37,7 +37,7 @@ Called once when the scene is first created. Override to set up initial objects 
 
 ---
 
-### ``void onActivate()=0``
+### `void onActivate()=0`
 
 Called when scene becomes active. 
 
@@ -45,7 +45,7 @@ Called when the scene becomes the active scene. Use this to resume animations, s
 
 ---
 
-### ``void onDeactivate()=0``
+### `void onDeactivate()=0`
 
 Called when scene becomes inactive. 
 
@@ -53,7 +53,7 @@ Called when the scene is no longer active. Use this to pause animations, stop ba
 
 ---
 
-### ``void onDestroy()=0``
+### `void onDestroy()=0`
 
 Called when scene is destroyed. 
 
@@ -61,7 +61,7 @@ Use this to clean up scene-specific resources.
 
 ---
 
-### ``void onUpdate(uint16_t deltaTime)=0``
+### `void onUpdate(uint16_t deltaTime)=0`
 
 Called every frame during update. 
 
@@ -70,7 +70,7 @@ Use this for scene-specific update logic that should happen before object update
 
 ---
 
-### ``void onRender(ICanvas&lt; PixelType &gt; &canvas)=0``
+### `void onRender(ICanvas< PixelType > &canvas)=0`
 
 Called during rendering. 
 
@@ -79,7 +79,7 @@ Use this for scene-specific rendering like backgrounds or UI overlays. paramcanv
 
 ---
 
-### ``uint32_t getId() const =0 const``
+### `uint32_t getId() const =0 const`
 
 Get scene ID. 
 
@@ -87,7 +87,7 @@ return identifier Sceneclassenjin2_1_1Scenecompound
 
 ---
 
-### ``bool isActive() const =0 const``
+### `bool isActive() const =0 const`
 
 Check if scene is active. 
 
@@ -95,7 +95,7 @@ returnTrue if scene is active
 
 ---
 
-### ``bool isInitialized() const =0 const``
+### `bool isInitialized() const =0 const`
 
 Check if scene is initialized. 
 

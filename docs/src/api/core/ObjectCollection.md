@@ -19,7 +19,7 @@ Provides static allocation-based management of objects with lifecycle control an
 
 ## Public Methods
 
-### `` ObjectCollection()``
+### ` ObjectCollection()`
 
 Constructor. 
 
@@ -28,7 +28,7 @@ Constructor.
 
 ---
 
-### `` ~ObjectCollection()=default``
+### ` ~ObjectCollection()=default`
 
 Destructor. 
 
@@ -37,7 +37,7 @@ Destructor.
 
 ---
 
-### ``void initialize()``
+### `void initialize()`
 
 Initialize the collection. 
 
@@ -45,7 +45,7 @@ Calls awake() on all objects in the collection.
 
 ---
 
-### ``void start()``
+### `void start()`
 
 Start the collection. 
 
@@ -53,7 +53,7 @@ Calls  on all objects in the collection. start()classenjin2_1_1ObjectCollection_
 
 ---
 
-### ``void update(uint16_t deltaTime)``
+### `void update(uint16_t deltaTime)`
 
 Update all objects in the collection. 
 
@@ -61,7 +61,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### ``void lateUpdate(uint16_t deltaTime)``
+### `void lateUpdate(uint16_t deltaTime)`
 
 Late update all objects in the collection. 
 
@@ -69,7 +69,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### ``T * addObject(Args &&... args)``
+### `T * addObject(Args &&... args)`
 
 Add an object to the collection. 
 
@@ -77,7 +77,7 @@ templateparamT type (must derive from ) Objectclassenjin2_1_1ObjectcompoundObjec
 
 ---
 
-### ``bool removeObject(Object *object)``
+### `bool removeObject(Object *object)`
 
 Remove an object from the collection. 
 
@@ -85,7 +85,7 @@ paramobject to remove Objectclassenjin2_1_1ObjectcompoundreturnTrue if object wa
 
 ---
 
-### ``T * findObject()``
+### `T * findObject()`
 
 Find first object of specified type. 
 
@@ -93,7 +93,7 @@ templateparamT type Objectclassenjin2_1_1ObjectcompoundreturnPointer to object o
 
 ---
 
-### ``size_t findObjects(T **results, size_t maxResults)``
+### `size_t findObjects(T **results, size_t maxResults)`
 
 Find all objects of specified type. 
 
@@ -101,7 +101,7 @@ templateparamT type Objectclassenjin2_1_1ObjectcompoundparamresultsArray to stor
 
 ---
 
-### `` *Objectclassenjin2_1_1Objectcompound findObjectWithComponent()``
+### ` *Objectclassenjin2_1_1Objectcompound findObjectWithComponent()`
 
 Find object with component of specified type. 
 
@@ -109,7 +109,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to ob
 
 ---
 
-### ``void forEach(std::function&lt; void(Object *)&gt; func)``
+### `void forEach(std::function< void(Object *)> func)`
 
 Apply function to all objects. 
 
@@ -117,7 +117,7 @@ paramfuncFunction to apply (takes Object* parameter)
 
 ---
 
-### ``void forEachActive(std::function&lt; void(Object *)&gt; func)``
+### `void forEachActive(std::function< void(Object *)> func)`
 
 Apply function to all active objects. 
 
@@ -125,7 +125,7 @@ paramfuncFunction to apply (takes Object* parameter)
 
 ---
 
-### ``void clear()``
+### `void clear()`
 
 Clear all objects from the collection. 
 
@@ -134,7 +134,7 @@ Clear all objects from the collection.
 
 ---
 
-### ``size_t size() const const``
+### `size_t size() const const`
 
 Get number of objects in collection. 
 
@@ -142,7 +142,7 @@ return count Objectclassenjin2_1_1Objectcompound
 
 ---
 
-### ``bool empty() const const``
+### `bool empty() const const`
 
 Check if collection is empty. 
 
@@ -150,7 +150,7 @@ returnTrue if empty
 
 ---
 
-### `` *Objectclassenjin2_1_1Objectcompound getObject(size_t index)``
+### ` *Objectclassenjin2_1_1Objectcompound getObject(size_t index)`
 
 Get object at index. 
 
@@ -158,7 +158,7 @@ paramindex index Objectclassenjin2_1_1ObjectcompoundreturnPointer to object or n
 
 ---
 
-### ``const  *Objectclassenjin2_1_1Objectcompound getObject(size_t index) const const``
+### `const  *Objectclassenjin2_1_1Objectcompound getObject(size_t index) const const`
 
 Get const object at index. 
 
@@ -166,7 +166,7 @@ paramindex index Objectclassenjin2_1_1ObjectcompoundreturnPointer to object or n
 
 ---
 
-### ``void removeInactiveObjects()``
+### `void removeInactiveObjects()`
 
 Remove inactive objects from the collection. 
 

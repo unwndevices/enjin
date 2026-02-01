@@ -19,7 +19,7 @@ Provides a lightweight event system using static allocation.  can be emitted wit
 
 ## Public Methods
 
-### `` Signal()``
+### ` Signal()`
 
 Constructor. 
 
@@ -28,7 +28,7 @@ Constructor.
 
 ---
 
-### ``int connect(CallbackType callback)``
+### `int connect(CallbackType callback)`
 
 Connect a callback to this signal. 
 
@@ -36,7 +36,7 @@ paramcallbackFunction to call when signal is emitted returnConnection ID (can be
 
 ---
 
-### ``void disconnect(int connectionId)``
+### `void disconnect(int connectionId)`
 
 Disconnect a callback by connection ID. 
 
@@ -44,7 +44,7 @@ paramconnectionIdConnection ID returned by  connect()classenjin2_1_1Signal_1a384
 
 ---
 
-### ``void emit(Args... args)``
+### `void emit(Args... args)`
 
 Emit the signal, calling all connected callbacks. 
 
@@ -52,7 +52,7 @@ paramargsArguments to pass to callbacks
 
 ---
 
-### ``void disconnectAll()``
+### `void disconnectAll()`
 
 Disconnect all callbacks. 
 
@@ -61,7 +61,7 @@ Disconnect all callbacks.
 
 ---
 
-### ``size_t getConnectionCount() const const``
+### `size_t getConnectionCount() const const`
 
 Get number of active connections. 
 
@@ -69,7 +69,7 @@ returnNumber of connected callbacks
 
 ---
 
-### ``bool hasConnections() const const``
+### `bool hasConnections() const const`
 
 Check if signal has any connections. 
 
@@ -77,7 +77,7 @@ returnTrue if there are active connections
 
 ---
 
-### ``void operator()(Args... args)``
+### `void operator()(Args... args)`
 
 Operator() for emitting signals. 
 

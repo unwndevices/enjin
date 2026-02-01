@@ -19,7 +19,7 @@ Manages a collection of objects and provides lifecycle methods for scene initial
 
 ## Public Methods
 
-### `` Scene(uint32_t id)``
+### ` Scene(uint32_t id)`
 
 Constructor. 
 
@@ -27,7 +27,7 @@ paramidUnique scene identifier
 
 ---
 
-### ``virtual  ~Scene()``
+### `virtual  ~Scene()`
 
 Virtual destructor. 
 
@@ -36,7 +36,7 @@ Virtual destructor.
 
 ---
 
-### ``void initialize()``
+### `void initialize()`
 
 Initialize the scene. 
 
@@ -44,7 +44,7 @@ Called once when the scene is first created. Override to set up initial objects 
 
 ---
 
-### ``void activate()``
+### `void activate()`
 
 Activate the scene. 
 
@@ -52,7 +52,7 @@ Called when the scene becomes the active scene.
 
 ---
 
-### ``void deactivate()``
+### `void deactivate()`
 
 Deactivate the scene. 
 
@@ -60,7 +60,7 @@ Called when the scene is no longer active.
 
 ---
 
-### ``void update(uint16_t deltaTime)``
+### `void update(uint16_t deltaTime)`
 
 Update the scene. 
 
@@ -68,7 +68,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### ``void render(ICanvas&lt; PixelType &gt; &canvas)``
+### `void render(ICanvas< PixelType > &canvas)`
 
 Render the scene. 
 
@@ -76,7 +76,7 @@ paramcanvasTarget canvas for rendering
 
 ---
 
-### ``T * addObject(Args &&... args)``
+### `T * addObject(Args &&... args)`
 
 Add an object to the scene. 
 
@@ -84,7 +84,7 @@ templateparamT type (must derive from ) Objectclassenjin2_1_1ObjectcompoundObjec
 
 ---
 
-### ``bool removeObject(Object *object)``
+### `bool removeObject(Object *object)`
 
 Remove an object from the scene. 
 
@@ -92,7 +92,7 @@ paramobject to remove Objectclassenjin2_1_1ObjectcompoundreturnTrue if object wa
 
 ---
 
-### ``T * findObject()``
+### `T * findObject()`
 
 Find first object of specified type. 
 
@@ -100,7 +100,7 @@ templateparamT type Objectclassenjin2_1_1ObjectcompoundreturnPointer to object o
 
 ---
 
-### `` *Objectclassenjin2_1_1Objectcompound findObjectWithComponent()``
+### ` *Objectclassenjin2_1_1Objectcompound findObjectWithComponent()`
 
 Find object with component of specified type. 
 
@@ -108,7 +108,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to ob
 
 ---
 
-### ``uint32_t getId() const const``
+### `uint32_t getId() const const`
 
 Get scene ID. 
 
@@ -116,7 +116,7 @@ return identifier Sceneclassenjin2_1_1Scenecompound
 
 ---
 
-### ``bool isActive() const const``
+### `bool isActive() const const`
 
 Check if scene is active. 
 
@@ -124,7 +124,7 @@ returnTrue if scene is active
 
 ---
 
-### ``bool isInitialized() const const``
+### `bool isInitialized() const const`
 
 Check if scene is initialized. 
 
@@ -132,7 +132,7 @@ returnTrue if scene is initialized
 
 ---
 
-### `` &ObjectCollectionclassenjin2_1_1ObjectCollectioncompound getObjects()``
+### ` &ObjectCollectionclassenjin2_1_1ObjectCollectioncompound getObjects()`
 
 Get object collection. 
 
@@ -140,7 +140,7 @@ returnReference to object collection
 
 ---
 
-### ``const  &ObjectCollectionclassenjin2_1_1ObjectCollectioncompound getObjects() const const``
+### `const  &ObjectCollectionclassenjin2_1_1ObjectCollectioncompound getObjects() const const`
 
 Get object collection (const). 
 
@@ -148,7 +148,7 @@ returnConst reference to object collection
 
 ---
 
-### ``<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnCreate(std::function&lt; void(Scene *)&gt; callback)``
+### `<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnCreate(std::function< void(Scene *)> callback)`
 
 Connect to scene lifecycle events. 
 
@@ -157,7 +157,7 @@ Connect to scene lifecycle events.
 
 ---
 
-### ``<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnActivate(std::function&lt; void(Scene *)&gt; callback)``
+### `<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnActivate(std::function< void(Scene *)> callback)`
 
 
         
@@ -167,7 +167,7 @@ Connect to scene lifecycle events.
 
 ---
 
-### ``<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnDeactivate(std::function&lt; void(Scene *)&gt; callback)``
+### `<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnDeactivate(std::function< void(Scene *)> callback)`
 
 
         
@@ -177,7 +177,7 @@ Connect to scene lifecycle events.
 
 ---
 
-### ``<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnDestroy(std::function&lt; void(Scene *)&gt; callback)``
+### `<  * >SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnDestroy(std::function< void(Scene *)> callback)`
 
 
         
@@ -189,7 +189,7 @@ Connect to scene lifecycle events.
 
 ## Protected Methods
 
-### ``virtual void onCreate()``
+### `virtual void onCreate()`
 
 Called when scene is created (override in derived classes). 
 
@@ -197,7 +197,7 @@ Use this to initialize scene-specific data and create initial objects.
 
 ---
 
-### ``virtual void onActivate()``
+### `virtual void onActivate()`
 
 Called when scene becomes active (override in derived classes). 
 
@@ -205,7 +205,7 @@ Use this to resume animations, start background processes, etc.
 
 ---
 
-### ``virtual void onDeactivate()``
+### `virtual void onDeactivate()`
 
 Called when scene becomes inactive (override in derived classes). 
 
@@ -213,7 +213,7 @@ Use this to pause animations, stop background processes, etc.
 
 ---
 
-### ``virtual void onDestroy()``
+### `virtual void onDestroy()`
 
 Called when scene is destroyed (override in derived classes). 
 
@@ -221,7 +221,7 @@ Use this to clean up scene-specific resources.
 
 ---
 
-### ``virtual void onUpdate(uint16_t deltaTime)``
+### `virtual void onUpdate(uint16_t deltaTime)`
 
 Called every frame (override in derived classes). 
 
@@ -230,7 +230,7 @@ Use this for scene-specific update logic that should happen before object update
 
 ---
 
-### ``virtual void onRender(ICanvas&lt; Pixel4 &gt; &canvas)``
+### `virtual void onRender(ICanvas< Pixel4 > &canvas)`
 
 Called during rendering for 4-bit canvas (override in derived classes). 
 
@@ -239,7 +239,7 @@ Use this for scene-specific rendering like backgrounds or UI overlays. paramcanv
 
 ---
 
-### ``virtual void onRender(ICanvas&lt; uint8_t &gt; &canvas)``
+### `virtual void onRender(ICanvas< uint8_t > &canvas)`
 
 Called during rendering for 8-bit canvas (override in derived classes). 
 
@@ -250,7 +250,7 @@ Use this for scene-specific rendering like backgrounds or UI overlays. paramcanv
 
 ## Private Methods
 
-### ``void renderObjects(ICanvas&lt; PixelType &gt; &canvas)``
+### `void renderObjects(ICanvas< PixelType > &canvas)`
 
 Render all objects in the scene. 
 

@@ -19,7 +19,7 @@ The  class is the base class for all game entities in the Enjin system. It manag
 
 ## Public Methods
 
-### `` Object()``
+### ` Object()`
 
 Constructor. 
 
@@ -28,7 +28,7 @@ Constructor.
 
 ---
 
-### ``virtual  ~Object()=default``
+### `virtual  ~Object()=default`
 
 Virtual destructor. 
 
@@ -37,7 +37,7 @@ Virtual destructor.
 
 ---
 
-### ``virtual void awake()``
+### `virtual void awake()`
 
 Awake is called when object is created. 
 
@@ -45,7 +45,7 @@ Use this to ensure required components are present and initialize component rela
 
 ---
 
-### ``virtual void start()``
+### `virtual void start()`
 
 Start is called before the first frame update. 
 
@@ -53,7 +53,7 @@ Use this for initialization that depends on other objects being fully set up.
 
 ---
 
-### ``virtual void update(uint16_t deltaTime)``
+### `virtual void update(uint16_t deltaTime)`
 
 Update is called once per frame. 
 
@@ -61,7 +61,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### ``virtual void lateUpdate(uint16_t deltaTime)``
+### `virtual void lateUpdate(uint16_t deltaTime)`
 
 LateUpdate is called after all Update calls. 
 
@@ -69,7 +69,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 ---
 
-### ``bool isQueuedForRemoval() const const``
+### `bool isQueuedForRemoval() const const`
 
 Check if object is queued for removal (matches original Enjin). 
 
@@ -77,7 +77,7 @@ returnTrue if object should be removed
 
 ---
 
-### ``T * addComponent(Args &&... args)``
+### `T * addComponent(Args &&... args)`
 
 Add a component to this object. 
 
@@ -85,7 +85,7 @@ templateparamT type (must derive from ) Componentclassenjin2_1_1Componentcompoun
 
 ---
 
-### ``T * getComponent()``
+### `T * getComponent()`
 
 Get a component of specified type. 
 
@@ -93,7 +93,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to co
 
 ---
 
-### ``bool hasComponent() const const``
+### `bool hasComponent() const const`
 
 Check if object has a component of specified type. 
 
@@ -101,7 +101,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnTrue if compo
 
 ---
 
-### ``bool removeComponent()``
+### `bool removeComponent()`
 
 Remove a component of specified type. 
 
@@ -109,7 +109,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnTrue if compo
 
 ---
 
-### `` *C_Positionclassenjin2_1_1C__Positioncompound getPosition() const const``
+### ` *C_Positionclassenjin2_1_1C__Positioncompound getPosition() const const`
 
 Get position component (cached for performance). 
 
@@ -117,7 +117,7 @@ returnPosition component pointer or nullptr
 
 ---
 
-### ``const  *const *C_Drawableclassenjin2_1_1C__Drawablecompound getDrawables() const const``
+### `const  *const *C_Drawableclassenjin2_1_1C__Drawablecompound getDrawables() const const`
 
 Get all drawable components. 
 
@@ -125,7 +125,7 @@ returnArray of drawable component pointers
 
 ---
 
-### ``size_t getDrawableCount() const const``
+### `size_t getDrawableCount() const const`
 
 Get number of drawable components. 
 
@@ -133,7 +133,7 @@ returnNumber of drawable components
 
 ---
 
-### `` *C_Drawableclassenjin2_1_1C__Drawablecompound getDrawable(size_t index) const const``
+### ` *C_Drawableclassenjin2_1_1C__Drawablecompound getDrawable(size_t index) const const`
 
 Get drawable component by index. 
 
@@ -141,7 +141,7 @@ paramindexIndex of drawable component returnPointer to drawable component or nul
 
 ---
 
-### ``bool isActive() const const``
+### `bool isActive() const const`
 
 Check if object is active. 
 
@@ -149,7 +149,7 @@ returnTrue if active
 
 ---
 
-### ``void setActive(bool isActive)``
+### `void setActive(bool isActive)`
 
 Set object active state. 
 
@@ -157,7 +157,7 @@ paramisActiveclassenjin2_1_1Object_1a49d28edf30e20db1c42d10851fe4d63amemberNew a
 
 ---
 
-### ``size_t getComponentCount() const const``
+### `size_t getComponentCount() const const`
 
 Get total number of components. 
 
@@ -167,7 +167,7 @@ return count Componentclassenjin2_1_1Componentcompound
 
 ## Private Methods
 
-### ``std::enable_if< std::is_same< T,  >::value >::typeC_Positionclassenjin2_1_1C__Positioncompound cachePositionIfType(T *componentPtr)``
+### `std::enable_if< std::is_same< T,  >::value >::typeC_Positionclassenjin2_1_1C__Positioncompound cachePositionIfType(T *componentPtr)`
 
 Helper to cache position component only if T is  using SFINAE. C_Positionclassenjin2_1_1C__Positioncompound
 
@@ -176,7 +176,7 @@ Helper to cache position component only if T is  using SFINAE. C_Positionclassen
 
 ---
 
-### ``std::enable_if<!std::is_same< T,  >::value >::typeC_Positionclassenjin2_1_1C__Positioncompound cachePositionIfType(T *componentPtr)``
+### `std::enable_if<!std::is_same< T,  >::value >::typeC_Positionclassenjin2_1_1C__Positioncompound cachePositionIfType(T *componentPtr)`
 
 
         
@@ -186,7 +186,7 @@ Helper to cache position component only if T is  using SFINAE. C_Positionclassen
 
 ---
 
-### ``void initializeComponentCache()``
+### `void initializeComponentCache()`
 
 Initialize cached component pointers. 
 

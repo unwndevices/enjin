@@ -21,7 +21,7 @@ sidebar_label: StaticPool
 
 ## Public Methods
 
-### `` StaticPool()``
+### ` StaticPool()`
 
 
         
@@ -31,7 +31,7 @@ sidebar_label: StaticPool
 
 ---
 
-### ``T * allocate()``
+### `T * allocate()`
 
 
         
@@ -41,7 +41,7 @@ sidebar_label: StaticPool
 
 ---
 
-### ``void deallocate(T *ptr)``
+### `void deallocate(T *ptr)`
 
 
         
@@ -51,7 +51,7 @@ sidebar_label: StaticPool
 
 ---
 
-### ``size_t size() const const``
+### `size_t size() const const`
 
 
         
@@ -61,7 +61,7 @@ sidebar_label: StaticPool
 
 ---
 
-### ``size_t capacity() const const``
+### `size_t capacity() const const`
 
 
         
@@ -71,7 +71,7 @@ sidebar_label: StaticPool
 
 ---
 
-### ``bool empty() const const``
+### `bool empty() const const`
 
 
         
@@ -81,7 +81,7 @@ sidebar_label: StaticPool
 
 ---
 
-### ``bool full() const const``
+### `bool full() const const`
 
 
         

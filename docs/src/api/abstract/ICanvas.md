@@ -21,7 +21,7 @@ Provides a hardware-independent interface for all drawing operations. Concrete i
 
 ## Public Methods
 
-### ``virtual  ~ICanvas()=default``
+### `virtual  ~ICanvas()=default`
 
 Virtual destructor for proper cleanup through base pointer. 
 
@@ -30,7 +30,7 @@ Virtual destructor for proper cleanup through base pointer.
 
 ---
 
-### ``uint16_t getWidth() const =0 const``
+### `uint16_t getWidth() const =0 const`
 
 Get canvas width in pixels. 
 
@@ -38,7 +38,7 @@ returnWidth in pixels
 
 ---
 
-### ``uint16_t getHeight() const =0 const``
+### `uint16_t getHeight() const =0 const`
 
 Get canvas height in pixels. 
 
@@ -46,7 +46,7 @@ returnHeight in pixels
 
 ---
 
-### ``void setPixel(int16_t x, int16_t y, TPixel color)=0``
+### `void setPixel(int16_t x, int16_t y, TPixel color)=0`
 
 Set pixel color at specified coordinates. 
 
@@ -54,7 +54,7 @@ paramxX coordinate yY coordinate colorPixel color to set
 
 ---
 
-### ``TPixel getPixel(int16_t x, int16_t y) const =0 const``
+### `TPixel getPixel(int16_t x, int16_t y) const =0 const`
 
 Get pixel color at specified coordinates. 
 
@@ -62,7 +62,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 ---
 
-### ``void clear(TPixel color=TPixel(0))=0``
+### `void clear(TPixel color=TPixel(0))=0`
 
 Clear entire canvas to specified color. 
 
@@ -70,7 +70,7 @@ paramcolorColor to fill canvas with (default: black/zero)
 
 ---
 
-### ``void fill(const Rect &rect, TPixel color)=0``
+### `void fill(const Rect &rect, TPixel color)=0`
 
 Fill rectangular region with specified color. 
 
@@ -78,7 +78,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### ``void drawText(const char *text, int16_t x, int16_t y, TPixel color)=0``
+### `void drawText(const char *text, int16_t x, int16_t y, TPixel color)=0`
 
 Draw text at specified position. 
 
@@ -86,7 +86,7 @@ paramtextText to draw xX coordinate yY coordinate colorText color
 
 ---
 
-### ``void setTextColor(TPixel color)=0``
+### `void setTextColor(TPixel color)=0`
 
 Set text color for subsequent text operations. 
 
@@ -94,7 +94,7 @@ paramcolorText color
 
 ---
 
-### ``void setTextSize(uint8_t size)=0``
+### `void setTextSize(uint8_t size)=0`
 
 Set text size for subsequent text operations. 
 
@@ -102,7 +102,7 @@ paramsizeText scaling factor
 
 ---
 
-### ``void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, TPixel color)=0``
+### `void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, TPixel color)=0`
 
 Draw a line from (x0, y0) to (x1, y1). 
 
@@ -110,7 +110,7 @@ paramx0Start X coordinate y0Start Y coordinate x1End X coordinate y1End Y coordi
 
 ---
 
-### ``void drawRect(int16_t x, int16_t y, int16_t width, int16_t height, TPixel color)=0``
+### `void drawRect(int16_t x, int16_t y, int16_t width, int16_t height, TPixel color)=0`
 
 Draw rectangle outline. 
 
@@ -118,7 +118,7 @@ paramxTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRe
 
 ---
 
-### ``void fillRect(int16_t x, int16_t y, int16_t width, int16_t height, TPixel color)=0``
+### `void fillRect(int16_t x, int16_t y, int16_t width, int16_t height, TPixel color)=0`
 
 Draw filled rectangle. 
 
@@ -126,7 +126,7 @@ paramxTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRe
 
 ---
 
-### ``void drawCircle(int16_t x, int16_t y, int16_t radius, TPixel color)=0``
+### `void drawCircle(int16_t x, int16_t y, int16_t radius, TPixel color)=0`
 
 Draw circle outline. 
 
@@ -134,7 +134,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorLine col
 
 ---
 
-### ``void fillCircle(int16_t x, int16_t y, int16_t radius, TPixel color)=0``
+### `void fillCircle(int16_t x, int16_t y, int16_t radius, TPixel color)=0`
 
 Draw filled circle. 
 
@@ -142,7 +142,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill col
 
 ---
 
-### ``void drawBitmap(const uint8_t *bitmap, int16_t x, int16_t y, int16_t width, int16_t height, TPixel color)=0``
+### `void drawBitmap(const uint8_t *bitmap, int16_t x, int16_t y, int16_t width, int16_t height, TPixel color)=0`
 
 Draw bitmap image at specified position. 
 
@@ -150,7 +150,7 @@ parambitmapPointer to bitmap data xDestination X coordinate yDestination Y coord
 
 ---
 
-### ``void drawBitmap(const uint8_t *bitmap, uint8_t matte, int16_t x, int16_t y, int16_t width, int16_t height)=0``
+### `void drawBitmap(const uint8_t *bitmap, uint8_t matte, int16_t x, int16_t y, int16_t width, int16_t height)=0`
 
 Draw bitmap with transparency (skip pixels matching matte color). 
 
@@ -158,7 +158,7 @@ parambitmapPointer to bitmap data matteMatte color (pixels matching this are ski
 
 ---
 
-### ``virtual  ~ICanvas()=default``
+### `virtual  ~ICanvas()=default`
 
 
         
@@ -168,7 +168,7 @@ parambitmapPointer to bitmap data matteMatte color (pixels matching this are ski
 
 ---
 
-### ``uint16_t getWidth() const =0 const``
+### `uint16_t getWidth() const =0 const`
 
 Get canvas width in pixels. 
 
@@ -176,7 +176,7 @@ returnWidth in pixels
 
 ---
 
-### ``uint16_t getHeight() const =0 const``
+### `uint16_t getHeight() const =0 const`
 
 Get canvas height in pixels. 
 
@@ -184,7 +184,7 @@ returnHeight in pixels
 
 ---
 
-### ``void setPixel(int16_t x, int16_t y, TPixel color)=0``
+### `void setPixel(int16_t x, int16_t y, TPixel color)=0`
 
 Set pixel color at specified coordinates. 
 
@@ -192,7 +192,7 @@ paramxX coordinate yY coordinate colorPixel color to set
 
 ---
 
-### ``TPixel getPixel(int16_t x, int16_t y) const =0 const``
+### `TPixel getPixel(int16_t x, int16_t y) const =0 const`
 
 Get pixel color at specified coordinates. 
 
@@ -200,7 +200,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 ---
 
-### ``void clear(TPixel color=TPixel(0))=0``
+### `void clear(TPixel color=TPixel(0))=0`
 
 Clear entire canvas to specified color. 
 
@@ -208,7 +208,7 @@ paramcolorColor to fill canvas with (default: black)
 
 ---
 
-### ``void fill(const Rect &rect, TPixel color)=0``
+### `void fill(const Rect &rect, TPixel color)=0`
 
 Fill rectangular region with specified color. 
 
@@ -216,7 +216,7 @@ paramrectRectangle to fill colorColor to fill with
 
 ---
 
-### ``bool inBounds(int16_t x, int16_t y) const const``
+### `bool inBounds(int16_t x, int16_t y) const const`
 
 Check if coordinates are within canvas bounds. 
 
@@ -224,7 +224,7 @@ paramxX coordinate to check yY coordinate to check returntrue if coordinates are
 
 ---
 
-### ``Rectstructenjin2_1_1Rectcompound getBounds() const const``
+### `Rectstructenjin2_1_1Rectcompound getBounds() const const`
 
 Get canvas bounds as rectangle. 
 

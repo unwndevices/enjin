@@ -19,7 +19,7 @@ RAII wrapper that automatically disconnects when destroyed.
 
 ## Public Methods
 
-### `` SignalConnection(Signal&lt; Args... &gt; *sig, std::function&lt; void(Args...)&gt; callback)``
+### ` SignalConnection(Signal< Args... > *sig, std::function< void(Args...)> callback)`
 
 Constructor. 
 
@@ -27,7 +27,7 @@ paramsig to connect to Signalclassenjin2_1_1SignalcompoundcallbackCallback funct
 
 ---
 
-### `` SignalConnection(SignalConnection &&other) noexcept``
+### ` SignalConnection(SignalConnection &&other) noexcept`
 
 Move constructor. 
 
@@ -36,7 +36,7 @@ Move constructor.
 
 ---
 
-### `` &SignalConnectionclassenjin2_1_1SignalConnection_1accd0db24b7bbb5ff69ec86b2a5c846bamember operator=(SignalConnection &&other) noexcept``
+### ` &SignalConnectionclassenjin2_1_1SignalConnection_1accd0db24b7bbb5ff69ec86b2a5c846bamember operator=(SignalConnection &&other) noexcept`
 
 Move assignment. 
 
@@ -45,7 +45,7 @@ Move assignment.
 
 ---
 
-### `` ~SignalConnection()``
+### ` ~SignalConnection()`
 
 Destructor - automatically disconnects. 
 
@@ -54,7 +54,7 @@ Destructor - automatically disconnects.
 
 ---
 
-### ``void disconnect()``
+### `void disconnect()`
 
 Manually disconnect. 
 
@@ -63,7 +63,7 @@ Manually disconnect.
 
 ---
 
-### ``bool isConnected() const const``
+### `bool isConnected() const const`
 
 Check if connection is valid. 
 
@@ -71,7 +71,7 @@ returnTrue if connected
 
 ---
 
-### `` SignalConnection(const SignalConnection &)=delete``
+### ` SignalConnection(const SignalConnection &)=delete`
 
 
         
@@ -81,7 +81,7 @@ returnTrue if connected
 
 ---
 
-### `` &SignalConnectionclassenjin2_1_1SignalConnection_1accd0db24b7bbb5ff69ec86b2a5c846bamember operator=(const SignalConnection &)=delete``
+### ` &SignalConnectionclassenjin2_1_1SignalConnection_1accd0db24b7bbb5ff69ec86b2a5c846bamember operator=(const SignalConnection &)=delete`
 
 
         
