@@ -1,0 +1,53 @@
+---
+id: AnimationSystem
+title: AnimationSystem
+sidebar_label: AnimationSystem
+---
+
+# AnimationSystem
+
+Animation system for updating time-based animations. 
+
+
+Updates all entities with , handling timing, looping, and ping-pong behavior. AnimationComponentstructenjin2_1_1AnimationComponentcompound
+
+---
+
+**Namespace:** enjin2
+
+**Header:** include/enjin2/ui/systems.hpp
+
+## Public Methods
+
+### `cpp
+*virtual void update(float deltaTime) override*
+``
+
+Update all animations. 
+
+paramdeltaTimeTime since last update in seconds 
+
+---
+
+### `cpp
+*virtual int getPriority() const override const*
+``
+
+Get system priority (animations should run early). 
+
+returnPriority value 
+
+---
+
+## Private Methods
+
+### `cpp
+*void updateAnimation(AnimationComponent &animation, float deltaTime)*
+``
+
+Update individual animation component. 
+
+paramanimationAnimation to update deltaTimeDelta time 
+
+---
+

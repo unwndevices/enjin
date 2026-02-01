@@ -1,6 +1,4 @@
-const apiSidebarConfig = require('./api-sidebar.js');
-
-module.exports = {
+ module.exports = {
    guidesSidebar: [
      'intro',
      'getting-started',
@@ -20,6 +18,4 @@ module.exports = {
        items: ['scene-management', 'scene-transitions'],
      },
    ],
-
-   apiSidebar: apiSidebarConfig.apiSidebar,
  };
