@@ -19,37 +19,5 @@
     },
   ],
 
-  // TODO: Re-enable API sidebar when API docs are fixed (MDX syntax issues with C++ templates)
-  /*
-  apiSidebar: [
-    {
-      type: 'category',
-      label: 'Core',
-      items: [
-        'api/core/Object',
-        'api/core/Component',
-        'api/core/Scene',
-        'api/core/SceneStateMachine',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Graphics',
-      items: [
-        'api/graphics/Canvas',
-        'api/graphics/Sprite',
-        'api/graphics/TextRenderer',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Utils',
-      items: [
-        'api/utils/DrawingHelpers',
-        'api/utils/Noise',
-        'api/utils/Polar',
-      ],
-    },
-  ],
-  */
- };
+  apiSidebar: require('./api-sidebar.js').apiSidebar,
+};
