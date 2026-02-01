@@ -35,7 +35,20 @@ const config = {
     ],
   ],
 
-  plugins: [],
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'api',
+        path: 'api',
+        routeBasePath: 'api',
+        sidebarPath: 'api-sidebar.js',
+        editUrl: null,
+        showLastUpdateAuthor: false,
+        showLastUpdateTime: false,
+      },
+    ],
+  ],
 
   themeConfig: {
     image: 'img/docusaurus-social-card.jpg',
