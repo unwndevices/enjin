@@ -45,7 +45,15 @@ enjin2 works independently without any enjin1 dependencies.
 
 ### Active
 
-(None yet - use `/gsd-new-milestone` to define next milestone requirements)
+- [ ] README provides clear project description — v1.1 (Phase 7, RDME-01)
+- [ ] Features list highlighting key capabilities — v1.1 (Phase 7, RDME-02)
+- [ ] Documentation links to API, guides, GitHub Pages — v1.1 (Phase 7, RDME-03)
+- [ ] Lua dependency resolved — v1.1 (Phase 8, BLD-01)
+- [ ] Dependencies documented — v1.1 (Phase 8, BLD-02)
+- [ ] Doxygen warnings reduced (< 20) — v1.1 (Phase 9, DOC-01)
+- [ ] Public APIs documented — v1.1 (Phase 9, DOC-02)
+- [ ] Consistent documentation style — v1.1 (Phase 9, DOC-03)
+- [ ] Module overviews added — v1.1 (Phase 9, DOC-04)
 
 ### Out of Scope
 
@@ -86,4 +94,4 @@ enjin2 is a fully independent, self-contained library with:
 | Docusaurus dual-plugin setup | Separate guides and API reference | ✓ Working - Phase 6 |
 
 ---
-*Last updated: 2026-02-01 after v1.1 milestone planning*
+*Last updated: 2026-02-01 after v1.1 roadmap creation*
