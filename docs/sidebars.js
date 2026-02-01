@@ -18,6 +18,4 @@
       items: ['scene-management', 'scene-transitions'],
     },
   ],
-
-  apiSidebar: require('./api-sidebar.js').apiSidebar,
 };

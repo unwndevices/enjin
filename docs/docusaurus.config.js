@@ -26,6 +26,7 @@ const config = {
           routeBasePath: '/',
           sidebarPath: 'sidebars.js',
           editUrl: 'https://github.com/unwndevices/enjin/edit/main/docs/',
+          exclude: ['api/**'],
         },
         blog: false,
         theme: {
