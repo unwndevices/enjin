@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 6 of 6 (Create library docs, using doxygen + Docusaurus)
-Plan: 2 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-01 — Completed 06-02: Initialize Docusaurus site
+Last activity: 2026-02-01 — Completed 06-04: Create API reference pages
 
-Progress: [██████████░░░] 100% (Phase 5 complete, Phase 6: 40% complete)
+Progress: [██████████░░░] 100% (Phase 5 complete, Phase 6: 80% complete)
 
 ## Performance Metrics
 
@@ -32,11 +32,11 @@ Progress: [██████████░░░] 100% (Phase 5 complete, Phas
 | 03-feature-support | 3 | 3 | 3 min |
 | 04-validation | 4 | 4 | 8.5 min |
 | 05-final-cleanup | 1 | 1 | 7 min |
-| 06-create-library-docs | 2 | 5 | 10 min |
+ | 06-create-library-docs | 4 | 5 | 10 min |
 
 **Recent Trend:**
-- Last 3 plans: 15 min, 5 min, 5 min
-- Trend: Stable
+ - Last 3 plans: 5 min, 11 min, 11 min
+ - Trend: Stable
 
 *Updated after each plan completion*
 
@@ -81,7 +81,12 @@ Recent decisions affecting current work:
 - Docusaurus root routing: Changed routeBasePath from '/docs' to '/' to serve docs from root path (/enjin/) - provides cleaner URLs and avoids broken logo links (06-02)
 - Home page requirement: Created index.md as Docusaurus home page since navbar logo links to root path, which requires valid content (06-02)
 - API sidebar organization: Structured by module (Core, Graphics, Utils) instead of alphabetical A-Z to match project header organization (06-02)
-- CSS branding variables: Used Docusaurus CSS custom properties (--ifm-color-primary-*) instead of swizzling theme components for easier theme updates (06-02)
+ - CSS branding variables: Used Docusaurus CSS custom properties (--ifm-color-primary-*) instead of swizzling theme components for easier theme updates (06-02)
+ - XML parsing with xml2js: Use xml2js library instead of manual regex parsing for Doxygen XML to handle C++ templates, namespaces, and overloads correctly (06-04)
+ - MDX angle bracket escaping: Escape template parameters (< and >) in markdown output with HTML entities (&lt; and &gt;) to prevent MDX from interpreting them as JSX tags (06-04)
+ - Module-based API organization: Organize API reference by module (core, graphics, ui, utils, etc.) instead of alphabetical A-Z for better navigation matching project structure (06-04)
+ - Guide-to-API cross-links: Add "See Also" sections to guide pages for cross-referencing between narrative guides and API reference pages (06-04)
+ - Automated API generation: Integrate generate-api-docs.js into CMake docs target to generate both Doxygen XML and Docusaurus markdown with single command (06-04)
 
 ### Roadmap Evolution
 
@@ -102,5 +107,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Completed Plan 02 (Initialize Docusaurus site)
+Stopped at: Completed Plan 04 (Create API reference pages)
 Resume file: None
