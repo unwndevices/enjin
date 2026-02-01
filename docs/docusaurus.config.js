@@ -23,6 +23,7 @@ const config = {
       {
         docs: {
           path: 'src',
+          routeBasePath: '/',
           sidebarPath: 'sidebars.js',
           editUrl: 'https://github.com/unwndevices/enjin/edit/main/docs/',
         },
@@ -72,8 +73,8 @@ const config = {
         {
           title: 'Documentation',
           items: [
-            { label: 'Getting Started', to: '/docs/getting-started' },
-            { label: 'API Reference', to: '/api' },
+            { label: 'Getting Started', to: '/getting-started' },
+            { label: 'API Reference', to: '/api/core/Object' },
           ],
         },
         {
