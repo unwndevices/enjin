@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 
 Phase: 6 of 6 (Create library docs, using doxygen + Docusaurus)
 Plan: 6 of 6 in current phase
-Status: Gap closure - MDX syntax errors remain
-Last activity: 2026-02-01 — Partially completed 06-06: Enable API navigation (infrastructure complete, MDX errors block build)
+Status: Gap closure - MDX formatting errors block build
+Last activity: 2026-02-01 — Partially completed 06-06: API navigation configured, build blocked by MDX errors
 
-Progress: [████████████░] 90% (Phase 5 complete, Phase 6: 90% complete - MDX syntax errors)
+Progress: [████████████░] 95% (Phase 5 complete, Phase 6: 95% complete - MDX formatting issues remain)
 
 ## Performance Metrics
 

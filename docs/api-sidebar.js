@@ -1,14 +1,14 @@
-module.exports = {
-  apiSidebar: [
-    'test',    {
-      type: 'category',
-      label: 'Abstract',
-      items: [
-        'ICanvas',
-        'IComponent',
-        'IScene',
-      ],
-    },
+ module.exports = {
+   apiSidebar: [
+     {
+       type: 'category',
+       label: 'Abstract',
+       items: [
+         'ICanvas',
+         'IComponent',
+         'IScene',
+       ],
+     },
     {
       type: 'category',
       label: 'Animation',
