@@ -33,12 +33,9 @@ const config = {
         },
       },
     ],
-  ],
+   ],
 
-   // TODO: API plugin temporarily disabled due to MDX syntax issues with C++ templates
-   // Will be re-enabled in 06-04 when proper Doxygen XML to MDX conversion is implemented
-   /*
-   plugins: [
+  plugins: [
     [
       '@docusaurus/plugin-content-docs',
       {
@@ -51,7 +48,6 @@ const config = {
       },
     ],
   ],
-  */
 
   themeConfig: {
     image: 'img/docusaurus-social-card.jpg',
