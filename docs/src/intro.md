@@ -25,4 +25,4 @@ enjin2 is a lightweight C++ game engine library designed for embedded systems an
 
 [Architecture](./architecture.md) - Understand the design principles.
 
-[API Reference](/api) - Complete API documentation.
+*Note: API Reference documentation will be available in the next phase.*

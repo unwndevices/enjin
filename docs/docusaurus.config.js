@@ -35,20 +35,23 @@ const config = {
     ],
   ],
 
-  plugins: [
+   // TODO: API plugin temporarily disabled due to MDX syntax issues with C++ templates
+   // Will be re-enabled in 06-04 when proper Doxygen XML to MDX conversion is implemented
+   /*
+   plugins: [
     [
       '@docusaurus/plugin-content-docs',
       {
         id: 'api',
-        path: 'api',
+        path: 'src/api',
         routeBasePath: 'api',
         sidebarPath: 'api-sidebar.js',
-        editUrl: null,
         showLastUpdateAuthor: false,
         showLastUpdateTime: false,
       },
     ],
   ],
+  */
 
   themeConfig: {
     image: 'img/docusaurus-social-card.jpg',
@@ -66,12 +69,15 @@ const config = {
           position: 'left',
           label: 'Guides',
         },
+        // TODO: Re-enable API Reference when API docs are fixed
+        /*
         {
           type: 'docSidebar',
           sidebarId: 'apiSidebar',
           position: 'left',
           label: 'API Reference',
         },
+        */
         {
           href: 'https://github.com/unwndevices/enjin',
           label: 'GitHub',
@@ -87,7 +93,8 @@ const config = {
           title: 'Documentation',
           items: [
             { label: 'Getting Started', to: '/getting-started' },
-            { label: 'API Reference', to: '/api/core/Object' },
+            // TODO: Re-enable API Reference when API docs are fixed
+            // { label: 'API Reference', to: '/api/core/Object' },
           ],
         },
         {

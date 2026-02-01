@@ -1,4 +1,4 @@
-module.exports = {
+ module.exports = {
   guidesSidebar: [
     'intro',
     'getting-started',
@@ -19,6 +19,8 @@ module.exports = {
     },
   ],
 
+  // TODO: Re-enable API sidebar when API docs are fixed (MDX syntax issues with C++ templates)
+  /*
   apiSidebar: [
     {
       type: 'category',
@@ -49,4 +51,5 @@ module.exports = {
       ],
     },
   ],
-};
+  */
+ };

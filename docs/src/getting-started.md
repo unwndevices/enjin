@@ -45,10 +45,10 @@ int main() {
 
 ## Next Steps
 
-[Components](./components.md) - Learn the component system.
+[Components](./components.md) - Learn component system.
 
 [Canvas](./canvas.md) - Graphics operations guide.
 
 [Scene Management](./scene-management.md) - Scene system overview.
 
-[API Reference](/api) - Complete API documentation.
+*Note: API Reference documentation will be available in the next phase.*
