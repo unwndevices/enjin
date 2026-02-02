@@ -14,15 +14,30 @@ Full documentation is available at: https://unwndevices.github.io/enjin/
 - [API Reference](https://unwndevices.github.io/enjin/api) - Complete API documentation
 - [Architecture](https://unwndevices.github.io/enjin/architecture) - Design overview
 
-## Quick Start
-
-### Building
+## Installation
 
 ```bash
+git clone https://github.com/unwndevices/enjin.git
+cd enjin
 mkdir build && cd build
 cmake ..
-make
+cmake --build .
 ```
+
+## Quick Start
+
+```cpp
+#include <enjin2.hpp>
+using namespace enjin2;
+
+int main() {
+    Canvas8_128x64 canvas;
+    canvas.fillRect(10, 10, 108, 44, 15);
+    return 0;
+}
+```
+
+Creates a canvas and draws a filled rectangle.
 
 ### Running Examples
 
