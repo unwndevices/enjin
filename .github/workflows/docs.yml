@@ -12,6 +12,7 @@ on:
       - 'docs/**'
       - 'include/**'
       - '.github/workflows/docs.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
