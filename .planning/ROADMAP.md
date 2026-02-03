@@ -7,7 +7,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 ## Milestones
 
 - ✅ **v1.0 Migration + Documentation** — Phases 1-6 (shipped 2026-02-01)
-- 📋 **v1.1 Project Infrastructure & Documentation Enhancement** — Phases 7-9 (not started)
+- ✅ **v1.1 Project Infrastructure & Documentation Enhancement** — Phases 7-9 (completed 2026-02-03)
 
 ## Phases
 
@@ -26,7 +26,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 **Total:** 6 phases, 21 plans, all complete
 </details>
 
-### 📋 v1.1 Project Infrastructure & Documentation Enhancement (Not Started)
+### ✅ v1.1 Project Infrastructure & Documentation Enhancement (Completed 2026-02-03)
 
 **Milestone Goal:** Improve project accessibility with comprehensive README, fix build dependencies, and enhance documentation coverage.
 
@@ -73,7 +73,7 @@ Plans:
 - [x] 09-02: Document core, graphics, and UI module public APIs — add essential-level Doxygen comments (@brief, @param, @return) to all public APIs in these high-priority modules
 - [x] 09-03: Document scripting, animation, and utils module public APIs — add essential-level Doxygen comments to all public APIs in these medium-priority modules
 - [x] 09-04: Document abstract, compat, components, and effects module public APIs — add essential-level Doxygen comments to all public APIs in these low-priority modules
-- [ ] 09-05: Create module overview pages and verify final warnings — create @defgroup overview pages for all 10 modules, verify Doxygen warnings reduced to under 20, update tracking list with final results
+- [x] 09-05: Create module overview pages and verify final warnings — create @defgroup overview pages for all 10 modules, verify Doxygen warnings reduced to under 20, update tracking list with final results
 
 ## Progress
 
@@ -89,9 +89,9 @@ Phases execute in numeric order: 7 → 8 → 9
 | 5. Final Cleanup | v1.0 | 1/1 | Complete | 2026-01-31 |
 | 6. Create library docs | v1.0 | 7/7 | Complete | 2026-02-01 |
 | 7. README Enhancement | v1.1 | 1/1 | Complete | 2026-02-02 |
-| 8. Build System Fixes | v1.1 | 2/2 | Complete | 2026-02-03 |
- |  9. Documentation Coverage | v1.1 | 4/5 | In progress | 2026-02-03 |
- 
+ | 8. Build System Fixes | v1.1 | 2/2 | Complete | 2026-02-03 |
+| 9. Documentation Coverage | v1.1 | 5/5 | Complete | 2026-02-03 |
+
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
-- v1.1: 6/8 plans (75%)
+- v1.1: 8/8 plans complete (100%)
