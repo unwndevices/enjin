@@ -122,11 +122,6 @@ public:
      * @brief Set global number variable in Lua
      * @param name Variable name
      * @param value Number value to set
-     */
-    /**
-     * @brief Set global number variable in Lua
-     * @param name Variable name
-     * @param value Number value to set
      * @return void
      */
     void setGlobal(const std::string& name, double value);
