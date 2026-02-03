@@ -84,7 +84,11 @@ Plans:
   2. Module overview pages generated in docs/api/*/README.md for all 10 modules
   3. Module overview pages linked in Docusaurus sidebar navigation
   4. Documentation build includes module overview pages without errors
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Add group XML parsing and module overview generation functions
+- [ ] 10-02-PLAN.md — Integrate module overview generation and build verification
 
 #### Phase 11: Documentation Tracking Improvements
 **Goal**: Add automated Doxygen warning verification to CI
@@ -99,7 +103,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 7 → 8 → 9
+Phases execute in numeric order: 7 → 8 → 9 → 10 → 11
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -109,12 +113,12 @@ Phases execute in numeric order: 7 → 8 → 9
 | 4. Validation | v1.0 | 4/4 | Complete | 2026-01-31 |
 | 5. Final Cleanup | v1.0 | 1/1 | Complete | 2026-01-31 |
 | 6. Create library docs | v1.0 | 7/7 | Complete | 2026-02-01 |
- | 7. README Enhancement | v1.1 | 1/1 | Complete | 2026-02-02 |
- | 8. Build System Fixes | v1.1 | 2/2 | Complete | 2026-02-03 |
- | 9. Documentation Coverage | v1.1 | 5/5 | Complete | 2026-02-03 |
- | 10. Module Overview Generation | v1.1 | 0/0 | Pending | - |
- | 11. Documentation Tracking Improvements | v1.1 | 0/0 | Pending | - |
+  | 7. README Enhancement | v1.1 | 1/1 | Complete | 2026-02-02 |
+  | 8. Build System Fixes | v1.1 | 2/2 | Complete | 2026-02-03 |
+  | 9. Documentation Coverage | v1.1 | 5/5 | Complete | 2026-02-03 |
+  | 10. Module Overview Generation | v1.1 | 0/2 | Ready for execution | - |
+  | 11. Documentation Tracking Improvements | v1.1 | 0/0 | Pending | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
-- v1.1: 8/8 plans complete (89%) - Phases 10-11 pending gap closure
+- v1.1: 8/10 plans complete (80%) - Phase 10 ready, Phase 11 pending
