@@ -10,22 +10,22 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 8 of 9 (Build System Fixes)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-03 - Completed plan 08-02: Document all external dependencies in README.md
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-03 - Completed plan 08-01: Make Lua optional in CMake build system
 
 Milestone: v1.1 Project Infrastructure & Documentation Enhancement
 Previous: v1.0 Migration + Documentation (shipped 2026-02-01)
 
-Progress: [████████████░░░░░░░░░] 80%
-(v1.0 complete, v1.1 phases 7-8 complete)
+Progress: [████████████░░░░░░░░░] 78%
+(v1.0 complete, v1.1 phases 7 complete, phase 8 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26 (25 phase plans + 1 quick task)
+- Total plans completed: 27 (26 phase plans + 1 quick task)
 - Average duration: 5.7 min
-- Total execution time: 2.5 hours
+- Total execution time: 2.55 hours
 
 **By Phase:**
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░░] 80%
 | 05-final-cleanup | 1 | 1 | 7 min |
 | 06-create-library-docs | 7 | 7 | 9.2 min |
 | 07-readme-enhancement | 1 | 1 | 2 min |
-| 08-build-system-fixes | 2 | 2 | 5.5 min |
+| 08-build-system-fixes | 2 | 1 | 3 min |
 
 **Quick Tasks:**
 | Task | Duration |
@@ -46,7 +46,7 @@ Progress: [████████████░░░░░░░░░] 80%
 | 001-write-simple-design-document | 2 min |
 
 **Recent Trend:**
-  - Last 3 plans: 10 min, 2 min, 1.5 min
+  - Last 3 plans: 2 min, 3 min, 1.5 min
   - Trend: Stable
 
 *Updated after each plan completion*
@@ -112,8 +112,10 @@ Recent decisions:
  - GitHub Pages deployment method: Use actions/deploy-pages@v4 with GitHub Actions source instead of gh-pages branch for better integration (06-05)
  - Local preview testing: Single deploy-docs.sh script handles full build process and serves with python3 http.server for dependency-free testing (06-05)
  - Deployment documentation: Comprehensive troubleshooting section in deployment.md covers common GitHub Pages issues and configuration steps (06-05)
- - Docusaurus dual-plugin setup: Separate plugins for guides (classic preset) and API (@docusaurus/plugin-content-docs with id: 'api') with exclude: ['api/**'] in classic preset to prevent document ID conflicts (06-06)
- - API navigation configuration: Module-based sidebar (docs/api-sidebar.js) with paths without 'api/' prefix (e.g., 'core/Object' not 'api/core/Object') to match plugin's document ID generation (06-06)
+  - Docusaurus dual-plugin setup: Separate plugins for guides (classic preset) and API (@docusaurus/plugin-content-docs with id: 'api') with exclude: ['api/**'] in classic preset to prevent document ID conflicts (06-06)
+  - API navigation configuration: Module-based sidebar (docs/api-sidebar.js) with paths without 'api/' prefix (e.g., 'core/Object' not 'api/core/Object') to match plugin's document ID generation (06-06)
+  - Optional Lua dependency: Use `find_package(Lua QUIET)` instead of `REQUIRED` to allow building without Lua when ENJIN2_BUILD_LUA=OFF (08-01)
+  - Lua error messaging: Provide actionable FATAL_ERROR with installation instructions when ENJIN2_BUILD_LUA=ON but Lua is not found (08-01)
 
 ### Roadmap Evolution
 
@@ -148,5 +150,5 @@ Deferred items for future milestones:
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed plan 08-02: Document all external dependencies in README.md
+Stopped at: Completed plan 08-01: Make Lua optional in CMake build system
 Resume file: None
