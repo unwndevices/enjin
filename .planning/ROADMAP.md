@@ -26,7 +26,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 **Total:** 6 phases, 21 plans, all complete
 </details>
 
-### ✅ v1.1 Project Infrastructure & Documentation Enhancement (Completed 2026-02-03)
+### v1.1 Project Infrastructure & Documentation Enhancement (In Progress - Gap Closure)
 
 **Milestone Goal:** Improve project accessibility with comprehensive README, fix build dependencies, and enhance documentation coverage.
 
@@ -75,6 +75,27 @@ Plans:
 - [x] 09-04: Document abstract, compat, components, and effects module public APIs — add essential-level Doxygen comments to all public APIs in these low-priority modules
 - [x] 09-05: Create module overview pages and verify final warnings — create @defgroup overview pages for all 10 modules, verify Doxygen warnings reduced to under 20, update tracking list with final results
 
+#### Phase 10: Complete Module Overview Generation
+**Goal**: Generate Docusaurus module overview pages from Doxygen @defgroup annotations
+**Depends on**: Phase 9
+**Gap Closure**: Closes integration gap from v1.1 audit - module overview pages not converted to Docusaurus
+**Success Criteria** (what must be TRUE):
+  1. scripts/generate-api-docs.js parses group XML files from Doxygen output
+  2. Module overview pages generated in docs/api/*/README.md for all 10 modules
+  3. Module overview pages linked in Docusaurus sidebar navigation
+  4. Documentation build includes module overview pages without errors
+**Plans**: TBD
+
+#### Phase 11: Documentation Tracking Improvements
+**Goal**: Add automated Doxygen warning verification to CI
+**Depends on**: Phase 10
+**Gap Closure**: Closes tech debt from v1.1 audit - Doxygen warning tracking gap
+**Success Criteria** (what must be TRUE):
+  1. Doxygen WARN_LOGFILE properly created during build
+  2. CI/CD workflow verifies warning count is under 20
+  3. Fails build if warning threshold exceeded
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
@@ -88,10 +109,12 @@ Phases execute in numeric order: 7 → 8 → 9
 | 4. Validation | v1.0 | 4/4 | Complete | 2026-01-31 |
 | 5. Final Cleanup | v1.0 | 1/1 | Complete | 2026-01-31 |
 | 6. Create library docs | v1.0 | 7/7 | Complete | 2026-02-01 |
-| 7. README Enhancement | v1.1 | 1/1 | Complete | 2026-02-02 |
+ | 7. README Enhancement | v1.1 | 1/1 | Complete | 2026-02-02 |
  | 8. Build System Fixes | v1.1 | 2/2 | Complete | 2026-02-03 |
-| 9. Documentation Coverage | v1.1 | 5/5 | Complete | 2026-02-03 |
+ | 9. Documentation Coverage | v1.1 | 5/5 | Complete | 2026-02-03 |
+ | 10. Module Overview Generation | v1.1 | 0/0 | Pending | - |
+ | 11. Documentation Tracking Improvements | v1.1 | 0/0 | Pending | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
-- v1.1: 8/8 plans complete (100%)
+- v1.1: 8/8 plans complete (89%) - Phases 10-11 pending gap closure
