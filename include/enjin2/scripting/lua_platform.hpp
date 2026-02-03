@@ -43,20 +43,20 @@ namespace enjin2 {
  */
 struct LuaPlatformConfig {
 #ifdef VCV_RACK
-    static constexpr size_t MEMORY_LIMIT = 1024 * 1024;  // 1MB for desktop
-    static constexpr bool ENABLE_ALL_LIBS = true;        // Full Lua libraries
-    static constexpr bool ENABLE_FILE_IO = true;         // File operations allowed
-    static constexpr bool ENABLE_DEBUG = true;           // Debug facilities
+    static constexpr size_t MEMORY_LIMIT = 1024 * 1024;  ///< Memory limit for desktop (1MB)
+    static constexpr bool ENABLE_ALL_LIBS = true;         ///< Enable all Lua libraries on desktop
+    static constexpr bool ENABLE_FILE_IO = true;          ///< Enable file operations on desktop
+    static constexpr bool ENABLE_DEBUG = true;            ///< Enable debug facilities on desktop
 #elif defined(ESP32)
-    static constexpr size_t MEMORY_LIMIT = 64 * 1024;    // 64KB for ESP32
-    static constexpr bool ENABLE_ALL_LIBS = false;       // Minimal libraries only
-    static constexpr bool ENABLE_FILE_IO = false;        // No file I/O for security
-    static constexpr bool ENABLE_DEBUG = false;          // No debug to save memory
+    static constexpr size_t MEMORY_LIMIT = 64 * 1024;     ///< Memory limit for ESP32 (64KB)
+    static constexpr bool ENABLE_ALL_LIBS = false;        ///< Minimal libraries only on ESP32
+    static constexpr bool ENABLE_FILE_IO = false;         ///< No file I/O on ESP32 for security
+    static constexpr bool ENABLE_DEBUG = false;           ///< No debug on ESP32 to save memory
 #endif
-    
+
     // Common settings
-    static constexpr size_t STACK_SIZE = 8192;            // 8KB Lua stack
-    static constexpr int MAX_RECURSION_DEPTH = 32;       // Prevent stack overflow
+    static constexpr size_t STACK_SIZE = 8192;            ///< Lua stack size (8KB)
+    static constexpr int MAX_RECURSION_DEPTH = 32;       ///< Maximum recursion depth for stack overflow prevention
 };
 
 /**

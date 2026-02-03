@@ -12,7 +12,7 @@ const xml2js = require('xml2js');
 // Configuration
 const config = {
   xmlDir: path.join(__dirname, '..', 'docs', 'xml'),
-  outputDir: path.join(__dirname, '..', 'docs', 'src', 'api'),
+  outputDir: path.join(__dirname, '..', 'docs', 'api'),
   modules: {
     abstract: {
       classes: ['ICanvas', 'IComponent', 'IScene'],
@@ -110,6 +110,14 @@ function extractText(node) {
   return '';
 }
 
+// Escape angle brackets for MDX (prevents < > from being parsed as JSX)
+function escapeForMdx(text) {
+  if (!text) return '';
+  return text
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 // Format C++ type for display
 function formatType(type) {
   if (!type) return 'void';
@@ -119,7 +127,9 @@ function formatType(type) {
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&')
       .replace(/std::/g, '')
-      .replace(/enjin2::/g, '');
+      .replace(/enjin2::/g, '')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
   return extractText(type);
 }
@@ -140,7 +150,7 @@ function formatMethod(method) {
   if (isConstexpr) modifiers.push('constexpr');
 
   const modifiersStr = modifiers.length > 0 ? modifiers.join(' ') + ' ' : '';
-  return `${modifiersStr}${type} ${name}${args}${isConst ? ' const' : ''}`;
+  return escapeForMdx(`${modifiersStr}${type} ${name}${args}${isConst ? ' const' : ''}`);
 }
 
 // Sanitize class name for file

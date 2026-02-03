@@ -1,5 +1,17 @@
 # enjin2 Design
 
+
+```
+                        O))  O)             O) O))  
+   O))     O)) O))              O)) O))    O)    O))
+ O)   O))   O))  O))    O)) O))  O))  O))       O)) 
+O))))) O))  O))  O))    O)) O))  O))  O))     O))   
+O)          O))  O))    O)) O))  O))  O))   O))     
+  O))))    O)))  O))    O)) O)) O)))  O))  O))))))))
+                     O)))                           
+````
+
+
 ## Brief Description
 
 enjin2 is a lightweight C++ game engine designed for embedded devices and resource-constrained environments.
@@ -36,7 +48,7 @@ Maintain clean, modular architecture for long-term maintainability and extensibi
 
 **Platform Support:** ESP32-S3, Linux, Windows
 
-**Dependencies:** Minimal external libraries (Lua, Adafruit-GFX, stb_image)
+**Dependencies:** No external dependencies
 
 **Code Size:** Approximately 28,271 lines of C++ code
 

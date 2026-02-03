@@ -83,24 +83,50 @@ public:
      * @return Execution result
      */
     virtual ScriptResult callFunction(const std::string& functionName) = 0;
-    
+
     /**
-     * @brief Set global variable
+     * @brief Set global number variable
      * @param name Variable name
-     * @param value Variable value
+     * @param value Number value to set
      */
     virtual void setGlobal(const std::string& name, double value) = 0;
-    virtual void setGlobal(const std::string& name, const std::string& value) = 0;
-    virtual void setGlobal(const std::string& name, bool value) = 0;
-    
+
     /**
-     * @brief Get global variable
+     * @brief Set global string variable
+     * @param name Variable name
+     * @param value String value to set
+     */
+    virtual void setGlobal(const std::string& name, const std::string& value) = 0;
+
+    /**
+     * @brief Set global boolean variable
+     * @param name Variable name
+     * @param value Boolean value to set
+     */
+    virtual void setGlobal(const std::string& name, bool value) = 0;
+
+    /**
+     * @brief Get global number variable
      * @param name Variable name
      * @param defaultValue Default value if not found
-     * @return Variable value
+     * @return Number value
      */
     virtual double getGlobalNumber(const std::string& name, double defaultValue = 0.0) = 0;
+
+    /**
+     * @brief Get global string variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return String value
+     */
     virtual std::string getGlobalString(const std::string& name, const std::string& defaultValue = "") = 0;
+
+    /**
+     * @brief Get global boolean variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return Boolean value
+     */
     virtual bool getGlobalBool(const std::string& name, bool defaultValue = false) = 0;
     
     /**

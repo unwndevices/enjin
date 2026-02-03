@@ -32,19 +32,19 @@ private:
 public:
     /**
      * @brief Constructor for 4-bit canvas
+     * @tparam W Canvas width
+     * @tparam H Canvas height
      * @param canvas 4-bit canvas pointer
-     * @param w Canvas width
-     * @param h Canvas height
      */
     template<uint16_t W, uint16_t H>
-    LuaCanvas(Canvas4<W, H>* canvas) 
+    LuaCanvas(Canvas4<W, H>* canvas)
         : canvasPtr(canvas), is4Bit(true), width(W), height(H) {}
-    
+
     /**
      * @brief Constructor for 8-bit canvas
+     * @tparam W Canvas width
+     * @tparam H Canvas height
      * @param canvas 8-bit canvas pointer
-     * @param w Canvas width
-     * @param h Canvas height
      */
     template<uint16_t W, uint16_t H>
     LuaCanvas(Canvas8<W, H>* canvas) 

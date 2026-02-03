@@ -117,23 +117,50 @@ public:
      * @param name Table name
      */
     void createTable(const std::string& name);
-    
+
     /**
-     * @brief Set global variable in Lua
+     * @brief Set global number variable in Lua
      * @param name Variable name
-     * @param value Variable value
+     * @param value Number value to set
      */
     void setGlobal(const std::string& name, double value);
+
+    /**
+     * @brief Set global string variable in Lua
+     * @param name Variable name
+     * @param value String value to set
+     */
     void setGlobal(const std::string& name, const std::string& value);
+
+    /**
+     * @brief Set global boolean variable in Lua
+     * @param name Variable name
+     * @param value Boolean value to set
+     */
     void setGlobal(const std::string& name, bool value);
     
     /**
-     * @brief Get global variable from Lua
+     * @brief Get global number variable from Lua
      * @param name Variable name
-     * @return Variable value (or default if not found)
+     * @param defaultValue Default value if variable not found
+     * @return Number value (or default if not found)
      */
     double getGlobalNumber(const std::string& name, double defaultValue = 0.0);
+
+    /**
+     * @brief Get global string variable from Lua
+     * @param name Variable name
+     * @param defaultValue Default value if variable not found
+     * @return String value (or default if not found)
+     */
     std::string getGlobalString(const std::string& name, const std::string& defaultValue = "");
+
+    /**
+     * @brief Get global boolean variable from Lua
+     * @param name Variable name
+     * @param defaultValue Default value if variable not found
+     * @return Boolean value (or default if not found)
+     */
     bool getGlobalBool(const std::string& name, bool defaultValue = false);
     
     /**

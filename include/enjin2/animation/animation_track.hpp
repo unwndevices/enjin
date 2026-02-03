@@ -200,18 +200,30 @@ public:
     float getProgress() const {
         return duration > 0 ? static_cast<float>(currentTime) / static_cast<float>(duration) : 0.0f;
     }
-    
+
     /**
-     * @brief Connect to animation events
+     * @brief Connect to animation start event
+     * @param callback Function to call when animation starts
+     * @return Signal connection for disconnecting callback
      */
     SignalConnection<> connectOnStart(std::function<void()> callback) {
         return SignalConnection<>(&onStartSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to animation complete event
+     * @param callback Function to call when animation completes
+     * @return Signal connection for disconnecting callback
+     */
     SignalConnection<> connectOnComplete(std::function<void()> callback) {
         return SignalConnection<>(&onCompleteSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to animation update event
+     * @param callback Function to call when animation value updates
+     * @return Signal connection for disconnecting callback
+     */
     SignalConnection<T> connectOnUpdate(std::function<void(T)> callback) {
         return SignalConnection<T>(&onUpdateSignal, callback);
     }
