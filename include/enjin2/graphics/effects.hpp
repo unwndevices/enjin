@@ -2,15 +2,33 @@
 
 #include "../core/types.hpp"
 #include "canvas.hpp"
+namespace enjin2
+{
 
-namespace enjin2 {
+/**
+ * @file effects.hpp
+ * @brief Graphics effects and image processing
+ *
+ * Provides dithering, blur, and color manipulation effects
+ * for enhanced visual output.
+ */
 
-// Graphics effects for 4-bit canvas
+/**
+ * @brief Graphics effects for pixel manipulation
+ * @tparam TPixel Pixel type (e.g., Pixel4, uint8_t)
+ */
 template<typename TPixel>
 class Effects {
 public:
-    // Dithering patterns for 4-bit displays
-    static void ditherPattern(ICanvas<TPixel>& canvas, const Rect& rect, 
+    /**
+     * @brief Dither pattern for anti-aliasing
+     * @param canvas Target canvas
+     * @param rect Region to dither
+     * @param color1 First color in pattern
+     * @param color2 Second color in pattern
+     * @param pattern Dithering pattern bitmask (default: 0xAA checkerboard)
+     */
+    static void ditherPattern(ICanvas<TPixel>& canvas, const Rect& rect,
                              TPixel color1, TPixel color2, uint8_t pattern = 0xAA) {
         for (int16_t y = rect.y; y < rect.y + rect.height; ++y) {
             for (int16_t x = rect.x; x < rect.x + rect.width; ++x) {
@@ -20,14 +38,24 @@ public:
             }
         }
     }
-    
-    // Simple blur effect (box filter)
+
+    /**
+     * @brief Apply simple blur effect (box filter)
+     * @param canvas Target canvas
+     * @param rect Region to blur
+     * @param radius Blur radius in pixels (default: 1)
+     * @note Currently a placeholder for future implementation
+     */
     static void blur(ICanvas<TPixel>& canvas, const Rect& rect, uint8_t radius = 1) {
         // This would require a temporary buffer for proper implementation
         // Placeholder for future implementation
     }
-    
-    // Invert colors in a region
+
+    /**
+     * @brief Invert colors in a region
+     * @param canvas Target canvas
+     * @param rect Region to invert
+     */
     static void invert(ICanvas<TPixel>& canvas, const Rect& rect) {
         for (int16_t y = rect.y; y < rect.y + rect.height; ++y) {
             for (int16_t x = rect.x; x < rect.x + rect.width; ++x) {

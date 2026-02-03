@@ -17,9 +17,17 @@
 namespace enjin2
 {
 
+/**
+ * @file canvas.hpp
+ * @brief Canvas abstraction for drawing operations
+ *
+ * Provides hardware-independent canvas interface for drawing pixels,
+ * shapes, and text with support for 4-bit and 8-bit pixel formats.
+ */
+
     /**
-     * @brief Abstract canvas interface for drawing operations
-     * @tparam TPixel Pixel type (e.g., Pixel4, uint8_t)
+      * @brief Abstract canvas interface for drawing operations
+      * @tparam TPixel Pixel type (e.g., Pixel4, uint8_t)
      *
      * Provides a hardware-independent interface for all drawing operations.
      * Concrete implementations handle the actual pixel storage and formatting.
@@ -93,7 +101,11 @@ namespace enjin2
         }
     };
 
-    // 4-bit canvas with packed storage
+    /**
+     * @brief 4-bit canvas with packed pixel storage
+     * @tparam WIDTH Canvas width in pixels (must be even)
+     * @tparam HEIGHT Canvas height in pixels
+     */
     template <uint16_t WIDTH, uint16_t HEIGHT>
     class Canvas4 : public ICanvas<Pixel4>
     {
@@ -117,6 +129,9 @@ namespace enjin2
         }
 
     public:
+        /**
+         * @brief Constructor initializes clear canvas
+         */
         Canvas4()
         {
             clear();

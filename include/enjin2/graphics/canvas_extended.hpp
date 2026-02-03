@@ -2,7 +2,16 @@
 
 #include "canvas.hpp"
 
-namespace enjin2 {
+namespace enjin2
+{
+
+/**
+ * @file canvas_extended.hpp
+ * @brief Extended drawing operations for canvases
+ *
+ * Provides advanced drawing primitives like lines, circles,
+ * triangles, and ellipses using optimized algorithms.
+ */
 
 /**
  * @brief Extended canvas functionality for advanced graphics operations
@@ -15,6 +24,12 @@ public:
 
     /**
      * @brief Draw a line using Bresenham's algorithm
+     * @param canvas Target canvas
+     * @param x0 Starting X coordinate
+     * @param y0 Starting Y coordinate
+     * @param x1 Ending X coordinate
+     * @param y1 Ending Y coordinate
+     * @param color Line color
      */
     static void drawLine(TCanvas& canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, PixelType color) {
         int16_t dx = abs(x1 - x0);
@@ -42,6 +57,11 @@ public:
 
     /**
      * @brief Draw a horizontal line
+     * @param canvas Target canvas
+     * @param x Starting X coordinate
+     * @param y Y coordinate
+     * @param w Line width in pixels
+     * @param color Line color
      */
     static void drawHLine(TCanvas& canvas, int16_t x, int16_t y, int16_t w, PixelType color) {
         for (int16_t i = 0; i < w; i++) {
@@ -51,6 +71,11 @@ public:
 
     /**
      * @brief Draw a vertical line
+     * @param canvas Target canvas
+     * @param x X coordinate
+     * @param y Starting Y coordinate
+     * @param h Line height in pixels
+     * @param color Line color
      */
     static void drawVLine(TCanvas& canvas, int16_t x, int16_t y, int16_t h, PixelType color) {
         for (int16_t i = 0; i < h; i++) {
@@ -60,6 +85,12 @@ public:
 
     /**
      * @brief Draw a rectangle outline
+     * @param canvas Target canvas
+     * @param x X coordinate of top-left corner
+     * @param y Y coordinate of top-left corner
+     * @param w Width in pixels
+     * @param h Height in pixels
+     * @param color Rectangle outline color
      */
     static void drawRect(TCanvas& canvas, int16_t x, int16_t y, int16_t w, int16_t h, PixelType color) {
         drawHLine(canvas, x, y, w, color);
@@ -70,6 +101,12 @@ public:
 
     /**
      * @brief Fill a rectangle
+     * @param canvas Target canvas
+     * @param x X coordinate of top-left corner
+     * @param y Y coordinate of top-left corner
+     * @param w Width in pixels
+     * @param h Height in pixels
+     * @param color Fill color
      */
     static void fillRect(TCanvas& canvas, int16_t x, int16_t y, int16_t w, int16_t h, PixelType color) {
         for (int16_t j = 0; j < h; j++) {
@@ -79,6 +116,11 @@ public:
 
     /**
      * @brief Draw a circle using midpoint circle algorithm
+     * @param canvas Target canvas
+     * @param x0 Circle center X coordinate
+     * @param y0 Circle center Y coordinate
+     * @param r Circle radius in pixels
+     * @param color Circle outline color
      */
     static void drawCircle(TCanvas& canvas, int16_t x0, int16_t y0, int16_t r, PixelType color) {
         int16_t f = 1 - r;

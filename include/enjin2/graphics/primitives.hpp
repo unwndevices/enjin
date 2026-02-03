@@ -4,15 +4,34 @@
 #include "canvas.hpp"
 #include <algorithm>
 #include <cmath>
+namespace enjin2
+{
 
-namespace enjin2 {
+/**
+ * @file primitives.hpp
+ * @brief Drawing primitives for geometric shapes
+ *
+ * Provides optimized algorithms for drawing lines, circles,
+ * triangles, ellipses, and polygons on any canvas type.
+ */
 
-// Drawing primitives for 4-bit and 8-bit canvases
+/**
+ * @brief Drawing primitives for geometric shapes
+ * @tparam TPixel Pixel type (e.g., Pixel4, uint8_t)
+ */
 template<typename TPixel>
 class Primitives {
 public:
-    // Bresenham line algorithm
-    static void drawLine(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0, 
+    /**
+     * @brief Draw a line using Bresenham's algorithm
+     * @param canvas Target canvas
+     * @param x0 Starting X coordinate
+     * @param y0 Starting Y coordinate
+     * @param x1 Ending X coordinate
+     * @param y1 Ending Y coordinate
+     * @param color Line color
+     */
+    static void drawLine(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
                         int16_t x1, int16_t y1, TPixel color) {
         int16_t dx = abs(x1 - x0);
         int16_t dy = abs(y1 - y0);
