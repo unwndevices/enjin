@@ -1,3 +1,10 @@
+/**
+ * @file noise.hpp
+ * @brief Noise generation utilities for procedural content
+ *
+ * Provides Perlin noise, value noise, FBM noise, and cellular noise
+ * for textures, terrain generation, and visual effects.
+ */
 #pragma once
 
 #include <cstdint>

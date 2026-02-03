@@ -1,3 +1,10 @@
+/**
+ * @file polar.hpp
+ * @brief Polar coordinate utilities for circular UI elements and orbital motion
+ *
+ * Provides functions for converting between polar and cartesian coordinates,
+ * calculating angles and distances, and circle/ellipse calculations.
+ */
 #ifndef ENJIN2_UTILS_POLAR_HPP
 #define ENJIN2_UTILS_POLAR_HPP
 

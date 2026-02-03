@@ -1,3 +1,10 @@
+/**
+ * @file drawing_helpers.hpp
+ * @brief Drawing helper utilities for advanced shapes and effects
+ *
+ * Provides optimized drawing functions for circles with strokes, arcs,
+ * polygons, rounded rectangles, thick lines, bezier curves, and stars.
+ */
 #ifndef ENJIN2_UTILS_DRAWING_HELPERS_HPP
 #define ENJIN2_UTILS_DRAWING_HELPERS_HPP
 
