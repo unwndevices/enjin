@@ -1,0 +1,372 @@
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:98: warning: Compound enjin2::Canvas4 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:349: warning: Compound enjin2::Canvas8 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/effects.hpp:10: warning: Compound enjin2::Effects is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:56: warning: Compound enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:76: warning: Compound enjin2::HandlePool is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:12: warning: Compound enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:136: warning: Compound enjin2::StackAllocator is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:10: warning: Compound enjin2::StaticPool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:51: warning: Compound enjin2::math::TrigLUT is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:88: warning: Compound enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:414: warning: Member Canvas4_128x64_ESP32S3 (typedef) of namespace enjin2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:415: warning: Member Canvas4_256x128_ESP32S3 (typedef) of namespace enjin2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:416: warning: Member Canvas4_320x240_ESP32S3 (typedef) of namespace enjin2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/compat/types.hpp:33: warning: parameters of member enjin::Vector3::operator+ are not documented
+/home/unwn/dev/enjin/include/enjin2/compat/types.hpp:33: warning: return type of member enjin::Vector3::operator+ is not documented
+/home/unwn/dev/enjin/include/enjin2/compat/types.hpp:38: warning: parameters of member enjin::Vector3::operator- are not documented
+/home/unwn/dev/enjin/include/enjin2/compat/types.hpp:38: warning: return type of member enjin::Vector3::operator- is not documented
+/home/unwn/dev/enjin/include/enjin2/compat/types.hpp:20: warning: Member x (variable) of struct enjin::Vector3 is not documented.
+/home/unwn/dev/enjin/include/enjin2/compat/types.hpp:20: warning: Member y (variable) of struct enjin::Vector3 is not documented.
+/home/unwn/dev/enjin/include/enjin2/compat/types.hpp:20: warning: Member z (variable) of struct enjin::Vector3 is not documented.
+/home/unwn/dev/enjin/include/enjin2/abstract/icanvas.hpp:17: warning: Member PixelType (typedef) of class enjin2::ICanvas is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:31: warning: Member PixelType (typedef) of class enjin2::ICanvas is not documented.
+/home/unwn/dev/enjin/include/enjin2/animation/animation_track.hpp:198: warning: parameters of member enjin2::AnimationTrack::connectOnStart are not documented
+/home/unwn/dev/enjin/include/enjin2/animation/animation_track.hpp:198: warning: return type of member enjin2::AnimationTrack::connectOnStart is not documented
+/home/unwn/dev/enjin/include/enjin2/animation/animation_track.hpp:204: warning: Member connectOnComplete(std::function< void()> callback) (function) of class enjin2::AnimationTrack is not documented.
+/home/unwn/dev/enjin/include/enjin2/animation/animation_track.hpp:208: warning: Member connectOnUpdate(std::function< void(T)> callback) (function) of class enjin2::AnimationTrack is not documented.
+/home/unwn/dev/enjin/include/enjin2/animation/keyframe.hpp:38: warning: parameters of member enjin2::PositionKeyframe::PositionKeyframe are not documented
+/home/unwn/dev/enjin/include/enjin2/animation/keyframe.hpp:58: warning: parameters of member enjin2::FloatKeyframe::FloatKeyframe are not documented
+/home/unwn/dev/enjin/include/enjin2/animation/keyframe.hpp:78: warning: parameters of member enjin2::ColorKeyframe::ColorKeyframe are not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:275: warning: return type of member enjin2::C_Animation::getPositionTrack is not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:280: warning: return type of member enjin2::C_Animation::getScaleTrack is not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:285: warning: return type of member enjin2::C_Animation::getRotationTrack is not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:290: warning: return type of member enjin2::C_Animation::getColorTrack is not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:295: warning: parameters of member enjin2::C_Animation::setAutoStart are not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:302: warning: parameters of member enjin2::C_Animation::setUpdatePosition are not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:309: warning: parameters of member enjin2::C_Animation::setUpdateColor are not documented
+/home/unwn/dev/enjin/include/enjin2/components/animation.hpp:103: warning: parameters of member enjin2::C_Animation::update are not documented
+/home/unwn/dev/enjin/include/enjin2/components/button_dial.hpp:48: warning: Member onCreate() override (function) of class enjin2::ButtonDial is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/button_dial.hpp:50: warning: Member onUpdate(float deltaTime) override (function) of class enjin2::ButtonDial is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:88: warning: Member SetSortOrder(int order) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:89: warning: Member GetSortOrder() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:91: warning: Member SetBlendMode(BlendMode mode) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:92: warning: Member GetBlendMode() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:94: warning: Member SetDrawLayer(DrawLayer drawLayer) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:95: warning: Member GetDrawLayer() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:97: warning: Member SetVisibility(bool visibility) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:98: warning: Member GetVisibility() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:99: warning: Member isVisible() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:101: warning: Member SetAnchorPoint(Anchor anchor) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:103: warning: Member AddOffset(Point offset) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:104: warning: Member SetOffset(Point offset) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:106: warning: Member GetOffsetPosition() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:108: warning: Member SetXOffset(int16_t x) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:109: warning: Member SetYOffset(int16_t y) (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:111: warning: Member GetWidth() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:112: warning: Member GetHeight() const (function) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/drawable.hpp:59: warning: Member width (variable) of class enjin2::C_Drawable is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/fill_up_gauge.hpp:64: warning: Member onCreate() override (function) of class enjin2::FillUpGauge is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/fill_up_gauge.hpp:66: warning: Member onUpdate(float deltaTime) override (function) of class enjin2::FillUpGauge is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/image_cache.hpp:22: warning: Member open()=0 (function) of class enjin2::FileInterface is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/image_cache.hpp:23: warning: Member close()=0 (function) of class enjin2::FileInterface is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/image_cache.hpp:24: warning: Member read(uint8_t *buffer, size_t length)=0 (function) of class enjin2::FileInterface is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/image_cache.hpp:25: warning: Member seek(size_t position)=0 (function) of class enjin2::FileInterface is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/image_cache.hpp:26: warning: Member size() const =0 (function) of class enjin2::FileInterface is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/image_cache.hpp:48: warning: Member ImageCacheException(const char *message) (function) of class enjin2::ImageCacheException is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/lua_script.hpp:111: warning: Member setScriptVar(const std::string &name, const std::string &value) (function) of class enjin2::C_LuaScript is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/lua_script.hpp:112: warning: Member setScriptVar(const std::string &name, bool value) (function) of class enjin2::C_LuaScript is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/lua_script.hpp:121: warning: Member getScriptString(const std::string &name, const std::string &defaultValue="") (function) of class enjin2::C_LuaScript is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/lua_script.hpp:122: warning: Member getScriptBool(const std::string &name, bool defaultValue=false) (function) of class enjin2::C_LuaScript is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:80: warning: parameters of member enjin2::C_Planet::draw are not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:154: warning: parameters of member enjin2::C_Planet::setCoreColor are not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:162: warning: parameters of member enjin2::C_Planet::setAtmosphere are not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:173: warning: parameters of member enjin2::C_Planet::setPulsing are not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:182: warning: parameters of member enjin2::C_Planet::setRotation are not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:190: warning: parameters of member enjin2::C_Planet::setRings are not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:200: warning: return type of member enjin2::C_Planet::getRadius is not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:207: warning: return type of member enjin2::C_Planet::getCenterPosition is not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:117: warning: parameters of member enjin2::C_Planet::draw are not documented
+/home/unwn/dev/enjin/include/enjin2/components/planet.hpp:63: warning: parameters of member enjin2::C_Planet::update are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:130: warning: parameters of member enjin2::C_Probe::draw are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:232: warning: parameters of member enjin2::C_Probe::setAppearance are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:245: warning: parameters of member enjin2::C_Probe::setMovement are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:259: warning: parameters of member enjin2::C_Probe::setVelocity are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:266: warning: parameters of member enjin2::C_Probe::setPulsing are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:274: warning: parameters of member enjin2::C_Probe::setTrail are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:281: warning: parameters of member enjin2::C_Probe::setMovementBounds are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:289: warning: parameters of member enjin2::C_Probe::setScanner are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:185: warning: parameters of member enjin2::C_Probe::draw are not documented
+/home/unwn/dev/enjin/include/enjin2/components/probe.hpp:101: warning: parameters of member enjin2::C_Probe::update are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:133: warning: parameters of member enjin2::C_Satellite::draw are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:215: warning: parameters of member enjin2::C_Satellite::setParameterValue are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:222: warning: return type of member enjin2::C_Satellite::getParameterValue is not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:229: warning: parameters of member enjin2::C_Satellite::setParameterRange are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:237: warning: return type of member enjin2::C_Satellite::getScaledValue is not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:244: warning: parameters of member enjin2::C_Satellite::setScaledValue are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:253: warning: parameters of member enjin2::C_Satellite::setOrbit are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:262: warning: parameters of member enjin2::C_Satellite::setAppearance are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:271: warning: parameters of member enjin2::C_Satellite::setParameterEffects are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:280: warning: parameters of member enjin2::C_Satellite::setTrail are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:288: warning: parameters of member enjin2::C_Satellite::setConnection are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:295: warning: return type of member enjin2::C_Satellite::getAngle is not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:302: warning: parameters of member enjin2::C_Satellite::setAngle are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:178: warning: parameters of member enjin2::C_Satellite::draw are not documented
+/home/unwn/dev/enjin/include/enjin2/components/satellite.hpp:77: warning: parameters of member enjin2::C_Satellite::update are not documented
+/home/unwn/dev/enjin/include/enjin2/components/slider.hpp:44: warning: Member onCreate() override (function) of class enjin2::Slider is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/slider.hpp:46: warning: Member onUpdate(float deltaTime) override (function) of class enjin2::Slider is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/tickmarks.hpp:56: warning: Member onCreate() override (function) of class enjin2::Tickmarks is not documented.
+/home/unwn/dev/enjin/include/enjin2/components/tickmarks.hpp:58: warning: Member onUpdate(float deltaTime) override (function) of class enjin2::Tickmarks is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:23: warning: Member allocate() (function) of class enjin2::StaticPool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:34: warning: Member deallocate(T *ptr) (function) of class enjin2::StaticPool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:48: warning: Member size() const (function) of class enjin2::StaticPool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:49: warning: Member capacity() const (function) of class enjin2::StaticPool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:50: warning: Member empty() const (function) of class enjin2::StaticPool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:51: warning: Member full() const (function) of class enjin2::StaticPool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:61: warning: Member Handle(uint16_t i, uint16_t g) (function) of struct enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:63: warning: Member isValid() const (function) of struct enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:64: warning: Member invalidate() (function) of struct enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:66: warning: Member operator==(const Handle &other) const (function) of struct enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:70: warning: Member operator!=(const Handle &other) const (function) of struct enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:57: warning: Member index (variable) of struct enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:58: warning: Member generation (variable) of struct enjin2::Handle is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:90: warning: Member create() (function) of class enjin2::HandlePool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:107: warning: Member destroy(Handle< T > handle) (function) of class enjin2::HandlePool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:118: warning: Member get(Handle< T > handle) (function) of class enjin2::HandlePool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:123: warning: Member get(Handle< T > handle) const (function) of class enjin2::HandlePool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:128: warning: Member isValid(Handle< T > handle) const (function) of class enjin2::HandlePool is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:143: warning: Member StackAllocator(uint8_t *mem, size_t cap) (function) of class enjin2::StackAllocator is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:146: warning: Member allocate(size_t size, size_t alignment=sizeof(void *)) (function) of class enjin2::StackAllocator is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:159: warning: Member reset() (function) of class enjin2::StackAllocator is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:161: warning: Member getUsed() const (function) of class enjin2::StackAllocator is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/memory.hpp:162: warning: Member getRemaining() const (function) of class enjin2::StackAllocator is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/scene.hpp:210: warning: parameters of member enjin2::Scene::connectOnCreate are not documented
+/home/unwn/dev/enjin/include/enjin2/core/scene.hpp:210: warning: return type of member enjin2::Scene::connectOnCreate is not documented
+/home/unwn/dev/enjin/include/enjin2/core/scene.hpp:218: warning: Member connectOnActivate(std::function< void(Scene *)> callback) (function) of class enjin2::Scene is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/scene.hpp:223: warning: Member connectOnDeactivate(std::function< void(Scene *)> callback) (function) of class enjin2::Scene is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/scene.hpp:228: warning: Member connectOnDestroy(std::function< void(Scene *)> callback) (function) of class enjin2::Scene is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp:257: warning: parameters of member enjin2::SceneStateMachine::connectOnSceneChangeStart are not documented
+/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp:257: warning: return type of member enjin2::SceneStateMachine::connectOnSceneChangeStart is not documented
+/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp:263: warning: Member connectOnSceneChangeComplete(std::function< void(Scene *, Scene *)> callback) (function) of class enjin2::SceneStateMachine is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp:267: warning: Member connectOnTransitionStart(std::function< void(TransitionType)> callback) (function) of class enjin2::SceneStateMachine is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp:271: warning: Member connectOnTransitionProgress(std::function< void(float)> callback) (function) of class enjin2::SceneStateMachine is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/signal.hpp:179: warning: parameters of member enjin2::SignalConnection::SignalConnection are not documented
+/home/unwn/dev/enjin/include/enjin2/core/signal.hpp:188: warning: parameters of member enjin2::SignalConnection::operator= are not documented
+/home/unwn/dev/enjin/include/enjin2/core/signal.hpp:188: warning: return type of member enjin2::SignalConnection::operator= is not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:24: warning: parameters of member enjin2::Point::operator+ are not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:24: warning: return type of member enjin2::Point::operator+ is not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:29: warning: parameters of member enjin2::Point::operator- are not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:29: warning: return type of member enjin2::Point::operator- is not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:34: warning: parameters of member enjin2::Point::operator+= are not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:34: warning: return type of member enjin2::Point::operator+= is not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:41: warning: parameters of member enjin2::Point::operator-= are not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:41: warning: return type of member enjin2::Point::operator-= is not documented
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:12: warning: Member x (variable) of struct enjin2::Point is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:53: warning: Member width (variable) of struct enjin2::Size is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:70: warning: Member x (variable) of struct enjin2::Rect is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/types.hpp:71: warning: Member width (variable) of struct enjin2::Rect is not documented.
+/home/unwn/dev/enjin/include/enjin2/effects/postfx.hpp:38: warning: Member PostFxParams(float i, float s=1.0f, uint8_t t=8, uint8_t c=2) (function) of struct enjin2::PostFxParams is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:101: warning: Member PixelType (typedef) of class enjin2::Canvas4 is not documented.
+/home/unwn/dev/enjin/include/enjin2/abstract/icanvas.hpp:17: warning: Member PixelType (typedef) of class enjin2::ICanvas< Pixel4 > is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:314: warning: Member getBuffer() const (function) of class enjin2::Canvas4 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:315: warning: Member getBuffer() (function) of class enjin2::Canvas4 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:316: warning: Member getBufferSize() const (function) of class enjin2::Canvas4 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:319: warning: Member copyFrom(const Canvas4 &other, int16_t dst_x=0, int16_t dst_y=0) (function) of class enjin2::Canvas4 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:331: warning: Member blit(const Canvas4 &sprite, int16_t x, int16_t y, Pixel4 transparent=Pixel4(0)) (function) of class enjin2::Canvas4 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:352: warning: Member PixelType (typedef) of class enjin2::Canvas8 is not documented.
+/home/unwn/dev/enjin/include/enjin2/abstract/icanvas.hpp:17: warning: Member PixelType (typedef) of class enjin2::ICanvas< uint8_t > is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:413: warning: Member convertTo4bit(Canvas4< WIDTH, HEIGHT > &dst) const (function) of class enjin2::Canvas8 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:424: warning: Member getBuffer() const (function) of class enjin2::Canvas8 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:425: warning: Member getBuffer() (function) of class enjin2::Canvas8 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:430: warning: parameters of member enjin2::Canvas8::fillScreen are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:438: warning: parameters of member enjin2::Canvas8::drawPixel are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:446: warning: return type of member enjin2::Canvas8::width is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:451: warning: return type of member enjin2::Canvas8::height is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:456: warning: parameters of member enjin2::Canvas8::setTextColor are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:465: warning: parameters of member enjin2::Canvas8::setTextColor are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:474: warning: parameters of member enjin2::Canvas8::setCursor are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:483: warning: return type of member enjin2::Canvas8::getCursorX is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:488: warning: return type of member enjin2::Canvas8::getCursorY is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:493: warning: parameters of member enjin2::Canvas8::write are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:493: warning: return type of member enjin2::Canvas8::write is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:531: warning: parameters of member enjin2::Canvas8::print are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:544: warning: parameters of member enjin2::Canvas8::println are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:554: warning: parameters of member enjin2::Canvas8::drawChar are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:609: warning: Member drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size) (function) of class enjin2::Canvas8 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:618: warning: Member setTextSize(uint8_t s_x, uint8_t s_y) (function) of class enjin2::Canvas8 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:625: warning: parameters of member enjin2::Canvas8::setTextWrap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:630: warning: parameters of member enjin2::Canvas8::getTextWidth are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:630: warning: return type of member enjin2::Canvas8::getTextWidth is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:769: warning: parameters of member enjin2::Canvas8::drawRoundRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:796: warning: parameters of member enjin2::Canvas8::fillRoundRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:822: warning: parameters of member enjin2::Canvas8::fillRectWithPattern are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:849: warning: parameters of member enjin2::Canvas8::drawGrayscaleBitmap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:865: warning: parameters of member enjin2::Canvas8::drawGrayscaleBitmap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:883: warning: parameters of member enjin2::Canvas8::drawGrayscaleBitmap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:902: warning: parameters of member enjin2::Canvas8::drawGrayscaleBitmap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:921: warning: parameters of member enjin2::Canvas8::add are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:940: warning: parameters of member enjin2::Canvas8::add are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:959: warning: parameters of member enjin2::Canvas8::subtract are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:978: warning: parameters of member enjin2::Canvas8::subtract are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:997: warning: parameters of member enjin2::Canvas8::difference are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:1072: warning: parameters of member enjin2::Canvas8::charBounds are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:1146: warning: parameters of member enjin2::Canvas8::getTextBounds are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:1181: warning: parameters of member enjin2::Canvas8::fillTriangle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:736: warning: parameters of member enjin2::Canvas8::drawCircle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:668: warning: parameters of member enjin2::Canvas8::drawLine are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:657: warning: parameters of member enjin2::Canvas8::drawRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:700: warning: parameters of member enjin2::Canvas8::fillCircle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:640: warning: parameters of member enjin2::Canvas8::fillRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas.hpp:615: warning: parameters of member enjin2::Canvas8::setTextSize are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:65: warning: Member Type (enumeration) of struct enjin2::RenderCommand is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:74: warning: Member type (variable) of struct enjin2::RenderCommand is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:75: warning: Member x (variable) of struct enjin2::RenderCommand is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:75: warning: Member y (variable) of struct enjin2::RenderCommand is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:75: warning: Member w (variable) of struct enjin2::RenderCommand is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:75: warning: Member h (variable) of struct enjin2::RenderCommand is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:76: warning: Member color (variable) of struct enjin2::RenderCommand is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:125: warning: parameters of member enjin2::Canvas4_ESP32S3::setPixel are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:138: warning: parameters of member enjin2::Canvas4_ESP32S3::getPixel are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:138: warning: return type of member enjin2::Canvas4_ESP32S3::getPixel is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:156: warning: parameters of member enjin2::Canvas4_ESP32S3::drawHorizontalLine are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:216: warning: parameters of member enjin2::Canvas4_ESP32S3::drawVerticalLine are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:237: warning: parameters of member enjin2::Canvas4_ESP32S3::fillRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:251: warning: parameters of member enjin2::Canvas4_ESP32S3::fillCircle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:292: warning: parameters of member enjin2::Canvas4_ESP32S3::clear are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:319: warning: return type of member enjin2::Canvas4_ESP32S3::getData is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:324: warning: return type of member enjin2::Canvas4_ESP32S3::getDataSize is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:88: warning: Member width (variable) of class enjin2::Canvas4_ESP32S3 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:89: warning: Member height (variable) of class enjin2::Canvas4_ESP32S3 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:90: warning: Member dataSize (variable) of class enjin2::Canvas4_ESP32S3 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_esp32s3.hpp:93: warning: Member alignedSize (variable) of class enjin2::Canvas4_ESP32S3 is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:14: warning: Member PixelType (typedef) of class enjin2::CanvasExtended is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:17: warning: parameters of member enjin2::CanvasExtended::drawLine are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:44: warning: parameters of member enjin2::CanvasExtended::drawHLine are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:53: warning: parameters of member enjin2::CanvasExtended::drawVLine are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:62: warning: parameters of member enjin2::CanvasExtended::drawRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:72: warning: parameters of member enjin2::CanvasExtended::fillRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:81: warning: parameters of member enjin2::CanvasExtended::drawCircle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:117: warning: parameters of member enjin2::CanvasExtended::fillCircle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:125: warning: parameters of member enjin2::CanvasExtended::fillCircleHelper are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:162: warning: parameters of member enjin2::CanvasExtended::drawCircleHelper are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:201: warning: parameters of member enjin2::CanvasExtended::drawTriangle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:210: warning: parameters of member enjin2::CanvasExtended::fillTriangle are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:244: warning: parameters of member enjin2::CanvasExtended::drawRoundRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:261: warning: parameters of member enjin2::CanvasExtended::fillRoundRect are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:279: warning: parameters of member enjin2::CanvasExtended::drawBitmap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:292: warning: parameters of member enjin2::CanvasExtended::drawGrayscaleBitmap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:306: warning: parameters of member enjin2::CanvasExtended::drawGrayscaleBitmap are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:322: warning: parameters of member enjin2::CanvasExtended::blit are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/canvas_extended.hpp:330: warning: parameters of member enjin2::CanvasExtended::blit are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/effects.hpp:13: warning: Member ditherPattern(ICanvas< TPixel > &canvas, const Rect &rect, TPixel color1, TPixel color2, uint8_t pattern=0xAA) (function) of class enjin2::Effects is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/effects.hpp:25: warning: Member blur(ICanvas< TPixel > &canvas, const Rect &rect, uint8_t radius=1) (function) of class enjin2::Effects is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/effects.hpp:31: warning: Member invert(ICanvas< TPixel > &canvas, const Rect &rect) (function) of class enjin2::Effects is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:15: warning: Member drawLine(ICanvas< TPixel > &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:43: warning: Member drawRect(ICanvas< TPixel > &canvas, const Rect &rect, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:59: warning: Member fillRect(ICanvas< TPixel > &canvas, const Rect &rect, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:64: warning: Member drawCircle(ICanvas< TPixel > &canvas, int16_t cx, int16_t cy, int16_t radius, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:92: warning: Member fillCircle(ICanvas< TPixel > &canvas, int16_t cx, int16_t cy, int16_t radius, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:105: warning: Member drawTriangle(ICanvas< TPixel > &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:113: warning: Member fillTriangle(ICanvas< TPixel > &canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:143: warning: Member drawEllipse(ICanvas< TPixel > &canvas, int16_t cx, int16_t cy, int16_t rx, int16_t ry, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:195: warning: Member drawArc(ICanvas< TPixel > &canvas, int16_t cx, int16_t cy, int16_t radius, float start_angle, float end_angle, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp:214: warning: Member drawPolygon(ICanvas< TPixel > &canvas, const Point *vertices, size_t vertex_count, TPixel color) (function) of class enjin2::Primitives is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:158: warning: Member setTexture(const uint8_t *texture_data, uint8_t w, uint8_t h) (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:164: warning: Member setTexture(const uint8_t *texture_data, uint8_t frame_id) (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:169: warning: Member setTexture(uint8_t frame_id) (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:173: warning: Member setPosition(int16_t x, int16_t y) (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:178: warning: Member setPosition(Point pos) (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:182: warning: Member setMatte(uint8_t matte_color) (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:187: warning: Member GetTexture() const (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:192: warning: Member GetWidth() const (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:193: warning: Member GetHeight() const (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:194: warning: Member getFrame() const (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:195: warning: Member getPosition() const (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:196: warning: Member getMatte() const (function) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:199: warning: Member _width (variable) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:199: warning: Member _height (variable) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:199: warning: Member _frame (variable) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:200: warning: Member _position (variable) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:201: warning: Member _matte (variable) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/sprite.hpp:202: warning: Member _mode (variable) of class enjin2::Sprite is not documented.
+/home/unwn/dev/enjin/include/enjin2/graphics/text_renderer.hpp:416: warning: parameters of member enjin2::TextRenderer::getCharWidth are not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/text_renderer.hpp:416: warning: return type of member enjin2::TextRenderer::getCharWidth is not documented
+/home/unwn/dev/enjin/include/enjin2/graphics/text_renderer.hpp:429: warning: return type of member enjin2::TextRenderer::getCharHeight is not documented
+/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp:28: warning: argument 'w' of command @param is not found in the argument list of enjin2::LuaCanvas::LuaCanvas(Canvas4< W, H > *canvas)
+/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp:28: warning: argument 'h' of command @param is not found in the argument list of enjin2::LuaCanvas::LuaCanvas(Canvas4< W, H > *canvas)
+/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp:38: warning: argument 'w' of command @param is not found in the argument list of enjin2::LuaCanvas::LuaCanvas(Canvas8< W, H > *canvas)
+/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp:38: warning: argument 'h' of command @param is not found in the argument list of enjin2::LuaCanvas::LuaCanvas(Canvas8< W, H > *canvas)
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:120: warning: Member setGlobal(const std::string &name, const std::string &value) (function) of class enjin2::LuaEngine is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:121: warning: Member setGlobal(const std::string &name, bool value) (function) of class enjin2::LuaEngine is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:129: warning: Member getGlobalString(const std::string &name, const std::string &defaultValue="") (function) of class enjin2::LuaEngine is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:130: warning: Member getGlobalBool(const std::string &name, bool defaultValue=false) (function) of class enjin2::LuaEngine is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:125: warning: The following parameter of enjin2::LuaEngine::getGlobalNumber(const std::string &name, double defaultValue=0.0) is not documented:
+  parameter 'defaultValue'
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:50: warning: Member setGlobal(const std::string &name, const std::string &value) override (function) of class enjin2::LuaInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:51: warning: Member setGlobal(const std::string &name, bool value) override (function) of class enjin2::LuaInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:54: warning: Member getGlobalString(const std::string &name, const std::string &defaultValue="") override (function) of class enjin2::LuaInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:55: warning: Member getGlobalBool(const std::string &name, bool defaultValue=false) override (function) of class enjin2::LuaInterpreter is not documented.
+<getGlobalBool>:1: warning: parameters of member enjin2::LuaInterpreter::getGlobalBool are not documented
+<getGlobalString>:1: warning: parameters of member enjin2::LuaInterpreter::getGlobalString are not documented
+<setGlobal>:1: warning: parameters of member enjin2::LuaInterpreter::setGlobal are not documented
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:126: warning: Member setGlobal(const std::string &name, const std::string &value) override (function) of class enjin2::MinimalLuaInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:127: warning: Member setGlobal(const std::string &name, bool value) override (function) of class enjin2::MinimalLuaInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:130: warning: Member getGlobalString(const std::string &name, const std::string &defaultValue="") override (function) of class enjin2::MinimalLuaInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_interpreter.hpp:131: warning: Member getGlobalBool(const std::string &name, bool defaultValue=false) override (function) of class enjin2::MinimalLuaInterpreter is not documented.
+<getGlobalBool>:1: warning: parameters of member enjin2::MinimalLuaInterpreter::getGlobalBool are not documented
+<getGlobalString>:1: warning: parameters of member enjin2::MinimalLuaInterpreter::getGlobalString are not documented
+<setGlobal>:1: warning: parameters of member enjin2::MinimalLuaInterpreter::setGlobal are not documented
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_platform.hpp:51: warning: Member STACK_SIZE (variable) of struct enjin2::LuaPlatformConfig is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_platform.hpp:52: warning: Member MAX_RECURSION_DEPTH (variable) of struct enjin2::LuaPlatformConfig is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/script_interface.hpp:86: warning: Member setGlobal(const std::string &name, const std::string &value)=0 (function) of class enjin2::IScriptInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/script_interface.hpp:87: warning: Member setGlobal(const std::string &name, bool value)=0 (function) of class enjin2::IScriptInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/script_interface.hpp:96: warning: Member getGlobalString(const std::string &name, const std::string &defaultValue="")=0 (function) of class enjin2::IScriptInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/script_interface.hpp:97: warning: Member getGlobalBool(const std::string &name, bool defaultValue=false)=0 (function) of class enjin2::IScriptInterpreter is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:112: warning: parameters of member enjin2::Entity::operator== are not documented
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:112: warning: return type of member enjin2::Entity::operator== is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:119: warning: parameters of member enjin2::Entity::operator!= are not documented
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:119: warning: return type of member enjin2::Entity::operator!= is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:287: warning: return type of member enjin2::ComponentStorage::begin is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:292: warning: return type of member enjin2::ComponentStorage::end is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:275: warning: Member Iterator(const ComponentStorage *s, size_t i) (function) of class enjin2::ComponentStorage::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:277: warning: Member operator*() const (function) of class enjin2::ComponentStorage::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:282: warning: Member operator++() (function) of class enjin2::ComponentStorage::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/component.hpp:283: warning: Member operator!=(const Iterator &other) const (function) of class enjin2::ComponentStorage::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:249: warning: Member ShapeType (enumeration) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:254: warning: Member type (variable) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:260: warning: Member radius (variable) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:261: warning: Member p1 (variable) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:261: warning: Member p2 (variable) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:261: warning: Member p3 (variable) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:262: warning: Member start (variable) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:262: warning: Member end (variable) of struct enjin2::ShapeComponent is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:279: warning: return type of member enjin2::ShapeComponent::circle is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:313: warning: argument 'start' of command @param is not found in the argument list of enjin2::ShapeComponent::line(Point startPt, Point endPt, uint8_t thick=1)
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:313: warning: argument 'end' of command @param is not found in the argument list of enjin2::ShapeComponent::line(Point startPt, Point endPt, uint8_t thick=1)
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:313: warning: The following parameters of enjin2::ShapeComponent::line(Point startPt, Point endPt, uint8_t thick=1) are not documented:
+  parameter 'startPt'
+  parameter 'endPt'
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:313: warning: return type of member enjin2::ShapeComponent::line is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:266: warning: return type of member enjin2::ShapeComponent::rectangle is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:294: warning: argument 'p1' of command @param is not found in the argument list of enjin2::ShapeComponent::triangle(Point pt1, Point pt2, Point pt3, bool fill=true, uint8_t thick=1)
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:294: warning: argument 'p2' of command @param is not found in the argument list of enjin2::ShapeComponent::triangle(Point pt1, Point pt2, Point pt3, bool fill=true, uint8_t thick=1)
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:294: warning: argument 'p3' of command @param is not found in the argument list of enjin2::ShapeComponent::triangle(Point pt1, Point pt2, Point pt3, bool fill=true, uint8_t thick=1)
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:294: warning: The following parameters of enjin2::ShapeComponent::triangle(Point pt1, Point pt2, Point pt3, bool fill=true, uint8_t thick=1) are not documented:
+  parameter 'pt1'
+  parameter 'pt2'
+  parameter 'pt3'
+/home/unwn/dev/enjin/include/enjin2/ui/components.hpp:294: warning: return type of member enjin2::ShapeComponent::triangle is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/system.hpp:330: warning: return type of member enjin2::ComponentQuery::begin is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/system.hpp:337: warning: return type of member enjin2::ComponentQuery::end is not documented
+/home/unwn/dev/enjin/include/enjin2/ui/system.hpp:305: warning: Member Iterator(std::function< bool(Entity)> f, Entity start, size_t index) (function) of class enjin2::ComponentQuery::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/system.hpp:310: warning: Member operator*() const (function) of class enjin2::ComponentQuery::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/system.hpp:312: warning: Member operator++() (function) of class enjin2::ComponentQuery::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/ui/system.hpp:318: warning: Member operator!=(const Iterator &other) const (function) of class enjin2::ComponentQuery::Iterator is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:61: warning: Member sin(uint16_t angle) (function) of class enjin2::math::TrigLUT is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:68: warning: Member cos(uint16_t angle) (function) of class enjin2::math::TrigLUT is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:74: warning: Member angleToIndex(float radians) (function) of class enjin2::math::TrigLUT is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:92: warning: Member Vector2(float x_, float y_) (function) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:94: warning: Member operator+(const Vector2 &other) const (function) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:98: warning: Member operator-(const Vector2 &other) const (function) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:102: warning: Member operator*(float scalar) const (function) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:106: warning: Member length() const (function) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:110: warning: Member normalized() const (function) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:115: warning: Member dot(const Vector2 &other) const (function) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:89: warning: Member x (variable) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/core/math.hpp:89: warning: Member y (variable) of struct enjin2::math::Vector2 is not documented.
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:201: warning: argument 'args' of command @param is not found in the argument list of enjin2::LuaEngine::pushArg(T &&arg)
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:201: warning: The following parameter of enjin2::LuaEngine::pushArg(T &&arg) is not documented:
+  parameter 'arg'
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:208: warning: argument 'first' of command @param is not found in the argument list of enjin2::LuaEngine::pushArgs(T &&arg)
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:208: warning: argument 'rest' of command @param is not found in the argument list of enjin2::LuaEngine::pushArgs(T &&arg)
+/home/unwn/dev/enjin/include/enjin2/scripting/lua_engine.hpp:208: warning: The following parameter of enjin2::LuaEngine::pushArgs(T &&arg) is not documented:
+  parameter 'arg'
