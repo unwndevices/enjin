@@ -16,11 +16,19 @@ Full documentation is available at: https://unwndevices.github.io/enjin/
 
 ## Installation
 
+### Basic build
 ```bash
 git clone https://github.com/unwndevices/enjin.git
 cd enjin
 mkdir build && cd build
 cmake ..
+cmake --build .
+```
+
+### Build without Lua (docs deployment)
+```bash
+mkdir build && cd build
+cmake -DENJIN2_BUILD_LUA=OFF ..
 cmake --build .
 ```
 
