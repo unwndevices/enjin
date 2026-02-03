@@ -1,0 +1,246 @@
+\doxysection{enjin2::\+Noise Namespace Reference}
+\hypertarget{namespaceenjin2_1_1Noise}{}\label{namespaceenjin2_1_1Noise}\index{enjin2::Noise@{enjin2::Noise}}
+
+
+\doxylink{namespaceenjin2_1_1Noise}{Noise} generation utilities.  
+
+
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+float \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_adfb93d1df806a0e0bf1417064ea09ecb}{grad}} (int hash, float x, float y)
+\begin{DoxyCompactList}\small\item\em Gradient function for Perlin noise. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a627d225583e8b019c7b4305523e912a2}{pnoise}} (float x, float y, int px, int py)
+\begin{DoxyCompactList}\small\item\em 2D Perlin noise function \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a1b9a976f0abfa513a2886a7cc95f491e}{warped\+\_\+pnoise}} (float nx, float ny, int px, int py, int seed, float warp\+\_\+strength=0.\+5f)
+\begin{DoxyCompactList}\small\item\em Warped Perlin noise for more organic patterns. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a37e93ca42be867ec3fed24e324dff122}{value\+\_\+noise}} (float x, float y, uint32\+\_\+t seed)
+\begin{DoxyCompactList}\small\item\em Simple value noise. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_aa438ddc12b4ad0493ac65df76ebfdb10}{fbm\+\_\+noise}} (float x, float y, int octaves=4, float persistence=0.\+5f, float lacunarity=2.\+0f)
+\begin{DoxyCompactList}\small\item\em Fractal Brownian Motion (FBM) noise. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_ac4a77f36a261c3509c13772cc113d38c}{cellular\+\_\+noise}} (float x, float y, float scale=10.\+0f)
+\begin{DoxyCompactList}\small\item\em Cellular/\+\+Worley noise. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a2d271bbcbfcde0c0bbab290119e84925}{to\+\_\+4bit}} (uint8\+\_\+t noise\+\_\+value)
+\begin{DoxyCompactList}\small\item\em Convert noise to 4-\/bit range. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_adf835edffec6c30d3d0fe8cdf3366ec5}{generate\+\_\+noise\+\_\+texture}} (uint8\+\_\+t \texorpdfstring{$\ast$}{*}buffer, int width, int height, float scale, float offset\+\_\+x, float offset\+\_\+y, int noise\+\_\+type=0)
+\begin{DoxyCompactList}\small\item\em Generate noise texture into buffer. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const unsigned char \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_aa25bf27bd722312244ae8720e7a4d256}{perm}} \+[512]\+
+\begin{DoxyCompactList}\small\item\em Perlin noise permutation table. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{namespaceenjin2_1_1Noise}{Noise} generation utilities. 
+
+Provides Perlin noise and various noise functions for procedural generation and visual effects. Based on original Enjin noise implementation. 
+
+\label{doc-func-members}
+\Hypertarget{namespaceenjin2_1_1Noise_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceenjin2_1_1Noise_ac4a77f36a261c3509c13772cc113d38c}\index{enjin2::Noise@{enjin2::Noise}!cellular\_noise@{cellular\_noise}}
+\index{cellular\_noise@{cellular\_noise}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{cellular\_noise()}{cellular\_noise()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_ac4a77f36a261c3509c13772cc113d38c} 
+uint8\+\_\+t enjin2::\+\+Noise::\+cellular\+\_\+noise (\begin{DoxyParamCaption}\item[{float}]{x}{, }\item[{float}]{y}{, }\item[{float}]{scale}{ = {\ttfamily 10.0f}}\end{DoxyParamCaption})}
+
+
+
+Cellular/\+\+Worley noise. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & X coordinate \\
+\hline
+{\em y} & Y coordinate \\
+\hline
+{\em scale} & Grid scale \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Distance to nearest feature point \+[0, 255]\+ 
+\end{DoxyReturn}
+\Hypertarget{namespaceenjin2_1_1Noise_aa438ddc12b4ad0493ac65df76ebfdb10}\index{enjin2::Noise@{enjin2::Noise}!fbm\_noise@{fbm\_noise}}
+\index{fbm\_noise@{fbm\_noise}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{fbm\_noise()}{fbm\_noise()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_aa438ddc12b4ad0493ac65df76ebfdb10} 
+uint8\+\_\+t enjin2::\+\+Noise::\+fbm\+\_\+noise (\begin{DoxyParamCaption}\item[{float}]{x}{, }\item[{float}]{y}{, }\item[{int}]{octaves}{ = {\ttfamily 4}, }\item[{float}]{persistence}{ = {\ttfamily 0.5f}, }\item[{float}]{lacunarity}{ = {\ttfamily 2.0f}}\end{DoxyParamCaption})}
+
+
+
+Fractal Brownian Motion (FBM) noise. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & X coordinate \\
+\hline
+{\em y} & Y coordinate \\
+\hline
+{\em octaves} & Number of octaves \\
+\hline
+{\em persistence} & Amplitude multiplier per octave \\
+\hline
+{\em lacunarity} & Frequency multiplier per octave \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{namespaceenjin2_1_1Noise}{Noise} value in range \+[0, 255]\+ 
+\end{DoxyReturn}
+\Hypertarget{namespaceenjin2_1_1Noise_adf835edffec6c30d3d0fe8cdf3366ec5}\index{enjin2::Noise@{enjin2::Noise}!generate\_noise\_texture@{generate\_noise\_texture}}
+\index{generate\_noise\_texture@{generate\_noise\_texture}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{generate\_noise\_texture()}{generate\_noise\_texture()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_adf835edffec6c30d3d0fe8cdf3366ec5} 
+void enjin2::\+\+Noise::\+generate\+\_\+noise\+\_\+texture (\begin{DoxyParamCaption}\item[{uint8\+\_\+t \texorpdfstring{$\ast$}{*}}]{buffer}{, }\item[{int}]{width}{, }\item[{int}]{height}{, }\item[{float}]{scale}{, }\item[{float}]{offset\+\_\+x}{, }\item[{float}]{offset\+\_\+y}{, }\item[{int}]{noise\+\_\+type}{ = {\ttfamily 0}}\end{DoxyParamCaption})}
+
+
+
+Generate noise texture into buffer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & Output buffer \\
+\hline
+{\em width} & Texture width \\
+\hline
+{\em height} & Texture height \\
+\hline
+{\em scale} & \doxylink{namespaceenjin2_1_1Noise}{Noise} scale \\
+\hline
+{\em offset\+\_\+x} & X offset for animation \\
+\hline
+{\em offset\+\_\+y} & Y offset for animation \\
+\hline
+{\em noise\+\_\+type} & 0=perlin, 1=value, 2=fbm, 3=cellular \\
+\hline
+\end{DoxyParams}
+\Hypertarget{namespaceenjin2_1_1Noise_adfb93d1df806a0e0bf1417064ea09ecb}\index{enjin2::Noise@{enjin2::Noise}!grad@{grad}}
+\index{grad@{grad}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{grad()}{grad()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_adfb93d1df806a0e0bf1417064ea09ecb} 
+float enjin2::\+\+Noise::\+grad (\begin{DoxyParamCaption}\item[{int}]{hash}{, }\item[{float}]{x}{, }\item[{float}]{y}{}\end{DoxyParamCaption})}
+
+
+
+Gradient function for Perlin noise. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em hash} & Hash value \\
+\hline
+{\em x} & X coordinate \\
+\hline
+{\em y} & Y coordinate \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Gradient value 
+\end{DoxyReturn}
+\Hypertarget{namespaceenjin2_1_1Noise_a627d225583e8b019c7b4305523e912a2}\index{enjin2::Noise@{enjin2::Noise}!pnoise@{pnoise}}
+\index{pnoise@{pnoise}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{pnoise()}{pnoise()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_a627d225583e8b019c7b4305523e912a2} 
+float enjin2::\+\+Noise::\+pnoise (\begin{DoxyParamCaption}\item[{float}]{x}{, }\item[{float}]{y}{, }\item[{int}]{px}{, }\item[{int}]{py}{}\end{DoxyParamCaption})}
+
+
+
+2D Perlin noise function 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & X coordinate \\
+\hline
+{\em y} & Y coordinate \\
+\hline
+{\em px} & Period in X direction (for tiling) \\
+\hline
+{\em py} & Period in Y direction (for tiling) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{namespaceenjin2_1_1Noise}{Noise} value in range \+[-\/1, 1]\+ 
+\end{DoxyReturn}
+\Hypertarget{namespaceenjin2_1_1Noise_a2d271bbcbfcde0c0bbab290119e84925}\index{enjin2::Noise@{enjin2::Noise}!to\_4bit@{to\_4bit}}
+\index{to\_4bit@{to\_4bit}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{to\_4bit()}{to\_4bit()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_a2d271bbcbfcde0c0bbab290119e84925} 
+uint8\+\_\+t enjin2::\+\+Noise::\+to\+\_\+4bit (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{noise\+\_\+value}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Convert noise to 4-\/bit range. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em noise\+\_\+value} & 8-\/bit noise value \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+4-\/bit noise value (0-\/15) 
+\end{DoxyReturn}
+\Hypertarget{namespaceenjin2_1_1Noise_a37e93ca42be867ec3fed24e324dff122}\index{enjin2::Noise@{enjin2::Noise}!value\_noise@{value\_noise}}
+\index{value\_noise@{value\_noise}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{value\_noise()}{value\_noise()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_a37e93ca42be867ec3fed24e324dff122} 
+uint8\+\_\+t enjin2::\+\+Noise::\+value\+\_\+noise (\begin{DoxyParamCaption}\item[{float}]{x}{, }\item[{float}]{y}{, }\item[{uint32\+\_\+t}]{seed}{}\end{DoxyParamCaption})}
+
+
+
+Simple value noise. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & X coordinate \\
+\hline
+{\em y} & Y coordinate \\
+\hline
+{\em seed} & Random seed \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{namespaceenjin2_1_1Noise}{Noise} value in range \+[0, 255]\+ 
+\end{DoxyReturn}
+\Hypertarget{namespaceenjin2_1_1Noise_a1b9a976f0abfa513a2886a7cc95f491e}\index{enjin2::Noise@{enjin2::Noise}!warped\_pnoise@{warped\_pnoise}}
+\index{warped\_pnoise@{warped\_pnoise}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{warped\_pnoise()}{warped\_pnoise()}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_a1b9a976f0abfa513a2886a7cc95f491e} 
+uint8\+\_\+t enjin2::\+\+Noise::\+warped\+\_\+pnoise (\begin{DoxyParamCaption}\item[{float}]{nx}{, }\item[{float}]{ny}{, }\item[{int}]{px}{, }\item[{int}]{py}{, }\item[{int}]{seed}{, }\item[{float}]{warp\+\_\+strength}{ = {\ttfamily 0.5f}}\end{DoxyParamCaption})}
+
+
+
+Warped Perlin noise for more organic patterns. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em nx} & X coordinate \\
+\hline
+{\em ny} & Y coordinate \\
+\hline
+{\em px} & Period in X direction \\
+\hline
+{\em py} & Period in Y direction \\
+\hline
+{\em seed} & Random seed \\
+\hline
+{\em warp\+\_\+strength} & Warping strength (0.\+0 -\/ 1.\+0) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{namespaceenjin2_1_1Noise}{Noise} value in range \+[0, 255]\+ 
+\end{DoxyReturn}
+
+
+\label{doc-var-members}
+\Hypertarget{namespaceenjin2_1_1Noise_doc-var-members}
+\doxysubsection{Variable Documentation}
+\Hypertarget{namespaceenjin2_1_1Noise_aa25bf27bd722312244ae8720e7a4d256}\index{enjin2::Noise@{enjin2::Noise}!perm@{perm}}
+\index{perm@{perm}!enjin2::Noise@{enjin2::Noise}}
+\doxysubsubsection{\texorpdfstring{perm}{perm}}
+{\footnotesize\ttfamily \label{namespaceenjin2_1_1Noise_aa25bf27bd722312244ae8720e7a4d256} 
+const unsigned char enjin2::\+\+Noise::\+perm\+[512]\+\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+Perlin noise permutation table. 
+
+Standard permutation table repeated to avoid modulo operations 

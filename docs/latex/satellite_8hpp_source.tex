@@ -1,0 +1,356 @@
+\doxysection{satellite.\+hpp}
+\hypertarget{satellite_8hpp_source}{}\label{satellite_8hpp_source}\index{include/enjin2/components/satellite.hpp@{include/enjin2/components/satellite.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../components/drawable.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../components/planet.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a73d7c5ac51cbb5be67be5173504aa740}{C\_Satellite}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}\ \{}
+\DoxyCodeLine{00019\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00020\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Planet}{C\_Planet}}*\ orbitPlanet;\ \ \ \ \ \ }
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keywordtype}{float}\ orbitRadius;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{float}\ orbitSpeed;\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{float}\ currentAngle;\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keywordtype}{bool}\ clockwise;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00025\ \ \ \ \ }
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{comment}{//\ Satellite\ appearance}}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordtype}{float}\ satelliteRadius;\ \ \ \ \ \ }
+\DoxyCodeLine{00028\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ satelliteColor;\ \ \ \ \ \ }
+\DoxyCodeLine{00029\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ trailColor;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordtype}{bool}\ showTrail;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keywordtype}{bool}\ showConnection;\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00032\ \ \ \ \ }
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{comment}{//\ Parameter\ binding}}
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{float}\ parameterValue;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keywordtype}{float}\ minValue;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keywordtype}{float}\ maxValue;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordtype}{bool}\ radiusFromParameter;\ \ \ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{bool}\ speedFromParameter;\ \ \ \ }
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordtype}{bool}\ colorFromParameter;\ \ \ \ }
+\DoxyCodeLine{00040\ \ \ \ \ }
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{comment}{//\ Visual\ effects}}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keywordtype}{bool}\ pulsing;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00043\ \ \ \ \ uint32\_t\ animationTime;\ \ \ \ \ }
+\DoxyCodeLine{00044\ \ \ \ \ }
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{comment}{//\ Trail\ rendering\ (simple\ circular\ buffer)}}
+\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ TRAIL\_LENGTH\ =\ 16;}
+\DoxyCodeLine{00047\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ trailPoints[TRAIL\_LENGTH];}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ trailIndex;}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordtype}{bool}\ trailInitialized;}
+\DoxyCodeLine{00050\ \ \ \ \ }
+\DoxyCodeLine{00051\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00059\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a73d7c5ac51cbb5be67be5173504aa740}{C\_Satellite}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ \doxymbox{\hyperlink{classenjin2_1_1C__Planet}{C\_Planet}}*\ planet\ =\ \textcolor{keyword}{nullptr},\ \textcolor{keywordtype}{float}\ radius\ =\ 30.0f,\ \textcolor{keywordtype}{float}\ startAngle\ =\ 0.0f)}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ static\_cast<uint16\_t>(radius\ *\ 2.5f),\ static\_cast<uint16\_t>(radius\ *\ 2.5f)),}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ orbitPlanet(planet),\ orbitRadius(radius),\ orbitSpeed(1.0f),\ currentAngle(startAngle),}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ clockwise(true),\ satelliteRadius(3.0f),\ satelliteColor(15),\ trailColor(8),}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ showTrail(true),\ showConnection(false),\ parameterValue(0.5f),}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \ \ minValue(0.0f),\ maxValue(1.0f),\ radiusFromParameter(false),}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ speedFromParameter(false),\ colorFromParameter(false),\ pulsing(true),}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ animationTime(0),\ trailIndex(0),\ trailInitialized(false)\ \{}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ setDrawLayer(DrawLayer::ENTITIES);}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Initialize\ trail}}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ TRAIL\_LENGTH;\ ++i)\ \{}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ trailPoints[i]\ =\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}(0,\ 0);}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00074\ \ \ \ \ \}}
+\DoxyCodeLine{00075\ \ \ \ \ }
+\DoxyCodeLine{00079\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a519e50252d00b5de40c7ffabc4c5f7f6}{update}}(uint16\_t\ deltaTime)\textcolor{keyword}{\ override\ }\{}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{Component::update}}(deltaTime);}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ animationTime\ +=\ deltaTime;}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ orbital\ position}}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (orbitPlanet)\ \{}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ currentRadius\ =\ orbitRadius;}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ currentSpeed\ =\ orbitSpeed;}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Modify\ orbit\ based\ on\ parameter}}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (radiusFromParameter)\ \{}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ radiusScale\ =\ 0.5f\ +\ parameterValue;\ \ \textcolor{comment}{//\ 0.5x\ to\ 1.5x}}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentRadius\ *=\ radiusScale;}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (speedFromParameter)\ \{}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentSpeed\ *=\ (0.2f\ +\ parameterValue\ *\ 1.8f);\ \ \textcolor{comment}{//\ 0.2x\ to\ 2.0x\ speed}}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ angle}}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ deltaAngle\ =\ currentSpeed\ *\ (deltaTime\ /\ 1000.0f);}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!clockwise)\ deltaAngle\ =\ -\/deltaAngle;}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ currentAngle\ +=\ deltaAngle;}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Keep\ angle\ in\ range}}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentAngle\ >=\ 2.0f\ *\ 3.14159f)\ \{}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentAngle\ -\/=\ 2.0f\ *\ 3.14159f;}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (currentAngle\ <\ 0.0f)\ \{}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentAngle\ +=\ 2.0f\ *\ 3.14159f;}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ new\ position\ relative\ to\ planet}}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ planetCenter\ =\ orbitPlanet-\/>getCenterPosition();}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ newPos(}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(planetCenter.x\ +\ currentRadius\ *\ std::cos(currentAngle)\ -\/\ getWidth()\ /\ 2),}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(planetCenter.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +\ currentRadius\ *\ std::sin(currentAngle)\ -\/\ getHeight()\ /\ 2)}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \ \ \ \ );}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ position\ component}}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a897d96750c166bf11860be09c747c34f}{position}}\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getPosition();}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a897d96750c166bf11860be09c747c34f}{position}})\ \{}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a897d96750c166bf11860be09c747c34f}{position}}-\/>setPosition(newPos.x,\ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}});}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ trail}}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \ \ \ \ updateTrail(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}(}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(planetCenter.x\ +\ currentRadius\ *\ std::cos(currentAngle)),}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(planetCenter.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +\ currentRadius\ *\ std::sin(currentAngle))}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \ \ \ \ ));}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00130\ \ \ \ \ \}}
+\DoxyCodeLine{00131\ \ \ \ \ }
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a9ad9a6ba2edb3aaa0819425af35b28f5}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<Pixel4>}}\&\ canvas)\textcolor{keyword}{\ override\ }\{}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!isVisible())\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center\ =\ getRenderPosition();}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ center.x\ +=\ getWidth()\ /\ 2;}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ center.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +=\ getHeight()\ /\ 2;}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ connection\ line\ to\ planet}}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (showConnection\ \&\&\ orbitPlanet)\ \{}
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ planetCenter\ =\ orbitPlanet-\/>getCenterPosition();}
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ drawLine(canvas,\ planetCenter,\ center,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(4));}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ orbital\ trail}}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (showTrail\ \&\&\ trailInitialized)\ \{}
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \ \ \ \ drawTrail(canvas);}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ current\ satellite\ properties}}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ currentRadius\ =\ satelliteRadius;}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ currentColor\ =\ satelliteColor;}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Apply\ parameter-\/based\ effects}}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pulsing)\ \{}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ pulse\ =\ std::sin((animationTime\ /\ 1000.0f)\ *\ 4.0f\ *\ 2.0f\ *\ 3.14159f);}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \ \ \ \ currentRadius\ *=\ (1.0f\ +\ pulse\ *\ 0.3f\ *\ parameterValue);}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (colorFromParameter)\ \{}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Interpolate\ color\ based\ on\ parameter}}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ intensity\ =\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(4\ +\ parameterValue\ *\ 11);\ \ \textcolor{comment}{//\ 4\ to\ 15}}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ currentColor\ =\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(intensity);}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ satellite\ body}}
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ drawCircle(canvas,\ center,\ currentRadius,\ currentColor,\ \textcolor{keyword}{true});}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ satellite\ highlight}}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ highlight(center.x\ -\/\ 1,\ center.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ -\/\ 1);}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ drawCircle(canvas,\ highlight,\ currentRadius\ *\ 0.4f,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(15),\ \textcolor{keyword}{true});}
+\DoxyCodeLine{00175\ \ \ \ \ \}}
+\DoxyCodeLine{00176\ \ \ \ \ }
+\DoxyCodeLine{00180\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a8b48ae7a1849bda8a52d1f917bb67bd8}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\textcolor{keyword}{\ override\ }\{}
+\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!isVisible())\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center\ =\ getRenderPosition();}
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ center.x\ +=\ getWidth()\ /\ 2;}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ center.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +=\ getHeight()\ /\ 2;}
+\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (showConnection\ \&\&\ orbitPlanet)\ \{}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ planetCenter\ =\ orbitPlanet-\/>getCenterPosition();}
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ \ \ \ \ drawLine(canvas,\ planetCenter,\ center,\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(64));}
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (showTrail\ \&\&\ trailInitialized)\ \{}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \ \ \ \ drawTrail(canvas);}
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ currentRadius\ =\ satelliteRadius;}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ uint8\_t\ currentColor\ =\ satelliteColor.to8bit();}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pulsing)\ \{}
+\DoxyCodeLine{00200\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ pulse\ =\ std::sin((animationTime\ /\ 1000.0f)\ *\ 4.0f\ *\ 2.0f\ *\ 3.14159f);}
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \ \ \ \ currentRadius\ *=\ (1.0f\ +\ pulse\ *\ 0.3f\ *\ parameterValue);}
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (colorFromParameter)\ \{}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \ \ \ \ currentColor\ =\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(64\ +\ parameterValue\ *\ 191);\ \ \textcolor{comment}{//\ 64\ to\ 255}}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ drawCircle(canvas,\ center,\ currentRadius,\ currentColor,\ \textcolor{keyword}{true});}
+\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ highlight(center.x\ -\/\ 1,\ center.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ -\/\ 1);}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ drawCircle(canvas,\ highlight,\ currentRadius\ *\ 0.4f,\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(255),\ \textcolor{keyword}{true});}
+\DoxyCodeLine{00212\ \ \ \ \ \}}
+\DoxyCodeLine{00213\ \ \ \ \ }
+\DoxyCodeLine{00217\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_ad0a3e18352b8a86e397b8f1b2ad491f7}{setParameterValue}}(\textcolor{keywordtype}{float}\ value)\ \{}
+\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ parameterValue\ =\ value\ <\ 0.0f\ ?\ 0.0f\ :\ (value\ >\ 1.0f\ ?\ 1.0f\ :\ value);}
+\DoxyCodeLine{00219\ \ \ \ \ \}}
+\DoxyCodeLine{00220\ \ \ \ \ }
+\DoxyCodeLine{00224\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_ab661c5929fc03d1de4108c642b6f5b6a}{getParameterValue}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00225\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ parameterValue;}
+\DoxyCodeLine{00226\ \ \ \ \ \}}
+\DoxyCodeLine{00227\ \ \ \ \ }
+\DoxyCodeLine{00231\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a9957540a540b95d09723e4078a5c85ce}{setParameterRange}}(\textcolor{keywordtype}{float}\ min,\ \textcolor{keywordtype}{float}\ max)\ \{}
+\DoxyCodeLine{00232\ \ \ \ \ \ \ \ \ minValue\ =\ min;}
+\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ maxValue\ =\ max;}
+\DoxyCodeLine{00234\ \ \ \ \ \}}
+\DoxyCodeLine{00235\ \ \ \ \ }
+\DoxyCodeLine{00239\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a33ab842ec591699abe2b7385f166e58e}{getScaledValue}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ minValue\ +\ parameterValue\ *\ (maxValue\ -\/\ minValue);}
+\DoxyCodeLine{00241\ \ \ \ \ \}}
+\DoxyCodeLine{00242\ \ \ \ \ }
+\DoxyCodeLine{00246\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_aa28a6c0da58a7fdf0b7b48e614a20365}{setScaledValue}}(\textcolor{keywordtype}{float}\ scaledValue)\ \{}
+\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (maxValue\ !=\ minValue)\ \{}
+\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_ad0a3e18352b8a86e397b8f1b2ad491f7}{setParameterValue}}((scaledValue\ -\/\ minValue)\ /\ (maxValue\ -\/\ minValue));}
+\DoxyCodeLine{00249\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00250\ \ \ \ \ \}}
+\DoxyCodeLine{00251\ \ \ \ \ }
+\DoxyCodeLine{00255\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_ae1bf49c0ae40b7374fbf6611e7d28daa}{setOrbit}}(\textcolor{keywordtype}{float}\ radius,\ \textcolor{keywordtype}{float}\ speed,\ \textcolor{keywordtype}{bool}\ clockwiseDirection\ =\ \textcolor{keyword}{true})\ \{}
+\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ orbitRadius\ =\ radius;}
+\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ orbitSpeed\ =\ speed;}
+\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ clockwise\ =\ clockwiseDirection;}
+\DoxyCodeLine{00259\ \ \ \ \ \}}
+\DoxyCodeLine{00260\ \ \ \ \ }
+\DoxyCodeLine{00264\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a454465845df30414358842a5811b419a}{setAppearance}}(\textcolor{keywordtype}{float}\ radius,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ color,\ \textcolor{keywordtype}{bool}\ showOrbitalTrail\ =\ \textcolor{keyword}{true})\ \{}
+\DoxyCodeLine{00265\ \ \ \ \ \ \ \ \ satelliteRadius\ =\ radius;}
+\DoxyCodeLine{00266\ \ \ \ \ \ \ \ \ satelliteColor\ =\ color;}
+\DoxyCodeLine{00267\ \ \ \ \ \ \ \ \ showTrail\ =\ showOrbitalTrail;}
+\DoxyCodeLine{00268\ \ \ \ \ \}}
+\DoxyCodeLine{00269\ \ \ \ \ }
+\DoxyCodeLine{00273\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_ad56896f07a34511e0643e855a8822e19}{setParameterEffects}}(\textcolor{keywordtype}{bool}\ radiusEffect,\ \textcolor{keywordtype}{bool}\ speedEffect,\ \textcolor{keywordtype}{bool}\ colorEffect)\ \{}
+\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ radiusFromParameter\ =\ radiusEffect;}
+\DoxyCodeLine{00275\ \ \ \ \ \ \ \ \ speedFromParameter\ =\ speedEffect;}
+\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ colorFromParameter\ =\ colorEffect;}
+\DoxyCodeLine{00277\ \ \ \ \ \}}
+\DoxyCodeLine{00278\ \ \ \ \ }
+\DoxyCodeLine{00282\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a82eda8665dccae50cc19cb060a663a1b}{setTrail}}(\textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}},\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ color\ =\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(8))\ \{}
+\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ showTrail\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}};}
+\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ trailColor\ =\ color;}
+\DoxyCodeLine{00285\ \ \ \ \ \}}
+\DoxyCodeLine{00286\ \ \ \ \ }
+\DoxyCodeLine{00290\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a6e32cdac6889e1eadd7d7bb283285cc1}{setConnection}}(\textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}})\ \{}
+\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ showConnection\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}};}
+\DoxyCodeLine{00292\ \ \ \ \ \}}
+\DoxyCodeLine{00293\ \ \ \ \ }
+\DoxyCodeLine{00297\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_af317b42aa537ad968ec19ca48f1d70a2}{getAngle}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ currentAngle;}
+\DoxyCodeLine{00299\ \ \ \ \ \}}
+\DoxyCodeLine{00300\ \ \ \ \ }
+\DoxyCodeLine{00304\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Satellite_a376fe53320da42f34fd54c097ef52ec5}{setAngle}}(\textcolor{keywordtype}{float}\ angle)\ \{}
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ currentAngle\ =\ angle;}
+\DoxyCodeLine{00306\ \ \ \ \ \}}
+\DoxyCodeLine{00307\ }
+\DoxyCodeLine{00308\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00312\ \ \ \ \ \textcolor{keywordtype}{void}\ updateTrail(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ newPoint)\ \{}
+\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ trailPoints[trailIndex]\ =\ newPoint;}
+\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ trailIndex\ =\ (trailIndex\ +\ 1)\ \%\ TRAIL\_LENGTH;}
+\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!trailInitialized\ \&\&\ trailIndex\ ==\ 0)\ \{}
+\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ \ \ \ \ trailInitialized\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00318\ \ \ \ \ \}}
+\DoxyCodeLine{00319\ \ \ \ \ }
+\DoxyCodeLine{00323\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00324\ \ \ \ \ \textcolor{keywordtype}{void}\ drawTrail(ICanvas<PixelType>\&\ canvas)\ \{}
+\DoxyCodeLine{00325\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!trailInitialized)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00327\ \ \ \ \ \ \ \ \ PixelType\ color;}
+\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keyword}{constexpr}\ (std::is\_same\_v<PixelType,\ Pixel4>)\ \{}
+\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \ \ \ \ color\ =\ trailColor;}
+\DoxyCodeLine{00330\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00331\ \ \ \ \ \ \ \ \ \ \ \ \ color\ =\ \textcolor{keyword}{static\_cast<}PixelType\textcolor{keyword}{>}(trailColor.to8bit());}
+\DoxyCodeLine{00332\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00333\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00334\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ trail\ points\ with\ fading}}
+\DoxyCodeLine{00335\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ TRAIL\_LENGTH;\ ++i)\ \{}
+\DoxyCodeLine{00336\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ index\ =\ (trailIndex\ +\ i)\ \%\ TRAIL\_LENGTH;}
+\DoxyCodeLine{00337\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ alpha\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(i)\ /\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(TRAIL\_LENGTH);}
+\DoxyCodeLine{00338\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00339\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keyword}{constexpr}\ (std::is\_same\_v<PixelType,\ Pixel4>)\ \{}
+\DoxyCodeLine{00340\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Pixel4\ fadedColor(\textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(color.value\ *\ alpha));}
+\DoxyCodeLine{00341\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(trailPoints[index].x,\ trailPoints[index].y,\ fadedColor);}
+\DoxyCodeLine{00342\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00343\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ fadedColor\ =\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(color\ *\ alpha);}
+\DoxyCodeLine{00344\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(trailPoints[index].x,\ trailPoints[index].y,\ fadedColor);}
+\DoxyCodeLine{00345\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00346\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00347\ \ \ \ \ \}}
+\DoxyCodeLine{00348\ \ \ \ \ }
+\DoxyCodeLine{00352\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00353\ \ \ \ \ \textcolor{keywordtype}{void}\ drawLine(ICanvas<PixelType>\&\ canvas,\ Point\ from,\ Point\ to,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00354\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dx\ =\ abs(to.x\ -\/\ from.x);}
+\DoxyCodeLine{00355\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dy\ =\ abs(to.y\ -\/\ from.y);}
+\DoxyCodeLine{00356\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ sx\ =\ from.x\ <\ to.x\ ?\ 1\ :\ -\/1;}
+\DoxyCodeLine{00357\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ sy\ =\ from.y\ <\ to.y\ ?\ 1\ :\ -\/1;}
+\DoxyCodeLine{00358\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ err\ =\ dx\ -\/\ dy;}
+\DoxyCodeLine{00359\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00360\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ x\ =\ from.x;}
+\DoxyCodeLine{00361\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ y\ =\ from.y;}
+\DoxyCodeLine{00362\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00363\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (\textcolor{keyword}{true})\ \{}
+\DoxyCodeLine{00364\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(x,\ y,\ color);}
+\DoxyCodeLine{00365\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00366\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (x\ ==\ to.x\ \&\&\ y\ ==\ to.y)\ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00367\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00368\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ e2\ =\ 2\ *\ err;}
+\DoxyCodeLine{00369\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (e2\ >\ -\/dy)\ \{}
+\DoxyCodeLine{00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ err\ -\/=\ dy;}
+\DoxyCodeLine{00371\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ x\ +=\ sx;}
+\DoxyCodeLine{00372\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00373\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (e2\ <\ dx)\ \{}
+\DoxyCodeLine{00374\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ err\ +=\ dx;}
+\DoxyCodeLine{00375\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ y\ +=\ sy;}
+\DoxyCodeLine{00376\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00377\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00378\ \ \ \ \ \}}
+\DoxyCodeLine{00379\ \ \ \ \ }
+\DoxyCodeLine{00383\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00384\ \ \ \ \ \textcolor{keywordtype}{void}\ drawCircle(ICanvas<PixelType>\&\ canvas,\ Point\ center,\ \textcolor{keywordtype}{float}\ r,\ PixelType\ color,\ \textcolor{keywordtype}{bool}\ filled)\ \{}
+\DoxyCodeLine{00385\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ radius\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(r);}
+\DoxyCodeLine{00386\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00387\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (filled)\ \{}
+\DoxyCodeLine{00388\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ -\/radius;\ y\ <=\ radius;\ ++y)\ \{}
+\DoxyCodeLine{00389\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ x\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(std::sqrt(radius\ *\ radius\ -\/\ y\ *\ y));}
+\DoxyCodeLine{00390\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ dx\ =\ -\/x;\ dx\ <=\ x;\ ++dx)\ \{}
+\DoxyCodeLine{00391\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ dx,\ center.y\ +\ y,\ color);}
+\DoxyCodeLine{00392\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00393\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00394\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00395\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Circle\ outline\ using\ Bresenham}}
+\DoxyCodeLine{00396\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ x\ =\ 0;}
+\DoxyCodeLine{00397\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ y\ =\ radius;}
+\DoxyCodeLine{00398\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ d\ =\ 3\ -\/\ 2\ *\ radius;}
+\DoxyCodeLine{00399\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00400\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (x\ <=\ y)\ \{}
+\DoxyCodeLine{00401\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ x,\ center.y\ +\ y,\ color);}
+\DoxyCodeLine{00402\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ -\/\ x,\ center.y\ +\ y,\ color);}
+\DoxyCodeLine{00403\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ x,\ center.y\ -\/\ y,\ color);}
+\DoxyCodeLine{00404\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ -\/\ x,\ center.y\ -\/\ y,\ color);}
+\DoxyCodeLine{00405\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ y,\ center.y\ +\ x,\ color);}
+\DoxyCodeLine{00406\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ -\/\ y,\ center.y\ +\ x,\ color);}
+\DoxyCodeLine{00407\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ y,\ center.y\ -\/\ x,\ color);}
+\DoxyCodeLine{00408\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ -\/\ y,\ center.y\ -\/\ x,\ color);}
+\DoxyCodeLine{00409\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00410\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (d\ <\ 0)\ \{}
+\DoxyCodeLine{00411\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ d\ =\ d\ +\ 4\ *\ x\ +\ 6;}
+\DoxyCodeLine{00412\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00413\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ d\ =\ d\ +\ 4\ *\ (x\ -\/\ y)\ +\ 10;}
+\DoxyCodeLine{00414\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ y-\/-\/;}
+\DoxyCodeLine{00415\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00416\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ x++;}
+\DoxyCodeLine{00417\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00418\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00419\ \ \ \ \ \}}
+\DoxyCodeLine{00420\ \};}
+\DoxyCodeLine{00421\ }
+\DoxyCodeLine{00422\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

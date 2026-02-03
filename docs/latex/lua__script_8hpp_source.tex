@@ -1,0 +1,98 @@
+\doxysection{lua\+\_\+script.\+hpp}
+\hypertarget{lua__script_8hpp_source}{}\label{lua__script_8hpp_source}\index{include/enjin2/components/lua\_script.hpp@{include/enjin2/components/lua\_script.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../components/drawable.hpp"{}}\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../scripting/script\_interface.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}../scripting/lua\_interpreter.hpp"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a03553cc68acb15e6ad4f0d573595770c}{C\_LuaScript}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}\ \{}
+\DoxyCodeLine{00020\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00021\ \ \ \ \ std::unique\_ptr<IScriptInterpreter>\ interpreter;\ \ }
+\DoxyCodeLine{00022\ \ \ \ \ std::unique\_ptr<IScriptGraphics>\ graphics;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ std::string\ scriptCode;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ std::string\ scriptPath;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keywordtype}{bool}\ hasScript;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{bool}\ scriptError;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00027\ \ \ \ \ std::string\ errorMessage;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00028\ \ \ \ \ }
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{comment}{//\ Script\ lifecycle\ function\ names}}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ INIT\_FUNCTION\ =\ \textcolor{stringliteral}{"{}init"{}};}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ UPDATE\_FUNCTION\ =\ \textcolor{stringliteral}{"{}update"{}};\ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ DRAW\_FUNCTION\ =\ \textcolor{stringliteral}{"{}draw"{}};}
+\DoxyCodeLine{00033\ \ \ \ \ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{comment}{//\ Performance\ tracking}}
+\DoxyCodeLine{00035\ \ \ \ \ uint32\_t\ lastUpdateTime;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ uint32\_t\ drawCalls;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ }
+\DoxyCodeLine{00038\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00045\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a03553cc68acb15e6ad4f0d573595770c}{C\_LuaScript}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ uint16\_t\ width,\ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}});}
+\DoxyCodeLine{00046\ \ \ \ \ }
+\DoxyCodeLine{00054\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ad2a3f0a20305dfb93a951aca76ef60a7}{C\_LuaScript}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ uint16\_t\ width,\ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}},\ }
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{ScriptFactory::InterpreterType}}\ interpreterType);}
+\DoxyCodeLine{00056\ \ \ \ \ }
+\DoxyCodeLine{00060\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_aa588951d50c8a0a18a95cce4fe501382}{\string~C\_LuaScript}}();}
+\DoxyCodeLine{00061\ \ \ \ \ }
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a2135fedda37f960c4b810fa8b36f5da0}{loadScript}}(\textcolor{keyword}{const}\ std::string\&\ code);}
+\DoxyCodeLine{00068\ \ \ \ \ }
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ab6fcbe0e082a71c3782e2bc0fb1638c4}{loadScriptFile}}(\textcolor{keyword}{const}\ std::string\&\ filename);}
+\DoxyCodeLine{00075\ \ \ \ \ }
+\DoxyCodeLine{00080\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ae47288da77cd6628407186b689652d9f}{reloadScript}}();}
+\DoxyCodeLine{00081\ \ \ \ \ }
+\DoxyCodeLine{00085\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a925fc3cd8dd4c5c6286bc42845ff8539}{clearScript}}();}
+\DoxyCodeLine{00086\ \ \ \ \ }
+\DoxyCodeLine{00091\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a48420a847d017020603b02e30fd0789d}{hasLoadedScript}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ hasScript;\ \}}
+\DoxyCodeLine{00092\ \ \ \ \ }
+\DoxyCodeLine{00097\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a3fbf4bb8701cefd680f0e55aa8a90975}{hasErrors}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ scriptError;\ \}}
+\DoxyCodeLine{00098\ \ \ \ \ }
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keyword}{const}\ std::string\&\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a8ae85a115afb59699ac1150dcf774bbc}{getErrorMessage}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ errorMessage;\ \}}
+\DoxyCodeLine{00104\ \ \ \ \ }
+\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a90a9acbba9d07e0f8c2923a6636b8bd0}{setScriptVar}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{double}\ value);}
+\DoxyCodeLine{00111\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a90a9acbba9d07e0f8c2923a6636b8bd0}{setScriptVar}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keyword}{const}\ std::string\&\ value);}
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a90a9acbba9d07e0f8c2923a6636b8bd0}{setScriptVar}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{bool}\ value);}
+\DoxyCodeLine{00113\ \ \ \ \ }
+\DoxyCodeLine{00120\ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a8c07f0dae002aa5118ca4fd15ce10001}{getScriptNumber}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{double}\ defaultValue\ =\ 0.0);}
+\DoxyCodeLine{00121\ \ \ \ \ std::string\ getScriptString(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keyword}{const}\ std::string\&\ defaultValue\ =\ \textcolor{stringliteral}{"{}"{}});}
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keywordtype}{bool}\ getScriptBool(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{bool}\ defaultValue\ =\ \textcolor{keyword}{false});}
+\DoxyCodeLine{00123\ \ \ \ \ }
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_aad6110256ce3d0bbcb4b2d43431d57aa}{callScriptFunction}}(\textcolor{keyword}{const}\ std::string\&\ functionName);}
+\DoxyCodeLine{00130\ \ \ \ \ }
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a067f77662666facee47cfee046b1cd61}{update}}(uint16\_t\ deltaTime)\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00136\ \ \ \ \ }
+\DoxyCodeLine{00141\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a0ce12da4750f383854730be72b6b5c95}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<Pixel4>}}\&\ canvas)\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00142\ \ \ \ \ }
+\DoxyCodeLine{00147\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a09e9230213c59efcb52ba223af368e99}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00148\ \ \ \ \ }
+\DoxyCodeLine{00153\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{IScriptInterpreter}}*\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a9762e276ef474802afe4fb2963ecc636}{getInterpreter}}()\ \{\ \textcolor{keywordflow}{return}\ interpreter.get();\ \}}
+\DoxyCodeLine{00154\ \ \ \ \ }
+\DoxyCodeLine{00159\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1IScriptGraphics}{IScriptGraphics}}*\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ab92579a304d27b93da9fdc8ee348bd50}{getGraphics}}()\ \{\ \textcolor{keywordflow}{return}\ graphics.get();\ \}}
+\DoxyCodeLine{00160\ \ \ \ \ }
+\DoxyCodeLine{00165\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a552b2b05770a714d6b457dc9d85b8a3e}{getInterpreterType}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ interpreter\ ?\ interpreter-\/>getTypeName()\ :\ \textcolor{stringliteral}{"{}None"{}};}
+\DoxyCodeLine{00167\ \ \ \ \ \}}
+\DoxyCodeLine{00168\ \ \ \ \ }
+\DoxyCodeLine{00173\ \ \ \ \ uint32\_t\ \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ab2142fcac9b855d27e66a3dbafdddd09}{getDrawCalls}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ drawCalls;\ \}}
+\DoxyCodeLine{00174\ }
+\DoxyCodeLine{00175\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00181\ \ \ \ \ \textcolor{keywordtype}{bool}\ initializeInterpreter(\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{ScriptFactory::InterpreterType}}\ interpreterType);}
+\DoxyCodeLine{00182\ \ \ \ \ }
+\DoxyCodeLine{00188\ \ \ \ \ \textcolor{keywordtype}{bool}\ executeScript(\textcolor{keyword}{const}\ std::string\&\ code);}
+\DoxyCodeLine{00189\ \ \ \ \ }
+\DoxyCodeLine{00195\ \ \ \ \ \textcolor{keywordtype}{bool}\ callScriptFunctionSafe(\textcolor{keyword}{const}\ std::string\&\ functionName);}
+\DoxyCodeLine{00196\ \ \ \ \ }
+\DoxyCodeLine{00201\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ CanvasType>}
+\DoxyCodeLine{00202\ \ \ \ \ \textcolor{keywordtype}{void}\ setupLuaCanvas(CanvasType\&\ canvas);}
+\DoxyCodeLine{00203\ \ \ \ \ }
+\DoxyCodeLine{00208\ \ \ \ \ \textcolor{keywordtype}{void}\ handleScriptError(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{ScriptResult}}\&\ result);}
+\DoxyCodeLine{00209\ \};}
+\DoxyCodeLine{00210\ }
+\DoxyCodeLine{00211\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

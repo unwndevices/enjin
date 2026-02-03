@@ -1,0 +1,258 @@
+\doxysection{enjin2::\+C\+\_\+\+Image\+Cache Class Reference}
+\hypertarget{classenjin2_1_1C__ImageCache}{}\label{classenjin2_1_1C__ImageCache}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+
+
+Image cache component for sprite management.  
+
+
+
+
+{\ttfamily \+\#include $<$image\+\_\+cache.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a3d25592f20acbc7a5d582d99aeeb4a01}{C\+\_\+\+Image\+Cache}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__ImageCache_a95629ba7974cddc0c19f70657f32bc9e}\label{classenjin2_1_1C__ImageCache_a95629ba7974cddc0c19f70657f32bc9e} 
+{\bfseries \texorpdfstring{$\sim$}{\string~}\+C\+\_\+\+Image\+Cache} ()=default
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_abc683626c67b9d9a2292888305dd420e}{awake}} () override
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_aa53bcf95378948e062c4bcf8ca6c73de}{start}} () override
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a674d80edeb11565a1be49d9c07582c9e}{update}} (uint16\+\_\+t delta\+Time) override
+\begin{DoxyCompactList}\small\item\em Update is called once per frame. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static \doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{Image\+Entry}} \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a41ecec056d48ce6b7255ff1bca9eb1d6}{Add\+Image}} (\doxymbox{\hyperlink{classenjin2_1_1FileInterface}{File\+Interface}} \&file, uint16\+\_\+t width, uint16\+\_\+t height, uint16\+\_\+t frame\+Count)
+\begin{DoxyCompactList}\small\item\em Add image to cache from file. \end{DoxyCompactList}\item 
+static void \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_af0cffe2b6d02293723215090fad3a9a9}{Release\+Entry}} (\doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{Image\+Entry}} \&entry)
+\begin{DoxyCompactList}\small\item\em Release cached image entry. \end{DoxyCompactList}\item 
+static const uint8\+\_\+t \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_af1d4a7fbd3e53aec0f093a7333d5c74c}{Get\+Image\+Data}} (const \doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{Image\+Entry}} \&entry, size\+\_\+t frame\+Offset=0)
+\begin{DoxyCompactList}\small\item\em Get pointer to image data in cache. \end{DoxyCompactList}\item 
+static std::\+pair$<$ size\+\_\+t, size\+\_\+t $>$ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_aa10e22e9004635991c1a2c3eacd6d016}{Get\+Cache\+Stats}} ()
+\begin{DoxyCompactList}\small\item\em Get cache statistics. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__ImageCache_a0a31ecb43247b700e139c10e3dbea7b7}\label{classenjin2_1_1C__ImageCache_a0a31ecb43247b700e139c10e3dbea7b7} 
+static void {\bfseries Clear\+Cache} ()
+\begin{DoxyCompactList}\small\item\em Clear entire cache. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1C__ImageCache_a3f315e74bc17a4b1a9b1c2cdf0720a43}\label{classenjin2_1_1C__ImageCache_a3f315e74bc17a4b1a9b1c2cdf0720a43} 
+static constexpr size\+\_\+t {\bfseries CACHE\+\_\+\+SIZE} = 32768
+\begin{DoxyCompactList}\small\item\em 32KB cache size for embedded use \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Image cache component for sprite management. 
+
+Provides static memory allocation for 4-\/bit image data with efficient caching and frame-\/based animation support. Based on original Enjin \doxylink{classenjin2_1_1C__ImageCache}{C\+\_\+\+Image\+Cache} design. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1C__ImageCache_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1C__ImageCache_a3d25592f20acbc7a5d582d99aeeb4a01}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!C\_ImageCache@{C\_ImageCache}}
+\index{C\_ImageCache@{C\_ImageCache}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{C\_ImageCache()}{C\_ImageCache()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_a3d25592f20acbc7a5d582d99aeeb4a01} 
+enjin2::\+\+C\+\_\+\+Image\+Cache::\+\+C\+\_\+\+Image\+Cache (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+
+
+Constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Parent object \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1C__ImageCache_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1C__ImageCache_a41ecec056d48ce6b7255ff1bca9eb1d6}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!AddImage@{AddImage}}
+\index{AddImage@{AddImage}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{AddImage()}{AddImage()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_a41ecec056d48ce6b7255ff1bca9eb1d6} 
+\doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{Image\+Entry}} enjin2::\+\+C\+\_\+\+Image\+Cache::\+\+Add\+Image (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1FileInterface}{File\+Interface}} \&}]{file}{, }\item[{uint16\+\_\+t}]{width}{, }\item[{uint16\+\_\+t}]{height}{, }\item[{uint16\+\_\+t}]{frame\+Count}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Add image to cache from file. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file} & File interface to read from \\
+\hline
+{\em width} & Image width in pixels \\
+\hline
+{\em height} & Image height in pixels \\
+\hline
+{\em frame\+Count} & Number of animation frames \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{structenjin2_1_1ImageEntry}{Image\+Entry} descriptor for cached image 
+\end{DoxyReturn}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em \doxylink{classenjin2_1_1ImageCacheException}{Image\+Cache\+Exception}} & on allocation or I/\+O errors \\
+\hline
+\end{DoxyExceptions}
+\Hypertarget{classenjin2_1_1C__ImageCache_abc683626c67b9d9a2292888305dd420e}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!awake@{awake}}
+\index{awake@{awake}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{awake()}{awake()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_abc683626c67b9d9a2292888305dd420e} 
+void enjin2::\+\+C\+\_\+\+Image\+Cache::\+awake (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Awake is called when the component is created. 
+
+Use this for initialization that doesn\textquotesingle{}t depend on other components. This is called before Start(). 
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{enjin2::\+\+Component$<$ T $>$}}.
+
+\Hypertarget{classenjin2_1_1C__ImageCache_aa10e22e9004635991c1a2c3eacd6d016}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!GetCacheStats@{GetCacheStats}}
+\index{GetCacheStats@{GetCacheStats}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{GetCacheStats()}{GetCacheStats()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_aa10e22e9004635991c1a2c3eacd6d016} 
+std::\+pair$<$ size\+\_\+t, size\+\_\+t $>$ enjin2::\+\+C\+\_\+\+Image\+Cache::\+\+Get\+Cache\+Stats (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Get cache statistics. 
+
+\begin{DoxyReturn}{Returns}
+Pair of (used\+\_\+bytes, total\+\_\+bytes) 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__ImageCache_af1d4a7fbd3e53aec0f093a7333d5c74c}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!GetImageData@{GetImageData}}
+\index{GetImageData@{GetImageData}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{GetImageData()}{GetImageData()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_af1d4a7fbd3e53aec0f093a7333d5c74c} 
+const uint8\+\_\+t \texorpdfstring{$\ast$}{*} enjin2::\+\+C\+\_\+\+Image\+Cache::\+\+Get\+Image\+Data (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{Image\+Entry}} \&}]{entry}{, }\item[{size\+\_\+t}]{frame\+Offset}{ = {\ttfamily 0}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Get pointer to image data in cache. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em entry} & Image entry descriptor \\
+\hline
+{\em frame\+Offset} & Frame number (0-\/based) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Pointer to 4-\/bit image data 
+\end{DoxyReturn}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em \doxylink{classenjin2_1_1ImageCacheException}{Image\+Cache\+Exception}} & on invalid access \\
+\hline
+\end{DoxyExceptions}
+\Hypertarget{classenjin2_1_1C__ImageCache_af0cffe2b6d02293723215090fad3a9a9}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!ReleaseEntry@{ReleaseEntry}}
+\index{ReleaseEntry@{ReleaseEntry}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{ReleaseEntry()}{ReleaseEntry()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_af0cffe2b6d02293723215090fad3a9a9} 
+void enjin2::\+\+C\+\_\+\+Image\+Cache::\+\+Release\+Entry (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{Image\+Entry}} \&}]{entry}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Release cached image entry. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em entry} & Image entry to release \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em \doxylink{classenjin2_1_1ImageCacheException}{Image\+Cache\+Exception}} & if entry is inactive \\
+\hline
+\end{DoxyExceptions}
+\Hypertarget{classenjin2_1_1C__ImageCache_aa53bcf95378948e062c4bcf8ca6c73de}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!start@{start}}
+\index{start@{start}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{start()}{start()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_aa53bcf95378948e062c4bcf8ca6c73de} 
+void enjin2::\+\+C\+\_\+\+Image\+Cache::\+start (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Start is called before the first frame update. 
+
+Use this for initialization that depends on other components or objects being fully set up. 
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{enjin2::\+\+Component$<$ T $>$}}.
+
+\Hypertarget{classenjin2_1_1C__ImageCache_a674d80edeb11565a1be49d9c07582c9e}\index{enjin2::C\_ImageCache@{enjin2::C\_ImageCache}!update@{update}}
+\index{update@{update}!enjin2::C\_ImageCache@{enjin2::C\_ImageCache}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__ImageCache_a674d80edeb11565a1be49d9c07582c9e} 
+void enjin2::\+\+C\+\_\+\+Image\+Cache::\+update (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Update is called once per frame. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last frame in milliseconds \\
+\hline
+\end{DoxyParams}
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{enjin2::\+\+Component$<$ T $>$}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+components/\+image\+\_\+cache.\+hpp\end{DoxyCompactItemize}

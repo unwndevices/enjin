@@ -1,0 +1,90 @@
+\doxysection{enjin2::\+Animation\+System Class Reference}
+\hypertarget{classenjin2_1_1AnimationSystem}{}\label{classenjin2_1_1AnimationSystem}\index{enjin2::AnimationSystem@{enjin2::AnimationSystem}}
+
+
+Animation system for updating time-\/based animations.  
+
+
+
+
+{\ttfamily \+\#include $<$systems.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \doxymbox{\hyperlink{classenjin2_1_1AnimationSystem_a68c1b691d528eba2206aa8927f4ac9cb}{update}} (float delta\+Time) override
+\begin{DoxyCompactList}\small\item\em Update all animations. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{classenjin2_1_1AnimationSystem_ad09541f4c0c83b7044d7523cd039fdf4}{get\+Priority}} () const override
+\begin{DoxyCompactList}\small\item\em Get system priority (animations should run early). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1System}{enjin2::\+\+System$<$ Animation\+System $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+System\+ID \doxymbox{\hyperlink{classenjin2_1_1System_a4b181b72e69a9f4e0805a39352a0b9ba}{get\+System\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1SystemBase}{enjin2::\+\+System\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+System\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1System}{enjin2::\+\+System$<$ Animation\+System $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static System\+ID \doxymbox{\hyperlink{classenjin2_1_1System_a9d6a24f7c9f780b416708725fff803ca}{get\+Static\+System\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1SystemBase}{enjin2::\+\+System\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static System\+ID \doxymbox{\hyperlink{classenjin2_1_1SystemBase_ad58d4bd01a7008a96133a6629637e47c}{get\+System\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Animation system for updating time-\/based animations. 
+
+Updates all entities with \doxylink{structenjin2_1_1AnimationComponent}{Animation\+Component}, handling timing, looping, and ping-\/pong behavior. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1AnimationSystem_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1AnimationSystem_ad09541f4c0c83b7044d7523cd039fdf4}\index{enjin2::AnimationSystem@{enjin2::AnimationSystem}!getPriority@{getPriority}}
+\index{getPriority@{getPriority}!enjin2::AnimationSystem@{enjin2::AnimationSystem}}
+\doxysubsubsection{\texorpdfstring{getPriority()}{getPriority()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1AnimationSystem_ad09541f4c0c83b7044d7523cd039fdf4} 
+int enjin2::\+\+Animation\+System::\+get\+Priority (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Get system priority (animations should run early). 
+
+\begin{DoxyReturn}{Returns}
+Priority value 
+\end{DoxyReturn}
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1SystemBase_a0c748a49a94bba88a17945760790f15b}{enjin2::\+\+System\+Base}}.
+
+\Hypertarget{classenjin2_1_1AnimationSystem_a68c1b691d528eba2206aa8927f4ac9cb}\index{enjin2::AnimationSystem@{enjin2::AnimationSystem}!update@{update}}
+\index{update@{update}!enjin2::AnimationSystem@{enjin2::AnimationSystem}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1AnimationSystem_a68c1b691d528eba2206aa8927f4ac9cb} 
+void enjin2::\+\+Animation\+System::\+update (\begin{DoxyParamCaption}\item[{float}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Update all animations. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last update in seconds \\
+\hline
+\end{DoxyParams}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1SystemBase_af634eed7c5580169a826b1bd5e39d452}{enjin2::\+\+System\+Base}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+ui/\+systems.\+hpp\end{DoxyCompactItemize}

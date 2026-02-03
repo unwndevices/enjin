@@ -1,0 +1,329 @@
+\doxysection{enjin2::\+Scene\+State\+Machine Class Reference}
+\hypertarget{classenjin2_1_1SceneStateMachine}{}\label{classenjin2_1_1SceneStateMachine}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+
+
+State machine for managing scene transitions.  
+
+
+
+
+{\ttfamily \+\#include $<$scene\+\_\+state\+\_\+machine.\+hpp$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+enum class \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a}{Transition\+Type}} \{ \newline
+\doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aae35884a2445bc4ae2df52f188763273c}{IMMEDIATE}}
+, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa7a4f085f6d94319eba88ab629eb5ac25}{FADE\+\_\+\+OUT\+\_\+\+IN}}
+, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aad8d6276cf556fd04c990921931f7c8f9}{SLIDE\+\_\+\+LEFT}}
+, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa152f1036c0739805670d9a146ba55ea4}{SLIDE\+\_\+\+RIGHT}}
+, \newline
+\doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa1fed7c44a85162ae1a819234e4e0b62e}{SLIDE\+\_\+\+UP}}
+, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa543dfeb28adfe9a119ec87df86a2f02d}{SLIDE\+\_\+\+DOWN}}
+ \}
+\begin{DoxyCompactList}\small\item\em \doxylink{classenjin2_1_1Scene}{Scene} transition types. \end{DoxyCompactList}\item 
+enum class \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946}{Transition\+State}} \{ \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946aa5daf7f2ebbba4975d61dab1c40188c7}{IDLE}}
+, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946ab824d9db783f9289d36d1bb697d4f83f}{FADING\+\_\+\+OUT}}
+, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946abb28d0ea577d98d281f19b45ecf26cda}{FADING\+\_\+\+IN}}
+, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946a15443de7dd780091e8dd910b110bd99e}{SLIDING}}
+ \}
+\begin{DoxyCompactList}\small\item\em Transition state. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1SceneStateMachine_a92c9579c47b1bcff6c1a0ac10b9a858f}\label{classenjin2_1_1SceneStateMachine_a92c9579c47b1bcff6c1a0ac10b9a858f} 
+{\bfseries Scene\+State\+Machine} ()
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SceneStateMachine_a19e9832d2fa549c9f9178ae94f649193}\label{classenjin2_1_1SceneStateMachine_a19e9832d2fa549c9f9178ae94f649193} 
+{\bfseries \texorpdfstring{$\sim$}{\string~}\+Scene\+State\+Machine} ()=default
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename T, typename... Args$>$ }\\T \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a7177065a205d98dbe557c56aa3a422ec}{add\+Scene}} (uint32\+\_\+t scene\+Id, Args \&\&... args)
+\begin{DoxyCompactList}\small\item\em Add a scene to the state machine. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a895fd67342367a1e01a6f42ea5d0323c}{remove\+Scene}} (uint32\+\_\+t scene\+Id)
+\begin{DoxyCompactList}\small\item\em Remove a scene from the state machine. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a50a371c8805f1a1f9c90882f479cc623}{change\+Scene}} (uint32\+\_\+t scene\+Id, \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a}{Transition\+Type}} transition=\doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aae35884a2445bc4ae2df52f188763273c}{Transition\+Type::\+\+IMMEDIATE}}, uint16\+\_\+t duration=0)
+\begin{DoxyCompactList}\small\item\em Change to a different scene. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_af14baa337df44d1bcb77732dd87ba29d}{update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Update the state machine. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename Pixel\+Type$>$ }\\void \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_aa39f47f15fc7ac5c2a02f0e9ccb9cef1}{render}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ Pixel\+Type $>$ \&canvas)
+\begin{DoxyCompactList}\small\item\em Render the current scene with transition effects. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac29c773c8b41caec87a12f800f053d3b}{get\+Current\+Scene}} ()
+\begin{DoxyCompactList}\small\item\em Get current scene. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_afe89513d16e99ee484abc1a74a29227d}{get\+Scene}} (uint32\+\_\+t scene\+Id)
+\begin{DoxyCompactList}\small\item\em Get scene by ID. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a59848e3e40c80b27456fe4a74d140b57}{is\+Transitioning}} () const
+\begin{DoxyCompactList}\small\item\em Check if a transition is currently active. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a9a037f40a8f5ba10c82e58ccaa36aea2}{get\+Transition\+Progress}} () const
+\begin{DoxyCompactList}\small\item\em Get current transition progress. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SceneStateMachine_a3ac4ba9aa99dfa192450362a2facf34c}\label{classenjin2_1_1SceneStateMachine_a3ac4ba9aa99dfa192450362a2facf34c} 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}}$<$ \doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*}, \doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*} $>$ {\bfseries connect\+On\+Scene\+Change\+Start} (std::\+function$<$ void(\doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*}, \doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*})$>$ callback)
+\begin{DoxyCompactList}\small\item\em Connect to transition events. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SceneStateMachine_a4307b5f9be0af97c442c5360907afa50}\label{classenjin2_1_1SceneStateMachine_a4307b5f9be0af97c442c5360907afa50} 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}}$<$ \doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*}, \doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*} $>$ {\bfseries connect\+On\+Scene\+Change\+Complete} (std::\+function$<$ void(\doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*}, \doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*})$>$ callback)
+\item 
+\Hypertarget{classenjin2_1_1SceneStateMachine_a1648aa988da18eb429922001b36df100}\label{classenjin2_1_1SceneStateMachine_a1648aa988da18eb429922001b36df100} 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}}$<$ \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a}{Transition\+Type}} $>$ {\bfseries connect\+On\+Transition\+Start} (std::\+function$<$ void(\doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a}{Transition\+Type}})$>$ callback)
+\item 
+\Hypertarget{classenjin2_1_1SceneStateMachine_a0fc12a3125c384c75f77ca9220549df9}\label{classenjin2_1_1SceneStateMachine_a0fc12a3125c384c75f77ca9220549df9} 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}}$<$ float $>$ {\bfseries connect\+On\+Transition\+Progress} (std::\+function$<$ void(float)$>$ callback)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+State machine for managing scene transitions. 
+
+Provides a centralized system for managing multiple scenes, handling transitions between them, and maintaining scene state. 
+
+\label{doc-enum-members}
+\Hypertarget{classenjin2_1_1SceneStateMachine_doc-enum-members}
+\doxysubsection{Member Enumeration Documentation}
+\Hypertarget{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!TransitionState@{TransitionState}}
+\index{TransitionState@{TransitionState}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{TransitionState}{TransitionState}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946} 
+enum class \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946}{enjin2::\+\+Scene\+State\+Machine::\+\+Transition\+State}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+Transition state. 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{IDLE@{IDLE}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!IDLE@{IDLE}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946aa5daf7f2ebbba4975d61dab1c40188c7}\label{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946aa5daf7f2ebbba4975d61dab1c40188c7} 
+IDLE&No transition active. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FADING\_OUT@{FADING\_OUT}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!FADING\_OUT@{FADING\_OUT}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946ab824d9db783f9289d36d1bb697d4f83f}\label{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946ab824d9db783f9289d36d1bb697d4f83f} 
+FADING\+\_\+\+OUT&Fading out current scene. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FADING\_IN@{FADING\_IN}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!FADING\_IN@{FADING\_IN}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946abb28d0ea577d98d281f19b45ecf26cda}\label{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946abb28d0ea577d98d281f19b45ecf26cda} 
+FADING\+\_\+\+IN&Fading in new scene. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SLIDING@{SLIDING}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!SLIDING@{SLIDING}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946a15443de7dd780091e8dd910b110bd99e}\label{classenjin2_1_1SceneStateMachine_a9c07cc68279e2f341cc712d5e5fcc946a15443de7dd780091e8dd910b110bd99e} 
+SLIDING&Sliding between scenes. \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!TransitionType@{TransitionType}}
+\index{TransitionType@{TransitionType}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{TransitionType}{TransitionType}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a} 
+enum class \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a}{enjin2::\+\+Scene\+State\+Machine::\+\+Transition\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+\doxylink{classenjin2_1_1Scene}{Scene} transition types. 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{IMMEDIATE@{IMMEDIATE}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!IMMEDIATE@{IMMEDIATE}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aae35884a2445bc4ae2df52f188763273c}\label{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aae35884a2445bc4ae2df52f188763273c} 
+IMMEDIATE&Instant transition. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FADE\_OUT\_IN@{FADE\_OUT\_IN}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!FADE\_OUT\_IN@{FADE\_OUT\_IN}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa7a4f085f6d94319eba88ab629eb5ac25}\label{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa7a4f085f6d94319eba88ab629eb5ac25} 
+FADE\+\_\+\+OUT\+\_\+\+IN&Fade out current, fade in new. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SLIDE\_LEFT@{SLIDE\_LEFT}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!SLIDE\_LEFT@{SLIDE\_LEFT}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aad8d6276cf556fd04c990921931f7c8f9}\label{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aad8d6276cf556fd04c990921931f7c8f9} 
+SLIDE\+\_\+\+LEFT&Slide transition to the left. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SLIDE\_RIGHT@{SLIDE\_RIGHT}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!SLIDE\_RIGHT@{SLIDE\_RIGHT}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa152f1036c0739805670d9a146ba55ea4}\label{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa152f1036c0739805670d9a146ba55ea4} 
+SLIDE\+\_\+\+RIGHT&Slide transition to the right. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SLIDE\_UP@{SLIDE\_UP}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!SLIDE\_UP@{SLIDE\_UP}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa1fed7c44a85162ae1a819234e4e0b62e}\label{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa1fed7c44a85162ae1a819234e4e0b62e} 
+SLIDE\+\_\+\+UP&Slide transition up. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SLIDE\_DOWN@{SLIDE\_DOWN}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!SLIDE\_DOWN@{SLIDE\_DOWN}}
+}\Hypertarget{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa543dfeb28adfe9a119ec87df86a2f02d}\label{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aa543dfeb28adfe9a119ec87df86a2f02d} 
+SLIDE\+\_\+\+DOWN&Slide transition down. \\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1SceneStateMachine_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1SceneStateMachine_a7177065a205d98dbe557c56aa3a422ec}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!addScene@{addScene}}
+\index{addScene@{addScene}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{addScene()}{addScene()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_a7177065a205d98dbe557c56aa3a422ec} 
+template$<$typename T, typename... Args$>$ \\
+T \texorpdfstring{$\ast$}{*} enjin2::\+\+Scene\+State\+Machine::\+add\+Scene (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{scene\+Id}{, }\item[{Args \&\&...}]{args}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Add a scene to the state machine. 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em T} & \doxylink{classenjin2_1_1Scene}{Scene} type (must derive from \doxylink{classenjin2_1_1Scene}{Scene}) \\
+\hline
+{\em Args} & Constructor argument types \\
+\hline
+\end{DoxyTemplParams}
+
+\begin{DoxyParams}{Parameters}
+{\em scene\+Id} & Unique scene identifier \\
+\hline
+{\em args} & Constructor arguments \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Pointer to created scene or nullptr if failed 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SceneStateMachine_a50a371c8805f1a1f9c90882f479cc623}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!changeScene@{changeScene}}
+\index{changeScene@{changeScene}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{changeScene()}{changeScene()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_a50a371c8805f1a1f9c90882f479cc623} 
+bool enjin2::\+\+Scene\+State\+Machine::\+change\+Scene (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{scene\+Id}{, }\item[{\doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936a}{Transition\+Type}}}]{transition}{ = {\ttfamily \doxymbox{\hyperlink{classenjin2_1_1SceneStateMachine_ac0494c42046b4b5aad9d77883aee936aae35884a2445bc4ae2df52f188763273c}{Transition\+Type::\+\+IMMEDIATE}}}, }\item[{uint16\+\_\+t}]{duration}{ = {\ttfamily 0}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Change to a different scene. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene\+Id} & Target scene identifier \\
+\hline
+{\em transition} & Transition type to use \\
+\hline
+{\em duration} & Transition duration in milliseconds (0 = use default) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if transition started successfully 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SceneStateMachine_ac29c773c8b41caec87a12f800f053d3b}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!getCurrentScene@{getCurrentScene}}
+\index{getCurrentScene@{getCurrentScene}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{getCurrentScene()}{getCurrentScene()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_ac29c773c8b41caec87a12f800f053d3b} 
+\doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*} enjin2::\+\+Scene\+State\+Machine::\+get\+Current\+Scene (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get current scene. 
+
+\begin{DoxyReturn}{Returns}
+Pointer to current scene or nullptr 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SceneStateMachine_afe89513d16e99ee484abc1a74a29227d}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!getScene@{getScene}}
+\index{getScene@{getScene}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{getScene()}{getScene()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_afe89513d16e99ee484abc1a74a29227d} 
+\doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}} \texorpdfstring{$\ast$}{*} enjin2::\+\+Scene\+State\+Machine::\+get\+Scene (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{scene\+Id}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get scene by ID. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene\+Id} & \doxylink{classenjin2_1_1Scene}{Scene} identifier \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Pointer to scene or nullptr if not found 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SceneStateMachine_a9a037f40a8f5ba10c82e58ccaa36aea2}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!getTransitionProgress@{getTransitionProgress}}
+\index{getTransitionProgress@{getTransitionProgress}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{getTransitionProgress()}{getTransitionProgress()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_a9a037f40a8f5ba10c82e58ccaa36aea2} 
+float enjin2::\+\+Scene\+State\+Machine::\+get\+Transition\+Progress (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get current transition progress. 
+
+\begin{DoxyReturn}{Returns}
+Progress value from 0.\+0 to 1.\+0 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SceneStateMachine_a59848e3e40c80b27456fe4a74d140b57}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!isTransitioning@{isTransitioning}}
+\index{isTransitioning@{isTransitioning}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{isTransitioning()}{isTransitioning()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_a59848e3e40c80b27456fe4a74d140b57} 
+bool enjin2::\+\+Scene\+State\+Machine::\+is\+Transitioning (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Check if a transition is currently active. 
+
+\begin{DoxyReturn}{Returns}
+True if transitioning 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SceneStateMachine_a895fd67342367a1e01a6f42ea5d0323c}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!removeScene@{removeScene}}
+\index{removeScene@{removeScene}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{removeScene()}{removeScene()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_a895fd67342367a1e01a6f42ea5d0323c} 
+bool enjin2::\+\+Scene\+State\+Machine::\+remove\+Scene (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{scene\+Id}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Remove a scene from the state machine. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene\+Id} & \doxylink{classenjin2_1_1Scene}{Scene} identifier to remove \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if scene was removed 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SceneStateMachine_aa39f47f15fc7ac5c2a02f0e9ccb9cef1}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!render@{render}}
+\index{render@{render}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{render()}{render()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_aa39f47f15fc7ac5c2a02f0e9ccb9cef1} 
+template$<$typename Pixel\+Type$>$ \\
+void enjin2::\+\+Scene\+State\+Machine::\+render (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ Pixel\+Type $>$ \&}]{canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Render the current scene with transition effects. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Target canvas for rendering \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1SceneStateMachine_af14baa337df44d1bcb77732dd87ba29d}\index{enjin2::SceneStateMachine@{enjin2::SceneStateMachine}!update@{update}}
+\index{update@{update}!enjin2::SceneStateMachine@{enjin2::SceneStateMachine}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SceneStateMachine_af14baa337df44d1bcb77732dd87ba29d} 
+void enjin2::\+\+Scene\+State\+Machine::\+update (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Update the state machine. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last frame in milliseconds \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+core/\+scene\+\_\+state\+\_\+machine.\+hpp\end{DoxyCompactItemize}

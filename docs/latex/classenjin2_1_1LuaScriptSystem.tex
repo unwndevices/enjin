@@ -1,0 +1,175 @@
+\doxysection{enjin2::\+Lua\+Script\+System Class Reference}
+\hypertarget{classenjin2_1_1LuaScriptSystem}{}\label{classenjin2_1_1LuaScriptSystem}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+
+
+High-\/level Lua scripting interface.  
+
+
+
+
+{\ttfamily \+\#include $<$bindings.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1LuaScriptSystem_a850cb9d57efbca8e1446b6c69f3e45ea}\label{classenjin2_1_1LuaScriptSystem_a850cb9d57efbca8e1446b6c69f3e45ea} 
+{\bfseries Lua\+Script\+System} ()
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_ad6e0d7ad82a81e41e7c8b209f54c95df}{initialize}} ()
+\begin{DoxyCompactList}\small\item\em Initialize the script system. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1LuaScriptSystem_a4ff5214c7743c8cf7142601a7e36df3d}\label{classenjin2_1_1LuaScriptSystem_a4ff5214c7743c8cf7142601a7e36df3d} 
+void {\bfseries shutdown} ()
+\begin{DoxyCompactList}\small\item\em Shutdown the script system. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_a1ed4db9a5f1e262f7bbc4c95636a2ef1}{set\+Canvas}} (\doxymbox{\hyperlink{classenjin2_1_1LuaCanvas}{Lua\+Canvas}} \texorpdfstring{$\ast$}{*}canvas)
+\begin{DoxyCompactList}\small\item\em Set canvas for drawing operations. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_a6847a4429753240093c591b6a48d4f44}{execute\+Script}} (const std::\+string \&code)
+\begin{DoxyCompactList}\small\item\em Execute Lua script string. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_a4b9a8747a013f0848a0d854325eead1c}{load\+Script}} (const std::\+string \&filename)
+\begin{DoxyCompactList}\small\item\em Load and execute Lua script file. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename... Args$>$ }\\\doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_abe2297db816a2f0e889b91702dcc0535}{call\+Function}} (const std::\+string \&function\+Name, Args... args)
+\begin{DoxyCompactList}\small\item\em Call Lua function. \end{DoxyCompactList}\item 
+size\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_a15429cd0dbc3fe9b83ee54396a6d0386}{get\+Memory\+Usage}} () const
+\begin{DoxyCompactList}\small\item\em Get script system memory usage. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1LuaEngine}{Lua\+Engine}} \& \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_aaaaafe0095fc887d52507198e4e219ad}{get\+Engine}} ()
+\begin{DoxyCompactList}\small\item\em Get Lua engine reference. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1LuaBindings}{Lua\+Bindings}} \& \doxymbox{\hyperlink{classenjin2_1_1LuaScriptSystem_a43b481d99eec5d66cf2659f406a77134}{get\+Bindings}} ()
+\begin{DoxyCompactList}\small\item\em Get bindings reference. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+High-\/level Lua scripting interface. 
+
+Combines \doxylink{classenjin2_1_1LuaEngine}{Lua\+Engine} and \doxylink{classenjin2_1_1LuaBindings}{Lua\+Bindings} for easy script execution with graphics and UI capabilities. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_abe2297db816a2f0e889b91702dcc0535}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!callFunction@{callFunction}}
+\index{callFunction@{callFunction}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{callFunction()}{callFunction()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_abe2297db816a2f0e889b91702dcc0535} 
+template$<$typename... Args$>$ \\
+\doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} enjin2::\+\+Lua\+Script\+System::\+call\+Function (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{function\+Name}{, }\item[{Args...}]{args}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Call Lua function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em function\+Name} & Function name \\
+\hline
+{\em args} & Function arguments \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Execution result 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_a6847a4429753240093c591b6a48d4f44}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!executeScript@{executeScript}}
+\index{executeScript@{executeScript}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{executeScript()}{executeScript()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_a6847a4429753240093c591b6a48d4f44} 
+\doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} enjin2::\+\+Lua\+Script\+System::\+execute\+Script (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{code}{}\end{DoxyParamCaption})}
+
+
+
+Execute Lua script string. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em code} & Lua code to execute \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Execution result 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_a43b481d99eec5d66cf2659f406a77134}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!getBindings@{getBindings}}
+\index{getBindings@{getBindings}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{getBindings()}{getBindings()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_a43b481d99eec5d66cf2659f406a77134} 
+\doxymbox{\hyperlink{classenjin2_1_1LuaBindings}{Lua\+Bindings}} \& enjin2::\+\+Lua\+Script\+System::\+get\+Bindings (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get bindings reference. 
+
+\begin{DoxyReturn}{Returns}
+Lua bindings 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_aaaaafe0095fc887d52507198e4e219ad}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!getEngine@{getEngine}}
+\index{getEngine@{getEngine}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{getEngine()}{getEngine()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_aaaaafe0095fc887d52507198e4e219ad} 
+\doxymbox{\hyperlink{classenjin2_1_1LuaEngine}{Lua\+Engine}} \& enjin2::\+\+Lua\+Script\+System::\+get\+Engine (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get Lua engine reference. 
+
+\begin{DoxyReturn}{Returns}
+Lua engine 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_a15429cd0dbc3fe9b83ee54396a6d0386}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!getMemoryUsage@{getMemoryUsage}}
+\index{getMemoryUsage@{getMemoryUsage}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{getMemoryUsage()}{getMemoryUsage()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_a15429cd0dbc3fe9b83ee54396a6d0386} 
+size\+\_\+t enjin2::\+\+Lua\+Script\+System::\+get\+Memory\+Usage (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const}
+
+
+
+Get script system memory usage. 
+
+\begin{DoxyReturn}{Returns}
+Memory usage in bytes 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_ad6e0d7ad82a81e41e7c8b209f54c95df}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!initialize@{initialize}}
+\index{initialize@{initialize}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{initialize()}{initialize()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_ad6e0d7ad82a81e41e7c8b209f54c95df} 
+bool enjin2::\+\+Lua\+Script\+System::\+initialize (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Initialize the script system. 
+
+\begin{DoxyReturn}{Returns}
+True if successful 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_a4b9a8747a013f0848a0d854325eead1c}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!loadScript@{loadScript}}
+\index{loadScript@{loadScript}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{loadScript()}{loadScript()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_a4b9a8747a013f0848a0d854325eead1c} 
+\doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} enjin2::\+\+Lua\+Script\+System::\+load\+Script (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{filename}{}\end{DoxyParamCaption})}
+
+
+
+Load and execute Lua script file. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em filename} & Script file path \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Execution result 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaScriptSystem_a1ed4db9a5f1e262f7bbc4c95636a2ef1}\index{enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}!setCanvas@{setCanvas}}
+\index{setCanvas@{setCanvas}!enjin2::LuaScriptSystem@{enjin2::LuaScriptSystem}}
+\doxysubsubsection{\texorpdfstring{setCanvas()}{setCanvas()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaScriptSystem_a1ed4db9a5f1e262f7bbc4c95636a2ef1} 
+void enjin2::\+\+Lua\+Script\+System::\+set\+Canvas (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1LuaCanvas}{Lua\+Canvas}} \texorpdfstring{$\ast$}{*}}]{canvas}{}\end{DoxyParamCaption})}
+
+
+
+Set canvas for drawing operations. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to use \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+scripting/\+bindings.\+hpp\end{DoxyCompactItemize}

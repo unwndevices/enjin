@@ -1,0 +1,213 @@
+\doxysection{enjin2::\+Fill\+Up\+Gauge Class Reference}
+\hypertarget{classenjin2_1_1FillUpGauge}{}\label{classenjin2_1_1FillUpGauge}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+
+
+Fill-\/up gauge component for level display.  
+
+
+
+
+{\ttfamily \+\#include $<$fill\+\_\+up\+\_\+gauge.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a48b4e4a7fe7b75b4229b0ae8dfce3db7}{Fill\+Up\+Gauge}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint16\+\_\+t w, uint16\+\_\+t h, uint16\+\_\+t gauge\+Color, Gauge\+Mode gauge\+Mode)
+\begin{DoxyCompactList}\small\item\em Construct a new \doxylink{classenjin2_1_1FillUpGauge}{Fill\+Up\+Gauge} component. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1FillUpGauge_abf978bfc9174bef7d70e79778feb3d05}\label{classenjin2_1_1FillUpGauge_abf978bfc9174bef7d70e79778feb3d05} 
+void {\bfseries on\+Create} () override
+\item 
+\Hypertarget{classenjin2_1_1FillUpGauge_a2cc079560d96a796a6551af3f0726269}\label{classenjin2_1_1FillUpGauge_a2cc079560d96a796a6551af3f0726269} 
+void {\bfseries on\+Update} (float delta\+Time) override
+\item 
+void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a04c3f29b8e25ad4d07de51825bdab130}{draw}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&canvas)
+\begin{DoxyCompactList}\small\item\em Draw the gauge to the canvas. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a474b9656df2ca91019eff4b2faa61625}{set\+Value}} (float value)
+\begin{DoxyCompactList}\small\item\em Set the gauge value. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a4ec28890f1f7baebb0345c15c86d3236}{get\+Value}} () const
+\begin{DoxyCompactList}\small\item\em Get the current gauge value. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a4e7ad1fefdb259f1deacccb26de3470f}{set\+Mode}} (Gauge\+Mode new\+Mode)
+\begin{DoxyCompactList}\small\item\em Set the gauge mode. \end{DoxyCompactList}\item 
+Gauge\+Mode \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_ab74700a3b7364010d2f40d6235458ac0}{get\+Mode}} () const
+\begin{DoxyCompactList}\small\item\em Get the current gauge mode. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_aca7d4147f02a26726d1344830fbfc2d6}{set\+Color}} (uint16\+\_\+t new\+Color)
+\begin{DoxyCompactList}\small\item\em Set the gauge color. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Update is called once per frame. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Fill-\/up gauge component for level display. 
+
+A visual gauge that fills up to represent a value, similar to a VU meter. Supports both unidirectional (0-\/1) and bidirectional (-\/1 to 1) modes. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1FillUpGauge_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1FillUpGauge_a48b4e4a7fe7b75b4229b0ae8dfce3db7}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}!FillUpGauge@{FillUpGauge}}
+\index{FillUpGauge@{FillUpGauge}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+\doxysubsubsection{\texorpdfstring{FillUpGauge()}{FillUpGauge()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_a48b4e4a7fe7b75b4229b0ae8dfce3db7} 
+enjin2::\+\+Fill\+Up\+Gauge::\+\+Fill\+Up\+Gauge (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{uint16\+\_\+t}]{w}{, }\item[{uint16\+\_\+t}]{h}{, }\item[{uint16\+\_\+t}]{gauge\+Color}{, }\item[{Gauge\+Mode}]{gauge\+Mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Construct a new \doxylink{classenjin2_1_1FillUpGauge}{Fill\+Up\+Gauge} component. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & The object that owns this component \\
+\hline
+{\em w} & Width of the gauge in pixels \\
+\hline
+{\em h} & Height of the gauge in pixels \\
+\hline
+{\em gauge\+Color} & Color for the gauge outline and indicator \\
+\hline
+{\em gauge\+Mode} & Mode of operation (unidirectional or bidirectional) \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1FillUpGauge_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1FillUpGauge_a04c3f29b8e25ad4d07de51825bdab130}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}!draw@{draw}}
+\index{draw@{draw}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+\doxysubsubsection{\texorpdfstring{draw()}{draw()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_a04c3f29b8e25ad4d07de51825bdab130} 
+void enjin2::\+\+Fill\+Up\+Gauge::\+draw (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&}]{canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Draw the gauge to the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & The canvas to draw to \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1FillUpGauge_ab74700a3b7364010d2f40d6235458ac0}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}!getMode@{getMode}}
+\index{getMode@{getMode}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+\doxysubsubsection{\texorpdfstring{getMode()}{getMode()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_ab74700a3b7364010d2f40d6235458ac0} 
+Gauge\+Mode enjin2::\+\+Fill\+Up\+Gauge::\+get\+Mode (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get the current gauge mode. 
+
+\begin{DoxyReturn}{Returns}
+Current mode 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1FillUpGauge_a4ec28890f1f7baebb0345c15c86d3236}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}!getValue@{getValue}}
+\index{getValue@{getValue}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+\doxysubsubsection{\texorpdfstring{getValue()}{getValue()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_a4ec28890f1f7baebb0345c15c86d3236} 
+float enjin2::\+\+Fill\+Up\+Gauge::\+get\+Value (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get the current gauge value. 
+
+\begin{DoxyReturn}{Returns}
+Current value 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1FillUpGauge_aca7d4147f02a26726d1344830fbfc2d6}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}!setColor@{setColor}}
+\index{setColor@{setColor}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+\doxysubsubsection{\texorpdfstring{setColor()}{setColor()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_aca7d4147f02a26726d1344830fbfc2d6} 
+void enjin2::\+\+Fill\+Up\+Gauge::\+set\+Color (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{new\+Color}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set the gauge color. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em new\+Color} & Color value (0-\/15 for 4-\/bit grayscale) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1FillUpGauge_a4e7ad1fefdb259f1deacccb26de3470f}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}!setMode@{setMode}}
+\index{setMode@{setMode}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+\doxysubsubsection{\texorpdfstring{setMode()}{setMode()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_a4e7ad1fefdb259f1deacccb26de3470f} 
+void enjin2::\+\+Fill\+Up\+Gauge::\+set\+Mode (\begin{DoxyParamCaption}\item[{Gauge\+Mode}]{new\+Mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set the gauge mode. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em new\+Mode} & New mode (unidirectional or bidirectional) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1FillUpGauge_a474b9656df2ca91019eff4b2faa61625}\index{enjin2::FillUpGauge@{enjin2::FillUpGauge}!setValue@{setValue}}
+\index{setValue@{setValue}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
+\doxysubsubsection{\texorpdfstring{setValue()}{setValue()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_a474b9656df2ca91019eff4b2faa61625} 
+void enjin2::\+\+Fill\+Up\+Gauge::\+set\+Value (\begin{DoxyParamCaption}\item[{float}]{value}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set the gauge value. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em value} & Value to display (0.\+0-\/1.\+0 for unidirectional, -\/1.\+0-\/1.\+0 for bidirectional) \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+components/\+fill\+\_\+up\+\_\+gauge.\+hpp\end{DoxyCompactItemize}

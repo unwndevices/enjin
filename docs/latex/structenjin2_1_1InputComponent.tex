@@ -1,0 +1,163 @@
+\doxysection{enjin2::\+Input\+Component Struct Reference}
+\hypertarget{structenjin2_1_1InputComponent}{}\label{structenjin2_1_1InputComponent}\index{enjin2::InputComponent@{enjin2::InputComponent}}
+
+
+Input state component for interactive entities.  
+
+
+
+
+{\ttfamily \+\#include $<$components.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{structenjin2_1_1InputComponent_a58d0bbc9a3422802cc6d31f976ed0c0a}{Input\+Component}} (bool en=true)
+\begin{DoxyCompactList}\small\item\em Constructor with initial input state. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_afd2c6bdb0df97968efab9548cc8ef2d0}\label{structenjin2_1_1InputComponent_afd2c6bdb0df97968efab9548cc8ef2d0} 
+void {\bfseries reset\+Transient\+State} ()
+\begin{DoxyCompactList}\small\item\em Reset transient input state (called each frame). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{structenjin2_1_1InputComponent_a74924d30e05ca1b0cf22a2ec4d693c2d}{on\+Press}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pos)
+\begin{DoxyCompactList}\small\item\em \doxylink{structenjin2_1_1Handle}{Handle} press event. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{structenjin2_1_1InputComponent_aa01ff15e6fb2d594c946445f20eb4b7d}{on\+Release}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pos)
+\begin{DoxyCompactList}\small\item\em \doxylink{structenjin2_1_1Handle}{Handle} release event. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_a5af15c97d9363aeaa4f1eebb2ba236f2}\label{structenjin2_1_1InputComponent_a5af15c97d9363aeaa4f1eebb2ba236f2} 
+void {\bfseries on\+Hover\+Enter} ()
+\begin{DoxyCompactList}\small\item\em \doxylink{structenjin2_1_1Handle}{Handle} hover enter event. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_a8b787efda45115952d06692d5f24b0a7}\label{structenjin2_1_1InputComponent_a8b787efda45115952d06692d5f24b0a7} 
+void {\bfseries on\+Hover\+Exit} ()
+\begin{DoxyCompactList}\small\item\em \doxylink{structenjin2_1_1Handle}{Handle} hover exit event. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Input\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Update is called once per frame. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structenjin2_1_1InputComponent_a09303dca6bf250c72075290ec6dae343}\label{structenjin2_1_1InputComponent_a09303dca6bf250c72075290ec6dae343} 
+bool {\bfseries hovered}
+\begin{DoxyCompactList}\small\item\em Mouse/\+touch hover state. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_add8ae859c0bd5e433adbe836bd3c4d81}\label{structenjin2_1_1InputComponent_add8ae859c0bd5e433adbe836bd3c4d81} 
+bool {\bfseries pressed}
+\begin{DoxyCompactList}\small\item\em Currently being pressed. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_aebda97387d328925250504201b7a55f5}\label{structenjin2_1_1InputComponent_aebda97387d328925250504201b7a55f5} 
+bool {\bfseries clicked}
+\begin{DoxyCompactList}\small\item\em Was clicked this frame. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_a1df72b4916496966e688e8aba8d56fb4}\label{structenjin2_1_1InputComponent_a1df72b4916496966e688e8aba8d56fb4} 
+bool {\bfseries focused}
+\begin{DoxyCompactList}\small\item\em Has input focus. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_a880882cb3d384ca5d92d6e8b547f47e8}\label{structenjin2_1_1InputComponent_a880882cb3d384ca5d92d6e8b547f47e8} 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Accepts input events. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1InputComponent_ac9782e9923c7dd03c10d616e78c89d60}\label{structenjin2_1_1InputComponent_ac9782e9923c7dd03c10d616e78c89d60} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries last\+Hit\+Pos}
+\begin{DoxyCompactList}\small\item\em Last interaction position. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Input\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Input\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Input state component for interactive entities. 
+
+\label{doc-constructors}
+\Hypertarget{structenjin2_1_1InputComponent_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{structenjin2_1_1InputComponent_a58d0bbc9a3422802cc6d31f976ed0c0a}\index{enjin2::InputComponent@{enjin2::InputComponent}!InputComponent@{InputComponent}}
+\index{InputComponent@{InputComponent}!enjin2::InputComponent@{enjin2::InputComponent}}
+\doxysubsubsection{\texorpdfstring{InputComponent()}{InputComponent()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1InputComponent_a58d0bbc9a3422802cc6d31f976ed0c0a} 
+enjin2::\+\+Input\+Component::\+\+Input\+Component (\begin{DoxyParamCaption}\item[{bool}]{en}{ = {\ttfamily true}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor with initial input state. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em en} & Initial enabled state \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{structenjin2_1_1InputComponent_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{structenjin2_1_1InputComponent_a74924d30e05ca1b0cf22a2ec4d693c2d}\index{enjin2::InputComponent@{enjin2::InputComponent}!onPress@{onPress}}
+\index{onPress@{onPress}!enjin2::InputComponent@{enjin2::InputComponent}}
+\doxysubsubsection{\texorpdfstring{onPress()}{onPress()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1InputComponent_a74924d30e05ca1b0cf22a2ec4d693c2d} 
+void enjin2::\+\+Input\+Component::\+on\+Press (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pos}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxylink{structenjin2_1_1Handle}{Handle} press event. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & Position of press \\
+\hline
+\end{DoxyParams}
+\Hypertarget{structenjin2_1_1InputComponent_aa01ff15e6fb2d594c946445f20eb4b7d}\index{enjin2::InputComponent@{enjin2::InputComponent}!onRelease@{onRelease}}
+\index{onRelease@{onRelease}!enjin2::InputComponent@{enjin2::InputComponent}}
+\doxysubsubsection{\texorpdfstring{onRelease()}{onRelease()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1InputComponent_aa01ff15e6fb2d594c946445f20eb4b7d} 
+void enjin2::\+\+Input\+Component::\+on\+Release (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pos}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxylink{structenjin2_1_1Handle}{Handle} release event. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & Position of release \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this struct was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+ui/\+components.\+hpp\end{DoxyCompactItemize}

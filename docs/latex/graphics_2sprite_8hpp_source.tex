@@ -1,0 +1,193 @@
+\doxysection{sprite.\+hpp}
+\hypertarget{graphics_2sprite_8hpp_source}{}\label{graphics_2sprite_8hpp_source}\index{include/enjin2/graphics/sprite.hpp@{include/enjin2/graphics/sprite.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_GRAPHICS\_SPRITE\_HPP}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_GRAPHICS\_SPRITE\_HPP}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}../components/drawable.hpp"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}canvas.hpp"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Sprite_ac4e1343aeb9b9ad7defd34030cc6dfdb}{Sprite}}\ \{}
+\DoxyCodeLine{00018\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00022\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Sprite_ac4e1343aeb9b9ad7defd34030cc6dfdb}{Sprite}}()}
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ :\ texture(nullptr)}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ ,\ width(0)}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ ,\ height(0)}
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ ,\ matte(16)\ \ \textcolor{comment}{//\ 16\ =\ transparent\ for\ 4-\/bit,\ matches\ original}}
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ ,\ position(0,\ 0)}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ ,\ frame(0)}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ ,\ mode(BlendMode::Normal)}
+\DoxyCodeLine{00030\ \ \ \ \ \{\}}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00039\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Sprite_ae5e0e4b266059be7296e0eb6e7dc94cf}{Sprite}}(\textcolor{keyword}{const}\ uint8\_t*\ texture\_data,\ uint8\_t\ w,\ uint8\_t\ h,\ BlendMode\ blend\_mode\ =\ BlendMode::Normal)}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ :\ texture(texture\_data)}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ ,\ width(w)}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ ,\ height(h)}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ ,\ matte(16)\ \ \textcolor{comment}{//\ Default\ transparent}}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ ,\ position(0,\ 0)}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ ,\ frame(0)}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ ,\ mode(blend\_mode)}
+\DoxyCodeLine{00047\ \ \ \ \ \{\}}
+\DoxyCodeLine{00048\ }
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Sprite_ae2535b1cf9b35186ccaad8ac780b335c}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!texture)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ uint8\_t*\ frame\_texture\ =\ texture\ +\ (frame\ *\ width\ *\ height);}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ bitmap\ with\ matte\ transparency\ (matches\ original\ drawGrayscaleBitmap)}}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (uint8\_t\ y\ =\ 0;\ y\ <\ height;\ y++)\ \{}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (uint8\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pixel\ =\ frame\_texture[y\ *\ width\ +\ x];}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Skip\ transparent\ pixels\ (matte\ color)}}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pixel\ !=\ matte)\ \{}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ draw\_x\ =\ position.x\ +\ x;}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ draw\_y\ =\ position.y\ +\ y;}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Bounds\ check}}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (draw\_x\ >=\ 0\ \&\&\ draw\_x\ <\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_ac7c0bbbe3288628a960ad52d5c6b0354}{getWidth}}()\ \&\&\ }
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ draw\_y\ >=\ 0\ \&\&\ draw\_y\ <\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7029501093761bfddfee99c0ae0760a2}{getHeight}}())\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Apply\ blend\ mode}}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (mode)\ \{}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ BlendMode::Normal:}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(draw\_x,\ draw\_y,\ pixel);}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ BlendMode::Add:\ \{}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ existing\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a69f645c8dc5ec73967cde5725fc17047}{getPixel}}(draw\_x,\ draw\_y);}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint16\_t\ result\ =\ \textcolor{keyword}{static\_cast<}uint16\_t\textcolor{keyword}{>}(existing)\ +\ \textcolor{keyword}{static\_cast<}uint16\_t\textcolor{keyword}{>}(pixel);}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(draw\_x,\ draw\_y,\ result\ >\ 255\ ?\ 255\ :\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(result));}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ BlendMode::Sub:\ \{}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ existing\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a69f645c8dc5ec73967cde5725fc17047}{getPixel}}(draw\_x,\ draw\_y);}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ result\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(existing)\ -\/\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(pixel);}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(draw\_x,\ draw\_y,\ result\ <\ 0\ ?\ 0\ :\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(result));}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{default}:}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(draw\_x,\ draw\_y,\ pixel);}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00097\ \ \ \ \ \}}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Sprite_a18807509ab357a19783c011e23b5b27a}{Add}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!texture)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ uint8\_t*\ frame\_texture\ =\ texture\ +\ (frame\ *\ width\ *\ height);}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (uint8\_t\ y\ =\ 0;\ y\ <\ height;\ y++)\ \{}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (uint8\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pixel\ =\ frame\_texture[y\ *\ width\ +\ x];}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pixel\ !=\ matte)\ \{}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ draw\_x\ =\ position.x\ +\ x;}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ draw\_y\ =\ position.y\ +\ y;}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (draw\_x\ >=\ 0\ \&\&\ draw\_x\ <\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_ac7c0bbbe3288628a960ad52d5c6b0354}{getWidth}}()\ \&\&\ }
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ draw\_y\ >=\ 0\ \&\&\ draw\_y\ <\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7029501093761bfddfee99c0ae0760a2}{getHeight}}())\ \{}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ existing\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a69f645c8dc5ec73967cde5725fc17047}{getPixel}}(draw\_x,\ draw\_y);}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint16\_t\ result\ =\ \textcolor{keyword}{static\_cast<}uint16\_t\textcolor{keyword}{>}(existing)\ +\ \textcolor{keyword}{static\_cast<}uint16\_t\textcolor{keyword}{>}(pixel);}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(draw\_x,\ draw\_y,\ result\ >\ 255\ ?\ 255\ :\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(result));}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00126\ \ \ \ \ \}}
+\DoxyCodeLine{00127\ }
+\DoxyCodeLine{00132\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Sprite_a6cb8c54431fef7aecb0ce94d04c926fa}{Subtract}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!texture)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ uint8\_t*\ frame\_texture\ =\ texture\ +\ (frame\ *\ width\ *\ height);}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (uint8\_t\ y\ =\ 0;\ y\ <\ height;\ y++)\ \{}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (uint8\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pixel\ =\ frame\_texture[y\ *\ width\ +\ x];}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pixel\ !=\ matte)\ \{}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ draw\_x\ =\ position.x\ +\ x;}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ draw\_y\ =\ position.y\ +\ y;}
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (draw\_x\ >=\ 0\ \&\&\ draw\_x\ <\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_ac7c0bbbe3288628a960ad52d5c6b0354}{getWidth}}()\ \&\&\ }
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ draw\_y\ >=\ 0\ \&\&\ draw\_y\ <\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7029501093761bfddfee99c0ae0760a2}{getHeight}}())\ \{}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ existing\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a69f645c8dc5ec73967cde5725fc17047}{getPixel}}(draw\_x,\ draw\_y);}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ result\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(existing)\ -\/\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(pixel);}
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(draw\_x,\ draw\_y,\ result\ <\ 0\ ?\ 0\ :\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(result));}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00155\ \ \ \ \ \}}
+\DoxyCodeLine{00156\ }
+\DoxyCodeLine{00157\ \ \ \ \ \textcolor{comment}{//\ Setters\ (match\ original\ Enjin\ method\ names\ exactly)}}
+\DoxyCodeLine{00158\ \ \ \ \ \textcolor{keywordtype}{void}\ setTexture(\textcolor{keyword}{const}\ uint8\_t*\ texture\_data,\ uint8\_t\ w,\ uint8\_t\ h)\ \{}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ texture\ =\ texture\_data;}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ width\ =\ w;}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ height\ =\ h;}
+\DoxyCodeLine{00162\ \ \ \ \ \}}
+\DoxyCodeLine{00163\ }
+\DoxyCodeLine{00164\ \ \ \ \ \textcolor{keywordtype}{void}\ setTexture(\textcolor{keyword}{const}\ uint8\_t*\ texture\_data,\ uint8\_t\ frame\_id)\ \{}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ texture\ =\ texture\_data;}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ frame\ =\ frame\_id;}
+\DoxyCodeLine{00167\ \ \ \ \ \}}
+\DoxyCodeLine{00168\ }
+\DoxyCodeLine{00169\ \ \ \ \ \textcolor{keywordtype}{void}\ setTexture(uint8\_t\ frame\_id)\ \{}
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ frame\ =\ frame\_id;}
+\DoxyCodeLine{00171\ \ \ \ \ \}}
+\DoxyCodeLine{00172\ }
+\DoxyCodeLine{00173\ \ \ \ \ \textcolor{keywordtype}{void}\ setPosition(int16\_t\ x,\ int16\_t\ y)\ \{}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ position.x\ =\ x;}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ position.y\ =\ y;}
+\DoxyCodeLine{00176\ \ \ \ \ \}}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00178\ \ \ \ \ \textcolor{keywordtype}{void}\ setPosition(Point\ pos)\ \{}
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ position\ =\ pos;}
+\DoxyCodeLine{00180\ \ \ \ \ \}}
+\DoxyCodeLine{00181\ }
+\DoxyCodeLine{00182\ \ \ \ \ \textcolor{keywordtype}{void}\ setMatte(uint8\_t\ matte\_color)\ \{}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ matte\ =\ matte\_color;}
+\DoxyCodeLine{00184\ \ \ \ \ \}}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00186\ \ \ \ \ \textcolor{comment}{//\ Getters\ (match\ original\ Enjin)}}
+\DoxyCodeLine{00187\ \ \ \ \ \textcolor{keyword}{const}\ uint8\_t*\ GetTexture()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!texture)\ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ texture\ +\ (frame\ *\ width\ *\ height);}
+\DoxyCodeLine{00190\ \ \ \ \ \}}
+\DoxyCodeLine{00191\ }
+\DoxyCodeLine{00192\ \ \ \ \ uint8\_t\ GetWidth()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ width;\ \}}
+\DoxyCodeLine{00193\ \ \ \ \ uint8\_t\ GetHeight()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ height;\ \}}
+\DoxyCodeLine{00194\ \ \ \ \ uint8\_t\ getFrame()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ frame;\ \}}
+\DoxyCodeLine{00195\ \ \ \ \ Point\ getPosition()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ position;\ \}}
+\DoxyCodeLine{00196\ \ \ \ \ uint8\_t\ getMatte()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ matte;\ \}}
+\DoxyCodeLine{00197\ }
+\DoxyCodeLine{00198\ \ \ \ \ \textcolor{comment}{//\ Public\ members\ (matches\ original\ Enjin\ public\ interface)}}
+\DoxyCodeLine{00199\ \ \ \ \ uint8\_t\ \_width,\ \_height,\ \_frame;}
+\DoxyCodeLine{00200\ \ \ \ \ Point\ \_position;}
+\DoxyCodeLine{00201\ \ \ \ \ uint8\_t\ \_matte;}
+\DoxyCodeLine{00202\ \ \ \ \ BlendMode\ \_mode;}
+\DoxyCodeLine{00203\ }
+\DoxyCodeLine{00204\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00205\ \ \ \ \ \textcolor{keyword}{const}\ uint8\_t*\ texture;\ \ \ \ \ }
+\DoxyCodeLine{00206\ \ \ \ \ uint8\_t\ width,\ height;\ \ \ \ \ \ }
+\DoxyCodeLine{00207\ \ \ \ \ uint8\_t\ matte;\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00208\ \ \ \ \ Point\ position;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00209\ \ \ \ \ uint8\_t\ frame;\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00210\ \ \ \ \ BlendMode\ mode;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00211\ \};}
+\DoxyCodeLine{00212\ }
+\DoxyCodeLine{00213\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00214\ }
+\DoxyCodeLine{00215\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_GRAPHICS\_SPRITE\_HPP}}
+
+\end{DoxyCode}

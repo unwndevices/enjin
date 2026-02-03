@@ -1,0 +1,236 @@
+\doxysection{primitives.\+hpp}
+\hypertarget{primitives_8hpp_source}{}\label{primitives_8hpp_source}\index{include/enjin2/graphics/primitives.hpp@{include/enjin2/graphics/primitives.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}canvas.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{comment}{//\ Drawing\ primitives\ for\ 4-\/bit\ and\ 8-\/bit\ canvases}}
+\DoxyCodeLine{00011\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ TPixel>}
+\DoxyCodeLine{00012\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Primitives}{Primitives}}\ \{}
+\DoxyCodeLine{00013\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00014\ \ \ \ \ \textcolor{comment}{//\ Bresenham\ line\ algorithm}}
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ drawLine(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ int16\_t\ x0,\ int16\_t\ y0,\ }
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x1,\ int16\_t\ y1,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ int16\_t\ dx\ =\ abs(x1\ -\/\ x0);}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ int16\_t\ dy\ =\ abs(y1\ -\/\ y0);}
+\DoxyCodeLine{00019\ \ \ \ \ \ \ \ \ int16\_t\ sx\ =\ x0\ <\ x1\ ?\ 1\ :\ -\/1;}
+\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ int16\_t\ sy\ =\ y0\ <\ y1\ ?\ 1\ :\ -\/1;}
+\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ int16\_t\ err\ =\ dx\ -\/\ dy;}
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ int16\_t\ x\ =\ x0,\ y\ =\ y0;}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (\textcolor{keyword}{true})\ \{}
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(x,\ y,\ color);}
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (x\ ==\ x1\ \&\&\ y\ ==\ y1)\ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ e2\ =\ 2\ *\ err;}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (e2\ >\ -\/dy)\ \{}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ err\ -\/=\ dy;}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ x\ +=\ sx;}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (e2\ <\ dx)\ \{}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ err\ +=\ dx;}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ y\ +=\ sy;}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00040\ \ \ \ \ \}}
+\DoxyCodeLine{00041\ \ \ \ \ }
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{comment}{//\ Rectangle\ outline}}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ drawRect(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ rect,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ int16\_t\ x1\ =\ rect.x;}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ int16\_t\ y1\ =\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a2c5ffda22bcd9ca7b4471287dd603c97}{y}};}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ int16\_t\ x2\ =\ rect.x\ +\ rect.width\ -\/\ 1;}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ int16\_t\ y2\ =\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a2c5ffda22bcd9ca7b4471287dd603c97}{y}}\ +\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a769e260c98221171d7c75b155ddd151b}{height}}\ -\/\ 1;}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Top\ and\ bottom}}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ drawLine(canvas,\ x1,\ y1,\ x2,\ y1,\ color);}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ drawLine(canvas,\ x1,\ y2,\ x2,\ y2,\ color);}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Left\ and\ right}}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ drawLine(canvas,\ x1,\ y1,\ x1,\ y2,\ color);}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ drawLine(canvas,\ x2,\ y1,\ x2,\ y2,\ color);}
+\DoxyCodeLine{00056\ \ \ \ \ \}}
+\DoxyCodeLine{00057\ \ \ \ \ }
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{comment}{//\ Filled\ rectangle}}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ fillRect(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ rect,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7f96847cbbd9f6180f63fc9096bf8e71}{fill}}(rect,\ color);}
+\DoxyCodeLine{00061\ \ \ \ \ \}}
+\DoxyCodeLine{00062\ \ \ \ \ }
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{comment}{//\ Circle\ using\ midpoint\ algorithm}}
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ drawCircle(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ int16\_t\ cx,\ int16\_t\ cy,\ }
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ radius,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ int16\_t\ x\ =\ 0;}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ int16\_t\ y\ =\ radius;}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ int16\_t\ d\ =\ 1\ -\/\ radius;}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (x\ <=\ y)\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ 8-\/way\ symmetry}}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ x,\ cy\ +\ y,\ color);}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ x,\ cy\ +\ y,\ color);}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ x,\ cy\ -\/\ y,\ color);}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ x,\ cy\ -\/\ y,\ color);}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ y,\ cy\ +\ x,\ color);}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ y,\ cy\ +\ x,\ color);}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ y,\ cy\ -\/\ x,\ color);}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ y,\ cy\ -\/\ x,\ color);}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (d\ <\ 0)\ \{}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ d\ +=\ 2\ *\ x\ +\ 3;}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ d\ +=\ 2\ *\ (x\ -\/\ y)\ +\ 5;}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ y-\/-\/;}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ x++;}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00089\ \ \ \ \ \}}
+\DoxyCodeLine{00090\ \ \ \ \ }
+\DoxyCodeLine{00091\ \ \ \ \ \textcolor{comment}{//\ Filled\ circle\ using\ scanline\ algorithm}}
+\DoxyCodeLine{00092\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ fillCircle(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ int16\_t\ cx,\ int16\_t\ cy,\ }
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ radius,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ -\/radius;\ y\ <=\ radius;\ ++y)\ \{}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ int32\_t\ y\_sq\ =\ y\ *\ y;}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ int32\_t\ radius\_sq\ =\ radius\ *\ radius;}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (y\_sq\ <=\ radius\_sq)\ \{}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x\_extent\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(std::sqrt(radius\_sq\ -\/\ y\_sq));}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawLine(canvas,\ cx\ -\/\ x\_extent,\ cy\ +\ y,\ cx\ +\ x\_extent,\ cy\ +\ y,\ color);}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00102\ \ \ \ \ \}}
+\DoxyCodeLine{00103\ \ \ \ \ }
+\DoxyCodeLine{00104\ \ \ \ \ \textcolor{comment}{//\ Triangle\ outline}}
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ drawTriangle(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ int16\_t\ x0,\ int16\_t\ y0,}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x1,\ int16\_t\ y1,\ int16\_t\ x2,\ int16\_t\ y2,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ drawLine(canvas,\ x0,\ y0,\ x1,\ y1,\ color);}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ drawLine(canvas,\ x1,\ y1,\ x2,\ y2,\ color);}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ drawLine(canvas,\ x2,\ y2,\ x0,\ y0,\ color);}
+\DoxyCodeLine{00110\ \ \ \ \ \}}
+\DoxyCodeLine{00111\ \ \ \ \ }
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{comment}{//\ Filled\ triangle\ using\ scanline\ algorithm}}
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ fillTriangle(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ int16\_t\ x0,\ int16\_t\ y0,}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x1,\ int16\_t\ y1,\ int16\_t\ x2,\ int16\_t\ y2,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Sort\ vertices\ by\ y-\/coordinate}}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (y0\ >\ y1)\ \{\ std::swap(x0,\ x1);\ std::swap(y0,\ y1);\ \}}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (y1\ >\ y2)\ \{\ std::swap(x1,\ x2);\ std::swap(y1,\ y2);\ \}}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (y0\ >\ y1)\ \{\ std::swap(x0,\ x1);\ std::swap(y0,\ y1);\ \}}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Avoid\ division\ by\ zero}}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ int16\_t\ dy02\ =\ y2\ -\/\ y0;}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ int16\_t\ dy01\ =\ y1\ -\/\ y0;}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ int16\_t\ dy12\ =\ y2\ -\/\ y1;}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Fill\ upper\ half}}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ y0;\ y\ <=\ y1;\ ++y)\ \{}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ xa\ =\ (dy02\ !=\ 0)\ ?\ x0\ +\ (x2\ -\/\ x0)\ *\ (y\ -\/\ y0)\ /\ dy02\ :\ x0;}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ xb\ =\ (dy01\ !=\ 0)\ ?\ x0\ +\ (x1\ -\/\ x0)\ *\ (y\ -\/\ y0)\ /\ dy01\ :\ x0;}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (xa\ >\ xb)\ std::swap(xa,\ xb);}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ drawLine(canvas,\ xa,\ y,\ xb,\ y,\ color);}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Fill\ lower\ half}}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ y1;\ y\ <=\ y2;\ ++y)\ \{}
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ xa\ =\ (dy02\ !=\ 0)\ ?\ x0\ +\ (x2\ -\/\ x0)\ *\ (y\ -\/\ y0)\ /\ dy02\ :\ x0;}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ xb\ =\ (dy12\ !=\ 0)\ ?\ x1\ +\ (x2\ -\/\ x1)\ *\ (y\ -\/\ y1)\ /\ dy12\ :\ x1;}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (xa\ >\ xb)\ std::swap(xa,\ xb);}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \ \ \ \ drawLine(canvas,\ xa,\ y,\ xb,\ y,\ color);}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00140\ \ \ \ \ \}}
+\DoxyCodeLine{00141\ \ \ \ \ }
+\DoxyCodeLine{00142\ \ \ \ \ \textcolor{comment}{//\ Ellipse\ using\ midpoint\ algorithm}}
+\DoxyCodeLine{00143\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ drawEllipse(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ int16\_t\ cx,\ int16\_t\ cy,}
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ rx,\ int16\_t\ ry,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ int32\_t\ rx2\ =\ rx\ *\ rx;}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ int32\_t\ ry2\ =\ ry\ *\ ry;}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ int32\_t\ two\_rx2\ =\ 2\ *\ rx2;}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ int32\_t\ two\_ry2\ =\ 2\ *\ ry2;}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ int16\_t\ x\ =\ 0;}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ int16\_t\ y\ =\ ry;}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ int32\_t\ px\ =\ 0;}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ int32\_t\ py\ =\ two\_rx2\ *\ y;}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Region\ 1}}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ int32\_t\ p\ =\ ry2\ -\/\ (rx2\ *\ ry)\ +\ (rx2\ /\ 4);}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (px\ <\ py)\ \{}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ x,\ cy\ +\ y,\ color);}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ x,\ cy\ +\ y,\ color);}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ x,\ cy\ -\/\ y,\ color);}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ x,\ cy\ -\/\ y,\ color);}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \ \ \ \ x++;}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \ \ \ \ px\ +=\ two\_ry2;}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (p\ <\ 0)\ \{}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ p\ +=\ ry2\ +\ px;}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ y-\/-\/;}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ py\ -\/=\ two\_rx2;}
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ p\ +=\ ry2\ +\ px\ -\/\ py;}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Region\ 2}}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ p\ =\ ry2\ *\ (x\ +\ 0.5)\ *\ (x\ +\ 0.5)\ +\ rx2\ *\ (y\ -\/\ 1)\ *\ (y\ -\/\ 1)\ -\/\ rx2\ *\ ry2;}
+\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (y\ >\ 0)\ \{}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ x,\ cy\ +\ y,\ color);}
+\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ x,\ cy\ +\ y,\ color);}
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ +\ x,\ cy\ -\/\ y,\ color);}
+\DoxyCodeLine{00180\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(cx\ -\/\ x,\ cy\ -\/\ y,\ color);}
+\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \ \ \ \ y-\/-\/;}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ \ \ \ \ py\ -\/=\ two\_rx2;}
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (p\ >\ 0)\ \{}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ p\ +=\ rx2\ -\/\ py;}
+\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ x++;}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ px\ +=\ two\_ry2;}
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ p\ +=\ rx2\ -\/\ py\ +\ px;}
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00192\ \ \ \ \ \}}
+\DoxyCodeLine{00193\ \ \ \ \ }
+\DoxyCodeLine{00194\ \ \ \ \ \textcolor{comment}{//\ Arc\ drawing}}
+\DoxyCodeLine{00195\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ drawArc(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ int16\_t\ cx,\ int16\_t\ cy,}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ radius,\ \textcolor{keywordtype}{float}\ start\_angle,\ \textcolor{keywordtype}{float}\ end\_angle,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Convert\ angles\ to\ 0-\/2π\ range}}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (start\_angle\ <\ 0)\ start\_angle\ +=\ 2\ *\ M\_PI;}
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (end\_angle\ <\ 0)\ end\_angle\ +=\ 2\ *\ M\_PI;}
+\DoxyCodeLine{00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (start\_angle\ >=\ 2\ *\ M\_PI)\ start\_angle\ -\/=\ 2\ *\ M\_PI;}
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (end\_angle\ >=\ 2\ *\ M\_PI)\ end\_angle\ -\/=\ 2\ *\ M\_PI;}
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ step\ =\ 1.0f\ /\ radius;\ \textcolor{comment}{//\ Adaptive\ step\ size}}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{float}\ angle\ =\ start\_angle;\ }
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ (end\_angle\ >\ start\_angle)\ ?\ (angle\ <=\ end\_angle)\ :\ (angle\ <=\ end\_angle\ +\ 2\ *\ M\_PI);\ }
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ \ \ \ \ \ angle\ +=\ step)\ \{}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x\ =\ cx\ +\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(radius\ *\ cos(angle));}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ y\ =\ cy\ +\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(radius\ *\ sin(angle));}
+\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(x,\ y,\ color);}
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00211\ \ \ \ \ \}}
+\DoxyCodeLine{00212\ \ \ \ \ }
+\DoxyCodeLine{00213\ \ \ \ \ \textcolor{comment}{//\ Simple\ polygon\ outline}}
+\DoxyCodeLine{00214\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ drawPolygon(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}*\ vertices,\ }
+\DoxyCodeLine{00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ vertex\_count,\ TPixel\ color)\ \{}
+\DoxyCodeLine{00216\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (vertex\_count\ <\ 3)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00217\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ vertex\_count;\ ++i)\ \{}
+\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ next\ =\ (i\ +\ 1)\ \%\ vertex\_count;}
+\DoxyCodeLine{00220\ \ \ \ \ \ \ \ \ \ \ \ \ drawLine(canvas,\ vertices[i].x,\ vertices[i].y,}
+\DoxyCodeLine{00221\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ vertices[next].x,\ vertices[next].y,\ color);}
+\DoxyCodeLine{00222\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00223\ \ \ \ \ \}}
+\DoxyCodeLine{00224\ \};}
+\DoxyCodeLine{00225\ }
+\DoxyCodeLine{00226\ \textcolor{comment}{//\ Type\ aliases\ for\ common\ pixel\ types}}
+\DoxyCodeLine{00227\ \textcolor{keyword}{using\ }Primitives4\ =\ \doxymbox{\hyperlink{classenjin2_1_1Primitives}{Primitives<Pixel4>}};}
+\DoxyCodeLine{00228\ \textcolor{keyword}{using\ }Primitives8\ =\ \doxymbox{\hyperlink{classenjin2_1_1Primitives}{Primitives<uint8\_t>}};}
+\DoxyCodeLine{00229\ }
+\DoxyCodeLine{00230\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

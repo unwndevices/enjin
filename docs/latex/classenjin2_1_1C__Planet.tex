@@ -1,0 +1,230 @@
+\doxysection{enjin2::\+C\+\_\+\+Planet Class Reference}
+\hypertarget{classenjin2_1_1C__Planet}{}\label{classenjin2_1_1C__Planet}\index{enjin2::C\_Planet@{enjin2::C\_Planet}}
+
+
+Planet component for orbital visualization.  
+
+
+
+
+{\ttfamily \+\#include $<$planet.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Planet_a8fd7268ce29e0d7ea1ea4ae6c63160af}{C\+\_\+\+Planet}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, float planet\+Radius, \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} color=\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(12))
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Planet_aab571af3e158f19194d00baa8745c5b6}{update}} (uint16\+\_\+t delta\+Time) override
+\begin{DoxyCompactList}\small\item\em Update planet animations. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_acd67da395e390de58c1b2c3c527e37f0}\label{classenjin2_1_1C__Planet_acd67da395e390de58c1b2c3c527e37f0} 
+void {\bfseries draw} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} $>$ \&canvas) override
+\begin{DoxyCompactList}\small\item\em Draw planet to 4-\/bit canvas. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Planet_ae626b504790182e9a41048c143b57e0b}{draw}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&canvas) override
+\begin{DoxyCompactList}\small\item\em Draw planet to 8-\/bit canvas. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_a03e33a9fcbab5cbc01515c8219456983}\label{classenjin2_1_1C__Planet_a03e33a9fcbab5cbc01515c8219456983} 
+void {\bfseries set\+Core\+Color} (\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} color)
+\begin{DoxyCompactList}\small\item\em Set planet core color. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_a0e1c71355ad817cbad6bee07360dbf74}\label{classenjin2_1_1C__Planet_a0e1c71355ad817cbad6bee07360dbf74} 
+void {\bfseries set\+Atmosphere} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}}, float radius\+Multiplier=1.\+5f, \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} color=\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(0))
+\begin{DoxyCompactList}\small\item\em Set atmosphere properties. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_a1691abc91481873f6402ab1fc977ff0b}\label{classenjin2_1_1C__Planet_a1691abc91481873f6402ab1fc977ff0b} 
+void {\bfseries set\+Pulsing} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}}, float speed=2.\+0f, float amount=0.\+2f)
+\begin{DoxyCompactList}\small\item\em Enable pulsing animation. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_adf54fbf075ef6686477ff0c95a7657a7}\label{classenjin2_1_1C__Planet_adf54fbf075ef6686477ff0c95a7657a7} 
+void {\bfseries set\+Rotation} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}}, float speed=0.\+5f)
+\begin{DoxyCompactList}\small\item\em Enable rotation animation. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_a5c83208a8f3b4770ddd3581531b804eb}\label{classenjin2_1_1C__Planet_a5c83208a8f3b4770ddd3581531b804eb} 
+void {\bfseries set\+Rings} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}}, float inner\+Radius=1.\+3f, float outer\+Radius=1.\+7f, \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} color=\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(8))
+\begin{DoxyCompactList}\small\item\em Add rings around planet. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_ae4cc6ed7172181586abbd3409c7284f3}\label{classenjin2_1_1C__Planet_ae4cc6ed7172181586abbd3409c7284f3} 
+float {\bfseries get\+Radius} () const
+\begin{DoxyCompactList}\small\item\em Get planet radius. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Planet_adf57c22026524a7aa32961a1f9343afa}\label{classenjin2_1_1C__Planet_adf57c22026524a7aa32961a1f9343afa} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries get\+Center\+Position} () const
+\begin{DoxyCompactList}\small\item\em Get planet center position in world coordinates. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\+\_\+\+Drawable}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint8\+\_\+t width, uint8\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}})
+\begin{DoxyCompactList}\small\item\em Constructor (matches original Enjin). \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+C\+\_\+\+Drawable} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+virtual bool \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_aea77f53e5922743667146a257cf77ae0}{continue\+To\+Draw}} () const
+\begin{DoxyCompactList}\small\item\em Check if this drawable should continue to be drawn. \end{DoxyCompactList}\item 
+void {\bfseries Set\+Sort\+Order} (int order)
+\item 
+int {\bfseries Get\+Sort\+Order} () const
+\item 
+void {\bfseries Set\+Blend\+Mode} (Blend\+Mode mode)
+\item 
+Blend\+Mode {\bfseries Get\+Blend\+Mode} () const
+\item 
+void {\bfseries Set\+Draw\+Layer} (Draw\+Layer draw\+Layer)
+\item 
+Draw\+Layer {\bfseries Get\+Draw\+Layer} () const
+\item 
+void {\bfseries Set\+Visibility} (bool visibility)
+\item 
+bool {\bfseries Get\+Visibility} () const
+\item 
+bool {\bfseries is\+Visible} () const
+\item 
+void {\bfseries Set\+Anchor\+Point} (Anchor \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a2b6f351b7f70a5f7270711462172b696}{anchor}})
+\item 
+void {\bfseries Add\+Offset} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} offset)
+\item 
+void {\bfseries Set\+Offset} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} offset)
+\item 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries Get\+Offset\+Position} () const
+\item 
+void {\bfseries Set\+XOffset} (int16\+\_\+t x)
+\item 
+void {\bfseries Set\+YOffset} (int16\+\_\+t y)
+\item 
+uint8\+\_\+t {\bfseries Get\+Width} () const
+\item 
+uint8\+\_\+t {\bfseries Get\+Height} () const
+\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_afd3501bd681f616d5efcbec6c4ca41b1}{should\+Draw\+Before}} (const \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\+\_\+\+Drawable}} \&other) const
+\begin{DoxyCompactList}\small\item\em Determine if this drawable should be drawn before another drawable. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Position}{C\+\_\+\+Position}} \texorpdfstring{$\ast$}{*} {\bfseries position}
+\begin{DoxyCompactList}\small\item\em Position component reference. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries anchor\+\_\+offset}
+\begin{DoxyCompactList}\small\item\em Anchor offset. \end{DoxyCompactList}\item 
+int {\bfseries sort\+\_\+order}
+\begin{DoxyCompactList}\small\item\em Sort order for drawing. \end{DoxyCompactList}\item 
+Draw\+Layer {\bfseries layer}
+\begin{DoxyCompactList}\small\item\em Draw layer. \end{DoxyCompactList}\item 
+Blend\+Mode {\bfseries blend\+\_\+mode}
+\begin{DoxyCompactList}\small\item\em Blend mode. \end{DoxyCompactList}\item 
+Anchor {\bfseries anchor}
+\begin{DoxyCompactList}\small\item\em Anchor point. \end{DoxyCompactList}\item 
+bool {\bfseries is\+\_\+visible}
+\begin{DoxyCompactList}\small\item\em Visibility flag. \end{DoxyCompactList}\item 
+uint8\+\_\+t {\bfseries width}
+\item 
+uint8\+\_\+t {\bfseries height}
+\begin{DoxyCompactList}\small\item\em Dimensions. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}}
+\begin{DoxyCompactItemize}
+\item 
+static \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries abs\+\_\+center}
+\begin{DoxyCompactList}\small\item\em Absolute center point (63, 63 for 128x128). \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Planet component for orbital visualization. 
+
+Represents a central planet or control hub in the space-\/themed UI. Can have satellites orbiting around it and supports various visual effects like pulsing, rotation, and atmospheric effects. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1C__Planet_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1C__Planet_a8fd7268ce29e0d7ea1ea4ae6c63160af}\index{enjin2::C\_Planet@{enjin2::C\_Planet}!C\_Planet@{C\_Planet}}
+\index{C\_Planet@{C\_Planet}!enjin2::C\_Planet@{enjin2::C\_Planet}}
+\doxysubsubsection{\texorpdfstring{C\_Planet()}{C\_Planet()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Planet_a8fd7268ce29e0d7ea1ea4ae6c63160af} 
+enjin2::\+\+C\+\_\+\+Planet::\+\+C\+\_\+\+Planet (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{float}]{planet\+Radius}{, }\item[{\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}}]{color}{ = {\ttfamily \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(12)}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Owner object \\
+\hline
+{\em planet\+Radius} & Planet radius in pixels \\
+\hline
+{\em color} & Planet core color \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1C__Planet_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1C__Planet_ae626b504790182e9a41048c143b57e0b}\index{enjin2::C\_Planet@{enjin2::C\_Planet}!draw@{draw}}
+\index{draw@{draw}!enjin2::C\_Planet@{enjin2::C\_Planet}}
+\doxysubsubsection{\texorpdfstring{draw()}{draw()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Planet_ae626b504790182e9a41048c143b57e0b} 
+void enjin2::\+\+C\+\_\+\+Planet::\+draw (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&}]{canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Draw planet to 8-\/bit canvas. 
+
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a977a30e501e900c59c201eadcf5a766b}{enjin2::\+\+C\+\_\+\+Drawable}}.
+
+\Hypertarget{classenjin2_1_1C__Planet_aab571af3e158f19194d00baa8745c5b6}\index{enjin2::C\_Planet@{enjin2::C\_Planet}!update@{update}}
+\index{update@{update}!enjin2::C\_Planet@{enjin2::C\_Planet}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Planet_aab571af3e158f19194d00baa8745c5b6} 
+void enjin2::\+\+C\+\_\+\+Planet::\+update (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Update planet animations. 
+
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{enjin2::\+\+Component$<$ T $>$}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+components/\+planet.\+hpp\end{DoxyCompactItemize}

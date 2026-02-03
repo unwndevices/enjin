@@ -1,0 +1,336 @@
+\doxysection{enjin2::\+C\+\_\+\+Animation Class Reference}
+\hypertarget{classenjin2_1_1C__Animation}{}\label{classenjin2_1_1C__Animation}\index{enjin2::C\_Animation@{enjin2::C\_Animation}}
+
+
+Animation component for object animations.  
+
+
+
+
+{\ttfamily \+\#include $<$animation.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Animation_afe5d7652f17149e9642d3690d976b888}{C\+\_\+\+Animation}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_ab0986a297e924b1a411281fa25ce0273}\label{classenjin2_1_1C__Animation_ab0986a297e924b1a411281fa25ce0273} 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+C\+\_\+\+Animation} ()=default
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Animation_a504a4d6db75af99356e8d6a5da632fe0}{start}} () override
+\begin{DoxyCompactList}\small\item\em \doxylink{classenjin2_1_1Component}{Component} start -\/ set up animation connections. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Animation_af045b100ac6c4d25bec1f4bafcb90aa7}{update}} (uint16\+\_\+t delta\+Time) override
+\begin{DoxyCompactList}\small\item\em \doxylink{classenjin2_1_1Component}{Component} update -\/ update all active tracks. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_a7ce59d324bbb7b443f2ee54721ef2a7f}{add\+Position\+Keyframe}} (uint16\+\_\+t time, \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} position, Ease\+Type easing=Ease\+Type::\+\+LINEAR)
+\begin{DoxyCompactList}\small\item\em Add position keyframe. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_ac85ee7fb323372945fcc203da5b0b852}{add\+Scale\+Keyframe}} (uint16\+\_\+t time, float scale, Ease\+Type easing=Ease\+Type::\+\+LINEAR)
+\begin{DoxyCompactList}\small\item\em Add scale keyframe. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_adaa3460c74088ee689daba805fe8edfe}{add\+Rotation\+Keyframe}} (uint16\+\_\+t time, float rotation, Ease\+Type easing=Ease\+Type::\+\+LINEAR)
+\begin{DoxyCompactList}\small\item\em Add rotation keyframe. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_adca9cc96e707dd3fa523b32f246d616e}{add\+Color\+Keyframe}} (uint16\+\_\+t time, \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} color, Ease\+Type easing=Ease\+Type::\+\+LINEAR)
+\begin{DoxyCompactList}\small\item\em Add color keyframe. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_a1901cff45633f6667d1fe450970883bf}{create\+Orbit\+Animation}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} center, float radius, uint16\+\_\+t duration, float start\+Angle=0.\+0f, bool clockwise=true)
+\begin{DoxyCompactList}\small\item\em Create orbital animation around a center point. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_ab176e2dde45c1c2e96a0a66ada643c3a}{create\+Pulse\+Animation}} (float min\+Scale, float max\+Scale, uint16\+\_\+t duration)
+\begin{DoxyCompactList}\small\item\em Create pulsing scale animation. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_afaee9904b593ae5e18b6c26bfd76675b}{create\+Fade\+Animation}} (\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} from\+Color, \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} to\+Color, uint16\+\_\+t duration, bool ping\+Pong=false)
+\begin{DoxyCompactList}\small\item\em Create color fade animation. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_aa1dbe159aa1bf6542784257029d9dd24}\label{classenjin2_1_1C__Animation_aa1dbe159aa1bf6542784257029d9dd24} 
+void {\bfseries play\+All} ()
+\begin{DoxyCompactList}\small\item\em Play all animations. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_a8503b0091f856bd5e2ef2ec555992da7}\label{classenjin2_1_1C__Animation_a8503b0091f856bd5e2ef2ec555992da7} 
+void {\bfseries pause\+All} ()
+\begin{DoxyCompactList}\small\item\em Pause all animations. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_ae476e6b0e6e1f1075aa1b6b5182539d6}\label{classenjin2_1_1C__Animation_ae476e6b0e6e1f1075aa1b6b5182539d6} 
+void {\bfseries stop\+All} ()
+\begin{DoxyCompactList}\small\item\em Stop all animations. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_ac5acf375234d934d25ea3e1f1430900c}\label{classenjin2_1_1C__Animation_ac5acf375234d934d25ea3e1f1430900c} 
+Position\+Track \& {\bfseries get\+Position\+Track} ()
+\begin{DoxyCompactList}\small\item\em Get position track. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_a1ede2ad285b87fde01c7f3d857583b17}\label{classenjin2_1_1C__Animation_a1ede2ad285b87fde01c7f3d857583b17} 
+Float\+Track \& {\bfseries get\+Scale\+Track} ()
+\begin{DoxyCompactList}\small\item\em Get scale track. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_aac58d4089fb0dec42704c482f9adf274}\label{classenjin2_1_1C__Animation_aac58d4089fb0dec42704c482f9adf274} 
+Float\+Track \& {\bfseries get\+Rotation\+Track} ()
+\begin{DoxyCompactList}\small\item\em Get rotation track. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_a37016556324cd81422719bfa72d02ea4}\label{classenjin2_1_1C__Animation_a37016556324cd81422719bfa72d02ea4} 
+Color\+Track \& {\bfseries get\+Color\+Track} ()
+\begin{DoxyCompactList}\small\item\em Get color track. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_a71f0bfe8d5cfd5ce139e2163dc01b270}\label{classenjin2_1_1C__Animation_a71f0bfe8d5cfd5ce139e2163dc01b270} 
+void {\bfseries set\+Auto\+Start} (bool auto\+Start)
+\begin{DoxyCompactList}\small\item\em Set auto-\/start behavior. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_ad3077e84eca87d2c1675af208eb386b4}\label{classenjin2_1_1C__Animation_ad3077e84eca87d2c1675af208eb386b4} 
+void {\bfseries set\+Update\+Position} (bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_af045b100ac6c4d25bec1f4bafcb90aa7}{update}})
+\begin{DoxyCompactList}\small\item\em Enable/\+disable position updates. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__Animation_a8959798945254020829feb03eca27f8d}\label{classenjin2_1_1C__Animation_a8959798945254020829feb03eca27f8d} 
+void {\bfseries set\+Update\+Color} (bool \doxymbox{\hyperlink{classenjin2_1_1C__Animation_af045b100ac6c4d25bec1f4bafcb90aa7}{update}})
+\begin{DoxyCompactList}\small\item\em Enable/\+disable color updates. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Animation component for object animations. 
+
+Manages multiple animation tracks for different properties (position, scale, rotation, color, etc.) and applies them to the owning object\textquotesingle{}s components. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1C__Animation_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1C__Animation_afe5d7652f17149e9642d3690d976b888}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!C\_Animation@{C\_Animation}}
+\index{C\_Animation@{C\_Animation}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{C\_Animation()}{C\_Animation()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_afe5d7652f17149e9642d3690d976b888} 
+enjin2::\+\+C\+\_\+\+Animation::\+\+C\+\_\+\+Animation (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Owner object \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1C__Animation_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1C__Animation_adca9cc96e707dd3fa523b32f246d616e}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!addColorKeyframe@{addColorKeyframe}}
+\index{addColorKeyframe@{addColorKeyframe}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{addColorKeyframe()}{addColorKeyframe()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_adca9cc96e707dd3fa523b32f246d616e} 
+bool enjin2::\+\+C\+\_\+\+Animation::\+add\+Color\+Keyframe (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{time}{, }\item[{\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}}]{color}{, }\item[{Ease\+Type}]{easing}{ = {\ttfamily EaseType:\+:\+LINEAR}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Add color keyframe. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em time} & Time in milliseconds \\
+\hline
+{\em color} & Color at keyframe \\
+\hline
+{\em easing} & Easing function to next keyframe \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if keyframe was added 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Animation_a7ce59d324bbb7b443f2ee54721ef2a7f}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!addPositionKeyframe@{addPositionKeyframe}}
+\index{addPositionKeyframe@{addPositionKeyframe}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{addPositionKeyframe()}{addPositionKeyframe()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_a7ce59d324bbb7b443f2ee54721ef2a7f} 
+bool enjin2::\+\+C\+\_\+\+Animation::\+add\+Position\+Keyframe (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{time}{, }\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{position}{, }\item[{Ease\+Type}]{easing}{ = {\ttfamily EaseType:\+:\+LINEAR}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Add position keyframe. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em time} & Time in milliseconds \\
+\hline
+{\em position} & Position at keyframe \\
+\hline
+{\em easing} & Easing function to next keyframe \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if keyframe was added 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Animation_adaa3460c74088ee689daba805fe8edfe}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!addRotationKeyframe@{addRotationKeyframe}}
+\index{addRotationKeyframe@{addRotationKeyframe}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{addRotationKeyframe()}{addRotationKeyframe()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_adaa3460c74088ee689daba805fe8edfe} 
+bool enjin2::\+\+C\+\_\+\+Animation::\+add\+Rotation\+Keyframe (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{time}{, }\item[{float}]{rotation}{, }\item[{Ease\+Type}]{easing}{ = {\ttfamily EaseType:\+:\+LINEAR}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Add rotation keyframe. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em time} & Time in milliseconds \\
+\hline
+{\em rotation} & Rotation in radians at keyframe \\
+\hline
+{\em easing} & Easing function to next keyframe \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if keyframe was added 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Animation_ac85ee7fb323372945fcc203da5b0b852}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!addScaleKeyframe@{addScaleKeyframe}}
+\index{addScaleKeyframe@{addScaleKeyframe}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{addScaleKeyframe()}{addScaleKeyframe()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_ac85ee7fb323372945fcc203da5b0b852} 
+bool enjin2::\+\+C\+\_\+\+Animation::\+add\+Scale\+Keyframe (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{time}{, }\item[{float}]{scale}{, }\item[{Ease\+Type}]{easing}{ = {\ttfamily EaseType:\+:\+LINEAR}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Add scale keyframe. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em time} & Time in milliseconds \\
+\hline
+{\em scale} & Scale factor at keyframe \\
+\hline
+{\em easing} & Easing function to next keyframe \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if keyframe was added 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Animation_afaee9904b593ae5e18b6c26bfd76675b}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!createFadeAnimation@{createFadeAnimation}}
+\index{createFadeAnimation@{createFadeAnimation}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{createFadeAnimation()}{createFadeAnimation()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_afaee9904b593ae5e18b6c26bfd76675b} 
+bool enjin2::\+\+C\+\_\+\+Animation::\+create\+Fade\+Animation (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}}]{from\+Color}{, }\item[{\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}}]{to\+Color}{, }\item[{uint16\+\_\+t}]{duration}{, }\item[{bool}]{ping\+Pong}{ = {\ttfamily false}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Create color fade animation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em from\+Color} & Starting color \\
+\hline
+{\em to\+Color} & Ending color \\
+\hline
+{\em duration} & Animation duration in milliseconds \\
+\hline
+{\em ping\+Pong} & True to fade back and forth \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if animation was created 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Animation_a1901cff45633f6667d1fe450970883bf}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!createOrbitAnimation@{createOrbitAnimation}}
+\index{createOrbitAnimation@{createOrbitAnimation}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{createOrbitAnimation()}{createOrbitAnimation()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_a1901cff45633f6667d1fe450970883bf} 
+bool enjin2::\+\+C\+\_\+\+Animation::\+create\+Orbit\+Animation (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{center}{, }\item[{float}]{radius}{, }\item[{uint16\+\_\+t}]{duration}{, }\item[{float}]{start\+Angle}{ = {\ttfamily 0.0f}, }\item[{bool}]{clockwise}{ = {\ttfamily true}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Create orbital animation around a center point. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em center} & Center of orbit \\
+\hline
+{\em radius} & Orbit radius \\
+\hline
+{\em duration} & Animation duration in milliseconds \\
+\hline
+{\em start\+Angle} & Starting angle in radians \\
+\hline
+{\em clockwise} & True for clockwise rotation \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if animation was created 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Animation_ab176e2dde45c1c2e96a0a66ada643c3a}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!createPulseAnimation@{createPulseAnimation}}
+\index{createPulseAnimation@{createPulseAnimation}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{createPulseAnimation()}{createPulseAnimation()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_ab176e2dde45c1c2e96a0a66ada643c3a} 
+bool enjin2::\+\+C\+\_\+\+Animation::\+create\+Pulse\+Animation (\begin{DoxyParamCaption}\item[{float}]{min\+Scale}{, }\item[{float}]{max\+Scale}{, }\item[{uint16\+\_\+t}]{duration}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Create pulsing scale animation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em min\+Scale} & Minimum scale factor \\
+\hline
+{\em max\+Scale} & Maximum scale factor \\
+\hline
+{\em duration} & Pulse duration in milliseconds \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if animation was created 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Animation_a504a4d6db75af99356e8d6a5da632fe0}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!start@{start}}
+\index{start@{start}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{start()}{start()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_a504a4d6db75af99356e8d6a5da632fe0} 
+void enjin2::\+\+C\+\_\+\+Animation::\+start (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+\doxylink{classenjin2_1_1Component}{Component} start -\/ set up animation connections. 
+
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{enjin2::\+\+Component$<$ T $>$}}.
+
+\Hypertarget{classenjin2_1_1C__Animation_af045b100ac6c4d25bec1f4bafcb90aa7}\index{enjin2::C\_Animation@{enjin2::C\_Animation}!update@{update}}
+\index{update@{update}!enjin2::C\_Animation@{enjin2::C\_Animation}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Animation_af045b100ac6c4d25bec1f4bafcb90aa7} 
+void enjin2::\+\+C\+\_\+\+Animation::\+update (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+\doxylink{classenjin2_1_1Component}{Component} update -\/ update all active tracks. 
+
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{enjin2::\+\+Component$<$ T $>$}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+components/\+animation.\+hpp\end{DoxyCompactItemize}

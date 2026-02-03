@@ -1,0 +1,495 @@
+\doxysection{enjin2::\+C\+\_\+\+Lua\+Script Class Reference}
+\hypertarget{classenjin2_1_1C__LuaScript}{}\label{classenjin2_1_1C__LuaScript}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+
+
+Platform-\/agnostic script-\/driven UI component.  
+
+
+
+
+{\ttfamily \+\#include $<$lua\+\_\+script.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a03553cc68acb15e6ad4f0d573595770c}{C\+\_\+\+Lua\+Script}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint16\+\_\+t width, uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}})
+\begin{DoxyCompactList}\small\item\em Constructor with automatic interpreter selection. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ad2a3f0a20305dfb93a951aca76ef60a7}{C\+\_\+\+Lua\+Script}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint16\+\_\+t width, uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}}, \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Script\+Factory::\+\+Interpreter\+Type}} interpreter\+Type)
+\begin{DoxyCompactList}\small\item\em Constructor with specific interpreter type. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__LuaScript_aa588951d50c8a0a18a95cce4fe501382}\label{classenjin2_1_1C__LuaScript_aa588951d50c8a0a18a95cce4fe501382} 
+{\bfseries \texorpdfstring{$\sim$}{\string~}\+C\+\_\+\+Lua\+Script} ()
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a2135fedda37f960c4b810fa8b36f5da0}{load\+Script}} (const std::\+string \&code)
+\begin{DoxyCompactList}\small\item\em Load script from string. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ab6fcbe0e082a71c3782e2bc0fb1638c4}{load\+Script\+File}} (const std::\+string \&filename)
+\begin{DoxyCompactList}\small\item\em Load script from file. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ae47288da77cd6628407186b689652d9f}{reload\+Script}} ()
+\begin{DoxyCompactList}\small\item\em Reload current script (useful for development). \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__LuaScript_a925fc3cd8dd4c5c6286bc42845ff8539}\label{classenjin2_1_1C__LuaScript_a925fc3cd8dd4c5c6286bc42845ff8539} 
+void {\bfseries clear\+Script} ()
+\begin{DoxyCompactList}\small\item\em Clear current script. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a48420a847d017020603b02e30fd0789d}{has\+Loaded\+Script}} () const
+\begin{DoxyCompactList}\small\item\em Check if script is loaded. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a3fbf4bb8701cefd680f0e55aa8a90975}{has\+Errors}} () const
+\begin{DoxyCompactList}\small\item\em Check if script has errors. \end{DoxyCompactList}\item 
+const std::\+string \& \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a8ae85a115afb59699ac1150dcf774bbc}{get\+Error\+Message}} () const
+\begin{DoxyCompactList}\small\item\em Get last error message. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a90a9acbba9d07e0f8c2923a6636b8bd0}{set\+Script\+Var}} (const std::\+string \&name, double value)
+\begin{DoxyCompactList}\small\item\em Set script variable (expose game state to script). \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__LuaScript_ac6ce1476bbe1ae03381f132682ea1087}\label{classenjin2_1_1C__LuaScript_ac6ce1476bbe1ae03381f132682ea1087} 
+void {\bfseries set\+Script\+Var} (const std::\+string \&name, const std::\+string \&value)
+\item 
+\Hypertarget{classenjin2_1_1C__LuaScript_a7f8a422d8618c07de554d0d478191de0}\label{classenjin2_1_1C__LuaScript_a7f8a422d8618c07de554d0d478191de0} 
+void {\bfseries set\+Script\+Var} (const std::\+string \&name, bool value)
+\item 
+double \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a8c07f0dae002aa5118ca4fd15ce10001}{get\+Script\+Number}} (const std::\+string \&name, double default\+Value=0.\+0)
+\begin{DoxyCompactList}\small\item\em Get script variable. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1C__LuaScript_aa9114eb44d9757c5db09d8acc7933a0c}\label{classenjin2_1_1C__LuaScript_aa9114eb44d9757c5db09d8acc7933a0c} 
+std::\+string {\bfseries get\+Script\+String} (const std::\+string \&name, const std::\+string \&default\+Value="{}"{})
+\item 
+\Hypertarget{classenjin2_1_1C__LuaScript_a7ff12301af55afc687a7270738874a48}\label{classenjin2_1_1C__LuaScript_a7ff12301af55afc687a7270738874a48} 
+bool {\bfseries get\+Script\+Bool} (const std::\+string \&name, bool default\+Value=false)
+\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_aad6110256ce3d0bbcb4b2d43431d57aa}{call\+Script\+Function}} (const std::\+string \&function\+Name)
+\begin{DoxyCompactList}\small\item\em Call custom script function. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a067f77662666facee47cfee046b1cd61}{update}} (uint16\+\_\+t delta\+Time) override
+\begin{DoxyCompactList}\small\item\em Update component (calls script update function). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a0ce12da4750f383854730be72b6b5c95}{draw}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} $>$ \&canvas) override
+\begin{DoxyCompactList}\small\item\em Draw component using 4-\/bit canvas. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a09e9230213c59efcb52ba223af368e99}{draw}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&canvas) override
+\begin{DoxyCompactList}\small\item\em Draw component using 8-\/bit canvas. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{IScript\+Interpreter}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a9762e276ef474802afe4fb2963ecc636}{get\+Interpreter}} ()
+\begin{DoxyCompactList}\small\item\em Get script interpreter for advanced operations. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1IScriptGraphics}{IScript\+Graphics}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ab92579a304d27b93da9fdc8ee348bd50}{get\+Graphics}} ()
+\begin{DoxyCompactList}\small\item\em Get graphics interface. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_a552b2b05770a714d6b457dc9d85b8a3e}{get\+Interpreter\+Type}} () const
+\begin{DoxyCompactList}\small\item\em Get interpreter type name. \end{DoxyCompactList}\item 
+uint32\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1C__LuaScript_ab2142fcac9b855d27e66a3dbafdddd09}{get\+Draw\+Calls}} () const
+\begin{DoxyCompactList}\small\item\em Get performance stats. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\+\_\+\+Drawable}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint8\+\_\+t width, uint8\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}})
+\begin{DoxyCompactList}\small\item\em Constructor (matches original Enjin). \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+C\+\_\+\+Drawable} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+virtual bool \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_aea77f53e5922743667146a257cf77ae0}{continue\+To\+Draw}} () const
+\begin{DoxyCompactList}\small\item\em Check if this drawable should continue to be drawn. \end{DoxyCompactList}\item 
+void {\bfseries Set\+Sort\+Order} (int order)
+\item 
+int {\bfseries Get\+Sort\+Order} () const
+\item 
+void {\bfseries Set\+Blend\+Mode} (Blend\+Mode mode)
+\item 
+Blend\+Mode {\bfseries Get\+Blend\+Mode} () const
+\item 
+void {\bfseries Set\+Draw\+Layer} (Draw\+Layer draw\+Layer)
+\item 
+Draw\+Layer {\bfseries Get\+Draw\+Layer} () const
+\item 
+void {\bfseries Set\+Visibility} (bool visibility)
+\item 
+bool {\bfseries Get\+Visibility} () const
+\item 
+bool {\bfseries is\+Visible} () const
+\item 
+void {\bfseries Set\+Anchor\+Point} (Anchor \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a2b6f351b7f70a5f7270711462172b696}{anchor}})
+\item 
+void {\bfseries Add\+Offset} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} offset)
+\item 
+void {\bfseries Set\+Offset} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} offset)
+\item 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries Get\+Offset\+Position} () const
+\item 
+void {\bfseries Set\+XOffset} (int16\+\_\+t x)
+\item 
+void {\bfseries Set\+YOffset} (int16\+\_\+t y)
+\item 
+uint8\+\_\+t {\bfseries Get\+Width} () const
+\item 
+uint8\+\_\+t {\bfseries Get\+Height} () const
+\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_afd3501bd681f616d5efcbec6c4ca41b1}{should\+Draw\+Before}} (const \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\+\_\+\+Drawable}} \&other) const
+\begin{DoxyCompactList}\small\item\em Determine if this drawable should be drawn before another drawable. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Position}{C\+\_\+\+Position}} \texorpdfstring{$\ast$}{*} {\bfseries position}
+\begin{DoxyCompactList}\small\item\em Position component reference. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries anchor\+\_\+offset}
+\begin{DoxyCompactList}\small\item\em Anchor offset. \end{DoxyCompactList}\item 
+int {\bfseries sort\+\_\+order}
+\begin{DoxyCompactList}\small\item\em Sort order for drawing. \end{DoxyCompactList}\item 
+Draw\+Layer {\bfseries layer}
+\begin{DoxyCompactList}\small\item\em Draw layer. \end{DoxyCompactList}\item 
+Blend\+Mode {\bfseries blend\+\_\+mode}
+\begin{DoxyCompactList}\small\item\em Blend mode. \end{DoxyCompactList}\item 
+Anchor {\bfseries anchor}
+\begin{DoxyCompactList}\small\item\em Anchor point. \end{DoxyCompactList}\item 
+bool {\bfseries is\+\_\+visible}
+\begin{DoxyCompactList}\small\item\em Visibility flag. \end{DoxyCompactList}\item 
+uint8\+\_\+t {\bfseries width}
+\item 
+uint8\+\_\+t {\bfseries height}
+\begin{DoxyCompactList}\small\item\em Dimensions. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}}
+\begin{DoxyCompactItemize}
+\item 
+static \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries abs\+\_\+center}
+\begin{DoxyCompactList}\small\item\em Absolute center point (63, 63 for 128x128). \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Platform-\/agnostic script-\/driven UI component. 
+
+A drawable component that executes scripts for custom UI rendering. Uses platform-\/specific interpreters (full Lua on desktop, minimal on ESP32). Perfect for prototyping UI elements, data visualization, and custom effects. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1C__LuaScript_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1C__LuaScript_a03553cc68acb15e6ad4f0d573595770c}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!C\_LuaScript@{C\_LuaScript}}
+\index{C\_LuaScript@{C\_LuaScript}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{C\_LuaScript()}{C\_LuaScript()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a03553cc68acb15e6ad4f0d573595770c} 
+enjin2::\+\+C\+\_\+\+Lua\+Script::\+\+C\+\_\+\+Lua\+Script (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{uint16\+\_\+t}]{width}{, }\item[{uint16\+\_\+t}]{height}{}\end{DoxyParamCaption})}
+
+
+
+Constructor with automatic interpreter selection. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Owner object \\
+\hline
+{\em width} & \doxylink{classenjin2_1_1Component}{Component} width \\
+\hline
+{\em \doxylink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}} & \doxylink{classenjin2_1_1Component}{Component} height \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__LuaScript_ad2a3f0a20305dfb93a951aca76ef60a7}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!C\_LuaScript@{C\_LuaScript}}
+\index{C\_LuaScript@{C\_LuaScript}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{C\_LuaScript()}{C\_LuaScript()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_ad2a3f0a20305dfb93a951aca76ef60a7} 
+enjin2::\+\+C\+\_\+\+Lua\+Script::\+\+C\+\_\+\+Lua\+Script (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{uint16\+\_\+t}]{width}{, }\item[{uint16\+\_\+t}]{height}{, }\item[{\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Script\+Factory::\+\+Interpreter\+Type}}}]{interpreter\+Type}{}\end{DoxyParamCaption})}
+
+
+
+Constructor with specific interpreter type. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Owner object \\
+\hline
+{\em width} & \doxylink{classenjin2_1_1Component}{Component} width \\
+\hline
+{\em \doxylink{classenjin2_1_1C__Drawable_ae67d8735cdc3935c362d48f4973caf75}{height}} & \doxylink{classenjin2_1_1Component}{Component} height \\
+\hline
+{\em interpreter\+Type} & Specific interpreter to use \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1C__LuaScript_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1C__LuaScript_aad6110256ce3d0bbcb4b2d43431d57aa}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!callScriptFunction@{callScriptFunction}}
+\index{callScriptFunction@{callScriptFunction}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{callScriptFunction()}{callScriptFunction()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_aad6110256ce3d0bbcb4b2d43431d57aa} 
+bool enjin2::\+\+C\+\_\+\+Lua\+Script::\+call\+Script\+Function (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{function\+Name}{}\end{DoxyParamCaption})}
+
+
+
+Call custom script function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em function\+Name} & Function name to call \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if call was successful 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a0ce12da4750f383854730be72b6b5c95}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!draw@{draw}}
+\index{draw@{draw}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{draw()}{draw()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a0ce12da4750f383854730be72b6b5c95} 
+void enjin2::\+\+C\+\_\+\+Lua\+Script::\+draw (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} $>$ \&}]{canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}}
+
+
+
+Draw component using 4-\/bit canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & 4-\/bit canvas to draw on \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__LuaScript_a09e9230213c59efcb52ba223af368e99}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!draw@{draw}}
+\index{draw@{draw}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{draw()}{draw()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a09e9230213c59efcb52ba223af368e99} 
+void enjin2::\+\+C\+\_\+\+Lua\+Script::\+draw (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&}]{canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Draw component using 8-\/bit canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & 8-\/bit canvas to draw on \\
+\hline
+\end{DoxyParams}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a977a30e501e900c59c201eadcf5a766b}{enjin2::\+\+C\+\_\+\+Drawable}}.
+
+\Hypertarget{classenjin2_1_1C__LuaScript_ab2142fcac9b855d27e66a3dbafdddd09}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!getDrawCalls@{getDrawCalls}}
+\index{getDrawCalls@{getDrawCalls}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{getDrawCalls()}{getDrawCalls()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_ab2142fcac9b855d27e66a3dbafdddd09} 
+uint32\+\_\+t enjin2::\+\+C\+\_\+\+Lua\+Script::\+get\+Draw\+Calls (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get performance stats. 
+
+\begin{DoxyReturn}{Returns}
+Number of draw calls since creation 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a8ae85a115afb59699ac1150dcf774bbc}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!getErrorMessage@{getErrorMessage}}
+\index{getErrorMessage@{getErrorMessage}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{getErrorMessage()}{getErrorMessage()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a8ae85a115afb59699ac1150dcf774bbc} 
+const std::\+string \& enjin2::\+\+C\+\_\+\+Lua\+Script::\+get\+Error\+Message (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get last error message. 
+
+\begin{DoxyReturn}{Returns}
+Error message string 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_ab92579a304d27b93da9fdc8ee348bd50}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!getGraphics@{getGraphics}}
+\index{getGraphics@{getGraphics}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{getGraphics()}{getGraphics()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_ab92579a304d27b93da9fdc8ee348bd50} 
+\doxymbox{\hyperlink{classenjin2_1_1IScriptGraphics}{IScript\+Graphics}} \texorpdfstring{$\ast$}{*} enjin2::\+\+C\+\_\+\+Lua\+Script::\+get\+Graphics (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get graphics interface. 
+
+\begin{DoxyReturn}{Returns}
+Graphics interface reference 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a9762e276ef474802afe4fb2963ecc636}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!getInterpreter@{getInterpreter}}
+\index{getInterpreter@{getInterpreter}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{getInterpreter()}{getInterpreter()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a9762e276ef474802afe4fb2963ecc636} 
+\doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{IScript\+Interpreter}} \texorpdfstring{$\ast$}{*} enjin2::\+\+C\+\_\+\+Lua\+Script::\+get\+Interpreter (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get script interpreter for advanced operations. 
+
+\begin{DoxyReturn}{Returns}
+Script interpreter reference 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a552b2b05770a714d6b457dc9d85b8a3e}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!getInterpreterType@{getInterpreterType}}
+\index{getInterpreterType@{getInterpreterType}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{getInterpreterType()}{getInterpreterType()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a552b2b05770a714d6b457dc9d85b8a3e} 
+const char \texorpdfstring{$\ast$}{*} enjin2::\+\+C\+\_\+\+Lua\+Script::\+get\+Interpreter\+Type (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get interpreter type name. 
+
+\begin{DoxyReturn}{Returns}
+Type name string 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a8c07f0dae002aa5118ca4fd15ce10001}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!getScriptNumber@{getScriptNumber}}
+\index{getScriptNumber@{getScriptNumber}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{getScriptNumber()}{getScriptNumber()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a8c07f0dae002aa5118ca4fd15ce10001} 
+double enjin2::\+\+C\+\_\+\+Lua\+Script::\+get\+Script\+Number (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{double}]{default\+Value}{ = {\ttfamily 0.0}}\end{DoxyParamCaption})}
+
+
+
+Get script variable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em default\+Value} & Default value if not found \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Variable value 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a3fbf4bb8701cefd680f0e55aa8a90975}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!hasErrors@{hasErrors}}
+\index{hasErrors@{hasErrors}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{hasErrors()}{hasErrors()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a3fbf4bb8701cefd680f0e55aa8a90975} 
+bool enjin2::\+\+C\+\_\+\+Lua\+Script::\+has\+Errors (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Check if script has errors. 
+
+\begin{DoxyReturn}{Returns}
+True if script has errors 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a48420a847d017020603b02e30fd0789d}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!hasLoadedScript@{hasLoadedScript}}
+\index{hasLoadedScript@{hasLoadedScript}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{hasLoadedScript()}{hasLoadedScript()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a48420a847d017020603b02e30fd0789d} 
+bool enjin2::\+\+C\+\_\+\+Lua\+Script::\+has\+Loaded\+Script (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Check if script is loaded. 
+
+\begin{DoxyReturn}{Returns}
+True if script is loaded 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a2135fedda37f960c4b810fa8b36f5da0}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!loadScript@{loadScript}}
+\index{loadScript@{loadScript}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{loadScript()}{loadScript()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a2135fedda37f960c4b810fa8b36f5da0} 
+bool enjin2::\+\+C\+\_\+\+Lua\+Script::\+load\+Script (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{code}{}\end{DoxyParamCaption})}
+
+
+
+Load script from string. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em code} & Lua script code \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if loaded successfully 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_ab6fcbe0e082a71c3782e2bc0fb1638c4}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!loadScriptFile@{loadScriptFile}}
+\index{loadScriptFile@{loadScriptFile}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{loadScriptFile()}{loadScriptFile()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_ab6fcbe0e082a71c3782e2bc0fb1638c4} 
+bool enjin2::\+\+C\+\_\+\+Lua\+Script::\+load\+Script\+File (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{filename}{}\end{DoxyParamCaption})}
+
+
+
+Load script from file. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em filename} & Path to Lua script file \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if loaded successfully 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_ae47288da77cd6628407186b689652d9f}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!reloadScript@{reloadScript}}
+\index{reloadScript@{reloadScript}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{reloadScript()}{reloadScript()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_ae47288da77cd6628407186b689652d9f} 
+bool enjin2::\+\+C\+\_\+\+Lua\+Script::\+reload\+Script (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Reload current script (useful for development). 
+
+\begin{DoxyReturn}{Returns}
+True if reloaded successfully 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__LuaScript_a90a9acbba9d07e0f8c2923a6636b8bd0}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!setScriptVar@{setScriptVar}}
+\index{setScriptVar@{setScriptVar}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{setScriptVar()}{setScriptVar()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a90a9acbba9d07e0f8c2923a6636b8bd0} 
+void enjin2::\+\+C\+\_\+\+Lua\+Script::\+set\+Script\+Var (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{double}]{value}{}\end{DoxyParamCaption})}
+
+
+
+Set script variable (expose game state to script). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em value} & Variable value \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__LuaScript_a067f77662666facee47cfee046b1cd61}\index{enjin2::C\_LuaScript@{enjin2::C\_LuaScript}!update@{update}}
+\index{update@{update}!enjin2::C\_LuaScript@{enjin2::C\_LuaScript}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__LuaScript_a067f77662666facee47cfee046b1cd61} 
+void enjin2::\+\+C\+\_\+\+Lua\+Script::\+update (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Update component (calls script update function). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last update \\
+\hline
+\end{DoxyParams}
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{enjin2::\+\+Component$<$ T $>$}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+components/\+lua\+\_\+script.\+hpp\end{DoxyCompactItemize}

@@ -1,0 +1,371 @@
+\doxysection{enjin2::\+C\+\_\+\+Position Class Reference}
+\hypertarget{classenjin2_1_1C__Position}{}\label{classenjin2_1_1C__Position}\index{enjin2::C\_Position@{enjin2::C\_Position}}
+
+
+Position component for object positioning.  
+
+
+
+
+{\ttfamily \+\#include $<$position.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Position_a025a75860e3187feaa6e07fa779e008f}{C\+\_\+\+Position}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor with default position. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Position_a930262885e6595af45549249ea3988f0}{C\+\_\+\+Position}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, int16\+\_\+t x, int16\+\_\+t y)
+\begin{DoxyCompactList}\small\item\em Constructor with initial position. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1C__Position_aec92422fe0ce3438f8b29a7a39aa8cde}{C\+\_\+\+Position}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&pos)
+\begin{DoxyCompactList}\small\item\em Constructor with \doxylink{structenjin2_1_1Point}{Point}. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Position_a54ea82e280131e73551ab8c2ed8c7603}{set\+Position}} (int16\+\_\+t x, int16\+\_\+t y)
+\begin{DoxyCompactList}\small\item\em Set position. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Position_ae702bb40d1c3e35af567ef07b24e0cd4}{set\+Position}} (const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&pos)
+\begin{DoxyCompactList}\small\item\em Set position. \end{DoxyCompactList}\item 
+const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \& \doxymbox{\hyperlink{classenjin2_1_1C__Position_a0d063d54cf3fe1f0847168ece2981b6b}{get\+Position}} () const
+\begin{DoxyCompactList}\small\item\em Get position. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Position_a2a518cbcc544a6161aa8cdea3e8bf7b5}{move}} (int16\+\_\+t dx, int16\+\_\+t dy)
+\begin{DoxyCompactList}\small\item\em Move position by offset. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Position_a3a3435c361406a4d6936fbb5b130063b}{move}} (const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&offset)
+\begin{DoxyCompactList}\small\item\em Move position by offset. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Position_aef9e1ced67d996139651bcd76a913c67}{set\+Anchor}} (Anchor anchor)
+\begin{DoxyCompactList}\small\item\em Set anchor point. \end{DoxyCompactList}\item 
+Anchor \doxymbox{\hyperlink{classenjin2_1_1C__Position_ab0c3f5bf65a8aa615154dcf0a79d1558}{get\+Anchor}} () const
+\begin{DoxyCompactList}\small\item\em Get anchor point. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Position_a5fb29e2ebf51fd5970ec49e273e21d9b}{set\+Anchor\+Offset}} (const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&offset)
+\begin{DoxyCompactList}\small\item\em Set anchor offset. \end{DoxyCompactList}\item 
+const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \& \doxymbox{\hyperlink{classenjin2_1_1C__Position_a3dd3137e9d70fce1dfc26a9eeae808d6}{get\+Anchor\+Offset}} () const
+\begin{DoxyCompactList}\small\item\em Get anchor offset. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \doxymbox{\hyperlink{classenjin2_1_1C__Position_a4665dccaececc66dc07e7d76e4a6ae3b}{calculate\+Render\+Position}} (const \doxymbox{\hyperlink{structenjin2_1_1Size}{Size}} \&size) const
+\begin{DoxyCompactList}\small\item\em Calculate final rendering position based on anchor and size. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1C__Position_a2f5924371a812d99be1303a38967e75a}{lerp}} (const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&target, float t)
+\begin{DoxyCompactList}\small\item\em Linear interpolation to target position. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classenjin2_1_1C__Position_abd96aa8ff20582c738a23519654294b3}{distance\+To}} (const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&other) const
+\begin{DoxyCompactList}\small\item\em Calculate distance to another position. \end{DoxyCompactList}\item 
+int32\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1C__Position_a7b696c9f567ca490cd7aecd399ea6cea}{distance\+Squared\+To}} (const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&other) const
+\begin{DoxyCompactList}\small\item\em Calculate squared distance to another position (faster than distance\+To). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Update is called once per frame. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Position component for object positioning. 
+
+Manages the position and anchor point of an object in 2D space. This is a fundamental component used by most drawable objects. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1C__Position_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1C__Position_a025a75860e3187feaa6e07fa779e008f}\index{enjin2::C\_Position@{enjin2::C\_Position}!C\_Position@{C\_Position}}
+\index{C\_Position@{C\_Position}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{C\_Position()}{C\_Position()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a025a75860e3187feaa6e07fa779e008f} 
+enjin2::\+\+C\+\_\+\+Position::\+\+C\+\_\+\+Position (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [explicit]}}
+
+
+
+Constructor with default position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Owner object \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_a930262885e6595af45549249ea3988f0}\index{enjin2::C\_Position@{enjin2::C\_Position}!C\_Position@{C\_Position}}
+\index{C\_Position@{C\_Position}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{C\_Position()}{C\_Position()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a930262885e6595af45549249ea3988f0} 
+enjin2::\+\+C\+\_\+\+Position::\+\+C\+\_\+\+Position (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{int16\+\_\+t}]{x}{, }\item[{int16\+\_\+t}]{y}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor with initial position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Owner object \\
+\hline
+{\em x} & Initial X position \\
+\hline
+{\em y} & Initial Y position \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_aec92422fe0ce3438f8b29a7a39aa8cde}\index{enjin2::C\_Position@{enjin2::C\_Position}!C\_Position@{C\_Position}}
+\index{C\_Position@{C\_Position}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{C\_Position()}{C\_Position()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_aec92422fe0ce3438f8b29a7a39aa8cde} 
+enjin2::\+\+C\+\_\+\+Position::\+\+C\+\_\+\+Position (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&}]{pos}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor with \doxylink{structenjin2_1_1Point}{Point}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & Owner object \\
+\hline
+{\em pos} & Initial position \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1C__Position_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1C__Position_a4665dccaececc66dc07e7d76e4a6ae3b}\index{enjin2::C\_Position@{enjin2::C\_Position}!calculateRenderPosition@{calculateRenderPosition}}
+\index{calculateRenderPosition@{calculateRenderPosition}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{calculateRenderPosition()}{calculateRenderPosition()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a4665dccaececc66dc07e7d76e4a6ae3b} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} enjin2::\+\+C\+\_\+\+Position::\+calculate\+Render\+Position (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1Size}{Size}} \&}]{size}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Calculate final rendering position based on anchor and size. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em size} & \doxylink{structenjin2_1_1Size}{Size} of the object for anchor calculation \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Final rendering position 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Position_a7b696c9f567ca490cd7aecd399ea6cea}\index{enjin2::C\_Position@{enjin2::C\_Position}!distanceSquaredTo@{distanceSquaredTo}}
+\index{distanceSquaredTo@{distanceSquaredTo}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{distanceSquaredTo()}{distanceSquaredTo()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a7b696c9f567ca490cd7aecd399ea6cea} 
+int32\+\_\+t enjin2::\+\+C\+\_\+\+Position::\+distance\+Squared\+To (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&}]{other}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Calculate squared distance to another position (faster than distance\+To). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em other} & Other position \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Squared distance 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Position_abd96aa8ff20582c738a23519654294b3}\index{enjin2::C\_Position@{enjin2::C\_Position}!distanceTo@{distanceTo}}
+\index{distanceTo@{distanceTo}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{distanceTo()}{distanceTo()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_abd96aa8ff20582c738a23519654294b3} 
+float enjin2::\+\+C\+\_\+\+Position::\+distance\+To (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&}]{other}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Calculate distance to another position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em other} & Other position \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Distance in pixels 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Position_ab0c3f5bf65a8aa615154dcf0a79d1558}\index{enjin2::C\_Position@{enjin2::C\_Position}!getAnchor@{getAnchor}}
+\index{getAnchor@{getAnchor}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{getAnchor()}{getAnchor()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_ab0c3f5bf65a8aa615154dcf0a79d1558} 
+Anchor enjin2::\+\+C\+\_\+\+Position::\+get\+Anchor (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get anchor point. 
+
+\begin{DoxyReturn}{Returns}
+Current anchor point 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Position_a3dd3137e9d70fce1dfc26a9eeae808d6}\index{enjin2::C\_Position@{enjin2::C\_Position}!getAnchorOffset@{getAnchorOffset}}
+\index{getAnchorOffset@{getAnchorOffset}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{getAnchorOffset()}{getAnchorOffset()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a3dd3137e9d70fce1dfc26a9eeae808d6} 
+const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \& enjin2::\+\+C\+\_\+\+Position::\+get\+Anchor\+Offset (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get anchor offset. 
+
+\begin{DoxyReturn}{Returns}
+Current anchor offset 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Position_a0d063d54cf3fe1f0847168ece2981b6b}\index{enjin2::C\_Position@{enjin2::C\_Position}!getPosition@{getPosition}}
+\index{getPosition@{getPosition}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{getPosition()}{getPosition()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a0d063d54cf3fe1f0847168ece2981b6b} 
+const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \& enjin2::\+\+C\+\_\+\+Position::\+get\+Position (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get position. 
+
+\begin{DoxyReturn}{Returns}
+Current position 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1C__Position_a2f5924371a812d99be1303a38967e75a}\index{enjin2::C\_Position@{enjin2::C\_Position}!lerp@{lerp}}
+\index{lerp@{lerp}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{lerp()}{lerp()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a2f5924371a812d99be1303a38967e75a} 
+void enjin2::\+\+C\+\_\+\+Position::\+lerp (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&}]{target}{, }\item[{float}]{t}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Linear interpolation to target position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em target} & Target position \\
+\hline
+{\em t} & Interpolation factor (0.\+0 to 1.\+0) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_a3a3435c361406a4d6936fbb5b130063b}\index{enjin2::C\_Position@{enjin2::C\_Position}!move@{move}}
+\index{move@{move}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{move()}{move()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a3a3435c361406a4d6936fbb5b130063b} 
+void enjin2::\+\+C\+\_\+\+Position::\+move (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&}]{offset}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Move position by offset. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em offset} & Offset vector \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_a2a518cbcc544a6161aa8cdea3e8bf7b5}\index{enjin2::C\_Position@{enjin2::C\_Position}!move@{move}}
+\index{move@{move}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{move()}{move()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a2a518cbcc544a6161aa8cdea3e8bf7b5} 
+void enjin2::\+\+C\+\_\+\+Position::\+move (\begin{DoxyParamCaption}\item[{int16\+\_\+t}]{dx}{, }\item[{int16\+\_\+t}]{dy}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Move position by offset. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em dx} & X offset \\
+\hline
+{\em dy} & Y offset \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_aef9e1ced67d996139651bcd76a913c67}\index{enjin2::C\_Position@{enjin2::C\_Position}!setAnchor@{setAnchor}}
+\index{setAnchor@{setAnchor}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{setAnchor()}{setAnchor()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_aef9e1ced67d996139651bcd76a913c67} 
+void enjin2::\+\+C\+\_\+\+Position::\+set\+Anchor (\begin{DoxyParamCaption}\item[{Anchor}]{anchor}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set anchor point. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em anchor} & New anchor point \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_a5fb29e2ebf51fd5970ec49e273e21d9b}\index{enjin2::C\_Position@{enjin2::C\_Position}!setAnchorOffset@{setAnchorOffset}}
+\index{setAnchorOffset@{setAnchorOffset}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{setAnchorOffset()}{setAnchorOffset()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a5fb29e2ebf51fd5970ec49e273e21d9b} 
+void enjin2::\+\+C\+\_\+\+Position::\+set\+Anchor\+Offset (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&}]{offset}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set anchor offset. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em offset} & Offset from anchor point \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_ae702bb40d1c3e35af567ef07b24e0cd4}\index{enjin2::C\_Position@{enjin2::C\_Position}!setPosition@{setPosition}}
+\index{setPosition@{setPosition}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{setPosition()}{setPosition()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_ae702bb40d1c3e35af567ef07b24e0cd4} 
+void enjin2::\+\+C\+\_\+\+Position::\+set\+Position (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} \&}]{pos}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & New position \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1C__Position_a54ea82e280131e73551ab8c2ed8c7603}\index{enjin2::C\_Position@{enjin2::C\_Position}!setPosition@{setPosition}}
+\index{setPosition@{setPosition}!enjin2::C\_Position@{enjin2::C\_Position}}
+\doxysubsubsection{\texorpdfstring{setPosition()}{setPosition()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1C__Position_a54ea82e280131e73551ab8c2ed8c7603} 
+void enjin2::\+\+C\+\_\+\+Position::\+set\+Position (\begin{DoxyParamCaption}\item[{int16\+\_\+t}]{x}{, }\item[{int16\+\_\+t}]{y}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & X coordinate \\
+\hline
+{\em y} & Y coordinate \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+components/\+position.\+hpp\end{DoxyCompactItemize}

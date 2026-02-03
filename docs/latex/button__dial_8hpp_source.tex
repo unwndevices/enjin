@@ -1,0 +1,128 @@
+\doxysection{button\+\_\+dial.\+hpp}
+\hypertarget{button__dial_8hpp_source}{}\label{button__dial_8hpp_source}\index{include/enjin2/components/button\_dial.hpp@{include/enjin2/components/button\_dial.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_BUTTON\_DIAL\_HPP}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_BUTTON\_DIAL\_HPP}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/component.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}drawable.hpp"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}position.hpp"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}../core/math.hpp"{}}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1ButtonDial_a8f42c02822e19df019d0945650c43542}{ButtonDial}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}\ \{}
+\DoxyCodeLine{00019\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00020\ \ \ \ \ uint8\_t\ outer\_radius;}
+\DoxyCodeLine{00021\ \ \ \ \ uint8\_t\ inner\_radius;}
+\DoxyCodeLine{00022\ \ \ \ \ uint8\_t\ button\_count;}
+\DoxyCodeLine{00023\ \ \ \ \ uint8\_t\ color;}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keywordtype}{int}\ selected\_id;}
+\DoxyCodeLine{00025\ \ \ \ \ Position*\ position;}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keyword}{mutable}\ Canvas<uint8\_t,\ 64,\ 64>\ internal\_canvas;\ \textcolor{comment}{//\ Max\ size\ for\ dials}}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00028\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00036\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1ButtonDial_a8f42c02822e19df019d0945650c43542}{ButtonDial}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ uint8\_t\ outerRadius,\ uint8\_t\ innerRadius,\ uint8\_t\ buttonCount)}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ ,\ outer\_radius(outerRadius)}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ ,\ inner\_radius(innerRadius)}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ ,\ button\_count(buttonCount)}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ ,\ color(12)}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ ,\ selected\_id(-\/1)}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ ,\ position(nullptr)}
+\DoxyCodeLine{00044\ \ \ \ \ \{}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ position\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getComponent<Position>();}
+\DoxyCodeLine{00046\ \ \ \ \ \}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordtype}{void}\ onCreate()\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keywordtype}{void}\ onUpdate(\textcolor{keywordtype}{float}\ deltaTime)\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ButtonDial_ab521e4984520afaca68e55f01c105d0b}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!position)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ internal\ canvas}}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ size\ =\ outer\_radius\ *\ 2\ +\ 1;}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ internal\_canvas.clear(16);}
+\DoxyCodeLine{00062\ }
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ Vector2\ center\ =\ \{outer\_radius,\ outer\_radius\};}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ outer\ circle}}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ internal\_canvas.drawCircle(center.x,\ center.y,\ outer\_radius,\ color);}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ buttons\ and\ dividing\ lines}}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ i\ =\ 0;\ i\ <\ button\_count;\ i++)\ \{}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ phase\ =\ (float)i\ /\ button\_count;}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ angle\ =\ phase\ *\ 2.0f\ *\ PI;}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \ \ \ \ Vector2\ point\ =\ \{}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(center.x\ +\ cos(angle)\ *\ outer\_radius),}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(center.y\ +\ sin(angle)\ *\ outer\_radius)}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ \};}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(point.x,\ point.y,\ color);}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ dividing\ lines\ (dashed\ effect)}}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ Vector2\ direction\ =\ \{}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(cos(angle)\ *\ (outer\_radius\ -\/\ inner\_radius)),}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(sin(angle)\ *\ (outer\_radius\ -\/\ inner\_radius))}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \};}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ r\ =\ inner\_radius;\ r\ <\ outer\_radius;\ r\ +=\ 2)\ \{}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Vector2\ line\_point\ =\ \{}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(center.x\ +\ cos(angle)\ *\ r),}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(center.y\ +\ sin(angle)\ *\ r)}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \};}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(line\_point.x,\ line\_point.y,\ color);}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ inner\ circle}}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ internal\_canvas.fillCircle(center.x,\ center.y,\ inner\_radius,\ 16);}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ internal\_canvas.drawCircle(center.x,\ center.y,\ inner\_radius,\ color);}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Highlight\ active\ button}}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (selected\_id\ >=\ 0\ \&\&\ selected\_id\ <\ button\_count)\ \{}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ activePhase\ =\ (float)(selected\_id\ +\ 0.5f)\ /\ button\_count;}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ angle\ =\ activePhase\ *\ 2.0f\ *\ PI;}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ activeRadius\ =\ (outer\_radius\ +\ inner\_radius)\ /\ 2\ -\/\ 1;}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ Vector2\ activePoint\ =\ \{}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(center.x\ +\ cos(angle)\ *\ activeRadius),}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (int16\_t)(center.y\ +\ sin(angle)\ *\ activeRadius)}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \ \ \ \ \};}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.fillCircle(activePoint.x,\ activePoint.y,\ 3,\ color);}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00112\ }
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Copy\ to\ main\ canvas}}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ Vector2\ pos\ =\ position-\/>getGlobalPosition();}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ canvas.blit(internal\_canvas,\ pos.x,\ pos.y,\ size,\ size);}
+\DoxyCodeLine{00116\ \ \ \ \ \}}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ButtonDial_a1b09ea01bc1b3ceb6a6f4d444704821d}{setSelectedButton}}(\textcolor{keywordtype}{int}\ \textcolor{keywordtype}{id})\ \{}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\textcolor{keywordtype}{id}\ >=\ -\/1\ \&\&\ \textcolor{keywordtype}{id}\ <\ button\_count)\ \{}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ selected\_id\ =\ id;}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00126\ \ \ \ \ \}}
+\DoxyCodeLine{00127\ }
+\DoxyCodeLine{00132\ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classenjin2_1_1ButtonDial_ab343c1a155454236da201b534dce1cc2}{getSelectedButton}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ selected\_id;}
+\DoxyCodeLine{00134\ \ \ \ \ \}}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ButtonDial_a4482dba8537e7b8c17771f044a61268b}{setColor}}(uint8\_t\ newColor)\ \{}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ color\ =\ newColor;}
+\DoxyCodeLine{00142\ \ \ \ \ \}}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00148\ \ \ \ \ uint8\_t\ \doxymbox{\hyperlink{classenjin2_1_1ButtonDial_a27f157fec11a27d4abdc654c5de36081}{getButtonCount}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ button\_count;}
+\DoxyCodeLine{00150\ \ \ \ \ \}}
+\DoxyCodeLine{00151\ \};}
+\DoxyCodeLine{00152\ }
+\DoxyCodeLine{00153\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00154\ }
+\DoxyCodeLine{00155\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_BUTTON\_DIAL\_HPP}}
+
+\end{DoxyCode}

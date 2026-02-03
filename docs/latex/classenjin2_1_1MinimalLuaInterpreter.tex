@@ -1,0 +1,318 @@
+\doxysection{enjin2::\+Minimal\+Lua\+Interpreter Class Reference}
+\hypertarget{classenjin2_1_1MinimalLuaInterpreter}{}\label{classenjin2_1_1MinimalLuaInterpreter}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+
+
+Minimal Lua interpreter for ESP32.  
+
+
+
+
+{\ttfamily \+\#include $<$lua\+\_\+interpreter.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a69fb9e317ff0bf51ad1ad8466f47ea3a}\label{classenjin2_1_1MinimalLuaInterpreter_a69fb9e317ff0bf51ad1ad8466f47ea3a} 
+{\bfseries Minimal\+Lua\+Interpreter} ()
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a2c7866793e54f3f304be28923b42ee96}\label{classenjin2_1_1MinimalLuaInterpreter_a2c7866793e54f3f304be28923b42ee96} 
+{\bfseries \texorpdfstring{$\sim$}{\string~}\+Minimal\+Lua\+Interpreter} () override
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a38d39157df578dd1f422ae087d0e7f52}{set\+Graphics}} (\doxymbox{\hyperlink{classenjin2_1_1IScriptGraphics}{IScript\+Graphics}} \texorpdfstring{$\ast$}{*}gfx)
+\begin{DoxyCompactList}\small\item\em Set graphics interface. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_ab847268e1cf186f3de6f651024bef502}{initialize}} () override
+\begin{DoxyCompactList}\small\item\em Initialize the interpreter. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a1b2384897b001d64ed56318ebdddfade}{shutdown}} () override
+\begin{DoxyCompactList}\small\item\em Shutdown the interpreter. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a432a63d732ba673e1f7b0f6975e6cf98}{is\+Initialized}} () const override
+\begin{DoxyCompactList}\small\item\em Check if interpreter is initialized. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{Script\+Result}} \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a06d69f61dddadfc77d340ad7eb95c97e}{execute\+String}} (const std::\+string \&code) override
+\begin{DoxyCompactList}\small\item\em Execute script code string. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{Script\+Result}} \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a6e6074f6aea79024b40fbe3d6d8a6cf7}{execute\+File}} (const std::\+string \&filename) override
+\begin{DoxyCompactList}\small\item\em Load and execute script file. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{Script\+Result}} \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a03da9fd7f0a729f9ced627272a2f9f34}{call\+Function}} (const std::\+string \&function\+Name) override
+\begin{DoxyCompactList}\small\item\em Call script function. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a2b67618899c6c04f05651b8551b98bf7}{set\+Global}} (const std::\+string \&name, double value) override
+\begin{DoxyCompactList}\small\item\em Set global variable. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_aa7af8e3a477c08bd8a9fa61a8e402495}{set\+Global}} (const std::\+string \&name, const std::\+string \&value) override
+\item 
+void \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a97a17d350c752255015f7fab7c0198d9}{set\+Global}} (const std::\+string \&name, bool value) override
+\item 
+double \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a8a7223b6061af245ba6864a51d1d7b46}{get\+Global\+Number}} (const std::\+string \&name, double default\+Value=0.\+0) override
+\begin{DoxyCompactList}\small\item\em Get global variable. \end{DoxyCompactList}\item 
+std::\+string \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a08d845c29122219267bcc12b63c4271f}{get\+Global\+String}} (const std::\+string \&name, const std::\+string \&default\+Value="{}"{}) override
+\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a834ca134ed77c8a6df0e297b3fa6ba4f}{get\+Global\+Bool}} (const std::\+string \&name, bool default\+Value=false) override
+\item 
+size\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_a5fee356b7cd5305b9880a650ba0ea02c}{get\+Memory\+Usage}} () const override
+\begin{DoxyCompactList}\small\item\em Get current memory usage. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1MinimalLuaInterpreter_abf367b8507edfeb815327be9d158c12d}{get\+Type\+Name}} () const override
+\begin{DoxyCompactList}\small\item\em Get interpreter type name. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{enjin2::\+\+IScript\+Interpreter}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+IScript\+Interpreter} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Minimal Lua interpreter for ESP32. 
+
+Lightweight Lua implementation for ESP32 with reduced memory footprint and essential graphics functions only. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a03da9fd7f0a729f9ced627272a2f9f34}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!callFunction@{callFunction}}
+\index{callFunction@{callFunction}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{callFunction()}{callFunction()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a03da9fd7f0a729f9ced627272a2f9f34} 
+\doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{Script\+Result}} enjin2::\+\+Minimal\+Lua\+Interpreter::\+call\+Function (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{function\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Call script function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em function\+Name} & Name of function to call \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Execution result 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_aba4f8137339a59af901a9f53f63c8193}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a6e6074f6aea79024b40fbe3d6d8a6cf7}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!executeFile@{executeFile}}
+\index{executeFile@{executeFile}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{executeFile()}{executeFile()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a6e6074f6aea79024b40fbe3d6d8a6cf7} 
+\doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{Script\+Result}} enjin2::\+\+Minimal\+Lua\+Interpreter::\+execute\+File (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{filename}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Load and execute script file. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em filename} & Path to script file \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Execution result 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_ab3b5a3c6ec86f0b5d4178824a996f5c9}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a06d69f61dddadfc77d340ad7eb95c97e}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!executeString@{executeString}}
+\index{executeString@{executeString}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{executeString()}{executeString()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a06d69f61dddadfc77d340ad7eb95c97e} 
+\doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{Script\+Result}} enjin2::\+\+Minimal\+Lua\+Interpreter::\+execute\+String (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{code}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Execute script code string. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em code} & Script code to execute \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Execution result 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_af0ce0b5ae0d9841c434b015b8864dde1}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a834ca134ed77c8a6df0e297b3fa6ba4f}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!getGlobalBool@{getGlobalBool}}
+\index{getGlobalBool@{getGlobalBool}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{getGlobalBool()}{getGlobalBool()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a834ca134ed77c8a6df0e297b3fa6ba4f} 
+bool enjin2::\+\+Minimal\+Lua\+Interpreter::\+get\+Global\+Bool (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{bool}]{default\+Value}{ = {\ttfamily false}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a8a7223b6061af245ba6864a51d1d7b46}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!getGlobalNumber@{getGlobalNumber}}
+\index{getGlobalNumber@{getGlobalNumber}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{getGlobalNumber()}{getGlobalNumber()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a8a7223b6061af245ba6864a51d1d7b46} 
+double enjin2::\+\+Minimal\+Lua\+Interpreter::\+get\+Global\+Number (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{double}]{default\+Value}{ = {\ttfamily 0.0}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Get global variable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em default\+Value} & Default value if not found \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Variable value 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_a42c025cd0d3aceb3fb0a441a67730ca2}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a08d845c29122219267bcc12b63c4271f}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!getGlobalString@{getGlobalString}}
+\index{getGlobalString@{getGlobalString}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{getGlobalString()}{getGlobalString()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a08d845c29122219267bcc12b63c4271f} 
+std::\+string enjin2::\+\+Minimal\+Lua\+Interpreter::\+get\+Global\+String (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{const std::\+string \&}]{default\+Value}{ = {\ttfamily "{}"{}}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a5fee356b7cd5305b9880a650ba0ea02c}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!getMemoryUsage@{getMemoryUsage}}
+\index{getMemoryUsage@{getMemoryUsage}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{getMemoryUsage()}{getMemoryUsage()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a5fee356b7cd5305b9880a650ba0ea02c} 
+size\+\_\+t enjin2::\+\+Minimal\+Lua\+Interpreter::\+get\+Memory\+Usage (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Get current memory usage. 
+
+\begin{DoxyReturn}{Returns}
+Memory usage in bytes 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_a02fa82422ad5f5f6e36a669173be2609}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_abf367b8507edfeb815327be9d158c12d}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!getTypeName@{getTypeName}}
+\index{getTypeName@{getTypeName}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{getTypeName()}{getTypeName()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_abf367b8507edfeb815327be9d158c12d} 
+const char \texorpdfstring{$\ast$}{*} enjin2::\+\+Minimal\+Lua\+Interpreter::\+get\+Type\+Name (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Get interpreter type name. 
+
+\begin{DoxyReturn}{Returns}
+Type name string (e.\+g., "{}\+Lua"{}, "{}\+Java\+Script"{}, "{}\+Micro\+Python"{}) 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_a545935bc6bdd4d618fbbe25924ee84ed}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_ab847268e1cf186f3de6f651024bef502}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!initialize@{initialize}}
+\index{initialize@{initialize}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{initialize()}{initialize()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_ab847268e1cf186f3de6f651024bef502} 
+bool enjin2::\+\+Minimal\+Lua\+Interpreter::\+initialize (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Initialize the interpreter. 
+
+\begin{DoxyReturn}{Returns}
+True if initialization successful 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_a409e2e6ab76b130081d6d1aeeec4fee0}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a432a63d732ba673e1f7b0f6975e6cf98}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!isInitialized@{isInitialized}}
+\index{isInitialized@{isInitialized}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{isInitialized()}{isInitialized()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a432a63d732ba673e1f7b0f6975e6cf98} 
+bool enjin2::\+\+Minimal\+Lua\+Interpreter::\+is\+Initialized (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Check if interpreter is initialized. 
+
+\begin{DoxyReturn}{Returns}
+True if initialized 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_a3a3a5c023ee1a4b9c00429f6139fd261}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a97a17d350c752255015f7fab7c0198d9}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!setGlobal@{setGlobal}}
+\index{setGlobal@{setGlobal}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{setGlobal()}{setGlobal()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a97a17d350c752255015f7fab7c0198d9} 
+void enjin2::\+\+Minimal\+Lua\+Interpreter::\+set\+Global (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{bool}]{value}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_aa7af8e3a477c08bd8a9fa61a8e402495}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!setGlobal@{setGlobal}}
+\index{setGlobal@{setGlobal}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{setGlobal()}{setGlobal()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_aa7af8e3a477c08bd8a9fa61a8e402495} 
+void enjin2::\+\+Minimal\+Lua\+Interpreter::\+set\+Global (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{const std::\+string \&}]{value}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a2b67618899c6c04f05651b8551b98bf7}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!setGlobal@{setGlobal}}
+\index{setGlobal@{setGlobal}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{setGlobal()}{setGlobal()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a2b67618899c6c04f05651b8551b98bf7} 
+void enjin2::\+\+Minimal\+Lua\+Interpreter::\+set\+Global (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{double}]{value}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Set global variable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em value} & Variable value \\
+\hline
+\end{DoxyParams}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_ad57edf3fe4a7ddf7e03767d873a51083}{enjin2::\+\+IScript\+Interpreter}}.
+
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a38d39157df578dd1f422ae087d0e7f52}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!setGraphics@{setGraphics}}
+\index{setGraphics@{setGraphics}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{setGraphics()}{setGraphics()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a38d39157df578dd1f422ae087d0e7f52} 
+void enjin2::\+\+Minimal\+Lua\+Interpreter::\+set\+Graphics (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1IScriptGraphics}{IScript\+Graphics}} \texorpdfstring{$\ast$}{*}}]{gfx}{}\end{DoxyParamCaption})}
+
+
+
+Set graphics interface. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em gfx} & Graphics interface to use \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1MinimalLuaInterpreter_a1b2384897b001d64ed56318ebdddfade}\index{enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}!shutdown@{shutdown}}
+\index{shutdown@{shutdown}!enjin2::MinimalLuaInterpreter@{enjin2::MinimalLuaInterpreter}}
+\doxysubsubsection{\texorpdfstring{shutdown()}{shutdown()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1MinimalLuaInterpreter_a1b2384897b001d64ed56318ebdddfade} 
+void enjin2::\+\+Minimal\+Lua\+Interpreter::\+shutdown (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Shutdown the interpreter. 
+
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter_a70bb1423380759b30fd2e8615203a90e}{enjin2::\+\+IScript\+Interpreter}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+scripting/\+lua\+\_\+interpreter.\+hpp\end{DoxyCompactItemize}

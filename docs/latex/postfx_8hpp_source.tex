@@ -1,0 +1,84 @@
+\doxysection{postfx.\+hpp}
+\hypertarget{postfx_8hpp_source}{}\label{postfx_8hpp_source}\index{include/enjin2/effects/postfx.hpp@{include/enjin2/effects/postfx.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <functional>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{enum\ class}\ EffectType\ \{}
+\DoxyCodeLine{00015\ \ \ \ \ None,}
+\DoxyCodeLine{00016\ \ \ \ \ CrtScanlines,\ \ \ \ }
+\DoxyCodeLine{00017\ \ \ \ \ MovingScanlines,\ }
+\DoxyCodeLine{00018\ \ \ \ \ BarrelDistortion,}
+\DoxyCodeLine{00019\ \ \ \ \ \doxymbox{\hyperlink{namespaceenjin2_1_1Noise}{Noise}},\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00020\ \ \ \ \ Blur,\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00021\ \ \ \ \ Glow,\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00022\ \ \ \ \ Dither,\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ Contrast,\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ Brightness\ \ \ \ \ \ \ }
+\DoxyCodeLine{00025\ \};}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00030\ \textcolor{keyword}{struct\ }PostFxParams\ \{}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_a927f23a1f18777f6d49b1acf3ff35403}{intensity}}\ =\ 1.0f;\ \ \ \ \ \ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_ad6dae269d15ce374f68773b706f6c777}{speed}}\ =\ 1.0f;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00033\ \ \ \ \ uint8\_t\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_a90f73f38308fc9ae72f965735a589332}{threshold}}\ =\ 8;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00034\ \ \ \ \ uint8\_t\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_a2a62ec4b64853375991aa732949d6e3f}{color}}\ =\ 2;\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_ae60eb5ef55f6fdeae8b3535374ee0268}{enabled}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ PostFxParams()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00038\ \ \ \ \ PostFxParams(\textcolor{keywordtype}{float}\ i,\ \textcolor{keywordtype}{float}\ s\ =\ 1.0f,\ uint8\_t\ t\ =\ 8,\ uint8\_t\ c\ =\ 2)\ }
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_a927f23a1f18777f6d49b1acf3ff35403}{intensity}}(i),\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_ad6dae269d15ce374f68773b706f6c777}{speed}}(s),\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_a90f73f38308fc9ae72f965735a589332}{threshold}}(t),\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams_a2a62ec4b64853375991aa732949d6e3f}{color}}(c)\ \{\}}
+\DoxyCodeLine{00040\ \};}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00049\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1PostFx_af63de4a243a24460572b9da272bd841c}{PostFx}}\ \{}
+\DoxyCodeLine{00050\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00054\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1PostFx_af63de4a243a24460572b9da272bd841c}{PostFx}}();}
+\DoxyCodeLine{00055\ \ \ \ \ }
+\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_ad475e970dc312be18c1ada0f65487739}{update}}(uint16\_t\ deltaTime);}
+\DoxyCodeLine{00061\ \ \ \ \ }
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a5adb27228e3dbdce14a0dba15df50fe6}{applyCrtScanlines}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(0.5f));}
+\DoxyCodeLine{00068\ \ \ \ \ }
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_afbc15531017a53b2f05732e469328c99}{applyMovingScanlines}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params,\ uint32\_t\ time);}
+\DoxyCodeLine{00076\ \ \ \ \ }
+\DoxyCodeLine{00082\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a634bf4d0bc38e5054934835ac49b8589}{applyBarrelDistortion}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(0.3f));}
+\DoxyCodeLine{00083\ \ \ \ \ }
+\DoxyCodeLine{00089\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a9a8c2b6c986a0e704a81118882d79456}{applyNoise}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(0.3f));}
+\DoxyCodeLine{00090\ \ \ \ \ }
+\DoxyCodeLine{00096\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_af51199d99eb4729e27412158937d0bce}{applyBlur}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(0.5f));}
+\DoxyCodeLine{00097\ \ \ \ \ }
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a491c21c19d1c7116057ef86a5fbe7d20}{applyGlow}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(0.4f));}
+\DoxyCodeLine{00104\ \ \ \ \ }
+\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a901c8cfdf729306d61d9c1aa92b7a373}{applyDither}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(0.5f));}
+\DoxyCodeLine{00111\ \ \ \ \ }
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a5b031535bbcc9bd321b0c1049bbe3c89}{applyContrast}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(1.2f));}
+\DoxyCodeLine{00118\ \ \ \ \ }
+\DoxyCodeLine{00124\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a60c8f90b32bde7cf784bde14955eb999}{applyBrightness}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}\&\ params\ =\ \doxymbox{\hyperlink{structenjin2_1_1PostFxParams}{PostFxParams}}(2.0f));}
+\DoxyCodeLine{00125\ \ \ \ \ }
+\DoxyCodeLine{00132\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a0d4ed83994d07029e77fc225d3f11734}{applyEffectChain}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ }
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<std::pair<EffectType,\ PostFxParams>>\&\ effects,}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint32\_t\ time\ =\ 0);}
+\DoxyCodeLine{00135\ \ \ \ \ }
+\DoxyCodeLine{00140\ \ \ \ \ uint32\_t\ \doxymbox{\hyperlink{classenjin2_1_1PostFx_a1a3576d2670587c1323619fd1009c298}{getTime}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ elapsed\_time;\ \}}
+\DoxyCodeLine{00141\ \ \ \ \ }
+\DoxyCodeLine{00142\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00143\ \ \ \ \ uint32\_t\ elapsed\_time;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00144\ \ \ \ \ uint8\_t\ scanline\_offset;\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00145\ \ \ \ \ uint16\_t\ noise\_seed;\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00146\ \ \ \ \ }
+\DoxyCodeLine{00151\ \ \ \ \ \textcolor{keyword}{static}\ uint8\_t\ random();}
+\DoxyCodeLine{00152\ \ \ \ \ }
+\DoxyCodeLine{00158\ \ \ \ \ \textcolor{keyword}{static}\ uint8\_t\ clamp4bit(\textcolor{keywordtype}{int}\ value);}
+\DoxyCodeLine{00159\ \ \ \ \ }
+\DoxyCodeLine{00166\ \ \ \ \ \textcolor{keyword}{static}\ uint8\_t\ getDitherPattern(uint8\_t\ x,\ uint8\_t\ y);}
+\DoxyCodeLine{00167\ \};}
+\DoxyCodeLine{00168\ }
+\DoxyCodeLine{00169\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

@@ -1,0 +1,204 @@
+\doxysection{enjin2::\+Shape\+Component Struct Reference}
+\hypertarget{structenjin2_1_1ShapeComponent}{}\label{structenjin2_1_1ShapeComponent}\index{enjin2::ShapeComponent@{enjin2::ShapeComponent}}
+
+
+Shape rendering component for geometric primitives.  
+
+
+
+
+{\ttfamily \+\#include $<$components.\+hpp$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_ad01216a02d31a0333d2e46f1d2dd666a}\label{structenjin2_1_1ShapeComponent_ad01216a02d31a0333d2e46f1d2dd666a} 
+enum {\bfseries Shape\+Type} \{ {\bfseries RECTANGLE}
+, {\bfseries CIRCLE}
+, {\bfseries TRIANGLE}
+, {\bfseries LINE}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static Shape\+Component \doxymbox{\hyperlink{structenjin2_1_1ShapeComponent_abb69ba9f3326be4d7cb3738873e677b6}{rectangle}} (bool fill=true, uint8\+\_\+t thick=1)
+\begin{DoxyCompactList}\small\item\em Constructor for rectangle. \end{DoxyCompactList}\item 
+static Shape\+Component \doxymbox{\hyperlink{structenjin2_1_1ShapeComponent_a92bfeef0b10397f133ca3b30e2f299bd}{circle}} (uint16\+\_\+t radius, bool fill=true, uint8\+\_\+t thick=1)
+\begin{DoxyCompactList}\small\item\em Constructor for circle. \end{DoxyCompactList}\item 
+static Shape\+Component \doxymbox{\hyperlink{structenjin2_1_1ShapeComponent_a6bfb805e84ff2d9943dc6cda2fe8d31d}{triangle}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pt1, \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pt2, \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pt3, bool fill=true, uint8\+\_\+t thick=1)
+\begin{DoxyCompactList}\small\item\em Constructor for triangle. \end{DoxyCompactList}\item 
+static Shape\+Component \doxymbox{\hyperlink{structenjin2_1_1ShapeComponent_af1212380ed8e34e50771ebb8c58ab4d2}{line}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} start\+Pt, \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} end\+Pt, uint8\+\_\+t thick=1)
+\begin{DoxyCompactList}\small\item\em Constructor for line. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Shape\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_aa22a1b27c85249f2f98c3b27a84c320f}\label{structenjin2_1_1ShapeComponent_aa22a1b27c85249f2f98c3b27a84c320f} 
+enum enjin2::\+\+Shape\+Component::\+\+Shape\+Type {\bfseries type}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_a3945f39ef0bcad39883012b589f5f929}\label{structenjin2_1_1ShapeComponent_a3945f39ef0bcad39883012b589f5f929} 
+bool {\bfseries filled}
+\begin{DoxyCompactList}\small\item\em Whether shape is filled or outline. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_a6fb3ab8d3e9977f071555cb77f36811d}\label{structenjin2_1_1ShapeComponent_a6fb3ab8d3e9977f071555cb77f36811d} 
+uint8\+\_\+t {\bfseries thickness}
+\begin{DoxyCompactList}\small\item\em Line thickness for outlines. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_a3328cf22392e73408b2e822a413911ac}\label{structenjin2_1_1ShapeComponent_a3328cf22392e73408b2e822a413911ac} 
+uint16\+\_\+t {\bfseries radius}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_a72803287bc533cc41a461ef991988fa8}\label{structenjin2_1_1ShapeComponent_a72803287bc533cc41a461ef991988fa8} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries p1}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_aee03b95fca59668a17482df56fcc6014}\label{structenjin2_1_1ShapeComponent_aee03b95fca59668a17482df56fcc6014} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries p2}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_a2f6c941aa46aabed5c6315bcd557fffa}\label{structenjin2_1_1ShapeComponent_a2f6c941aa46aabed5c6315bcd557fffa} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries p3}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_aa8c7067a7669abed4ed05366d6787483}\label{structenjin2_1_1ShapeComponent_aa8c7067a7669abed4ed05366d6787483} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries start}
+\item 
+\Hypertarget{structenjin2_1_1ShapeComponent_a918df9df698c8e2076f0035794e584ec}\label{structenjin2_1_1ShapeComponent_a918df9df698c8e2076f0035794e584ec} 
+\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} {\bfseries end}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Shape\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Update is called once per frame. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Shape\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Shape rendering component for geometric primitives. 
+
+\label{doc-func-members}
+\Hypertarget{structenjin2_1_1ShapeComponent_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{structenjin2_1_1ShapeComponent_a92bfeef0b10397f133ca3b30e2f299bd}\index{enjin2::ShapeComponent@{enjin2::ShapeComponent}!circle@{circle}}
+\index{circle@{circle}!enjin2::ShapeComponent@{enjin2::ShapeComponent}}
+\doxysubsubsection{\texorpdfstring{circle()}{circle()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1ShapeComponent_a92bfeef0b10397f133ca3b30e2f299bd} 
+Shape\+Component enjin2::\+\+Shape\+Component::\+circle (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{radius}{, }\item[{bool}]{fill}{ = {\ttfamily true}, }\item[{uint8\+\_\+t}]{thick}{ = {\ttfamily 1}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Constructor for circle. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em radius} & Circle radius \\
+\hline
+{\em fill} & Whether to fill the circle \\
+\hline
+{\em thick} & Line thickness \\
+\hline
+\end{DoxyParams}
+\Hypertarget{structenjin2_1_1ShapeComponent_af1212380ed8e34e50771ebb8c58ab4d2}\index{enjin2::ShapeComponent@{enjin2::ShapeComponent}!line@{line}}
+\index{line@{line}!enjin2::ShapeComponent@{enjin2::ShapeComponent}}
+\doxysubsubsection{\texorpdfstring{line()}{line()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1ShapeComponent_af1212380ed8e34e50771ebb8c58ab4d2} 
+Shape\+Component enjin2::\+\+Shape\+Component::\+line (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{start\+Pt}{, }\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{end\+Pt}{, }\item[{uint8\+\_\+t}]{thick}{ = {\ttfamily 1}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Constructor for line. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em start} & Start point \\
+\hline
+{\em end} & End point \\
+\hline
+{\em thick} & Line thickness \\
+\hline
+\end{DoxyParams}
+\Hypertarget{structenjin2_1_1ShapeComponent_abb69ba9f3326be4d7cb3738873e677b6}\index{enjin2::ShapeComponent@{enjin2::ShapeComponent}!rectangle@{rectangle}}
+\index{rectangle@{rectangle}!enjin2::ShapeComponent@{enjin2::ShapeComponent}}
+\doxysubsubsection{\texorpdfstring{rectangle()}{rectangle()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1ShapeComponent_abb69ba9f3326be4d7cb3738873e677b6} 
+Shape\+Component enjin2::\+\+Shape\+Component::\+rectangle (\begin{DoxyParamCaption}\item[{bool}]{fill}{ = {\ttfamily true}, }\item[{uint8\+\_\+t}]{thick}{ = {\ttfamily 1}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Constructor for rectangle. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fill} & Whether to fill the rectangle \\
+\hline
+{\em thick} & Line thickness \\
+\hline
+\end{DoxyParams}
+\Hypertarget{structenjin2_1_1ShapeComponent_a6bfb805e84ff2d9943dc6cda2fe8d31d}\index{enjin2::ShapeComponent@{enjin2::ShapeComponent}!triangle@{triangle}}
+\index{triangle@{triangle}!enjin2::ShapeComponent@{enjin2::ShapeComponent}}
+\doxysubsubsection{\texorpdfstring{triangle()}{triangle()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1ShapeComponent_a6bfb805e84ff2d9943dc6cda2fe8d31d} 
+Shape\+Component enjin2::\+\+Shape\+Component::\+triangle (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pt1}{, }\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pt2}{, }\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pt3}{, }\item[{bool}]{fill}{ = {\ttfamily true}, }\item[{uint8\+\_\+t}]{thick}{ = {\ttfamily 1}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Constructor for triangle. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em p1} & First vertex \\
+\hline
+{\em p2} & Second vertex ~\newline
+ \\
+\hline
+{\em p3} & Third vertex \\
+\hline
+{\em fill} & Whether to fill the triangle \\
+\hline
+{\em thick} & Line thickness \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this struct was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+ui/\+components.\+hpp\end{DoxyCompactItemize}

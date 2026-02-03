@@ -1,0 +1,120 @@
+\doxysection{enjin2::\+Lua\+Platform Class Reference}
+\hypertarget{classenjin2_1_1LuaPlatform}{}\label{classenjin2_1_1LuaPlatform}\index{enjin2::LuaPlatform@{enjin2::LuaPlatform}}
+
+
+Platform abstraction for Lua initialization.  
+
+
+
+
+{\ttfamily \+\#include $<$lua\+\_\+platform.\+hpp$>$}
+
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static lua\+\_\+\+State \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_abe12267b6e5619431b77f0142469c555}{create\+State}} (lua\+\_\+\+Alloc allocator=nullptr, void \texorpdfstring{$\ast$}{*}ud=nullptr)
+\begin{DoxyCompactList}\small\item\em Create platform-\/appropriate Lua state. \end{DoxyCompactList}\item 
+static void \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a363dfb8a638ca79572071591abb03b4c}{open\+Libraries}} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\begin{DoxyCompactList}\small\item\em Open platform-\/appropriate standard libraries. \end{DoxyCompactList}\item 
+static void \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_ac009ab1ecbff4d9673d63474f26ea309}{configure\+Security\+Restrictions}} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\begin{DoxyCompactList}\small\item\em Configure platform-\/specific security restrictions. \end{DoxyCompactList}\item 
+static size\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a787eaf195ab403daaab5fe2685296639}{get\+Memory\+Usage}} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\begin{DoxyCompactList}\small\item\em Get platform memory statistics. \end{DoxyCompactList}\item 
+static void \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a8da15c9cd1deb575ee0ac06dfabd078a}{tune\+Garbage\+Collector}} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\begin{DoxyCompactList}\small\item\em Platform-\/specific garbage collection tuning. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Platform abstraction for Lua initialization. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1LuaPlatform_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1LuaPlatform_ac009ab1ecbff4d9673d63474f26ea309}\index{enjin2::LuaPlatform@{enjin2::LuaPlatform}!configureSecurityRestrictions@{configureSecurityRestrictions}}
+\index{configureSecurityRestrictions@{configureSecurityRestrictions}!enjin2::LuaPlatform@{enjin2::LuaPlatform}}
+\doxysubsubsection{\texorpdfstring{configureSecurityRestrictions()}{configureSecurityRestrictions()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaPlatform_ac009ab1ecbff4d9673d63474f26ea309} 
+void enjin2::\+\+Lua\+Platform::\+configure\+Security\+Restrictions (\begin{DoxyParamCaption}\item[{lua\+\_\+\+State \texorpdfstring{$\ast$}{*}}]{L}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Configure platform-\/specific security restrictions. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em L} & Lua state \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1LuaPlatform_abe12267b6e5619431b77f0142469c555}\index{enjin2::LuaPlatform@{enjin2::LuaPlatform}!createState@{createState}}
+\index{createState@{createState}!enjin2::LuaPlatform@{enjin2::LuaPlatform}}
+\doxysubsubsection{\texorpdfstring{createState()}{createState()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaPlatform_abe12267b6e5619431b77f0142469c555} 
+lua\+\_\+\+State \texorpdfstring{$\ast$}{*} enjin2::\+\+Lua\+Platform::\+create\+State (\begin{DoxyParamCaption}\item[{lua\+\_\+\+Alloc}]{allocator}{ = {\ttfamily nullptr}, }\item[{void \texorpdfstring{$\ast$}{*}}]{ud}{ = {\ttfamily nullptr}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Create platform-\/appropriate Lua state. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em allocator} & Custom allocator function (nullptr for default) \\
+\hline
+{\em ud} & User data for allocator \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Lua state or nullptr on failure 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaPlatform_a787eaf195ab403daaab5fe2685296639}\index{enjin2::LuaPlatform@{enjin2::LuaPlatform}!getMemoryUsage@{getMemoryUsage}}
+\index{getMemoryUsage@{getMemoryUsage}!enjin2::LuaPlatform@{enjin2::LuaPlatform}}
+\doxysubsubsection{\texorpdfstring{getMemoryUsage()}{getMemoryUsage()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaPlatform_a787eaf195ab403daaab5fe2685296639} 
+size\+\_\+t enjin2::\+\+Lua\+Platform::\+get\+Memory\+Usage (\begin{DoxyParamCaption}\item[{lua\+\_\+\+State \texorpdfstring{$\ast$}{*}}]{L}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Get platform memory statistics. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em L} & Lua state \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Memory usage in bytes 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaPlatform_a363dfb8a638ca79572071591abb03b4c}\index{enjin2::LuaPlatform@{enjin2::LuaPlatform}!openLibraries@{openLibraries}}
+\index{openLibraries@{openLibraries}!enjin2::LuaPlatform@{enjin2::LuaPlatform}}
+\doxysubsubsection{\texorpdfstring{openLibraries()}{openLibraries()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaPlatform_a363dfb8a638ca79572071591abb03b4c} 
+void enjin2::\+\+Lua\+Platform::\+open\+Libraries (\begin{DoxyParamCaption}\item[{lua\+\_\+\+State \texorpdfstring{$\ast$}{*}}]{L}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Open platform-\/appropriate standard libraries. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em L} & Lua state \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1LuaPlatform_a8da15c9cd1deb575ee0ac06dfabd078a}\index{enjin2::LuaPlatform@{enjin2::LuaPlatform}!tuneGarbageCollector@{tuneGarbageCollector}}
+\index{tuneGarbageCollector@{tuneGarbageCollector}!enjin2::LuaPlatform@{enjin2::LuaPlatform}}
+\doxysubsubsection{\texorpdfstring{tuneGarbageCollector()}{tuneGarbageCollector()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaPlatform_a8da15c9cd1deb575ee0ac06dfabd078a} 
+void enjin2::\+\+Lua\+Platform::\+tune\+Garbage\+Collector (\begin{DoxyParamCaption}\item[{lua\+\_\+\+State \texorpdfstring{$\ast$}{*}}]{L}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Platform-\/specific garbage collection tuning. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em L} & Lua state \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+scripting/\+lua\+\_\+platform.\+hpp\end{DoxyCompactItemize}

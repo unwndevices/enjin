@@ -1,0 +1,163 @@
+\doxysection{signal.\+hpp}
+\hypertarget{signal_8hpp_source}{}\label{signal_8hpp_source}\index{include/enjin2/core/signal.hpp@{include/enjin2/core/signal.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <array>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <functional>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00015\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Signal_af92d15f3b5a31241655299bc0f1c5a4f}{Signal}}\ \{}
+\DoxyCodeLine{00016\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00017\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MAX\_CONNECTIONS\ =\ 16;\ \ }
+\DoxyCodeLine{00018\ \ \ \ \ }
+\DoxyCodeLine{00019\ \ \ \ \ \textcolor{keyword}{using\ }CallbackType\ =\ std::function<void(Args...)>;}
+\DoxyCodeLine{00020\ \ \ \ \ }
+\DoxyCodeLine{00021\ \ \ \ \ std::array<CallbackType,\ MAX\_CONNECTIONS>\ callbacks;}
+\DoxyCodeLine{00022\ \ \ \ \ std::array<bool,\ MAX\_CONNECTIONS>\ active;}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ connectionCount;}
+\DoxyCodeLine{00024\ \ \ \ \ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00029\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal_af92d15f3b5a31241655299bc0f1c5a4f}{Signal}}()\ :\ connectionCount(0)\ \{}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ active.fill(\textcolor{keyword}{false});}
+\DoxyCodeLine{00031\ \ \ \ \ \}}
+\DoxyCodeLine{00032\ \ \ \ \ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_a3842d5435fcb3bef84a5eb16531e7aab}{connect}}(CallbackType\ callback)\ \{}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Find\ an\ empty\ slot}}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ MAX\_CONNECTIONS;\ ++i)\ \{}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!active[i])\ \{}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ callbacks[i]\ =\ std::move(callback);}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ active[i]\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (i\ >=\ connectionCount)\ \{}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ connectionCount\ =\ i\ +\ 1;}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(i);}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ -\/1;\ \textcolor{comment}{//\ No\ space\ available}}
+\DoxyCodeLine{00051\ \ \ \ \ \}}
+\DoxyCodeLine{00052\ \ \ \ \ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_ae3b4a170471ed9dc3088232d5a34b6da}{disconnect}}(\textcolor{keywordtype}{int}\ connectionId)\ \{}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (connectionId\ >=\ 0\ \&\&\ connectionId\ <\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(MAX\_CONNECTIONS))\ \{}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \ \ \ \ active[connectionId]\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \ \ \ \ callbacks[connectionId]\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ connection\ count\ if\ we\ removed\ the\ last\ connection}}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (connectionId\ ==\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(connectionCount\ -\/\ 1))\ \{}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (connectionCount\ >\ 0\ \&\&\ !active[connectionCount\ -\/\ 1])\ \{}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ connectionCount-\/-\/;}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00069\ \ \ \ \ \}}
+\DoxyCodeLine{00070\ \ \ \ \ }
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_a4000dd1d3003bdab0db9cccbc191ce6a}{emit}}(Args...\ args)\ \{}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ connectionCount;\ ++i)\ \{}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (active[i]\ \&\&\ callbacks[i])\ \{}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ callbacks[i](args...);}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00081\ \ \ \ \ \}}
+\DoxyCodeLine{00082\ \ \ \ \ }
+\DoxyCodeLine{00086\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_afd5df43ea97de5b9647c85c4c4941f0f}{disconnectAll}}()\ \{}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ active.fill(\textcolor{keyword}{false});}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ connectionCount\ =\ 0;}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\&\ callback\ :\ callbacks)\ \{}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ callback\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00092\ \ \ \ \ \}}
+\DoxyCodeLine{00093\ \ \ \ \ }
+\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_a8d53cede212281dcc1d5a9cc3343f467}{getConnectionCount}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ count\ =\ 0;}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ connectionCount;\ ++i)\ \{}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (active[i])\ \{}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ count++;}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ count;}
+\DoxyCodeLine{00106\ \ \ \ \ \}}
+\DoxyCodeLine{00107\ \ \ \ \ }
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_a64a91282d796f4374263fed1533f2041}{hasConnections}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_a8d53cede212281dcc1d5a9cc3343f467}{getConnectionCount}}()\ >\ 0;}
+\DoxyCodeLine{00114\ \ \ \ \ \}}
+\DoxyCodeLine{00115\ \ \ \ \ }
+\DoxyCodeLine{00120\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Signal_abe3fe2ce13eb46a622380c90ef90c73e}{operator()}}(Args...\ args)\ \{}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal_a4000dd1d3003bdab0db9cccbc191ce6a}{emit}}(args...);}
+\DoxyCodeLine{00122\ \ \ \ \ \}}
+\DoxyCodeLine{00123\ \};}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00128\ \textcolor{keyword}{using\ }SimpleSignal\ =\ Signal<>;}
+\DoxyCodeLine{00129\ }
+\DoxyCodeLine{00133\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
+\DoxyCodeLine{00134\ \textcolor{keyword}{using\ }Signal1\ =\ Signal<T>;}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00139\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T1,\ \textcolor{keyword}{typename}\ T2>}
+\DoxyCodeLine{00140\ \textcolor{keyword}{using\ }Signal2\ =\ Signal<T1,\ T2>;}
+\DoxyCodeLine{00141\ }
+\DoxyCodeLine{00145\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Signals}{Signals}}\ \{}
+\DoxyCodeLine{00146\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Signals_a9a02c1bab65c91cd28e075724b1f501d}{Clicked}}\ =\ SimpleSignal;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00147\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Signals_a030e5db6753ff80c02608ab807dbaa92}{ValueChanged}}\ =\ Signal1<float>;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00148\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Signals_a50af608b1f67ddadf1af8808db98f45a}{IntValueChanged}}\ =\ Signal1<int>;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00149\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Signals_a9333812ac7ec5e3b10f467d19a704542}{PositionChanged}}\ =\ Signal2<int16\_t,\ int16\_t>;\ \ \ \ \ }
+\DoxyCodeLine{00150\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Signals_aa462484ab2fe058ef11f8bd0ead2e8bd}{SizeChanged}}\ =\ Signal2<uint16\_t,\ uint16\_t>;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00151\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Signals_a3995ea9fa63cc0fd07912c7fd4ddb09d}{StateChanged}}\ =\ Signal1<bool>;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00152\ \}}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00159\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00160\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{SignalConnection}}\ \{}
+\DoxyCodeLine{00161\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00162\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal}}<Args...>*\ signal;}
+\DoxyCodeLine{00163\ \ \ \ \ \textcolor{keywordtype}{int}\ connectionId;}
+\DoxyCodeLine{00164\ \ \ \ \ }
+\DoxyCodeLine{00165\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00171\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{SignalConnection}}(\doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<Args...>}}*\ sig,\ std::function<\textcolor{keywordtype}{void}(Args...)>\ callback)}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ :\ signal(sig),\ connectionId(-\/1)\ \{}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (signal)\ \{}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \ \ \ \ connectionId\ =\ signal-\/>connect(callback);}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00176\ \ \ \ \ \}}
+\DoxyCodeLine{00177\ \ \ \ \ }
+\DoxyCodeLine{00181\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_acd495c7fe4b96acd4b945bfa14fa2e4e}{SignalConnection}}(\doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{SignalConnection}}\&\&\ other)\ noexcept}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ :\ signal(other.signal),\ connectionId(other.connectionId)\ \{}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ other.signal\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ other.connectionId\ =\ -\/1;}
+\DoxyCodeLine{00185\ \ \ \ \ \}}
+\DoxyCodeLine{00186\ \ \ \ \ }
+\DoxyCodeLine{00190\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{SignalConnection}}\&\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_afc26882c8fcc1325b559d58d3a706c00}{operator=}}(\doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{SignalConnection}}\&\&\ other)\ \textcolor{keyword}{noexcept}\ \{}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\textcolor{keyword}{this}\ !=\ \&other)\ \{}
+\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_ad79706aaaf635a6b8f805fc04bf423ed}{disconnect}}();}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \ \ \ \ signal\ =\ other.signal;}
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ \ \ \ \ connectionId\ =\ other.connectionId;}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \ \ \ \ other.signal\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \ \ \ \ other.connectionId\ =\ -\/1;}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{00199\ \ \ \ \ \}}
+\DoxyCodeLine{00200\ \ \ \ \ }
+\DoxyCodeLine{00204\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_a00681bce736f1b0c493707e0b5545254}{\string~SignalConnection}}()\ \{}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_ad79706aaaf635a6b8f805fc04bf423ed}{disconnect}}();}
+\DoxyCodeLine{00206\ \ \ \ \ \}}
+\DoxyCodeLine{00207\ \ \ \ \ }
+\DoxyCodeLine{00211\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_ad79706aaaf635a6b8f805fc04bf423ed}{disconnect}}()\ \{}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (signal\ \&\&\ connectionId\ >=\ 0)\ \{}
+\DoxyCodeLine{00213\ \ \ \ \ \ \ \ \ \ \ \ \ signal-\/>disconnect(connectionId);}
+\DoxyCodeLine{00214\ \ \ \ \ \ \ \ \ \ \ \ \ signal\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00215\ \ \ \ \ \ \ \ \ \ \ \ \ connectionId\ =\ -\/1;}
+\DoxyCodeLine{00216\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00217\ \ \ \ \ \}}
+\DoxyCodeLine{00218\ \ \ \ \ }
+\DoxyCodeLine{00223\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_a06e62a08983a5d677e71a3873bb9ab81}{isConnected}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ signal\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ connectionId\ >=\ 0;}
+\DoxyCodeLine{00225\ \ \ \ \ \}}
+\DoxyCodeLine{00226\ \ \ \ \ }
+\DoxyCodeLine{00227\ \ \ \ \ \textcolor{comment}{//\ Disable\ copy}}
+\DoxyCodeLine{00228\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{SignalConnection}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection}}\&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00229\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection}}\&\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_afc26882c8fcc1325b559d58d3a706c00}{operator=}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection}}\&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00230\ \};}
+\DoxyCodeLine{00231\ }
+\DoxyCodeLine{00232\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

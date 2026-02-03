@@ -1,0 +1,45 @@
+\doxysection{scene.\+hpp}
+\hypertarget{compat_2scene_8hpp_source}{}\label{compat_2scene_8hpp_source}\index{include/enjin2/compat/scene.hpp@{include/enjin2/compat/scene.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ Migration\ support\ -\/\ deprecated\ after\ enjin1\ deletion}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}enjin2/core/scene.hpp"{}}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }enjin\ \{}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{comment}{//\ Type\ alias\ for\ enjin1\ compatibility}}
+\DoxyCodeLine{00010\ \textcolor{keyword}{using\ }Scene\ =\ enjin2::Scene;}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00020\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ OnCreate(enjin2::Scene*\ scene)\ \{}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{comment}{//\ Note:\ enjin2's\ onCreate\ is\ protected/virtual\ and\ called\ by\ initialize()}}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{comment}{//\ This\ wrapper\ is\ for\ calling\ logic\ that\ would\ have\ been\ in\ enjin1's\ OnCreate}}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordflow}{if}\ (scene)\ scene-\/>\doxymbox{\hyperlink{classenjin2_1_1Scene_a8ee0c0c3f72a0f39adbcaaa389b66514}{initialize}}();}
+\DoxyCodeLine{00024\ \}}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00034\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ OnDestroy(enjin2::Scene*\ scene)\ \{}
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{comment}{//\ Note:\ enjin2's\ onDestroy\ is\ called\ automatically\ in\ destructor}}
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{comment}{//\ This\ wrapper\ is\ for\ calling\ logic\ that\ would\ have\ been\ in\ enjin1's\ OnDestroy}}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordflow}{if}\ (scene)\ \{}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ scene-\/>\doxymbox{\hyperlink{classenjin2_1_1Scene_a58c03e375454bceb7400f2f5f9a8e053}{deactivate}}();}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Destructor\ will\ call\ onDestroy}}
+\DoxyCodeLine{00040\ \ \ \ \ \}}
+\DoxyCodeLine{00041\ \}}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00051\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ OnActivate(enjin2::Scene*\ scene)\ \{}
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keywordflow}{if}\ (scene)\ scene-\/>\doxymbox{\hyperlink{classenjin2_1_1Scene_a7619e8801723180b129223c0d2eac81f}{activate}}();}
+\DoxyCodeLine{00053\ \}}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00063\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ OnDeactivate(enjin2::Scene*\ scene)\ \{}
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keywordflow}{if}\ (scene)\ scene-\/>\doxymbox{\hyperlink{classenjin2_1_1Scene_a58c03e375454bceb7400f2f5f9a8e053}{deactivate}}();}
+\DoxyCodeLine{00065\ \}}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00076\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ Update(enjin2::Scene*\ scene,\ uint16\_t\ deltaTime)\ \{}
+\DoxyCodeLine{00077\ \ \ \ \ \textcolor{keywordflow}{if}\ (scene)\ scene-\/>\doxymbox{\hyperlink{classenjin2_1_1Scene_ab4a88fd071c15194567c319106400e68}{update}}(deltaTime);}
+\DoxyCodeLine{00078\ \}}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00080\ \}\ \textcolor{comment}{//\ namespace\ enjin}}
+
+\end{DoxyCode}

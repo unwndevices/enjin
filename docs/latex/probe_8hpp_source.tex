@@ -1,0 +1,445 @@
+\doxysection{probe.\+hpp}
+\hypertarget{probe_8hpp_source}{}\label{probe_8hpp_source}\index{include/enjin2/components/probe.hpp@{include/enjin2/components/probe.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../components/drawable.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00016\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1C__Probe_ad13d904b15c714894c0af8b1fbfded75}{C\_Probe}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}\ \{}
+\DoxyCodeLine{00017\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40}{ProbeType}}\ \{}
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a40679521b5da0954b705341a2859f782}{DOT}},\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a337f43db5edddda90ef2156a9baaed09}{DIAMOND}},\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a04dd53a8e6c2306e9bbf944c1d6047f2}{CROSS}},\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a9bcd89070cae224dce305f5011659ef4}{TRIANGLE}},\ \ \ \ \ \ \ }
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40aa1323822e71d19091075dd86a90ee35d}{SCANNER}},\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a5818992261344f3f6c810ea0dfc13c24}{PARTICLE}}\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00028\ \ \ \ \ \};}
+\DoxyCodeLine{00029\ \ \ \ \ }
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590c}{MovementPattern}}\ \{}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590cafe6f99ef1ec99efbdc19a9786cf1facc}{STATIC}},\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590caaac544aacc3615aada24897a215f5046}{LINEAR}},\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca0aa12b2b3dc4f87e3c5d2431608a7710}{ORBITAL}},\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca550c81f476de2243dc93872a898ea918}{SPIRAL}},\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590caaecf4952eec2bd3f2f466be174f92b9b}{RANDOM\_WALK}},\ \ \ \ }
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca0df10cd5f37b3e77e6574c1599389392}{SINE\_WAVE}},\ \ \ \ \ \ }
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca1feb8311a6fad0076d77de9ecba66e9e}{TRIANGLE\_WAVE}}\ \ \ }
+\DoxyCodeLine{00041\ \ \ \ \ \};}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00043\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00044\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40}{ProbeType}}\ probeType;\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00045\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590c}{MovementPattern}}\ movement;\ \ \ }
+\DoxyCodeLine{00046\ \ \ \ \ }
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{comment}{//\ Appearance}}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordtype}{float}\ probeSize;\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00049\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ probeColor;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00050\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ accentColor;\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keywordtype}{bool}\ pulsing;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keywordtype}{float}\ pulseSpeed;\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00053\ \ \ \ \ }
+\DoxyCodeLine{00054\ \ \ \ \ \textcolor{comment}{//\ Movement\ state}}
+\DoxyCodeLine{00055\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ velocity;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00056\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ homePosition;\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{keywordtype}{float}\ movementSpeed;\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keywordtype}{float}\ phase;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00059\ \ \ \ \ uint32\_t\ animationTime;\ \ \ \ \ }
+\DoxyCodeLine{00060\ \ \ \ \ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{comment}{//\ Scanner-\/specific}}
+\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keywordtype}{float}\ scanAngle;\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{float}\ scanRadius;\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keywordtype}{float}\ scanSpeed;\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00065\ \ \ \ \ }
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{comment}{//\ Particle\ trail}}
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ TRAIL\_LENGTH\ =\ 8;}
+\DoxyCodeLine{00068\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ trailPoints[TRAIL\_LENGTH];}
+\DoxyCodeLine{00069\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ trailIndex;}
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keywordtype}{bool}\ hasTrail;}
+\DoxyCodeLine{00071\ \ \ \ \ }
+\DoxyCodeLine{00072\ \ \ \ \ \textcolor{comment}{//\ Bounds\ for\ movement}}
+\DoxyCodeLine{00073\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\ movementBounds;}
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{bool}\ constrainToBounds;}
+\DoxyCodeLine{00075\ \ \ \ \ }
+\DoxyCodeLine{00076\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00083\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_ad13d904b15c714894c0af8b1fbfded75}{C\_Probe}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40}{ProbeType}}\ type\ =\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a40679521b5da0954b705341a2859f782}{ProbeType::DOT}},\ \textcolor{keywordtype}{float}\ size\ =\ 2.0f)}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ static\_cast<uint16\_t>(size\ *\ 4),\ static\_cast<uint16\_t>(size\ *\ 4)),}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ probeType(type),\ movement(\doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590c}{MovementPattern}}::\doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590cafe6f99ef1ec99efbdc19a9786cf1facc}{STATIC}}),\ probeSize(size),}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ probeColor(15),\ accentColor(10),\ pulsing(false),\ pulseSpeed(2.0f),}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ velocity(0,\ 0),\ homePosition(0,\ 0),\ movementSpeed(1.0f),\ phase(0.0f),}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ animationTime(0),\ scanAngle(0.0f),\ scanRadius(10.0f),\ scanSpeed(1.0f),}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ trailIndex(0),\ hasTrail(false),\ movementBounds(0,\ 0,\ 0,\ 0),}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ constrainToBounds(false)\ \{}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ setDrawLayer(DrawLayer::FOREGROUND);}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Initialize\ trail}}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ TRAIL\_LENGTH;\ ++i)\ \{}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ trailPoints[i]\ =\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}(0,\ 0);}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00098\ \ \ \ \ \}}
+\DoxyCodeLine{00099\ \ \ \ \ }
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a867901a854d44d3041deedcd8b71e48a}{update}}(uint16\_t\ deltaTime)\textcolor{keyword}{\ override\ }\{}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{Component::update}}(deltaTime);}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ animationTime\ +=\ deltaTime;}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ deltaSeconds\ =\ deltaTime\ /\ 1000.0f;}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ position\ based\ on\ movement\ pattern}}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ updateMovement(deltaSeconds);}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ scanner\ angle}}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (probeType\ ==\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40aa1323822e71d19091075dd86a90ee35d}{ProbeType::SCANNER}})\ \{}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ scanAngle\ +=\ scanSpeed\ *\ deltaSeconds\ *\ 2.0f\ *\ 3.14159f;}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (scanAngle\ >=\ 2.0f\ *\ 3.14159f)\ \{}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ scanAngle\ -\/=\ 2.0f\ *\ 3.14159f;}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ trail}}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (hasTrail)\ \{}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center\ =\ getRenderPosition();}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ center.x\ +=\ getWidth()\ /\ 2;}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ center.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +=\ getHeight()\ /\ 2;}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \ \ \ \ updateTrail(center);}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00127\ \ \ \ \ \}}
+\DoxyCodeLine{00128\ \ \ \ \ }
+\DoxyCodeLine{00132\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a3a858c7406bd085105bb125e2478a7dd}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<Pixel4>}}\&\ canvas)\textcolor{keyword}{\ override\ }\{}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!isVisible())\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center\ =\ getRenderPosition();}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ center.x\ +=\ getWidth()\ /\ 2;}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ center.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +=\ getHeight()\ /\ 2;}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ trail\ first\ (behind\ probe)}}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (hasTrail)\ \{}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \ \ \ \ drawTrail(canvas);}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ current\ size\ and\ color}}
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ currentSize\ =\ probeSize;}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ currentColor\ =\ probeColor;}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pulsing)\ \{}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ pulse\ =\ std::sin((animationTime\ /\ 1000.0f)\ *\ pulseSpeed\ *\ 2.0f\ *\ 3.14159f);}
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \ \ \ \ currentSize\ *=\ (1.0f\ +\ pulse\ *\ 0.4f);}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pulse\ >\ 0)\ \{}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentColor\ =\ accentColor;}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ based\ on\ probe\ type}}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (probeType)\ \{}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a40679521b5da0954b705341a2859f782}{ProbeType::DOT}}:}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawDot(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a337f43db5edddda90ef2156a9baaed09}{ProbeType::DIAMOND}}:}
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawDiamond(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a04dd53a8e6c2306e9bbf944c1d6047f2}{ProbeType::CROSS}}:}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawCross(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a9bcd89070cae224dce305f5011659ef4}{ProbeType::TRIANGLE}}:}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawTriangle(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40aa1323822e71d19091075dd86a90ee35d}{ProbeType::SCANNER}}:}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawScanner(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a5818992261344f3f6c810ea0dfc13c24}{ProbeType::PARTICLE}}:}
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawParticle(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00180\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00182\ \ \ \ \ \}}
+\DoxyCodeLine{00183\ \ \ \ \ }
+\DoxyCodeLine{00187\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a1efa56dfb840a98f2d45bc420d26f9ab}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\textcolor{keyword}{\ override\ }\{}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!isVisible())\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center\ =\ getRenderPosition();}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ center.x\ +=\ getWidth()\ /\ 2;}
+\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ center.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +=\ getHeight()\ /\ 2;}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (hasTrail)\ \{}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \ \ \ \ drawTrail(canvas);}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ currentSize\ =\ probeSize;}
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ uint8\_t\ currentColor\ =\ probeColor.to8bit();}
+\DoxyCodeLine{00200\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pulsing)\ \{}
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ pulse\ =\ std::sin((animationTime\ /\ 1000.0f)\ *\ pulseSpeed\ *\ 2.0f\ *\ 3.14159f);}
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \ \ \ \ currentSize\ *=\ (1.0f\ +\ pulse\ *\ 0.4f);}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pulse\ >\ 0)\ \{}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentColor\ =\ accentColor.to8bit();}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (probeType)\ \{}
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a40679521b5da0954b705341a2859f782}{ProbeType::DOT}}:}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawDot(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00213\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a337f43db5edddda90ef2156a9baaed09}{ProbeType::DIAMOND}}:}
+\DoxyCodeLine{00214\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawDiamond(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00216\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a04dd53a8e6c2306e9bbf944c1d6047f2}{ProbeType::CROSS}}:}
+\DoxyCodeLine{00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawCross(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a9bcd89070cae224dce305f5011659ef4}{ProbeType::TRIANGLE}}:}
+\DoxyCodeLine{00220\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawTriangle(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00221\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00222\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40aa1323822e71d19091075dd86a90ee35d}{ProbeType::SCANNER}}:}
+\DoxyCodeLine{00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawScanner(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00225\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40a5818992261344f3f6c810ea0dfc13c24}{ProbeType::PARTICLE}}:}
+\DoxyCodeLine{00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawParticle(canvas,\ center,\ currentSize,\ currentColor);}
+\DoxyCodeLine{00227\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00228\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00229\ \ \ \ \ \}}
+\DoxyCodeLine{00230\ \ \ \ \ }
+\DoxyCodeLine{00234\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_aa880deb4fd483ab00f80e5fabdd56269}{setAppearance}}(\doxymbox{\hyperlink{classenjin2_1_1C__Probe_acc6da7260ef84cdf26cf03b306d44e40}{ProbeType}}\ type,\ \textcolor{keywordtype}{float}\ size,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ color,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ accent\ =\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(10))\ \{}
+\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ probeType\ =\ type;}
+\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ probeSize\ =\ size;}
+\DoxyCodeLine{00237\ \ \ \ \ \ \ \ \ probeColor\ =\ color;}
+\DoxyCodeLine{00238\ \ \ \ \ \ \ \ \ accentColor\ =\ accent;}
+\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ drawable\ size}}
+\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ setSize(\textcolor{keyword}{static\_cast<}uint16\_t\textcolor{keyword}{>}(size\ *\ 4),\ \textcolor{keyword}{static\_cast<}uint16\_t\textcolor{keyword}{>}(size\ *\ 4));}
+\DoxyCodeLine{00242\ \ \ \ \ \}}
+\DoxyCodeLine{00243\ \ \ \ \ }
+\DoxyCodeLine{00247\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a9c815e1d2b234760d4b898e5ecd45ddc}{setMovement}}(\doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590c}{MovementPattern}}\ pattern,\ \textcolor{keywordtype}{float}\ speed\ =\ 1.0f)\ \{}
+\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ movement\ =\ pattern;}
+\DoxyCodeLine{00249\ \ \ \ \ \ \ \ \ movementSpeed\ =\ speed;}
+\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Set\ home\ position\ to\ current\ position}}
+\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ pos\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getPosition();}
+\DoxyCodeLine{00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pos)\ \{}
+\DoxyCodeLine{00254\ \ \ \ \ \ \ \ \ \ \ \ \ homePosition\ =\ pos-\/>getPosition();}
+\DoxyCodeLine{00255\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00256\ \ \ \ \ \}}
+\DoxyCodeLine{00257\ \ \ \ \ }
+\DoxyCodeLine{00261\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_aa708ca490118c924f0667d7c07b37969}{setVelocity}}(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ vel)\ \{}
+\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ velocity\ =\ vel;}
+\DoxyCodeLine{00263\ \ \ \ \ \}}
+\DoxyCodeLine{00264\ \ \ \ \ }
+\DoxyCodeLine{00268\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_aa417b3596489bf11c227b18f34544298}{setPulsing}}(\textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}},\ \textcolor{keywordtype}{float}\ speed\ =\ 2.0f)\ \{}
+\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ pulsing\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}};}
+\DoxyCodeLine{00270\ \ \ \ \ \ \ \ \ pulseSpeed\ =\ speed;}
+\DoxyCodeLine{00271\ \ \ \ \ \}}
+\DoxyCodeLine{00272\ \ \ \ \ }
+\DoxyCodeLine{00276\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_aa64110fcf49f7fa27e8bb5ac97304ecd}{setTrail}}(\textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}})\ \{}
+\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ hasTrail\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_ad05479377756fa07b8de93b1a4687d84}{enabled}};}
+\DoxyCodeLine{00278\ \ \ \ \ \}}
+\DoxyCodeLine{00279\ \ \ \ \ }
+\DoxyCodeLine{00283\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a121d67f415a6181ca9ab96033965f972}{setMovementBounds}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ bounds,\ \textcolor{keywordtype}{bool}\ constrain\ =\ \textcolor{keyword}{true})\ \{}
+\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ movementBounds\ =\ bounds;}
+\DoxyCodeLine{00285\ \ \ \ \ \ \ \ \ constrainToBounds\ =\ constrain;}
+\DoxyCodeLine{00286\ \ \ \ \ \}}
+\DoxyCodeLine{00287\ \ \ \ \ }
+\DoxyCodeLine{00291\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_ae27b795c8543f78fa23f904045885f1a}{setScanner}}(\textcolor{keywordtype}{float}\ radius,\ \textcolor{keywordtype}{float}\ speed\ =\ 1.0f)\ \{}
+\DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ scanRadius\ =\ radius;}
+\DoxyCodeLine{00293\ \ \ \ \ \ \ \ \ scanSpeed\ =\ speed;}
+\DoxyCodeLine{00294\ \ \ \ \ \}}
+\DoxyCodeLine{00295\ }
+\DoxyCodeLine{00296\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00300\ \ \ \ \ \textcolor{keywordtype}{void}\ updateMovement(\textcolor{keywordtype}{float}\ deltaTime)\ \{}
+\DoxyCodeLine{00301\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a897d96750c166bf11860be09c747c34f}{position}}\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>\doxymbox{\hyperlink{classenjin2_1_1Object_a8366fa139fddb3cbd9d89db8003e06c1}{getPosition}}();}
+\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a897d96750c166bf11860be09c747c34f}{position}})\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ currentPos\ =\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a897d96750c166bf11860be09c747c34f}{position}}-\/>\doxymbox{\hyperlink{classenjin2_1_1C__Position_a0d063d54cf3fe1f0847168ece2981b6b}{getPosition}}();}
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ newPos\ =\ currentPos;}
+\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (movement)\ \{}
+\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590cafe6f99ef1ec99efbdc19a9786cf1facc}{MovementPattern::STATIC}}:}
+\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ No\ movement}}
+\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00311\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00312\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590caaac544aacc3615aada24897a215f5046}{MovementPattern::LINEAR}}:}
+\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.x\ +=\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(velocity.x\ *\ deltaTime\ *\ movementSpeed);}
+\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +=\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(velocity.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ *\ deltaTime\ *\ movementSpeed);}
+\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca0aa12b2b3dc4f87e3c5d2431608a7710}{MovementPattern::ORBITAL}}:\ \{}
+\DoxyCodeLine{00318\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ phase\ +=\ deltaTime\ *\ movementSpeed;}
+\DoxyCodeLine{00319\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ radius\ =\ 20.0f;}
+\DoxyCodeLine{00320\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.x\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.x\ +\ radius\ *\ std::cos(phase));}
+\DoxyCodeLine{00321\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +\ radius\ *\ std::sin(phase));}
+\DoxyCodeLine{00322\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00323\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00325\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca550c81f476de2243dc93872a898ea918}{MovementPattern::SPIRAL}}:\ \{}
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ phase\ +=\ deltaTime\ *\ movementSpeed;}
+\DoxyCodeLine{00327\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ radius\ =\ 5.0f\ +\ phase\ *\ 2.0f;}
+\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.x\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.x\ +\ radius\ *\ std::cos(phase));}
+\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +\ radius\ *\ std::sin(phase));}
+\DoxyCodeLine{00330\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00331\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00332\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00333\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590caaecf4952eec2bd3f2f466be174f92b9b}{MovementPattern::RANDOM\_WALK}}:\ \{}
+\DoxyCodeLine{00334\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Simple\ random\ walk}}
+\DoxyCodeLine{00335\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ randomSeed\ =\ 12345;}
+\DoxyCodeLine{00336\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ randomSeed\ =\ (randomSeed\ *\ 1103515245\ +\ 12345)\ \&\ 0x7fffffff;}
+\DoxyCodeLine{00337\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ randomX\ =\ (randomSeed\ \%\ 1000\ -\/\ 500)\ /\ 500.0f;}
+\DoxyCodeLine{00338\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ randomSeed\ =\ (randomSeed\ *\ 1103515245\ +\ 12345)\ \&\ 0x7fffffff;}
+\DoxyCodeLine{00339\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ randomY\ =\ (randomSeed\ \%\ 1000\ -\/\ 500)\ /\ 500.0f;}
+\DoxyCodeLine{00340\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00341\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.x\ +=\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(randomX\ *\ deltaTime\ *\ movementSpeed\ *\ 10.0f);}
+\DoxyCodeLine{00342\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +=\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(randomY\ *\ deltaTime\ *\ movementSpeed\ *\ 10.0f);}
+\DoxyCodeLine{00343\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00344\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00345\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00346\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca0df10cd5f37b3e77e6574c1599389392}{MovementPattern::SINE\_WAVE}}:\ \{}
+\DoxyCodeLine{00347\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ phase\ +=\ deltaTime\ *\ movementSpeed;}
+\DoxyCodeLine{00348\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.x\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.x\ +\ phase\ *\ 20.0f);}
+\DoxyCodeLine{00349\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.y\ +\ std::sin(phase)\ *\ 15.0f);}
+\DoxyCodeLine{00350\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00351\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00352\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00353\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{classenjin2_1_1C__Probe_a5d20dcf965e5e24c4cd51b94232d590ca1feb8311a6fad0076d77de9ecba66e9e}{MovementPattern::TRIANGLE\_WAVE}}:\ \{}
+\DoxyCodeLine{00354\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ phase\ +=\ deltaTime\ *\ movementSpeed;}
+\DoxyCodeLine{00355\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ triangleWave\ =\ 2.0f\ *\ std::abs(2.0f\ *\ (phase\ /\ (2.0f\ *\ 3.14159f)\ -\/\ std::floor(phase\ /\ (2.0f\ *\ 3.14159f)\ +\ 0.5f)))\ -\/\ 1.0f;}
+\DoxyCodeLine{00356\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.x\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.x\ +\ phase\ *\ 20.0f);}
+\DoxyCodeLine{00357\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ =\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(homePosition.y\ +\ triangleWave\ *\ 15.0f);}
+\DoxyCodeLine{00358\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00359\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00360\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00361\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00362\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Apply\ bounds\ constraint}}
+\DoxyCodeLine{00363\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (constrainToBounds)\ \{}
+\DoxyCodeLine{00364\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ maxX\ =\ movementBounds.x\ +\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(movementBounds.width);}
+\DoxyCodeLine{00365\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ maxY\ =\ movementBounds.y\ +\ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(movementBounds.height);}
+\DoxyCodeLine{00366\ \ \ \ \ \ \ \ \ \ \ \ \ newPos.x\ =\ std::max(movementBounds.x,\ std::min(newPos.x,\ maxX));}
+\DoxyCodeLine{00367\ \ \ \ \ \ \ \ \ \ \ \ \ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ =\ std::max(movementBounds.y,\ std::min(newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}},\ maxY));}
+\DoxyCodeLine{00368\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00369\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00370\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a897d96750c166bf11860be09c747c34f}{position}}-\/>setPosition(newPos.x,\ newPos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}});}
+\DoxyCodeLine{00371\ \ \ \ \ \}}
+\DoxyCodeLine{00372\ \ \ \ \ }
+\DoxyCodeLine{00376\ \ \ \ \ \textcolor{keywordtype}{void}\ updateTrail(Point\ newPoint)\ \{}
+\DoxyCodeLine{00377\ \ \ \ \ \ \ \ \ trailPoints[trailIndex]\ =\ newPoint;}
+\DoxyCodeLine{00378\ \ \ \ \ \ \ \ \ trailIndex\ =\ (trailIndex\ +\ 1)\ \%\ TRAIL\_LENGTH;}
+\DoxyCodeLine{00379\ \ \ \ \ \}}
+\DoxyCodeLine{00380\ \ \ \ \ }
+\DoxyCodeLine{00384\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00385\ \ \ \ \ \textcolor{keywordtype}{void}\ drawTrail(ICanvas<PixelType>\&\ canvas)\ \{}
+\DoxyCodeLine{00386\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ TRAIL\_LENGTH;\ ++i)\ \{}
+\DoxyCodeLine{00387\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ index\ =\ (trailIndex\ +\ i)\ \%\ TRAIL\_LENGTH;}
+\DoxyCodeLine{00388\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ alpha\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(i)\ /\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(TRAIL\_LENGTH);}
+\DoxyCodeLine{00389\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00390\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keyword}{constexpr}\ (std::is\_same\_v<PixelType,\ Pixel4>)\ \{}
+\DoxyCodeLine{00391\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Pixel4\ color(\textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(accentColor.value\ *\ alpha));}
+\DoxyCodeLine{00392\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(trailPoints[index].x,\ trailPoints[index].y,\ color);}
+\DoxyCodeLine{00393\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00394\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ color\ =\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(accentColor.to8bit()\ *\ alpha);}
+\DoxyCodeLine{00395\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(trailPoints[index].x,\ trailPoints[index].y,\ color);}
+\DoxyCodeLine{00396\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00397\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00398\ \ \ \ \ \}}
+\DoxyCodeLine{00399\ \ \ \ \ }
+\DoxyCodeLine{00403\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00404\ \ \ \ \ \textcolor{keywordtype}{void}\ drawDot(ICanvas<PixelType>\&\ canvas,\ Point\ center,\ \textcolor{keywordtype}{float}\ size,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00405\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ radius\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(size);}
+\DoxyCodeLine{00406\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ -\/radius;\ y\ <=\ radius;\ ++y)\ \{}
+\DoxyCodeLine{00407\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ -\/radius;\ x\ <=\ radius;\ ++x)\ \{}
+\DoxyCodeLine{00408\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (x\ *\ x\ +\ y\ *\ y\ <=\ radius\ *\ radius)\ \{}
+\DoxyCodeLine{00409\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ x,\ center.y\ +\ y,\ color);}
+\DoxyCodeLine{00410\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00411\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00412\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00413\ \ \ \ \ \}}
+\DoxyCodeLine{00414\ \ \ \ \ }
+\DoxyCodeLine{00415\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00416\ \ \ \ \ \textcolor{keywordtype}{void}\ drawDiamond(ICanvas<PixelType>\&\ canvas,\ Point\ center,\ \textcolor{keywordtype}{float}\ size,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00417\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ s\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(size);}
+\DoxyCodeLine{00418\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ -\/s;\ y\ <=\ s;\ ++y)\ \{}
+\DoxyCodeLine{00419\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ -\/s;\ x\ <=\ s;\ ++x)\ \{}
+\DoxyCodeLine{00420\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (abs(x)\ +\ abs(y)\ <=\ s)\ \{}
+\DoxyCodeLine{00421\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ x,\ center.y\ +\ y,\ color);}
+\DoxyCodeLine{00422\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00423\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00424\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00425\ \ \ \ \ \}}
+\DoxyCodeLine{00426\ \ \ \ \ }
+\DoxyCodeLine{00427\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00428\ \ \ \ \ \textcolor{keywordtype}{void}\ drawCross(ICanvas<PixelType>\&\ canvas,\ Point\ center,\ \textcolor{keywordtype}{float}\ size,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00429\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ s\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(size);}
+\DoxyCodeLine{00430\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Horizontal\ line}}
+\DoxyCodeLine{00431\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ -\/s;\ x\ <=\ s;\ ++x)\ \{}
+\DoxyCodeLine{00432\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ x,\ center.y,\ color);}
+\DoxyCodeLine{00433\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00434\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Vertical\ line}}
+\DoxyCodeLine{00435\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ -\/s;\ y\ <=\ s;\ ++y)\ \{}
+\DoxyCodeLine{00436\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x,\ center.y\ +\ y,\ color);}
+\DoxyCodeLine{00437\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00438\ \ \ \ \ \}}
+\DoxyCodeLine{00439\ \ \ \ \ }
+\DoxyCodeLine{00440\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00441\ \ \ \ \ \textcolor{keywordtype}{void}\ drawTriangle(ICanvas<PixelType>\&\ canvas,\ Point\ center,\ \textcolor{keywordtype}{float}\ size,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00442\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ s\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(size);}
+\DoxyCodeLine{00443\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ 0;\ y\ <=\ s;\ ++y)\ \{}
+\DoxyCodeLine{00444\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ width\ =\ s\ -\/\ y;}
+\DoxyCodeLine{00445\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ -\/width;\ x\ <=\ width;\ ++x)\ \{}
+\DoxyCodeLine{00446\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ x,\ center.y\ -\/\ s\ +\ y,\ color);}
+\DoxyCodeLine{00447\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00448\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00449\ \ \ \ \ \}}
+\DoxyCodeLine{00450\ \ \ \ \ }
+\DoxyCodeLine{00451\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00452\ \ \ \ \ \textcolor{keywordtype}{void}\ drawScanner(ICanvas<PixelType>\&\ canvas,\ Point\ center,\ \textcolor{keywordtype}{float}\ size,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00453\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ scanning\ beam}}
+\DoxyCodeLine{00454\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ beamLength\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(scanRadius);}
+\DoxyCodeLine{00455\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ endX\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(center.x\ +\ beamLength\ *\ std::cos(scanAngle));}
+\DoxyCodeLine{00456\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ endY\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(center.y\ +\ beamLength\ *\ std::sin(scanAngle));}
+\DoxyCodeLine{00457\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00458\ \ \ \ \ \ \ \ \ drawLine(canvas,\ center,\ Point(endX,\ endY),\ color);}
+\DoxyCodeLine{00459\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00460\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ center\ dot}}
+\DoxyCodeLine{00461\ \ \ \ \ \ \ \ \ drawDot(canvas,\ center,\ size\ *\ 0.5f,\ color);}
+\DoxyCodeLine{00462\ \ \ \ \ \}}
+\DoxyCodeLine{00463\ \ \ \ \ }
+\DoxyCodeLine{00464\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00465\ \ \ \ \ \textcolor{keywordtype}{void}\ drawParticle(ICanvas<PixelType>\&\ canvas,\ Point\ center,\ \textcolor{keywordtype}{float}\ size,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00466\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Bright\ center\ with\ dimmer\ halo}}
+\DoxyCodeLine{00467\ \ \ \ \ \ \ \ \ drawDot(canvas,\ center,\ size\ *\ 0.6f,\ color);}
+\DoxyCodeLine{00468\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00469\ \ \ \ \ \ \ \ \ PixelType\ dimColor;}
+\DoxyCodeLine{00470\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keyword}{constexpr}\ (std::is\_same\_v<PixelType,\ Pixel4>)\ \{}
+\DoxyCodeLine{00471\ \ \ \ \ \ \ \ \ \ \ \ \ dimColor\ =\ Pixel4(color.value\ /\ 2);}
+\DoxyCodeLine{00472\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00473\ \ \ \ \ \ \ \ \ \ \ \ \ dimColor\ =\ \textcolor{keyword}{static\_cast<}PixelType\textcolor{keyword}{>}(color\ /\ 2);}
+\DoxyCodeLine{00474\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00475\ \ \ \ \ \ \ \ \ drawDot(canvas,\ center,\ size,\ dimColor);}
+\DoxyCodeLine{00476\ \ \ \ \ \}}
+\DoxyCodeLine{00477\ \ \ \ \ }
+\DoxyCodeLine{00478\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00479\ \ \ \ \ \textcolor{keywordtype}{void}\ drawLine(ICanvas<PixelType>\&\ canvas,\ Point\ from,\ Point\ to,\ PixelType\ color)\ \{}
+\DoxyCodeLine{00480\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dx\ =\ abs(to.x\ -\/\ from.x);}
+\DoxyCodeLine{00481\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dy\ =\ abs(to.y\ -\/\ from.y);}
+\DoxyCodeLine{00482\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ sx\ =\ from.x\ <\ to.x\ ?\ 1\ :\ -\/1;}
+\DoxyCodeLine{00483\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ sy\ =\ from.y\ <\ to.y\ ?\ 1\ :\ -\/1;}
+\DoxyCodeLine{00484\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ err\ =\ dx\ -\/\ dy;}
+\DoxyCodeLine{00485\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00486\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ x\ =\ from.x;}
+\DoxyCodeLine{00487\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ y\ =\ from.y;}
+\DoxyCodeLine{00488\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00489\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (\textcolor{keyword}{true})\ \{}
+\DoxyCodeLine{00490\ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(x,\ y,\ color);}
+\DoxyCodeLine{00491\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (x\ ==\ to.x\ \&\&\ y\ ==\ to.y)\ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00492\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00493\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ e2\ =\ 2\ *\ err;}
+\DoxyCodeLine{00494\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (e2\ >\ -\/dy)\ \{\ err\ -\/=\ dy;\ x\ +=\ sx;\ \}}
+\DoxyCodeLine{00495\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (e2\ <\ dx)\ \{\ err\ +=\ dx;\ y\ +=\ sy;\ \}}
+\DoxyCodeLine{00496\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00497\ \ \ \ \ \}}
+\DoxyCodeLine{00498\ \};}
+\DoxyCodeLine{00499\ }
+\DoxyCodeLine{00500\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

@@ -1,0 +1,119 @@
+\doxysection{enjin2::\+Image\+Exporter Class Reference}
+\hypertarget{classenjin2_1_1ImageExporter}{}\label{classenjin2_1_1ImageExporter}\index{enjin2::ImageExporter@{enjin2::ImageExporter}}
+
+
+Simple image export utilities for visualizing canvas output.  
+
+
+
+
+{\ttfamily \+\#include $<$image\+\_\+export.\+hpp$>$}
+
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ }\\static bool \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_aeaf65b1dc82036e620f122979502134b}{export\+To\+PGM}} (const \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$ WIDTH, HEIGHT $>$ \&canvas, const std::\+string \&filename, int scale=4)
+\begin{DoxyCompactList}\small\item\em Export 4-\/bit canvas to PGM (Portable Graymap) format. \end{DoxyCompactList}\item 
+{\footnotesize template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ }\\static bool \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_a1ef93521cf993bb99b983e7204bf159c}{export\+To\+PGM}} (const \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{Canvas8}}$<$ WIDTH, HEIGHT $>$ \&canvas, const std::\+string \&filename, int scale=4)
+\begin{DoxyCompactList}\small\item\em Export 8-\/bit canvas to PGM format. \end{DoxyCompactList}\item 
+{\footnotesize template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ }\\static void \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_a78d9d87685d42a17a5e37b81a09c2bab}{print\+Visual}} (const \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$ WIDTH, HEIGHT $>$ \&canvas, const std::\+string \&title="{}"{})
+\begin{DoxyCompactList}\small\item\em Export 4-\/bit canvas to simple visual ASCII format (better than before). \end{DoxyCompactList}\item 
+{\footnotesize template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ }\\static void \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_a4f5ea43e9af2f0fe2ec0b78ef192f4eb}{print\+Color\+Visual}} (const \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$ WIDTH, HEIGHT $>$ \&canvas, const std::\+string \&title="{}"{})
+\begin{DoxyCompactList}\small\item\em Create a color-\/coded terminal visualization using ANSI colors. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Simple image export utilities for visualizing canvas output. 
+
+Provides basic image export functionality to visualize the canvas content as actual images rather than ASCII output. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1ImageExporter_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1ImageExporter_aeaf65b1dc82036e620f122979502134b}\index{enjin2::ImageExporter@{enjin2::ImageExporter}!exportToPGM@{exportToPGM}}
+\index{exportToPGM@{exportToPGM}!enjin2::ImageExporter@{enjin2::ImageExporter}}
+\doxysubsubsection{\texorpdfstring{exportToPGM()}{exportToPGM()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ImageExporter_aeaf65b1dc82036e620f122979502134b} 
+template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ \\
+bool enjin2::\+\+Image\+Exporter::\+export\+To\+PGM (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$ WIDTH, HEIGHT $>$ \&}]{canvas}{, }\item[{const std::\+string \&}]{filename}{, }\item[{int}]{scale}{ = {\ttfamily 4}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Export 4-\/bit canvas to PGM (Portable Graymap) format. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to export \\
+\hline
+{\em filename} & Output filename \\
+\hline
+{\em scale} & Scale factor for output image (1 = 1:\+1, 2 = 2x size, etc.) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if export succeeded 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1ImageExporter_a1ef93521cf993bb99b983e7204bf159c}\index{enjin2::ImageExporter@{enjin2::ImageExporter}!exportToPGM@{exportToPGM}}
+\index{exportToPGM@{exportToPGM}!enjin2::ImageExporter@{enjin2::ImageExporter}}
+\doxysubsubsection{\texorpdfstring{exportToPGM()}{exportToPGM()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ImageExporter_a1ef93521cf993bb99b983e7204bf159c} 
+template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ \\
+bool enjin2::\+\+Image\+Exporter::\+export\+To\+PGM (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{Canvas8}}$<$ WIDTH, HEIGHT $>$ \&}]{canvas}{, }\item[{const std::\+string \&}]{filename}{, }\item[{int}]{scale}{ = {\ttfamily 4}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Export 8-\/bit canvas to PGM format. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to export \\
+\hline
+{\em filename} & Output filename \\
+\hline
+{\em scale} & Scale factor for output image \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if export succeeded 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1ImageExporter_a4f5ea43e9af2f0fe2ec0b78ef192f4eb}\index{enjin2::ImageExporter@{enjin2::ImageExporter}!printColorVisual@{printColorVisual}}
+\index{printColorVisual@{printColorVisual}!enjin2::ImageExporter@{enjin2::ImageExporter}}
+\doxysubsubsection{\texorpdfstring{printColorVisual()}{printColorVisual()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ImageExporter_a4f5ea43e9af2f0fe2ec0b78ef192f4eb} 
+template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ \\
+void enjin2::\+\+Image\+Exporter::\+print\+Color\+Visual (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$ WIDTH, HEIGHT $>$ \&}]{canvas}{, }\item[{const std::\+string \&}]{title}{ = {\ttfamily "{}"{}}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Create a color-\/coded terminal visualization using ANSI colors. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to display \\
+\hline
+{\em title} & Title to display \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1ImageExporter_a78d9d87685d42a17a5e37b81a09c2bab}\index{enjin2::ImageExporter@{enjin2::ImageExporter}!printVisual@{printVisual}}
+\index{printVisual@{printVisual}!enjin2::ImageExporter@{enjin2::ImageExporter}}
+\doxysubsubsection{\texorpdfstring{printVisual()}{printVisual()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ImageExporter_a78d9d87685d42a17a5e37b81a09c2bab} 
+template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$ \\
+void enjin2::\+\+Image\+Exporter::\+print\+Visual (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$ WIDTH, HEIGHT $>$ \&}]{canvas}{, }\item[{const std::\+string \&}]{title}{ = {\ttfamily "{}"{}}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Export 4-\/bit canvas to simple visual ASCII format (better than before). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to export \\
+\hline
+{\em title} & Title to display above the visualization \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+graphics/\+image\+\_\+export.\+hpp\end{DoxyCompactItemize}

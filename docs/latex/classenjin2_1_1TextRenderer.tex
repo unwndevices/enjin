@@ -1,0 +1,315 @@
+\doxysection{enjin2::\+Text\+Renderer\texorpdfstring{$<$}{<} TPixel \texorpdfstring{$>$}{>} Class Template Reference}
+\hypertarget{classenjin2_1_1TextRenderer}{}\label{classenjin2_1_1TextRenderer}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+
+
+Text renderer for drawing text to canvas.  
+
+
+
+
+{\ttfamily \+\#include $<$text\+\_\+renderer.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1TextRenderer_a0032b96046808654e635856b5b9a3f2f}\label{classenjin2_1_1TextRenderer_a0032b96046808654e635856b5b9a3f2f} 
+{\bfseries Text\+Renderer} ()
+\begin{DoxyCompactList}\small\item\em Construct a new \doxylink{classenjin2_1_1TextRenderer}{Text\+Renderer}. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a527b4f8ff4d5f1bb6d9f2a7077742048}{set\+Font}} (const \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}} \texorpdfstring{$\ast$}{*}font)
+\begin{DoxyCompactList}\small\item\em Set the GFX font. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a3e4ddb5db25ccfe37e1ff45ae92c75d0}{set\+Text\+Color}} (TPixel color)
+\begin{DoxyCompactList}\small\item\em Set text color (transparent background). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a1ceb3d54fb539d212d23d77f428d1a18}{set\+Text\+Color}} (TPixel color, TPixel bgcolor)
+\begin{DoxyCompactList}\small\item\em Set text color with background. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a435007445b5c87fd03dfc087c7ecd0bf}{set\+Text\+Size}} (uint8\+\_\+t size)
+\begin{DoxyCompactList}\small\item\em Set text size. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a2f7e7d232c976d8cc558bccadb464c0b}{set\+Text\+Size}} (uint8\+\_\+t sx, uint8\+\_\+t sy)
+\begin{DoxyCompactList}\small\item\em Set text size with separate X/\+Y scaling. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a6c410991c4c9c380c356e415b4c369d6}{set\+Cursor}} (int16\+\_\+t x, int16\+\_\+t y)
+\begin{DoxyCompactList}\small\item\em Set cursor position. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_af2313836d15f21642f43d0029785b89f}{set\+Text\+Wrap}} (bool wrap)
+\begin{DoxyCompactList}\small\item\em Set text wrapping. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a3914b00604e9b2d4b3f0abc750b9dbeb}{draw\+Char}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&canvas, int16\+\_\+t x, int16\+\_\+t y, unsigned char c)
+\begin{DoxyCompactList}\small\item\em Draw a single character (Adafruit GFX style). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_ae510ff77056ae74fd39cc9843e2210a6}{draw\+String}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&canvas, int16\+\_\+t x, int16\+\_\+t y, const char \texorpdfstring{$\ast$}{*}str)
+\begin{DoxyCompactList}\small\item\em Draw a string. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_afda20f07e448232910b5af2bb5242ba7}{draw\+String\+Wrapped}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&canvas, int16\+\_\+t x, int16\+\_\+t y, uint16\+\_\+t width, const char \texorpdfstring{$\ast$}{*}str)
+\begin{DoxyCompactList}\small\item\em Draw a string with automatic wrapping. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a49b572a69383857315a29523ccc3d885}{get\+Text\+Bounds}} (const char \texorpdfstring{$\ast$}{*}str, int16\+\_\+t x, int16\+\_\+t y, int16\+\_\+t \texorpdfstring{$\ast$}{*}x1, int16\+\_\+t \texorpdfstring{$\ast$}{*}y1, uint16\+\_\+t \texorpdfstring{$\ast$}{*}w, uint16\+\_\+t \texorpdfstring{$\ast$}{*}h)
+\begin{DoxyCompactList}\small\item\em Get text bounds for a string. \end{DoxyCompactList}\item 
+uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a3e215fd8dde2a6180c86580c4c37553f}{get\+Text\+Width}} (const char \texorpdfstring{$\ast$}{*}str)
+\begin{DoxyCompactList}\small\item\em Get width of a string in pixels. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer_a87c5d22c2dd9495179a2a185754ea1f3}{write\+Char}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&canvas, unsigned char c)
+\begin{DoxyCompactList}\small\item\em Write a character at current cursor position. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1TextRenderer_a2eabbebecbabdcab562d7f3d308f9db6}\label{classenjin2_1_1TextRenderer_a2eabbebecbabdcab562d7f3d308f9db6} 
+uint16\+\_\+t {\bfseries get\+Char\+Width} (unsigned char c)
+\begin{DoxyCompactList}\small\item\em Get character width. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1TextRenderer_addb9f7577d1bbc0c29808bb633c8b747}\label{classenjin2_1_1TextRenderer_addb9f7577d1bbc0c29808bb633c8b747} 
+uint8\+\_\+t {\bfseries get\+Char\+Height} ()
+\begin{DoxyCompactList}\small\item\em Get character height. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename TPixel$>$\newline
+class enjin2::\+\+Text\+Renderer$<$ TPixel $>$}
+Text renderer for drawing text to canvas. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1TextRenderer_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1TextRenderer_a3914b00604e9b2d4b3f0abc750b9dbeb}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!drawChar@{drawChar}}
+\index{drawChar@{drawChar}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{drawChar()}{drawChar()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a3914b00604e9b2d4b3f0abc750b9dbeb} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+draw\+Char (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&}]{canvas}{, }\item[{int16\+\_\+t}]{x}{, }\item[{int16\+\_\+t}]{y}{, }\item[{unsigned char}]{c}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Draw a single character (Adafruit GFX style). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to draw to \\
+\hline
+{\em x} & X position \\
+\hline
+{\em y} & Y position \\
+\hline
+{\em c} & Character to draw \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_ae510ff77056ae74fd39cc9843e2210a6}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!drawString@{drawString}}
+\index{drawString@{drawString}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{drawString()}{drawString()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_ae510ff77056ae74fd39cc9843e2210a6} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+draw\+String (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&}]{canvas}{, }\item[{int16\+\_\+t}]{x}{, }\item[{int16\+\_\+t}]{y}{, }\item[{const char \texorpdfstring{$\ast$}{*}}]{str}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Draw a string. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to draw to \\
+\hline
+{\em x} & X position \\
+\hline
+{\em y} & Y position \\
+\hline
+{\em str} & String to draw \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_afda20f07e448232910b5af2bb5242ba7}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!drawStringWrapped@{drawStringWrapped}}
+\index{drawStringWrapped@{drawStringWrapped}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{drawStringWrapped()}{drawStringWrapped()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_afda20f07e448232910b5af2bb5242ba7} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+draw\+String\+Wrapped (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&}]{canvas}{, }\item[{int16\+\_\+t}]{x}{, }\item[{int16\+\_\+t}]{y}{, }\item[{uint16\+\_\+t}]{width}{, }\item[{const char \texorpdfstring{$\ast$}{*}}]{str}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Draw a string with automatic wrapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to draw to \\
+\hline
+{\em x} & X position \\
+\hline
+{\em y} & Y position \\
+\hline
+{\em width} & Maximum width before wrapping \\
+\hline
+{\em str} & String to draw \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a49b572a69383857315a29523ccc3d885}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!getTextBounds@{getTextBounds}}
+\index{getTextBounds@{getTextBounds}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{getTextBounds()}{getTextBounds()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a49b572a69383857315a29523ccc3d885} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+get\+Text\+Bounds (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{str}{, }\item[{int16\+\_\+t}]{x}{, }\item[{int16\+\_\+t}]{y}{, }\item[{int16\+\_\+t \texorpdfstring{$\ast$}{*}}]{x1}{, }\item[{int16\+\_\+t \texorpdfstring{$\ast$}{*}}]{y1}{, }\item[{uint16\+\_\+t \texorpdfstring{$\ast$}{*}}]{w}{, }\item[{uint16\+\_\+t \texorpdfstring{$\ast$}{*}}]{h}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get text bounds for a string. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em str} & String to measure \\
+\hline
+{\em x} & X position \\
+\hline
+{\em y} & Y position \\
+\hline
+{\em x1} & Output:\+ left bound \\
+\hline
+{\em y1} & Output:\+ top bound \\
+\hline
+{\em w} & Output:\+ width \\
+\hline
+{\em h} & Output:\+ height \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a3e215fd8dde2a6180c86580c4c37553f}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!getTextWidth@{getTextWidth}}
+\index{getTextWidth@{getTextWidth}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{getTextWidth()}{getTextWidth()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a3e215fd8dde2a6180c86580c4c37553f} 
+template$<$typename TPixel$>$ \\
+uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+get\+Text\+Width (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{str}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get width of a string in pixels. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em str} & String to measure \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Width in pixels 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1TextRenderer_a6c410991c4c9c380c356e415b4c369d6}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!setCursor@{setCursor}}
+\index{setCursor@{setCursor}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{setCursor()}{setCursor()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a6c410991c4c9c380c356e415b4c369d6} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+set\+Cursor (\begin{DoxyParamCaption}\item[{int16\+\_\+t}]{x}{, }\item[{int16\+\_\+t}]{y}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set cursor position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & X coordinate \\
+\hline
+{\em y} & Y coordinate \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a527b4f8ff4d5f1bb6d9f2a7077742048}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!setFont@{setFont}}
+\index{setFont@{setFont}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{setFont()}{setFont()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a527b4f8ff4d5f1bb6d9f2a7077742048} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+set\+Font (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}} \texorpdfstring{$\ast$}{*}}]{font}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set the GFX font. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em font} & Pointer to GFX font structure (nullptr for default built-\/in font) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a3e4ddb5db25ccfe37e1ff45ae92c75d0}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!setTextColor@{setTextColor}}
+\index{setTextColor@{setTextColor}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{setTextColor()}{setTextColor()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a3e4ddb5db25ccfe37e1ff45ae92c75d0} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+set\+Text\+Color (\begin{DoxyParamCaption}\item[{TPixel}]{color}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set text color (transparent background). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em color} & Text color \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a1ceb3d54fb539d212d23d77f428d1a18}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!setTextColor@{setTextColor}}
+\index{setTextColor@{setTextColor}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{setTextColor()}{setTextColor()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a1ceb3d54fb539d212d23d77f428d1a18} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+set\+Text\+Color (\begin{DoxyParamCaption}\item[{TPixel}]{color}{, }\item[{TPixel}]{bgcolor}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set text color with background. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em color} & Text color \\
+\hline
+{\em bgcolor} & Background color \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a435007445b5c87fd03dfc087c7ecd0bf}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!setTextSize@{setTextSize}}
+\index{setTextSize@{setTextSize}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{setTextSize()}{setTextSize()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a435007445b5c87fd03dfc087c7ecd0bf} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+set\+Text\+Size (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set text size. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em size} & \doxylink{structenjin2_1_1Size}{Size} multiplier (1 = normal, 2 = double, etc.) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a2f7e7d232c976d8cc558bccadb464c0b}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!setTextSize@{setTextSize}}
+\index{setTextSize@{setTextSize}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{setTextSize()}{setTextSize()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a2f7e7d232c976d8cc558bccadb464c0b} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+set\+Text\+Size (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{sx}{, }\item[{uint8\+\_\+t}]{sy}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set text size with separate X/\+Y scaling. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em sx} & X size multiplier \\
+\hline
+{\em sy} & Y size multiplier \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_af2313836d15f21642f43d0029785b89f}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!setTextWrap@{setTextWrap}}
+\index{setTextWrap@{setTextWrap}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{setTextWrap()}{setTextWrap()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_af2313836d15f21642f43d0029785b89f} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+set\+Text\+Wrap (\begin{DoxyParamCaption}\item[{bool}]{wrap}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set text wrapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em wrap} & True to enable text wrapping \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1TextRenderer_a87c5d22c2dd9495179a2a185754ea1f3}\index{enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}!writeChar@{writeChar}}
+\index{writeChar@{writeChar}!enjin2::TextRenderer$<$ TPixel $>$@{enjin2::TextRenderer$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{writeChar()}{writeChar()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1TextRenderer_a87c5d22c2dd9495179a2a185754ea1f3} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{enjin2::\+\+Text\+Renderer}}$<$ TPixel $>$::\+write\+Char (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&}]{canvas}{, }\item[{unsigned char}]{c}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Write a character at current cursor position. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Canvas to draw to \\
+\hline
+{\em c} & Character to write \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+graphics/\+text\+\_\+renderer.\+hpp\end{DoxyCompactItemize}

@@ -1,0 +1,158 @@
+\doxysection{image\+\_\+export.\+hpp}
+\hypertarget{image__export_8hpp_source}{}\label{image__export_8hpp_source}\index{include/enjin2/graphics/image\_export.hpp@{include/enjin2/graphics/image\_export.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}canvas.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1ImageExporter}{ImageExporter}}\ \{}
+\DoxyCodeLine{00018\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keyword}{template}<u\textcolor{keywordtype}{int}16\_t\ WIDTH,\ u\textcolor{keywordtype}{int}16\_t\ HEIGHT>}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_aeaf65b1dc82036e620f122979502134b}{exportToPGM}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4<WIDTH,\ HEIGHT>}}\&\ canvas,\ \textcolor{keyword}{const}\ std::string\&\ filename,\ \textcolor{keywordtype}{int}\ scale\ =\ 4)\ \{}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ std::ofstream\ file(filename);}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!file.is\_open())\ \{}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ outputWidth\ =\ WIDTH\ *\ scale;}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ outputHeight\ =\ HEIGHT\ *\ scale;}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ PGM\ header}}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ file\ <<\ \textcolor{stringliteral}{"{}P2\(\backslash\)n"{}};}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ file\ <<\ outputWidth\ <<\ \textcolor{stringliteral}{"{}\ "{}}\ <<\ outputHeight\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ file\ <<\ \textcolor{stringliteral}{"{}15\(\backslash\)n"{}};\ \ \textcolor{comment}{//\ Max\ value\ (4-\/bit\ =\ 0-\/15)}}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Write\ pixel\ data}}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ 0;\ y\ <\ outputHeight;\ ++y)\ \{}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ 0;\ x\ <\ outputWidth;\ ++x)\ \{}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Scale\ down\ to\ original\ canvas\ coordinates}}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ canvasX\ =\ x\ /\ scale;}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ canvasY\ =\ y\ /\ scale;}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ pixel\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1Canvas4_a088fcb07a85c10edd5745808a5373f49}{getPixel}}(canvasX,\ canvasY);}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ file\ <<\ static\_cast<int>(pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}});}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (x\ <\ outputWidth\ -\/\ 1)\ file\ <<\ \textcolor{stringliteral}{"{}\ "{}};}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \ \ \ \ file\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ file.close();}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00058\ \ \ \ \ \}}
+\DoxyCodeLine{00059\ \ \ \ \ }
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keyword}{template}<u\textcolor{keywordtype}{int}16\_t\ WIDTH,\ u\textcolor{keywordtype}{int}16\_t\ HEIGHT>}
+\DoxyCodeLine{00068\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_a1ef93521cf993bb99b983e7204bf159c}{exportToPGM}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{Canvas8<WIDTH,\ HEIGHT>}}\&\ canvas,\ \textcolor{keyword}{const}\ std::string\&\ filename,\ \textcolor{keywordtype}{int}\ scale\ =\ 4)\ \{}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ std::ofstream\ file(filename);}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!file.is\_open())\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ outputWidth\ =\ WIDTH\ *\ scale;}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ outputHeight\ =\ HEIGHT\ *\ scale;}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ PGM\ header}}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ file\ <<\ \textcolor{stringliteral}{"{}P2\(\backslash\)n"{}};}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ file\ <<\ outputWidth\ <<\ \textcolor{stringliteral}{"{}\ "{}}\ <<\ outputHeight\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ file\ <<\ \textcolor{stringliteral}{"{}255\(\backslash\)n"{}};\ \ \textcolor{comment}{//\ Max\ value\ (8-\/bit\ =\ 0-\/255)}}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Write\ pixel\ data}}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ 0;\ y\ <\ outputHeight;\ ++y)\ \{}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ 0;\ x\ <\ outputWidth;\ ++x)\ \{}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ canvasX\ =\ x\ /\ scale;}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ canvasY\ =\ y\ /\ scale;}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pixel\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1Canvas8_aaaf192de1569b9fb1cee4e563be32d8b}{getPixel}}(canvasX,\ canvasY);}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ file\ <<\ static\_cast<int>(pixel);}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (x\ <\ outputWidth\ -\/\ 1)\ file\ <<\ \textcolor{stringliteral}{"{}\ "{}};}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ file\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ file.close();}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00098\ \ \ \ \ \}}
+\DoxyCodeLine{00099\ \ \ \ \ }
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keyword}{template}<u\textcolor{keywordtype}{int}16\_t\ WIDTH,\ u\textcolor{keywordtype}{int}16\_t\ HEIGHT>}
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_a78d9d87685d42a17a5e37b81a09c2bab}{printVisual}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4<WIDTH,\ HEIGHT>}}\&\ canvas,\ \textcolor{keyword}{const}\ std::string\&\ title\ =\ \textcolor{stringliteral}{"{}"{}})\ \{}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!title.empty())\ \{}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ title\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Print\ border}}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}+"{}};}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ 0;\ x\ <\ WIDTH;\ ++x)\ std::cout\ <<\ \textcolor{stringliteral}{"{}-\/"{}};}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}+\(\backslash\)n"{}};}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Print\ canvas\ content}}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ 0;\ y\ <\ HEIGHT;\ ++y)\ \{}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}|"{}};}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ 0;\ x\ <\ WIDTH;\ ++x)\ \{}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ pixel\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1Canvas4_a088fcb07a85c10edd5745808a5373f49}{getPixel}}(x,\ y);}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Use\ different\ characters\ for\ different\ intensity\ levels}}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ ==\ 0)\ \{}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ "{}};\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Black/empty}}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 2)\ \{}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}·"{}};\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Very\ dim}}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 5)\ \{}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}░"{}};\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Dim}}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 8)\ \{}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}▒"{}};\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Medium}}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 12)\ \{}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}▓"{}};\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Bright}}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}█"{}};\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Very\ bright}}
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}|\(\backslash\)n"{}};}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Print\ border}}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}+"{}};}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ 0;\ x\ <\ WIDTH;\ ++x)\ std::cout\ <<\ \textcolor{stringliteral}{"{}-\/"{}};}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}+\(\backslash\)n"{}};}
+\DoxyCodeLine{00144\ \ \ \ \ \}}
+\DoxyCodeLine{00145\ \ \ \ \ }
+\DoxyCodeLine{00151\ \ \ \ \ \textcolor{keyword}{template}<u\textcolor{keywordtype}{int}16\_t\ WIDTH,\ u\textcolor{keywordtype}{int}16\_t\ HEIGHT>}
+\DoxyCodeLine{00152\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ImageExporter_a4f5ea43e9af2f0fe2ec0b78ef192f4eb}{printColorVisual}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4<WIDTH,\ HEIGHT>}}\&\ canvas,\ \textcolor{keyword}{const}\ std::string\&\ title\ =\ \textcolor{stringliteral}{"{}"{}})\ \{}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!title.empty())\ \{}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)033[1;37m"{}}\ <<\ title\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)033[0m\(\backslash\)n"{}};\ \ \textcolor{comment}{//\ Bold\ white\ title}}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ 0;\ y\ <\ HEIGHT;\ ++y)\ \{}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ 0;\ x\ <\ WIDTH;\ ++x)\ \{}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ pixel\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1Canvas4_a088fcb07a85c10edd5745808a5373f49}{getPixel}}(x,\ y);}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Use\ ANSI\ color\ codes\ based\ on\ pixel\ intensity}}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ ==\ 0)\ \{}
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ "{}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Black}}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 3)\ \{}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)033[38;5;232m▓\(\backslash\)033[0m"{}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Very\ dark\ gray}}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 6)\ \{}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)033[38;5;240m▓\(\backslash\)033[0m"{}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Dark\ gray}}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 9)\ \{}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)033[38;5;248m▓\(\backslash\)033[0m"{}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Medium\ gray}}
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (pixel.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}\ <=\ 12)\ \{}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)033[38;5;255m▓\(\backslash\)033[0m"{}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Light\ gray}}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)033[38;5;15m█\(\backslash\)033[0m"{}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ White}}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{00179\ \ \ \ \ \}}
+\DoxyCodeLine{00180\ \};}
+\DoxyCodeLine{00181\ }
+\DoxyCodeLine{00182\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

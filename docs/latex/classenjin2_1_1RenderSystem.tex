@@ -1,0 +1,122 @@
+\doxysection{enjin2::\+Render\+System\texorpdfstring{$<$}{<} TCanvas \texorpdfstring{$>$}{>} Class Template Reference}
+\hypertarget{classenjin2_1_1RenderSystem}{}\label{classenjin2_1_1RenderSystem}\index{enjin2::RenderSystem$<$ TCanvas $>$@{enjin2::RenderSystem$<$ TCanvas $>$}}
+
+
+Rendering system for drawing entities to canvas.  
+
+
+
+
+{\ttfamily \+\#include $<$systems.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a8f680072e72efed1ef2bc3796d6578c8}{Render\+System}} (TCanvas \texorpdfstring{$\ast$}{*}target\+Canvas)
+\begin{DoxyCompactList}\small\item\em Constructor with target canvas. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a361b3d826f4bdddbf4bea3e9e8fed312}{update}} (float delta\+Time) override
+\begin{DoxyCompactList}\small\item\em Update rendering. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a77ea3fdcfc57f765dda7f25288d1d67a}{get\+Priority}} () const override
+\begin{DoxyCompactList}\small\item\em Get system priority (rendering should run last). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1System}{enjin2::\+\+System$<$ Render\+System$<$ TCanvas $>$ $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+System\+ID \doxymbox{\hyperlink{classenjin2_1_1System_a4b181b72e69a9f4e0805a39352a0b9ba}{get\+System\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1SystemBase}{enjin2::\+\+System\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+System\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1System}{enjin2::\+\+System$<$ Render\+System$<$ TCanvas $>$ $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static System\+ID \doxymbox{\hyperlink{classenjin2_1_1System_a9d6a24f7c9f780b416708725fff803ca}{get\+Static\+System\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1SystemBase}{enjin2::\+\+System\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static System\+ID \doxymbox{\hyperlink{classenjin2_1_1SystemBase_ad58d4bd01a7008a96133a6629637e47c}{get\+System\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename TCanvas$>$\newline
+class enjin2::\+\+Render\+System$<$ TCanvas $>$}
+Rendering system for drawing entities to canvas. 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em TCanvas} & Canvas type for rendering\\
+\hline
+\end{DoxyTemplParams}
+Renders all visible entities with \doxylink{structenjin2_1_1RenderComponent}{Render\+Component} to the target canvas. Handles z-\/ordering and shape rendering. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1RenderSystem_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1RenderSystem_a8f680072e72efed1ef2bc3796d6578c8}\index{enjin2::RenderSystem$<$ TCanvas $>$@{enjin2::RenderSystem$<$ TCanvas $>$}!RenderSystem@{RenderSystem}}
+\index{RenderSystem@{RenderSystem}!enjin2::RenderSystem$<$ TCanvas $>$@{enjin2::RenderSystem$<$ TCanvas $>$}}
+\doxysubsubsection{\texorpdfstring{RenderSystem()}{RenderSystem()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1RenderSystem_a8f680072e72efed1ef2bc3796d6578c8} 
+template$<$typename TCanvas$>$ \\
+\doxymbox{\hyperlink{classenjin2_1_1RenderSystem}{enjin2::\+\+Render\+System}}$<$ TCanvas $>$::\+\+Render\+System (\begin{DoxyParamCaption}\item[{TCanvas \texorpdfstring{$\ast$}{*}}]{target\+Canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor with target canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em target\+Canvas} & Canvas to render to \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1RenderSystem_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1RenderSystem_a77ea3fdcfc57f765dda7f25288d1d67a}\index{enjin2::RenderSystem$<$ TCanvas $>$@{enjin2::RenderSystem$<$ TCanvas $>$}!getPriority@{getPriority}}
+\index{getPriority@{getPriority}!enjin2::RenderSystem$<$ TCanvas $>$@{enjin2::RenderSystem$<$ TCanvas $>$}}
+\doxysubsubsection{\texorpdfstring{getPriority()}{getPriority()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1RenderSystem_a77ea3fdcfc57f765dda7f25288d1d67a} 
+template$<$typename TCanvas$>$ \\
+int \doxymbox{\hyperlink{classenjin2_1_1RenderSystem}{enjin2::\+\+Render\+System}}$<$ TCanvas $>$::\+get\+Priority (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Get system priority (rendering should run last). 
+
+\begin{DoxyReturn}{Returns}
+Priority value 
+\end{DoxyReturn}
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1SystemBase_a0c748a49a94bba88a17945760790f15b}{enjin2::\+\+System\+Base}}.
+
+\Hypertarget{classenjin2_1_1RenderSystem_a361b3d826f4bdddbf4bea3e9e8fed312}\index{enjin2::RenderSystem$<$ TCanvas $>$@{enjin2::RenderSystem$<$ TCanvas $>$}!update@{update}}
+\index{update@{update}!enjin2::RenderSystem$<$ TCanvas $>$@{enjin2::RenderSystem$<$ TCanvas $>$}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1RenderSystem_a361b3d826f4bdddbf4bea3e9e8fed312} 
+template$<$typename TCanvas$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1RenderSystem}{enjin2::\+\+Render\+System}}$<$ TCanvas $>$::\+update (\begin{DoxyParamCaption}\item[{float}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Update rendering. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last update \\
+\hline
+\end{DoxyParams}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1SystemBase_af634eed7c5580169a826b1bd5e39d452}{enjin2::\+\+System\+Base}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+ui/\+systems.\+hpp\end{DoxyCompactItemize}

@@ -1,0 +1,214 @@
+\doxysection{scene.\+hpp}
+\hypertarget{core_2scene_8hpp_source}{}\label{core_2scene_8hpp_source}\index{include/enjin2/core/scene.hpp@{include/enjin2/core/scene.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}object\_collection.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}signal.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}../components/drawable.hpp"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <type\_traits>}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Scene_a4a7dcc3e8b941246279ad1c3fda6ed09}{Scene}}\ \{}
+\DoxyCodeLine{00020\ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00021\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1ObjectCollection}{ObjectCollection}}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}};\ \ \ \ \ \ \ }
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_addd421c716c26d1ff1876a119a33d7da}{initialized}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ uint32\_t\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a803f75fe224389622cb1c03b5aa69aa8}{sceneId}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00025\ \ \ \ \ }
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{comment}{//\ Scene\ lifecycle\ signals}}
+\DoxyCodeLine{00027\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<Scene*>}}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a7115ae394dfddf15e681a9319f6af11a}{onCreateSignal}};\ \ \ \ \ \ }
+\DoxyCodeLine{00028\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<Scene*>}}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a12bb91d4745b2bc446e9f93660cc9bdd}{onActivateSignal}};\ \ \ \ }
+\DoxyCodeLine{00029\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<Scene*>}}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a1452dd3863c01179abc54fc98a695701}{onDeactivateSignal}};\ \ }
+\DoxyCodeLine{00030\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<Scene*>}}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a4c860b34575af820960951555c97ecd3}{onDestroySignal}};\ \ \ \ \ }
+\DoxyCodeLine{00031\ \ \ \ \ }
+\DoxyCodeLine{00032\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keyword}{explicit}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a4a7dcc3e8b941246279ad1c3fda6ed09}{Scene}}(uint32\_t\ \textcolor{keywordtype}{id})\ }
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1Scene_addd421c716c26d1ff1876a119a33d7da}{initialized}}(false),\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}}(false),\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a803f75fe224389622cb1c03b5aa69aa8}{sceneId}}(id)\ \{\}}
+\DoxyCodeLine{00039\ \ \ \ \ }
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{virtual}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a60c7c9a7f8e8f9a06142d266ea6e82d5}{\string~Scene}}()\ \{}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}})\ \{}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a58c03e375454bceb7400f2f5f9a8e053}{deactivate}}();}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a749642707574a78a936b39e6c0cfa16b}{onDestroy}}();}
+\DoxyCodeLine{00048\ \ \ \ \ \}}
+\DoxyCodeLine{00049\ \ \ \ \ }
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a8ee0c0c3f72a0f39adbcaaa389b66514}{initialize}}()\ \{}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\doxymbox{\hyperlink{classenjin2_1_1Scene_addd421c716c26d1ff1876a119a33d7da}{initialized}})\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_ae4e2a8f05e9835519bb9f3d64107de65}{onCreate}}();}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.initialize();}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_addd421c716c26d1ff1876a119a33d7da}{initialized}}\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a7115ae394dfddf15e681a9319f6af11a}{onCreateSignal}}.emit(\textcolor{keyword}{this});}
+\DoxyCodeLine{00064\ \ \ \ \ \}}
+\DoxyCodeLine{00065\ \ \ \ \ }
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a7619e8801723180b129223c0d2eac81f}{activate}}()\ \{}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}})\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1Scene_addd421c716c26d1ff1876a119a33d7da}{initialized}})\ \{}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a8ee0c0c3f72a0f39adbcaaa389b66514}{initialize}}();}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a225fe8b39419c3a1274d86e533be52e2}{onActivate}}();}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.start();}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}}\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a12bb91d4745b2bc446e9f93660cc9bdd}{onActivateSignal}}.emit(\textcolor{keyword}{this});}
+\DoxyCodeLine{00083\ \ \ \ \ \}}
+\DoxyCodeLine{00084\ \ \ \ \ }
+\DoxyCodeLine{00090\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a58c03e375454bceb7400f2f5f9a8e053}{deactivate}}()\ \{}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}})\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_ae72e2d6bcf6fb13ceb66393f979e96f7}{onDeactivate}}();}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}}\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a1452dd3863c01179abc54fc98a695701}{onDeactivateSignal}}.emit(\textcolor{keyword}{this});}
+\DoxyCodeLine{00097\ \ \ \ \ \}}
+\DoxyCodeLine{00098\ \ \ \ \ }
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_ab4a88fd071c15194567c319106400e68}{update}}(uint16\_t\ deltaTime)\ \{}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}})\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_a8223422206c98062d857112c9cf5a4f4}{onUpdate}}(deltaTime);}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.update(deltaTime);}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.lateUpdate(deltaTime);}
+\DoxyCodeLine{00109\ \ \ \ \ \}}
+\DoxyCodeLine{00110\ \ \ \ \ }
+\DoxyCodeLine{00115\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00116\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a600039f09b35e3db24810dbc5f507a09}{render}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<PixelType>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}})\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keyword}{constexpr}\ (std::is\_same\_v<PixelType,\ uint8\_t>)\ \{}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_aebf606cafc04d48f4e592eaa78b907cd}{onRender}}(canvas);}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ For\ non-\/uint8\_t\ canvases,\ skip\ scene-\/specific\ rendering\ for\ now}}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ In\ a\ full\ implementation,\ you'd\ convert\ or\ provide\ templated\ onRender}}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ renderObjects(canvas);}
+\DoxyCodeLine{00126\ \ \ \ \ \}}
+\DoxyCodeLine{00127\ \ \ \ \ }
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00136\ \ \ \ \ T*\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a16789d47660a1110362385617ccef149}{addObject}}(Args\&\&...\ args)\ \{}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.addObject<T>(std::forward<Args>(args)...);}
+\DoxyCodeLine{00138\ \ \ \ \ \}}
+\DoxyCodeLine{00139\ \ \ \ \ }
+\DoxyCodeLine{00145\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a2373f5ef8ed456c90feefebab97bc673}{removeObject}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \textcolor{keywordtype}{object})\ \{}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.removeObject(\textcolor{keywordtype}{object});}
+\DoxyCodeLine{00147\ \ \ \ \ \}}
+\DoxyCodeLine{00148\ \ \ \ \ }
+\DoxyCodeLine{00154\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
+\DoxyCodeLine{00155\ \ \ \ \ T*\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a663838150fba26e1a2a1aa45f3b62a88}{findObject}}()\ \{}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.findObject<T>();}
+\DoxyCodeLine{00157\ \ \ \ \ \}}
+\DoxyCodeLine{00158\ \ \ \ \ }
+\DoxyCodeLine{00164\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
+\DoxyCodeLine{00165\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a5bc661ad0ff85b7cd37fd1684566ec23}{findObjectWithComponent}}()\ \{}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.findObjectWithComponent<T>();}
+\DoxyCodeLine{00167\ \ \ \ \ \}}
+\DoxyCodeLine{00168\ \ \ \ \ }
+\DoxyCodeLine{00173\ \ \ \ \ uint32\_t\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a0ef0bbfb338c88953da87de1620c36bd}{getId}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a803f75fe224389622cb1c03b5aa69aa8}{sceneId}};}
+\DoxyCodeLine{00175\ \ \ \ \ \}}
+\DoxyCodeLine{00176\ \ \ \ \ }
+\DoxyCodeLine{00181\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_ac946e1c2a9d2a5a4f099c5d85b4c18f6}{isActive}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a89fb11e2046b9c326683c1789ec75bc9}{active}};}
+\DoxyCodeLine{00183\ \ \ \ \ \}}
+\DoxyCodeLine{00184\ \ \ \ \ }
+\DoxyCodeLine{00189\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_afa2b6441bbb85b555fa2bdf66fae0dcb}{isInitialized}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_addd421c716c26d1ff1876a119a33d7da}{initialized}};}
+\DoxyCodeLine{00191\ \ \ \ \ \}}
+\DoxyCodeLine{00192\ \ \ \ \ }
+\DoxyCodeLine{00197\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1ObjectCollection}{ObjectCollection}}\&\ \doxymbox{\hyperlink{classenjin2_1_1Scene_aa2d12e806e909b5948236c776e17ac8d}{getObjects}}()\ \{}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}};}
+\DoxyCodeLine{00199\ \ \ \ \ \}}
+\DoxyCodeLine{00200\ \ \ \ \ }
+\DoxyCodeLine{00205\ \ \ \ \ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{classenjin2_1_1ObjectCollection}{ObjectCollection}}\&\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a1fccccb180786a336e22b2217fb23c69}{getObjects}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}};}
+\DoxyCodeLine{00207\ \ \ \ \ \}}
+\DoxyCodeLine{00208\ \ \ \ \ }
+\DoxyCodeLine{00212\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00213\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<Scene*>}}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a36462e5a91d7dc9ad908b0d83704d97f}{connectOnCreate}}(std::function<\textcolor{keywordtype}{void}(\doxymbox{\hyperlink{classenjin2_1_1Scene_a4a7dcc3e8b941246279ad1c3fda6ed09}{Scene}}*)>\ callback)\ \{}
+\DoxyCodeLine{00214\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<Scene*>}}(\&\doxymbox{\hyperlink{classenjin2_1_1Scene_a7115ae394dfddf15e681a9319f6af11a}{onCreateSignal}},\ callback);}
+\DoxyCodeLine{00215\ \ \ \ \ \}}
+\DoxyCodeLine{00216\ \ \ \ \ }
+\DoxyCodeLine{00217\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00218\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<Scene*>}}\ connectOnActivate(std::function<\textcolor{keywordtype}{void}(\doxymbox{\hyperlink{classenjin2_1_1Scene}{Scene}}*)>\ callback)\ \{}
+\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<Scene*>}}(\&\doxymbox{\hyperlink{classenjin2_1_1Scene_a12bb91d4745b2bc446e9f93660cc9bdd}{onActivateSignal}},\ callback);}
+\DoxyCodeLine{00220\ \ \ \ \ \}}
+\DoxyCodeLine{00221\ \ \ \ \ }
+\DoxyCodeLine{00222\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00223\ \ \ \ \ SignalConnection<Scene*>\ connectOnDeactivate(std::function<\textcolor{keywordtype}{void}(\doxymbox{\hyperlink{classenjin2_1_1Scene_a4a7dcc3e8b941246279ad1c3fda6ed09}{Scene}}*)>\ callback)\ \{}
+\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ SignalConnection<Scene*>(\&\doxymbox{\hyperlink{classenjin2_1_1Scene_a1452dd3863c01179abc54fc98a695701}{onDeactivateSignal}},\ callback);}
+\DoxyCodeLine{00225\ \ \ \ \ \}}
+\DoxyCodeLine{00226\ \ \ \ \ }
+\DoxyCodeLine{00227\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00228\ \ \ \ \ SignalConnection<Scene*>\ connectOnDestroy(std::function<\textcolor{keywordtype}{void}(\doxymbox{\hyperlink{classenjin2_1_1Scene_a4a7dcc3e8b941246279ad1c3fda6ed09}{Scene}}*)>\ callback)\ \{}
+\DoxyCodeLine{00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ SignalConnection<Scene*>(\&\doxymbox{\hyperlink{classenjin2_1_1Scene_a4c860b34575af820960951555c97ecd3}{onDestroySignal}},\ callback);}
+\DoxyCodeLine{00230\ \ \ \ \ \}}
+\DoxyCodeLine{00231\ }
+\DoxyCodeLine{00232\ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00238\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_ae4e2a8f05e9835519bb9f3d64107de65}{onCreate}}()\ \{\}}
+\DoxyCodeLine{00239\ \ \ \ \ }
+\DoxyCodeLine{00245\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a225fe8b39419c3a1274d86e533be52e2}{onActivate}}()\ \{\}}
+\DoxyCodeLine{00246\ \ \ \ \ }
+\DoxyCodeLine{00252\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_ae72e2d6bcf6fb13ceb66393f979e96f7}{onDeactivate}}()\ \{\}}
+\DoxyCodeLine{00253\ \ \ \ \ }
+\DoxyCodeLine{00259\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a749642707574a78a936b39e6c0cfa16b}{onDestroy}}()\ \{\}}
+\DoxyCodeLine{00260\ \ \ \ \ }
+\DoxyCodeLine{00268\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a8223422206c98062d857112c9cf5a4f4}{onUpdate}}(uint16\_t\ deltaTime)\ \{\}}
+\DoxyCodeLine{00269\ \ \ \ \ }
+\DoxyCodeLine{00276\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_aebf606cafc04d48f4e592eaa78b907cd}{onRender}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<Pixel4>}}\&\ canvas)\ \{\}}
+\DoxyCodeLine{00277\ \ \ \ \ }
+\DoxyCodeLine{00284\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Scene_a1dc7f6a0a55f1f7d7f672790ec8a3fe1}{onRender}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{\}}
+\DoxyCodeLine{00285\ \ \ \ \ }
+\DoxyCodeLine{00286\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00291\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
+\DoxyCodeLine{00292\ \ \ \ \ \textcolor{keywordtype}{void}\ renderObjects(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<PixelType>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00293\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Collect\ all\ drawable\ components}}
+\DoxyCodeLine{00294\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MAX\_DRAWABLES\ =\ 256;}
+\DoxyCodeLine{00295\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{C\_Drawable}}*\ drawables[MAX\_DRAWABLES];}
+\DoxyCodeLine{00296\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ drawableCount\ =\ 0;}
+\DoxyCodeLine{00297\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Scene_af43c2ea6045075ea9bf4d202428869f6}{objects}}.\doxymbox{\hyperlink{classenjin2_1_1ObjectCollection_a2c15c91d27bec78cda17a8947b4b58d1}{forEach}}([\&](\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ obj)\ \{}
+\DoxyCodeLine{00299\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!obj\ ||\ !obj-\/>\doxymbox{\hyperlink{classenjin2_1_1Object_a49d28edf30e20db1c42d10851fe4d63a}{isActive}}())\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00301\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Get\ all\ drawable\ components\ from\ this\ object}}
+\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ obj-\/>\doxymbox{\hyperlink{classenjin2_1_1Object_a3e5a05dca7bf7b18e16d48ff59af8c0c}{getDrawableCount}}();\ ++i)\ \{}
+\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ drawable\ =\ obj-\/>\doxymbox{\hyperlink{classenjin2_1_1Object_a95f28044cf8a89c2c080c43058164ab6}{getDrawable}}(i);}
+\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (drawable\ \&\&\ drawable-\/>isVisible()\ \&\&\ drawableCount\ <\ MAX\_DRAWABLES)\ \{}
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawables[drawableCount++]\ =\ drawable;}
+\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ \});}
+\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Sort\ drawables\ by\ layer\ and\ sort\ order}}
+\DoxyCodeLine{00311\ \ \ \ \ \ \ \ \ std::sort(drawables,\ drawables\ +\ drawableCount,\ }
+\DoxyCodeLine{00312\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [](\textcolor{keyword}{const}\ C\_Drawable*\ a,\ \textcolor{keyword}{const}\ C\_Drawable*\ b)\ \{}
+\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ a-\/>shouldDrawBefore(*b);}
+\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \});}
+\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Render\ all\ sorted\ drawables}}
+\DoxyCodeLine{00318\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ drawableCount;\ ++i)\ \{}
+\DoxyCodeLine{00319\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keyword}{constexpr}\ (std::is\_same\_v<PixelType,\ uint8\_t>)\ \{}
+\DoxyCodeLine{00320\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Direct\ drawing\ for\ uint8\_t\ canvas}}
+\DoxyCodeLine{00321\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ drawables[i]-\/>\doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a977a30e501e900c59c201eadcf5a766b}{draw}}(canvas);}
+\DoxyCodeLine{00322\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00323\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ For\ other\ pixel\ types,\ we\ need\ to\ create\ a\ temporary\ uint8\_t\ canvas}}
+\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ and\ then\ convert/copy\ to\ the\ target\ canvas}}
+\DoxyCodeLine{00325\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ This\ is\ a\ simplified\ approach\ -\/\ in\ practice\ you'd\ want\ a\ more\ efficient\ method}}
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_assert}(std::is\_same\_v<PixelType,\ uint8\_t>,\ }
+\DoxyCodeLine{00327\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Drawable\ components\ currently\ only\ support\ uint8\_t\ canvas.\ Use\ uint8\_t\ canvas\ or\ implement\ conversion."{}});}
+\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00330\ \ \ \ \ \}}
+\DoxyCodeLine{00331\ \};}
+\DoxyCodeLine{00332\ }
+\DoxyCodeLine{00333\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

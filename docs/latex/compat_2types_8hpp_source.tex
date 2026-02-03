@@ -1,0 +1,35 @@
+\doxysection{types.\+hpp}
+\hypertarget{compat_2types_8hpp_source}{}\label{compat_2types_8hpp_source}\index{include/enjin2/compat/types.hpp@{include/enjin2/compat/types.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ Migration\ support\ -\/\ deprecated\ after\ enjin1\ deletion}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}enjin2/core/types.hpp"{}}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }enjin\ \{}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{comment}{//\ Type\ aliases\ for\ enjin1\ compatibility}}
+\DoxyCodeLine{00010\ \textcolor{keyword}{using\ }Vector2\ =\ enjin2::Point;}
+\DoxyCodeLine{00011\ \textcolor{keyword}{using\ }Size\ =\ enjin2::Size;}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}\ \{}
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordtype}{float}\ x,\ y,\ z;}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00023\ \ \ \ \ \doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}()\ :\ x(0.0f),\ y(0.0f),\ z(0.0f)\ \{\}}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00031\ \ \ \ \ \doxymbox{\hyperlink{structenjin_1_1Vector3_a7bd991a97860a23951ddda2722e19f29}{Vector3}}(\textcolor{keywordtype}{float}\ x\_,\ \textcolor{keywordtype}{float}\ y\_,\ \textcolor{keywordtype}{float}\ z\_)\ :\ x(x\_),\ y(y\_),\ z(z\_)\ \{\}}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00034\ \ \ \ \ \doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}\ \doxymbox{\hyperlink{structenjin_1_1Vector3_ad19117d7ebf6830294e8621fcdac9cff}{operator+}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}\&\ other)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}(x\ +\ other.x,\ y\ +\ other.y,\ z\ +\ other.z);}
+\DoxyCodeLine{00036\ \ \ \ \ \}}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00039\ \ \ \ \ \doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}\ \doxymbox{\hyperlink{structenjin_1_1Vector3_ab0c117879b36be8aea1b7c4360968939}{operator-\/}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}\&\ other)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin_1_1Vector3_a756fe0de4b34a789fdfe782f9c29aa2b}{Vector3}}(x\ -\/\ other.x,\ y\ -\/\ other.y,\ z\ -\/\ other.z);}
+\DoxyCodeLine{00041\ \ \ \ \ \}}
+\DoxyCodeLine{00042\ \};}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \}\ \textcolor{comment}{//\ namespace\ enjin}}
+
+\end{DoxyCode}

@@ -1,0 +1,165 @@
+\doxysection{enjin2::\+Animation\+Component Struct Reference}
+\hypertarget{structenjin2_1_1AnimationComponent}{}\label{structenjin2_1_1AnimationComponent}\index{enjin2::AnimationComponent@{enjin2::AnimationComponent}}
+
+
+Animation component for time-\/based property changes.  
+
+
+
+
+{\ttfamily \+\#include $<$components.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{structenjin2_1_1AnimationComponent_a10116c395b6f0513007bd2212ea6d09e}{Animation\+Component}} (float dur=1.\+0f, bool loop=false, bool pp=false, float spd=1.\+0f)
+\begin{DoxyCompactList}\small\item\em Constructor with animation parameters. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_a86a5a6c51b7ccba2ac174a415a026023}\label{structenjin2_1_1AnimationComponent_a86a5a6c51b7ccba2ac174a415a026023} 
+void {\bfseries play} ()
+\begin{DoxyCompactList}\small\item\em Start animation playback. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_aeafa4fd7f22ddc66f8b67ce223a40ded}\label{structenjin2_1_1AnimationComponent_aeafa4fd7f22ddc66f8b67ce223a40ded} 
+void {\bfseries pause} ()
+\begin{DoxyCompactList}\small\item\em Pause animation playback. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_ab332e14f51b7afb750c9618fff25737a}\label{structenjin2_1_1AnimationComponent_ab332e14f51b7afb750c9618fff25737a} 
+void {\bfseries stop} ()
+\begin{DoxyCompactList}\small\item\em Stop and reset animation. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{structenjin2_1_1AnimationComponent_a3af8b2176ce1be2e2e401926b20022c6}{get\+Progress}} () const
+\begin{DoxyCompactList}\small\item\em Get normalized animation progress (0-\/1). \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{structenjin2_1_1AnimationComponent_a9f86ed96763172feef4d6dcfa9c2c051}{is\+Complete}} () const
+\begin{DoxyCompactList}\small\item\em Check if animation is complete. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Animation\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Update is called once per frame. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_aa28c763c9be97ec0bcfc7301aff0a6b3}\label{structenjin2_1_1AnimationComponent_aa28c763c9be97ec0bcfc7301aff0a6b3} 
+float {\bfseries duration}
+\begin{DoxyCompactList}\small\item\em Total animation duration in seconds. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_af86b691497d5a63771624aff7c156d56}\label{structenjin2_1_1AnimationComponent_af86b691497d5a63771624aff7c156d56} 
+float {\bfseries current\+Time}
+\begin{DoxyCompactList}\small\item\em Current animation time. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_af02462748d730336e9ba2d03a99c35ab}\label{structenjin2_1_1AnimationComponent_af02462748d730336e9ba2d03a99c35ab} 
+bool {\bfseries playing}
+\begin{DoxyCompactList}\small\item\em Animation playback state. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_afa18ee144e31d3fc4290cb7e95796ba7}\label{structenjin2_1_1AnimationComponent_afa18ee144e31d3fc4290cb7e95796ba7} 
+bool {\bfseries looping}
+\begin{DoxyCompactList}\small\item\em Whether animation should loop. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_a1549bb8af311020840a8762a3058b8c4}\label{structenjin2_1_1AnimationComponent_a1549bb8af311020840a8762a3058b8c4} 
+bool {\bfseries ping\+Pong}
+\begin{DoxyCompactList}\small\item\em Whether animation should ping-\/pong. \end{DoxyCompactList}\item 
+\Hypertarget{structenjin2_1_1AnimationComponent_a5237fc3a55130cb7e8d03ba7153de7b6}\label{structenjin2_1_1AnimationComponent_a5237fc3a55130cb7e8d03ba7153de7b6} 
+float {\bfseries speed}
+\begin{DoxyCompactList}\small\item\em Animation speed multiplier. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Animation\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ Animation\+Component $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Animation component for time-\/based property changes. 
+
+\label{doc-constructors}
+\Hypertarget{structenjin2_1_1AnimationComponent_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{structenjin2_1_1AnimationComponent_a10116c395b6f0513007bd2212ea6d09e}\index{enjin2::AnimationComponent@{enjin2::AnimationComponent}!AnimationComponent@{AnimationComponent}}
+\index{AnimationComponent@{AnimationComponent}!enjin2::AnimationComponent@{enjin2::AnimationComponent}}
+\doxysubsubsection{\texorpdfstring{AnimationComponent()}{AnimationComponent()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1AnimationComponent_a10116c395b6f0513007bd2212ea6d09e} 
+enjin2::\+\+Animation\+Component::\+\+Animation\+Component (\begin{DoxyParamCaption}\item[{float}]{dur}{ = {\ttfamily 1.0f}, }\item[{bool}]{loop}{ = {\ttfamily false}, }\item[{bool}]{pp}{ = {\ttfamily false}, }\item[{float}]{spd}{ = {\ttfamily 1.0f}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor with animation parameters. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em dur} & Duration in seconds \\
+\hline
+{\em loop} & Whether to loop \\
+\hline
+{\em pp} & Whether to ping-\/pong \\
+\hline
+{\em spd} & Speed multiplier \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{structenjin2_1_1AnimationComponent_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{structenjin2_1_1AnimationComponent_a3af8b2176ce1be2e2e401926b20022c6}\index{enjin2::AnimationComponent@{enjin2::AnimationComponent}!getProgress@{getProgress}}
+\index{getProgress@{getProgress}!enjin2::AnimationComponent@{enjin2::AnimationComponent}}
+\doxysubsubsection{\texorpdfstring{getProgress()}{getProgress()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1AnimationComponent_a3af8b2176ce1be2e2e401926b20022c6} 
+float enjin2::\+\+Animation\+Component::\+get\+Progress (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get normalized animation progress (0-\/1). 
+
+\begin{DoxyReturn}{Returns}
+Animation progress 
+\end{DoxyReturn}
+\Hypertarget{structenjin2_1_1AnimationComponent_a9f86ed96763172feef4d6dcfa9c2c051}\index{enjin2::AnimationComponent@{enjin2::AnimationComponent}!isComplete@{isComplete}}
+\index{isComplete@{isComplete}!enjin2::AnimationComponent@{enjin2::AnimationComponent}}
+\doxysubsubsection{\texorpdfstring{isComplete()}{isComplete()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1AnimationComponent_a9f86ed96763172feef4d6dcfa9c2c051} 
+bool enjin2::\+\+Animation\+Component::\+is\+Complete (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Check if animation is complete. 
+
+\begin{DoxyReturn}{Returns}
+true if animation finished 
+\end{DoxyReturn}
+
+
+The documentation for this struct was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+ui/\+components.\+hpp\end{DoxyCompactItemize}

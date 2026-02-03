@@ -1,0 +1,292 @@
+\doxysection{enjin2::\+Label Class Reference}
+\hypertarget{classenjin2_1_1Label}{}\label{classenjin2_1_1Label}\index{enjin2::Label@{enjin2::Label}}
+
+
+\doxylink{classenjin2_1_1Label}{Label} component for text display with word wrapping and styling.  
+
+
+
+
+{\ttfamily \+\#include $<$label.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Label_a0086cfd740cb8aba7341902b7ecce2ff}{Label}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint16\+\_\+t w, uint16\+\_\+t h, const \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}} \texorpdfstring{$\ast$}{*}text\+Font=nullptr, uint8\+\_\+t font\+Size=1, uint8\+\_\+t text\+Color=14, uint8\+\_\+t background\+Color=0, uint8\+\_\+t pointer\+Height=0)
+\begin{DoxyCompactList}\small\item\em Construct a new \doxylink{classenjin2_1_1Label}{Label} component. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_a9242e00b2f9dada3bc4aa37eb2fcad88}{draw}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&canvas)
+\begin{DoxyCompactList}\small\item\em Draw the label to the canvas. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_a01c70bff0c62f67478f445e7bf03e32d}{set\+Text}} (const std::\+string \&new\+Text)
+\begin{DoxyCompactList}\small\item\em Set the label text. \end{DoxyCompactList}\item 
+const std::\+string \& \doxymbox{\hyperlink{classenjin2_1_1Label_a3ed9aea0acbb985e13d1fbe5399537c1}{get\+Text}} () const
+\begin{DoxyCompactList}\small\item\em Get the current text. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_a0306f5c4c4e9cb47e8d2ceed88692126}{set\+Text\+Color}} (uint8\+\_\+t color)
+\begin{DoxyCompactList}\small\item\em Set text color. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_aadd53e2c2b8643a42697e149cb2bb7a5}{set\+Background\+Color}} (uint8\+\_\+t color)
+\begin{DoxyCompactList}\small\item\em Set background color. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_afb471ff3ae5fe0afd61739f2553036fd}{set\+Alignment}} (Label\+Align align)
+\begin{DoxyCompactList}\small\item\em Set text alignment. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_a09d155595581129098bcf4d7e7590de4}{set\+Margins}} (int16\+\_\+t left, int16\+\_\+t right=-\/1)
+\begin{DoxyCompactList}\small\item\em Set margins. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_ad63fde7f72755f7f7ffc2bfafd8357c7}{set\+Word\+Wrap}} (bool wrap)
+\begin{DoxyCompactList}\small\item\em Enable or disable word wrapping. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_a723f9b0f235502ee7e536cac619a45d9}{set\+Font\+Size}} (uint8\+\_\+t size)
+\begin{DoxyCompactList}\small\item\em Set font size. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Label_accb45b6bef9cd73ca8fc56a14a6ab0c7}{set\+Pointer\+Height}} (uint8\+\_\+t height)
+\begin{DoxyCompactList}\small\item\em Set pointer height for tooltip-\/style labels. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classenjin2_1_1Component_a6d4f9f702557426886dc50d3d5e3331c}{get\+Owner}} () const
+\begin{DoxyCompactList}\small\item\em Get the owner object. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}} () const
+\begin{DoxyCompactList}\small\item\em Check if component is enabled. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1Component_a0c8125a4ab80389db2af0e6622232192}{set\+Enabled}} (bool \doxymbox{\hyperlink{classenjin2_1_1Component_a9816f093b126432025a7e0316b34ff6a}{is\+Enabled}})
+\begin{DoxyCompactList}\small\item\em Set component enabled state. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}} ()
+\begin{DoxyCompactList}\small\item\em Awake is called when the component is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}} ()
+\begin{DoxyCompactList}\small\item\em Start is called before the first frame update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Update is called once per frame. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{late\+Update}} (uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Late\+Update is called after all Update calls. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Enable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is enabled. \end{DoxyCompactList}\item 
+virtual void {\bfseries on\+Disable} ()
+\begin{DoxyCompactList}\small\item\em Called when component is disabled. \end{DoxyCompactList}\item 
+Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a2542f0111173bdf8f404dfd6e0a07a2a}{get\+Component\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get component type ID for this component type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+Component\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be39433d5c00403dcf62dce}{get\+Static\+Component\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ComponentBase}{enjin2::\+\+Component\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1ComponentBase_ae8187503597fb93c67ed6f536fabafe4}{get\+Component\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique component type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::\+\+Component$<$ T $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*} {\bfseries owner}
+\begin{DoxyCompactList}\small\item\em The object that owns this component. \end{DoxyCompactList}\item 
+bool {\bfseries enabled}
+\begin{DoxyCompactList}\small\item\em Whether the component is enabled. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{classenjin2_1_1Label}{Label} component for text display with word wrapping and styling. 
+
+A versatile text display component that supports:\+
+\begin{DoxyItemize}
+\item Custom fonts (GFX-\/style fonts)
+\item Text wrapping and alignment
+\item Background colors and borders
+\item Tooltip-\/style pointers
+\item Opacity/\+blend modes 
+\end{DoxyItemize}
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1Label_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1Label_a0086cfd740cb8aba7341902b7ecce2ff}\index{enjin2::Label@{enjin2::Label}!Label@{Label}}
+\index{Label@{Label}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{Label()}{Label()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_a0086cfd740cb8aba7341902b7ecce2ff} 
+enjin2::\+\+Label::\+\+Label (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{uint16\+\_\+t}]{w}{, }\item[{uint16\+\_\+t}]{h}{, }\item[{const \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}} \texorpdfstring{$\ast$}{*}}]{text\+Font}{ = {\ttfamily nullptr}, }\item[{uint8\+\_\+t}]{font\+Size}{ = {\ttfamily 1}, }\item[{uint8\+\_\+t}]{text\+Color}{ = {\ttfamily 14}, }\item[{uint8\+\_\+t}]{background\+Color}{ = {\ttfamily 0}, }\item[{uint8\+\_\+t}]{pointer\+Height}{ = {\ttfamily 0}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Construct a new \doxylink{classenjin2_1_1Label}{Label} component. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}} & The object that owns this component \\
+\hline
+{\em w} & Width of the label in pixels \\
+\hline
+{\em h} & Height of the label in pixels \\
+\hline
+{\em text\+Font} & Font to use (nullptr for default) \\
+\hline
+{\em font\+Size} & Font size multiplier \\
+\hline
+{\em text\+Color} & Text color (0-\/15 for 4-\/bit grayscale) \\
+\hline
+{\em background\+Color} & Background color (0 for transparent) \\
+\hline
+{\em pointer\+Height} & Height of tooltip pointer (0 for no pointer) \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1Label_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1Label_a9242e00b2f9dada3bc4aa37eb2fcad88}\index{enjin2::Label@{enjin2::Label}!draw@{draw}}
+\index{draw@{draw}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{draw()}{draw()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_a9242e00b2f9dada3bc4aa37eb2fcad88} 
+void enjin2::\+\+Label::\+draw (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&}]{canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Draw the label to the canvas. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & The canvas to draw to \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_a3ed9aea0acbb985e13d1fbe5399537c1}\index{enjin2::Label@{enjin2::Label}!getText@{getText}}
+\index{getText@{getText}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{getText()}{getText()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_a3ed9aea0acbb985e13d1fbe5399537c1} 
+const std::\+string \& enjin2::\+\+Label::\+get\+Text (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get the current text. 
+
+\begin{DoxyReturn}{Returns}
+Current text string 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1Label_afb471ff3ae5fe0afd61739f2553036fd}\index{enjin2::Label@{enjin2::Label}!setAlignment@{setAlignment}}
+\index{setAlignment@{setAlignment}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setAlignment()}{setAlignment()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_afb471ff3ae5fe0afd61739f2553036fd} 
+void enjin2::\+\+Label::\+set\+Alignment (\begin{DoxyParamCaption}\item[{Label\+Align}]{align}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set text alignment. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em align} & Text alignment mode \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_aadd53e2c2b8643a42697e149cb2bb7a5}\index{enjin2::Label@{enjin2::Label}!setBackgroundColor@{setBackgroundColor}}
+\index{setBackgroundColor@{setBackgroundColor}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setBackgroundColor()}{setBackgroundColor()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_aadd53e2c2b8643a42697e149cb2bb7a5} 
+void enjin2::\+\+Label::\+set\+Background\+Color (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{color}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set background color. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em color} & Background color (0 for transparent) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_a723f9b0f235502ee7e536cac619a45d9}\index{enjin2::Label@{enjin2::Label}!setFontSize@{setFontSize}}
+\index{setFontSize@{setFontSize}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setFontSize()}{setFontSize()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_a723f9b0f235502ee7e536cac619a45d9} 
+void enjin2::\+\+Label::\+set\+Font\+Size (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set font size. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em size} & Font size multiplier (1 = normal, 2 = double, etc.) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_a09d155595581129098bcf4d7e7590de4}\index{enjin2::Label@{enjin2::Label}!setMargins@{setMargins}}
+\index{setMargins@{setMargins}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setMargins()}{setMargins()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_a09d155595581129098bcf4d7e7590de4} 
+void enjin2::\+\+Label::\+set\+Margins (\begin{DoxyParamCaption}\item[{int16\+\_\+t}]{left}{, }\item[{int16\+\_\+t}]{right}{ = {\ttfamily -\/1}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set margins. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em left} & Left margin in pixels \\
+\hline
+{\em right} & Right margin in pixels (defaults to left margin) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_accb45b6bef9cd73ca8fc56a14a6ab0c7}\index{enjin2::Label@{enjin2::Label}!setPointerHeight@{setPointerHeight}}
+\index{setPointerHeight@{setPointerHeight}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setPointerHeight()}{setPointerHeight()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_accb45b6bef9cd73ca8fc56a14a6ab0c7} 
+void enjin2::\+\+Label::\+set\+Pointer\+Height (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{height}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set pointer height for tooltip-\/style labels. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em height} & Height of pointer in pixels (0 for no pointer) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_a01c70bff0c62f67478f445e7bf03e32d}\index{enjin2::Label@{enjin2::Label}!setText@{setText}}
+\index{setText@{setText}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setText()}{setText()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_a01c70bff0c62f67478f445e7bf03e32d} 
+void enjin2::\+\+Label::\+set\+Text (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{new\+Text}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set the label text. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em new\+Text} & Text to display \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_a0306f5c4c4e9cb47e8d2ceed88692126}\index{enjin2::Label@{enjin2::Label}!setTextColor@{setTextColor}}
+\index{setTextColor@{setTextColor}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setTextColor()}{setTextColor()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_a0306f5c4c4e9cb47e8d2ceed88692126} 
+void enjin2::\+\+Label::\+set\+Text\+Color (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{color}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Set text color. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em color} & New text color (0-\/15) \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1Label_ad63fde7f72755f7f7ffc2bfafd8357c7}\index{enjin2::Label@{enjin2::Label}!setWordWrap@{setWordWrap}}
+\index{setWordWrap@{setWordWrap}!enjin2::Label@{enjin2::Label}}
+\doxysubsubsection{\texorpdfstring{setWordWrap()}{setWordWrap()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Label_ad63fde7f72755f7f7ffc2bfafd8357c7} 
+void enjin2::\+\+Label::\+set\+Word\+Wrap (\begin{DoxyParamCaption}\item[{bool}]{wrap}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Enable or disable word wrapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em wrap} & True to enable word wrapping \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+components/\+label.\+hpp\end{DoxyCompactItemize}

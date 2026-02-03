@@ -1,0 +1,175 @@
+\doxysection{enjin2::\+IScene\texorpdfstring{$<$}{<} Pixel\+Type \texorpdfstring{$>$}{>} Class Template Reference}
+\hypertarget{classenjin2_1_1IScene}{}\label{classenjin2_1_1IScene}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+
+
+Abstract scene interface for scene lifecycle.  
+
+
+
+
+{\ttfamily \+\#include $<$iscene.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1IScene_ac48cfb8573ae799640113b67a2d450e0}\label{classenjin2_1_1IScene_ac48cfb8573ae799640113b67a2d450e0} 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+IScene} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor for proper cleanup through base pointer. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene_a7fa02e77ba845c340a124a16be334ef2}{on\+Create}} ()=0
+\begin{DoxyCompactList}\small\item\em Called when scene is created. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene_a258a64e8cd400b4d12976cf52bf627d9}{on\+Activate}} ()=0
+\begin{DoxyCompactList}\small\item\em Called when scene becomes active. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene_ab19c0cf8faee77ac32c74ba33c2ac477}{on\+Deactivate}} ()=0
+\begin{DoxyCompactList}\small\item\em Called when scene becomes inactive. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene_a886a56aad0c2f8f64806cef793163b31}{on\+Destroy}} ()=0
+\begin{DoxyCompactList}\small\item\em Called when scene is destroyed. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene_a179a5627b86457ba4c759498563e3f67}{on\+Update}} (uint16\+\_\+t delta\+Time)=0
+\begin{DoxyCompactList}\small\item\em Called every frame during update. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene_a50889566883d6e574757fb79ded3659c}{on\+Render}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ Pixel\+Type $>$ \&canvas)=0
+\begin{DoxyCompactList}\small\item\em Called during rendering. \end{DoxyCompactList}\item 
+virtual uint32\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1IScene_ab5b3b11d14b9d26eac394d9b700d07f9}{get\+Id}} () const =0
+\begin{DoxyCompactList}\small\item\em Get scene ID. \end{DoxyCompactList}\item 
+virtual bool \doxymbox{\hyperlink{classenjin2_1_1IScene_a327631c5bfd9f195c6d0994cd7309b77}{is\+Active}} () const =0
+\begin{DoxyCompactList}\small\item\em Check if scene is active. \end{DoxyCompactList}\item 
+virtual bool \doxymbox{\hyperlink{classenjin2_1_1IScene_a423f16e405b8f8b85200fbd36d506df3}{is\+Initialized}} () const =0
+\begin{DoxyCompactList}\small\item\em Check if scene is initialized. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename Pixel\+Type$>$\newline
+class enjin2::\+\+IScene$<$ Pixel\+Type $>$}
+Abstract scene interface for scene lifecycle. 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em Pixel\+Type} & Pixel type for rendering (e.\+g., \doxylink{structenjin2_1_1Pixel4}{Pixel4}, uint8\+\_\+t)\\
+\hline
+\end{DoxyTemplParams}
+Both enjin1 and enjin2 can implement this interface for compile-\/time polymorphism. Provides standard scene lifecycle methods (on\+Create, on\+Update, on\+Render, etc.). 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1IScene_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1IScene_ab5b3b11d14b9d26eac394d9b700d07f9}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!getId@{getId}}
+\index{getId@{getId}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{getId()}{getId()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_ab5b3b11d14b9d26eac394d9b700d07f9} 
+template$<$typename Pixel\+Type$>$ \\
+virtual uint32\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+get\+Id (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Get scene ID. 
+
+\begin{DoxyReturn}{Returns}
+\doxylink{classenjin2_1_1Scene}{Scene} identifier 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1IScene_a327631c5bfd9f195c6d0994cd7309b77}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!isActive@{isActive}}
+\index{isActive@{isActive}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{isActive()}{isActive()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_a327631c5bfd9f195c6d0994cd7309b77} 
+template$<$typename Pixel\+Type$>$ \\
+virtual bool \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+is\+Active (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Check if scene is active. 
+
+\begin{DoxyReturn}{Returns}
+True if scene is active 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1IScene_a423f16e405b8f8b85200fbd36d506df3}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!isInitialized@{isInitialized}}
+\index{isInitialized@{isInitialized}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{isInitialized()}{isInitialized()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_a423f16e405b8f8b85200fbd36d506df3} 
+template$<$typename Pixel\+Type$>$ \\
+virtual bool \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+is\+Initialized (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Check if scene is initialized. 
+
+\begin{DoxyReturn}{Returns}
+True if scene is initialized 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1IScene_a258a64e8cd400b4d12976cf52bf627d9}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!onActivate@{onActivate}}
+\index{onActivate@{onActivate}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{onActivate()}{onActivate()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_a258a64e8cd400b4d12976cf52bf627d9} 
+template$<$typename Pixel\+Type$>$ \\
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+on\+Activate (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Called when scene becomes active. 
+
+Called when the scene becomes the active scene. Use this to resume animations, start background processes, etc. \Hypertarget{classenjin2_1_1IScene_a7fa02e77ba845c340a124a16be334ef2}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!onCreate@{onCreate}}
+\index{onCreate@{onCreate}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{onCreate()}{onCreate()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_a7fa02e77ba845c340a124a16be334ef2} 
+template$<$typename Pixel\+Type$>$ \\
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+on\+Create (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Called when scene is created. 
+
+Called once when the scene is first created. Override to set up initial objects and state. \Hypertarget{classenjin2_1_1IScene_ab19c0cf8faee77ac32c74ba33c2ac477}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!onDeactivate@{onDeactivate}}
+\index{onDeactivate@{onDeactivate}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{onDeactivate()}{onDeactivate()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_ab19c0cf8faee77ac32c74ba33c2ac477} 
+template$<$typename Pixel\+Type$>$ \\
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+on\+Deactivate (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Called when scene becomes inactive. 
+
+Called when the scene is no longer active. Use this to pause animations, stop background processes, etc. \Hypertarget{classenjin2_1_1IScene_a886a56aad0c2f8f64806cef793163b31}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!onDestroy@{onDestroy}}
+\index{onDestroy@{onDestroy}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{onDestroy()}{onDestroy()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_a886a56aad0c2f8f64806cef793163b31} 
+template$<$typename Pixel\+Type$>$ \\
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+on\+Destroy (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Called when scene is destroyed. 
+
+Use this to clean up scene-\/specific resources. \Hypertarget{classenjin2_1_1IScene_a50889566883d6e574757fb79ded3659c}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!onRender@{onRender}}
+\index{onRender@{onRender}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{onRender()}{onRender()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_a50889566883d6e574757fb79ded3659c} 
+template$<$typename Pixel\+Type$>$ \\
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+on\+Render (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ Pixel\+Type $>$ \&}]{canvas}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Called during rendering. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Target canvas for rendering\\
+\hline
+\end{DoxyParams}
+Use this for scene-\/specific rendering like backgrounds or UI overlays. \Hypertarget{classenjin2_1_1IScene_a179a5627b86457ba4c759498563e3f67}\index{enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}!onUpdate@{onUpdate}}
+\index{onUpdate@{onUpdate}!enjin2::IScene$<$ PixelType $>$@{enjin2::IScene$<$ PixelType $>$}}
+\doxysubsubsection{\texorpdfstring{onUpdate()}{onUpdate()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1IScene_a179a5627b86457ba4c759498563e3f67} 
+template$<$typename Pixel\+Type$>$ \\
+virtual void \doxymbox{\hyperlink{classenjin2_1_1IScene}{enjin2::\+\+IScene}}$<$ Pixel\+Type $>$::\+on\+Update (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Called every frame during update. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last frame in milliseconds\\
+\hline
+\end{DoxyParams}
+Use this for scene-\/specific update logic that should happen before object updates. 
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+abstract/\+iscene.\+hpp\end{DoxyCompactItemize}

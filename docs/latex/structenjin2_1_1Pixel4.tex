@@ -1,0 +1,113 @@
+\doxysection{enjin2::\+Pixel4 Struct Reference}
+\hypertarget{structenjin2_1_1Pixel4}{}\label{structenjin2_1_1Pixel4}\index{enjin2::Pixel4@{enjin2::Pixel4}}
+
+
+4-\/bit pixel type for memory-\/efficient graphics  
+
+
+
+
+{\ttfamily \+\#include $<$types.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structenjin2_1_1Pixel4_ae675f7ac9a9bb3940952d91e3475b758}\label{structenjin2_1_1Pixel4_ae675f7ac9a9bb3940952d91e3475b758} 
+constexpr {\bfseries Pixel4} ()
+\begin{DoxyCompactList}\small\item\em Default constructor initializes to black (value 0). \end{DoxyCompactList}\item 
+constexpr \doxymbox{\hyperlink{structenjin2_1_1Pixel4_a7f4d62657cfa467ec1c6e75b517d1637}{Pixel4}} (uint8\+\_\+t v)
+\begin{DoxyCompactList}\small\item\em Constructor from 8-\/bit value. \end{DoxyCompactList}\item 
+constexpr \doxymbox{\hyperlink{structenjin2_1_1Pixel4_afad175fc3b9dd537b57a2032e605ce82}{operator uint8\+\_\+t}} () const
+\begin{DoxyCompactList}\small\item\em Implicit conversion to uint8\+\_\+t. \end{DoxyCompactList}\item 
+constexpr uint8\+\_\+t \doxymbox{\hyperlink{structenjin2_1_1Pixel4_a306d044b638261c190c8b094d67ceb8e}{to8bit}} () const
+\begin{DoxyCompactList}\small\item\em Convert to 8-\/bit grayscale value. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static constexpr \doxymbox{\hyperlink{structenjin2_1_1Pixel4_ae675f7ac9a9bb3940952d91e3475b758}{Pixel4}} \doxymbox{\hyperlink{structenjin2_1_1Pixel4_aaef019480a38f011575946342f770ad2}{from8bit}} (uint8\+\_\+t gray)
+\begin{DoxyCompactList}\small\item\em Create \doxylink{structenjin2_1_1Pixel4}{Pixel4} from 8-\/bit grayscale value. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}\label{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528} 
+uint8\+\_\+t {\bfseries value}:\+ 4
+\begin{DoxyCompactList}\small\item\em 4-\/bit pixel value (0-\/15) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+4-\/bit pixel type for memory-\/efficient graphics 
+
+Represents a pixel value in the range 0-\/15, using only 4 bits of storage. Provides automatic conversion to/\+from 8-\/bit values for compatibility. 
+
+\label{doc-constructors}
+\Hypertarget{structenjin2_1_1Pixel4_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{structenjin2_1_1Pixel4_a7f4d62657cfa467ec1c6e75b517d1637}\index{enjin2::Pixel4@{enjin2::Pixel4}!Pixel4@{Pixel4}}
+\index{Pixel4@{Pixel4}!enjin2::Pixel4@{enjin2::Pixel4}}
+\doxysubsubsection{\texorpdfstring{Pixel4()}{Pixel4()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1Pixel4_a7f4d62657cfa467ec1c6e75b517d1637} 
+enjin2::\+\+Pixel4::\+\+Pixel4 (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{v}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [constexpr]}}
+
+
+
+Constructor from 8-\/bit value. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em v} & Value to convert, automatically clamped to 4-\/bit range \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{structenjin2_1_1Pixel4_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{structenjin2_1_1Pixel4_aaef019480a38f011575946342f770ad2}\index{enjin2::Pixel4@{enjin2::Pixel4}!from8bit@{from8bit}}
+\index{from8bit@{from8bit}!enjin2::Pixel4@{enjin2::Pixel4}}
+\doxysubsubsection{\texorpdfstring{from8bit()}{from8bit()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1Pixel4_aaef019480a38f011575946342f770ad2} 
+constexpr \doxymbox{\hyperlink{structenjin2_1_1Pixel4_ae675f7ac9a9bb3940952d91e3475b758}{Pixel4}} enjin2::\+\+Pixel4::\+from8bit (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{gray}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}, {\ttfamily [constexpr]}}
+
+
+
+Create \doxylink{structenjin2_1_1Pixel4}{Pixel4} from 8-\/bit grayscale value. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em gray} & 8-\/bit grayscale value (0-\/255) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{structenjin2_1_1Pixel4}{Pixel4} with equivalent 4-\/bit value 
+\end{DoxyReturn}
+\Hypertarget{structenjin2_1_1Pixel4_afad175fc3b9dd537b57a2032e605ce82}\index{enjin2::Pixel4@{enjin2::Pixel4}!operator uint8\_t@{operator uint8\_t}}
+\index{operator uint8\_t@{operator uint8\_t}!enjin2::Pixel4@{enjin2::Pixel4}}
+\doxysubsubsection{\texorpdfstring{operator uint8\_t()}{operator uint8\_t()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1Pixel4_afad175fc3b9dd537b57a2032e605ce82} 
+enjin2::\+\+Pixel4::\+operator uint8\+\_\+t (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [constexpr]}}
+
+
+
+Implicit conversion to uint8\+\_\+t. 
+
+\begin{DoxyReturn}{Returns}
+4-\/bit value as uint8\+\_\+t 
+\end{DoxyReturn}
+\Hypertarget{structenjin2_1_1Pixel4_a306d044b638261c190c8b094d67ceb8e}\index{enjin2::Pixel4@{enjin2::Pixel4}!to8bit@{to8bit}}
+\index{to8bit@{to8bit}!enjin2::Pixel4@{enjin2::Pixel4}}
+\doxysubsubsection{\texorpdfstring{to8bit()}{to8bit()}}
+{\footnotesize\ttfamily \label{structenjin2_1_1Pixel4_a306d044b638261c190c8b094d67ceb8e} 
+uint8\+\_\+t enjin2::\+\+Pixel4::\+to8bit (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [constexpr]}}
+
+
+
+Convert to 8-\/bit grayscale value. 
+
+\begin{DoxyReturn}{Returns}
+8-\/bit equivalent (0-\/255 range) 
+\end{DoxyReturn}
+
+
+The documentation for this struct was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+core/\+types.\+hpp\end{DoxyCompactItemize}

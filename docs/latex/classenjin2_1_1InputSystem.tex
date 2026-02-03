@@ -1,0 +1,144 @@
+\doxysection{enjin2::\+Input\+System Class Reference}
+\hypertarget{classenjin2_1_1InputSystem}{}\label{classenjin2_1_1InputSystem}\index{enjin2::InputSystem@{enjin2::InputSystem}}
+
+
+Input system for handling user interaction.  
+
+
+
+
+{\ttfamily \+\#include $<$systems.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1InputSystem_a4bd42fb9464ffc2ab99dec0b7ec0d857}\label{classenjin2_1_1InputSystem_a4bd42fb9464ffc2ab99dec0b7ec0d857} 
+{\bfseries Input\+System} ()
+\begin{DoxyCompactList}\small\item\em Constructor initializes input state. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1InputSystem_a91423ea26f50245ea88e8484631a2c4f}{update}} (float delta\+Time) override
+\begin{DoxyCompactList}\small\item\em Update input processing. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1InputSystem_ad8373fa956285d92da62c05a987ceab8}{on\+Mouse\+Move}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pos)
+\begin{DoxyCompactList}\small\item\em \doxylink{structenjin2_1_1Handle}{Handle} mouse move event. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1InputSystem_aba8c9397c0eaae2941306ee276517c3c}{on\+Mouse\+Press}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pos)
+\begin{DoxyCompactList}\small\item\em \doxylink{structenjin2_1_1Handle}{Handle} mouse button press. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1InputSystem_aa6fdb452365986142a02be7e32e33815}{on\+Mouse\+Release}} (\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}} pos)
+\begin{DoxyCompactList}\small\item\em \doxylink{structenjin2_1_1Handle}{Handle} mouse button release. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{classenjin2_1_1InputSystem_a450fa82273eff09d5921fbeec2501802}{get\+Priority}} () const override
+\begin{DoxyCompactList}\small\item\em Get system priority (input should run first). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1System}{enjin2::\+\+System$<$ Input\+System $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+System\+ID \doxymbox{\hyperlink{classenjin2_1_1System_a4b181b72e69a9f4e0805a39352a0b9ba}{get\+System\+ID}} () const override
+\begin{DoxyCompactList}\small\item\em Get system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1SystemBase}{enjin2::\+\+System\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+System\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1System}{enjin2::\+\+System$<$ Input\+System $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static System\+ID \doxymbox{\hyperlink{classenjin2_1_1System_a9d6a24f7c9f780b416708725fff803ca}{get\+Static\+System\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Get static system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1SystemBase}{enjin2::\+\+System\+Base}}}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static System\+ID \doxymbox{\hyperlink{classenjin2_1_1SystemBase_ad58d4bd01a7008a96133a6629637e47c}{get\+System\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Input system for handling user interaction. 
+
+Processes input events and updates \doxylink{structenjin2_1_1InputComponent}{Input\+Component} states. Handles hit testing against entity bounds. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1InputSystem_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1InputSystem_a450fa82273eff09d5921fbeec2501802}\index{enjin2::InputSystem@{enjin2::InputSystem}!getPriority@{getPriority}}
+\index{getPriority@{getPriority}!enjin2::InputSystem@{enjin2::InputSystem}}
+\doxysubsubsection{\texorpdfstring{getPriority()}{getPriority()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1InputSystem_a450fa82273eff09d5921fbeec2501802} 
+int enjin2::\+\+Input\+System::\+get\+Priority (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Get system priority (input should run first). 
+
+\begin{DoxyReturn}{Returns}
+Priority value 
+\end{DoxyReturn}
+
+
+Reimplemented from \doxymbox{\hyperlink{classenjin2_1_1SystemBase_a0c748a49a94bba88a17945760790f15b}{enjin2::\+\+System\+Base}}.
+
+\Hypertarget{classenjin2_1_1InputSystem_ad8373fa956285d92da62c05a987ceab8}\index{enjin2::InputSystem@{enjin2::InputSystem}!onMouseMove@{onMouseMove}}
+\index{onMouseMove@{onMouseMove}!enjin2::InputSystem@{enjin2::InputSystem}}
+\doxysubsubsection{\texorpdfstring{onMouseMove()}{onMouseMove()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1InputSystem_ad8373fa956285d92da62c05a987ceab8} 
+void enjin2::\+\+Input\+System::\+on\+Mouse\+Move (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pos}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxylink{structenjin2_1_1Handle}{Handle} mouse move event. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & New mouse position \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1InputSystem_aba8c9397c0eaae2941306ee276517c3c}\index{enjin2::InputSystem@{enjin2::InputSystem}!onMousePress@{onMousePress}}
+\index{onMousePress@{onMousePress}!enjin2::InputSystem@{enjin2::InputSystem}}
+\doxysubsubsection{\texorpdfstring{onMousePress()}{onMousePress()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1InputSystem_aba8c9397c0eaae2941306ee276517c3c} 
+void enjin2::\+\+Input\+System::\+on\+Mouse\+Press (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pos}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxylink{structenjin2_1_1Handle}{Handle} mouse button press. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & Mouse position \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1InputSystem_aa6fdb452365986142a02be7e32e33815}\index{enjin2::InputSystem@{enjin2::InputSystem}!onMouseRelease@{onMouseRelease}}
+\index{onMouseRelease@{onMouseRelease}!enjin2::InputSystem@{enjin2::InputSystem}}
+\doxysubsubsection{\texorpdfstring{onMouseRelease()}{onMouseRelease()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1InputSystem_aa6fdb452365986142a02be7e32e33815} 
+void enjin2::\+\+Input\+System::\+on\+Mouse\+Release (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}}]{pos}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxylink{structenjin2_1_1Handle}{Handle} mouse button release. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & Mouse position \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classenjin2_1_1InputSystem_a91423ea26f50245ea88e8484631a2c4f}\index{enjin2::InputSystem@{enjin2::InputSystem}!update@{update}}
+\index{update@{update}!enjin2::InputSystem@{enjin2::InputSystem}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1InputSystem_a91423ea26f50245ea88e8484631a2c4f} 
+void enjin2::\+\+Input\+System::\+update (\begin{DoxyParamCaption}\item[{float}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Update input processing. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last update \\
+\hline
+\end{DoxyParams}
+
+
+Implements \doxymbox{\hyperlink{classenjin2_1_1SystemBase_af634eed7c5580169a826b1bd5e39d452}{enjin2::\+\+System\+Base}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+ui/\+systems.\+hpp\end{DoxyCompactItemize}

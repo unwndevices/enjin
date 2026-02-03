@@ -1,0 +1,83 @@
+\doxysection{image\+\_\+cache.\+hpp}
+\hypertarget{image__cache_8hpp_source}{}\label{image__cache_8hpp_source}\index{include/enjin2/components/image\_cache.hpp@{include/enjin2/components/image\_cache.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/component.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{comment}{//\ Forward\ declarations}}
+\DoxyCodeLine{00011\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}};}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1FileInterface}{FileInterface}}\ \{}
+\DoxyCodeLine{00020\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keyword}{virtual}\ \doxymbox{\hyperlink{classenjin2_1_1FileInterface}{\string~FileInterface}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{bool}\ open()\ =\ 0;}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ close()\ =\ 0;}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{size\_t}\ read(uint8\_t*\ buffer,\ \textcolor{keywordtype}{size\_t}\ length)\ =\ 0;}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{bool}\ seek(\textcolor{keywordtype}{size\_t}\ position)\ =\ 0;}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{size\_t}\ size()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00027\ \};}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00032\ \textcolor{keyword}{struct\ }ImageEntry\ \{}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ad48677a3777743398405239a61dbb8ce}{offset}};\ \ \ \ \ \ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ac94ffcf481596c78d78245975fcd2636}{size}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ac422ad323306fb28b67e464b9a778f4f}{width}};\ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_a74782b8e5ecf87a238d06dc352a314fc}{height}};\ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ae0df2e1429369660bc5558d1cd1a603b}{frames}};\ \ \ \ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_a2fc66b448ab40ce6c9f79e3fb9b02380}{active}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00039\ \ \ \ \ }
+\DoxyCodeLine{00040\ \ \ \ \ ImageEntry()\ :\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ad48677a3777743398405239a61dbb8ce}{offset}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ac94ffcf481596c78d78245975fcd2636}{size}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ac422ad323306fb28b67e464b9a778f4f}{width}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_a74782b8e5ecf87a238d06dc352a314fc}{height}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_ae0df2e1429369660bc5558d1cd1a603b}{frames}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry_a2fc66b448ab40ce6c9f79e3fb9b02380}{active}}(false)\ \{\}}
+\DoxyCodeLine{00041\ \};}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00046\ \textcolor{keyword}{class\ }ImageCacheException\ :\ \textcolor{keyword}{public}\ std::runtime\_error\ \{}
+\DoxyCodeLine{00047\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keyword}{explicit}\ ImageCacheException(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ message)\ :\ std::runtime\_error(message)\ \{\}}
+\DoxyCodeLine{00049\ \};}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00058\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a3d25592f20acbc7a5d582d99aeeb4a01}{C\_ImageCache}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}\ \{}
+\DoxyCodeLine{00059\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a3f315e74bc17a4b1a9b1c2cdf0720a43}{CACHE\_SIZE}}\ =\ 32768;\ \ }
+\DoxyCodeLine{00061\ \ \ \ \ }
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keyword}{explicit}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a3d25592f20acbc7a5d582d99aeeb4a01}{C\_ImageCache}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}});}
+\DoxyCodeLine{00067\ \ \ \ \ }
+\DoxyCodeLine{00071\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a95629ba7974cddc0c19f70657f32bc9e}{\string~C\_ImageCache}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00072\ \ \ \ \ }
+\DoxyCodeLine{00073\ \ \ \ \ \textcolor{comment}{//\ Component\ interface}}
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_abc683626c67b9d9a2292888305dd420e}{awake}}()\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_aa53bcf95378948e062c4bcf8ca6c73de}{start}}()\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00076\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a674d80edeb11565a1be49d9c07582c9e}{update}}(uint16\_t\ deltaTime)\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00077\ \ \ \ \ }
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{comment}{//\ Static\ cache\ operations\ (matches\ original\ Enjin\ exactly)}}
+\DoxyCodeLine{00079\ \ \ \ \ }
+\DoxyCodeLine{00089\ \ \ \ \ \textcolor{keyword}{static}\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{ImageEntry}}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a41ecec056d48ce6b7255ff1bca9eb1d6}{AddImage}}(\doxymbox{\hyperlink{classenjin2_1_1FileInterface}{FileInterface}}\&\ file,\ uint16\_t\ width,\ uint16\_t\ height,\ uint16\_t\ frameCount);}
+\DoxyCodeLine{00090\ \ \ \ \ }
+\DoxyCodeLine{00096\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_af0cffe2b6d02293723215090fad3a9a9}{ReleaseEntry}}(\doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{ImageEntry}}\&\ entry);}
+\DoxyCodeLine{00097\ \ \ \ \ }
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{const}\ uint8\_t*\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_af1d4a7fbd3e53aec0f093a7333d5c74c}{GetImageData}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{ImageEntry}}\&\ entry,\ \textcolor{keywordtype}{size\_t}\ frameOffset\ =\ 0);}
+\DoxyCodeLine{00106\ \ \ \ \ }
+\DoxyCodeLine{00111\ \ \ \ \ \textcolor{keyword}{static}\ std::pair<size\_t,\ size\_t>\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_aa10e22e9004635991c1a2c3eacd6d016}{GetCacheStats}}();}
+\DoxyCodeLine{00112\ \ \ \ \ }
+\DoxyCodeLine{00116\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a0a31ecb43247b700e139c10e3dbea7b7}{ClearCache}}();}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00118\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{keyword}{static}\ uint8\_t\ textureCache[\doxymbox{\hyperlink{classenjin2_1_1C__ImageCache_a3f315e74bc17a4b1a9b1c2cdf0720a43}{CACHE\_SIZE}}];\ \ }
+\DoxyCodeLine{00120\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ initialized;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00121\ \ \ \ \ }
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{comment}{//\ Memory\ management}}
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{size\_t}\ FindFreeSpace(\textcolor{keywordtype}{size\_t}\ requiredSize);}
+\DoxyCodeLine{00124\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ ValidateImageParameters(uint16\_t\ width,\ uint16\_t\ height,\ uint16\_t\ frameCount,\ \textcolor{keywordtype}{size\_t}\ fileSize);}
+\DoxyCodeLine{00125\ \ \ \ \ }
+\DoxyCodeLine{00126\ \ \ \ \ \textcolor{comment}{//\ Utility\ functions}}
+\DoxyCodeLine{00127\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ SerialLog(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ message);}
+\DoxyCodeLine{00128\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ InitializeCache();}
+\DoxyCodeLine{00129\ \};}
+\DoxyCodeLine{00130\ }
+\DoxyCodeLine{00131\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

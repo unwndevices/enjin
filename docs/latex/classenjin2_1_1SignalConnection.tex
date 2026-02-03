@@ -1,0 +1,90 @@
+\doxysection{enjin2::\+Signal\+Connection\texorpdfstring{$<$}{<} Args \texorpdfstring{$>$}{>} Class Template Reference}
+\hypertarget{classenjin2_1_1SignalConnection}{}\label{classenjin2_1_1SignalConnection}\index{enjin2::SignalConnection$<$ Args $>$@{enjin2::SignalConnection$<$ Args $>$}}
+
+
+Auto-\/disconnecting signal connection.  
+
+
+
+
+{\ttfamily \+\#include $<$signal.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{Signal\+Connection}} (\doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal}}$<$ Args... $>$ \texorpdfstring{$\ast$}{*}sig, std::\+function$<$ void(Args...)$>$ callback)
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SignalConnection_acd495c7fe4b96acd4b945bfa14fa2e4e}\label{classenjin2_1_1SignalConnection_acd495c7fe4b96acd4b945bfa14fa2e4e} 
+{\bfseries Signal\+Connection} (Signal\+Connection \&\&other) noexcept
+\begin{DoxyCompactList}\small\item\em Move constructor. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SignalConnection_afc26882c8fcc1325b559d58d3a706c00}\label{classenjin2_1_1SignalConnection_afc26882c8fcc1325b559d58d3a706c00} 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{Signal\+Connection}} \& {\bfseries operator=} (\doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{Signal\+Connection}} \&\&other) noexcept
+\begin{DoxyCompactList}\small\item\em Move assignment. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SignalConnection_a00681bce736f1b0c493707e0b5545254}\label{classenjin2_1_1SignalConnection_a00681bce736f1b0c493707e0b5545254} 
+{\bfseries \texorpdfstring{$\sim$}{\string~}\+Signal\+Connection} ()
+\begin{DoxyCompactList}\small\item\em Destructor -\/ automatically disconnects. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SignalConnection_ad79706aaaf635a6b8f805fc04bf423ed}\label{classenjin2_1_1SignalConnection_ad79706aaaf635a6b8f805fc04bf423ed} 
+void {\bfseries disconnect} ()
+\begin{DoxyCompactList}\small\item\em Manually disconnect. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_a06e62a08983a5d677e71a3873bb9ab81}{is\+Connected}} () const
+\begin{DoxyCompactList}\small\item\em Check if connection is valid. \end{DoxyCompactList}\item 
+\Hypertarget{classenjin2_1_1SignalConnection_a8677a29509d1476e0c868f7a05a034e8}\label{classenjin2_1_1SignalConnection_a8677a29509d1476e0c868f7a05a034e8} 
+{\bfseries Signal\+Connection} (const Signal\+Connection \&)=delete
+\item 
+\Hypertarget{classenjin2_1_1SignalConnection_aad07f423fae789c933c86b0148e3a058}\label{classenjin2_1_1SignalConnection_aad07f423fae789c933c86b0148e3a058} 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{Signal\+Connection}} \& {\bfseries operator=} (const \doxymbox{\hyperlink{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}{Signal\+Connection}} \&)=delete
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename... Args$>$\newline
+class enjin2::\+\+Signal\+Connection$<$ Args $>$}
+Auto-\/disconnecting signal connection. 
+
+RAII wrapper that automatically disconnects when destroyed. 
+
+\label{doc-constructors}
+\Hypertarget{classenjin2_1_1SignalConnection_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba}\index{enjin2::SignalConnection$<$ Args $>$@{enjin2::SignalConnection$<$ Args $>$}!SignalConnection@{SignalConnection}}
+\index{SignalConnection@{SignalConnection}!enjin2::SignalConnection$<$ Args $>$@{enjin2::SignalConnection$<$ Args $>$}}
+\doxysubsubsection{\texorpdfstring{SignalConnection()}{SignalConnection()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SignalConnection_accd0db24b7bbb5ff69ec86b2a5c846ba} 
+template$<$typename... Args$>$ \\
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{enjin2::\+\+Signal\+Connection}}$<$ Args $>$::\+\+Signal\+Connection (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal}}$<$ Args... $>$ \texorpdfstring{$\ast$}{*}}]{sig}{, }\item[{std::\+function$<$ void(Args...)$>$}]{callback}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em sig} & \doxylink{classenjin2_1_1Signal}{Signal} to connect to \\
+\hline
+{\em callback} & Callback function \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1SignalConnection_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1SignalConnection_a06e62a08983a5d677e71a3873bb9ab81}\index{enjin2::SignalConnection$<$ Args $>$@{enjin2::SignalConnection$<$ Args $>$}!isConnected@{isConnected}}
+\index{isConnected@{isConnected}!enjin2::SignalConnection$<$ Args $>$@{enjin2::SignalConnection$<$ Args $>$}}
+\doxysubsubsection{\texorpdfstring{isConnected()}{isConnected()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SignalConnection_a06e62a08983a5d677e71a3873bb9ab81} 
+template$<$typename... Args$>$ \\
+bool \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{enjin2::\+\+Signal\+Connection}}$<$ Args $>$::\+is\+Connected (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Check if connection is valid. 
+
+\begin{DoxyReturn}{Returns}
+True if connected 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+core/\+signal.\+hpp\end{DoxyCompactItemize}

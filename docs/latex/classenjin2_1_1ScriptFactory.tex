@@ -1,0 +1,141 @@
+\doxysection{enjin2::\+Script\+Factory Class Reference}
+\hypertarget{classenjin2_1_1ScriptFactory}{}\label{classenjin2_1_1ScriptFactory}\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+
+
+Script system factory for creating platform-\/specific interpreters.  
+
+
+
+
+{\ttfamily \+\#include $<$script\+\_\+interface.\+hpp$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+enum class \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Interpreter\+Type}} \{ \newline
+\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aaec919e5a30bd32f192208193c88ed935}{LUA\+\_\+\+FULL}}
+, \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aac3a3e51c2d3c0908f4fdb4bbff2cba5b}{LUA\+\_\+\+MINIMAL}}
+, \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aa53c6c951f4e8b9dff2989655588a21b5}{JAVASCRIPT}}
+, \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aae0a0b6af89830221451566a9d57c5a6a}{MICROPYTHON}}
+, \newline
+\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aa1c76168facea208413c1718242b21540}{SIMPLE\+\_\+\+BASIC}}
+ \}
+\begin{DoxyCompactList}\small\item\em Interpreter type enum. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static std::\+unique\+\_\+ptr$<$ \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{IScript\+Interpreter}} $>$ \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_aa86ef71ea7c5ad79dc428105cf160736}{create\+Interpreter}} (\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Interpreter\+Type}} type)
+\begin{DoxyCompactList}\small\item\em Create interpreter for current platform. \end{DoxyCompactList}\item 
+static \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Interpreter\+Type}} \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a0b2d7dc268e4b3fc45f12bfdef65d7a9}{get\+Recommended\+Interpreter}} ()
+\begin{DoxyCompactList}\small\item\em Get recommended interpreter for current platform. \end{DoxyCompactList}\item 
+static bool \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a152edb40467ae4e0d5ce500f50cc6923}{is\+Interpreter\+Available}} (\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Interpreter\+Type}} type)
+\begin{DoxyCompactList}\small\item\em Check if interpreter type is available on current platform. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Script system factory for creating platform-\/specific interpreters. 
+
+\label{doc-enum-members}
+\Hypertarget{classenjin2_1_1ScriptFactory_doc-enum-members}
+\doxysubsection{Member Enumeration Documentation}
+\Hypertarget{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!InterpreterType@{InterpreterType}}
+\index{InterpreterType@{InterpreterType}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\doxysubsubsection{\texorpdfstring{InterpreterType}{InterpreterType}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a} 
+enum class \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{enjin2::\+\+Script\+Factory::\+\+Interpreter\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+Interpreter type enum. 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{LUA\_FULL@{LUA\_FULL}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!LUA\_FULL@{LUA\_FULL}}
+}\Hypertarget{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aaec919e5a30bd32f192208193c88ed935}\label{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aaec919e5a30bd32f192208193c88ed935} 
+LUA\+\_\+\+FULL&Full Lua interpreter (desktop). \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{LUA\_MINIMAL@{LUA\_MINIMAL}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!LUA\_MINIMAL@{LUA\_MINIMAL}}
+}\Hypertarget{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aac3a3e51c2d3c0908f4fdb4bbff2cba5b}\label{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aac3a3e51c2d3c0908f4fdb4bbff2cba5b} 
+LUA\+\_\+\+MINIMAL&Minimal Lua interpreter (ESP32). \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{JAVASCRIPT@{JAVASCRIPT}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!JAVASCRIPT@{JAVASCRIPT}}
+}\Hypertarget{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aa53c6c951f4e8b9dff2989655588a21b5}\label{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aa53c6c951f4e8b9dff2989655588a21b5} 
+JAVASCRIPT&Java\+Script interpreter (future). \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{MICROPYTHON@{MICROPYTHON}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!MICROPYTHON@{MICROPYTHON}}
+}\Hypertarget{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aae0a0b6af89830221451566a9d57c5a6a}\label{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aae0a0b6af89830221451566a9d57c5a6a} 
+MICROPYTHON&Micro\+Python interpreter (future). \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SIMPLE\_BASIC@{SIMPLE\_BASIC}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!SIMPLE\_BASIC@{SIMPLE\_BASIC}}
+}\Hypertarget{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aa1c76168facea208413c1718242b21540}\label{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702aa1c76168facea208413c1718242b21540} 
+SIMPLE\+\_\+\+BASIC&Simple BASIC-\/like interpreter (very constrained systems). \\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1ScriptFactory_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1ScriptFactory_aa86ef71ea7c5ad79dc428105cf160736}\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!createInterpreter@{createInterpreter}}
+\index{createInterpreter@{createInterpreter}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\doxysubsubsection{\texorpdfstring{createInterpreter()}{createInterpreter()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ScriptFactory_aa86ef71ea7c5ad79dc428105cf160736} 
+std::\+unique\+\_\+ptr$<$ \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{IScript\+Interpreter}} $>$ enjin2::\+\+Script\+Factory::\+create\+Interpreter (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Interpreter\+Type}}}]{type}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Create interpreter for current platform. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em type} & Interpreter type to create \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Unique pointer to interpreter instance 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1ScriptFactory_a0b2d7dc268e4b3fc45f12bfdef65d7a9}\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!getRecommendedInterpreter@{getRecommendedInterpreter}}
+\index{getRecommendedInterpreter@{getRecommendedInterpreter}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\doxysubsubsection{\texorpdfstring{getRecommendedInterpreter()}{getRecommendedInterpreter()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ScriptFactory_a0b2d7dc268e4b3fc45f12bfdef65d7a9} 
+\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Interpreter\+Type}} enjin2::\+\+Script\+Factory::\+get\+Recommended\+Interpreter (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Get recommended interpreter for current platform. 
+
+\begin{DoxyReturn}{Returns}
+Recommended interpreter type 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1ScriptFactory_a152edb40467ae4e0d5ce500f50cc6923}\index{enjin2::ScriptFactory@{enjin2::ScriptFactory}!isInterpreterAvailable@{isInterpreterAvailable}}
+\index{isInterpreterAvailable@{isInterpreterAvailable}!enjin2::ScriptFactory@{enjin2::ScriptFactory}}
+\doxysubsubsection{\texorpdfstring{isInterpreterAvailable()}{isInterpreterAvailable()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1ScriptFactory_a152edb40467ae4e0d5ce500f50cc6923} 
+bool enjin2::\+\+Script\+Factory::\+is\+Interpreter\+Available (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ScriptFactory_a93634331864cee4a0924b2a1982b702a}{Interpreter\+Type}}}]{type}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Check if interpreter type is available on current platform. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em type} & Interpreter type to check \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if available 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+scripting/\+script\+\_\+interface.\+hpp\end{DoxyCompactItemize}

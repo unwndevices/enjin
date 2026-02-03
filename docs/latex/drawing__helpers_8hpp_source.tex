@@ -1,0 +1,46 @@
+\doxysection{drawing\+\_\+helpers.\+hpp}
+\hypertarget{drawing__helpers_8hpp_source}{}\label{drawing__helpers_8hpp_source}\index{include/enjin2/utils/drawing\_helpers.hpp@{include/enjin2/utils/drawing\_helpers.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_UTILS\_DRAWING\_HELPERS\_HPP}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_UTILS\_DRAWING\_HELPERS\_HPP}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00016\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers}{DrawingHelpers}}\ \{}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00027\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers_afaa29092eb3ab0b3828ea9e0ff89be25}{drawCircleStroke}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ int16\_t\ x0,\ int16\_t\ y0,\ int16\_t\ radius,}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ color,\ uint8\_t\ strokeWidth);}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00041\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers_a4d8741ed6d112c03365fca5c0cb7904d}{drawArcStroke}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ int16\_t\ x0,\ int16\_t\ y0,\ int16\_t\ radius,}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ startAngle,\ \textcolor{keywordtype}{float}\ endAngle,\ uint8\_t\ color,\ uint8\_t\ strokeWidth);}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00052\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers_a2169023c2377b659ee1da97e59ecac9d}{drawPolygon}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}*\ points,\ uint8\_t\ numPoints,}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ color,\ \textcolor{keywordtype}{bool}\ filled\ =\ \textcolor{keyword}{false});}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00066\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers_a46d8e0994d0835488df0fffaf8799856}{drawRoundedRect}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ int16\_t\ x,\ int16\_t\ y,\ }
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint16\_t\ width,\ uint16\_t\ height,\ uint8\_t\ radius,}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ color,\ \textcolor{keywordtype}{bool}\ filled\ =\ \textcolor{keyword}{false});}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00080\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers_af581c637c02d6aafe07edbfdee596f5e}{drawThickLine}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ int16\_t\ x0,\ int16\_t\ y0,}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x1,\ int16\_t\ y1,\ uint8\_t\ color,\ uint8\_t\ thickness);}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00097\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers_a81258f775cde6c5f73de054add87ff11}{drawBezierCurve}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ int16\_t\ x0,\ int16\_t\ y0,}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x1,\ int16\_t\ y1,\ int16\_t\ x2,\ int16\_t\ y2,}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x3,\ int16\_t\ y3,\ uint8\_t\ color,\ uint8\_t\ segments\ =\ 20);}
+\DoxyCodeLine{00100\ }
+\DoxyCodeLine{00112\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1DrawingHelpers_a0f6bb8b7636460a07d3b11cc67b2c366}{drawStar}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas,\ int16\_t\ centerX,\ int16\_t\ centerY,}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ outerRadius,\ uint8\_t\ innerRadius,\ uint8\_t\ numPoints,}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ color,\ \textcolor{keywordtype}{bool}\ filled\ =\ \textcolor{keyword}{false});}
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00116\ \}\ \textcolor{comment}{//\ namespace\ DrawingHelpers}}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00118\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00120\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_UTILS\_DRAWING\_HELPERS\_HPP}}
+
+\end{DoxyCode}

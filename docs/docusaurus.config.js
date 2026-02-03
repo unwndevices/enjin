@@ -10,7 +10,13 @@ const config = {
   projectName: 'enjin',
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+
+  markdown: {
+    format: 'detect',
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
 
   i18n: {
     defaultLocale: 'en',
@@ -34,14 +40,14 @@ const config = {
         },
       },
     ],
-   ],
+  ],
 
   plugins: [
     [
       '@docusaurus/plugin-content-docs',
       {
         id: 'api',
-        path: 'src/api',
+        path: 'api',
         routeBasePath: 'api',
         sidebarPath: 'api-sidebar.js',
         showLastUpdateAuthor: false,
@@ -60,7 +66,7 @@ const config = {
         src: 'img/logo.svg',
       },
       items: [
-         {
+        {
           type: 'docSidebar',
           sidebarId: 'guidesSidebar',
           position: 'left',
@@ -68,6 +74,7 @@ const config = {
         },
         {
           type: 'docSidebar',
+          docsPluginId: 'api',
           sidebarId: 'apiSidebar',
           position: 'left',
           label: 'API Reference',
@@ -83,7 +90,7 @@ const config = {
     footer: {
       style: 'dark',
       links: [
-         {
+        {
           title: 'Documentation',
           items: [
             { label: 'Getting Started', to: '/getting-started' },

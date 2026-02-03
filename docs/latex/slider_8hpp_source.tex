@@ -1,0 +1,88 @@
+\doxysection{slider.\+hpp}
+\hypertarget{slider_8hpp_source}{}\label{slider_8hpp_source}\index{include/enjin2/components/slider.hpp@{include/enjin2/components/slider.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_SLIDER\_HPP}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_SLIDER\_HPP}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/component.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}drawable.hpp"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}position.hpp"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Slider_a36046f0b600e14ea3756785fda25a941}{Slider}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}\ \{}
+\DoxyCodeLine{00018\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00019\ \ \ \ \ uint8\_t\ slider\_width;}
+\DoxyCodeLine{00020\ \ \ \ \ uint8\_t\ slider\_height;}
+\DoxyCodeLine{00021\ \ \ \ \ uint8\_t\ color;}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{float}\ value;}
+\DoxyCodeLine{00023\ \ \ \ \ Position*\ position;}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keyword}{mutable}\ Canvas<uint8\_t,\ 64,\ 32>\ internal\_canvas;\ \textcolor{comment}{//\ Max\ size\ for\ sliders}}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00033\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Slider_a36046f0b600e14ea3756785fda25a941}{Slider}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ uint8\_t\ width,\ uint8\_t\ height)}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ ,\ slider\_width(width)}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ ,\ slider\_height(height)}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ ,\ color(12)}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ ,\ value(0.0f)}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ ,\ position(nullptr)}
+\DoxyCodeLine{00040\ \ \ \ \ \{}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ position\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getComponent<Position>();}
+\DoxyCodeLine{00042\ \ \ \ \ \}}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keywordtype}{void}\ onCreate()\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keywordtype}{void}\ onUpdate(\textcolor{keywordtype}{float}\ deltaTime)\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Slider_afa11262f7c92ae84b9660994d2b67b50}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!position)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ internal\ canvas}}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ internal\_canvas.clear(16);}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ midX\ =\ slider\_width\ /\ 2;}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ midY\ =\ slider\_height\ /\ 2;}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ slider\ fill\ length}}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ sliderLength\ =\ std::max((\textcolor{keywordtype}{int})(slider\_width\ *\ value),\ 1);}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ leftX\ =\ midX\ -\/\ sliderLength\ /\ 2;}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ slider\ track}}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ internal\_canvas.drawVLine(midX\ -\/\ slider\_width\ /\ 2,\ 0,\ slider\_height,\ color);}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ internal\_canvas.drawVLine(midX\ +\ slider\_width\ /\ 2,\ 0,\ slider\_height,\ color);}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ center\ line\ (dashed\ effect\ by\ drawing\ every\ other\ pixel)}}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ midX\ -\/\ slider\_width\ /\ 2;\ x\ <=\ midX\ +\ slider\_width\ /\ 2;\ x\ +=\ 2)\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(x,\ midY,\ color\ /\ 2);}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ filled\ portion}}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ internal\_canvas.fillRect(leftX,\ midY\ -\/\ slider\_height\ /\ 4,\ sliderLength,\ slider\_height\ /\ 2,\ 16);}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ internal\_canvas.drawRect(leftX,\ midY\ -\/\ slider\_height\ /\ 4,\ sliderLength,\ slider\_height\ /\ 2,\ color);}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Copy\ to\ main\ canvas}}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ Vector2\ pos\ =\ position-\/>getGlobalPosition();}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ canvas.blit(internal\_canvas,\ pos.x,\ pos.y,\ slider\_width,\ slider\_height);}
+\DoxyCodeLine{00081\ \ \ \ \ \}}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00087\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Slider_a26927e69c77ae44c75ac8af416335ba7}{setValue}}(\textcolor{keywordtype}{float}\ newValue)\ \{}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ value\ =\ std::clamp(newValue,\ 0.0f,\ 1.0f);}
+\DoxyCodeLine{00089\ \ \ \ \ \}}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00095\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1Slider_a127da4502664e7d8aba52ab288812a63}{getValue}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value;}
+\DoxyCodeLine{00097\ \ \ \ \ \}}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Slider_a3c31c788264b43f00dc3b863dd5bca44}{setColor}}(uint8\_t\ newColor)\ \{}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ color\ =\ newColor;}
+\DoxyCodeLine{00105\ \ \ \ \ \}}
+\DoxyCodeLine{00106\ \};}
+\DoxyCodeLine{00107\ }
+\DoxyCodeLine{00108\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00110\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_SLIDER\_HPP}}
+
+\end{DoxyCode}

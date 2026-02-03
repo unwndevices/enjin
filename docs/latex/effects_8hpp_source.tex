@@ -1,0 +1,57 @@
+\doxysection{effects.\+hpp}
+\hypertarget{effects_8hpp_source}{}\label{effects_8hpp_source}\index{include/enjin2/graphics/effects.hpp@{include/enjin2/graphics/effects.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}canvas.hpp"{}}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{comment}{//\ Graphics\ effects\ for\ 4-\/bit\ canvas}}
+\DoxyCodeLine{00009\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ TPixel>}
+\DoxyCodeLine{00010\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Effects}{Effects}}\ \{}
+\DoxyCodeLine{00011\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00012\ \ \ \ \ \textcolor{comment}{//\ Dithering\ patterns\ for\ 4-\/bit\ displays}}
+\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ ditherPattern(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ rect,\ }
+\DoxyCodeLine{00014\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ TPixel\ color1,\ TPixel\ color2,\ uint8\_t\ pattern\ =\ 0xAA)\ \{}
+\DoxyCodeLine{00015\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a2c5ffda22bcd9ca7b4471287dd603c97}{y}};\ y\ <\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a2c5ffda22bcd9ca7b4471287dd603c97}{y}}\ +\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a769e260c98221171d7c75b155ddd151b}{height}};\ ++y)\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ rect.x;\ x\ <\ rect.x\ +\ rect.width;\ ++x)\ \{}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ bit\_pos\ =\ ((y\ -\/\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a2c5ffda22bcd9ca7b4471287dd603c97}{y}})\ *\ 8\ +\ (x\ -\/\ rect.x))\ \%\ 8;}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ TPixel\ color\ =\ (pattern\ \&\ (1\ <<\ bit\_pos))\ ?\ color1\ :\ color2;}
+\DoxyCodeLine{00019\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(x,\ y,\ color);}
+\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00022\ \ \ \ \ \}}
+\DoxyCodeLine{00023\ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{comment}{//\ Simple\ blur\ effect\ (box\ filter)}}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ blur(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ rect,\ uint8\_t\ radius\ =\ 1)\ \{}
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ This\ would\ require\ a\ temporary\ buffer\ for\ proper\ implementation}}
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Placeholder\ for\ future\ implementation}}
+\DoxyCodeLine{00028\ \ \ \ \ \}}
+\DoxyCodeLine{00029\ \ \ \ \ }
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{comment}{//\ Invert\ colors\ in\ a\ region}}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ invert(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<TPixel>}}\&\ canvas,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ rect)\ \{}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a2c5ffda22bcd9ca7b4471287dd603c97}{y}};\ y\ <\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a2c5ffda22bcd9ca7b4471287dd603c97}{y}}\ +\ rect.\doxymbox{\hyperlink{structenjin2_1_1Rect_a769e260c98221171d7c75b155ddd151b}{height}};\ ++y)\ \{}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ rect.x;\ x\ <\ rect.x\ +\ rect.width;\ ++x)\ \{}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a9eebb09ac52919c29947f3e682b3f0f6}{inBounds}}(x,\ y))\ \{}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ TPixel\ current\ =\ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a69f645c8dc5ec73967cde5725fc17047}{getPixel}}(x,\ y);}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ For\ 4-\/bit:\ invert\ by\ XOR\ with\ 15\ (0xF)}}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keyword}{constexpr}\ (std::is\_same\_v<TPixel,\ Pixel4>)\ \{}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(x,\ y,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(15\ -\/\ current.value));}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(x,\ y,\ TPixel(255\ -\/\ \textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(current)));}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00045\ \ \ \ \ \}}
+\DoxyCodeLine{00046\ \};}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{keyword}{using\ }Effects4\ =\ \doxymbox{\hyperlink{classenjin2_1_1Effects}{Effects<Pixel4>}};}
+\DoxyCodeLine{00049\ \textcolor{keyword}{using\ }Effects8\ =\ \doxymbox{\hyperlink{classenjin2_1_1Effects}{Effects<uint8\_t>}};}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+
+\end{DoxyCode}

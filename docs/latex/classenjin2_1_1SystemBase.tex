@@ -1,0 +1,115 @@
+\doxysection{enjin2::\+System\+Base Class Reference}
+\hypertarget{classenjin2_1_1SystemBase}{}\label{classenjin2_1_1SystemBase}\index{enjin2::SystemBase@{enjin2::SystemBase}}
+
+
+Base class for all systems in the ECS architecture.  
+
+
+
+
+{\ttfamily \+\#include $<$system.\+hpp$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classenjin2_1_1SystemBase_ad21fb0f3c84cfff2c52217d9786d710a}\label{classenjin2_1_1SystemBase_ad21fb0f3c84cfff2c52217d9786d710a} 
+virtual {\bfseries \texorpdfstring{$\sim$}{\string~}\+System\+Base} ()=default
+\begin{DoxyCompactList}\small\item\em Virtual destructor. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classenjin2_1_1SystemBase_af634eed7c5580169a826b1bd5e39d452}{update}} (float delta\+Time)=0
+\begin{DoxyCompactList}\small\item\em Update system with delta time. \end{DoxyCompactList}\item 
+virtual int \doxymbox{\hyperlink{classenjin2_1_1SystemBase_a0c748a49a94bba88a17945760790f15b}{get\+Priority}} () const
+\begin{DoxyCompactList}\small\item\em Get system priority for update ordering. \end{DoxyCompactList}\item 
+virtual System\+ID \doxymbox{\hyperlink{classenjin2_1_1SystemBase_aa968c6f237a7a29bc0764f4c0be31a5f}{get\+System\+ID}} () const =0
+\begin{DoxyCompactList}\small\item\em Get unique system ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T$>$ }\\static System\+ID \doxymbox{\hyperlink{classenjin2_1_1SystemBase_ad58d4bd01a7008a96133a6629637e47c}{get\+System\+Type\+ID}} ()
+\begin{DoxyCompactList}\small\item\em Generate unique system type ID. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Base class for all systems in the ECS architecture. 
+
+Systems contain the logic and operate on components. They are stateless and process entities that have required components. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1SystemBase_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1SystemBase_a0c748a49a94bba88a17945760790f15b}\index{enjin2::SystemBase@{enjin2::SystemBase}!getPriority@{getPriority}}
+\index{getPriority@{getPriority}!enjin2::SystemBase@{enjin2::SystemBase}}
+\doxysubsubsection{\texorpdfstring{getPriority()}{getPriority()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SystemBase_a0c748a49a94bba88a17945760790f15b} 
+virtual int enjin2::\+\+System\+Base::\+get\+Priority (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [virtual]}}
+
+
+
+Get system priority for update ordering. 
+
+\begin{DoxyReturn}{Returns}
+Priority value (lower = earlier execution) 
+\end{DoxyReturn}
+
+
+Reimplemented in \doxymbox{\hyperlink{classenjin2_1_1AnimationSystem_ad09541f4c0c83b7044d7523cd039fdf4}{enjin2::\+\+Animation\+System}}, \doxymbox{\hyperlink{classenjin2_1_1InputSystem_a450fa82273eff09d5921fbeec2501802}{enjin2::\+\+Input\+System}}, \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a77ea3fdcfc57f765dda7f25288d1d67a}{enjin2::\+\+Render\+System$<$ TCanvas $>$}}, \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a77ea3fdcfc57f765dda7f25288d1d67a}{enjin2::\+\+Render\+System$<$ Canvas4$<$ 128, 64 $>$ $>$}}, and \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a77ea3fdcfc57f765dda7f25288d1d67a}{enjin2::\+\+Render\+System$<$ Canvas8$<$ 128, 64 $>$ $>$}}.
+
+\Hypertarget{classenjin2_1_1SystemBase_aa968c6f237a7a29bc0764f4c0be31a5f}\index{enjin2::SystemBase@{enjin2::SystemBase}!getSystemID@{getSystemID}}
+\index{getSystemID@{getSystemID}!enjin2::SystemBase@{enjin2::SystemBase}}
+\doxysubsubsection{\texorpdfstring{getSystemID()}{getSystemID()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SystemBase_aa968c6f237a7a29bc0764f4c0be31a5f} 
+virtual System\+ID enjin2::\+\+System\+Base::\+get\+System\+ID (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Get unique system ID. 
+
+\begin{DoxyReturn}{Returns}
+\doxylink{classenjin2_1_1System}{System} identifier 
+\end{DoxyReturn}
+
+
+Implemented in \doxymbox{\hyperlink{classenjin2_1_1System_a4b181b72e69a9f4e0805a39352a0b9ba}{enjin2::\+\+System$<$ T $>$}}, \doxymbox{\hyperlink{classenjin2_1_1System_a4b181b72e69a9f4e0805a39352a0b9ba}{enjin2::\+\+System$<$ Animation\+System $>$}}, \doxymbox{\hyperlink{classenjin2_1_1System_a4b181b72e69a9f4e0805a39352a0b9ba}{enjin2::\+\+System$<$ Input\+System $>$}}, and \doxymbox{\hyperlink{classenjin2_1_1System_a4b181b72e69a9f4e0805a39352a0b9ba}{enjin2::\+\+System$<$ Render\+System$<$ TCanvas $>$ $>$}}.
+
+\Hypertarget{classenjin2_1_1SystemBase_ad58d4bd01a7008a96133a6629637e47c}\index{enjin2::SystemBase@{enjin2::SystemBase}!getSystemTypeID@{getSystemTypeID}}
+\index{getSystemTypeID@{getSystemTypeID}!enjin2::SystemBase@{enjin2::SystemBase}}
+\doxysubsubsection{\texorpdfstring{getSystemTypeID()}{getSystemTypeID()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SystemBase_ad58d4bd01a7008a96133a6629637e47c} 
+template$<$typename T$>$ \\
+System\+ID enjin2::\+\+System\+Base::\+get\+System\+Type\+ID (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}, {\ttfamily [protected]}}
+
+
+
+Generate unique system type ID. 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em T} & \doxylink{classenjin2_1_1System}{System} type \\
+\hline
+\end{DoxyTemplParams}
+\begin{DoxyReturn}{Returns}
+Unique ID for system type T 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1SystemBase_af634eed7c5580169a826b1bd5e39d452}\index{enjin2::SystemBase@{enjin2::SystemBase}!update@{update}}
+\index{update@{update}!enjin2::SystemBase@{enjin2::SystemBase}}
+\doxysubsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1SystemBase_af634eed7c5580169a826b1bd5e39d452} 
+virtual void enjin2::\+\+System\+Base::\+update (\begin{DoxyParamCaption}\item[{float}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Update system with delta time. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delta\+Time} & Time since last update in seconds \\
+\hline
+\end{DoxyParams}
+
+
+Implemented in \doxymbox{\hyperlink{classenjin2_1_1AnimationSystem_a68c1b691d528eba2206aa8927f4ac9cb}{enjin2::\+\+Animation\+System}}, \doxymbox{\hyperlink{classenjin2_1_1InputSystem_a91423ea26f50245ea88e8484631a2c4f}{enjin2::\+\+Input\+System}}, \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a361b3d826f4bdddbf4bea3e9e8fed312}{enjin2::\+\+Render\+System$<$ TCanvas $>$}}, \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a361b3d826f4bdddbf4bea3e9e8fed312}{enjin2::\+\+Render\+System$<$ Canvas4$<$ 128, 64 $>$ $>$}}, and \doxymbox{\hyperlink{classenjin2_1_1RenderSystem_a361b3d826f4bdddbf4bea3e9e8fed312}{enjin2::\+\+Render\+System$<$ Canvas8$<$ 128, 64 $>$ $>$}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+enjin2/\+ui/\+system.\+hpp\end{DoxyCompactItemize}
