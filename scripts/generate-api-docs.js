@@ -462,6 +462,11 @@ async function main() {
   for (const [moduleName, moduleInfo] of Object.entries(config.modules)) {
     console.log(`\nProcessing ${moduleName} module...`);
 
+    // Generate module overview page
+    const overviewResult = await processGroup(moduleName, moduleInfo);
+    if (overviewResult) generatedFiles++;
+
+    // Generate class documentation
     for (const className of moduleInfo.classes) {
       const result = await processClass(className, moduleName, moduleInfo);
       if (result) generatedFiles++;
