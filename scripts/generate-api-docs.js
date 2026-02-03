@@ -110,6 +110,28 @@ function extractText(node) {
   return '';
 }
 
+// Generate module overview markdown
+function generateModuleOverview(moduleName, title, brief, detailed, classes) {
+  let markdown = `---
+id: ${moduleName}
+title: ${title}
+sidebar_label: ${title}
+---
+
+# ${title}
+
+${brief}
+
+${detailed}
+
+## Classes
+
+${classes.map(cls => `- [${cls}](./${cls})`).join('\n')}
+`;
+
+  return markdown;
+}
+
 // Escape angle brackets for MDX (prevents < > from being parsed as JSX)
 function escapeForMdx(text) {
   if (!text) return '';
@@ -393,6 +415,37 @@ ${detailedDesc ? '\n' + detailedDesc : ''}
     return outputFile;
   } catch (error) {
     console.error(`Error processing namespace ${namespaceName}:`, error.message);
+    return null;
+  }
+}
+
+// Process group XML and generate module overview page
+async function processGroup(moduleName, moduleInfo) {
+  try {
+    const groupXml = path.join(config.xmlDir, `group__${moduleName}_group.xml`);
+
+    if (!fs.existsSync(groupXml)) {
+      console.log(`Warning: Group XML not found for ${moduleName}`);
+      return null;
+    }
+
+    const xml = await parseXmlFile(groupXml);
+    const compound = xml.doxygen.compounddef[0];
+    const title = extractText(compound.title);
+    const brief = extractText(compound.briefdescription);
+    const detailed = extractText(compound.detaileddescription);
+
+    // Generate module overview markdown
+    const markdown = generateModuleOverview(moduleName, title, brief, detailed, moduleInfo.classes);
+
+    // Write README.md to module directory
+    const outputPath = path.join(config.outputDir, moduleName, 'README.md');
+    fs.writeFileSync(outputPath, markdown);
+    console.log(`Generated module overview: ${moduleName}/README.md`);
+
+    return outputPath;
+  } catch (error) {
+    console.error(`Error processing group ${moduleName}:`, error.message);
     return null;
   }
 }
