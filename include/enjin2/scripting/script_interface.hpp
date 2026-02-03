@@ -1,3 +1,10 @@
+/**
+ * @file script_interface.hpp
+ * @brief Platform-agnostic interfaces for script interpreters and graphics
+ *
+ * Provides abstract interfaces IScriptInterpreter and IScriptGraphics
+ * allowing multiple scripting languages and graphics backends.
+ */
 #pragma once
 
 #include "../core/types.hpp"

@@ -1,3 +1,10 @@
+/**
+ * @file lua_interpreter.hpp
+ * @brief Lua interpreter implementations for desktop and ESP32 platforms
+ *
+ * Provides full and minimal Lua interpreters with graphics integration
+ * for scripting support across different platforms.
+ */
 #pragma once
 
 #include "script_interface.hpp"

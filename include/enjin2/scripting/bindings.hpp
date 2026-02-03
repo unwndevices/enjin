@@ -1,3 +1,10 @@
+/**
+ * @file bindings.hpp
+ * @brief Lua bindings for Enjin graphics, canvas operations, and scripting interface
+ *
+ * Provides LuaCanvas wrapper for 4-bit/8-bit canvases and LuaBindings
+ * for love2d.graphics-style API familiar to Lua developers.
+ */
 #pragma once
 
 #include "lua_engine.hpp"

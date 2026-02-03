@@ -1,3 +1,10 @@
+/**
+ * @file lua_platform.hpp
+ * @brief Platform-specific Lua configuration and file system abstraction
+ *
+ * Provides platform-appropriate Lua initialization, library loading,
+ * and file I/O for desktop (VCV Rack) and ESP32 platforms.
+ */
 #pragma once
 
 #include "../core/types.hpp"

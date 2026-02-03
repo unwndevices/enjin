@@ -1,3 +1,10 @@
+/**
+ * @file lua_engine.hpp
+ * @brief Lua engine for embedded scripting with static memory management
+ *
+ * Provides a lightweight Lua scripting environment optimized for embedded systems
+ * with love2d.graphics-style API for familiar drawing operations.
+ */
 #pragma once
 
 #include "../core/types.hpp"
