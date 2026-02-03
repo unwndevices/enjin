@@ -112,11 +112,15 @@ function extractText(node) {
 
 // Generate module overview markdown
 function generateModuleOverview(moduleName, title, brief, detailed, classes, moduleDir) {
-  // Filter classes to only include those that have markdown files
-  const existingClasses = classes.filter(cls => {
-    const mdFile = path.join(moduleDir, `${cls}.md`);
-    return fs.existsSync(mdFile);
-  });
+  // Build links from actual .md files in the module dir (excluding README)
+  // so links match real filenames and avoid Docusaurus broken links (e.g. Effects -> EffectsClass.md)
+  const existingClassLinks = fs.readdirSync(moduleDir)
+    .filter((f) => f.endsWith('.md') && f !== 'README.md')
+    .map((f) => {
+      const stem = path.basename(f, '.md');
+      return { label: stem, target: `./${stem}` };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   let markdown = `---
 id: ${moduleName}
@@ -132,7 +136,7 @@ ${detailed}
 
 ## Classes
 
-${existingClasses.map(cls => `- [${cls}](./${cls})`).join('\n')}
+${existingClassLinks.map(({ label, target }) => `- [${label}](${target})`).join('\n')}
 `;
 
   return markdown;
@@ -259,12 +263,15 @@ async function processClass(className, module, classInfo) {
       }
     }
 
-    // Generate markdown
+    // Generate markdown (add slug only when class name matches module)
+    const sanitized = sanitizeClassName(className);
+    const needsSlug = sanitized.toLowerCase() === module.toLowerCase();
+    const slugLine = needsSlug ? `slug: ${module}/${sanitized}\n` : '';
     let markdown = `---
 id: ${className}
 title: ${className}
 sidebar_label: ${className}
----
+${slugLine}---
 
 # ${className}
 
@@ -326,7 +333,6 @@ ${detailedDesc ? '\n' + detailedDesc : ''}
     }
 
     // Write markdown file
-    const sanitized = sanitizeClassName(className);
     const outputFile = path.join(config.outputDir, module, `${sanitized}.md`);
     fs.writeFileSync(outputFile, markdown);
     console.log(`Generated: ${module}/${sanitized}.md`);
@@ -476,15 +482,15 @@ async function main() {
   for (const [moduleName, moduleInfo] of Object.entries(config.modules)) {
     console.log(`\nProcessing ${moduleName} module...`);
 
-    // Generate module overview page
-    const overviewResult = await processGroup(moduleName, moduleInfo);
-    if (overviewResult) generatedFiles++;
-
     // Generate class documentation
     for (const className of moduleInfo.classes) {
       const result = await processClass(className, moduleName, moduleInfo);
       if (result) generatedFiles++;
     }
+
+    // Generate module overview page after class docs exist
+    const overviewResult = await processGroup(moduleName, moduleInfo);
+    if (overviewResult) generatedFiles++;
   }
 
   // Process namespaces
