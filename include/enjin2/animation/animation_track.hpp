@@ -1,3 +1,10 @@
+/**
+ * @file animation_track.hpp
+ * @brief Template animation track for keyframe-based animations
+ *
+ * Provides keyframe interpolation, playback control, and animation events
+ * for position, float, and color animations.
+ */
 #pragma once
 
 #include "keyframe.hpp"

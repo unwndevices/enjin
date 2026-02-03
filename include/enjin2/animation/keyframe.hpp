@@ -1,3 +1,10 @@
+/**
+ * @file keyframe.hpp
+ * @brief Keyframe types, animation states, and easing functions
+ *
+ * Provides PositionKeyframe, FloatKeyframe, ColorKeyframe structures,
+ * AnimationState and LoopMode enums, and EasingFunctions utilities.
+ */
 #pragma once
 
 #include "../core/types.hpp"
