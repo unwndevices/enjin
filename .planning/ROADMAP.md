@@ -50,10 +50,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can build enjin2 successfully without Lua dependency errors
   2. User can find complete list of dependencies in README or DEPENDENCIES.md
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: [TBD during planning]
+- [ ] 08-01: Make Lua optional in CMake build system — modify CMakeLists.txt to use find_package(Lua QUIET) and add clear error messages
+- [ ] 08-02: Document dependencies in README — add Dependencies section with Required vs Optional categorization and installation instructions
 
 #### Phase 9: Documentation Coverage
 **Goal**: Comprehensive, high-quality documentation across all public APIs
@@ -83,9 +84,9 @@ Phases execute in numeric order: 7 → 8 → 9
 | 5. Final Cleanup | v1.0 | 1/1 | Complete | 2026-01-31 |
 | 6. Create library docs | v1.0 | 7/7 | Complete | 2026-02-01 |
 | 7. README Enhancement | v1.1 | 1/1 | Complete | 2026-02-02 |
-| 8. Build System Fixes | v1.1 | 0/TBD | Not started | - |
+| 8. Build System Fixes | v1.1 | 0/2 | Not started | - |
 | 9. Documentation Coverage | v1.1 | 0/TBD | Not started | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
-- v1.1: 1/4+ plans (~25%)
+- v1.1: 1/5 plans (~20%)
