@@ -26,7 +26,9 @@ EXTRACT_LOCAL_CLASSES  = NO
 # Warning settings
 WARN_IF_UNDOCUMENTED   = YES
 WARN_IF_DOC_ERROR      = YES
-WARN_NO_PARAMDOC       = NO   # Allow undocumented params temporarily
+WARN_NO_PARAMDOC       = YES  # Detect missing parameter documentation
+QUIET                  = NO   # Ensure all warnings are visible
+WARN_LOGFILE           = doxygen-warnings.log  # Capture warnings to file
 
 # C++ specific
 OPTIMIZE_OUTPUT_JAVA   = NO   # Use C++ settings
