@@ -1,10 +1,10 @@
 ---
 id: effects
-title: Effects
-sidebar_label: Effects
+title: Effects Module
+sidebar_label: Effects Module
 ---
 
-# Effects
+# Effects Module
 
 Visual effects and particle systems. 
 
@@ -13,4 +13,4 @@ Provides visual effects, particles, and special effect implementations for game 
 ## Classes
 
 - [PostFx](./PostFx)
-- [Effects](./Effects)
+- [Effects](./EffectsClass)

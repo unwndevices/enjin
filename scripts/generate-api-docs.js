@@ -111,7 +111,13 @@ function extractText(node) {
 }
 
 // Generate module overview markdown
-function generateModuleOverview(moduleName, title, brief, detailed, classes) {
+function generateModuleOverview(moduleName, title, brief, detailed, classes, moduleDir) {
+  // Filter classes to only include those that have markdown files
+  const existingClasses = classes.filter(cls => {
+    const mdFile = path.join(moduleDir, `${cls}.md`);
+    return fs.existsSync(mdFile);
+  });
+
   let markdown = `---
 id: ${moduleName}
 title: ${title}
@@ -126,7 +132,7 @@ ${detailed}
 
 ## Classes
 
-${classes.map(cls => `- [${cls}](./${cls})`).join('\n')}
+${existingClasses.map(cls => `- [${cls}](./${cls})`).join('\n')}
 `;
 
   return markdown;
@@ -431,15 +437,23 @@ async function processGroup(moduleName, moduleInfo) {
 
     const xml = await parseXmlFile(groupXml);
     const compound = xml.doxygen.compounddef[0];
-    const title = extractText(compound.title);
+    let title = extractText(compound.title);
+
+    // If title matches a class name, append " Module" to avoid conflicts
+    if (moduleInfo.classes.includes(title)) {
+      title = `${title} Module`;
+    }
+
     const brief = extractText(compound.briefdescription);
     const detailed = extractText(compound.detaileddescription);
 
-    // Generate module overview markdown
-    const markdown = generateModuleOverview(moduleName, title, brief, detailed, moduleInfo.classes);
+    const moduleDir = path.join(config.outputDir, moduleName);
+
+    // Generate module overview markdown (only include existing classes)
+    const markdown = generateModuleOverview(moduleName, title, brief, detailed, moduleInfo.classes, moduleDir);
 
     // Write README.md to module directory
-    const outputPath = path.join(config.outputDir, moduleName, 'README.md');
+    const outputPath = path.join(moduleDir, 'README.md');
     fs.writeFileSync(outputPath, markdown);
     console.log(`Generated module overview: ${moduleName}/README.md`);
 

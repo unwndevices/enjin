@@ -13,11 +13,9 @@ Provides canvas rendering, fonts, colors, and visual output capabilities for the
 ## Classes
 
 - [Canvas4](./Canvas4)
-- [Canvas4_ESP32S3](./Canvas4_ESP32S3)
 - [Canvas8](./Canvas8)
 - [CanvasExtended](./CanvasExtended)
 - [CanvasGraphicsAdapter](./CanvasGraphicsAdapter)
-- [C_Canvas](./C_Canvas)
 - [ImageExporter](./ImageExporter)
 - [PackedPixel4](./PackedPixel4)
 - [Primitives](./Primitives)

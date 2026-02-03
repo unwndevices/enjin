@@ -1,17 +1,12 @@
 ---
-id: Effects
+id: EffectsClass
 title: Effects
 sidebar_label: Effects
 ---
 
 # Effects
 
-
-    
-
-
-
-    
+Graphics effects for pixel manipulation.
 
 ---
 
@@ -23,31 +18,18 @@ sidebar_label: Effects
 
 ### `static void ditherPattern(ICanvas&lt; TPixel &gt; &canvas, const Rect &rect, TPixel color1, TPixel color2, uint8_t pattern=0xAA)`
 
-
-        
-
-
-        
+Dither pattern for anti-aliasing.
 
 ---
 
 ### `static void blur(ICanvas&lt; TPixel &gt; &canvas, const Rect &rect, uint8_t radius=1)`
 
-
-        
-
-
-        
+Apply simple blur effect (box filter).
 
 ---
 
 ### `static void invert(ICanvas&lt; TPixel &gt; &canvas, const Rect &rect)`
 
-
-        
-
-
-        
+Invert colors in a region.
 
 ---
-
