@@ -1,3 +1,11 @@
+/**
+ * @file sprite.hpp
+ * @brief Sprite component for bitmap rendering
+ *
+ * Component wrapper around Sprite class, providing ECS integration
+ * for bitmap image rendering with frame animation support.
+ * Based on original Enjin C_Sprite.
+ */
 #ifndef ENJIN2_COMPONENTS_SPRITE_HPP
 #define ENJIN2_COMPONENTS_SPRITE_HPP
 

@@ -1,6 +1,12 @@
+/**
+ * @file canvas.hpp
+ * @brief Canvas component for embedding canvases as components
+ *
+ * Provides a component wrapper for Canvas objects, allowing
+ * canvases to be managed as components within the object system.
+ */
 #pragma once
 
-#include "../core/component.hpp"
 #include "../core/types.hpp"
 #include "../graphics/canvas.hpp"
 #include "drawable.hpp"

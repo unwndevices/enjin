@@ -1,3 +1,10 @@
+/**
+ * @file icanvas.hpp
+ * @brief Abstract canvas interface for drawing operations
+ *
+ * Provides hardware-independent interface for all drawing operations.
+ * Both enjin1 and enjin2 can implement this interface.
+ */
 #pragma once
 
 #include "../core/types.hpp"

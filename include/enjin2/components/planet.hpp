@@ -1,3 +1,11 @@
+/**
+ * @file planet.hpp
+ * @brief Planet component for orbital visualization
+ *
+ * Represents a central planet or control hub in space-themed UI.
+ * Can have satellites orbiting around it and supports various visual
+ * effects like pulsing, rotation, and atmospheric effects.
+ */
 #pragma once
 
 #include "../components/drawable.hpp"

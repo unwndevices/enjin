@@ -1,3 +1,10 @@
+/**
+ * @file tickmarks.hpp
+ * @brief Tickmarks component for drawing measurement scales
+ *
+ * A component that draws tickmarks around a circular arc, useful for creating
+ * dial scales, meters, and other measurement indicators.
+ */
 #ifndef ENJIN2_COMPONENTS_TICKMARKS_HPP
 #define ENJIN2_COMPONENTS_TICKMARKS_HPP
 

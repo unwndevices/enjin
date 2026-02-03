@@ -1,3 +1,10 @@
+/**
+ * @file scene.hpp
+ * @brief Compatibility layer for scene lifecycle methods
+ *
+ * Provides PascalCase wrapper functions for enjin1 compatibility.
+ * Deprecated after enjin1 deletion.
+ */
 #pragma once
 
 // Migration support - deprecated after enjin1 deletion

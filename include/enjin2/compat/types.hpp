@@ -1,3 +1,10 @@
+/**
+ * @file types.hpp
+ * @brief Compatibility layer for enjin1 type aliases
+ *
+ * Provides Vector3 and other type aliases for enjin1 compatibility.
+ * Deprecated after enjin1 deletion.
+ */
 #pragma once
 
 // Migration support - deprecated after enjin1 deletion

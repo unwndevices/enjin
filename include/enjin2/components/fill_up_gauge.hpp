@@ -1,3 +1,10 @@
+/**
+ * @file fill_up_gauge.hpp
+ * @brief Fill-up gauge component for level display
+ *
+ * A visual gauge that fills up to represent a value, similar to a VU meter.
+ * Supports both unidirectional (0-1) and bidirectional (-1 to 1) modes.
+ */
 #ifndef ENJIN2_COMPONENTS_FILL_UP_GAUGE_HPP
 #define ENJIN2_COMPONENTS_FILL_UP_GAUGE_HPP
 

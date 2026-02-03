@@ -1,3 +1,11 @@
+/**
+ * @file postfx.hpp
+ * @brief Post-processing effects system
+ *
+ * Provides various visual effects including CRT simulation, noise,
+ * blur, glow, dithering, and contrast/brightness adjustment.
+ * Based on original Enjin PostFx with expanded functionality.
+ */
 #pragma once
 
 #include "../core/types.hpp"

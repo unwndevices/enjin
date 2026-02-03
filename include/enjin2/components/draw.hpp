@@ -1,3 +1,10 @@
+/**
+ * @file draw.hpp
+ * @brief Simple draw component for custom rendering
+ *
+ * Provides a lightweight component for drawing rectangles and circles
+ * using lambda-based draw functions.
+ */
 #ifndef ENJIN2_COMPONENTS_DRAW_HPP
 #define ENJIN2_COMPONENTS_DRAW_HPP
 

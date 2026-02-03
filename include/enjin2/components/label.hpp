@@ -1,3 +1,14 @@
+/**
+ * @file label.hpp
+ * @brief Label component for text display with word wrapping and styling
+ *
+ * A versatile text display component that supports:
+ * - Custom fonts (GFX-style fonts)
+ * - Text wrapping and alignment
+ * - Background colors and borders
+ * - Tooltip-style pointers
+ * - Opacity/blend modes
+ */
 #ifndef ENJIN2_COMPONENTS_LABEL_HPP
 #define ENJIN2_COMPONENTS_LABEL_HPP
 

@@ -1,3 +1,10 @@
+/**
+ * @file position.hpp
+ * @brief Position component for object positioning
+ *
+ * Manages position and anchor point of an object in 2D space.
+ * This is a fundamental component used by most drawable objects.
+ */
 #pragma once
 
 #include "../core/component.hpp"

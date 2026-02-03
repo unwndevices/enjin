@@ -1,3 +1,10 @@
+/**
+ * @file button_dial.hpp
+ * @brief Circular button dial component for discrete parameter selection
+ *
+ * A drawable dial component with multiple buttons arranged in a circle.
+ * Used for selecting discrete values or modes.
+ */
 #ifndef ENJIN2_COMPONENTS_BUTTON_DIAL_HPP
 #define ENJIN2_COMPONENTS_BUTTON_DIAL_HPP
 

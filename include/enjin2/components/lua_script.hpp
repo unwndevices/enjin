@@ -1,6 +1,14 @@
+/**
+ * @file lua_script.hpp
+ * @brief Platform-agnostic script-driven UI component
+ *
+ * A drawable component that executes scripts for custom UI rendering.
+ * Uses platform-specific interpreters (full Lua on desktop, minimal on ESP32).
+ * Perfect for prototyping UI elements, data visualization, and custom effects.
+ */
 #pragma once
 
-#include "../components/drawable.hpp" 
+#include "../components/drawable.hpp"
 #include "../scripting/script_interface.hpp"
 #include "../scripting/lua_interpreter.hpp"
 #include "../core/types.hpp"

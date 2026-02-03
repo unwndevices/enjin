@@ -1,3 +1,11 @@
+/**
+ * @file satellite.hpp
+ * @brief Satellite component for orbiting parameter controls
+ *
+ * Represents a small satellite that orbits around a planet.
+ * Used for audio parameter visualization and control in space-themed UI.
+ * Can represent things like filter frequency, resonance, gain, etc.
+ */
 #pragma once
 
 #include "../components/drawable.hpp"

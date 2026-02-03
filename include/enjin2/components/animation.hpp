@@ -1,3 +1,10 @@
+/**
+ * @file animation.hpp
+ * @brief Animation component for object animations
+ *
+ * Manages multiple animation tracks for position, scale, rotation,
+ * color, and other properties with signal-based updates.
+ */
 #pragma once
 
 #include "../core/component.hpp"

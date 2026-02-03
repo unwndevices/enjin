@@ -1,3 +1,11 @@
+/**
+ * @file image_cache.hpp
+ * @brief Image cache component for sprite management
+ *
+ * Provides static memory allocation for 4-bit image data with
+ * efficient caching and frame-based animation support.
+ * Based on original Enjin C_ImageCache design.
+ */
 #pragma once
 
 #include "../core/component.hpp"

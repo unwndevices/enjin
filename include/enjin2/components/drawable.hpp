@@ -1,3 +1,10 @@
+/**
+ * @file drawable.hpp
+ * @brief Base drawable component for rendering
+ *
+ * Provides common functionality for components that can be rendered,
+ * including layer management, blending, anchoring, and visibility.
+ */
 #pragma once
 
 #include "../core/component.hpp"

@@ -1,3 +1,10 @@
+/**
+ * @file slider.hpp
+ * @brief Linear slider component for parameter control
+ *
+ * A drawable slider component that displays a linear slider with a filled portion
+ * indicating current value. Can be used for controlling continuous parameters.
+ */
 #ifndef ENJIN2_COMPONENTS_SLIDER_HPP
 #define ENJIN2_COMPONENTS_SLIDER_HPP
 

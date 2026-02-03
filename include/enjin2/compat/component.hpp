@@ -1,3 +1,10 @@
+/**
+ * @file component.hpp
+ * @brief Compatibility layer for component lifecycle methods
+ *
+ * Provides PascalCase wrapper functions for enjin1 compatibility.
+ * Deprecated after enjin1 deletion.
+ */
 #pragma once
 
 // Migration support - deprecated after enjin1 deletion
