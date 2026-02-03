@@ -81,7 +81,7 @@ Plans:
 **Gap Closure**: Closes integration gap from v1.1 audit - module overview pages not converted to Docusaurus
 **Success Criteria** (what must be TRUE):
   1. scripts/generate-api-docs.js parses group XML files from Doxygen output
-  2. Module overview pages generated in docs/api/*/README.md for all 10 modules
+  2. Module overview pages generated in docs/api/*/README.md for all 9 modules (excludes compat as it's not in config.modules)
   3. Module overview pages linked in Docusaurus sidebar navigation
   4. Documentation build includes module overview pages without errors
 **Plans**: 2 plans
