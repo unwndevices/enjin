@@ -54,6 +54,36 @@ See the `examples/` directory for sample code.
 - **Sprite System:** Sprite sheet and animation support
 - **Text Rendering:** Font rendering with Adafruit GFX
 
+## Dependencies
+
+enjin2 includes all required functionality as single-header vendor libraries.
+
+### Required
+
+None - all core functionality is self-contained for basic usage.
+
+### Optional
+
+- **Lua** (version 5.1+): Scripting support for game logic.
+  - Install from: https://lua.org/
+  - Package managers:
+    - Debian/Ubuntu: `apt-get install liblua5.1-dev`
+    - macOS: `brew install lua`
+  - Build without Lua: Set `ENJIN2_BUILD_LUA=OFF` when running CMake
+  - Used by: `C_LuaScript` component, scripting subsystem
+
+### Vendor Libraries
+
+enjin2 includes these single-header libraries (no installation required):
+
+- **Adafruit GFX Library**: Graphics font rendering and text display
+  - Location: External library at `../Libs/Adafruit-GFX-Library`
+  - Used by: UI widgets, text rendering
+
+- **stb_image_write.h**: BMP image writing
+  - Location: `vendor/` directory
+  - Used by: Canvas export functionality
+
 ## Project Structure
 
 ```
