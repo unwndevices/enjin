@@ -266,7 +266,8 @@ async function processClass(className, module, classInfo) {
     // Generate markdown (add slug only when class name matches module)
     const sanitized = sanitizeClassName(className);
     const needsSlug = sanitized.toLowerCase() === module.toLowerCase();
-    const slugLine = needsSlug ? `slug: ${module}/${sanitized}\n` : '';
+    // Use absolute slug to avoid duplicating module path in nested docs.
+    const slugLine = needsSlug ? `slug: /${module}/${sanitized}\n` : '';
     let markdown = `---
 id: ${className}
 title: ${className}
