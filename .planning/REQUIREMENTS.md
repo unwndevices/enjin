@@ -15,8 +15,8 @@ Requirements for Project Infrastructure & Documentation Enhancement. Each maps t
 
 ### Build System
 
-- [ ] **BLD-01**: Lua dependency is resolved - CMake configuration handles Lua properly (not optional, must work)
-- [ ] **BLD-02**: All dependencies are documented in README or separate DEPENDENCIES.md file
+- [x] **BLD-01**: Lua dependency is resolved - CMake configuration handles Lua properly (not optional, must work) — satisfied 2026-02-03
+- [x] **BLD-02**: All dependencies are documented in README or separate DEPENDENCIES.md file — satisfied 2026-02-03
 
 ### Documentation Coverage
 
@@ -44,8 +44,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RDME-01 | Phase 7 | Complete |
 | RDME-02 | Phase 7 | Complete |
 | RDME-03 | Phase 7 | Complete |
-| BLD-01 | Phase 8 | Pending |
-| BLD-02 | Phase 8 | Pending |
+| BLD-01 | Phase 8 | Complete |
+| BLD-02 | Phase 8 | Complete |
 | DOC-01 | Phase 9 | Pending |
 | DOC-02 | Phase 9 | Pending |
 | DOC-03 | Phase 9 | Pending |

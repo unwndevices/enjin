@@ -5,27 +5,27 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Phase 8 - Build System Fixes
+**Current focus:** Phase 9 - Documentation Coverage
 
 ## Current Position
 
-Phase: 8 of 9 (Build System Fixes)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-03 - Completed plan 08-01: Make Lua optional in CMake build system
+Phase: 9 of 9 (Documentation Coverage)
+Plan: Not started
+Status: Not started
+Last activity: 2026-02-03 - Completed Phase 8: Build System Fixes
 
 Milestone: v1.1 Project Infrastructure & Documentation Enhancement
 Previous: v1.0 Migration + Documentation (shipped 2026-02-01)
 
-Progress: [████████████░░░░░░░░░] 78%
-(v1.0 complete, v1.1 phases 7 complete, phase 8 in progress)
+Progress: [█████████████░░░░░░░] 80%
+(v1.0 complete, v1.1 phases 7-8 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27 (26 phase plans + 1 quick task)
+- Total plans completed: 28 (27 phase plans + 1 quick task)
 - Average duration: 5.7 min
-- Total execution time: 2.55 hours
+- Total execution time: 2.6 hours
 
 **By Phase:**
 
@@ -38,7 +38,8 @@ Progress: [████████████░░░░░░░░░] 78%
 | 05-final-cleanup | 1 | 1 | 7 min |
 | 06-create-library-docs | 7 | 7 | 9.2 min |
 | 07-readme-enhancement | 1 | 1 | 2 min |
-| 08-build-system-fixes | 2 | 1 | 3 min |
+| 08-build-system-fixes | 2 | 2 | 2.5 min |
+| 09-documentation-coverage | 0 | TBD | - |
 
 **Quick Tasks:**
 | Task | Duration |
@@ -116,6 +117,9 @@ Recent decisions:
   - API navigation configuration: Module-based sidebar (docs/api-sidebar.js) with paths without 'api/' prefix (e.g., 'core/Object' not 'api/core/Object') to match plugin's document ID generation (06-06)
   - Optional Lua dependency: Use `find_package(Lua QUIET)` instead of `REQUIRED` to allow building without Lua when ENJIN2_BUILD_LUA=OFF (08-01)
   - Lua error messaging: Provide actionable FATAL_ERROR with installation instructions when ENJIN2_BUILD_LUA=ON but Lua is not found (08-01)
+  - Dependencies documentation: Categorize dependencies as Required/Optional/Vendor Libraries in README for clear user guidance (08-02)
+  - Optional Lua dependency: Use `find_package(Lua QUIET)` instead of `REQUIRED` to allow building without Lua when ENJIN2_BUILD_LUA=OFF (08-01)
+  - Lua error messaging: Provide actionable FATAL_ERROR with installation instructions when ENJIN2_BUILD_LUA=ON but Lua is not found (08-01)
 
 ### Roadmap Evolution
 
@@ -150,5 +154,5 @@ Deferred items for future milestones:
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed plan 08-01: Make Lua optional in CMake build system
+Stopped at: Completed Phase 8: Build System Fixes
 Resume file: None
