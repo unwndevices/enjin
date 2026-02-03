@@ -48,19 +48,59 @@ public:
     bool initialize() override;
     void shutdown() override;
     bool isInitialized() const override { return initialized; }
-    
+
     ScriptResult executeString(const std::string& code) override;
     ScriptResult executeFile(const std::string& filename) override;
     ScriptResult callFunction(const std::string& functionName) override;
-    
+
+    /**
+     * @brief Set global number variable
+     * @param name Variable name
+     * @param value Number value to set
+     * @return void
+     */
     void setGlobal(const std::string& name, double value) override;
+
+    /**
+     * @brief Set global string variable
+     * @param name Variable name
+     * @param value String value to set
+     * @return void
+     */
     void setGlobal(const std::string& name, const std::string& value) override;
+
+    /**
+     * @brief Set global boolean variable
+     * @param name Variable name
+     * @param value Boolean value to set
+     * @return void
+     */
     void setGlobal(const std::string& name, bool value) override;
-    
+
+    /**
+     * @brief Get global number variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return Number value (or default if not found)
+     */
     double getGlobalNumber(const std::string& name, double defaultValue = 0.0) override;
+
+    /**
+     * @brief Get global string variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return String value (or default if not found)
+     */
     std::string getGlobalString(const std::string& name, const std::string& defaultValue = "") override;
+
+    /**
+     * @brief Get global boolean variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return Boolean value (or default if not found)
+     */
     bool getGlobalBool(const std::string& name, bool defaultValue = false) override;
-    
+
     size_t getMemoryUsage() const override;
     const char* getTypeName() const override { return "Lua"; }
     
@@ -124,19 +164,59 @@ public:
     bool initialize() override;
     void shutdown() override;
     bool isInitialized() const override { return initialized; }
-    
+
     ScriptResult executeString(const std::string& code) override;
     ScriptResult executeFile(const std::string& filename) override;
     ScriptResult callFunction(const std::string& functionName) override;
-    
+
+    /**
+     * @brief Set global number variable
+     * @param name Variable name
+     * @param value Number value to set
+     * @return void
+     */
     void setGlobal(const std::string& name, double value) override;
+
+    /**
+     * @brief Set global string variable
+     * @param name Variable name
+     * @param value String value to set
+     * @return void
+     */
     void setGlobal(const std::string& name, const std::string& value) override;
+
+    /**
+     * @brief Set global boolean variable
+     * @param name Variable name
+     * @param value Boolean value to set
+     * @return void
+     */
     void setGlobal(const std::string& name, bool value) override;
-    
+
+    /**
+     * @brief Get global number variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return Number value (or default if not found)
+     */
     double getGlobalNumber(const std::string& name, double defaultValue = 0.0) override;
+
+    /**
+     * @brief Get global string variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return String value (or default if not found)
+     */
     std::string getGlobalString(const std::string& name, const std::string& defaultValue = "") override;
+
+    /**
+     * @brief Get global boolean variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return Boolean value (or default if not found)
+     */
     bool getGlobalBool(const std::string& name, bool defaultValue = false) override;
-    
+
     size_t getMemoryUsage() const override;
     const char* getTypeName() const override { return "MinimalLua"; }
 
