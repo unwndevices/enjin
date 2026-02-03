@@ -422,7 +422,7 @@ ${detailedDesc ? '\n' + detailedDesc : ''}
 // Process group XML and generate module overview page
 async function processGroup(moduleName, moduleInfo) {
   try {
-    const groupXml = path.join(config.xmlDir, `group__${moduleName}_group.xml`);
+    const groupXml = path.join(config.xmlDir, `group__${moduleName}__group.xml`);
 
     if (!fs.existsSync(groupXml)) {
       console.log(`Warning: Group XML not found for ${moduleName}`);
