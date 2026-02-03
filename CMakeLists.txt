@@ -121,7 +121,18 @@ if(ENJIN2_BUILD_LUA)
         endif()
     else()
         # Desktop platforms - use system Lua
-        find_package(Lua REQUIRED)
+        find_package(Lua QUIET)
+
+        # Provide clear error if Lua was requested but not found
+        if(NOT Lua_FOUND AND ENJIN2_BUILD_LUA)
+            message(FATAL_ERROR
+                "Lua was requested (ENJIN2_BUILD_LUA=ON) but could not be found.\n"
+                "Install Lua from https://lua.org/ or set ENJIN2_BUILD_LUA=OFF to build without Lua support.\n"
+                "Package managers:\n"
+                "  Debian/Ubuntu: apt-get install liblua5.1-dev\n"
+                "  macOS: brew install lua\n"
+            )
+        endif()
     endif()
     
     add_library(enjin2_lua STATIC)
