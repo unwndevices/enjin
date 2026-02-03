@@ -47,7 +47,7 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DENJIN2_BUILD_LUA=OFF
           cmake --build . --target docs
 
       - name: Generate API documentation
