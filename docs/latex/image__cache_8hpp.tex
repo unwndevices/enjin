@@ -1,0 +1,28 @@
+\doxysection{include/\+enjin2/\+components/\+image\+\_\+cache.hpp File Reference}
+\hypertarget{image__cache_8hpp}{}\label{image__cache_8hpp}\index{include/enjin2/components/image\_cache.hpp@{include/enjin2/components/image\_cache.hpp}}
+
+
+Image cache component for sprite management.  
+
+
+{\ttfamily \+\#include "{}../\+core/\+component.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}../\+core/\+types.\+hpp"{}}\newline
+{\ttfamily \+\#include $<$cstdint$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classenjin2_1_1FileInterface}{enjin2::\+\+File\+Interface}}
+\begin{DoxyCompactList}\small\item\em Abstract file interface for platform independence. \end{DoxyCompactList}\item 
+struct \doxymbox{\hyperlink{structenjin2_1_1ImageEntry}{enjin2::\+\+Image\+Entry}}
+\begin{DoxyCompactList}\small\item\em Image entry descriptor for cached images. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1ImageCacheException}{enjin2::\+\+Image\+Cache\+Exception}}
+\begin{DoxyCompactList}\small\item\em Exception class for Image\+Cache errors. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1C__ImageCache}{enjin2::\+\+C\+\_\+\+Image\+Cache}}
+\begin{DoxyCompactList}\small\item\em Image cache component for sprite management. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Image cache component for sprite management. 
+
+Provides static memory allocation for 4-\/bit image data with efficient caching and frame-\/based animation support. Based on original Enjin C\+\_\+\+Image\+Cache design. 

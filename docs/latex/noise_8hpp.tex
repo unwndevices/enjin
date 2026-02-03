@@ -1,0 +1,90 @@
+\doxysection{include/\+enjin2/\+utils/\+noise.hpp File Reference}
+\hypertarget{noise_8hpp}{}\label{noise_8hpp}\index{include/enjin2/utils/noise.hpp@{include/enjin2/utils/noise.hpp}}
+
+
+Noise generation utilities for procedural content.  
+
+
+{\ttfamily \+\#include $<$cstdint$>$}\newline
+{\ttfamily \+\#include $<$cmath$>$}\newline
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceenjin2_1_1Noise}{enjin2::\+\+Noise}}
+\begin{DoxyCompactList}\small\item\em \doxylink{namespaceenjin2_1_1Noise}{Noise} generation utilities. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\+\#define \doxymbox{\hyperlink{noise_8hpp_ae426292a2a2cac396a07776ed99d6d3f}{FASTFLOOR}}(x)
+\item 
+\+\#define \doxymbox{\hyperlink{noise_8hpp_a5877c0e563e194ef9c2bf3fd62ac36c2}{LERP}}(t,  a,  b)
+\item 
+\+\#define \doxymbox{\hyperlink{noise_8hpp_a506f1e767225dc83f2cb4c1c983ad1a2}{FADE}}(t)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+float \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_adfb93d1df806a0e0bf1417064ea09ecb}{enjin2::\+\+Noise::\+grad}} (int hash, float x, float y)
+\begin{DoxyCompactList}\small\item\em Gradient function for Perlin noise. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a627d225583e8b019c7b4305523e912a2}{enjin2::\+\+Noise::\+pnoise}} (float x, float y, int px, int py)
+\begin{DoxyCompactList}\small\item\em 2D Perlin noise function \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a1b9a976f0abfa513a2886a7cc95f491e}{enjin2::\+\+Noise::\+warped\+\_\+pnoise}} (float nx, float ny, int px, int py, int seed, float warp\+\_\+strength=0.\+5f)
+\begin{DoxyCompactList}\small\item\em Warped Perlin noise for more organic patterns. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a37e93ca42be867ec3fed24e324dff122}{enjin2::\+\+Noise::\+value\+\_\+noise}} (float x, float y, uint32\+\_\+t seed)
+\begin{DoxyCompactList}\small\item\em Simple value noise. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_aa438ddc12b4ad0493ac65df76ebfdb10}{enjin2::\+\+Noise::\+fbm\+\_\+noise}} (float x, float y, int octaves=4, float persistence=0.\+5f, float lacunarity=2.\+0f)
+\begin{DoxyCompactList}\small\item\em Fractal Brownian Motion (FBM) noise. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_ac4a77f36a261c3509c13772cc113d38c}{enjin2::\+\+Noise::\+cellular\+\_\+noise}} (float x, float y, float scale=10.\+0f)
+\begin{DoxyCompactList}\small\item\em Cellular/\+\+Worley noise. \end{DoxyCompactList}\item 
+uint8\+\_\+t \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_a2d271bbcbfcde0c0bbab290119e84925}{enjin2::\+\+Noise::\+to\+\_\+4bit}} (uint8\+\_\+t noise\+\_\+value)
+\begin{DoxyCompactList}\small\item\em Convert noise to 4-\/bit range. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_adf835edffec6c30d3d0fe8cdf3366ec5}{enjin2::\+\+Noise::\+generate\+\_\+noise\+\_\+texture}} (uint8\+\_\+t \texorpdfstring{$\ast$}{*}buffer, int width, int height, float scale, float offset\+\_\+x, float offset\+\_\+y, int noise\+\_\+type=0)
+\begin{DoxyCompactList}\small\item\em Generate noise texture into buffer. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const unsigned char \doxymbox{\hyperlink{namespaceenjin2_1_1Noise_aa25bf27bd722312244ae8720e7a4d256}{enjin2::\+\+Noise::\+perm}} \+[512]\+
+\begin{DoxyCompactList}\small\item\em Perlin noise permutation table. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Noise generation utilities for procedural content. 
+
+Provides Perlin noise, value noise, FBM noise, and cellular noise for textures, terrain generation, and visual effects. 
+
+\label{doc-define-members}
+\Hypertarget{noise_8hpp_doc-define-members}
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{noise_8hpp_a506f1e767225dc83f2cb4c1c983ad1a2}\index{noise.hpp@{noise.hpp}!FADE@{FADE}}
+\index{FADE@{FADE}!noise.hpp@{noise.hpp}}
+\doxysubsubsection{\texorpdfstring{FADE}{FADE}}
+{\footnotesize\ttfamily \label{noise_8hpp_a506f1e767225dc83f2cb4c1c983ad1a2} 
+\+\#define FADE(\begin{DoxyParamCaption}\item[{}]{t}{}\end{DoxyParamCaption})}
+
+{\bfseries Value:\+}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{(t\ *\ t\ *\ t\ *\ (t\ *\ (t\ *\ 6\ -\/\ 15)\ +\ 10))}
+
+\end{DoxyCode}
+\Hypertarget{noise_8hpp_ae426292a2a2cac396a07776ed99d6d3f}\index{noise.hpp@{noise.hpp}!FASTFLOOR@{FASTFLOOR}}
+\index{FASTFLOOR@{FASTFLOOR}!noise.hpp@{noise.hpp}}
+\doxysubsubsection{\texorpdfstring{FASTFLOOR}{FASTFLOOR}}
+{\footnotesize\ttfamily \label{noise_8hpp_ae426292a2a2cac396a07776ed99d6d3f} 
+\+\#define FASTFLOOR(\begin{DoxyParamCaption}\item[{}]{x}{}\end{DoxyParamCaption})}
+
+{\bfseries Value:\+}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{(((x)\ >\ 0)\ ?\ ((int)x)\ :\ ((int)x\ -\/\ 1))}
+
+\end{DoxyCode}
+\Hypertarget{noise_8hpp_a5877c0e563e194ef9c2bf3fd62ac36c2}\index{noise.hpp@{noise.hpp}!LERP@{LERP}}
+\index{LERP@{LERP}!noise.hpp@{noise.hpp}}
+\doxysubsubsection{\texorpdfstring{LERP}{LERP}}
+{\footnotesize\ttfamily \label{noise_8hpp_a5877c0e563e194ef9c2bf3fd62ac36c2} 
+\+\#define LERP(\begin{DoxyParamCaption}\item[{}]{t}{, }\item[{}]{a}{, }\item[{}]{b}{}\end{DoxyParamCaption})}
+
+{\bfseries Value:\+}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{((a)\ +\ (t)\ *\ ((b)\ -\/\ (a)))}
+
+\end{DoxyCode}

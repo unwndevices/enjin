@@ -1,0 +1,28 @@
+\doxysection{include/\+enjin2/\+scripting/\+script\+\_\+interface.hpp File Reference}
+\hypertarget{script__interface_8hpp}{}\label{script__interface_8hpp}\index{include/enjin2/scripting/script\_interface.hpp@{include/enjin2/scripting/script\_interface.hpp}}
+
+
+Platform-\/agnostic interfaces for script interpreters and graphics.  
+
+
+{\ttfamily \+\#include "{}../\+core/\+types.\+hpp"{}}\newline
+{\ttfamily \+\#include $<$string$>$}\newline
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$functional$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \doxymbox{\hyperlink{structenjin2_1_1ScriptResult}{enjin2::\+\+Script\+Result}}
+\begin{DoxyCompactList}\small\item\em Script execution result. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1IScriptInterpreter}{enjin2::\+\+IScript\+Interpreter}}
+\begin{DoxyCompactList}\small\item\em Platform-\/agnostic script interpreter interface. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1IScriptGraphics}{enjin2::\+\+IScript\+Graphics}}
+\begin{DoxyCompactList}\small\item\em Platform-\/agnostic graphics interface for scripts. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1ScriptFactory}{enjin2::\+\+Script\+Factory}}
+\begin{DoxyCompactList}\small\item\em Script system factory for creating platform-\/specific interpreters. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Platform-\/agnostic interfaces for script interpreters and graphics. 
+
+Provides abstract interfaces IScript\+Interpreter and IScript\+Graphics allowing multiple scripting languages and graphics backends. 

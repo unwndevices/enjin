@@ -1,63 +1,64 @@
 \doxysection{icanvas.\+hpp}
 \hypertarget{icanvas_8hpp_source}{}\label{icanvas_8hpp_source}\index{include/enjin2/abstract/icanvas.hpp@{include/enjin2/abstract/icanvas.hpp}}
-
+\doxymbox{\hyperlink{icanvas_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
-\DoxyCodeLine{00002\ }
-\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
-\DoxyCodeLine{00004\ }
-\DoxyCodeLine{00005\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00006\ }
-\DoxyCodeLine{00014\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ TPixel>}
-\DoxyCodeLine{00015\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}\ \{}
-\DoxyCodeLine{00016\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00017\ \ \ \ \ \textcolor{keyword}{using\ }PixelType\ =\ TPixel;}
-\DoxyCodeLine{00018\ }
-\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keyword}{virtual}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a62d871f824b36d0bf57514d02c4be465}{\string~ICanvas}}()\ =\ \textcolor{keywordflow}{default};}
-\DoxyCodeLine{00023\ }
-\DoxyCodeLine{00024\ \ \ \ \ \textcolor{comment}{//\ =====\ Core\ canvas\ methods\ =====}}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00021\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ TPixel>}
+\DoxyCodeLine{00022\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}\ \{}
+\DoxyCodeLine{00023\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keyword}{using\ }PixelType\ =\ TPixel;}
 \DoxyCodeLine{00025\ }
-\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{virtual}\ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_ac7c0bbbe3288628a960ad52d5c6b0354}{getWidth}}()\ \textcolor{keyword}{const}\ =\ 0;}
-\DoxyCodeLine{00031\ }
-\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keyword}{virtual}\ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7029501093761bfddfee99c0ae0760a2}{getHeight}}()\ \textcolor{keyword}{const}\ =\ 0;}
-\DoxyCodeLine{00037\ }
-\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(int16\_t\ x,\ int16\_t\ y,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00045\ }
-\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keyword}{virtual}\ TPixel\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a69f645c8dc5ec73967cde5725fc17047}{getPixel}}(int16\_t\ x,\ int16\_t\ y)\ \textcolor{keyword}{const}\ =\ 0;}
-\DoxyCodeLine{00053\ }
-\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a97164405e3ffacf287380b35762d5073}{clear}}(TPixel\ color\ =\ TPixel(0))\ =\ 0;}
-\DoxyCodeLine{00059\ }
-\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7f96847cbbd9f6180f63fc9096bf8e71}{fill}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ rect,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keyword}{virtual}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a62d871f824b36d0bf57514d02c4be465}{\string~ICanvas}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{comment}{//\ =====\ Core\ canvas\ methods\ =====}}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keyword}{virtual}\ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_ac7c0bbbe3288628a960ad52d5c6b0354}{getWidth}}()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{virtual}\ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7029501093761bfddfee99c0ae0760a2}{getHeight}}()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(int16\_t\ x,\ int16\_t\ y,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{virtual}\ TPixel\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a69f645c8dc5ec73967cde5725fc17047}{getPixel}}(int16\_t\ x,\ int16\_t\ y)\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a97164405e3ffacf287380b35762d5073}{clear}}(TPixel\ color\ =\ TPixel(0))\ =\ 0;}
 \DoxyCodeLine{00066\ }
-\DoxyCodeLine{00067\ \ \ \ \ \textcolor{comment}{//\ =====\ Text\ rendering\ =====}}
-\DoxyCodeLine{00068\ }
-\DoxyCodeLine{00076\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_af4f784850fed245adbb9eebbf98f3ea7}{drawText}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ text,\ int16\_t\ x,\ int16\_t\ y,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00077\ }
-\DoxyCodeLine{00082\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a6c5876ed236729e21a85c10887455330}{setTextColor}}(TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00083\ }
-\DoxyCodeLine{00088\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a47e3108765fc642f18ab20837c82ba43}{setTextSize}}(uint8\_t\ size)\ =\ 0;}
-\DoxyCodeLine{00089\ }
-\DoxyCodeLine{00090\ \ \ \ \ \textcolor{comment}{//\ =====\ Shape\ drawing\ =====}}
-\DoxyCodeLine{00091\ }
-\DoxyCodeLine{00100\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_ac6757401345063879c3097207c33d04e}{drawLine}}(int16\_t\ x0,\ int16\_t\ y0,\ int16\_t\ x1,\ int16\_t\ y1,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00101\ }
-\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7b106fb32edfbe3f292a7375c9f38ee6}{drawRect}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ width,\ int16\_t\ height,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00111\ }
-\DoxyCodeLine{00120\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a18a82c205b203244bee4b4ad62034927}{fillRect}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ width,\ int16\_t\ height,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00121\ }
-\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7dc53bc34eaf0a575f89ae30e7406bc9}{drawCircle}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ radius,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00130\ }
-\DoxyCodeLine{00138\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a88da1d6eeb27f81301a9429aa8c73d83}{fillCircle}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ radius,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00139\ }
-\DoxyCodeLine{00140\ \ \ \ \ \textcolor{comment}{//\ =====\ Image\ drawing\ =====}}
-\DoxyCodeLine{00141\ }
-\DoxyCodeLine{00151\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_ad07daf8e8fa13d7632a574047a5258eb}{drawBitmap}}(\textcolor{keyword}{const}\ uint8\_t*\ bitmap,\ int16\_t\ x,\ int16\_t\ y,}
-\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ width,\ int16\_t\ height,\ TPixel\ color)\ =\ 0;}
-\DoxyCodeLine{00153\ }
-\DoxyCodeLine{00163\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a673ab27f94356bde93543d93ff675f5d}{drawBitmap}}(\textcolor{keyword}{const}\ uint8\_t*\ bitmap,\ uint8\_t\ matte,}
-\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x,\ int16\_t\ y,\ int16\_t\ width,\ int16\_t\ height)\ =\ 0;}
-\DoxyCodeLine{00165\ \};}
-\DoxyCodeLine{00166\ }
-\DoxyCodeLine{00167\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00072\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7f96847cbbd9f6180f63fc9096bf8e71}{fill}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}}\&\ rect,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{comment}{//\ =====\ Text\ rendering\ =====}}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00083\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_af4f784850fed245adbb9eebbf98f3ea7}{drawText}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ text,\ int16\_t\ x,\ int16\_t\ y,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00089\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a6c5876ed236729e21a85c10887455330}{setTextColor}}(TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00095\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a47e3108765fc642f18ab20837c82ba43}{setTextSize}}(uint8\_t\ size)\ =\ 0;}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00097\ \ \ \ \ \textcolor{comment}{//\ =====\ Shape\ drawing\ =====}}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_ac6757401345063879c3097207c33d04e}{drawLine}}(int16\_t\ x0,\ int16\_t\ y0,\ int16\_t\ x1,\ int16\_t\ y1,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7b106fb32edfbe3f292a7375c9f38ee6}{drawRect}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ width,\ int16\_t\ height,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00118\ }
+\DoxyCodeLine{00127\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a18a82c205b203244bee4b4ad62034927}{fillRect}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ width,\ int16\_t\ height,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00136\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a7dc53bc34eaf0a575f89ae30e7406bc9}{drawCircle}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ radius,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00137\ }
+\DoxyCodeLine{00145\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a88da1d6eeb27f81301a9429aa8c73d83}{fillCircle}}(int16\_t\ x,\ int16\_t\ y,\ int16\_t\ radius,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00146\ }
+\DoxyCodeLine{00147\ \ \ \ \ \textcolor{comment}{//\ =====\ Image\ drawing\ =====}}
+\DoxyCodeLine{00148\ }
+\DoxyCodeLine{00158\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_ad07daf8e8fa13d7632a574047a5258eb}{drawBitmap}}(\textcolor{keyword}{const}\ uint8\_t*\ bitmap,\ int16\_t\ x,\ int16\_t\ y,}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ width,\ int16\_t\ height,\ TPixel\ color)\ =\ 0;}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00170\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a673ab27f94356bde93543d93ff675f5d}{drawBitmap}}(\textcolor{keyword}{const}\ uint8\_t*\ bitmap,\ uint8\_t\ matte,}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ x,\ int16\_t\ y,\ int16\_t\ width,\ int16\_t\ height)\ =\ 0;}
+\DoxyCodeLine{00172\ \};}
+\DoxyCodeLine{00173\ }
+\DoxyCodeLine{00174\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
 
 \end{DoxyCode}

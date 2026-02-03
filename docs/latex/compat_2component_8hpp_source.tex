@@ -1,34 +1,35 @@
 \doxysection{component.\+hpp}
 \hypertarget{compat_2component_8hpp_source}{}\label{compat_2component_8hpp_source}\index{include/enjin2/compat/component.hpp@{include/enjin2/compat/component.hpp}}
-
+\doxymbox{\hyperlink{compat_2component_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
-\DoxyCodeLine{00002\ }
-\DoxyCodeLine{00003\ \textcolor{comment}{//\ Migration\ support\ -\/\ deprecated\ after\ enjin1\ deletion}}
-\DoxyCodeLine{00004\ }
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}enjin2/core/component.hpp"{}}}
-\DoxyCodeLine{00006\ }
-\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }enjin\ \{}
-\DoxyCodeLine{00008\ }
-\DoxyCodeLine{00009\ \textcolor{comment}{//\ Type\ alias\ for\ enjin1\ compatibility}}
-\DoxyCodeLine{00010\ \textcolor{keyword}{using\ }Component\ =\ enjin2::Component;}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{comment}{//\ Migration\ support\ -\/\ deprecated\ after\ enjin1\ deletion}}
 \DoxyCodeLine{00011\ }
-\DoxyCodeLine{00020\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ Awake(enjin2::Component*\ comp)\ \{}
-\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}}();}
-\DoxyCodeLine{00022\ \}}
-\DoxyCodeLine{00023\ }
-\DoxyCodeLine{00032\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ Start(enjin2::Component*\ comp)\ \{}
-\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}}();}
-\DoxyCodeLine{00034\ \}}
-\DoxyCodeLine{00035\ }
-\DoxyCodeLine{00045\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ Update(enjin2::Component*\ comp,\ uint16\_t\ deltaTime)\ \{}
-\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}}(deltaTime);}
-\DoxyCodeLine{00047\ \}}
-\DoxyCodeLine{00048\ }
-\DoxyCodeLine{00058\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ LateUpdate(enjin2::Component*\ comp,\ uint16\_t\ deltaTime)\ \{}
-\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{lateUpdate}}(deltaTime);}
-\DoxyCodeLine{00060\ \}}
-\DoxyCodeLine{00061\ }
-\DoxyCodeLine{00062\ \}\ \textcolor{comment}{//\ namespace\ enjin}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ "{}enjin2/core/component.hpp"{}}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{namespace\ }enjin\ \{}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{comment}{//\ Type\ alias\ for\ enjin1\ compatibility}}
+\DoxyCodeLine{00017\ \textcolor{keyword}{using\ }Component\ =\ enjin2::Component;}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00027\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{compat_2component_8hpp_a31117580f1af15931e6599a20733e4a6}{Awake}}(\doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::Component}}*\ comp)\ \{}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_a22fe5ad007920ede92f4f446b1e33427}{awake}}();}
+\DoxyCodeLine{00029\ \}}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{compat_2component_8hpp_a04f5af3599a319a6927103d77932c95f}{Start}}(\doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::Component}}*\ comp)\ \{}
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_a0352d5264fc45111513e9ae28d591a88}{start}}();}
+\DoxyCodeLine{00041\ \}}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00052\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{compat_2component_8hpp_aebbd3e564e5d32c1045a547627508f49}{Update}}(\doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::Component}}*\ comp,\ uint16\_t\ deltaTime)\ \{}
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_a4851316bd8efa529a3d61b50a2decd34}{update}}(deltaTime);}
+\DoxyCodeLine{00054\ \}}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00065\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{compat_2component_8hpp_a1553c38925dab23b302d0464e8e50483}{LateUpdate}}(\doxymbox{\hyperlink{classenjin2_1_1Component}{enjin2::Component}}*\ comp,\ uint16\_t\ deltaTime)\ \{}
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keywordflow}{if}\ (comp)\ comp-\/>\doxymbox{\hyperlink{classenjin2_1_1Component_abaa079e53696344c39b847d1acd4cf6f}{lateUpdate}}(deltaTime);}
+\DoxyCodeLine{00067\ \}}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00069\ \}\ \textcolor{comment}{//\ namespace\ enjin}}
 
 \end{DoxyCode}

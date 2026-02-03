@@ -1,120 +1,121 @@
 \doxysection{tickmarks.\+hpp}
 \hypertarget{tickmarks_8hpp_source}{}\label{tickmarks_8hpp_source}\index{include/enjin2/components/tickmarks.hpp@{include/enjin2/components/tickmarks.hpp}}
-
+\doxymbox{\hyperlink{tickmarks_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_TICKMARKS\_HPP}}
-\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_TICKMARKS\_HPP}}
-\DoxyCodeLine{00003\ }
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/component.hpp"{}}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}drawable.hpp"{}}}
-\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}position.hpp"{}}}
-\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
-\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}../core/math.hpp"{}}}
-\DoxyCodeLine{00009\ }
-\DoxyCodeLine{00010\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00011\ }
-\DoxyCodeLine{00018\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a0f822af645c5803eb91e50a956e7be42}{Tickmarks}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}\ \{}
-\DoxyCodeLine{00019\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00020\ \ \ \ \ Vector2\ center;}
-\DoxyCodeLine{00021\ \ \ \ \ int16\_t\ start\_angle;}
-\DoxyCodeLine{00022\ \ \ \ \ int16\_t\ stop\_angle;}
-\DoxyCodeLine{00023\ \ \ \ \ uint8\_t\ spacing;}
-\DoxyCodeLine{00024\ \ \ \ \ uint8\_t\ length;}
-\DoxyCodeLine{00025\ \ \ \ \ uint8\_t\ radius;}
-\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{float}\ current\_value;}
-\DoxyCodeLine{00027\ \ \ \ \ Position*\ position;}
-\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keyword}{mutable}\ Canvas<uint8\_t,\ 128,\ 128>\ internal\_canvas;\ \textcolor{comment}{//\ Large\ canvas\ for\ full\ scale}}
-\DoxyCodeLine{00029\ }
-\DoxyCodeLine{00030\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00041\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a0f822af645c5803eb91e50a956e7be42}{Tickmarks}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ Vector2\ centerPoint,\ int16\_t\ startAngle,\ int16\_t\ stopAngle,\ }
-\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ tickSpacing,\ uint8\_t\ tickLength,\ uint8\_t\ arcRadius)}
-\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})}
-\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ ,\ center(centerPoint)}
-\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ ,\ start\_angle(startAngle)}
-\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ ,\ stop\_angle(stopAngle)}
-\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ ,\ spacing(tickSpacing)}
-\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ ,\ length(tickLength)}
-\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ ,\ radius(arcRadius)}
-\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ ,\ current\_value(0.0f)}
-\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ ,\ position(nullptr)}
-\DoxyCodeLine{00052\ \ \ \ \ \{}
-\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ position\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getComponent<Position>();}
-\DoxyCodeLine{00054\ \ \ \ \ \}}
-\DoxyCodeLine{00055\ }
-\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{void}\ onCreate()\textcolor{keyword}{\ override\ }\{\}}
-\DoxyCodeLine{00057\ }
-\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keywordtype}{void}\ onUpdate(\textcolor{keywordtype}{float}\ deltaTime)\textcolor{keyword}{\ override\ }\{\}}
-\DoxyCodeLine{00059\ }
-\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a37c7e75426e427208f6ffb6d45bf1a53}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
-\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!position)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_TICKMARKS\_HPP}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_TICKMARKS\_HPP}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}../core/component.hpp"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{drawable_8hpp}{drawable.hpp}}"{}}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{position_8hpp}{position.hpp}}"{}}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{graphics_2canvas_8hpp}{../graphics/canvas.hpp}}"{}}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{math_8hpp}{../core/math.hpp}}"{}}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a0f822af645c5803eb91e50a956e7be42}{Tickmarks}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}\ \{}
+\DoxyCodeLine{00026\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00027\ \ \ \ \ Vector2\ center;}
+\DoxyCodeLine{00028\ \ \ \ \ int16\_t\ start\_angle;}
+\DoxyCodeLine{00029\ \ \ \ \ int16\_t\ stop\_angle;}
+\DoxyCodeLine{00030\ \ \ \ \ uint8\_t\ spacing;}
+\DoxyCodeLine{00031\ \ \ \ \ uint8\_t\ length;}
+\DoxyCodeLine{00032\ \ \ \ \ uint8\_t\ radius;}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{float}\ current\_value;}
+\DoxyCodeLine{00034\ \ \ \ \ Position*\ position;}
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keyword}{mutable}\ Canvas<uint8\_t,\ 128,\ 128>\ internal\_canvas;\ \textcolor{comment}{//\ Large\ canvas\ for\ full\ scale}}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00037\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00048\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a0f822af645c5803eb91e50a956e7be42}{Tickmarks}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ Vector2\ centerPoint,\ int16\_t\ startAngle,\ int16\_t\ stopAngle,\ }
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ tickSpacing,\ uint8\_t\ tickLength,\ uint8\_t\ arcRadius)}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ ,\ center(centerPoint)}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ ,\ start\_angle(startAngle)}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ ,\ stop\_angle(stopAngle)}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ ,\ spacing(tickSpacing)}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ ,\ length(tickLength)}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ ,\ radius(arcRadius)}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ ,\ current\_value(0.0f)}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ ,\ position(nullptr)}
+\DoxyCodeLine{00059\ \ \ \ \ \{}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ position\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getComponent<Position>();}
+\DoxyCodeLine{00061\ \ \ \ \ \}}
+\DoxyCodeLine{00062\ }
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{void}\ onCreate()\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keywordtype}{void}\ onUpdate(\textcolor{keywordtype}{float}\ deltaTime)\textcolor{keyword}{\ override\ }\{\}}
 \DoxyCodeLine{00066\ }
-\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ internal\ canvas}}
-\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ internal\_canvas.clear(16);}
-\DoxyCodeLine{00069\ }
-\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ tickmarks}}
-\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ i\ =\ start\_angle;\ i\ <=\ stop\_angle;\ i\ +=\ spacing)\ \{}
-\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ angle\ adjusted\ for\ current\ value}}
-\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ angle\ =\ i\ -\/\ ((int)(current\_value\ *\ 100.0f)\ *\ spacing\ /\ 10)\ \%\ spacing\ -\/\ 90;}
-\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ tick\ value\ for\ determining\ tick\ length}}
-\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ tick\_value\ =\ floorf((current\_value\ *\ 10.0f)\ +\ (angle\ +\ 90.0f)\ /\ spacing);}
-\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Major\ ticks\ (every\ 10th)\ are\ longer}}
-\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ tick\_length\ =\ ((int)tick\_value\ \%\ 10\ ==\ 0)\ ?\ length\ :\ length\ /\ 2;}
-\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Convert\ angle\ to\ radians}}
-\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ angle\_rad\ =\ angle\ *\ PI\ /\ 180.0f;}
-\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ start\ and\ end\ points\ of\ the\ tickmark}}
-\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ start\_x\ =\ center.x\ +\ (radius\ -\/\ tick\_length)\ *\ sin(angle\_rad);}
-\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ start\_y\ =\ center.y\ +\ (radius\ -\/\ tick\_length)\ *\ cos(angle\_rad);}
-\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_x\ =\ start\_x\ +\ tick\_length\ *\ sin(angle\_rad);}
-\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_y\ =\ start\_y\ +\ tick\_length\ *\ cos(angle\_rad);}
-\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Ensure\ coordinates\ are\ within\ bounds}}
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (start\_x\ >=\ 0\ \&\&\ start\_x\ <\ 128\ \&\&\ start\_y\ >=\ 0\ \&\&\ start\_y\ <\ 128\ \&\&}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end\_x\ >=\ 0\ \&\&\ end\_x\ <\ 128\ \&\&\ end\_y\ >=\ 0\ \&\&\ end\_y\ <\ 128)\ \{}
-\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.drawLine(start\_x,\ start\_y,\ end\_x,\ end\_y,\ 15);}
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00096\ }
-\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Copy\ to\ main\ canvas}}
-\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ Vector2\ pos\ =\ position-\/>getGlobalPosition();}
-\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ canvas.blit(internal\_canvas,\ pos.x,\ pos.y,\ 128,\ 128);}
-\DoxyCodeLine{00100\ \ \ \ \ \}}
-\DoxyCodeLine{00101\ }
-\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_ad9eed318d02a71acd09085cdbfca5b53}{setValue}}(\textcolor{keywordtype}{float}\ value)\ \{}
-\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ current\_value\ =\ value;}
-\DoxyCodeLine{00108\ \ \ \ \ \}}
-\DoxyCodeLine{00109\ }
-\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a3d50fc7ccf37ac8986463ee2c2884aa3}{getValue}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ current\_value;}
-\DoxyCodeLine{00116\ \ \ \ \ \}}
-\DoxyCodeLine{00117\ }
-\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a1aac881ab556a5e7534fd26914d11896}{setCenter}}(Vector2\ newCenter)\ \{}
-\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ center\ =\ newCenter;}
-\DoxyCodeLine{00124\ \ \ \ \ \}}
-\DoxyCodeLine{00125\ }
-\DoxyCodeLine{00131\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a077fc4a1275e0743064b06d6966bcde9}{setAngleRange}}(int16\_t\ startAngle,\ int16\_t\ stopAngle)\ \{}
-\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ start\_angle\ =\ startAngle;}
-\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ stop\_angle\ =\ stopAngle;}
-\DoxyCodeLine{00134\ \ \ \ \ \}}
-\DoxyCodeLine{00135\ }
-\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a4142583a3500e4cb4584e53f9d9ccf65}{setSpacing}}(uint8\_t\ newSpacing)\ \{}
-\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ spacing\ =\ newSpacing;}
-\DoxyCodeLine{00142\ \ \ \ \ \}}
-\DoxyCodeLine{00143\ }
-\DoxyCodeLine{00148\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a60a9a635416a08c1100b3ecda8119618}{setLength}}(uint8\_t\ newLength)\ \{}
-\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ length\ =\ newLength;}
-\DoxyCodeLine{00150\ \ \ \ \ \}}
-\DoxyCodeLine{00151\ }
-\DoxyCodeLine{00156\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a90b26ebd4ab467b12b91f9287c9917c9}{setRadius}}(uint8\_t\ newRadius)\ \{}
-\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ radius\ =\ newRadius;}
-\DoxyCodeLine{00158\ \ \ \ \ \}}
-\DoxyCodeLine{00159\ \};}
-\DoxyCodeLine{00160\ }
-\DoxyCodeLine{00161\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
-\DoxyCodeLine{00162\ }
-\DoxyCodeLine{00163\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_TICKMARKS\_HPP}}
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a37c7e75426e427208f6ffb6d45bf1a53}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!position)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ internal\ canvas}}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ internal\_canvas.clear(16);}
+\DoxyCodeLine{00076\ }
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ tickmarks}}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ i\ =\ start\_angle;\ i\ <=\ stop\_angle;\ i\ +=\ spacing)\ \{}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ angle\ adjusted\ for\ current\ value}}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ angle\ =\ i\ -\/\ ((int)(current\_value\ *\ 100.0f)\ *\ spacing\ /\ 10)\ \%\ spacing\ -\/\ 90;}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ tick\ value\ for\ determining\ tick\ length}}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ tick\_value\ =\ floorf((current\_value\ *\ 10.0f)\ +\ (angle\ +\ 90.0f)\ /\ spacing);}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Major\ ticks\ (every\ 10th)\ are\ longer}}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ tick\_length\ =\ ((int)tick\_value\ \%\ 10\ ==\ 0)\ ?\ length\ :\ length\ /\ 2;}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Convert\ angle\ to\ radians}}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ angle\_rad\ =\ angle\ *\ PI\ /\ 180.0f;}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ start\ and\ end\ points\ of\ the\ tickmark}}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ start\_x\ =\ center.x\ +\ (radius\ -\/\ tick\_length)\ *\ sin(angle\_rad);}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ start\_y\ =\ center.y\ +\ (radius\ -\/\ tick\_length)\ *\ cos(angle\_rad);}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_x\ =\ start\_x\ +\ tick\_length\ *\ sin(angle\_rad);}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_y\ =\ start\_y\ +\ tick\_length\ *\ cos(angle\_rad);}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Ensure\ coordinates\ are\ within\ bounds}}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (start\_x\ >=\ 0\ \&\&\ start\_x\ <\ 128\ \&\&\ start\_y\ >=\ 0\ \&\&\ start\_y\ <\ 128\ \&\&}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end\_x\ >=\ 0\ \&\&\ end\_x\ <\ 128\ \&\&\ end\_y\ >=\ 0\ \&\&\ end\_y\ <\ 128)\ \{}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.drawLine(start\_x,\ start\_y,\ end\_x,\ end\_y,\ 15);}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Copy\ to\ main\ canvas}}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ Vector2\ pos\ =\ position-\/>getGlobalPosition();}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ canvas.blit(internal\_canvas,\ pos.x,\ pos.y,\ 128,\ 128);}
+\DoxyCodeLine{00107\ \ \ \ \ \}}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_ad9eed318d02a71acd09085cdbfca5b53}{setValue}}(\textcolor{keywordtype}{float}\ value)\ \{}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ current\_value\ =\ value;}
+\DoxyCodeLine{00115\ \ \ \ \ \}}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00121\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a3d50fc7ccf37ac8986463ee2c2884aa3}{getValue}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ current\_value;}
+\DoxyCodeLine{00123\ \ \ \ \ \}}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a1aac881ab556a5e7534fd26914d11896}{setCenter}}(Vector2\ newCenter)\ \{}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ center\ =\ newCenter;}
+\DoxyCodeLine{00131\ \ \ \ \ \}}
+\DoxyCodeLine{00132\ }
+\DoxyCodeLine{00138\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a077fc4a1275e0743064b06d6966bcde9}{setAngleRange}}(int16\_t\ startAngle,\ int16\_t\ stopAngle)\ \{}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ start\_angle\ =\ startAngle;}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ stop\_angle\ =\ stopAngle;}
+\DoxyCodeLine{00141\ \ \ \ \ \}}
+\DoxyCodeLine{00142\ }
+\DoxyCodeLine{00147\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a4142583a3500e4cb4584e53f9d9ccf65}{setSpacing}}(uint8\_t\ newSpacing)\ \{}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ spacing\ =\ newSpacing;}
+\DoxyCodeLine{00149\ \ \ \ \ \}}
+\DoxyCodeLine{00150\ }
+\DoxyCodeLine{00155\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a60a9a635416a08c1100b3ecda8119618}{setLength}}(uint8\_t\ newLength)\ \{}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ length\ =\ newLength;}
+\DoxyCodeLine{00157\ \ \ \ \ \}}
+\DoxyCodeLine{00158\ }
+\DoxyCodeLine{00163\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Tickmarks_a90b26ebd4ab467b12b91f9287c9917c9}{setRadius}}(uint8\_t\ newRadius)\ \{}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ radius\ =\ newRadius;}
+\DoxyCodeLine{00165\ \ \ \ \ \}}
+\DoxyCodeLine{00166\ \};}
+\DoxyCodeLine{00167\ }
+\DoxyCodeLine{00168\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00170\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_TICKMARKS\_HPP}}
 
 \end{DoxyCode}

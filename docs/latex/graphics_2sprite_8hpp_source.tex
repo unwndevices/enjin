@@ -6,8 +6,8 @@
 \DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_GRAPHICS\_SPRITE\_HPP}}
 \DoxyCodeLine{00003\ }
 \DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}../components/drawable.hpp"{}}}
-\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}canvas.hpp"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{drawable_8hpp}{../components/drawable.hpp}}"{}}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{graphics_2canvas_8hpp}{canvas.hpp}}"{}}}
 \DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <cstdint>}}
 \DoxyCodeLine{00008\ }
 \DoxyCodeLine{00009\ \textcolor{keyword}{namespace\ }enjin2\ \{}
@@ -21,10 +21,10 @@
 \DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ ,\ matte(16)\ \ \textcolor{comment}{//\ 16\ =\ transparent\ for\ 4-\/bit,\ matches\ original}}
 \DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ ,\ position(0,\ 0)}
 \DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ ,\ frame(0)}
-\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ ,\ mode(BlendMode::Normal)}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ ,\ mode(\doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{BlendMode}}::Normal)}
 \DoxyCodeLine{00030\ \ \ \ \ \{\}}
 \DoxyCodeLine{00031\ }
-\DoxyCodeLine{00039\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Sprite_ae5e0e4b266059be7296e0eb6e7dc94cf}{Sprite}}(\textcolor{keyword}{const}\ uint8\_t*\ texture\_data,\ uint8\_t\ w,\ uint8\_t\ h,\ BlendMode\ blend\_mode\ =\ BlendMode::Normal)}
+\DoxyCodeLine{00039\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Sprite_ae5e0e4b266059be7296e0eb6e7dc94cf}{Sprite}}(\textcolor{keyword}{const}\ uint8\_t*\ texture\_data,\ uint8\_t\ w,\ uint8\_t\ h,\ \doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{BlendMode}}\ blend\_mode\ =\ BlendMode::Normal)}
 \DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ :\ texture(texture\_data)}
 \DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ ,\ width(w)}
 \DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ ,\ height(h)}
@@ -175,7 +175,7 @@
 \DoxyCodeLine{00199\ \ \ \ \ uint8\_t\ \_width,\ \_height,\ \_frame;}
 \DoxyCodeLine{00200\ \ \ \ \ Point\ \_position;}
 \DoxyCodeLine{00201\ \ \ \ \ uint8\_t\ \_matte;}
-\DoxyCodeLine{00202\ \ \ \ \ BlendMode\ \_mode;}
+\DoxyCodeLine{00202\ \ \ \ \ \doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{BlendMode}}\ \_mode;}
 \DoxyCodeLine{00203\ }
 \DoxyCodeLine{00204\ \textcolor{keyword}{private}:}
 \DoxyCodeLine{00205\ \ \ \ \ \textcolor{keyword}{const}\ uint8\_t*\ texture;\ \ \ \ \ }
@@ -183,7 +183,7 @@
 \DoxyCodeLine{00207\ \ \ \ \ uint8\_t\ matte;\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
 \DoxyCodeLine{00208\ \ \ \ \ Point\ position;\ \ \ \ \ \ \ \ \ \ \ \ \ }
 \DoxyCodeLine{00209\ \ \ \ \ uint8\_t\ frame;\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00210\ \ \ \ \ BlendMode\ mode;\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00210\ \ \ \ \ \doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{BlendMode}}\ mode;\ \ \ \ \ \ \ \ \ \ \ \ \ }
 \DoxyCodeLine{00211\ \};}
 \DoxyCodeLine{00212\ }
 \DoxyCodeLine{00213\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}

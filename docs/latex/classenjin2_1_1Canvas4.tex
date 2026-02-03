@@ -1,5 +1,14 @@
 \doxysection{enjin2::\+Canvas4\texorpdfstring{$<$}{<} WIDTH, HEIGHT \texorpdfstring{$>$}{>} Class Template Reference}
 \hypertarget{classenjin2_1_1Canvas4}{}\label{classenjin2_1_1Canvas4}\index{enjin2::Canvas4$<$ WIDTH, HEIGHT $>$@{enjin2::Canvas4$<$ WIDTH, HEIGHT $>$}}
+
+
+4-\/bit canvas with packed pixel storage  
+
+
+
+
+{\ttfamily \+\#include $<$canvas.\+hpp$>$}
+
 \doxysubsubsection*{Public Types}
 \begin{DoxyCompactItemize}
 \item 
@@ -14,6 +23,9 @@ using {\bfseries Pixel\+Type}
 \doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
+\Hypertarget{classenjin2_1_1Canvas4_a6369b0993b0e46eaaacfe7f4cd011f68}\label{classenjin2_1_1Canvas4_a6369b0993b0e46eaaacfe7f4cd011f68} 
+{\bfseries Canvas4} ()
+\begin{DoxyCompactList}\small\item\em Constructor initializes clear canvas. \end{DoxyCompactList}\item 
 uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1Canvas4_ae1d72cc1431579dd7b434acd5f5df35e}{get\+Width}} () const override
 \begin{DoxyCompactList}\small\item\em Get canvas width in pixels. \end{DoxyCompactList}\item 
 uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1Canvas4_a2b75ead71ffb7fce14869e1f82c53d1a}{get\+Height}} () const override
@@ -44,10 +56,10 @@ const \doxymbox{\hyperlink{classenjin2_1_1PackedPixel4}{Packed\+Pixel4}} \texorp
 size\+\_\+t {\bfseries get\+Buffer\+Size} () const
 \item 
 \Hypertarget{classenjin2_1_1Canvas4_a042bc59864e80adfdd5eaaed60c01073}\label{classenjin2_1_1Canvas4_a042bc59864e80adfdd5eaaed60c01073} 
-void {\bfseries copy\+From} (const Canvas4 \&other, int16\+\_\+t dst\+\_\+x=0, int16\+\_\+t dst\+\_\+y=0)
+void {\bfseries copy\+From} (const \doxymbox{\hyperlink{classenjin2_1_1Canvas4_a6369b0993b0e46eaaacfe7f4cd011f68}{Canvas4}} \&other, int16\+\_\+t dst\+\_\+x=0, int16\+\_\+t dst\+\_\+y=0)
 \item 
 \Hypertarget{classenjin2_1_1Canvas4_a1408035f3488f778fb671226f57b2f90}\label{classenjin2_1_1Canvas4_a1408035f3488f778fb671226f57b2f90} 
-void {\bfseries blit} (const Canvas4 \&sprite, int16\+\_\+t x, int16\+\_\+t y, \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} transparent=\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(0))
+void {\bfseries blit} (const \doxymbox{\hyperlink{classenjin2_1_1Canvas4_a6369b0993b0e46eaaacfe7f4cd011f68}{Canvas4}} \&sprite, int16\+\_\+t x, int16\+\_\+t y, \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}} transparent=\doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(0))
 \end{DoxyCompactItemize}
 \doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1ICanvas}{enjin2::\+\+ICanvas$<$ Pixel4 $>$}}}
 \begin{DoxyCompactItemize}
@@ -74,6 +86,20 @@ bool \doxymbox{\hyperlink{classenjin2_1_1ICanvas_a9eebb09ac52919c29947f3e682b3f0
 \begin{DoxyCompactList}\small\item\em Check if coordinates are within canvas bounds. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}} \doxymbox{\hyperlink{classenjin2_1_1ICanvas_aff1dee9b6315278286485c99d7fde674}{get\+Bounds}} () const
 \begin{DoxyCompactList}\small\item\em Get canvas bounds as rectangle. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$uint16\+\_\+t WIDTH, uint16\+\_\+t HEIGHT$>$\newline
+class enjin2::\+\+Canvas4$<$ WIDTH, HEIGHT $>$}
+4-\/bit canvas with packed pixel storage 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em WIDTH} & Canvas width in pixels (must be even) \\
+\hline
+{\em HEIGHT} & Canvas height in pixels \\
+\hline
+\end{DoxyTemplParams}
 
 
 \label{doc-func-members}
@@ -304,4 +330,4 @@ Batch pixel setting for arrays of data.
 
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-include/\+enjin2/\+graphics/\+canvas.\+hpp\end{DoxyCompactItemize}
+include/\+enjin2/\+graphics/\+\doxymbox{\hyperlink{graphics_2canvas_8hpp}{canvas.\+hpp}}\end{DoxyCompactItemize}

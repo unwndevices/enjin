@@ -1,244 +1,245 @@
 \doxysection{animation\+\_\+track.\+hpp}
 \hypertarget{animation__track_8hpp_source}{}\label{animation__track_8hpp_source}\index{include/enjin2/animation/animation\_track.hpp@{include/enjin2/animation/animation\_track.hpp}}
-
+\doxymbox{\hyperlink{animation__track_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
-\DoxyCodeLine{00002\ }
-\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}keyframe.hpp"{}}}
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/signal.hpp"{}}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <array>}}
-\DoxyCodeLine{00006\ }
-\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00008\ }
-\DoxyCodeLine{00014\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keyword}{typename}\ KeyframeType>}
-\DoxyCodeLine{00015\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aa09f367cdd39f469cfd6ba95b3926e9a}{AnimationTrack}}\ \{}
-\DoxyCodeLine{00016\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00017\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MAX\_KEYFRAMES\ =\ 16;\ \ }
-\DoxyCodeLine{00018\ \ \ \ \ }
-\DoxyCodeLine{00019\ \ \ \ \ std::array<KeyframeType,\ MAX\_KEYFRAMES>\ keyframes;}
-\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ keyframeCount;}
-\DoxyCodeLine{00021\ \ \ \ \ }
-\DoxyCodeLine{00022\ \ \ \ \ uint16\_t\ currentTime;\ \ \ \ \ \ \ }
-\DoxyCodeLine{00023\ \ \ \ \ uint16\_t\ duration;\ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00024\ \ \ \ \ AnimationState\ state;\ \ \ \ \ \ \ }
-\DoxyCodeLine{00025\ \ \ \ \ LoopMode\ loopMode;\ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{bool}\ reversed;\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00027\ \ \ \ \ }
-\DoxyCodeLine{00028\ \ \ \ \ \textcolor{comment}{//\ Animation\ events}}
-\DoxyCodeLine{00029\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<>}}\ onStartSignal;\ \ \ \ \ }
-\DoxyCodeLine{00030\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<>}}\ onCompleteSignal;\ \ }
-\DoxyCodeLine{00031\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<T>}}\ onUpdateSignal;\ \ \ }
-\DoxyCodeLine{00032\ \ \ \ \ }
-\DoxyCodeLine{00033\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00037\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aa09f367cdd39f469cfd6ba95b3926e9a}{AnimationTrack}}()\ }
-\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ :\ keyframeCount(0),\ currentTime(0),\ duration(0),\ }
-\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \ \ state(AnimationState::STOPPED),\ loopMode(LoopMode::NONE),\ reversed(false)\ \{\}}
-\DoxyCodeLine{00040\ \ \ \ \ }
-\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a77589216fb5ed2271f338dee69848d3b}{addKeyframe}}(\textcolor{keyword}{const}\ KeyframeType\&\ keyframe)\ \{}
-\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ >=\ MAX\_KEYFRAMES)\ \{}
-\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
-\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Insert\ keyframe\ in\ sorted\ order\ by\ time}}
-\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ insertIndex\ =\ 0;}
-\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ keyframeCount;\ ++i)\ \{}
-\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframes[i].time\ <=\ keyframe.time)\ \{}
-\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ insertIndex\ =\ i\ +\ 1;}
-\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
-\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Shift\ existing\ keyframes}}
-\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ keyframeCount;\ i\ >\ insertIndex;\ -\/-\/i)\ \{}
-\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ keyframes[i]\ =\ keyframes[i\ -\/\ 1];}
-\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ keyframes[insertIndex]\ =\ keyframe;}
-\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ keyframeCount++;}
-\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ duration}}
-\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ >\ 0)\ \{}
-\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ duration\ =\ keyframes[keyframeCount\ -\/\ 1].time;}
-\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
-\DoxyCodeLine{00075\ \ \ \ \ \}}
-\DoxyCodeLine{00076\ \ \ \ \ }
-\DoxyCodeLine{00080\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_ae189cec6237dc04c3406ba14517431a9}{clearKeyframes}}()\ \{}
-\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ keyframeCount\ =\ 0;}
-\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ duration\ =\ 0;}
-\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
-\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ state\ =\ AnimationState::STOPPED;}
-\DoxyCodeLine{00085\ \ \ \ \ \}}
-\DoxyCodeLine{00086\ \ \ \ \ }
-\DoxyCodeLine{00090\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a440c9ec5713ca01b92b21b00d7e4cb82}{play}}()\ \{}
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ ==\ 0)\ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ state\ =\ AnimationState::PLAYING;}
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentTime\ >=\ duration\ \&\&\ loopMode\ ==\ LoopMode::NONE)\ \{}
-\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ 0;\ \ \textcolor{comment}{//\ Restart\ if\ at\ end}}
-\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ onStartSignal.emit();}
-\DoxyCodeLine{00098\ \ \ \ \ \}}
-\DoxyCodeLine{00099\ \ \ \ \ }
-\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a32ee5332bc23cee2c20aa264fc1a2305}{pause}}()\ \{}
-\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (state\ ==\ AnimationState::PLAYING)\ \{}
-\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ state\ =\ AnimationState::PAUSED;}
-\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00107\ \ \ \ \ \}}
-\DoxyCodeLine{00108\ \ \ \ \ }
-\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a8a90dd639a98c0759439f6203e1ce0ca}{stop}}()\ \{}
-\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ state\ =\ AnimationState::STOPPED;}
-\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
-\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ reversed\ =\ \textcolor{keyword}{false};}
-\DoxyCodeLine{00116\ \ \ \ \ \}}
-\DoxyCodeLine{00117\ \ \ \ \ }
-\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a5580ce56d1a8bf2120c5a6d9edf02de4}{setLoopMode}}(LoopMode\ mode)\ \{}
-\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ loopMode\ =\ mode;}
-\DoxyCodeLine{00124\ \ \ \ \ \}}
-\DoxyCodeLine{00125\ \ \ \ \ }
-\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a30b162efb1f6cbd9b217d990f7eaf9ec}{update}}(uint16\_t\ deltaTime)\ \{}
-\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (state\ !=\ AnimationState::PLAYING\ ||\ keyframeCount\ ==\ 0)\ \{}
-\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ time\ based\ on\ direction}}
-\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (reversed)\ \{}
-\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentTime\ >=\ deltaTime)\ \{}
-\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ -\/=\ deltaTime;}
-\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
-\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ handleLoopBoundary();}
-\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ +=\ deltaTime;}
-\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentTime\ >=\ duration)\ \{}
-\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ handleLoopBoundary();}
-\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ current\ value\ and\ emit\ update}}
-\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ T\ currentValue\ =\ evaluateAtTime(currentTime);}
-\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ onUpdateSignal.emit(currentValue);}
-\DoxyCodeLine{00155\ \ \ \ \ \}}
-\DoxyCodeLine{00156\ \ \ \ \ }
-\DoxyCodeLine{00161\ \ \ \ \ T\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a5b4e066802298b63702a2d6301595cb1}{getCurrentValue}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ evaluateAtTime(currentTime);}
-\DoxyCodeLine{00163\ \ \ \ \ \}}
-\DoxyCodeLine{00164\ \ \ \ \ }
-\DoxyCodeLine{00169\ \ \ \ \ AnimationState\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aef444ab9c7757916ac4607dc559b75a3}{getState}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ state;}
-\DoxyCodeLine{00171\ \ \ \ \ \}}
-\DoxyCodeLine{00172\ \ \ \ \ }
-\DoxyCodeLine{00177\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a2e7b4e27d01bb8e6510063d9c1226400}{getCurrentTime}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ currentTime;}
-\DoxyCodeLine{00179\ \ \ \ \ \}}
-\DoxyCodeLine{00180\ \ \ \ \ }
-\DoxyCodeLine{00185\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aae8d82b6cd88fa746acbdf84cb1fff0f}{getDuration}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ duration;}
-\DoxyCodeLine{00187\ \ \ \ \ \}}
-\DoxyCodeLine{00188\ \ \ \ \ }
-\DoxyCodeLine{00193\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a78b17fb3d014d6f1e66d5617491eb5af}{getProgress}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ duration\ >\ 0\ ?\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(currentTime)\ /\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(duration)\ :\ 0.0f;}
-\DoxyCodeLine{00195\ \ \ \ \ \}}
-\DoxyCodeLine{00196\ \ \ \ \ }
-\DoxyCodeLine{00200\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_ad09ec3ef6a89f7c8e67b1ebbb117316c}{connectOnStart}}(std::function<\textcolor{keywordtype}{void}()>\ callback)\ \{}
-\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}(\&onStartSignal,\ callback);}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{keyframe_8hpp}{keyframe.hpp}}"{}}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}../core/signal.hpp"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <array>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00021\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keyword}{typename}\ KeyframeType>}
+\DoxyCodeLine{00022\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aa09f367cdd39f469cfd6ba95b3926e9a}{AnimationTrack}}\ \{}
+\DoxyCodeLine{00023\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MAX\_KEYFRAMES\ =\ 16;\ \ }
+\DoxyCodeLine{00025\ \ \ \ \ }
+\DoxyCodeLine{00026\ \ \ \ \ std::array<KeyframeType,\ MAX\_KEYFRAMES>\ keyframes;}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ keyframeCount;}
+\DoxyCodeLine{00028\ \ \ \ \ }
+\DoxyCodeLine{00029\ \ \ \ \ uint16\_t\ currentTime;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00030\ \ \ \ \ uint16\_t\ duration;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00031\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{AnimationState}}\ state;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00032\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{LoopMode}}\ loopMode;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{bool}\ reversed;\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00034\ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{comment}{//\ Animation\ events}}
+\DoxyCodeLine{00036\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<>}}\ onStartSignal;\ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<>}}\ onCompleteSignal;\ \ }
+\DoxyCodeLine{00038\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Signal}{Signal<T>}}\ onUpdateSignal;\ \ \ }
+\DoxyCodeLine{00039\ \ \ \ \ }
+\DoxyCodeLine{00040\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00044\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aa09f367cdd39f469cfd6ba95b3926e9a}{AnimationTrack}}()\ }
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ :\ keyframeCount(0),\ currentTime(0),\ duration(0),\ }
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \ \ state(\doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{AnimationState}}::\doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da09d4d696b4e935115b9313e3c412509a}{STOPPED}}),\ loopMode(\doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{LoopMode}}::\doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0ab50339a10e1de285ac99d4c3990b8693}{NONE}}),\ reversed(false)\ \{\}}
+\DoxyCodeLine{00047\ \ \ \ \ }
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a77589216fb5ed2271f338dee69848d3b}{addKeyframe}}(\textcolor{keyword}{const}\ KeyframeType\&\ keyframe)\ \{}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ >=\ MAX\_KEYFRAMES)\ \{}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Insert\ keyframe\ in\ sorted\ order\ by\ time}}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ insertIndex\ =\ 0;}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ keyframeCount;\ ++i)\ \{}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframes[i].time\ <=\ keyframe.time)\ \{}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ insertIndex\ =\ i\ +\ 1;}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Shift\ existing\ keyframes}}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ keyframeCount;\ i\ >\ insertIndex;\ -\/-\/i)\ \{}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \ \ \ \ keyframes[i]\ =\ keyframes[i\ -\/\ 1];}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ keyframes[insertIndex]\ =\ keyframe;}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ keyframeCount++;}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ duration}}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ >\ 0)\ \{}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ duration\ =\ keyframes[keyframeCount\ -\/\ 1].time;}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00082\ \ \ \ \ \}}
+\DoxyCodeLine{00083\ \ \ \ \ }
+\DoxyCodeLine{00087\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_ae189cec6237dc04c3406ba14517431a9}{clearKeyframes}}()\ \{}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ keyframeCount\ =\ 0;}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ duration\ =\ 0;}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ state\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da09d4d696b4e935115b9313e3c412509a}{AnimationState::STOPPED}};}
+\DoxyCodeLine{00092\ \ \ \ \ \}}
+\DoxyCodeLine{00093\ \ \ \ \ }
+\DoxyCodeLine{00097\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a440c9ec5713ca01b92b21b00d7e4cb82}{play}}()\ \{}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ ==\ 0)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ state\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da50366a49630a416ab3ccaa004196027e}{AnimationState::PLAYING}};}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentTime\ >=\ duration\ \&\&\ loopMode\ ==\ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0ab50339a10e1de285ac99d4c3990b8693}{LoopMode::NONE}})\ \{}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ 0;\ \ \textcolor{comment}{//\ Restart\ if\ at\ end}}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ onStartSignal.emit();}
+\DoxyCodeLine{00105\ \ \ \ \ \}}
+\DoxyCodeLine{00106\ \ \ \ \ }
+\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a32ee5332bc23cee2c20aa264fc1a2305}{pause}}()\ \{}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (state\ ==\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da50366a49630a416ab3ccaa004196027e}{AnimationState::PLAYING}})\ \{}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ state\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da99b2439e63f73ad515f7ab2447a80673}{AnimationState::PAUSED}};}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00114\ \ \ \ \ \}}
+\DoxyCodeLine{00115\ \ \ \ \ }
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a8a90dd639a98c0759439f6203e1ce0ca}{stop}}()\ \{}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ state\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da09d4d696b4e935115b9313e3c412509a}{AnimationState::STOPPED}};}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ reversed\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00123\ \ \ \ \ \}}
+\DoxyCodeLine{00124\ \ \ \ \ }
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a5580ce56d1a8bf2120c5a6d9edf02de4}{setLoopMode}}(\doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{LoopMode}}\ mode)\ \{}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ loopMode\ =\ mode;}
+\DoxyCodeLine{00131\ \ \ \ \ \}}
+\DoxyCodeLine{00132\ \ \ \ \ }
+\DoxyCodeLine{00137\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a30b162efb1f6cbd9b217d990f7eaf9ec}{update}}(uint16\_t\ deltaTime)\ \{}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (state\ !=\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da50366a49630a416ab3ccaa004196027e}{AnimationState::PLAYING}}\ ||\ keyframeCount\ ==\ 0)\ \{}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Update\ time\ based\ on\ direction}}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (reversed)\ \{}
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentTime\ >=\ deltaTime)\ \{}
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ -\/=\ deltaTime;}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ handleLoopBoundary();}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ +=\ deltaTime;}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentTime\ >=\ duration)\ \{}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ handleLoopBoundary();}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ current\ value\ and\ emit\ update}}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ T\ currentValue\ =\ evaluateAtTime(currentTime);}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ onUpdateSignal.emit(currentValue);}
+\DoxyCodeLine{00162\ \ \ \ \ \}}
+\DoxyCodeLine{00163\ \ \ \ \ }
+\DoxyCodeLine{00168\ \ \ \ \ T\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a5b4e066802298b63702a2d6301595cb1}{getCurrentValue}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ evaluateAtTime(currentTime);}
+\DoxyCodeLine{00170\ \ \ \ \ \}}
+\DoxyCodeLine{00171\ \ \ \ \ }
+\DoxyCodeLine{00176\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{AnimationState}}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aef444ab9c7757916ac4607dc559b75a3}{getState}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ state;}
+\DoxyCodeLine{00178\ \ \ \ \ \}}
+\DoxyCodeLine{00179\ \ \ \ \ }
+\DoxyCodeLine{00184\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a2e7b4e27d01bb8e6510063d9c1226400}{getCurrentTime}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ currentTime;}
+\DoxyCodeLine{00186\ \ \ \ \ \}}
+\DoxyCodeLine{00187\ \ \ \ \ }
+\DoxyCodeLine{00192\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aae8d82b6cd88fa746acbdf84cb1fff0f}{getDuration}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ duration;}
+\DoxyCodeLine{00194\ \ \ \ \ \}}
+\DoxyCodeLine{00195\ \ \ \ \ }
+\DoxyCodeLine{00200\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a78b17fb3d014d6f1e66d5617491eb5af}{getProgress}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ duration\ >\ 0\ ?\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(currentTime)\ /\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(duration)\ :\ 0.0f;}
 \DoxyCodeLine{00202\ \ \ \ \ \}}
-\DoxyCodeLine{00203\ \ \ \ \ }
-\DoxyCodeLine{00204\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}\ connectOnComplete(std::function<\textcolor{keywordtype}{void}()>\ callback)\ \{}
-\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}(\&onCompleteSignal,\ callback);}
-\DoxyCodeLine{00206\ \ \ \ \ \}}
-\DoxyCodeLine{00207\ \ \ \ \ }
-\DoxyCodeLine{00208\ \ \ \ \ SignalConnection<T>\ connectOnUpdate(std::function<\textcolor{keywordtype}{void}(T)>\ callback)\ \{}
-\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ SignalConnection<T>(\&onUpdateSignal,\ callback);}
-\DoxyCodeLine{00210\ \ \ \ \ \}}
-\DoxyCodeLine{00211\ }
-\DoxyCodeLine{00212\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00216\ \ \ \ \ \textcolor{keywordtype}{void}\ handleLoopBoundary()\ \{}
-\DoxyCodeLine{00217\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (loopMode)\ \{}
-\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LoopMode::NONE:}
-\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ duration;}
-\DoxyCodeLine{00220\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ state\ =\ AnimationState::FINISHED;}
-\DoxyCodeLine{00221\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ onCompleteSignal.emit();}
-\DoxyCodeLine{00222\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
-\DoxyCodeLine{00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LoopMode::LOOP:}
-\DoxyCodeLine{00225\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ currentTime\ \%\ duration;}
-\DoxyCodeLine{00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
-\DoxyCodeLine{00227\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00228\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LoopMode::PING\_PONG:}
-\DoxyCodeLine{00229\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ reversed\ =\ !reversed;}
-\DoxyCodeLine{00230\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (reversed)\ \{}
-\DoxyCodeLine{00231\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ duration\ -\/\ (currentTime\ -\/\ duration);}
-\DoxyCodeLine{00232\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
-\DoxyCodeLine{00234\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
-\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00237\ \ \ \ \ \}}
-\DoxyCodeLine{00238\ \ \ \ \ }
-\DoxyCodeLine{00244\ \ \ \ \ T\ evaluateAtTime(uint16\_t\ time)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ ==\ 0)\ \{}
-\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ T\{\};\ \ \textcolor{comment}{//\ Default\ constructed\ value}}
-\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00249\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ ==\ 1\ ||\ time\ <=\ keyframes[0].time)\ \{}
-\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(keyframes[0]);}
-\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (time\ >=\ keyframes[keyframeCount\ -\/\ 1].time)\ \{}
-\DoxyCodeLine{00254\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(keyframes[keyframeCount\ -\/\ 1]);}
+\DoxyCodeLine{00203\ }
+\DoxyCodeLine{00209\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_ad09ec3ef6a89f7c8e67b1ebbb117316c}{connectOnStart}}(std::function<\textcolor{keywordtype}{void}()>\ callback)\ \{}
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}(\&onStartSignal,\ callback);}
+\DoxyCodeLine{00211\ \ \ \ \ \}}
+\DoxyCodeLine{00212\ }
+\DoxyCodeLine{00218\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a2838636aa681861482d52afbdbc1a291}{connectOnComplete}}(std::function<\textcolor{keywordtype}{void}()>\ callback)\ \{}
+\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<>}}(\&onCompleteSignal,\ callback);}
+\DoxyCodeLine{00220\ \ \ \ \ \}}
+\DoxyCodeLine{00221\ }
+\DoxyCodeLine{00227\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<T>}}\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_ab7176e06106f7cd88e124e28499d0c20}{connectOnUpdate}}(std::function<\textcolor{keywordtype}{void}(T)>\ callback)\ \{}
+\DoxyCodeLine{00228\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{SignalConnection<T>}}(\&onUpdateSignal,\ callback);}
+\DoxyCodeLine{00229\ \ \ \ \ \}}
+\DoxyCodeLine{00230\ }
+\DoxyCodeLine{00231\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00235\ \ \ \ \ \textcolor{keywordtype}{void}\ handleLoopBoundary()\ \{}
+\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (loopMode)\ \{}
+\DoxyCodeLine{00237\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0ab50339a10e1de285ac99d4c3990b8693}{LoopMode::NONE}}:}
+\DoxyCodeLine{00238\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ duration;}
+\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ state\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da2c616b2713e2e0aed04b4c4752c88133}{AnimationState::FINISHED}};}
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ onCompleteSignal.\doxymbox{\hyperlink{classenjin2_1_1Signal_a4000dd1d3003bdab0db9cccbc191ce6a}{emit}}();}
+\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00242\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a9159b3578e4e1eb31ffdf90acd6f6e40}{LoopMode::LOOP}}:}
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ currentTime\ \%\ duration;}
+\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a39d9a3e04b6cb09993554dc67fc4e40c}{LoopMode::PING\_PONG}}:}
+\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ reversed\ =\ !reversed;}
+\DoxyCodeLine{00249\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (reversed)\ \{}
+\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ duration\ -\/\ (currentTime\ -\/\ duration);}
+\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ currentTime\ =\ 0;}
+\DoxyCodeLine{00253\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00254\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
 \DoxyCodeLine{00255\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Find\ keyframes\ to\ interpolate\ between}}
-\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ keyframeCount\ -\/\ 1;\ ++i)\ \{}
-\DoxyCodeLine{00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (time\ >=\ keyframes[i].time\ \&\&\ time\ <=\ keyframes[i\ +\ 1].time)\ \{}
-\DoxyCodeLine{00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ interpolateBetween(keyframes[i],\ keyframes[i\ +\ 1],\ time);}
-\DoxyCodeLine{00261\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00263\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(keyframes[keyframeCount\ -\/\ 1]);}
-\DoxyCodeLine{00265\ \ \ \ \ \}}
-\DoxyCodeLine{00266\ \ \ \ \ }
-\DoxyCodeLine{00270\ \ \ \ \ T\ getValue(\textcolor{keyword}{const}\ KeyframeType\&\ keyframe)\ \textcolor{keyword}{const};}
-\DoxyCodeLine{00271\ \ \ \ \ }
-\DoxyCodeLine{00275\ \ \ \ \ T\ interpolateBetween(\textcolor{keyword}{const}\ KeyframeType\&\ from,\ \textcolor{keyword}{const}\ KeyframeType\&\ to,\ uint16\_t\ time)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (from.time\ ==\ to.time)\ \{}
-\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(to);}
-\DoxyCodeLine{00278\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ t\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(time\ -\/\ from.time)\ /\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(to.time\ -\/\ from.time);}
-\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ easedT\ =\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ababce2f09f4f9b97088686f1dd209e8f}{EasingFunctions::ease}}(t,\ from.easing);}
+\DoxyCodeLine{00256\ \ \ \ \ \}}
+\DoxyCodeLine{00257\ \ \ \ \ }
+\DoxyCodeLine{00263\ \ \ \ \ T\ evaluateAtTime(uint16\_t\ time)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ ==\ 0)\ \{}
+\DoxyCodeLine{00265\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ T\{\};\ \ \textcolor{comment}{//\ Default\ constructed\ value}}
+\DoxyCodeLine{00266\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00267\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00268\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (keyframeCount\ ==\ 1\ ||\ time\ <=\ keyframes[0].time)\ \{}
+\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(keyframes[0]);}
+\DoxyCodeLine{00270\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00271\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00272\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (time\ >=\ keyframes[keyframeCount\ -\/\ 1].time)\ \{}
+\DoxyCodeLine{00273\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(keyframes[keyframeCount\ -\/\ 1]);}
+\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00275\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Find\ keyframes\ to\ interpolate\ between}}
+\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ keyframeCount\ -\/\ 1;\ ++i)\ \{}
+\DoxyCodeLine{00278\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (time\ >=\ keyframes[i].time\ \&\&\ time\ <=\ keyframes[i\ +\ 1].time)\ \{}
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ interpolateBetween(keyframes[i],\ keyframes[i\ +\ 1],\ time);}
+\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00282\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{EasingFunctions::lerp}}(getValue(from),\ getValue(to),\ easedT);}
+\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(keyframes[keyframeCount\ -\/\ 1]);}
 \DoxyCodeLine{00284\ \ \ \ \ \}}
-\DoxyCodeLine{00285\ \};}
-\DoxyCodeLine{00286\ }
-\DoxyCodeLine{00287\ \textcolor{comment}{//\ Template\ specializations\ for\ getValue}}
-\DoxyCodeLine{00288\ \textcolor{keyword}{template}<>}
-\DoxyCodeLine{00289\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ AnimationTrack<Point,\ PositionKeyframe>::getValue(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe}{PositionKeyframe}}\&\ keyframe)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00290\ \ \ \ \ \textcolor{keywordflow}{return}\ keyframe.position;}
-\DoxyCodeLine{00291\ \}}
-\DoxyCodeLine{00292\ }
-\DoxyCodeLine{00293\ \textcolor{keyword}{template}<>}
-\DoxyCodeLine{00294\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{float}\ AnimationTrack<float,\ FloatKeyframe>::getValue(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe}{FloatKeyframe}}\&\ keyframe)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00295\ \ \ \ \ \textcolor{keywordflow}{return}\ keyframe.value;}
-\DoxyCodeLine{00296\ \}}
-\DoxyCodeLine{00297\ }
-\DoxyCodeLine{00298\ \textcolor{keyword}{template}<>}
-\DoxyCodeLine{00299\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ AnimationTrack<Pixel4,\ ColorKeyframe>::getValue(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe}{ColorKeyframe}}\&\ keyframe)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00300\ \ \ \ \ \textcolor{keywordflow}{return}\ keyframe.color;}
-\DoxyCodeLine{00301\ \}}
-\DoxyCodeLine{00302\ }
-\DoxyCodeLine{00303\ \textcolor{comment}{//\ Convenience\ type\ aliases}}
-\DoxyCodeLine{00304\ \textcolor{keyword}{using\ }PositionTrack\ =\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{AnimationTrack<Point,\ PositionKeyframe>}};}
-\DoxyCodeLine{00305\ \textcolor{keyword}{using\ }FloatTrack\ =\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{AnimationTrack<float,\ FloatKeyframe>}};}
-\DoxyCodeLine{00306\ \textcolor{keyword}{using\ }ColorTrack\ =\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{AnimationTrack<Pixel4,\ ColorKeyframe>}};}
-\DoxyCodeLine{00307\ }
-\DoxyCodeLine{00308\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00285\ \ \ \ \ }
+\DoxyCodeLine{00289\ \ \ \ \ T\ getValue(\textcolor{keyword}{const}\ KeyframeType\&\ keyframe)\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00290\ \ \ \ \ }
+\DoxyCodeLine{00294\ \ \ \ \ T\ interpolateBetween(\textcolor{keyword}{const}\ KeyframeType\&\ from,\ \textcolor{keyword}{const}\ KeyframeType\&\ to,\ uint16\_t\ time)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00295\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (from.time\ ==\ to.time)\ \{}
+\DoxyCodeLine{00296\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ getValue(to);}
+\DoxyCodeLine{00297\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00299\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ t\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(time\ -\/\ from.time)\ /\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(to.time\ -\/\ from.time);}
+\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ easedT\ =\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ababce2f09f4f9b97088686f1dd209e8f}{EasingFunctions::ease}}(t,\ from.easing);}
+\DoxyCodeLine{00301\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{EasingFunctions::lerp}}(getValue(from),\ getValue(to),\ easedT);}
+\DoxyCodeLine{00303\ \ \ \ \ \}}
+\DoxyCodeLine{00304\ \};}
+\DoxyCodeLine{00305\ }
+\DoxyCodeLine{00306\ \textcolor{comment}{//\ Template\ specializations\ for\ getValue}}
+\DoxyCodeLine{00307\ \textcolor{keyword}{template}<>}
+\DoxyCodeLine{00308\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ AnimationTrack<Point,\ PositionKeyframe>::getValue(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe}{PositionKeyframe}}\&\ keyframe)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00309\ \ \ \ \ \textcolor{keywordflow}{return}\ keyframe.position;}
+\DoxyCodeLine{00310\ \}}
+\DoxyCodeLine{00311\ }
+\DoxyCodeLine{00312\ \textcolor{keyword}{template}<>}
+\DoxyCodeLine{00313\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{float}\ AnimationTrack<float,\ FloatKeyframe>::getValue(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe}{FloatKeyframe}}\&\ keyframe)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00314\ \ \ \ \ \textcolor{keywordflow}{return}\ keyframe.value;}
+\DoxyCodeLine{00315\ \}}
+\DoxyCodeLine{00316\ }
+\DoxyCodeLine{00317\ \textcolor{keyword}{template}<>}
+\DoxyCodeLine{00318\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ AnimationTrack<Pixel4,\ ColorKeyframe>::getValue(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe}{ColorKeyframe}}\&\ keyframe)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00319\ \ \ \ \ \textcolor{keywordflow}{return}\ keyframe.color;}
+\DoxyCodeLine{00320\ \}}
+\DoxyCodeLine{00321\ }
+\DoxyCodeLine{00322\ \textcolor{comment}{//\ Convenience\ type\ aliases}}
+\DoxyCodeLine{00323\ \textcolor{keyword}{using\ }PositionTrack\ =\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{AnimationTrack<Point,\ PositionKeyframe>}};}
+\DoxyCodeLine{00324\ \textcolor{keyword}{using\ }FloatTrack\ =\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{AnimationTrack<float,\ FloatKeyframe>}};}
+\DoxyCodeLine{00325\ \textcolor{keyword}{using\ }ColorTrack\ =\ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{AnimationTrack<Pixel4,\ ColorKeyframe>}};}
+\DoxyCodeLine{00326\ }
+\DoxyCodeLine{00327\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
 
 \end{DoxyCode}

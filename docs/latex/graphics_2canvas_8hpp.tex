@@ -1,0 +1,45 @@
+\doxysection{include/\+enjin2/\+graphics/\+canvas.hpp File Reference}
+\hypertarget{graphics_2canvas_8hpp}{}\label{graphics_2canvas_8hpp}\index{include/enjin2/graphics/canvas.hpp@{include/enjin2/graphics/canvas.hpp}}
+
+
+Canvas abstraction for drawing operations.  
+
+
+{\ttfamily \+\#include "{}../\+core/\+types.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}../\+core/\+memory.\+hpp"{}}\newline
+{\ttfamily \+\#include $<$algorithm$>$}\newline
+{\ttfamily \+\#include $<$cstdio$>$}\newline
+{\ttfamily \+\#include $<$cstring$>$}\newline
+{\ttfamily \+\#include $<$Arduino.\+h$>$}\newline
+{\ttfamily \+\#include "{}gfxfont.\+h"{}}\newline
+{\ttfamily \+\#include "{}defaultfont.\+hpp"{}}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classenjin2_1_1ICanvas}{enjin2::\+\+ICanvas$<$ TPixel $>$}}
+\begin{DoxyCompactList}\small\item\em Abstract canvas interface for drawing operations. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{enjin2::\+\+Canvas4$<$ WIDTH, HEIGHT $>$}}
+\begin{DoxyCompactList}\small\item\em 4-\/bit canvas with packed pixel storage \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{enjin2::\+\+Canvas8$<$ WIDTH, HEIGHT $>$}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{graphics_2canvas_8hpp_ac361f8ad3f4400b65fd0ff349f59c587}\label{graphics_2canvas_8hpp_ac361f8ad3f4400b65fd0ff349f59c587} 
+using {\bfseries enjin2::\+\+Canvas4\+\_\+128x64} = \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$128, 64$>$
+\item 
+\Hypertarget{graphics_2canvas_8hpp_a8c748731e143b96e771b7f2a117250ad}\label{graphics_2canvas_8hpp_a8c748731e143b96e771b7f2a117250ad} 
+using {\bfseries enjin2::\+\+Canvas4\+\_\+128x128} = \doxymbox{\hyperlink{classenjin2_1_1Canvas4}{Canvas4}}$<$128, 128$>$
+\item 
+\Hypertarget{graphics_2canvas_8hpp_a017024fc9cd4a853eca8af9bfa155bd4}\label{graphics_2canvas_8hpp_a017024fc9cd4a853eca8af9bfa155bd4} 
+using {\bfseries enjin2::\+\+Canvas8\+\_\+128x64} = \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{Canvas8}}$<$128, 64$>$
+\item 
+\Hypertarget{graphics_2canvas_8hpp_af1f3f7b9c2dbfd759d9aff6c5032cd9f}\label{graphics_2canvas_8hpp_af1f3f7b9c2dbfd759d9aff6c5032cd9f} 
+using {\bfseries enjin2::\+\+Canvas8\+\_\+128x128} = \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{Canvas8}}$<$128, 128$>$
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Canvas abstraction for drawing operations. 
+
+Provides hardware-\/independent canvas interface for drawing pixels, shapes, and text with support for 4-\/bit and 8-\/bit pixel formats. 

@@ -1,6 +1,6 @@
 \doxysection{memory.\+hpp}
 \hypertarget{memory_8hpp_source}{}\label{memory_8hpp_source}\index{include/enjin2/core/memory.hpp@{include/enjin2/core/memory.hpp}}
-
+\doxymbox{\hyperlink{memory_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
 \DoxyCodeLine{00002\ }
@@ -9,163 +9,167 @@
 \DoxyCodeLine{00005\ }
 \DoxyCodeLine{00006\ \textcolor{keyword}{namespace\ }enjin2\ \{}
 \DoxyCodeLine{00007\ }
-\DoxyCodeLine{00008\ \textcolor{comment}{//\ Static\ memory\ pool\ for\ embedded\ systems}}
-\DoxyCodeLine{00009\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keywordtype}{size\_t}\ CAPACITY>}
-\DoxyCodeLine{00010\ \textcolor{keyword}{class\ }StaticPool\ \{}
-\DoxyCodeLine{00011\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00012\ \ \ \ \ \textcolor{keyword}{alignas}(T)\ uint8\_t\ storage[\textcolor{keyword}{sizeof}(T)\ *\ CAPACITY];}
-\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keywordtype}{bool}\ used[CAPACITY];}
-\DoxyCodeLine{00014\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ count;}
-\DoxyCodeLine{00015\ \ \ \ \ }
-\DoxyCodeLine{00016\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00017\ \ \ \ \ StaticPool()\ :\ count(0)\ \{}
-\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
-\DoxyCodeLine{00019\ \ \ \ \ \ \ \ \ \ \ \ \ used[i]\ =\ \textcolor{keyword}{false};}
-\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00021\ \ \ \ \ \}}
-\DoxyCodeLine{00022\ \ \ \ \ }
-\DoxyCodeLine{00023\ \ \ \ \ T*\ allocate()\ \{}
-\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
-\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!used[i])\ \{}
-\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ used[i]\ =\ \textcolor{keyword}{true};}
-\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ count++;}
-\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{reinterpret\_cast<}T*\textcolor{keyword}{>}(\&storage[i\ *\ \textcolor{keyword}{sizeof}(T)]);}
-\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};\ \textcolor{comment}{//\ Pool\ exhausted}}
-\DoxyCodeLine{00032\ \ \ \ \ \}}
-\DoxyCodeLine{00033\ \ \ \ \ }
-\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{void}\ deallocate(T*\ ptr)\ \{}
-\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!ptr)\ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ uintptr\_t\ offset\ =\ \textcolor{keyword}{reinterpret\_cast<}uintptr\_t\textcolor{keyword}{>}(ptr)\ -\/\ }
-\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{reinterpret\_cast<}uintptr\_t\textcolor{keyword}{>}(storage);}
-\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ index\ =\ offset\ /\ \textcolor{keyword}{sizeof}(T);}
-\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (index\ <\ CAPACITY\ \&\&\ used[index])\ \{}
-\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \ \ \ \ used[index]\ =\ \textcolor{keyword}{false};}
-\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \ \ \ \ count-\/-\/;}
-\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \ \ \ \ ptr-\/>\string~T();\ \textcolor{comment}{//\ Call\ destructor}}
-\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00046\ \ \ \ \ \}}
-\DoxyCodeLine{00047\ \ \ \ \ }
-\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ size()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ count;\ \}}
-\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ capacity()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ CAPACITY;\ \}}
-\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keywordtype}{bool}\ empty()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ count\ ==\ 0;\ \}}
-\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keywordtype}{bool}\ full()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ count\ ==\ CAPACITY;\ \}}
-\DoxyCodeLine{00052\ \};}
-\DoxyCodeLine{00053\ }
-\DoxyCodeLine{00054\ \textcolor{comment}{//\ Handle-\/based\ system\ to\ avoid\ pointer\ issues}}
-\DoxyCodeLine{00055\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
-\DoxyCodeLine{00056\ \textcolor{keyword}{struct\ }Handle\ \{}
-\DoxyCodeLine{00057\ \ \ \ \ uint16\_t\ index;}
-\DoxyCodeLine{00058\ \ \ \ \ uint16\_t\ generation;}
-\DoxyCodeLine{00059\ \ \ \ \ }
-\DoxyCodeLine{00060\ \ \ \ \ Handle()\ :\ index(0),\ generation(0)\ \{\}}
-\DoxyCodeLine{00061\ \ \ \ \ Handle(uint16\_t\ i,\ uint16\_t\ g)\ :\ index(i),\ generation(g)\ \{\}}
-\DoxyCodeLine{00062\ \ \ \ \ }
-\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{bool}\ isValid()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ generation\ !=\ 0;\ \}}
-\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keywordtype}{void}\ invalidate()\ \{\ generation\ =\ 0;\ \}}
-\DoxyCodeLine{00065\ \ \ \ \ }
-\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keywordtype}{bool}\ operator==(\textcolor{keyword}{const}\ Handle\&\ other)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ index\ ==\ other.index\ \&\&\ generation\ ==\ other.generation;}
-\DoxyCodeLine{00068\ \ \ \ \ \}}
-\DoxyCodeLine{00069\ \ \ \ \ }
-\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keywordtype}{bool}\ operator!=(\textcolor{keyword}{const}\ Handle\&\ other)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ !(*\textcolor{keyword}{this}\ ==\ other);}
-\DoxyCodeLine{00072\ \ \ \ \ \}}
-\DoxyCodeLine{00073\ \};}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keywordtype}{size\_t}\ CAPACITY>}
+\DoxyCodeLine{00026\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1StaticPool_a4386c923cdc380acc2948755f45d2dd8}{StaticPool}}\ \{}
+\DoxyCodeLine{00027\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keyword}{alignas}(T)\ uint8\_t\ storage[\textcolor{keyword}{sizeof}(T)\ *\ CAPACITY];}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keywordtype}{bool}\ used[CAPACITY];}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ count;}
+\DoxyCodeLine{00031\ \ \ \ \ }
+\DoxyCodeLine{00032\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00036\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1StaticPool_a4386c923cdc380acc2948755f45d2dd8}{StaticPool}}()\ :\ count(0)\ \{}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ \ \ \ \ used[i]\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00040\ \ \ \ \ \}}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00046\ \ \ \ \ T*\ \doxymbox{\hyperlink{classenjin2_1_1StaticPool_acdf3eafc5b101cfc5c8f31084c07828f}{allocate}}()\ \{}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!used[i])\ \{}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ used[i]\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ count++;}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{reinterpret\_cast<}T*\textcolor{keyword}{>}(\&storage[i\ *\ \textcolor{keyword}{sizeof}(T)]);}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};\ \textcolor{comment}{//\ Pool\ exhausted}}
+\DoxyCodeLine{00055\ \ \ \ \ \}}
+\DoxyCodeLine{00056\ \ \ \ \ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1StaticPool_a28caf580cd76d7f4180eb6fcbc5c27b1}{deallocate}}(T*\ ptr)\ \{}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!ptr)\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ uintptr\_t\ offset\ =\ \textcolor{keyword}{reinterpret\_cast<}uintptr\_t\textcolor{keyword}{>}(ptr)\ -\/}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{reinterpret\_cast<}uintptr\_t\textcolor{keyword}{>}(storage);}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ index\ =\ offset\ /\ \textcolor{keyword}{sizeof}(T);}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (index\ <\ CAPACITY\ \&\&\ used[index])\ \{}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \ \ \ \ used[index]\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \ \ \ \ count-\/-\/;}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ ptr-\/>\string~T();\ \textcolor{comment}{//\ Call\ destructor}}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00073\ \ \ \ \ \}}
 \DoxyCodeLine{00074\ }
-\DoxyCodeLine{00075\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keywordtype}{size\_t}\ CAPACITY>}
-\DoxyCodeLine{00076\ \textcolor{keyword}{class\ }HandlePool\ \{}
-\DoxyCodeLine{00077\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00078\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1StaticPool}{StaticPool<T,\ CAPACITY>}}\ pool;}
-\DoxyCodeLine{00079\ \ \ \ \ uint16\_t\ generations[CAPACITY];}
-\DoxyCodeLine{00080\ \ \ \ \ T*\ objects[CAPACITY];}
-\DoxyCodeLine{00081\ \ \ \ \ }
-\DoxyCodeLine{00082\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00083\ \ \ \ \ HandlePool()\ \{}
-\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
-\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ generations[i]\ =\ 1;\ \textcolor{comment}{//\ Start\ at\ 1\ so\ 0\ means\ invalid}}
-\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ objects[i]\ =\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00088\ \ \ \ \ \}}
-\DoxyCodeLine{00089\ \ \ \ \ }
-\DoxyCodeLine{00090\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ create()\ \{}
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ T*\ obj\ =\ pool.allocate();}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!obj)\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}();\ \textcolor{comment}{//\ Invalid\ handle}}
-\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Find\ the\ slot}}
-\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
-\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!objects[i])\ \{}
-\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ objects[i]\ =\ obj;}
-\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}(i,\ generations[i]);}
-\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ This\ shouldn't\ happen\ if\ pool\ allocation\ succeeded}}
-\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ pool.deallocate(obj);}
-\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}();}
-\DoxyCodeLine{00105\ \ \ \ \ \}}
-\DoxyCodeLine{00106\ \ \ \ \ }
-\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordtype}{void}\ destroy(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\ \{}
-\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!isValid(handle))\ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ T*\ obj\ =\ objects[handle.index];}
-\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (obj)\ \{}
-\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ pool.deallocate(obj);}
-\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \ \ \ \ objects[handle.index]\ =\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ generations[handle.index]++;}
-\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00116\ \ \ \ \ \}}
-\DoxyCodeLine{00117\ \ \ \ \ }
-\DoxyCodeLine{00118\ \ \ \ \ T*\ get(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\ \{}
-\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!isValid(handle))\ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ objects[handle.index];}
-\DoxyCodeLine{00121\ \ \ \ \ \}}
-\DoxyCodeLine{00122\ \ \ \ \ }
-\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keyword}{const}\ T*\ get(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!isValid(handle))\ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ objects[handle.index];}
-\DoxyCodeLine{00126\ \ \ \ \ \}}
-\DoxyCodeLine{00127\ \ \ \ \ }
-\DoxyCodeLine{00128\ \ \ \ \ \textcolor{keywordtype}{bool}\ isValid(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ handle.index\ <\ CAPACITY\ \&\&\ }
-\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ handle.generation\ ==\ generations[handle.index]\ \&\&}
-\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ objects[handle.index]\ !=\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00132\ \ \ \ \ \}}
-\DoxyCodeLine{00133\ \};}
-\DoxyCodeLine{00134\ }
-\DoxyCodeLine{00135\ \textcolor{comment}{//\ Stack\ allocator\ for\ temporary\ allocations}}
-\DoxyCodeLine{00136\ \textcolor{keyword}{class\ }StackAllocator\ \{}
-\DoxyCodeLine{00137\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00138\ \ \ \ \ uint8\_t*\ memory;}
-\DoxyCodeLine{00139\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ capacity;}
-\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ top;}
-\DoxyCodeLine{00141\ \ \ \ \ }
-\DoxyCodeLine{00142\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00143\ \ \ \ \ StackAllocator(uint8\_t*\ mem,\ \textcolor{keywordtype}{size\_t}\ cap)\ }
-\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ :\ memory(mem),\ capacity(cap),\ top(0)\ \{\}}
-\DoxyCodeLine{00145\ \ \ \ \ }
-\DoxyCodeLine{00146\ \ \ \ \ \textcolor{keywordtype}{void}*\ allocate(\textcolor{keywordtype}{size\_t}\ size,\ \textcolor{keywordtype}{size\_t}\ alignment\ =\ \textcolor{keyword}{sizeof}(\textcolor{keywordtype}{void}*))\ \{}
-\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Align\ the\ allocation}}
-\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ aligned\_top\ =\ (top\ +\ alignment\ -\/\ 1)\ \&\ \string~(alignment\ -\/\ 1);}
-\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (aligned\_top\ +\ size\ >\ capacity)\ \{}
-\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};\ \textcolor{comment}{//\ Out\ of\ memory}}
-\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}*\ result\ =\ memory\ +\ aligned\_top;}
-\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ top\ =\ aligned\_top\ +\ size;}
-\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ result;}
-\DoxyCodeLine{00157\ \ \ \ \ \}}
-\DoxyCodeLine{00158\ \ \ \ \ }
-\DoxyCodeLine{00159\ \ \ \ \ \textcolor{keywordtype}{void}\ reset()\ \{\ top\ =\ 0;\ \}}
-\DoxyCodeLine{00160\ \ \ \ \ }
-\DoxyCodeLine{00161\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ getUsed()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ top;\ \}}
-\DoxyCodeLine{00162\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ getRemaining()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ capacity\ -\/\ top;\ \}}
-\DoxyCodeLine{00163\ \};}
-\DoxyCodeLine{00164\ }
-\DoxyCodeLine{00165\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00079\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1StaticPool_a52ca16d6a8bb24cc467a0e9678ded47b}{size}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ count;\ \}}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00085\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1StaticPool_a24f3576c5be79abffdd285675aefa9ae}{capacity}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ CAPACITY;\ \}}
+\DoxyCodeLine{00086\ }
+\DoxyCodeLine{00091\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1StaticPool_a8357b78053bfa4bf69e730632564bf43}{empty}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ count\ ==\ 0;\ \}}
+\DoxyCodeLine{00092\ }
+\DoxyCodeLine{00097\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1StaticPool_a963dd0243da0c4535892dc0f66244a75}{full}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ count\ ==\ CAPACITY;\ \}}
+\DoxyCodeLine{00098\ \};}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00108\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
+\DoxyCodeLine{00109\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1Handle_aa27255fb2ea78755fff9fef9e24d822f}{Handle}}\ \{}
+\DoxyCodeLine{00110\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}};\ }
+\DoxyCodeLine{00111\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}};\ }
+\DoxyCodeLine{00112\ }
+\DoxyCodeLine{00116\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Handle_aa27255fb2ea78755fff9fef9e24d822f}{Handle}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}}(0)\ \{\}}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00123\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Handle_a28166aae251343459851a288c8a04696}{Handle}}(uint16\_t\ i,\ uint16\_t\ g)\ :\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}(i),\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}}(g)\ \{\}}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a838e9e616e2a4be945a5434550e07f82}{isValid}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}}\ !=\ 0;\ \}}
+\DoxyCodeLine{00130\ }
+\DoxyCodeLine{00134\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a835596930967ecb3951490abf811464e}{invalidate}}()\ \{\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}}\ =\ 0;\ \}}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00141\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a36c6d5d6310e376675d18fe29bb11f2c}{operator==}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_aa27255fb2ea78755fff9fef9e24d822f}{Handle}}\&\ other)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}\ ==\ other.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}\ \&\&\ \doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}}\ ==\ other.\doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}};}
+\DoxyCodeLine{00143\ \ \ \ \ \}}
+\DoxyCodeLine{00144\ }
+\DoxyCodeLine{00150\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_aceb5e7480b60e93ee864e506d06c9f8c}{operator!=}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Handle_aa27255fb2ea78755fff9fef9e24d822f}{Handle}}\&\ other)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ !(*\textcolor{keyword}{this}\ ==\ other);}
+\DoxyCodeLine{00152\ \ \ \ \ \}}
+\DoxyCodeLine{00153\ \};}
+\DoxyCodeLine{00154\ }
+\DoxyCodeLine{00164\ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keywordtype}{size\_t}\ CAPACITY>}
+\DoxyCodeLine{00165\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1HandlePool_a2984aa8ec5d701dbbfd98ff39578432b}{HandlePool}}\ \{}
+\DoxyCodeLine{00166\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00167\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1StaticPool}{StaticPool<T,\ CAPACITY>}}\ pool;}
+\DoxyCodeLine{00168\ \ \ \ \ uint16\_t\ generations[CAPACITY];}
+\DoxyCodeLine{00169\ \ \ \ \ T*\ objects[CAPACITY];}
+\DoxyCodeLine{00170\ }
+\DoxyCodeLine{00171\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00175\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1HandlePool_a2984aa8ec5d701dbbfd98ff39578432b}{HandlePool}}()\ \{}
+\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \ \ \ \ generations[i]\ =\ 1;\ \textcolor{comment}{//\ Start\ at\ 1\ so\ 0\ means\ invalid}}
+\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \ \ \ \ objects[i]\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00180\ \ \ \ \ \}}
+\DoxyCodeLine{00181\ }
+\DoxyCodeLine{00186\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ \doxymbox{\hyperlink{classenjin2_1_1HandlePool_aaa8ed47eb44f57e18f6ab5148dd04446}{create}}()\ \{}
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ T*\ obj\ =\ pool.allocate();}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!obj)\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}();\ \textcolor{comment}{//\ Invalid\ handle}}
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Find\ the\ slot}}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ CAPACITY;\ ++i)\ \{}
+\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!objects[i])\ \{}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ objects[i]\ =\ obj;}
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}(i,\ generations[i]);}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ This\ shouldn't\ happen\ if\ pool\ allocation\ succeeded}}
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ pool.deallocate(obj);}
+\DoxyCodeLine{00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}();}
+\DoxyCodeLine{00201\ \ \ \ \ \}}
+\DoxyCodeLine{00202\ }
+\DoxyCodeLine{00207\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1HandlePool_a1887d4909a62803de88e10ce748caa07}{destroy}}(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\ \{}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1HandlePool_a8f418fd90dbb8d165a56314cd3132a21}{isValid}}(handle))\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ T*\ obj\ =\ objects[handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}];}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (obj)\ \{}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ \ \ \ \ pool.deallocate(obj);}
+\DoxyCodeLine{00213\ \ \ \ \ \ \ \ \ \ \ \ \ objects[handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}]\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00214\ \ \ \ \ \ \ \ \ \ \ \ \ generations[handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}]++;}
+\DoxyCodeLine{00215\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00216\ \ \ \ \ \}}
+\DoxyCodeLine{00217\ }
+\DoxyCodeLine{00223\ \ \ \ \ T*\ \doxymbox{\hyperlink{classenjin2_1_1HandlePool_a99016e1dfd7df838aba622e2f04926c3}{get}}(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\ \{}
+\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1HandlePool_a8f418fd90dbb8d165a56314cd3132a21}{isValid}}(handle))\ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00225\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ objects[handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}];}
+\DoxyCodeLine{00226\ \ \ \ \ \}}
+\DoxyCodeLine{00227\ }
+\DoxyCodeLine{00233\ \ \ \ \ \textcolor{keyword}{const}\ T*\ \doxymbox{\hyperlink{classenjin2_1_1HandlePool_af81252434e9cac40a2f12c27eeb8c843}{get}}(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00234\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!\doxymbox{\hyperlink{classenjin2_1_1HandlePool_a8f418fd90dbb8d165a56314cd3132a21}{isValid}}(handle))\ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ objects[handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}];}
+\DoxyCodeLine{00236\ \ \ \ \ \}}
+\DoxyCodeLine{00237\ }
+\DoxyCodeLine{00243\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1HandlePool_a8f418fd90dbb8d165a56314cd3132a21}{isValid}}(\doxymbox{\hyperlink{structenjin2_1_1Handle}{Handle<T>}}\ handle)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}\ <\ CAPACITY\ \&\&\ }
+\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a784aa167a3c3da27dcef1f1f47270a5d}{generation}}\ ==\ generations[handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}]\ \&\&}
+\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ objects[handle.\doxymbox{\hyperlink{structenjin2_1_1Handle_a0d206f9c772515d0a503f39a6f4c7f67}{index}}]\ !=\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00247\ \ \ \ \ \}}
+\DoxyCodeLine{00248\ \};}
+\DoxyCodeLine{00249\ }
+\DoxyCodeLine{00256\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1StackAllocator_a2d247a250a258f28d1a8a0faa072defe}{StackAllocator}}\ \{}
+\DoxyCodeLine{00257\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00258\ \ \ \ \ uint8\_t*\ memory;}
+\DoxyCodeLine{00259\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ capacity;}
+\DoxyCodeLine{00260\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ top;}
+\DoxyCodeLine{00261\ }
+\DoxyCodeLine{00262\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00268\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1StackAllocator_a2d247a250a258f28d1a8a0faa072defe}{StackAllocator}}(uint8\_t*\ mem,\ \textcolor{keywordtype}{size\_t}\ cap)}
+\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ :\ memory(mem),\ capacity(cap),\ top(0)\ \{\}}
+\DoxyCodeLine{00270\ }
+\DoxyCodeLine{00277\ \ \ \ \ \textcolor{keywordtype}{void}*\ \doxymbox{\hyperlink{classenjin2_1_1StackAllocator_af6c989730739465f403a9299147026bf}{allocate}}(\textcolor{keywordtype}{size\_t}\ size,\ \textcolor{keywordtype}{size\_t}\ alignment\ =\ \textcolor{keyword}{sizeof}(\textcolor{keywordtype}{void}*))\ \{}
+\DoxyCodeLine{00278\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Align\ the\ allocation}}
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ aligned\_top\ =\ (top\ +\ alignment\ -\/\ 1)\ \&\ \string~(alignment\ -\/\ 1);}
+\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (aligned\_top\ +\ size\ >\ capacity)\ \{}
+\DoxyCodeLine{00282\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};\ \textcolor{comment}{//\ Out\ of\ memory}}
+\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00285\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}*\ result\ =\ memory\ +\ aligned\_top;}
+\DoxyCodeLine{00286\ \ \ \ \ \ \ \ \ top\ =\ aligned\_top\ +\ size;}
+\DoxyCodeLine{00287\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ result;}
+\DoxyCodeLine{00288\ \ \ \ \ \}}
+\DoxyCodeLine{00289\ }
+\DoxyCodeLine{00293\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1StackAllocator_a414bd82160cf508b285c74351a91ed42}{reset}}()\ \{\ top\ =\ 0;\ \}}
+\DoxyCodeLine{00294\ }
+\DoxyCodeLine{00299\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1StackAllocator_ade3c231c95a80bde7154de7162747796}{getUsed}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ top;\ \}}
+\DoxyCodeLine{00300\ }
+\DoxyCodeLine{00305\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1StackAllocator_a94812ca099fcfd3a41e6552c4e51b71f}{getRemaining}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ capacity\ -\/\ top;\ \}}
+\DoxyCodeLine{00306\ \};}
+\DoxyCodeLine{00307\ }
+\DoxyCodeLine{00308\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
 
 \end{DoxyCode}

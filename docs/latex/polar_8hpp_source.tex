@@ -1,43 +1,44 @@
 \doxysection{polar.\+hpp}
 \hypertarget{polar_8hpp_source}{}\label{polar_8hpp_source}\index{include/enjin2/utils/polar.hpp@{include/enjin2/utils/polar.hpp}}
-
+\doxymbox{\hyperlink{polar_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_UTILS\_POLAR\_HPP}}
-\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_UTILS\_POLAR\_HPP}}
-\DoxyCodeLine{00003\ }
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <cstdint>}}
-\DoxyCodeLine{00006\ }
-\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00008\ }
-\DoxyCodeLine{00015\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Polar}{Polar}}\ \{}
-\DoxyCodeLine{00016\ }
-\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#ifndef\ PI}}
-\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#define\ PI\ 3.1415926535897932384626433832795}}
-\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00020\ }
-\DoxyCodeLine{00028\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a0beeb44f57f8984676b2f05e7693f06e}{RadialToCartesian}}(\textcolor{keywordtype}{float}\ phase,\ uint8\_t\ radius,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center\ =\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}(63,\ 63));}
-\DoxyCodeLine{00029\ }
-\DoxyCodeLine{00037\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_afc33421a4ecb92519ade3bffdba9c9fc}{CartesianToRadial}}(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ point,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center,\ \textcolor{keywordtype}{float}\&\ phase,\ uint8\_t\&\ radius);}
-\DoxyCodeLine{00038\ }
-\DoxyCodeLine{00047\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a0b9d090c86e9e8159028595f7a70e624}{GetCirclePoint}}(int16\_t\ centerX,\ int16\_t\ centerY,\ \textcolor{keywordtype}{float}\ angle,\ uint8\_t\ radius);}
-\DoxyCodeLine{00048\ }
-\DoxyCodeLine{00058\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a9f573730443622ffffa1edeea27c2a0d}{GetEllipsePoint}}(int16\_t\ centerX,\ int16\_t\ centerY,\ \textcolor{keywordtype}{float}\ angle,\ uint8\_t\ radiusX,\ uint8\_t\ radiusY);}
-\DoxyCodeLine{00059\ }
-\DoxyCodeLine{00066\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a4d57b96b8b613e9340bcbedcf4bb8b7d}{CalculateDistance}}(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p1,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p2);}
-\DoxyCodeLine{00067\ }
-\DoxyCodeLine{00074\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a46425683c9d095633253a6c7f8f0acdd}{CalculateAngle}}(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p1,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p2);}
-\DoxyCodeLine{00075\ }
-\DoxyCodeLine{00081\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a71cf554da832be45ee3ef331b4f00de8}{NormalizePhase}}(\textcolor{keywordtype}{float}\ phase);}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_UTILS\_POLAR\_HPP}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ ENJIN2\_UTILS\_POLAR\_HPP}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00022\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceenjin2_1_1Polar}{Polar}}\ \{}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#ifndef\ PI}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#define\ PI\ 3.1415926535897932384626433832795}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00035\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a0beeb44f57f8984676b2f05e7693f06e}{RadialToCartesian}}(\textcolor{keywordtype}{float}\ phase,\ uint8\_t\ radius,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center\ =\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}(63,\ 63));}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00044\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_afc33421a4ecb92519ade3bffdba9c9fc}{CartesianToRadial}}(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ point,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ center,\ \textcolor{keywordtype}{float}\&\ phase,\ uint8\_t\&\ radius);}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00054\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a0b9d090c86e9e8159028595f7a70e624}{GetCirclePoint}}(int16\_t\ centerX,\ int16\_t\ centerY,\ \textcolor{keywordtype}{float}\ angle,\ uint8\_t\ radius);}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00065\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a9f573730443622ffffa1edeea27c2a0d}{GetEllipsePoint}}(int16\_t\ centerX,\ int16\_t\ centerY,\ \textcolor{keywordtype}{float}\ angle,\ uint8\_t\ radiusX,\ uint8\_t\ radiusY);}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00073\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a4d57b96b8b613e9340bcbedcf4bb8b7d}{CalculateDistance}}(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p1,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p2);}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00081\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a46425683c9d095633253a6c7f8f0acdd}{CalculateAngle}}(\doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p1,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ p2);}
 \DoxyCodeLine{00082\ }
-\DoxyCodeLine{00088\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a2130e2991f451cbc0a3600279730234e}{PhaseToRadians}}(\textcolor{keywordtype}{float}\ phase);}
+\DoxyCodeLine{00088\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a71cf554da832be45ee3ef331b4f00de8}{NormalizePhase}}(\textcolor{keywordtype}{float}\ phase);}
 \DoxyCodeLine{00089\ }
-\DoxyCodeLine{00095\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_aa4d1b1e76f66ddc6b9d514362fd7e951}{RadiansToPhase}}(\textcolor{keywordtype}{float}\ radians);}
+\DoxyCodeLine{00095\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_a2130e2991f451cbc0a3600279730234e}{PhaseToRadians}}(\textcolor{keywordtype}{float}\ phase);}
 \DoxyCodeLine{00096\ }
-\DoxyCodeLine{00097\ \}\ \textcolor{comment}{//\ namespace\ Polar}}
-\DoxyCodeLine{00098\ }
-\DoxyCodeLine{00099\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
-\DoxyCodeLine{00100\ }
-\DoxyCodeLine{00101\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_UTILS\_POLAR\_HPP}}
+\DoxyCodeLine{00102\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{namespaceenjin2_1_1Polar_aa4d1b1e76f66ddc6b9d514362fd7e951}{RadiansToPhase}}(\textcolor{keywordtype}{float}\ radians);}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00104\ \}\ \textcolor{comment}{//\ namespace\ Polar}}
+\DoxyCodeLine{00105\ }
+\DoxyCodeLine{00106\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00107\ }
+\DoxyCodeLine{00108\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_UTILS\_POLAR\_HPP}}
 
 \end{DoxyCode}

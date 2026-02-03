@@ -4,7 +4,7 @@
 \begin{DoxyCode}{0}
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
 \DoxyCodeLine{00002\ }
-\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../components/drawable.hpp"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{drawable_8hpp}{../components/drawable.hpp}}"{}}}
 \DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
 \DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <cmath>}}
 \DoxyCodeLine{00006\ }
@@ -360,7 +360,7 @@
 \DoxyCodeLine{00417\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ s\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{int}\textcolor{keyword}{>}(size);}
 \DoxyCodeLine{00418\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ y\ =\ -\/s;\ y\ <=\ s;\ ++y)\ \{}
 \DoxyCodeLine{00419\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ x\ =\ -\/s;\ x\ <=\ s;\ ++x)\ \{}
-\DoxyCodeLine{00420\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (abs(x)\ +\ abs(y)\ <=\ s)\ \{}
+\DoxyCodeLine{00420\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (\doxymbox{\hyperlink{namespaceenjin2_1_1math_a1ad75009d20de9792cd5ea95d288fbd6}{abs}}(x)\ +\ \doxymbox{\hyperlink{namespaceenjin2_1_1math_a1ad75009d20de9792cd5ea95d288fbd6}{abs}}(y)\ <=\ s)\ \{}
 \DoxyCodeLine{00421\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.setPixel(center.x\ +\ x,\ center.y\ +\ y,\ color);}
 \DoxyCodeLine{00422\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00423\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
@@ -420,8 +420,8 @@
 \DoxyCodeLine{00477\ \ \ \ \ }
 \DoxyCodeLine{00478\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ PixelType>}
 \DoxyCodeLine{00479\ \ \ \ \ \textcolor{keywordtype}{void}\ drawLine(ICanvas<PixelType>\&\ canvas,\ Point\ from,\ Point\ to,\ PixelType\ color)\ \{}
-\DoxyCodeLine{00480\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dx\ =\ abs(to.x\ -\/\ from.x);}
-\DoxyCodeLine{00481\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dy\ =\ abs(to.y\ -\/\ from.y);}
+\DoxyCodeLine{00480\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dx\ =\ \doxymbox{\hyperlink{namespaceenjin2_1_1math_a1ad75009d20de9792cd5ea95d288fbd6}{abs}}(to.x\ -\/\ from.x);}
+\DoxyCodeLine{00481\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ dy\ =\ \doxymbox{\hyperlink{namespaceenjin2_1_1math_a1ad75009d20de9792cd5ea95d288fbd6}{abs}}(to.y\ -\/\ from.y);}
 \DoxyCodeLine{00482\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ sx\ =\ from.x\ <\ to.x\ ?\ 1\ :\ -\/1;}
 \DoxyCodeLine{00483\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ sy\ =\ from.y\ <\ to.y\ ?\ 1\ :\ -\/1;}
 \DoxyCodeLine{00484\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ err\ =\ dx\ -\/\ dy;}

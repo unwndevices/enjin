@@ -1,11 +1,19 @@
 \doxysection{enjin2::\+Primitives\texorpdfstring{$<$}{<} TPixel \texorpdfstring{$>$}{>} Class Template Reference}
 \hypertarget{classenjin2_1_1Primitives}{}\label{classenjin2_1_1Primitives}\index{enjin2::Primitives$<$ TPixel $>$@{enjin2::Primitives$<$ TPixel $>$}}
+
+
+Drawing primitives for geometric shapes.  
+
+
+
+
+{\ttfamily \+\#include $<$primitives.\+hpp$>$}
+
 \doxysubsubsection*{Static Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{classenjin2_1_1Primitives_a260738670787f57096f230ef1e3d3c07}\label{classenjin2_1_1Primitives_a260738670787f57096f230ef1e3d3c07} 
-static void {\bfseries draw\+Line} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&canvas, int16\+\_\+t x0, int16\+\_\+t y0, int16\+\_\+t x1, int16\+\_\+t y1, TPixel color)
-\item 
+static void \doxymbox{\hyperlink{classenjin2_1_1Primitives_a260738670787f57096f230ef1e3d3c07}{draw\+Line}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&canvas, int16\+\_\+t x0, int16\+\_\+t y0, int16\+\_\+t x1, int16\+\_\+t y1, TPixel color)
+\begin{DoxyCompactList}\small\item\em Draw a line using Bresenham\textquotesingle{}s algorithm. \end{DoxyCompactList}\item 
 \Hypertarget{classenjin2_1_1Primitives_aac0eb5f1a674da1dd72f3dd56fa93ff2}\label{classenjin2_1_1Primitives_aac0eb5f1a674da1dd72f3dd56fa93ff2} 
 static void {\bfseries draw\+Rect} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&canvas, const \doxymbox{\hyperlink{structenjin2_1_1Rect}{Rect}} \&rect, TPixel color)
 \item 
@@ -35,6 +43,49 @@ static void {\bfseries draw\+Polygon} (\doxymbox{\hyperlink{classenjin2_1_1ICanv
 \end{DoxyCompactItemize}
 
 
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename TPixel$>$\newline
+class enjin2::\+\+Primitives$<$ TPixel $>$}
+Drawing primitives for geometric shapes. 
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em TPixel} & Pixel type (e.\+g., \doxylink{structenjin2_1_1Pixel4}{Pixel4}, uint8\+\_\+t) \\
+\hline
+\end{DoxyTemplParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1Primitives_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1Primitives_a260738670787f57096f230ef1e3d3c07}\index{enjin2::Primitives$<$ TPixel $>$@{enjin2::Primitives$<$ TPixel $>$}!drawLine@{drawLine}}
+\index{drawLine@{drawLine}!enjin2::Primitives$<$ TPixel $>$@{enjin2::Primitives$<$ TPixel $>$}}
+\doxysubsubsection{\texorpdfstring{drawLine()}{drawLine()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1Primitives_a260738670787f57096f230ef1e3d3c07} 
+template$<$typename TPixel$>$ \\
+void \doxymbox{\hyperlink{classenjin2_1_1Primitives}{enjin2::\+\+Primitives}}$<$ TPixel $>$::\+draw\+Line (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ TPixel $>$ \&}]{canvas}{, }\item[{int16\+\_\+t}]{x0}{, }\item[{int16\+\_\+t}]{y0}{, }\item[{int16\+\_\+t}]{x1}{, }\item[{int16\+\_\+t}]{y1}{, }\item[{TPixel}]{color}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Draw a line using Bresenham\textquotesingle{}s algorithm. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em canvas} & Target canvas \\
+\hline
+{\em x0} & Starting X coordinate \\
+\hline
+{\em y0} & Starting Y coordinate \\
+\hline
+{\em x1} & Ending X coordinate \\
+\hline
+{\em y1} & Ending Y coordinate \\
+\hline
+{\em color} & Line color \\
+\hline
+\end{DoxyParams}
+
+
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-include/\+enjin2/\+graphics/\+primitives.\+hpp\end{DoxyCompactItemize}
+include/\+enjin2/\+graphics/\+\doxymbox{\hyperlink{primitives_8hpp}{primitives.\+hpp}}\end{DoxyCompactItemize}

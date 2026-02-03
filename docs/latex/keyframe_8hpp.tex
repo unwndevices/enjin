@@ -1,0 +1,197 @@
+\doxysection{include/\+enjin2/\+animation/\+keyframe.hpp File Reference}
+\hypertarget{keyframe_8hpp}{}\label{keyframe_8hpp}\index{include/enjin2/animation/keyframe.hpp@{include/enjin2/animation/keyframe.hpp}}
+
+
+Keyframe types, animation states, and easing functions.  
+
+
+{\ttfamily \+\#include "{}../\+core/\+types.\+hpp"{}}\newline
+{\ttfamily \+\#include $<$cstdint$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe}{enjin2::\+\+Position\+Keyframe}}
+\begin{DoxyCompactList}\small\item\em Keyframe for position animation. \end{DoxyCompactList}\item 
+struct \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe}{enjin2::\+\+Float\+Keyframe}}
+\begin{DoxyCompactList}\small\item\em Keyframe for float value animation. \end{DoxyCompactList}\item 
+struct \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe}{enjin2::\+\+Color\+Keyframe}}
+\begin{DoxyCompactList}\small\item\em Keyframe for color animation. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions}{enjin2::\+\+Easing\+Functions}}
+\begin{DoxyCompactList}\small\item\em Easing function utilities. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{enjin2::\+\+Ease\+Type}} \{ \newline
+\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{LINEAR}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0660967ed80dd5cae27f219de88fcaf7}{EASE\+\_\+\+IN}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1ac7f1ac6b9424a63a30f71760bde503}{EASE\+\_\+\+OUT}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1bfc63ad6bcaed6056d1428ca80e1ecb}{EASE\+\_\+\+IN\+\_\+\+OUT}}
+, \newline
+\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a2931ba9ba54f08c9e47897156da23d80}{EASE\+\_\+\+IN\+\_\+\+QUAD}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0d4b5515ac1af5b4a19b4d92d6904704}{EASE\+\_\+\+OUT\+\_\+\+QUAD}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a8ede4db7eb19d14265ec995bddf7cbc9}{EASE\+\_\+\+IN\+\_\+\+CUBIC}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2ad6d1b2d7f0b5e3fb5a03b0d2c290d1e2}{EASE\+\_\+\+OUT\+\_\+\+CUBIC}}
+, \newline
+\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1cf1819fff23d998f749635e4da14371}{EASE\+\_\+\+BOUNCE}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2afd3c3ebb038f27098a905477876fe4bb}{EASE\+\_\+\+ELASTIC}}
+ \}
+\begin{DoxyCompactList}\small\item\em Easing function types for smooth animations. \end{DoxyCompactList}\item 
+enum class \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{enjin2::\+\+Animation\+State}} \{ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da09d4d696b4e935115b9313e3c412509a}{STOPPED}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da50366a49630a416ab3ccaa004196027e}{PLAYING}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da99b2439e63f73ad515f7ab2447a80673}{PAUSED}}
+, \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da2c616b2713e2e0aed04b4c4752c88133}{FINISHED}}
+ \}
+\begin{DoxyCompactList}\small\item\em Animation state for tracking playback. \end{DoxyCompactList}\item 
+enum class \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{enjin2::\+\+Loop\+Mode}} \{ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0ab50339a10e1de285ac99d4c3990b8693}{NONE}}
+, \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a9159b3578e4e1eb31ffdf90acd6f6e40}{LOOP}}
+, \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a39d9a3e04b6cb09993554dc67fc4e40c}{PING\+\_\+\+PONG}}
+ \}
+\begin{DoxyCompactList}\small\item\em Animation loop modes. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Keyframe types, animation states, and easing functions. 
+
+Provides Position\+Keyframe, Float\+Keyframe, Color\+Keyframe structures, Animation\+State and Loop\+Mode enums, and Easing\+Functions utilities. 
+
+\label{doc-enum-members}
+\Hypertarget{keyframe_8hpp_doc-enum-members}
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}\index{keyframe.hpp@{keyframe.hpp}!AnimationState@{AnimationState}}
+\index{AnimationState@{AnimationState}!keyframe.hpp@{keyframe.hpp}}
+\doxysubsubsection{\texorpdfstring{AnimationState}{AnimationState}}
+{\footnotesize\ttfamily \label{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d} 
+enum class \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{enjin2::\+\+Animation\+State}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+Animation state for tracking playback. 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{STOPPED@{STOPPED}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!STOPPED@{STOPPED}}
+}\Hypertarget{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da09d4d696b4e935115b9313e3c412509a}\label{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da09d4d696b4e935115b9313e3c412509a} 
+STOPPED&Animation is stopped. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{PLAYING@{PLAYING}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!PLAYING@{PLAYING}}
+}\Hypertarget{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da50366a49630a416ab3ccaa004196027e}\label{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da50366a49630a416ab3ccaa004196027e} 
+PLAYING&Animation is playing. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{PAUSED@{PAUSED}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!PAUSED@{PAUSED}}
+}\Hypertarget{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da99b2439e63f73ad515f7ab2447a80673}\label{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da99b2439e63f73ad515f7ab2447a80673} 
+PAUSED&Animation is paused. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FINISHED@{FINISHED}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!FINISHED@{FINISHED}}
+}\Hypertarget{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da2c616b2713e2e0aed04b4c4752c88133}\label{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da2c616b2713e2e0aed04b4c4752c88133} 
+FINISHED&Animation has finished. \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}\index{keyframe.hpp@{keyframe.hpp}!EaseType@{EaseType}}
+\index{EaseType@{EaseType}!keyframe.hpp@{keyframe.hpp}}
+\doxysubsubsection{\texorpdfstring{EaseType}{EaseType}}
+{\footnotesize\ttfamily \label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2} 
+enum class \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{enjin2::\+\+Ease\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+Easing function types for smooth animations. 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{LINEAR@{LINEAR}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!LINEAR@{LINEAR}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046} 
+LINEAR&Linear interpolation. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_IN@{EASE\_IN}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_IN@{EASE\_IN}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0660967ed80dd5cae27f219de88fcaf7}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0660967ed80dd5cae27f219de88fcaf7} 
+EASE\+\_\+\+IN&Slow start, fast end. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_OUT@{EASE\_OUT}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_OUT@{EASE\_OUT}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1ac7f1ac6b9424a63a30f71760bde503}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1ac7f1ac6b9424a63a30f71760bde503} 
+EASE\+\_\+\+OUT&Fast start, slow end. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_IN\_OUT@{EASE\_IN\_OUT}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_IN\_OUT@{EASE\_IN\_OUT}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1bfc63ad6bcaed6056d1428ca80e1ecb}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1bfc63ad6bcaed6056d1428ca80e1ecb} 
+EASE\+\_\+\+IN\+\_\+\+OUT&Slow start and end, fast middle. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_IN\_QUAD@{EASE\_IN\_QUAD}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_IN\_QUAD@{EASE\_IN\_QUAD}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a2931ba9ba54f08c9e47897156da23d80}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a2931ba9ba54f08c9e47897156da23d80} 
+EASE\+\_\+\+IN\+\_\+\+QUAD&Quadratic ease in. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_OUT\_QUAD@{EASE\_OUT\_QUAD}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_OUT\_QUAD@{EASE\_OUT\_QUAD}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0d4b5515ac1af5b4a19b4d92d6904704}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0d4b5515ac1af5b4a19b4d92d6904704} 
+EASE\+\_\+\+OUT\+\_\+\+QUAD&Quadratic ease out. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_IN\_CUBIC@{EASE\_IN\_CUBIC}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_IN\_CUBIC@{EASE\_IN\_CUBIC}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a8ede4db7eb19d14265ec995bddf7cbc9}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a8ede4db7eb19d14265ec995bddf7cbc9} 
+EASE\+\_\+\+IN\+\_\+\+CUBIC&Cubic ease in. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_OUT\_CUBIC@{EASE\_OUT\_CUBIC}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_OUT\_CUBIC@{EASE\_OUT\_CUBIC}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2ad6d1b2d7f0b5e3fb5a03b0d2c290d1e2}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2ad6d1b2d7f0b5e3fb5a03b0d2c290d1e2} 
+EASE\+\_\+\+OUT\+\_\+\+CUBIC&Cubic ease out. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_BOUNCE@{EASE\_BOUNCE}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_BOUNCE@{EASE\_BOUNCE}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1cf1819fff23d998f749635e4da14371}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1cf1819fff23d998f749635e4da14371} 
+EASE\+\_\+\+BOUNCE&Bouncing effect. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{EASE\_ELASTIC@{EASE\_ELASTIC}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!EASE\_ELASTIC@{EASE\_ELASTIC}}
+}\Hypertarget{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2afd3c3ebb038f27098a905477876fe4bb}\label{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2afd3c3ebb038f27098a905477876fe4bb} 
+EASE\+\_\+\+ELASTIC&Elastic spring effect. \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}\index{keyframe.hpp@{keyframe.hpp}!LoopMode@{LoopMode}}
+\index{LoopMode@{LoopMode}!keyframe.hpp@{keyframe.hpp}}
+\doxysubsubsection{\texorpdfstring{LoopMode}{LoopMode}}
+{\footnotesize\ttfamily \label{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0} 
+enum class \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{enjin2::\+\+Loop\+Mode}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+Animation loop modes. 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{NONE@{NONE}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!NONE@{NONE}}
+}\Hypertarget{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0ab50339a10e1de285ac99d4c3990b8693}\label{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0ab50339a10e1de285ac99d4c3990b8693} 
+NONE&Play once and stop. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{LOOP@{LOOP}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!LOOP@{LOOP}}
+}\Hypertarget{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a9159b3578e4e1eb31ffdf90acd6f6e40}\label{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a9159b3578e4e1eb31ffdf90acd6f6e40} 
+LOOP&Loop continuously. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{PING\_PONG@{PING\_PONG}!keyframe.hpp@{keyframe.hpp}}
+\index{keyframe.hpp@{keyframe.hpp}!PING\_PONG@{PING\_PONG}}
+}\Hypertarget{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a39d9a3e04b6cb09993554dc67fc4e40c}\label{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a39d9a3e04b6cb09993554dc67fc4e40c} 
+PING\+\_\+\+PONG&Play forward then backward repeatedly. \\
+\hline
+
+\end{DoxyEnumFields}

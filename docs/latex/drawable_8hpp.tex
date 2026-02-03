@@ -1,0 +1,47 @@
+\doxysection{include/\+enjin2/\+components/\+drawable.hpp File Reference}
+\hypertarget{drawable_8hpp}{}\label{drawable_8hpp}\index{include/enjin2/components/drawable.hpp@{include/enjin2/components/drawable.hpp}}
+
+
+Base drawable component for rendering.  
+
+
+{\ttfamily \+\#include "{}../\+core/\+component.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}../\+core/\+types.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}../\+graphics/\+canvas.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}position.\+hpp"{}}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}
+\begin{DoxyCompactList}\small\item\em Base class for all drawable components (matches original Enjin \doxylink{classenjin2_1_1C__Drawable}{C\+\_\+\+Drawable}). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{drawable_8hpp_abc9fd42ae01df89be2b46fc64ace9b64}\label{drawable_8hpp_abc9fd42ae01df89be2b46fc64ace9b64} 
+enum class \doxymbox{\hyperlink{drawable_8hpp_abc9fd42ae01df89be2b46fc64ace9b64}{enjin2::\+\+Draw\+Layer}} \{ \newline
+{\bfseries Default}
+, {\bfseries Background}
+, {\bfseries Entities}
+, {\bfseries Foreground}
+, \newline
+{\bfseries Overlay}
+, {\bfseries UI}
+ \}
+\begin{DoxyCompactList}\small\item\em Draw layer enumeration for rendering order (matches original Enjin). \end{DoxyCompactList}\item 
+\Hypertarget{drawable_8hpp_a93eabee0843e21302c246269da3374df}\label{drawable_8hpp_a93eabee0843e21302c246269da3374df} 
+enum class \doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{enjin2::\+\+Blend\+Mode}} \{ \newline
+{\bfseries Normal}
+, {\bfseries Add}
+, {\bfseries Sub}
+, {\bfseries Difference}
+, \newline
+{\bfseries Opacity50}
+, {\bfseries Opacity25}
+ \}
+\begin{DoxyCompactList}\small\item\em Blend mode enumeration for compositing (matches original Enjin). \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Base drawable component for rendering. 
+
+Provides common functionality for components that can be rendered, including layer management, blending, anchoring, and visibility. 

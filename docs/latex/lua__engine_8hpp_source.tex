@@ -1,122 +1,127 @@
 \doxysection{lua\+\_\+engine.\+hpp}
 \hypertarget{lua__engine_8hpp_source}{}\label{lua__engine_8hpp_source}\index{include/enjin2/scripting/lua\_engine.hpp@{include/enjin2/scripting/lua\_engine.hpp}}
-
+\doxymbox{\hyperlink{lua__engine_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
-\DoxyCodeLine{00002\ }
-\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}lua\_platform.hpp"{}}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <string>}}
-\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <vector>}}
-\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <functional>}}
-\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#pragma\ once}}
 \DoxyCodeLine{00009\ }
-\DoxyCodeLine{00010\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00011\ }
-\DoxyCodeLine{00015\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1LuaResult_a51518a4188d04cb62471be27aa588ee8}{LuaResult}}\ \{}
-\DoxyCodeLine{00016\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ae52b5e7b2c10b782c53b07854f717405}{success}};\ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00017\ \ \ \ \ std::string\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ab997a064f88e10d62d0b94a04fb6df7a}{error}};\ \ \ \ \ \ }
-\DoxyCodeLine{00018\ \ \ \ \ }
-\DoxyCodeLine{00022\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_a51518a4188d04cb62471be27aa588ee8}{LuaResult}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ae52b5e7b2c10b782c53b07854f717405}{success}}(true)\ \{\}}
-\DoxyCodeLine{00023\ \ \ \ \ }
-\DoxyCodeLine{00028\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_a75666bd0e3c38c88fe8692c9c751db60}{LuaResult}}(\textcolor{keyword}{const}\ std::string\&\ errorMsg)\ :\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ae52b5e7b2c10b782c53b07854f717405}{success}}(false),\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ab997a064f88e10d62d0b94a04fb6df7a}{error}}(errorMsg)\ \{\}}
-\DoxyCodeLine{00029\ \};}
-\DoxyCodeLine{00030\ }
-\DoxyCodeLine{00034\ \textcolor{keyword}{using\ }LuaCallback\ =\ std::function<int(lua\_State*)>;}
-\DoxyCodeLine{00035\ }
-\DoxyCodeLine{00042\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af4ebc140ba4aa58a55ad2c1a35fdba73}{LuaEngine}}\ \{}
-\DoxyCodeLine{00043\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00044\ \ \ \ \ lua\_State*\ L;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keywordtype}{bool}\ initialized;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00046\ \ \ \ \ std::vector<std::string>\ loadedScripts;\ }
-\DoxyCodeLine{00047\ \ \ \ \ }
-\DoxyCodeLine{00048\ \ \ \ \ \textcolor{comment}{//\ Static\ memory\ management\ \ }}
-\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{size\_t}\ memoryUsed;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{char}\ memoryPool[];\ }
-\DoxyCodeLine{00051\ \ \ \ \ }
-\DoxyCodeLine{00052\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00056\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af4ebc140ba4aa58a55ad2c1a35fdba73}{LuaEngine}}();}
-\DoxyCodeLine{00057\ \ \ \ \ }
-\DoxyCodeLine{00061\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a24e09030cc220f6acc7e4e058a5b3985}{\string~LuaEngine}}();}
-\DoxyCodeLine{00062\ \ \ \ \ }
-\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a3ce1fc93526406a63c8bee4fb8fa5f1c}{initialize}}();}
-\DoxyCodeLine{00068\ \ \ \ \ }
-\DoxyCodeLine{00072\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a58733c7357bcff13f3b6693801ca9b3b}{shutdown}}();}
-\DoxyCodeLine{00073\ \ \ \ \ }
-\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ad6cad2546db21fc22923a3589686c2b2}{isInitialized}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ initialized;\ \}}
-\DoxyCodeLine{00079\ \ \ \ \ }
-\DoxyCodeLine{00085\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ad04499cb09016b0f6b35135c8c65e1c6}{executeString}}(\textcolor{keyword}{const}\ std::string\&\ code);}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{lua__platform_8hpp}{lua\_platform.hpp}}"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <functional>}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00022\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1LuaResult_a51518a4188d04cb62471be27aa588ee8}{LuaResult}}\ \{}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ae52b5e7b2c10b782c53b07854f717405}{success}};\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ std::string\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ab997a064f88e10d62d0b94a04fb6df7a}{error}};\ \ \ \ \ \ }
+\DoxyCodeLine{00025\ \ \ \ \ }
+\DoxyCodeLine{00029\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_a51518a4188d04cb62471be27aa588ee8}{LuaResult}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ae52b5e7b2c10b782c53b07854f717405}{success}}(true)\ \{\}}
+\DoxyCodeLine{00030\ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_a75666bd0e3c38c88fe8692c9c751db60}{LuaResult}}(\textcolor{keyword}{const}\ std::string\&\ errorMsg)\ :\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ae52b5e7b2c10b782c53b07854f717405}{success}}(false),\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult_ab997a064f88e10d62d0b94a04fb6df7a}{error}}(errorMsg)\ \{\}}
+\DoxyCodeLine{00036\ \};}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00041\ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{lua__engine_8hpp_a7b8ba6c2d516c86075be22f0aca1760c}{LuaCallback}}\ =\ std::function<int(lua\_State*)>;}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00049\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af4ebc140ba4aa58a55ad2c1a35fdba73}{LuaEngine}}\ \{}
+\DoxyCodeLine{00050\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00051\ \ \ \ \ lua\_State*\ L;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keywordtype}{bool}\ initialized;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00053\ \ \ \ \ std::vector<std::string>\ loadedScripts;\ }
+\DoxyCodeLine{00054\ \ \ \ \ }
+\DoxyCodeLine{00055\ \ \ \ \ \textcolor{comment}{//\ Static\ memory\ management\ \ }}
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{size\_t}\ memoryUsed;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{char}\ memoryPool[];\ }
+\DoxyCodeLine{00058\ \ \ \ \ }
+\DoxyCodeLine{00059\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00063\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af4ebc140ba4aa58a55ad2c1a35fdba73}{LuaEngine}}();}
+\DoxyCodeLine{00064\ \ \ \ \ }
+\DoxyCodeLine{00068\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a24e09030cc220f6acc7e4e058a5b3985}{\string~LuaEngine}}();}
+\DoxyCodeLine{00069\ \ \ \ \ }
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a3ce1fc93526406a63c8bee4fb8fa5f1c}{initialize}}();}
+\DoxyCodeLine{00075\ \ \ \ \ }
+\DoxyCodeLine{00079\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a58733c7357bcff13f3b6693801ca9b3b}{shutdown}}();}
+\DoxyCodeLine{00080\ \ \ \ \ }
+\DoxyCodeLine{00085\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ad6cad2546db21fc22923a3589686c2b2}{isInitialized}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ initialized;\ \}}
 \DoxyCodeLine{00086\ \ \ \ \ }
-\DoxyCodeLine{00092\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_aec933b810fbafb836a81d65140e79db0}{executeFile}}(\textcolor{keyword}{const}\ std::string\&\ filename);}
+\DoxyCodeLine{00092\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ad04499cb09016b0f6b35135c8c65e1c6}{executeString}}(\textcolor{keyword}{const}\ std::string\&\ code);}
 \DoxyCodeLine{00093\ \ \ \ \ }
-\DoxyCodeLine{00099\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a78ee0bb854fddb7a28d61e05beec6667}{registerFunction}}(\textcolor{keyword}{const}\ std::string\&\ name,\ LuaCallback\ callback);}
+\DoxyCodeLine{00099\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_aec933b810fbafb836a81d65140e79db0}{executeFile}}(\textcolor{keyword}{const}\ std::string\&\ filename);}
 \DoxyCodeLine{00100\ \ \ \ \ }
-\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_aa8d683bbfccab34bd1565cf109155a62}{registerFunction}}(\textcolor{keyword}{const}\ std::string\&\ name,\ lua\_CFunction\ func);}
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a78ee0bb854fddb7a28d61e05beec6667}{registerFunction}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \doxymbox{\hyperlink{lua__engine_8hpp_a7b8ba6c2d516c86075be22f0aca1760c}{LuaCallback}}\ callback);}
 \DoxyCodeLine{00107\ \ \ \ \ }
-\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a719df01f36e044138f6b3840fef556ba}{createTable}}(\textcolor{keyword}{const}\ std::string\&\ name);}
-\DoxyCodeLine{00113\ \ \ \ \ }
-\DoxyCodeLine{00119\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25}{setGlobal}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{double}\ value);}
-\DoxyCodeLine{00120\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25}{setGlobal}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keyword}{const}\ std::string\&\ value);}
-\DoxyCodeLine{00121\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25}{setGlobal}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{bool}\ value);}
-\DoxyCodeLine{00122\ \ \ \ \ }
-\DoxyCodeLine{00128\ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_acf683a6d7f6917249f21dc06bdc3eb07}{getGlobalNumber}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{double}\ defaultValue\ =\ 0.0);}
-\DoxyCodeLine{00129\ \ \ \ \ std::string\ getGlobalString(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keyword}{const}\ std::string\&\ defaultValue\ =\ \textcolor{stringliteral}{"{}"{}});}
-\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keywordtype}{bool}\ getGlobalBool(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{bool}\ defaultValue\ =\ \textcolor{keyword}{false});}
-\DoxyCodeLine{00131\ \ \ \ \ }
-\DoxyCodeLine{00138\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
-\DoxyCodeLine{00139\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af20b7ca5dd36539c9fdc6bbd1931591e}{callFunction}}(\textcolor{keyword}{const}\ std::string\&\ functionName,\ Args...\ args)\ \{}
-\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!initialized)\ \{}
-\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}(\textcolor{stringliteral}{"{}Lua\ engine\ not\ initialized"{}});}
-\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ lua\_getglobal(L,\ functionName.c\_str());}
-\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!lua\_isfunction(L,\ -\/1))\ \{}
-\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ lua\_pop(L,\ 1);}
-\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}(\textcolor{stringliteral}{"{}Function\ not\ found:\ "{}}\ +\ functionName);}
-\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Push\ arguments}}
-\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ pushArgs(std::forward<Args>(args)...);}
-\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Call\ function}}
-\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ result\ =\ lua\_pcall(L,\ \textcolor{keyword}{sizeof}...(args),\ 0,\ 0);}
-\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ checkResult(result);}
-\DoxyCodeLine{00156\ \ \ \ \ \}}
-\DoxyCodeLine{00157\ \ \ \ \ }
-\DoxyCodeLine{00162\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ac1773c9079cdd90b251b74d96a2b52a7}{getMemoryUsage}}()\ \textcolor{keyword}{const};}
-\DoxyCodeLine{00163\ \ \ \ \ }
-\DoxyCodeLine{00168\ \ \ \ \ \textcolor{keyword}{const}\ std::vector<std::string>\&\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a96dc975162c484c47444acc183ee04fb}{getLoadedScripts}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ loadedScripts;\ \}}
-\DoxyCodeLine{00169\ \ \ \ \ }
-\DoxyCodeLine{00173\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ade8e87ae49b37c1ad599ec1e0e4a9d7d}{clearScripts}}();}
-\DoxyCodeLine{00174\ \ \ \ \ }
-\DoxyCodeLine{00179\ \ \ \ \ lua\_State*\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a2e8bb86a820606d80c9eb9dcd0347770}{getState}}()\ \{\ \textcolor{keywordflow}{return}\ L;\ \}}
-\DoxyCodeLine{00180\ }
-\DoxyCodeLine{00181\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00190\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}*\ luaAllocator(\textcolor{keywordtype}{void}*\ ud,\ \textcolor{keywordtype}{void}*\ ptr,\ \textcolor{keywordtype}{size\_t}\ osize,\ \textcolor{keywordtype}{size\_t}\ nsize);}
-\DoxyCodeLine{00191\ \ \ \ \ }
-\DoxyCodeLine{00197\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ luaPanic(lua\_State*\ L);}
-\DoxyCodeLine{00198\ \ \ \ \ }
-\DoxyCodeLine{00203\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
-\DoxyCodeLine{00204\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArg(T\&\&\ arg);}
-\DoxyCodeLine{00205\ \ \ \ \ }
-\DoxyCodeLine{00211\ \ \ \ \ \textcolor{comment}{//\ Simplified\ recursive\ template\ for\ C++11\ compatibility\ \ }}
-\DoxyCodeLine{00212\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
-\DoxyCodeLine{00213\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArgs(T\&\&\ arg)\ \{}
-\DoxyCodeLine{00214\ \ \ \ \ \ \ \ \ pushArg(std::forward<T>(arg));}
-\DoxyCodeLine{00215\ \ \ \ \ \}}
-\DoxyCodeLine{00216\ \ \ \ \ }
-\DoxyCodeLine{00217\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keyword}{typename}...\ Args>}
-\DoxyCodeLine{00218\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArgs(T\&\&\ first,\ Args\&\&...\ rest)\ \{}
-\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ pushArg(std::forward<T>(first));}
-\DoxyCodeLine{00220\ \ \ \ \ \ \ \ \ pushArgs(std::forward<Args>(rest)...);}
-\DoxyCodeLine{00221\ \ \ \ \ \}}
-\DoxyCodeLine{00222\ \ \ \ \ }
-\DoxyCodeLine{00226\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArgs()\ \{\}}
-\DoxyCodeLine{00227\ \ \ \ \ }
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_aa8d683bbfccab34bd1565cf109155a62}{registerFunction}}(\textcolor{keyword}{const}\ std::string\&\ name,\ lua\_CFunction\ func);}
+\DoxyCodeLine{00114\ \ \ \ \ }
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a719df01f36e044138f6b3840fef556ba}{createTable}}(\textcolor{keyword}{const}\ std::string\&\ name);}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00127\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25}{setGlobal}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{double}\ value);}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ae8fb7fbed6e865c2a29cf0fe011bbc78}{setGlobal}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keyword}{const}\ std::string\&\ value);}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00143\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af55ceaf21d7c2e9da5789236047a09a0}{setGlobal}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{bool}\ value);}
+\DoxyCodeLine{00144\ \ \ \ \ }
+\DoxyCodeLine{00151\ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_acf683a6d7f6917249f21dc06bdc3eb07}{getGlobalNumber}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{double}\ defaultValue\ =\ 0.0);}
+\DoxyCodeLine{00152\ }
+\DoxyCodeLine{00159\ \ \ \ \ std::string\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ab04d02186842a3219a3c0dacd703bcf3}{getGlobalString}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keyword}{const}\ std::string\&\ defaultValue\ =\ \textcolor{stringliteral}{"{}"{}});}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00167\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ab65821f081fc8a497984375c9575c6e8}{getGlobalBool}}(\textcolor{keyword}{const}\ std::string\&\ name,\ \textcolor{keywordtype}{bool}\ defaultValue\ =\ \textcolor{keyword}{false});}
+\DoxyCodeLine{00168\ \ \ \ \ }
+\DoxyCodeLine{00175\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00176\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af20b7ca5dd36539c9fdc6bbd1931591e}{callFunction}}(\textcolor{keyword}{const}\ std::string\&\ functionName,\ Args...\ args)\ \{}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!initialized)\ \{}
+\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}(\textcolor{stringliteral}{"{}Lua\ engine\ not\ initialized"{}});}
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00180\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ lua\_getglobal(L,\ functionName.c\_str());}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!lua\_isfunction(L,\ -\/1))\ \{}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ \ \ \ \ lua\_pop(L,\ 1);}
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{LuaResult}}(\textcolor{stringliteral}{"{}Function\ not\ found:\ "{}}\ +\ functionName);}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Push\ arguments}}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ pushArgs(std::forward<Args>(args)...);}
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Call\ function}}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ result\ =\ lua\_pcall(L,\ \textcolor{keyword}{sizeof}...(args),\ 0,\ 0);}
+\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ checkResult(result);}
+\DoxyCodeLine{00193\ \ \ \ \ \}}
+\DoxyCodeLine{00194\ \ \ \ \ }
+\DoxyCodeLine{00199\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ac1773c9079cdd90b251b74d96a2b52a7}{getMemoryUsage}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00200\ \ \ \ \ }
+\DoxyCodeLine{00205\ \ \ \ \ \textcolor{keyword}{const}\ std::vector<std::string>\&\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a96dc975162c484c47444acc183ee04fb}{getLoadedScripts}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ loadedScripts;\ \}}
+\DoxyCodeLine{00206\ \ \ \ \ }
+\DoxyCodeLine{00210\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ade8e87ae49b37c1ad599ec1e0e4a9d7d}{clearScripts}}();}
+\DoxyCodeLine{00211\ \ \ \ \ }
+\DoxyCodeLine{00216\ \ \ \ \ lua\_State*\ \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a2e8bb86a820606d80c9eb9dcd0347770}{getState}}()\ \{\ \textcolor{keywordflow}{return}\ L;\ \}}
+\DoxyCodeLine{00217\ }
+\DoxyCodeLine{00218\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00227\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}*\ luaAllocator(\textcolor{keywordtype}{void}*\ ud,\ \textcolor{keywordtype}{void}*\ ptr,\ \textcolor{keywordtype}{size\_t}\ osize,\ \textcolor{keywordtype}{size\_t}\ nsize);}
 \DoxyCodeLine{00228\ \ \ \ \ }
-\DoxyCodeLine{00234\ \ \ \ \ LuaResult\ checkResult(\textcolor{keywordtype}{int}\ result);}
-\DoxyCodeLine{00235\ \};}
-\DoxyCodeLine{00236\ }
-\DoxyCodeLine{00237\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00234\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ luaPanic(lua\_State*\ L);}
+\DoxyCodeLine{00235\ \ \ \ \ }
+\DoxyCodeLine{00240\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
+\DoxyCodeLine{00241\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArg(T\&\&\ arg);}
+\DoxyCodeLine{00242\ \ \ \ \ }
+\DoxyCodeLine{00248\ \ \ \ \ \textcolor{comment}{//\ Simplified\ recursive\ template\ for\ C++11\ compatibility\ \ }}
+\DoxyCodeLine{00249\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T>}
+\DoxyCodeLine{00250\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArgs(T\&\&\ arg)\ \{}
+\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ pushArg(std::forward<T>(arg));}
+\DoxyCodeLine{00252\ \ \ \ \ \}}
+\DoxyCodeLine{00253\ \ \ \ \ }
+\DoxyCodeLine{00254\ \ \ \ \ \textcolor{keyword}{template}<\textcolor{keyword}{typename}\ T,\ \textcolor{keyword}{typename}...\ Args>}
+\DoxyCodeLine{00255\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArgs(T\&\&\ first,\ Args\&\&...\ rest)\ \{}
+\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ pushArg(std::forward<T>(first));}
+\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ pushArgs(std::forward<Args>(rest)...);}
+\DoxyCodeLine{00258\ \ \ \ \ \}}
+\DoxyCodeLine{00259\ \ \ \ \ }
+\DoxyCodeLine{00263\ \ \ \ \ \textcolor{keywordtype}{void}\ pushArgs()\ \{\}}
+\DoxyCodeLine{00264\ \ \ \ \ }
+\DoxyCodeLine{00265\ \ \ \ \ }
+\DoxyCodeLine{00271\ \ \ \ \ LuaResult\ checkResult(\textcolor{keywordtype}{int}\ result);}
+\DoxyCodeLine{00272\ \};}
+\DoxyCodeLine{00273\ }
+\DoxyCodeLine{00274\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
 
 \end{DoxyCode}

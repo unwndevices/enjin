@@ -29,28 +29,24 @@ bool \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ad6cad2546db21fc22923a3589686
 \begin{DoxyCompactList}\small\item\em Execute Lua code string. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_aec933b810fbafb836a81d65140e79db0}{execute\+File}} (const std::\+string \&filename)
 \begin{DoxyCompactList}\small\item\em Load and execute Lua script file. \end{DoxyCompactList}\item 
-void \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a78ee0bb854fddb7a28d61e05beec6667}{register\+Function}} (const std::\+string \&name, Lua\+Callback callback)
+void \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a78ee0bb854fddb7a28d61e05beec6667}{register\+Function}} (const std::\+string \&name, \doxymbox{\hyperlink{lua__engine_8hpp_a7b8ba6c2d516c86075be22f0aca1760c}{Lua\+Callback}} callback)
 \begin{DoxyCompactList}\small\item\em Register C function with Lua. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_aa8d683bbfccab34bd1565cf109155a62}{register\+Function}} (const std::\+string \&name, lua\+\_\+\+CFunction func)
 \begin{DoxyCompactList}\small\item\em Register C function with Lua (C-\/style). \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a719df01f36e044138f6b3840fef556ba}{create\+Table}} (const std::\+string \&name)
 \begin{DoxyCompactList}\small\item\em Create Lua table. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25}{set\+Global}} (const std::\+string \&name, double value)
-\begin{DoxyCompactList}\small\item\em Set global variable in Lua. \end{DoxyCompactList}\item 
-\Hypertarget{classenjin2_1_1LuaEngine_ae8fb7fbed6e865c2a29cf0fe011bbc78}\label{classenjin2_1_1LuaEngine_ae8fb7fbed6e865c2a29cf0fe011bbc78} 
-void {\bfseries set\+Global} (const std::\+string \&name, const std::\+string \&value)
-\item 
-\Hypertarget{classenjin2_1_1LuaEngine_af55ceaf21d7c2e9da5789236047a09a0}\label{classenjin2_1_1LuaEngine_af55ceaf21d7c2e9da5789236047a09a0} 
-void {\bfseries set\+Global} (const std::\+string \&name, bool value)
-\item 
+\begin{DoxyCompactList}\small\item\em Set global number variable in Lua. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ae8fb7fbed6e865c2a29cf0fe011bbc78}{set\+Global}} (const std::\+string \&name, const std::\+string \&value)
+\begin{DoxyCompactList}\small\item\em Set global string variable in Lua. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af55ceaf21d7c2e9da5789236047a09a0}{set\+Global}} (const std::\+string \&name, bool value)
+\begin{DoxyCompactList}\small\item\em Set global boolean variable in Lua. \end{DoxyCompactList}\item 
 double \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_acf683a6d7f6917249f21dc06bdc3eb07}{get\+Global\+Number}} (const std::\+string \&name, double default\+Value=0.\+0)
-\begin{DoxyCompactList}\small\item\em Get global variable from Lua. \end{DoxyCompactList}\item 
-\Hypertarget{classenjin2_1_1LuaEngine_ab04d02186842a3219a3c0dacd703bcf3}\label{classenjin2_1_1LuaEngine_ab04d02186842a3219a3c0dacd703bcf3} 
-std::\+string {\bfseries get\+Global\+String} (const std::\+string \&name, const std::\+string \&default\+Value="{}"{})
-\item 
-\Hypertarget{classenjin2_1_1LuaEngine_ab65821f081fc8a497984375c9575c6e8}\label{classenjin2_1_1LuaEngine_ab65821f081fc8a497984375c9575c6e8} 
-bool {\bfseries get\+Global\+Bool} (const std::\+string \&name, bool default\+Value=false)
-\item 
+\begin{DoxyCompactList}\small\item\em Get global number variable from Lua. \end{DoxyCompactList}\item 
+std::\+string \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ab04d02186842a3219a3c0dacd703bcf3}{get\+Global\+String}} (const std::\+string \&name, const std::\+string \&default\+Value="{}"{})
+\begin{DoxyCompactList}\small\item\em Get global string variable from Lua. \end{DoxyCompactList}\item 
+bool \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ab65821f081fc8a497984375c9575c6e8}{get\+Global\+Bool}} (const std::\+string \&name, bool default\+Value=false)
+\begin{DoxyCompactList}\small\item\em Get global boolean variable from Lua. \end{DoxyCompactList}\item 
 {\footnotesize template$<$typename... Args$>$ }\\\doxymbox{\hyperlink{structenjin2_1_1LuaResult}{Lua\+Result}} \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_af20b7ca5dd36539c9fdc6bbd1931591e}{call\+Function}} (const std::\+string \&function\+Name, Args... args)
 \begin{DoxyCompactList}\small\item\em Call Lua function. \end{DoxyCompactList}\item 
 size\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1LuaEngine_ac1773c9079cdd90b251b74d96a2b52a7}{get\+Memory\+Usage}} () const
@@ -144,6 +140,26 @@ Execute Lua code string.
 \begin{DoxyReturn}{Returns}
 Execution result 
 \end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaEngine_ab65821f081fc8a497984375c9575c6e8}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!getGlobalBool@{getGlobalBool}}
+\index{getGlobalBool@{getGlobalBool}!enjin2::LuaEngine@{enjin2::LuaEngine}}
+\doxysubsubsection{\texorpdfstring{getGlobalBool()}{getGlobalBool()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaEngine_ab65821f081fc8a497984375c9575c6e8} 
+bool enjin2::\+\+Lua\+Engine::\+get\+Global\+Bool (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{bool}]{default\+Value}{ = {\ttfamily false}}\end{DoxyParamCaption})}
+
+
+
+Get global boolean variable from Lua. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em default\+Value} & Default value if variable not found \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Boolean value (or default if not found) 
+\end{DoxyReturn}
 \Hypertarget{classenjin2_1_1LuaEngine_acf683a6d7f6917249f21dc06bdc3eb07}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!getGlobalNumber@{getGlobalNumber}}
 \index{getGlobalNumber@{getGlobalNumber}!enjin2::LuaEngine@{enjin2::LuaEngine}}
 \doxysubsubsection{\texorpdfstring{getGlobalNumber()}{getGlobalNumber()}}
@@ -152,15 +168,37 @@ double enjin2::\+\+Lua\+Engine::\+get\+Global\+Number (\begin{DoxyParamCaption}\
 
 
 
-Get global variable from Lua. 
+Get global number variable from Lua. 
 
 
 \begin{DoxyParams}{Parameters}
 {\em name} & Variable name \\
 \hline
+{\em default\+Value} & Default value if variable not found \\
+\hline
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
-Variable value (or default if not found) 
+Number value (or default if not found) 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaEngine_ab04d02186842a3219a3c0dacd703bcf3}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!getGlobalString@{getGlobalString}}
+\index{getGlobalString@{getGlobalString}!enjin2::LuaEngine@{enjin2::LuaEngine}}
+\doxysubsubsection{\texorpdfstring{getGlobalString()}{getGlobalString()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaEngine_ab04d02186842a3219a3c0dacd703bcf3} 
+std::\+string enjin2::\+\+Lua\+Engine::\+get\+Global\+String (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{const std::\+string \&}]{default\+Value}{ = {\ttfamily "{}"{}}}\end{DoxyParamCaption})}
+
+
+
+Get global string variable from Lua. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em default\+Value} & Default value if variable not found \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+String value (or default if not found) 
 \end{DoxyReturn}
 \Hypertarget{classenjin2_1_1LuaEngine_a96dc975162c484c47444acc183ee04fb}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!getLoadedScripts@{getLoadedScripts}}
 \index{getLoadedScripts@{getLoadedScripts}!enjin2::LuaEngine@{enjin2::LuaEngine}}
@@ -248,7 +286,7 @@ Register C function with Lua (C-\/style).
 \index{registerFunction@{registerFunction}!enjin2::LuaEngine@{enjin2::LuaEngine}}
 \doxysubsubsection{\texorpdfstring{registerFunction()}{registerFunction()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
 {\footnotesize\ttfamily \label{classenjin2_1_1LuaEngine_a78ee0bb854fddb7a28d61e05beec6667} 
-void enjin2::\+\+Lua\+Engine::\+register\+Function (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{Lua\+Callback}]{callback}{}\end{DoxyParamCaption})}
+void enjin2::\+\+Lua\+Engine::\+register\+Function (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{\doxymbox{\hyperlink{lua__engine_8hpp_a7b8ba6c2d516c86075be22f0aca1760c}{Lua\+Callback}}}]{callback}{}\end{DoxyParamCaption})}
 
 
 
@@ -261,25 +299,68 @@ Register C function with Lua.
 {\em callback} & C function callback \\
 \hline
 \end{DoxyParams}
-\Hypertarget{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!setGlobal@{setGlobal}}
+\Hypertarget{classenjin2_1_1LuaEngine_af55ceaf21d7c2e9da5789236047a09a0}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!setGlobal@{setGlobal}}
 \index{setGlobal@{setGlobal}!enjin2::LuaEngine@{enjin2::LuaEngine}}
-\doxysubsubsection{\texorpdfstring{setGlobal()}{setGlobal()}}
-{\footnotesize\ttfamily \label{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25} 
-void enjin2::\+\+Lua\+Engine::\+set\+Global (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{double}]{value}{}\end{DoxyParamCaption})}
+\doxysubsubsection{\texorpdfstring{setGlobal()}{setGlobal()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaEngine_af55ceaf21d7c2e9da5789236047a09a0} 
+void enjin2::\+\+Lua\+Engine::\+set\+Global (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{bool}]{value}{}\end{DoxyParamCaption})}
 
 
 
-Set global variable in Lua. 
+Set global boolean variable in Lua. 
 
 
 \begin{DoxyParams}{Parameters}
 {\em name} & Variable name \\
 \hline
-{\em value} & Variable value \\
+{\em value} & Boolean value to set \\
 \hline
 \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaEngine_ae8fb7fbed6e865c2a29cf0fe011bbc78}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!setGlobal@{setGlobal}}
+\index{setGlobal@{setGlobal}!enjin2::LuaEngine@{enjin2::LuaEngine}}
+\doxysubsubsection{\texorpdfstring{setGlobal()}{setGlobal()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaEngine_ae8fb7fbed6e865c2a29cf0fe011bbc78} 
+void enjin2::\+\+Lua\+Engine::\+set\+Global (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{const std::\+string \&}]{value}{}\end{DoxyParamCaption})}
+
+
+
+Set global string variable in Lua. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em value} & String value to set \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25}\index{enjin2::LuaEngine@{enjin2::LuaEngine}!setGlobal@{setGlobal}}
+\index{setGlobal@{setGlobal}!enjin2::LuaEngine@{enjin2::LuaEngine}}
+\doxysubsubsection{\texorpdfstring{setGlobal()}{setGlobal()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily \label{classenjin2_1_1LuaEngine_a4d7434f2a282603603653cec0a234e25} 
+void enjin2::\+\+Lua\+Engine::\+set\+Global (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{name}{, }\item[{double}]{value}{}\end{DoxyParamCaption})}
+
+
+
+Set global number variable in Lua. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & Variable name \\
+\hline
+{\em value} & Number value to set \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
 
 
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-include/\+enjin2/\+scripting/\+lua\+\_\+engine.\+hpp\end{DoxyCompactItemize}
+include/\+enjin2/\+scripting/\+\doxymbox{\hyperlink{lua__engine_8hpp}{lua\+\_\+engine.\+hpp}}\end{DoxyCompactItemize}

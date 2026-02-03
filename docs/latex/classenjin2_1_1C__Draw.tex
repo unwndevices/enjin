@@ -12,15 +12,15 @@ Draw component for lambda-\/based custom rendering (matches original Enjin \doxy
 \doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\doxymbox{\hyperlink{classenjin2_1_1C__Draw_aa21562a66cba16cb747ad5859b107d9d}{C\+\_\+\+Draw}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, Draw\+Function draw\+Func=nullptr)
+\doxymbox{\hyperlink{classenjin2_1_1C__Draw_aa21562a66cba16cb747ad5859b107d9d}{C\+\_\+\+Draw}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, \doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{Draw\+Function}} draw\+Func=nullptr)
 \begin{DoxyCompactList}\small\item\em Construct a new Draw component. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classenjin2_1_1C__Draw_ae13e81bc7460c4da87c4b6e909ce94dd}{draw}} (\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$ uint8\+\_\+t $>$ \&canvas) override
 \begin{DoxyCompactList}\small\item\em Draw using the stored draw function. \end{DoxyCompactList}\item 
 bool \doxymbox{\hyperlink{classenjin2_1_1C__Draw_a0df1365a7a6ee694d290a9251280c97a}{continue\+To\+Draw}} () const override
 \begin{DoxyCompactList}\small\item\em Check if should continue drawing (matches original Enjin). \end{DoxyCompactList}\item 
-void \doxymbox{\hyperlink{classenjin2_1_1C__Draw_a11703d05f5248fb10cd7cede338e066b}{Set\+Draw\+Function}} (Draw\+Function draw\+Func)
+void \doxymbox{\hyperlink{classenjin2_1_1C__Draw_a11703d05f5248fb10cd7cede338e066b}{Set\+Draw\+Function}} (\doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{Draw\+Function}} draw\+Func)
 \begin{DoxyCompactList}\small\item\em Set the draw function. \end{DoxyCompactList}\item 
-const Draw\+Function \& \doxymbox{\hyperlink{classenjin2_1_1C__Draw_ac58777d896e1f3c35ac584b4b5b212ae}{Get\+Draw\+Function}} () const
+const \doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{Draw\+Function}} \& \doxymbox{\hyperlink{classenjin2_1_1C__Draw_ac58777d896e1f3c35ac584b4b5b212ae}{Get\+Draw\+Function}} () const
 \begin{DoxyCompactList}\small\item\em Get the current draw function. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classenjin2_1_1C__Drawable}{enjin2::\+\+C\+\_\+\+Drawable}}}
 \begin{DoxyCompactItemize}
@@ -33,13 +33,13 @@ void {\bfseries Set\+Sort\+Order} (int order)
 \item 
 int {\bfseries Get\+Sort\+Order} () const
 \item 
-void {\bfseries Set\+Blend\+Mode} (Blend\+Mode mode)
+void {\bfseries Set\+Blend\+Mode} (\doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{Blend\+Mode}} mode)
 \item 
-Blend\+Mode {\bfseries Get\+Blend\+Mode} () const
+\doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{Blend\+Mode}} {\bfseries Get\+Blend\+Mode} () const
 \item 
-void {\bfseries Set\+Draw\+Layer} (Draw\+Layer draw\+Layer)
+void {\bfseries Set\+Draw\+Layer} (\doxymbox{\hyperlink{drawable_8hpp_abc9fd42ae01df89be2b46fc64ace9b64}{Draw\+Layer}} draw\+Layer)
 \item 
-Draw\+Layer {\bfseries Get\+Draw\+Layer} () const
+\doxymbox{\hyperlink{drawable_8hpp_abc9fd42ae01df89be2b46fc64ace9b64}{Draw\+Layer}} {\bfseries Get\+Draw\+Layer} () const
 \item 
 void {\bfseries Set\+Visibility} (bool visibility)
 \item 
@@ -117,9 +117,9 @@ static Component\+ID \doxymbox{\hyperlink{classenjin2_1_1Component_a8a6361bf4be3
 \begin{DoxyCompactList}\small\item\em Anchor offset. \end{DoxyCompactList}\item 
 int {\bfseries sort\+\_\+order}
 \begin{DoxyCompactList}\small\item\em Sort order for drawing. \end{DoxyCompactList}\item 
-Draw\+Layer {\bfseries layer}
+\doxymbox{\hyperlink{drawable_8hpp_abc9fd42ae01df89be2b46fc64ace9b64}{Draw\+Layer}} {\bfseries layer}
 \begin{DoxyCompactList}\small\item\em Draw layer. \end{DoxyCompactList}\item 
-Blend\+Mode {\bfseries blend\+\_\+mode}
+\doxymbox{\hyperlink{drawable_8hpp_a93eabee0843e21302c246269da3374df}{Blend\+Mode}} {\bfseries blend\+\_\+mode}
 \begin{DoxyCompactList}\small\item\em Blend mode. \end{DoxyCompactList}\item 
 Anchor {\bfseries anchor}
 \begin{DoxyCompactList}\small\item\em Anchor point. \end{DoxyCompactList}\item 
@@ -155,7 +155,7 @@ Allows custom drawing operations to be performed via lambda functions, providing
 \index{C\_Draw@{C\_Draw}!enjin2::C\_Draw@{enjin2::C\_Draw}}
 \doxysubsubsection{\texorpdfstring{C\_Draw()}{C\_Draw()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1C__Draw_aa21562a66cba16cb747ad5859b107d9d} 
-enjin2::\+\+C\+\_\+\+Draw::\+\+C\+\_\+\+Draw (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{Draw\+Function}]{draw\+Func}{ = {\ttfamily nullptr}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+enjin2::\+\+C\+\_\+\+Draw::\+\+C\+\_\+\+Draw (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{\doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{Draw\+Function}}}]{draw\+Func}{ = {\ttfamily nullptr}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -213,7 +213,7 @@ Implements \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a977a30e501e900c59c20
 \index{GetDrawFunction@{GetDrawFunction}!enjin2::C\_Draw@{enjin2::C\_Draw}}
 \doxysubsubsection{\texorpdfstring{GetDrawFunction()}{GetDrawFunction()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1C__Draw_ac58777d896e1f3c35ac584b4b5b212ae} 
-const Draw\+Function \& enjin2::\+\+C\+\_\+\+Draw::\+\+Get\+Draw\+Function (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+const \doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{Draw\+Function}} \& enjin2::\+\+C\+\_\+\+Draw::\+\+Get\+Draw\+Function (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -226,7 +226,7 @@ Current draw function (may be nullptr)
 \index{SetDrawFunction@{SetDrawFunction}!enjin2::C\_Draw@{enjin2::C\_Draw}}
 \doxysubsubsection{\texorpdfstring{SetDrawFunction()}{SetDrawFunction()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1C__Draw_a11703d05f5248fb10cd7cede338e066b} 
-void enjin2::\+\+C\+\_\+\+Draw::\+\+Set\+Draw\+Function (\begin{DoxyParamCaption}\item[{Draw\+Function}]{draw\+Func}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+void enjin2::\+\+C\+\_\+\+Draw::\+\+Set\+Draw\+Function (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{Draw\+Function}}}]{draw\+Func}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -241,4 +241,4 @@ Set the draw function.
 
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-include/\+enjin2/\+components/\+draw.\+hpp\end{DoxyCompactItemize}
+include/\+enjin2/\+components/\+\doxymbox{\hyperlink{draw_8hpp}{draw.\+hpp}}\end{DoxyCompactItemize}

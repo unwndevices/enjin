@@ -1,0 +1,28 @@
+\doxysection{include/\+enjin2/\+components/\+draw.hpp File Reference}
+\hypertarget{draw_8hpp}{}\label{draw_8hpp}\index{include/enjin2/components/draw.hpp@{include/enjin2/components/draw.hpp}}
+
+
+Simple draw component for custom rendering.  
+
+
+{\ttfamily \+\#include "{}drawable.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}../\+graphics/\+canvas.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}../\+core/\+object.\+hpp"{}}\newline
+{\ttfamily \+\#include $<$functional$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classenjin2_1_1C__Draw}{enjin2::\+\+C\+\_\+\+Draw}}
+\begin{DoxyCompactList}\small\item\em Draw component for lambda-\/based custom rendering (matches original Enjin \doxylink{classenjin2_1_1C__Draw}{C\+\_\+\+Draw}). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}\label{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c} 
+using {\bfseries enjin2::\+\+Draw\+Function} = std::\+function$<$void(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas}}$<$uint8\+\_\+t$>$\& canvas)$>$
+\begin{DoxyCompactList}\small\item\em Function type for custom drawing operations (matches original Enjin \doxylink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{Draw\+Function}). \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Simple draw component for custom rendering. 
+
+Provides a lightweight component for drawing rectangles and circles using lambda-\/based draw functions. 

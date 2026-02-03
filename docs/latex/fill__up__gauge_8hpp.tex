@@ -1,0 +1,57 @@
+\doxysection{include/\+enjin2/\+components/\+fill\+\_\+up\+\_\+gauge.hpp File Reference}
+\hypertarget{fill__up__gauge_8hpp}{}\label{fill__up__gauge_8hpp}\index{include/enjin2/components/fill\_up\_gauge.hpp@{include/enjin2/components/fill\_up\_gauge.hpp}}
+
+
+Fill-\/up gauge component for level display.  
+
+
+{\ttfamily \+\#include "{}../\+core/\+component.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}drawable.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}position.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}../\+graphics/\+canvas.\+hpp"{}}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge}{enjin2::\+\+Fill\+Up\+Gauge}}
+\begin{DoxyCompactList}\small\item\em Fill-\/up gauge component for level display. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{enjin2::\+\+Gauge\+Mode}} \{ \doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acba7c91d399b1b0815caa55eebe8056c2b7}{Unidirectional}}
+, \doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acbaabd4328c725637aabedbd02d3b7ffd40}{Bidirectional}}
+ \}
+\begin{DoxyCompactList}\small\item\em Mode for fill-\/up gauge behavior. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Fill-\/up gauge component for level display. 
+
+A visual gauge that fills up to represent a value, similar to a VU meter. Supports both unidirectional (0-\/1) and bidirectional (-\/1 to 1) modes. 
+
+\label{doc-enum-members}
+\Hypertarget{fill__up__gauge_8hpp_doc-enum-members}
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}\index{fill\_up\_gauge.hpp@{fill\_up\_gauge.hpp}!GaugeMode@{GaugeMode}}
+\index{GaugeMode@{GaugeMode}!fill\_up\_gauge.hpp@{fill\_up\_gauge.hpp}}
+\doxysubsubsection{\texorpdfstring{GaugeMode}{GaugeMode}}
+{\footnotesize\ttfamily \label{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb} 
+enum class \doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{enjin2::\+\+Gauge\+Mode}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+Mode for fill-\/up gauge behavior. 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Unidirectional@{Unidirectional}!fill\_up\_gauge.hpp@{fill\_up\_gauge.hpp}}
+\index{fill\_up\_gauge.hpp@{fill\_up\_gauge.hpp}!Unidirectional@{Unidirectional}}
+}\Hypertarget{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acba7c91d399b1b0815caa55eebe8056c2b7}\label{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acba7c91d399b1b0815caa55eebe8056c2b7} 
+Unidirectional&Fill from bottom to top (0.\+0 to 1.\+0). \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Bidirectional@{Bidirectional}!fill\_up\_gauge.hpp@{fill\_up\_gauge.hpp}}
+\index{fill\_up\_gauge.hpp@{fill\_up\_gauge.hpp}!Bidirectional@{Bidirectional}}
+}\Hypertarget{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acbaabd4328c725637aabedbd02d3b7ffd40}\label{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acbaabd4328c725637aabedbd02d3b7ffd40} 
+Bidirectional&Fill from center outward (-\/1.\+0 to 1.\+0). \\
+\hline
+
+\end{DoxyEnumFields}

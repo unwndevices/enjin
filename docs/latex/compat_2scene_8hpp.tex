@@ -1,0 +1,124 @@
+\doxysection{include/\+enjin2/\+compat/\+scene.hpp File Reference}
+\hypertarget{compat_2scene_8hpp}{}\label{compat_2scene_8hpp}\index{include/enjin2/compat/scene.hpp@{include/enjin2/compat/scene.hpp}}
+
+
+Compatibility layer for scene lifecycle methods.  
+
+
+{\ttfamily \+\#include "{}enjin2/\+core/\+scene.\+hpp"{}}\newline
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{compat_2scene_8hpp_a0bdaefa8fd43e015afb1e35be88e6887}\label{compat_2scene_8hpp_a0bdaefa8fd43e015afb1e35be88e6887} 
+using {\bfseries enjin::\+\+Scene} = \doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \doxymbox{\hyperlink{compat_2scene_8hpp_a5865905b4a59c382393ce7d89f841057}{enjin::\+\+On\+Create}} (\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}scene)
+\begin{DoxyCompactList}\small\item\em Wrapper for enjin1 On\+Create lifecycle method. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{compat_2scene_8hpp_a26f8571dd656a7d120ed76d18c9126b7}{enjin::\+\+On\+Destroy}} (\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}scene)
+\begin{DoxyCompactList}\small\item\em Wrapper for enjin1 On\+Destroy lifecycle method. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{compat_2scene_8hpp_ad1ba2b6257854e68b70197d435623592}{enjin::\+\+On\+Activate}} (\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}scene)
+\begin{DoxyCompactList}\small\item\em Wrapper for enjin1 On\+Activate lifecycle method. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{compat_2scene_8hpp_a9266903fe25ae652e1a1dbfed5515834}{enjin::\+\+On\+Deactivate}} (\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}scene)
+\begin{DoxyCompactList}\small\item\em Wrapper for enjin1 On\+Deactivate lifecycle method. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{compat_2scene_8hpp_af920a00059d494159862c0b1f548f8c5}{enjin::\+\+Update}} (\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}scene, uint16\+\_\+t delta\+Time)
+\begin{DoxyCompactList}\small\item\em Wrapper for enjin1 Update lifecycle method. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Compatibility layer for scene lifecycle methods. 
+
+Provides Pascal\+Case wrapper functions for enjin1 compatibility. Deprecated after enjin1 deletion. 
+
+\label{doc-func-members}
+\Hypertarget{compat_2scene_8hpp_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{compat_2scene_8hpp_ad1ba2b6257854e68b70197d435623592}\index{scene.hpp@{scene.hpp}!OnActivate@{OnActivate}}
+\index{OnActivate@{OnActivate}!scene.hpp@{scene.hpp}}
+\doxysubsubsection{\texorpdfstring{OnActivate()}{OnActivate()}}
+{\footnotesize\ttfamily \label{compat_2scene_8hpp_ad1ba2b6257854e68b70197d435623592} 
+void enjin::\+\+On\+Activate (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}}]{scene}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Wrapper for enjin1 On\+Activate lifecycle method. 
+
+In enjin1, scenes used Pascal\+Case:\+ On\+Activate() In enjin2, scenes use camel\+Case:\+ on\+Activate()
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene} & Pointer to scene to call on\+Activate on \\
+\hline
+\end{DoxyParams}
+\Hypertarget{compat_2scene_8hpp_a5865905b4a59c382393ce7d89f841057}\index{scene.hpp@{scene.hpp}!OnCreate@{OnCreate}}
+\index{OnCreate@{OnCreate}!scene.hpp@{scene.hpp}}
+\doxysubsubsection{\texorpdfstring{OnCreate()}{OnCreate()}}
+{\footnotesize\ttfamily \label{compat_2scene_8hpp_a5865905b4a59c382393ce7d89f841057} 
+void enjin::\+\+On\+Create (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}}]{scene}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Wrapper for enjin1 On\+Create lifecycle method. 
+
+In enjin1, scenes used Pascal\+Case:\+ On\+Create() In enjin2, scenes use camel\+Case:\+ on\+Create()
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene} & Pointer to scene to call on\+Create on \\
+\hline
+\end{DoxyParams}
+\Hypertarget{compat_2scene_8hpp_a9266903fe25ae652e1a1dbfed5515834}\index{scene.hpp@{scene.hpp}!OnDeactivate@{OnDeactivate}}
+\index{OnDeactivate@{OnDeactivate}!scene.hpp@{scene.hpp}}
+\doxysubsubsection{\texorpdfstring{OnDeactivate()}{OnDeactivate()}}
+{\footnotesize\ttfamily \label{compat_2scene_8hpp_a9266903fe25ae652e1a1dbfed5515834} 
+void enjin::\+\+On\+Deactivate (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}}]{scene}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Wrapper for enjin1 On\+Deactivate lifecycle method. 
+
+In enjin1, scenes used Pascal\+Case:\+ On\+Deactivate() In enjin2, scenes use camel\+Case:\+ on\+Deactivate()
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene} & Pointer to scene to call on\+Deactivate on \\
+\hline
+\end{DoxyParams}
+\Hypertarget{compat_2scene_8hpp_a26f8571dd656a7d120ed76d18c9126b7}\index{scene.hpp@{scene.hpp}!OnDestroy@{OnDestroy}}
+\index{OnDestroy@{OnDestroy}!scene.hpp@{scene.hpp}}
+\doxysubsubsection{\texorpdfstring{OnDestroy()}{OnDestroy()}}
+{\footnotesize\ttfamily \label{compat_2scene_8hpp_a26f8571dd656a7d120ed76d18c9126b7} 
+void enjin::\+\+On\+Destroy (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}}]{scene}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Wrapper for enjin1 On\+Destroy lifecycle method. 
+
+In enjin1, scenes used Pascal\+Case:\+ On\+Destroy() In enjin2, scenes use camel\+Case:\+ on\+Destroy()
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene} & Pointer to scene to call on\+Destroy on \\
+\hline
+\end{DoxyParams}
+\Hypertarget{compat_2scene_8hpp_af920a00059d494159862c0b1f548f8c5}\index{scene.hpp@{scene.hpp}!Update@{Update}}
+\index{Update@{Update}!scene.hpp@{scene.hpp}}
+\doxysubsubsection{\texorpdfstring{Update()}{Update()}}
+{\footnotesize\ttfamily \label{compat_2scene_8hpp_af920a00059d494159862c0b1f548f8c5} 
+void enjin::\+\+Update (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Scene}{enjin2::\+\+Scene}} \texorpdfstring{$\ast$}{*}}]{scene}{, }\item[{uint16\+\_\+t}]{delta\+Time}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Wrapper for enjin1 Update lifecycle method. 
+
+In enjin1, scenes used Pascal\+Case:\+ Update() In enjin2, scenes use camel\+Case:\+ update()
+
+
+\begin{DoxyParams}{Parameters}
+{\em scene} & Pointer to scene to call update on \\
+\hline
+{\em delta\+Time} & Time since last frame in milliseconds \\
+\hline
+\end{DoxyParams}

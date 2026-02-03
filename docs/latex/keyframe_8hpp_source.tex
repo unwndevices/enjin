@@ -1,99 +1,100 @@
 \doxysection{keyframe.\+hpp}
 \hypertarget{keyframe_8hpp_source}{}\label{keyframe_8hpp_source}\index{include/enjin2/animation/keyframe.hpp@{include/enjin2/animation/keyframe.hpp}}
-
+\doxymbox{\hyperlink{keyframe_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
-\DoxyCodeLine{00002\ }
-\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <cstdint>}}
-\DoxyCodeLine{00005\ }
-\DoxyCodeLine{00006\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00007\ }
-\DoxyCodeLine{00011\ \textcolor{keyword}{enum\ class}\ EaseType\ \{}
-\DoxyCodeLine{00012\ \ \ \ \ LINEAR,\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00013\ \ \ \ \ EASE\_IN,\ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00014\ \ \ \ \ EASE\_OUT,\ \ \ \ \ \ \ }
-\DoxyCodeLine{00015\ \ \ \ \ EASE\_IN\_OUT,\ \ \ \ }
-\DoxyCodeLine{00016\ \ \ \ \ EASE\_IN\_QUAD,\ \ \ }
-\DoxyCodeLine{00017\ \ \ \ \ EASE\_OUT\_QUAD,\ \ }
-\DoxyCodeLine{00018\ \ \ \ \ EASE\_IN\_CUBIC,\ \ }
-\DoxyCodeLine{00019\ \ \ \ \ EASE\_OUT\_CUBIC,\ }
-\DoxyCodeLine{00020\ \ \ \ \ EASE\_BOUNCE,\ \ \ \ }
-\DoxyCodeLine{00021\ \ \ \ \ EASE\_ELASTIC\ \ \ \ }
-\DoxyCodeLine{00022\ \};}
-\DoxyCodeLine{00023\ }
-\DoxyCodeLine{00027\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_aa3f15696bf2f20bb4540db1e89271921}{PositionKeyframe}}\ \{}
-\DoxyCodeLine{00028\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a58282ca780fd23e788a7d095e926da61}{time}};\ \ \ \ \ \ }
-\DoxyCodeLine{00029\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a0545b1c2005bc42caa9ff8a6c2ec0509}{position}};\ \ \ \ \ }
-\DoxyCodeLine{00030\ \ \ \ \ EaseType\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a69edb5bcde91d40313195110d06ab546}{easing}};\ \ \ \ }
-\DoxyCodeLine{00031\ \ \ \ \ }
-\DoxyCodeLine{00035\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_aa3f15696bf2f20bb4540db1e89271921}{PositionKeyframe}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a58282ca780fd23e788a7d095e926da61}{time}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a0545b1c2005bc42caa9ff8a6c2ec0509}{position}}(0,\ 0),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a69edb5bcde91d40313195110d06ab546}{easing}}(EaseType::LINEAR)\ \{\}}
-\DoxyCodeLine{00036\ \ \ \ \ }
-\DoxyCodeLine{00040\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a1d5252a55839f6d27b7241b7e9db1662}{PositionKeyframe}}(uint16\_t\ t,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ pos,\ EaseType\ ease\ =\ EaseType::LINEAR)}
-\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a58282ca780fd23e788a7d095e926da61}{time}}(t),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a0545b1c2005bc42caa9ff8a6c2ec0509}{position}}(pos),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a69edb5bcde91d40313195110d06ab546}{easing}}(ease)\ \{\}}
-\DoxyCodeLine{00042\ \};}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <cstdint>}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ \{}
+\DoxyCodeLine{00019\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{LINEAR}},\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00020\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0660967ed80dd5cae27f219de88fcaf7}{EASE\_IN}},\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00021\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1ac7f1ac6b9424a63a30f71760bde503}{EASE\_OUT}},\ \ \ \ \ \ \ }
+\DoxyCodeLine{00022\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1bfc63ad6bcaed6056d1428ca80e1ecb}{EASE\_IN\_OUT}},\ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a2931ba9ba54f08c9e47897156da23d80}{EASE\_IN\_QUAD}},\ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a0d4b5515ac1af5b4a19b4d92d6904704}{EASE\_OUT\_QUAD}},\ \ }
+\DoxyCodeLine{00025\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a8ede4db7eb19d14265ec995bddf7cbc9}{EASE\_IN\_CUBIC}},\ \ }
+\DoxyCodeLine{00026\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2ad6d1b2d7f0b5e3fb5a03b0d2c290d1e2}{EASE\_OUT\_CUBIC}},\ }
+\DoxyCodeLine{00027\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2a1cf1819fff23d998f749635e4da14371}{EASE\_BOUNCE}},\ \ \ \ }
+\DoxyCodeLine{00028\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2afd3c3ebb038f27098a905477876fe4bb}{EASE\_ELASTIC}}\ \ \ \ }
+\DoxyCodeLine{00029\ \};}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_aa3f15696bf2f20bb4540db1e89271921}{PositionKeyframe}}\ \{}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a58282ca780fd23e788a7d095e926da61}{time}};\ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a0545b1c2005bc42caa9ff8a6c2ec0509}{position}};\ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a69edb5bcde91d40313195110d06ab546}{easing}};\ \ \ \ }
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_aa3f15696bf2f20bb4540db1e89271921}{PositionKeyframe}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a58282ca780fd23e788a7d095e926da61}{time}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a0545b1c2005bc42caa9ff8a6c2ec0509}{position}}(0,\ 0),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a69edb5bcde91d40313195110d06ab546}{easing}}(\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}::\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{LINEAR}})\ \{\}}
 \DoxyCodeLine{00043\ }
-\DoxyCodeLine{00047\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_add920ba827a14846d1a4d4fa350688db}{FloatKeyframe}}\ \{}
-\DoxyCodeLine{00048\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a8e22a2fa1b728ddb3a165b20ca3da6ac}{time}};\ \ \ \ \ \ }
-\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_aae9932c68d86875f21c0fb666f41409e}{value}};\ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00050\ \ \ \ \ EaseType\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_ab84faad7158b9d1e63100caecc1250b8}{easing}};\ \ \ \ }
-\DoxyCodeLine{00051\ \ \ \ \ }
-\DoxyCodeLine{00055\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_add920ba827a14846d1a4d4fa350688db}{FloatKeyframe}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a8e22a2fa1b728ddb3a165b20ca3da6ac}{time}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_aae9932c68d86875f21c0fb666f41409e}{value}}(0.0f),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_ab84faad7158b9d1e63100caecc1250b8}{easing}}(EaseType::LINEAR)\ \{\}}
-\DoxyCodeLine{00056\ \ \ \ \ }
-\DoxyCodeLine{00060\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a794195b3085506a189f35e7345424c73}{FloatKeyframe}}(uint16\_t\ t,\ \textcolor{keywordtype}{float}\ val,\ EaseType\ ease\ =\ EaseType::LINEAR)}
-\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a8e22a2fa1b728ddb3a165b20ca3da6ac}{time}}(t),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_aae9932c68d86875f21c0fb666f41409e}{value}}(val),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_ab84faad7158b9d1e63100caecc1250b8}{easing}}(ease)\ \{\}}
-\DoxyCodeLine{00062\ \};}
-\DoxyCodeLine{00063\ }
-\DoxyCodeLine{00067\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a1c0171842a1fc6c06cec9d27e6394da2}{ColorKeyframe}}\ \{}
-\DoxyCodeLine{00068\ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_ae1c52a2d9c2c4f6b9d10a2a74a2654bd}{time}};\ \ \ \ \ \ }
-\DoxyCodeLine{00069\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a5339c9ce8b3d51dd4ba1e61421e00a4f}{color}};\ \ \ \ \ \ \ }
-\DoxyCodeLine{00070\ \ \ \ \ EaseType\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a06bbe7cb1791965ccb7b0d96e66158b4}{easing}};\ \ \ \ }
-\DoxyCodeLine{00071\ \ \ \ \ }
-\DoxyCodeLine{00075\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a1c0171842a1fc6c06cec9d27e6394da2}{ColorKeyframe}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_ae1c52a2d9c2c4f6b9d10a2a74a2654bd}{time}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a5339c9ce8b3d51dd4ba1e61421e00a4f}{color}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a06bbe7cb1791965ccb7b0d96e66158b4}{easing}}(EaseType::LINEAR)\ \{\}}
-\DoxyCodeLine{00076\ \ \ \ \ }
-\DoxyCodeLine{00080\ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a6053d9768b301a51c4b45e0614f70e0c}{ColorKeyframe}}(uint16\_t\ t,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ col,\ EaseType\ ease\ =\ EaseType::LINEAR)}
-\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_ae1c52a2d9c2c4f6b9d10a2a74a2654bd}{time}}(t),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a5339c9ce8b3d51dd4ba1e61421e00a4f}{color}}(col),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a06bbe7cb1791965ccb7b0d96e66158b4}{easing}}(ease)\ \{\}}
-\DoxyCodeLine{00082\ \};}
-\DoxyCodeLine{00083\ }
-\DoxyCodeLine{00087\ \textcolor{keyword}{enum\ class}\ AnimationState\ \{}
-\DoxyCodeLine{00088\ \ \ \ \ STOPPED,\ \ \ \ }
-\DoxyCodeLine{00089\ \ \ \ \ PLAYING,\ \ \ \ }
-\DoxyCodeLine{00090\ \ \ \ \ PAUSED,\ \ \ \ \ }
-\DoxyCodeLine{00091\ \ \ \ \ FINISHED\ \ \ \ }
-\DoxyCodeLine{00092\ \};}
-\DoxyCodeLine{00093\ }
-\DoxyCodeLine{00097\ \textcolor{keyword}{enum\ class}\ LoopMode\ \{}
-\DoxyCodeLine{00098\ \ \ \ \ NONE,\ \ \ \ \ \ \ }
-\DoxyCodeLine{00099\ \ \ \ \ LOOP,\ \ \ \ \ \ \ }
-\DoxyCodeLine{00100\ \ \ \ \ PING\_PONG\ \ \ }
-\DoxyCodeLine{00101\ \};}
-\DoxyCodeLine{00102\ }
-\DoxyCodeLine{00106\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1EasingFunctions}{EasingFunctions}}\ \{}
-\DoxyCodeLine{00107\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ababce2f09f4f9b97088686f1dd209e8f}{ease}}(\textcolor{keywordtype}{float}\ t,\ EaseType\ easeType);}
-\DoxyCodeLine{00115\ \ \ \ \ }
-\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keywordtype}{float}\ a,\ \textcolor{keywordtype}{float}\ b,\ \textcolor{keywordtype}{float}\ t)\ \{}
-\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ a\ +\ (b\ -\/\ a)\ *\ t;}
-\DoxyCodeLine{00125\ \ \ \ \ \}}
-\DoxyCodeLine{00126\ \ \ \ \ }
-\DoxyCodeLine{00134\ \ \ \ \ \textcolor{keyword}{static}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_afe8a39a1b09cfb9f1937e50cd8e01094}{lerp}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\&\ a,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\&\ b,\ \textcolor{keywordtype}{float}\ t)\ \{}
-\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}(}
-\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(\doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(a.x),\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(b.x),\ t)),}
-\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(\doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(a.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}),\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(b.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}),\ t))}
-\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ );}
-\DoxyCodeLine{00139\ \ \ \ \ \}}
-\DoxyCodeLine{00140\ \ \ \ \ }
-\DoxyCodeLine{00148\ \ \ \ \ \textcolor{keyword}{static}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_aaa49d9d13705c66c684968a4d82789a2}{lerp}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\&\ a,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\&\ b,\ \textcolor{keywordtype}{float}\ t)\ \{}
-\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ result\ =\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(a.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}),\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(b.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}),\ t);}
-\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(\textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(result\ +\ 0.5f));\ \textcolor{comment}{//\ Round\ to\ nearest}}
-\DoxyCodeLine{00151\ \ \ \ \ \}}
-\DoxyCodeLine{00152\ }
-\DoxyCodeLine{00153\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00157\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{float}\ clamp01(\textcolor{keywordtype}{float}\ t)\ \{}
-\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ t\ <\ 0.0f\ ?\ 0.0f\ :\ (t\ >\ 1.0f\ ?\ 1.0f\ :\ t);}
-\DoxyCodeLine{00159\ \ \ \ \ \}}
-\DoxyCodeLine{00160\ \};}
-\DoxyCodeLine{00161\ }
-\DoxyCodeLine{00162\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a1d5252a55839f6d27b7241b7e9db1662}{PositionKeyframe}}(uint16\_t\ t,\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ pos,\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ ease\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{EaseType::LINEAR}})}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a58282ca780fd23e788a7d095e926da61}{time}}(t),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a0545b1c2005bc42caa9ff8a6c2ec0509}{position}}(pos),\ \doxymbox{\hyperlink{structenjin2_1_1PositionKeyframe_a69edb5bcde91d40313195110d06ab546}{easing}}(ease)\ \{\}}
+\DoxyCodeLine{00052\ \ \ \ \ \};}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_add920ba827a14846d1a4d4fa350688db}{FloatKeyframe}}\ \{}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a8e22a2fa1b728ddb3a165b20ca3da6ac}{time}};\ \ \ \ \ \ }
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_aae9932c68d86875f21c0fb666f41409e}{value}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_ab84faad7158b9d1e63100caecc1250b8}{easing}};\ \ \ \ }
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_add920ba827a14846d1a4d4fa350688db}{FloatKeyframe}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a8e22a2fa1b728ddb3a165b20ca3da6ac}{time}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_aae9932c68d86875f21c0fb666f41409e}{value}}(0.0f),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_ab84faad7158b9d1e63100caecc1250b8}{easing}}(\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}::\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{LINEAR}})\ \{\}}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a794195b3085506a189f35e7345424c73}{FloatKeyframe}}(uint16\_t\ t,\ \textcolor{keywordtype}{float}\ val,\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ ease\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{EaseType::LINEAR}})}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_a8e22a2fa1b728ddb3a165b20ca3da6ac}{time}}(t),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_aae9932c68d86875f21c0fb666f41409e}{value}}(val),\ \doxymbox{\hyperlink{structenjin2_1_1FloatKeyframe_ab84faad7158b9d1e63100caecc1250b8}{easing}}(ease)\ \{\}}
+\DoxyCodeLine{00075\ \ \ \ \ \};}
+\DoxyCodeLine{00076\ }
+\DoxyCodeLine{00080\ \ \ \ \ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a1c0171842a1fc6c06cec9d27e6394da2}{ColorKeyframe}}\ \{}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ uint16\_t\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_ae1c52a2d9c2c4f6b9d10a2a74a2654bd}{time}};\ \ \ \ \ \ }
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a5339c9ce8b3d51dd4ba1e61421e00a4f}{color}};\ \ \ \ \ \ \ }
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a06bbe7cb1791965ccb7b0d96e66158b4}{easing}};\ \ \ \ }
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a1c0171842a1fc6c06cec9d27e6394da2}{ColorKeyframe}}()\ :\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_ae1c52a2d9c2c4f6b9d10a2a74a2654bd}{time}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a5339c9ce8b3d51dd4ba1e61421e00a4f}{color}}(0),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a06bbe7cb1791965ccb7b0d96e66158b4}{easing}}(\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}::\doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{LINEAR}})\ \{\}}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a6053d9768b301a51c4b45e0614f70e0c}{ColorKeyframe}}(uint16\_t\ t,\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ col,\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ ease\ =\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2aaac544aacc3615aada24897a215f5046}{EaseType::LINEAR}})}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_ae1c52a2d9c2c4f6b9d10a2a74a2654bd}{time}}(t),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a5339c9ce8b3d51dd4ba1e61421e00a4f}{color}}(col),\ \doxymbox{\hyperlink{structenjin2_1_1ColorKeyframe_a06bbe7cb1791965ccb7b0d96e66158b4}{easing}}(ease)\ \{\}}
+\DoxyCodeLine{00098\ \ \ \ \ \};}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00103\ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{AnimationState}}\ \{}
+\DoxyCodeLine{00104\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da09d4d696b4e935115b9313e3c412509a}{STOPPED}},\ \ \ \ }
+\DoxyCodeLine{00105\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da50366a49630a416ab3ccaa004196027e}{PLAYING}},\ \ \ \ }
+\DoxyCodeLine{00106\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da99b2439e63f73ad515f7ab2447a80673}{PAUSED}},\ \ \ \ \ }
+\DoxyCodeLine{00107\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5da2c616b2713e2e0aed04b4c4752c88133}{FINISHED}}\ \ \ \ }
+\DoxyCodeLine{00108\ \};}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00113\ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{LoopMode}}\ \{}
+\DoxyCodeLine{00114\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0ab50339a10e1de285ac99d4c3990b8693}{NONE}},\ \ \ \ \ \ \ }
+\DoxyCodeLine{00115\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a9159b3578e4e1eb31ffdf90acd6f6e40}{LOOP}},\ \ \ \ \ \ \ }
+\DoxyCodeLine{00116\ \ \ \ \ \doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0a39d9a3e04b6cb09993554dc67fc4e40c}{PING\_PONG}}\ \ \ }
+\DoxyCodeLine{00117\ \};}
+\DoxyCodeLine{00118\ }
+\DoxyCodeLine{00122\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1EasingFunctions}{EasingFunctions}}\ \{}
+\DoxyCodeLine{00123\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ababce2f09f4f9b97088686f1dd209e8f}{ease}}(\textcolor{keywordtype}{float}\ t,\ \doxymbox{\hyperlink{keyframe_8hpp_a819c538aee4b1259207e5de24960cbe2}{EaseType}}\ easeType);}
+\DoxyCodeLine{00131\ \ \ \ \ }
+\DoxyCodeLine{00139\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keywordtype}{float}\ a,\ \textcolor{keywordtype}{float}\ b,\ \textcolor{keywordtype}{float}\ t)\ \{}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ a\ +\ (b\ -\/\ a)\ *\ t;}
+\DoxyCodeLine{00141\ \ \ \ \ \}}
+\DoxyCodeLine{00142\ \ \ \ \ }
+\DoxyCodeLine{00150\ \ \ \ \ \textcolor{keyword}{static}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_afe8a39a1b09cfb9f1937e50cd8e01094}{lerp}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\&\ a,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\&\ b,\ \textcolor{keywordtype}{float}\ t)\ \{}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}(}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(\doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(a.x),\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(b.x),\ t)),}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{static\_cast<}int16\_t\textcolor{keyword}{>}(\doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(a.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}),\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(b.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}),\ t))}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ );}
+\DoxyCodeLine{00155\ \ \ \ \ \}}
+\DoxyCodeLine{00156\ \ \ \ \ }
+\DoxyCodeLine{00164\ \ \ \ \ \textcolor{keyword}{static}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_aaa49d9d13705c66c684968a4d82789a2}{lerp}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\&\ a,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}\&\ b,\ \textcolor{keywordtype}{float}\ t)\ \{}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ result\ =\ \doxymbox{\hyperlink{classenjin2_1_1EasingFunctions_ab197bb58f255120da29fade5184feb5a}{lerp}}(\textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(a.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}),\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\textcolor{keyword}{>}(b.\doxymbox{\hyperlink{structenjin2_1_1Pixel4_a54a8d8955ab7fcddca60246daa908528}{value}}),\ t);}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structenjin2_1_1Pixel4}{Pixel4}}(\textcolor{keyword}{static\_cast<}uint8\_t\textcolor{keyword}{>}(result\ +\ 0.5f));\ \textcolor{comment}{//\ Round\ to\ nearest}}
+\DoxyCodeLine{00167\ \ \ \ \ \}}
+\DoxyCodeLine{00168\ }
+\DoxyCodeLine{00169\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00173\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{float}\ clamp01(\textcolor{keywordtype}{float}\ t)\ \{}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ t\ <\ 0.0f\ ?\ 0.0f\ :\ (t\ >\ 1.0f\ ?\ 1.0f\ :\ t);}
+\DoxyCodeLine{00175\ \ \ \ \ \}}
+\DoxyCodeLine{00176\ \};}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00178\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
 
 \end{DoxyCode}

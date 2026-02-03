@@ -1,299 +1,300 @@
 \doxysection{label.\+hpp}
 \hypertarget{label_8hpp_source}{}\label{label_8hpp_source}\index{include/enjin2/components/label.hpp@{include/enjin2/components/label.hpp}}
-
+\doxymbox{\hyperlink{label_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_LABEL\_HPP}}
-\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_LABEL\_HPP}}
-\DoxyCodeLine{00003\ }
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}../core/component.hpp"{}}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}drawable.hpp"{}}}
-\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}position.hpp"{}}}
-\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
-\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas\_extended.hpp"{}}}
-\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ "{}../graphics/text\_renderer.hpp"{}}}
-\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
-\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <string>}}
-\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <vector>}}
-\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_LABEL\_HPP}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_LABEL\_HPP}}
 \DoxyCodeLine{00014\ }
-\DoxyCodeLine{00015\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00016\ }
-\DoxyCodeLine{00020\ \textcolor{keyword}{enum\ class}\ LabelAlign\ \{}
-\DoxyCodeLine{00021\ \ \ \ \ Left,}
-\DoxyCodeLine{00022\ \ \ \ \ Center,}
-\DoxyCodeLine{00023\ \ \ \ \ Right}
-\DoxyCodeLine{00024\ \};}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ "{}../core/component.hpp"{}}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{drawable_8hpp}{drawable.hpp}}"{}}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{position_8hpp}{position.hpp}}"{}}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{graphics_2canvas_8hpp}{../graphics/canvas.hpp}}"{}}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{canvas__extended_8hpp}{../graphics/canvas\_extended.hpp}}"{}}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ "{}../graphics/text\_renderer.hpp"{}}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#include\ <sstream>}}
 \DoxyCodeLine{00025\ }
-\DoxyCodeLine{00036\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Label_a0086cfd740cb8aba7341902b7ecce2ff}{Label}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}\ \{}
-\DoxyCodeLine{00037\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00038\ \ \ \ \ uint16\_t\ width;}
-\DoxyCodeLine{00039\ \ \ \ \ uint16\_t\ height;}
-\DoxyCodeLine{00040\ \ \ \ \ uint8\_t\ label\_color;}
-\DoxyCodeLine{00041\ \ \ \ \ uint8\_t\ bg\_color;}
-\DoxyCodeLine{00042\ \ \ \ \ uint8\_t\ pointer\_height;}
-\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keywordtype}{bool}\ transparent\_bg;}
-\DoxyCodeLine{00044\ \ \ \ \ std::string\ text;}
-\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}}*\ font;}
-\DoxyCodeLine{00046\ \ \ \ \ uint8\_t\ font\_size;}
-\DoxyCodeLine{00047\ \ \ \ \ LabelAlign\ alignment;}
-\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordtype}{bool}\ word\_wrap;}
-\DoxyCodeLine{00049\ \ \ \ \ int16\_t\ left\_margin;}
-\DoxyCodeLine{00050\ \ \ \ \ int16\_t\ right\_margin;}
-\DoxyCodeLine{00051\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Position}{C\_Position}}*\ position;}
-\DoxyCodeLine{00052\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{TextRenderer<uint8\_t>}}\ text\_renderer;}
-\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keyword}{mutable}\ \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{Canvas8<128,\ 64>}}\ internal\_canvas;\ \textcolor{comment}{//\ Max\ size\ for\ labels}}
-\DoxyCodeLine{00054\ }
-\DoxyCodeLine{00055\ \ \ \ \ \textcolor{comment}{//\ Helper\ function\ to\ split\ text\ by\ spaces}}
-\DoxyCodeLine{00056\ \ \ \ \ std::vector<std::string>\ split(\textcolor{keyword}{const}\ std::string\&\ s,\ \textcolor{keywordtype}{char}\ delimiter)\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ std::vector<std::string>\ tokens;}
-\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ std::string\ token;}
-\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ std::istringstream\ tokenStream(s);}
-\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (std::getline(tokenStream,\ token,\ delimiter))\ \{}
-\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.push\_back(token);}
-\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tokens;}
-\DoxyCodeLine{00064\ \ \ \ \ \}}
+\DoxyCodeLine{00026\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00031\ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{label_8hpp_a86d760ba39500a9920b26a350d09ae28}{LabelAlign}}\ \{}
+\DoxyCodeLine{00032\ \ \ \ \ Left,}
+\DoxyCodeLine{00033\ \ \ \ \ Center,}
+\DoxyCodeLine{00034\ \ \ \ \ Right}
+\DoxyCodeLine{00035\ \};}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00047\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1Label_a0086cfd740cb8aba7341902b7ecce2ff}{Label}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}\ \{}
+\DoxyCodeLine{00048\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00049\ \ \ \ \ uint16\_t\ width;}
+\DoxyCodeLine{00050\ \ \ \ \ uint16\_t\ height;}
+\DoxyCodeLine{00051\ \ \ \ \ uint8\_t\ label\_color;}
+\DoxyCodeLine{00052\ \ \ \ \ uint8\_t\ bg\_color;}
+\DoxyCodeLine{00053\ \ \ \ \ uint8\_t\ pointer\_height;}
+\DoxyCodeLine{00054\ \ \ \ \ \textcolor{keywordtype}{bool}\ transparent\_bg;}
+\DoxyCodeLine{00055\ \ \ \ \ std::string\ text;}
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}}*\ font;}
+\DoxyCodeLine{00057\ \ \ \ \ uint8\_t\ font\_size;}
+\DoxyCodeLine{00058\ \ \ \ \ \doxymbox{\hyperlink{label_8hpp_a86d760ba39500a9920b26a350d09ae28}{LabelAlign}}\ alignment;}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keywordtype}{bool}\ word\_wrap;}
+\DoxyCodeLine{00060\ \ \ \ \ int16\_t\ left\_margin;}
+\DoxyCodeLine{00061\ \ \ \ \ int16\_t\ right\_margin;}
+\DoxyCodeLine{00062\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Position}{C\_Position}}*\ position;}
+\DoxyCodeLine{00063\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1TextRenderer}{TextRenderer<uint8\_t>}}\ text\_renderer;}
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keyword}{mutable}\ \doxymbox{\hyperlink{classenjin2_1_1Canvas8}{Canvas8<128,\ 64>}}\ internal\_canvas;\ \textcolor{comment}{//\ Max\ size\ for\ labels}}
 \DoxyCodeLine{00065\ }
-\DoxyCodeLine{00066\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00078\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Label_a0086cfd740cb8aba7341902b7ecce2ff}{Label}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ uint16\_t\ w,\ uint16\_t\ h,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}}*\ textFont\ =\ \textcolor{keyword}{nullptr},\ }
-\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ uint8\_t\ fontSize\ =\ 1,\ uint8\_t\ textColor\ =\ 14,\ uint8\_t\ backgroundColor\ =\ 0,\ }
-\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pointerHeight\ =\ 0)}
-\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})}
-\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ ,\ width(w)}
-\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ ,\ height(h)}
-\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ ,\ label\_color(textColor)}
-\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ ,\ bg\_color(backgroundColor)}
-\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ ,\ pointer\_height(pointerHeight)}
-\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ ,\ transparent\_bg(backgroundColor\ ==\ 0)}
-\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ ,\ text(\textcolor{stringliteral}{"{}Label"{}})}
-\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ ,\ font(textFont)}
-\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ ,\ font\_size(fontSize)}
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ ,\ alignment(LabelAlign::Center)}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ ,\ word\_wrap(true)}
-\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ ,\ left\_margin(2)}
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ ,\ right\_margin(2)}
-\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ ,\ position(nullptr)}
-\DoxyCodeLine{00096\ \ \ \ \ \{}
-\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ position\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getComponent<\doxymbox{\hyperlink{classenjin2_1_1C__Position}{C\_Position}}>();}
-\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Configure\ text\ renderer}}
-\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ text\_renderer.setFont(font);}
-\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ text\_renderer.setTextSize(font\_size);}
-\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (transparent\_bg)\ \{}
-\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color);}
-\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color,\ bg\_color);}
-\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00107\ \ \ \ \ \}}
-\DoxyCodeLine{00108\ }
-\DoxyCodeLine{00109\ }
-\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a9242e00b2f9dada3bc4aa37eb2fcad88}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
-\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!position\ ||\ text.empty())\ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00116\ }
-\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ internal\ canvas}}
-\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ internal\_canvas.clear(bg\_color\ ==\ 0\ ?\ 16\ :\ bg\_color);\ \textcolor{comment}{//\ Use\ transparent\ or\ bg\ color}}
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{comment}{//\ Helper\ function\ to\ split\ text\ by\ spaces}}
+\DoxyCodeLine{00067\ \ \ \ \ std::vector<std::string>\ split(\textcolor{keyword}{const}\ std::string\&\ s,\ \textcolor{keywordtype}{char}\ delimiter)\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ std::vector<std::string>\ tokens;}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ std::string\ token;}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ std::istringstream\ tokenStream(s);}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (std::getline(tokenStream,\ token,\ delimiter))\ \{}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.push\_back(token);}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tokens;}
+\DoxyCodeLine{00075\ \ \ \ \ \}}
+\DoxyCodeLine{00076\ }
+\DoxyCodeLine{00077\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00089\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1Label_a0086cfd740cb8aba7341902b7ecce2ff}{Label}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ uint16\_t\ w,\ uint16\_t\ h,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{structenjin2_1_1GFXfont}{GFXfont}}*\ textFont\ =\ \textcolor{keyword}{nullptr},\ }
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ uint8\_t\ fontSize\ =\ 1,\ uint8\_t\ textColor\ =\ 14,\ uint8\_t\ backgroundColor\ =\ 0,\ }
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pointerHeight\ =\ 0)}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1Component_af02eaf48a7e257e49732ffa02efe0c3b}{Component}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}})}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ ,\ width(w)}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ ,\ height(h)}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ ,\ label\_color(textColor)}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ ,\ bg\_color(backgroundColor)}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ ,\ pointer\_height(pointerHeight)}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ ,\ transparent\_bg(backgroundColor\ ==\ 0)}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ ,\ text(\textcolor{stringliteral}{"{}Label"{}})}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ ,\ font(textFont)}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ ,\ font\_size(fontSize)}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ ,\ alignment(\doxymbox{\hyperlink{label_8hpp_a86d760ba39500a9920b26a350d09ae28}{LabelAlign}}::Center)}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ ,\ word\_wrap(true)}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ ,\ left\_margin(2)}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ ,\ right\_margin(2)}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ ,\ position(nullptr)}
+\DoxyCodeLine{00107\ \ \ \ \ \{}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ position\ =\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>getComponent<\doxymbox{\hyperlink{classenjin2_1_1C__Position}{C\_Position}}>();}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Configure\ text\ renderer}}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ text\_renderer.setFont(font);}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ text\_renderer.setTextSize(font\_size);}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (transparent\_bg)\ \{}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color);}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color,\ bg\_color);}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00118\ \ \ \ \ \}}
 \DoxyCodeLine{00119\ }
-\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ text\ layout}}
-\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ layoutText();}
-\DoxyCodeLine{00122\ }
-\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Copy\ to\ main\ canvas\ manually}}
-\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ pos\ =\ position-\/>getPosition();}
-\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ height\ +\ pointer\_height;\ y++)\ \{}
-\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
-\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pixel\ =\ internal\_canvas.getPixel(x,\ y);}
-\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pixel\ !=\ 16)\ \{\ \textcolor{comment}{//\ Skip\ transparent\ pixels}}
-\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(pos.x\ +\ x,\ pos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +\ y,\ pixel);}
-\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00133\ \ \ \ \ \}}
-\DoxyCodeLine{00134\ }
-\DoxyCodeLine{00139\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a01c70bff0c62f67478f445e7bf03e32d}{setText}}(\textcolor{keyword}{const}\ std::string\&\ newText)\ \{}
-\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ text\ =\ newText;}
-\DoxyCodeLine{00141\ \ \ \ \ \}}
-\DoxyCodeLine{00142\ }
-\DoxyCodeLine{00147\ \ \ \ \ \textcolor{keyword}{const}\ std::string\&\ \doxymbox{\hyperlink{classenjin2_1_1Label_a3ed9aea0acbb985e13d1fbe5399537c1}{getText}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ text;}
-\DoxyCodeLine{00149\ \ \ \ \ \}}
-\DoxyCodeLine{00150\ }
-\DoxyCodeLine{00155\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a0306f5c4c4e9cb47e8d2ceed88692126}{setTextColor}}(uint8\_t\ color)\ \{}
-\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ label\_color\ =\ color;}
-\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (transparent\_bg)\ \{}
-\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color);}
-\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color,\ bg\_color);}
-\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00162\ \ \ \ \ \}}
-\DoxyCodeLine{00163\ }
-\DoxyCodeLine{00168\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_aadd53e2c2b8643a42697e149cb2bb7a5}{setBackgroundColor}}(uint8\_t\ color)\ \{}
-\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ bg\_color\ =\ color;}
-\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ transparent\_bg\ =\ (color\ ==\ 0);}
-\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (transparent\_bg)\ \{}
-\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color);}
-\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color,\ bg\_color);}
-\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00176\ \ \ \ \ \}}
-\DoxyCodeLine{00177\ }
-\DoxyCodeLine{00182\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_afb471ff3ae5fe0afd61739f2553036fd}{setAlignment}}(LabelAlign\ align)\ \{}
-\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ alignment\ =\ align;}
-\DoxyCodeLine{00184\ \ \ \ \ \}}
-\DoxyCodeLine{00185\ }
-\DoxyCodeLine{00191\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a09d155595581129098bcf4d7e7590de4}{setMargins}}(int16\_t\ left,\ int16\_t\ right\ =\ -\/1)\ \{}
-\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ left\_margin\ =\ left;}
-\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ right\_margin\ =\ (right\ >=\ 0)\ ?\ right\ :\ left;}
-\DoxyCodeLine{00194\ \ \ \ \ \}}
-\DoxyCodeLine{00195\ }
-\DoxyCodeLine{00200\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_ad63fde7f72755f7f7ffc2bfafd8357c7}{setWordWrap}}(\textcolor{keywordtype}{bool}\ wrap)\ \{}
-\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ word\_wrap\ =\ wrap;}
-\DoxyCodeLine{00202\ \ \ \ \ \}}
-\DoxyCodeLine{00203\ }
-\DoxyCodeLine{00208\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a723f9b0f235502ee7e536cac619a45d9}{setFontSize}}(uint8\_t\ size)\ \{}
-\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ font\_size\ =\ size;}
-\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ text\_renderer.setTextSize(font\_size);}
-\DoxyCodeLine{00211\ \ \ \ \ \}}
-\DoxyCodeLine{00212\ }
-\DoxyCodeLine{00217\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_accb45b6bef9cd73ca8fc56a14a6ab0c7}{setPointerHeight}}(uint8\_t\ height)\ \{}
-\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ pointer\_height\ =\ height;}
-\DoxyCodeLine{00219\ \ \ \ \ \}}
-\DoxyCodeLine{00220\ }
-\DoxyCodeLine{00221\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00225\ \ \ \ \ \textcolor{keywordtype}{void}\ layoutText()\ \{}
-\DoxyCodeLine{00226\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (text.empty())\ \textcolor{keywordflow}{return};}
-\DoxyCodeLine{00227\ }
-\DoxyCodeLine{00228\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ int16\_t\ padding\ =\ 2;}
-\DoxyCodeLine{00229\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ int16\_t\ line\_spacing\ =\ 2;}
-\DoxyCodeLine{00230\ \ \ \ \ \ \ \ \ int16\_t\ box\_height\ =\ height\ -\/\ pointer\_height;}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00125\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a9242e00b2f9dada3bc4aa37eb2fcad88}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\ \{}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!position\ ||\ text.empty())\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00127\ }
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ internal\ canvas}}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ internal\_canvas.clear(bg\_color\ ==\ 0\ ?\ 16\ :\ bg\_color);\ \textcolor{comment}{//\ Use\ transparent\ or\ bg\ color}}
+\DoxyCodeLine{00130\ }
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ text\ layout}}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ layoutText();}
+\DoxyCodeLine{00133\ }
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Copy\ to\ main\ canvas\ manually}}
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structenjin2_1_1Point}{Point}}\ pos\ =\ position-\/>getPosition();}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ height\ +\ pointer\_height;\ y++)\ \{}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint8\_t\ pixel\ =\ internal\_canvas.getPixel(x,\ y);}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pixel\ !=\ 16)\ \{\ \textcolor{comment}{//\ Skip\ transparent\ pixels}}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canvas.\doxymbox{\hyperlink{classenjin2_1_1ICanvas_a222cce5fb24e424f62548588f7d4a065}{setPixel}}(pos.x\ +\ x,\ pos.\doxymbox{\hyperlink{structenjin2_1_1Point_a1ca0314282497a547cfbeb24a4a7d361}{y}}\ +\ y,\ pixel);}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00144\ \ \ \ \ \}}
+\DoxyCodeLine{00145\ }
+\DoxyCodeLine{00150\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a01c70bff0c62f67478f445e7bf03e32d}{setText}}(\textcolor{keyword}{const}\ std::string\&\ newText)\ \{}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ text\ =\ newText;}
+\DoxyCodeLine{00152\ \ \ \ \ \}}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00158\ \ \ \ \ \textcolor{keyword}{const}\ std::string\&\ \doxymbox{\hyperlink{classenjin2_1_1Label_a3ed9aea0acbb985e13d1fbe5399537c1}{getText}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ text;}
+\DoxyCodeLine{00160\ \ \ \ \ \}}
+\DoxyCodeLine{00161\ }
+\DoxyCodeLine{00166\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a0306f5c4c4e9cb47e8d2ceed88692126}{setTextColor}}(uint8\_t\ color)\ \{}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ label\_color\ =\ color;}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (transparent\_bg)\ \{}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color);}
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color,\ bg\_color);}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00173\ \ \ \ \ \}}
+\DoxyCodeLine{00174\ }
+\DoxyCodeLine{00179\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_aadd53e2c2b8643a42697e149cb2bb7a5}{setBackgroundColor}}(uint8\_t\ color)\ \{}
+\DoxyCodeLine{00180\ \ \ \ \ \ \ \ \ bg\_color\ =\ color;}
+\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ transparent\_bg\ =\ (color\ ==\ 0);}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (transparent\_bg)\ \{}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color);}
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.setTextColor(label\_color,\ bg\_color);}
+\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00187\ \ \ \ \ \}}
+\DoxyCodeLine{00188\ }
+\DoxyCodeLine{00193\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_afb471ff3ae5fe0afd61739f2553036fd}{setAlignment}}(\doxymbox{\hyperlink{label_8hpp_a86d760ba39500a9920b26a350d09ae28}{LabelAlign}}\ align)\ \{}
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ alignment\ =\ align;}
+\DoxyCodeLine{00195\ \ \ \ \ \}}
+\DoxyCodeLine{00196\ }
+\DoxyCodeLine{00202\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a09d155595581129098bcf4d7e7590de4}{setMargins}}(int16\_t\ left,\ int16\_t\ right\ =\ -\/1)\ \{}
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ left\_margin\ =\ left;}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ right\_margin\ =\ (right\ >=\ 0)\ ?\ right\ :\ left;}
+\DoxyCodeLine{00205\ \ \ \ \ \}}
+\DoxyCodeLine{00206\ }
+\DoxyCodeLine{00211\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_ad63fde7f72755f7f7ffc2bfafd8357c7}{setWordWrap}}(\textcolor{keywordtype}{bool}\ wrap)\ \{}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ word\_wrap\ =\ wrap;}
+\DoxyCodeLine{00213\ \ \ \ \ \}}
+\DoxyCodeLine{00214\ }
+\DoxyCodeLine{00219\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_a723f9b0f235502ee7e536cac619a45d9}{setFontSize}}(uint8\_t\ size)\ \{}
+\DoxyCodeLine{00220\ \ \ \ \ \ \ \ \ font\_size\ =\ size;}
+\DoxyCodeLine{00221\ \ \ \ \ \ \ \ \ text\_renderer.setTextSize(font\_size);}
+\DoxyCodeLine{00222\ \ \ \ \ \}}
+\DoxyCodeLine{00223\ }
+\DoxyCodeLine{00228\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1Label_accb45b6bef9cd73ca8fc56a14a6ab0c7}{setPointerHeight}}(uint8\_t\ height)\ \{}
+\DoxyCodeLine{00229\ \ \ \ \ \ \ \ \ pointer\_height\ =\ height;}
+\DoxyCodeLine{00230\ \ \ \ \ \}}
 \DoxyCodeLine{00231\ }
-\DoxyCodeLine{00232\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ background}}
-\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!transparent\_bg)\ \{}
-\DoxyCodeLine{00234\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ background\ as\ simple\ rectangle\ for\ now}}
-\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ box\_height;\ y++)\ \{}
-\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
-\DoxyCodeLine{00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.\doxymbox{\hyperlink{classenjin2_1_1Canvas8_abce99a338b87cb20277401e1411f4701}{setPixel}}(x,\ y,\ bg\_color);}
-\DoxyCodeLine{00238\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ border}}
-\DoxyCodeLine{00242\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
-\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(x,\ 0,\ label\_color);}
-\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ bottom\ border\ but\ leave\ opening\ for\ pointer}}
-\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pointer\_height\ ==\ 0\ ||\ x\ <\ width/2\ -\/\ 3\ ||\ x\ >\ width/2\ +\ 3)\ \{}
-\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(x,\ box\_height\ -\/\ 1,\ label\_color);}
-\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00249\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ box\_height;\ y++)\ \{}
-\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(0,\ y,\ label\_color);}
-\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(width\ -\/\ 1,\ y,\ label\_color);}
-\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00253\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00254\ }
-\DoxyCodeLine{00255\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ pointer\ if\ needed}}
-\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pointer\_height\ >\ 0\ \&\&\ !transparent\_bg)\ \{}
-\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ pointer\_base\_y\ =\ box\_height\ -\/\ 1;}
-\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ pointer\_tip\_y\ =\ box\_height\ +\ pointer\_height\ -\/\ 1;}
-\DoxyCodeLine{00259\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ pointer\_center\_x\ =\ width\ /\ 2;}
-\DoxyCodeLine{00260\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00261\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ simple\ triangle\ pointer\ manually}}
-\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ pointer\_height;\ y++)\ \{}
-\DoxyCodeLine{00263\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ left\_x\ =\ pointer\_center\_x\ -\/\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
-\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ right\_x\ =\ pointer\_center\_x\ +\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
-\DoxyCodeLine{00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ left\_x;\ x\ <=\ right\_x;\ x++)\ \{}
-\DoxyCodeLine{00266\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(x,\ box\_height\ +\ y,\ bg\_color);}
-\DoxyCodeLine{00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00268\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00270\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ triangle\ outline}}
-\DoxyCodeLine{00271\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ pointer\_height;\ y++)\ \{}
-\DoxyCodeLine{00272\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ left\_x\ =\ pointer\_center\_x\ -\/\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
-\DoxyCodeLine{00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ right\_x\ =\ pointer\_center\_x\ +\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
-\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(left\_x,\ box\_height\ +\ y,\ label\_color);}
-\DoxyCodeLine{00275\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(right\_x,\ box\_height\ +\ y,\ label\_color);}
-\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00278\ }
-\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Layout\ text}}
-\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ renderText(padding,\ line\_spacing,\ box\_height);}
-\DoxyCodeLine{00281\ \ \ \ \ \}}
-\DoxyCodeLine{00282\ }
-\DoxyCodeLine{00286\ \ \ \ \ \textcolor{keywordtype}{void}\ renderText(int16\_t\ padding,\ int16\_t\ line\_spacing,\ int16\_t\ box\_height)\ \{}
-\DoxyCodeLine{00287\ \ \ \ \ \ \ \ \ std::vector<std::string>\ lines;}
-\DoxyCodeLine{00288\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00289\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (word\_wrap)\ \{}
-\DoxyCodeLine{00290\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Word\ wrapping}}
-\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ words\ =\ split(text,\ \textcolor{charliteral}{'\ '});}
-\DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ \ \ \ \ std::string\ current\_line;}
-\DoxyCodeLine{00293\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00294\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{const}\ \textcolor{keyword}{auto}\&\ word\ :\ words)\ \{}
-\DoxyCodeLine{00295\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (word.empty())\ \textcolor{keywordflow}{continue};}
-\DoxyCodeLine{00296\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00297\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::string\ test\_line\ =\ current\_line;}
-\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!test\_line.empty())\ \{}
-\DoxyCodeLine{00299\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ test\_line\ +=\ \textcolor{stringliteral}{"{}\ "{}};}
-\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00301\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ test\_line\ +=\ word;}
-\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint16\_t\ line\_width\ =\ text\_renderer.getTextWidth(test\_line.c\_str());}
-\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (line\_width\ >\ width\ -\/\ 2\ *\ padding\ -\/\ left\_margin\ -\/\ right\_margin)\ \{}
-\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!current\_line.empty())\ \{}
-\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lines.push\_back(current\_line);}
-\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_line\ =\ word;}
-\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00311\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_line\ =\ test\_line;}
-\DoxyCodeLine{00312\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!current\_line.empty())\ \{}
-\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lines.push\_back(current\_line);}
-\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00318\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
-\DoxyCodeLine{00319\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ No\ wrapping\ -\/\ just\ use\ the\ text\ as\ is}}
-\DoxyCodeLine{00320\ \ \ \ \ \ \ \ \ \ \ \ \ lines.push\_back(text);}
-\DoxyCodeLine{00321\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00322\ }
-\DoxyCodeLine{00323\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Get\ proper\ character\ height\ from\ text\ renderer}}
-\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ uint16\_t\ char\_height\ =\ text\_renderer.getCharHeight();}
-\DoxyCodeLine{00325\ \ \ \ \ \ \ \ \ uint16\_t\ total\_text\_height\ =\ lines.size()\ *\ char\_height\ *\ font\_size\ +\ }
-\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (lines.size()\ -\/\ 1)\ *\ line\_spacing;}
-\DoxyCodeLine{00327\ }
-\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ starting\ Y\ position\ for\ vertical\ centering}}
-\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ int16\_t\ start\_y\ =\ (box\_height\ -\/\ total\_text\_height)\ /\ 2;}
-\DoxyCodeLine{00330\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (start\_y\ <\ padding)\ start\_y\ =\ padding;}
-\DoxyCodeLine{00331\ }
-\DoxyCodeLine{00332\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Render\ each\ line\ using\ text\ renderer\ properly}}
-\DoxyCodeLine{00333\ \ \ \ \ \ \ \ \ int16\_t\ current\_y\ =\ start\_y;}
-\DoxyCodeLine{00334\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{const}\ \textcolor{keyword}{auto}\&\ line\ :\ lines)\ \{}
-\DoxyCodeLine{00335\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ line\_x\ =\ calculateLineX(line,\ padding);}
-\DoxyCodeLine{00336\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00337\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Use\ drawString\ instead\ of\ writeChar\ to\ avoid\ automatic\ cursor\ management\ conflicts}}
-\DoxyCodeLine{00338\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.drawString(internal\_canvas,\ line\_x,\ current\_y,\ line.c\_str());}
-\DoxyCodeLine{00339\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00340\ \ \ \ \ \ \ \ \ \ \ \ \ current\_y\ +=\ char\_height\ *\ font\_size\ +\ line\_spacing;}
-\DoxyCodeLine{00341\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00342\ \ \ \ \ \}}
-\DoxyCodeLine{00343\ }
-\DoxyCodeLine{00347\ \ \ \ \ int16\_t\ calculateLineX(\textcolor{keyword}{const}\ std::string\&\ line,\ int16\_t\ padding)\ \{}
-\DoxyCodeLine{00348\ \ \ \ \ \ \ \ \ uint16\_t\ line\_width\ =\ line.length()\ *\ 6\ *\ font\_size;\ \textcolor{comment}{//\ 6\ pixels\ per\ char\ (5+1\ spacing)}}
-\DoxyCodeLine{00349\ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00350\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (alignment)\ \{}
-\DoxyCodeLine{00351\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LabelAlign::Left:}
-\DoxyCodeLine{00352\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ padding\ +\ left\_margin;}
-\DoxyCodeLine{00353\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00354\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LabelAlign::Right:}
-\DoxyCodeLine{00355\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ width\ -\/\ padding\ -\/\ right\_margin\ -\/\ line\_width;}
-\DoxyCodeLine{00356\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00357\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LabelAlign::Center:}
-\DoxyCodeLine{00358\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{default}:}
-\DoxyCodeLine{00359\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (width\ -\/\ line\_width)\ /\ 2;}
-\DoxyCodeLine{00360\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00361\ \ \ \ \ \}}
-\DoxyCodeLine{00362\ }
-\DoxyCodeLine{00363\ \};}
-\DoxyCodeLine{00364\ }
-\DoxyCodeLine{00365\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
-\DoxyCodeLine{00366\ }
-\DoxyCodeLine{00367\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_LABEL\_HPP}}
+\DoxyCodeLine{00232\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00236\ \ \ \ \ \textcolor{keywordtype}{void}\ layoutText()\ \{}
+\DoxyCodeLine{00237\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (text.empty())\ \textcolor{keywordflow}{return};}
+\DoxyCodeLine{00238\ }
+\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ int16\_t\ padding\ =\ 2;}
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ int16\_t\ line\_spacing\ =\ 2;}
+\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ int16\_t\ box\_height\ =\ height\ -\/\ pointer\_height;}
+\DoxyCodeLine{00242\ }
+\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Clear\ background}}
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!transparent\_bg)\ \{}
+\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ background\ as\ simple\ rectangle\ for\ now}}
+\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ box\_height;\ y++)\ \{}
+\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
+\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.\doxymbox{\hyperlink{classenjin2_1_1Canvas8_abce99a338b87cb20277401e1411f4701}{setPixel}}(x,\ y,\ bg\_color);}
+\DoxyCodeLine{00249\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ border}}
+\DoxyCodeLine{00253\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ 0;\ x\ <\ width;\ x++)\ \{}
+\DoxyCodeLine{00254\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(x,\ 0,\ label\_color);}
+\DoxyCodeLine{00255\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ bottom\ border\ but\ leave\ opening\ for\ pointer}}
+\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pointer\_height\ ==\ 0\ ||\ x\ <\ width/2\ -\/\ 3\ ||\ x\ >\ width/2\ +\ 3)\ \{}
+\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(x,\ box\_height\ -\/\ 1,\ label\_color);}
+\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00259\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00260\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ box\_height;\ y++)\ \{}
+\DoxyCodeLine{00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(0,\ y,\ label\_color);}
+\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(width\ -\/\ 1,\ y,\ label\_color);}
+\DoxyCodeLine{00263\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00265\ }
+\DoxyCodeLine{00266\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ pointer\ if\ needed}}
+\DoxyCodeLine{00267\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pointer\_height\ >\ 0\ \&\&\ !transparent\_bg)\ \{}
+\DoxyCodeLine{00268\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ pointer\_base\_y\ =\ box\_height\ -\/\ 1;}
+\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ pointer\_tip\_y\ =\ box\_height\ +\ pointer\_height\ -\/\ 1;}
+\DoxyCodeLine{00270\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ pointer\_center\_x\ =\ width\ /\ 2;}
+\DoxyCodeLine{00271\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00272\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ simple\ triangle\ pointer\ manually}}
+\DoxyCodeLine{00273\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ pointer\_height;\ y++)\ \{}
+\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ left\_x\ =\ pointer\_center\_x\ -\/\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
+\DoxyCodeLine{00275\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ right\_x\ =\ pointer\_center\_x\ +\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
+\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ x\ =\ left\_x;\ x\ <=\ right\_x;\ x++)\ \{}
+\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(x,\ box\_height\ +\ y,\ bg\_color);}
+\DoxyCodeLine{00278\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Draw\ triangle\ outline}}
+\DoxyCodeLine{00282\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (int16\_t\ y\ =\ 0;\ y\ <\ pointer\_height;\ y++)\ \{}
+\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ left\_x\ =\ pointer\_center\_x\ -\/\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
+\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ right\_x\ =\ pointer\_center\_x\ +\ (3\ *\ (pointer\_height\ -\/\ y))\ /\ pointer\_height;}
+\DoxyCodeLine{00285\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(left\_x,\ box\_height\ +\ y,\ label\_color);}
+\DoxyCodeLine{00286\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ internal\_canvas.setPixel(right\_x,\ box\_height\ +\ y,\ label\_color);}
+\DoxyCodeLine{00287\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00288\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00289\ }
+\DoxyCodeLine{00290\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Layout\ text}}
+\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ renderText(padding,\ line\_spacing,\ box\_height);}
+\DoxyCodeLine{00292\ \ \ \ \ \}}
+\DoxyCodeLine{00293\ }
+\DoxyCodeLine{00297\ \ \ \ \ \textcolor{keywordtype}{void}\ renderText(int16\_t\ padding,\ int16\_t\ line\_spacing,\ int16\_t\ box\_height)\ \{}
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ std::vector<std::string>\ lines;}
+\DoxyCodeLine{00299\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (word\_wrap)\ \{}
+\DoxyCodeLine{00301\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Word\ wrapping}}
+\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ words\ =\ split(text,\ \textcolor{charliteral}{'\ '});}
+\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ \ \ \ \ std::string\ current\_line;}
+\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{const}\ \textcolor{keyword}{auto}\&\ word\ :\ words)\ \{}
+\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (word.empty())\ \textcolor{keywordflow}{continue};}
+\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::string\ test\_line\ =\ current\_line;}
+\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!test\_line.empty())\ \{}
+\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ test\_line\ +=\ \textcolor{stringliteral}{"{}\ "{}};}
+\DoxyCodeLine{00311\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00312\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ test\_line\ +=\ word;}
+\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint16\_t\ line\_width\ =\ text\_renderer.getTextWidth(test\_line.c\_str());}
+\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (line\_width\ >\ width\ -\/\ 2\ *\ padding\ -\/\ left\_margin\ -\/\ right\_margin)\ \{}
+\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!current\_line.empty())\ \{}
+\DoxyCodeLine{00318\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lines.push\_back(current\_line);}
+\DoxyCodeLine{00319\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00320\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_line\ =\ word;}
+\DoxyCodeLine{00321\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00322\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_line\ =\ test\_line;}
+\DoxyCodeLine{00323\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00325\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!current\_line.empty())\ \{}
+\DoxyCodeLine{00327\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lines.push\_back(current\_line);}
+\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00330\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ No\ wrapping\ -\/\ just\ use\ the\ text\ as\ is}}
+\DoxyCodeLine{00331\ \ \ \ \ \ \ \ \ \ \ \ \ lines.push\_back(text);}
+\DoxyCodeLine{00332\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00333\ }
+\DoxyCodeLine{00334\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Get\ proper\ character\ height\ from\ text\ renderer}}
+\DoxyCodeLine{00335\ \ \ \ \ \ \ \ \ uint16\_t\ char\_height\ =\ text\_renderer.getCharHeight();}
+\DoxyCodeLine{00336\ \ \ \ \ \ \ \ \ uint16\_t\ total\_text\_height\ =\ lines.size()\ *\ char\_height\ *\ font\_size\ +\ }
+\DoxyCodeLine{00337\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (lines.size()\ -\/\ 1)\ *\ line\_spacing;}
+\DoxyCodeLine{00338\ }
+\DoxyCodeLine{00339\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ starting\ Y\ position\ for\ vertical\ centering}}
+\DoxyCodeLine{00340\ \ \ \ \ \ \ \ \ int16\_t\ start\_y\ =\ (box\_height\ -\/\ total\_text\_height)\ /\ 2;}
+\DoxyCodeLine{00341\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (start\_y\ <\ padding)\ start\_y\ =\ padding;}
+\DoxyCodeLine{00342\ }
+\DoxyCodeLine{00343\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Render\ each\ line\ using\ text\ renderer\ properly}}
+\DoxyCodeLine{00344\ \ \ \ \ \ \ \ \ int16\_t\ current\_y\ =\ start\_y;}
+\DoxyCodeLine{00345\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{const}\ \textcolor{keyword}{auto}\&\ line\ :\ lines)\ \{}
+\DoxyCodeLine{00346\ \ \ \ \ \ \ \ \ \ \ \ \ int16\_t\ line\_x\ =\ calculateLineX(line,\ padding);}
+\DoxyCodeLine{00347\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00348\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Use\ drawString\ instead\ of\ writeChar\ to\ avoid\ automatic\ cursor\ management\ conflicts}}
+\DoxyCodeLine{00349\ \ \ \ \ \ \ \ \ \ \ \ \ text\_renderer.drawString(internal\_canvas,\ line\_x,\ current\_y,\ line.c\_str());}
+\DoxyCodeLine{00350\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00351\ \ \ \ \ \ \ \ \ \ \ \ \ current\_y\ +=\ char\_height\ *\ font\_size\ +\ line\_spacing;}
+\DoxyCodeLine{00352\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00353\ \ \ \ \ \}}
+\DoxyCodeLine{00354\ }
+\DoxyCodeLine{00358\ \ \ \ \ int16\_t\ calculateLineX(\textcolor{keyword}{const}\ std::string\&\ line,\ int16\_t\ padding)\ \{}
+\DoxyCodeLine{00359\ \ \ \ \ \ \ \ \ uint16\_t\ line\_width\ =\ line.length()\ *\ 6\ *\ font\_size;\ \textcolor{comment}{//\ 6\ pixels\ per\ char\ (5+1\ spacing)}}
+\DoxyCodeLine{00360\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00361\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (alignment)\ \{}
+\DoxyCodeLine{00362\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LabelAlign::Left:}
+\DoxyCodeLine{00363\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ padding\ +\ left\_margin;}
+\DoxyCodeLine{00364\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00365\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LabelAlign::Right:}
+\DoxyCodeLine{00366\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ width\ -\/\ padding\ -\/\ right\_margin\ -\/\ line\_width;}
+\DoxyCodeLine{00367\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00368\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ LabelAlign::Center:}
+\DoxyCodeLine{00369\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{default}:}
+\DoxyCodeLine{00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (width\ -\/\ line\_width)\ /\ 2;}
+\DoxyCodeLine{00371\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00372\ \ \ \ \ \}}
+\DoxyCodeLine{00373\ }
+\DoxyCodeLine{00374\ \};}
+\DoxyCodeLine{00375\ }
+\DoxyCodeLine{00376\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00377\ }
+\DoxyCodeLine{00378\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_LABEL\_HPP}}
 
 \end{DoxyCode}

@@ -12,7 +12,7 @@ Fill-\/up gauge component for level display.
 \doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a48b4e4a7fe7b75b4229b0ae8dfce3db7}{Fill\+Up\+Gauge}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint16\+\_\+t w, uint16\+\_\+t h, uint16\+\_\+t gauge\+Color, Gauge\+Mode gauge\+Mode)
+\doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a48b4e4a7fe7b75b4229b0ae8dfce3db7}{Fill\+Up\+Gauge}} (\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}, uint16\+\_\+t w, uint16\+\_\+t h, uint16\+\_\+t gauge\+Color, \doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{Gauge\+Mode}} gauge\+Mode)
 \begin{DoxyCompactList}\small\item\em Construct a new \doxylink{classenjin2_1_1FillUpGauge}{Fill\+Up\+Gauge} component. \end{DoxyCompactList}\item 
 \Hypertarget{classenjin2_1_1FillUpGauge_abf978bfc9174bef7d70e79778feb3d05}\label{classenjin2_1_1FillUpGauge_abf978bfc9174bef7d70e79778feb3d05} 
 void {\bfseries on\+Create} () override
@@ -26,9 +26,9 @@ void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a474b9656df2ca91019eff4b2fa
 \begin{DoxyCompactList}\small\item\em Set the gauge value. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a4ec28890f1f7baebb0345c15c86d3236}{get\+Value}} () const
 \begin{DoxyCompactList}\small\item\em Get the current gauge value. \end{DoxyCompactList}\item 
-void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a4e7ad1fefdb259f1deacccb26de3470f}{set\+Mode}} (Gauge\+Mode new\+Mode)
+void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_a4e7ad1fefdb259f1deacccb26de3470f}{set\+Mode}} (\doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{Gauge\+Mode}} new\+Mode)
 \begin{DoxyCompactList}\small\item\em Set the gauge mode. \end{DoxyCompactList}\item 
-Gauge\+Mode \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_ab74700a3b7364010d2f40d6235458ac0}{get\+Mode}} () const
+\doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{Gauge\+Mode}} \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_ab74700a3b7364010d2f40d6235458ac0}{get\+Mode}} () const
 \begin{DoxyCompactList}\small\item\em Get the current gauge mode. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classenjin2_1_1FillUpGauge_aca7d4147f02a26726d1344830fbfc2d6}{set\+Color}} (uint16\+\_\+t new\+Color)
 \begin{DoxyCompactList}\small\item\em Set the gauge color. \end{DoxyCompactList}\end{DoxyCompactItemize}
@@ -96,7 +96,7 @@ A visual gauge that fills up to represent a value, similar to a VU meter. Suppor
 \index{FillUpGauge@{FillUpGauge}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
 \doxysubsubsection{\texorpdfstring{FillUpGauge()}{FillUpGauge()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_a48b4e4a7fe7b75b4229b0ae8dfce3db7} 
-enjin2::\+\+Fill\+Up\+Gauge::\+\+Fill\+Up\+Gauge (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{uint16\+\_\+t}]{w}{, }\item[{uint16\+\_\+t}]{h}{, }\item[{uint16\+\_\+t}]{gauge\+Color}{, }\item[{Gauge\+Mode}]{gauge\+Mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+enjin2::\+\+Fill\+Up\+Gauge::\+\+Fill\+Up\+Gauge (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}} \texorpdfstring{$\ast$}{*}}]{owner}{, }\item[{uint16\+\_\+t}]{w}{, }\item[{uint16\+\_\+t}]{h}{, }\item[{uint16\+\_\+t}]{gauge\+Color}{, }\item[{\doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{Gauge\+Mode}}}]{gauge\+Mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -139,7 +139,7 @@ Draw the gauge to the canvas.
 \index{getMode@{getMode}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
 \doxysubsubsection{\texorpdfstring{getMode()}{getMode()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_ab74700a3b7364010d2f40d6235458ac0} 
-Gauge\+Mode enjin2::\+\+Fill\+Up\+Gauge::\+get\+Mode (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+\doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{Gauge\+Mode}} enjin2::\+\+Fill\+Up\+Gauge::\+get\+Mode (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -180,7 +180,7 @@ Set the gauge color.
 \index{setMode@{setMode}!enjin2::FillUpGauge@{enjin2::FillUpGauge}}
 \doxysubsubsection{\texorpdfstring{setMode()}{setMode()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1FillUpGauge_a4e7ad1fefdb259f1deacccb26de3470f} 
-void enjin2::\+\+Fill\+Up\+Gauge::\+set\+Mode (\begin{DoxyParamCaption}\item[{Gauge\+Mode}]{new\+Mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+void enjin2::\+\+Fill\+Up\+Gauge::\+set\+Mode (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{fill__up__gauge_8hpp_aea3621225504f1d151e5e5f17ec98acb}{Gauge\+Mode}}}]{new\+Mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -210,4 +210,4 @@ Set the gauge value.
 
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-include/\+enjin2/\+components/\+fill\+\_\+up\+\_\+gauge.\+hpp\end{DoxyCompactItemize}
+include/\+enjin2/\+components/\+\doxymbox{\hyperlink{fill__up__gauge_8hpp}{fill\+\_\+up\+\_\+gauge.\+hpp}}\end{DoxyCompactItemize}

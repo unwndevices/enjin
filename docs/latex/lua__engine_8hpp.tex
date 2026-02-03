@@ -1,0 +1,32 @@
+\doxysection{include/\+enjin2/\+scripting/\+lua\+\_\+engine.hpp File Reference}
+\hypertarget{lua__engine_8hpp}{}\label{lua__engine_8hpp}\index{include/enjin2/scripting/lua\_engine.hpp@{include/enjin2/scripting/lua\_engine.hpp}}
+
+
+Lua engine for embedded scripting with static memory management.  
+
+
+{\ttfamily \+\#include "{}../\+core/\+types.\+hpp"{}}\newline
+{\ttfamily \+\#include "{}lua\+\_\+platform.\+hpp"{}}\newline
+{\ttfamily \+\#include $<$string$>$}\newline
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$functional$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \doxymbox{\hyperlink{structenjin2_1_1LuaResult}{enjin2::\+\+Lua\+Result}}
+\begin{DoxyCompactList}\small\item\em Lua script execution result. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classenjin2_1_1LuaEngine}{enjin2::\+\+Lua\+Engine}}
+\begin{DoxyCompactList}\small\item\em Lua engine for embedded scripting support. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{lua__engine_8hpp_a7b8ba6c2d516c86075be22f0aca1760c}\label{lua__engine_8hpp_a7b8ba6c2d516c86075be22f0aca1760c} 
+using {\bfseries enjin2::\+\+Lua\+Callback} = std::\+function$<$int(lua\+\_\+\+State\texorpdfstring{$\ast$}{*})$>$
+\begin{DoxyCompactList}\small\item\em Lua function callback type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Lua engine for embedded scripting with static memory management. 
+
+Provides a lightweight Lua scripting environment optimized for embedded systems with love2d.\+graphics-\/style API for familiar drawing operations. 

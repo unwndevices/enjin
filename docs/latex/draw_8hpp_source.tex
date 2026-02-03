@@ -1,52 +1,53 @@
 \doxysection{draw.\+hpp}
 \hypertarget{draw_8hpp_source}{}\label{draw_8hpp_source}\index{include/enjin2/components/draw.hpp@{include/enjin2/components/draw.hpp}}
-
+\doxymbox{\hyperlink{draw_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_DRAW\_HPP}}
-\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_DRAW\_HPP}}
-\DoxyCodeLine{00003\ }
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}drawable.hpp"{}}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}../graphics/canvas.hpp"{}}}
-\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}../core/object.hpp"{}}}
-\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <functional>}}
-\DoxyCodeLine{00008\ }
-\DoxyCodeLine{00009\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ ENJIN2\_COMPONENTS\_DRAW\_HPP}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ ENJIN2\_COMPONENTS\_DRAW\_HPP}}
 \DoxyCodeLine{00010\ }
-\DoxyCodeLine{00014\ \textcolor{keyword}{using\ }DrawFunction\ =\ std::function<void(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)>;}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{drawable_8hpp}{drawable.hpp}}"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{graphics_2canvas_8hpp}{../graphics/canvas.hpp}}"{}}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}../core/object.hpp"{}}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <functional>}}
 \DoxyCodeLine{00015\ }
-\DoxyCodeLine{00022\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1C__Draw_aa21562a66cba16cb747ad5859b107d9d}{C\_Draw}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}\ \{}
-\DoxyCodeLine{00023\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00029\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_aa21562a66cba16cb747ad5859b107d9d}{C\_Draw}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ DrawFunction\ drawFunc\ =\ \textcolor{keyword}{nullptr})}
-\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ 127,\ 127)\ \ \textcolor{comment}{//\ Default\ size\ matches\ original\ Enjin}}
-\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ ,\ draw\_function(drawFunc)}
-\DoxyCodeLine{00032\ \ \ \ \ \{}
-\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Position\ is\ already\ set\ by\ C\_Drawable\ constructor}}
-\DoxyCodeLine{00034\ \ \ \ \ \}}
-\DoxyCodeLine{00035\ }
-\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_ae13e81bc7460c4da87c4b6e909ce94dd}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\textcolor{keyword}{\ override\ }\{}
-\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (draw\_function\ \&\&\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a8499e775809955ce6ba74ebfb1c12e2e}{is\_visible}})\ \{}
-\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \ \ \ \ draw\_function(canvas);}
-\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00044\ \ \ \ \ \}}
-\DoxyCodeLine{00045\ }
-\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_a0df1365a7a6ee694d290a9251280c97a}{continueToDraw}}()\textcolor{keyword}{\ const\ override\ }\{}
-\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ !\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>isQueuedForRemoval();}
-\DoxyCodeLine{00052\ \ \ \ \ \}}
-\DoxyCodeLine{00053\ }
-\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_a11703d05f5248fb10cd7cede338e066b}{SetDrawFunction}}(DrawFunction\ drawFunc)\ \{}
-\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ draw\_function\ =\ drawFunc;}
-\DoxyCodeLine{00060\ \ \ \ \ \}}
-\DoxyCodeLine{00061\ }
-\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keyword}{const}\ DrawFunction\&\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_ac58777d896e1f3c35ac584b4b5b212ae}{GetDrawFunction}}()\textcolor{keyword}{\ const\ }\{}
-\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ draw\_function;}
-\DoxyCodeLine{00068\ \ \ \ \ \}}
-\DoxyCodeLine{00069\ }
-\DoxyCodeLine{00070\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00071\ \ \ \ \ DrawFunction\ draw\_function;\ \ }
-\DoxyCodeLine{00072\ \};}
-\DoxyCodeLine{00073\ }
-\DoxyCodeLine{00074\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
-\DoxyCodeLine{00075\ }
-\DoxyCodeLine{00076\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_DRAW\_HPP}}
+\DoxyCodeLine{00016\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00021\ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{DrawFunction}}\ =\ std::function<void(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)>;}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00029\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1C__Draw_aa21562a66cba16cb747ad5859b107d9d}{C\_Draw}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}\ \{}
+\DoxyCodeLine{00030\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00036\ \ \ \ \ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_aa21562a66cba16cb747ad5859b107d9d}{C\_Draw}}(\doxymbox{\hyperlink{classenjin2_1_1Object}{Object}}*\ \doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ \doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{DrawFunction}}\ drawFunc\ =\ \textcolor{keyword}{nullptr})}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ :\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_ada64fec39c57bff612f5653d8fa2795e}{C\_Drawable}}(\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}},\ 127,\ 127)\ \ \textcolor{comment}{//\ Default\ size\ matches\ original\ Enjin}}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ ,\ draw\_function(drawFunc)}
+\DoxyCodeLine{00039\ \ \ \ \ \{}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Position\ is\ already\ set\ by\ C\_Drawable\ constructor}}
+\DoxyCodeLine{00041\ \ \ \ \ \}}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_ae13e81bc7460c4da87c4b6e909ce94dd}{draw}}(\doxymbox{\hyperlink{classenjin2_1_1ICanvas}{ICanvas<uint8\_t>}}\&\ canvas)\textcolor{keyword}{\ override\ }\{}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (draw\_function\ \&\&\ \doxymbox{\hyperlink{classenjin2_1_1C__Drawable_a8499e775809955ce6ba74ebfb1c12e2e}{is\_visible}})\ \{}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \ \ \ \ draw\_function(canvas);}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00051\ \ \ \ \ \}}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_a0df1365a7a6ee694d290a9251280c97a}{continueToDraw}}()\textcolor{keyword}{\ const\ override\ }\{}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ !\doxymbox{\hyperlink{classenjin2_1_1Component_a3349b9210509e148f9f7625f6a39b022}{owner}}-\/>isQueuedForRemoval();}
+\DoxyCodeLine{00059\ \ \ \ \ \}}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_a11703d05f5248fb10cd7cede338e066b}{SetDrawFunction}}(\doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{DrawFunction}}\ drawFunc)\ \{}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ draw\_function\ =\ drawFunc;}
+\DoxyCodeLine{00067\ \ \ \ \ \}}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00073\ \ \ \ \ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{DrawFunction}}\&\ \doxymbox{\hyperlink{classenjin2_1_1C__Draw_ac58777d896e1f3c35ac584b4b5b212ae}{GetDrawFunction}}()\textcolor{keyword}{\ const\ }\{}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ draw\_function;}
+\DoxyCodeLine{00075\ \ \ \ \ \}}
+\DoxyCodeLine{00076\ }
+\DoxyCodeLine{00077\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00078\ \ \ \ \ \doxymbox{\hyperlink{draw_8hpp_a330a52b9f21118f8ddf7397f0026ef8c}{DrawFunction}}\ draw\_function;\ \ }
+\DoxyCodeLine{00079\ \};}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00083\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ENJIN2\_COMPONENTS\_DRAW\_HPP}}
 
 \end{DoxyCode}

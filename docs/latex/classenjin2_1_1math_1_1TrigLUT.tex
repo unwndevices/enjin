@@ -1,19 +1,89 @@
 \doxysection{enjin2::\+math::\+Trig\+LUT Class Reference}
 \hypertarget{classenjin2_1_1math_1_1TrigLUT}{}\label{classenjin2_1_1math_1_1TrigLUT}\index{enjin2::math::TrigLUT@{enjin2::math::TrigLUT}}
+
+
+Fast trigonometry using lookup table.  
+
+
+
+
+{\ttfamily \+\#include $<$math.\+hpp$>$}
+
 \doxysubsubsection*{Static Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{classenjin2_1_1math_1_1TrigLUT_ab521ddae66a9cf6c7bfcd65251270b25}\label{classenjin2_1_1math_1_1TrigLUT_ab521ddae66a9cf6c7bfcd65251270b25} 
-static int16\+\_\+t {\bfseries sin} (uint16\+\_\+t angle)
-\item 
-\Hypertarget{classenjin2_1_1math_1_1TrigLUT_afcebf6bc92e60d976cc93d6cbdccb965}\label{classenjin2_1_1math_1_1TrigLUT_afcebf6bc92e60d976cc93d6cbdccb965} 
-static int16\+\_\+t {\bfseries cos} (uint16\+\_\+t angle)
-\item 
-\Hypertarget{classenjin2_1_1math_1_1TrigLUT_adce56847773738550fae0dc822cb7715}\label{classenjin2_1_1math_1_1TrigLUT_adce56847773738550fae0dc822cb7715} 
-static uint16\+\_\+t {\bfseries angle\+To\+Index} (float radians)
-\end{DoxyCompactItemize}
+static int16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1math_1_1TrigLUT_ab521ddae66a9cf6c7bfcd65251270b25}{sin}} (uint16\+\_\+t angle)
+\begin{DoxyCompactList}\small\item\em Fast sine function using 0-\/255 angle range. \end{DoxyCompactList}\item 
+static int16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1math_1_1TrigLUT_afcebf6bc92e60d976cc93d6cbdccb965}{cos}} (uint16\+\_\+t angle)
+\begin{DoxyCompactList}\small\item\em Fast cosine function using 0-\/255 angle range. \end{DoxyCompactList}\item 
+static uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1math_1_1TrigLUT_adce56847773738550fae0dc822cb7715}{angle\+To\+Index}} (float radians)
+\begin{DoxyCompactList}\small\item\em Convert float radians to lookup table index. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Fast trigonometry using lookup table. 
+
+Provides sine and cosine functions optimized for embedded systems. Uses 256-\/step lookup table for 0-\/2π range. 
+
+\label{doc-func-members}
+\Hypertarget{classenjin2_1_1math_1_1TrigLUT_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classenjin2_1_1math_1_1TrigLUT_adce56847773738550fae0dc822cb7715}\index{enjin2::math::TrigLUT@{enjin2::math::TrigLUT}!angleToIndex@{angleToIndex}}
+\index{angleToIndex@{angleToIndex}!enjin2::math::TrigLUT@{enjin2::math::TrigLUT}}
+\doxysubsubsection{\texorpdfstring{angleToIndex()}{angleToIndex()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1math_1_1TrigLUT_adce56847773738550fae0dc822cb7715} 
+uint16\+\_\+t enjin2::\+math::\+\+Trig\+LUT::\+angle\+To\+Index (\begin{DoxyParamCaption}\item[{float}]{radians}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Convert float radians to lookup table index. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em radians} & Angle in radians \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Index in range \+[0, 255]\+ for lookup table 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1math_1_1TrigLUT_afcebf6bc92e60d976cc93d6cbdccb965}\index{enjin2::math::TrigLUT@{enjin2::math::TrigLUT}!cos@{cos}}
+\index{cos@{cos}!enjin2::math::TrigLUT@{enjin2::math::TrigLUT}}
+\doxysubsubsection{\texorpdfstring{cos()}{cos()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1math_1_1TrigLUT_afcebf6bc92e60d976cc93d6cbdccb965} 
+int16\+\_\+t enjin2::\+math::\+\+Trig\+LUT::\+cos (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{angle}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Fast cosine function using 0-\/255 angle range. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em angle} & Angle value (0-\/255 representing 0-\/2π) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Cosine value in range \+[-\/32767, 32767]\+ (Q15 fixed-\/point) 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1math_1_1TrigLUT_ab521ddae66a9cf6c7bfcd65251270b25}\index{enjin2::math::TrigLUT@{enjin2::math::TrigLUT}!sin@{sin}}
+\index{sin@{sin}!enjin2::math::TrigLUT@{enjin2::math::TrigLUT}}
+\doxysubsubsection{\texorpdfstring{sin()}{sin()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1math_1_1TrigLUT_ab521ddae66a9cf6c7bfcd65251270b25} 
+int16\+\_\+t enjin2::\+math::\+\+Trig\+LUT::\+sin (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{angle}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+Fast sine function using 0-\/255 angle range. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em angle} & Angle value (0-\/255 representing 0-\/2π) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Sine value in range \+[-\/32767, 32767]\+ (Q15 fixed-\/point) 
+\end{DoxyReturn}
 
 
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-include/\+enjin2/\+core/\+math.\+hpp\end{DoxyCompactItemize}
+include/\+enjin2/\+core/\+\doxymbox{\hyperlink{math_8hpp}{math.\+hpp}}\end{DoxyCompactItemize}

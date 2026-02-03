@@ -29,13 +29,13 @@ void {\bfseries pause} ()
 \Hypertarget{classenjin2_1_1AnimationTrack_a8a90dd639a98c0759439f6203e1ce0ca}\label{classenjin2_1_1AnimationTrack_a8a90dd639a98c0759439f6203e1ce0ca} 
 void {\bfseries stop} ()
 \begin{DoxyCompactList}\small\item\em Stop animation playback and reset to beginning. \end{DoxyCompactList}\item 
-void \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a5580ce56d1a8bf2120c5a6d9edf02de4}{set\+Loop\+Mode}} (Loop\+Mode mode)
+void \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a5580ce56d1a8bf2120c5a6d9edf02de4}{set\+Loop\+Mode}} (\doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{Loop\+Mode}} mode)
 \begin{DoxyCompactList}\small\item\em Set loop mode. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a30b162efb1f6cbd9b217d990f7eaf9ec}{update}} (uint16\+\_\+t delta\+Time)
 \begin{DoxyCompactList}\small\item\em Update animation by time delta. \end{DoxyCompactList}\item 
 T \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a5b4e066802298b63702a2d6301595cb1}{get\+Current\+Value}} () const
 \begin{DoxyCompactList}\small\item\em Get current animation value. \end{DoxyCompactList}\item 
-Animation\+State \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aef444ab9c7757916ac4607dc559b75a3}{get\+State}} () const
+\doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{Animation\+State}} \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aef444ab9c7757916ac4607dc559b75a3}{get\+State}} () const
 \begin{DoxyCompactList}\small\item\em Get animation state. \end{DoxyCompactList}\item 
 uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a2e7b4e27d01bb8e6510063d9c1226400}{get\+Current\+Time}} () const
 \begin{DoxyCompactList}\small\item\em Get current time. \end{DoxyCompactList}\item 
@@ -43,15 +43,12 @@ uint16\+\_\+t \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_aae8d82b6cd88fa
 \begin{DoxyCompactList}\small\item\em Get animation duration. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a78b17fb3d014d6f1e66d5617491eb5af}{get\+Progress}} () const
 \begin{DoxyCompactList}\small\item\em Get normalized progress (0.\+0 to 1.\+0). \end{DoxyCompactList}\item 
-\Hypertarget{classenjin2_1_1AnimationTrack_ad09ec3ef6a89f7c8e67b1ebbb117316c}\label{classenjin2_1_1AnimationTrack_ad09ec3ef6a89f7c8e67b1ebbb117316c} 
-\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}} {\bfseries connect\+On\+Start} (std::\+function$<$ void()$>$ callback)
-\begin{DoxyCompactList}\small\item\em Connect to animation events. \end{DoxyCompactList}\item 
-\Hypertarget{classenjin2_1_1AnimationTrack_a2838636aa681861482d52afbdbc1a291}\label{classenjin2_1_1AnimationTrack_a2838636aa681861482d52afbdbc1a291} 
-\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}} {\bfseries connect\+On\+Complete} (std::\+function$<$ void()$>$ callback)
-\item 
-\Hypertarget{classenjin2_1_1AnimationTrack_ab7176e06106f7cd88e124e28499d0c20}\label{classenjin2_1_1AnimationTrack_ab7176e06106f7cd88e124e28499d0c20} 
-\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}}$<$ T $>$ {\bfseries connect\+On\+Update} (std::\+function$<$ void(T)$>$ callback)
-\end{DoxyCompactItemize}
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}} \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_ad09ec3ef6a89f7c8e67b1ebbb117316c}{connect\+On\+Start}} (std::\+function$<$ void()$>$ callback)
+\begin{DoxyCompactList}\small\item\em Connect to animation start event. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}} \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_a2838636aa681861482d52afbdbc1a291}{connect\+On\+Complete}} (std::\+function$<$ void()$>$ callback)
+\begin{DoxyCompactList}\small\item\em Connect to animation complete event. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}}$<$ T $>$ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack_ab7176e06106f7cd88e124e28499d0c20}{connect\+On\+Update}} (std::\+function$<$ void(T)$>$ callback)
+\begin{DoxyCompactList}\small\item\em Connect to animation update event. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
@@ -89,6 +86,63 @@ Add a keyframe to the track.
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 True if keyframe was added successfully 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1AnimationTrack_a2838636aa681861482d52afbdbc1a291}\index{enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}!connectOnComplete@{connectOnComplete}}
+\index{connectOnComplete@{connectOnComplete}!enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}}
+\doxysubsubsection{\texorpdfstring{connectOnComplete()}{connectOnComplete()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1AnimationTrack_a2838636aa681861482d52afbdbc1a291} 
+template$<$typename T, typename Keyframe\+Type$>$ \\
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}} \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{enjin2::\+\+Animation\+Track}}$<$ T, Keyframe\+Type $>$::\+connect\+On\+Complete (\begin{DoxyParamCaption}\item[{std::\+function$<$ void()$>$}]{callback}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Connect to animation complete event. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em callback} & Function to call when animation completes \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{classenjin2_1_1Signal}{Signal} connection for disconnecting callback 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1AnimationTrack_ad09ec3ef6a89f7c8e67b1ebbb117316c}\index{enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}!connectOnStart@{connectOnStart}}
+\index{connectOnStart@{connectOnStart}!enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}}
+\doxysubsubsection{\texorpdfstring{connectOnStart()}{connectOnStart()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1AnimationTrack_ad09ec3ef6a89f7c8e67b1ebbb117316c} 
+template$<$typename T, typename Keyframe\+Type$>$ \\
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}} \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{enjin2::\+\+Animation\+Track}}$<$ T, Keyframe\+Type $>$::\+connect\+On\+Start (\begin{DoxyParamCaption}\item[{std::\+function$<$ void()$>$}]{callback}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Connect to animation start event. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em callback} & Function to call when animation starts \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{classenjin2_1_1Signal}{Signal} connection for disconnecting callback 
+\end{DoxyReturn}
+\Hypertarget{classenjin2_1_1AnimationTrack_ab7176e06106f7cd88e124e28499d0c20}\index{enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}!connectOnUpdate@{connectOnUpdate}}
+\index{connectOnUpdate@{connectOnUpdate}!enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}}
+\doxysubsubsection{\texorpdfstring{connectOnUpdate()}{connectOnUpdate()}}
+{\footnotesize\ttfamily \label{classenjin2_1_1AnimationTrack_ab7176e06106f7cd88e124e28499d0c20} 
+template$<$typename T, typename Keyframe\+Type$>$ \\
+\doxymbox{\hyperlink{classenjin2_1_1SignalConnection}{Signal\+Connection}}$<$ T $>$ \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{enjin2::\+\+Animation\+Track}}$<$ T, Keyframe\+Type $>$::\+connect\+On\+Update (\begin{DoxyParamCaption}\item[{std::\+function$<$ void(T)$>$}]{callback}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Connect to animation update event. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em callback} & Function to call when animation value updates \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\doxylink{classenjin2_1_1Signal}{Signal} connection for disconnecting callback 
 \end{DoxyReturn}
 \Hypertarget{classenjin2_1_1AnimationTrack_a2e7b4e27d01bb8e6510063d9c1226400}\index{enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}!getCurrentTime@{getCurrentTime}}
 \index{getCurrentTime@{getCurrentTime}!enjin2::AnimationTrack$<$ T, KeyframeType $>$@{enjin2::AnimationTrack$<$ T, KeyframeType $>$}}
@@ -151,7 +205,7 @@ Animation progress
 \doxysubsubsection{\texorpdfstring{getState()}{getState()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1AnimationTrack_aef444ab9c7757916ac4607dc559b75a3} 
 template$<$typename T, typename Keyframe\+Type$>$ \\
-Animation\+State \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{enjin2::\+\+Animation\+Track}}$<$ T, Keyframe\+Type $>$::\+get\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+\doxymbox{\hyperlink{keyframe_8hpp_a13cd37f1102dde201f8ebf9824dedd5d}{Animation\+State}} \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{enjin2::\+\+Animation\+Track}}$<$ T, Keyframe\+Type $>$::\+get\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -165,7 +219,7 @@ Current animation state
 \doxysubsubsection{\texorpdfstring{setLoopMode()}{setLoopMode()}}
 {\footnotesize\ttfamily \label{classenjin2_1_1AnimationTrack_a5580ce56d1a8bf2120c5a6d9edf02de4} 
 template$<$typename T, typename Keyframe\+Type$>$ \\
-void \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{enjin2::\+\+Animation\+Track}}$<$ T, Keyframe\+Type $>$::\+set\+Loop\+Mode (\begin{DoxyParamCaption}\item[{Loop\+Mode}]{mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+void \doxymbox{\hyperlink{classenjin2_1_1AnimationTrack}{enjin2::\+\+Animation\+Track}}$<$ T, Keyframe\+Type $>$::\+set\+Loop\+Mode (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{keyframe_8hpp_aa8118caae5bcb3e93c03f2348858ddc0}{Loop\+Mode}}}]{mode}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
 
 
@@ -196,4 +250,4 @@ Update animation by time delta.
 
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-include/\+enjin2/\+animation/\+animation\+\_\+track.\+hpp\end{DoxyCompactItemize}
+include/\+enjin2/\+animation/\+\doxymbox{\hyperlink{animation__track_8hpp}{animation\+\_\+track.\+hpp}}\end{DoxyCompactItemize}

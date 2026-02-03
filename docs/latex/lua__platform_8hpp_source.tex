@@ -1,96 +1,97 @@
 \doxysection{lua\+\_\+platform.\+hpp}
 \hypertarget{lua__platform_8hpp_source}{}\label{lua__platform_8hpp_source}\index{include/enjin2/scripting/lua\_platform.hpp@{include/enjin2/scripting/lua\_platform.hpp}}
-
+\doxymbox{\hyperlink{lua__platform_8hpp}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
-\DoxyCodeLine{00002\ }
-\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <string>}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <vector>}}
-\DoxyCodeLine{00006\ }
-\DoxyCodeLine{00007\ \textcolor{comment}{//\ Platform-\/specific\ Lua\ includes}}
-\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
-\DoxyCodeLine{00009\ \ \ \ \ \textcolor{comment}{//\ LuaJIT\ for\ VCV\ Rack\ (desktop)}}
-\DoxyCodeLine{00010\ \ \ \ \ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}\ \{}
-\DoxyCodeLine{00011\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lua.h"{}}}
-\DoxyCodeLine{00012\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lauxlib.h"{}}}
-\DoxyCodeLine{00013\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lualib.h"{}}}
-\DoxyCodeLine{00014\ \ \ \ \ \}}
-\DoxyCodeLine{00015\ \ \ \ \ \textcolor{comment}{//\ LuaJIT\ compatibility:\ map\ lua\_pcallk\ to\ lua\_pcall\ only\ for\ Lua\ 5.1}}
-\DoxyCodeLine{00016\ \textcolor{preprocessor}{\ \ \ \ \#if\ !defined(LUA\_VERSION\_NUM)\ ||\ LUA\_VERSION\_NUM\ <\ 502}}
-\DoxyCodeLine{00017\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#ifndef\ lua\_pcallk}}
-\DoxyCodeLine{00018\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#define\ lua\_pcallk(L,n,r,c,ctx,k)\ lua\_pcall(L,n,r,c)}}
-\DoxyCodeLine{00019\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#endif}}
-\DoxyCodeLine{00020\ \textcolor{preprocessor}{\ \ \ \ \#endif}}
-\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
-\DoxyCodeLine{00022\ \ \ \ \ \textcolor{comment}{//\ ESP32-\/specific\ Lua\ implementation}}
-\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}\ \{}
-\DoxyCodeLine{00024\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lua.h"{}}}
-\DoxyCodeLine{00025\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lauxlib.h"{}}}
-\DoxyCodeLine{00026\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lualib.h"{}}}
-\DoxyCodeLine{00027\ \ \ \ \ \}}
-\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00029\ \textcolor{preprocessor}{\ \ \ \ \#error\ "{}Platform\ not\ supported\ for\ Lua\ integration"{}}}
-\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00031\ }
-\DoxyCodeLine{00032\ \textcolor{keyword}{namespace\ }enjin2\ \{}
-\DoxyCodeLine{00033\ }
-\DoxyCodeLine{00037\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1LuaPlatformConfig}{LuaPlatformConfig}}\ \{}
-\DoxyCodeLine{00038\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
-\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MEMORY\_LIMIT\ =\ 1024\ *\ 1024;\ \ \textcolor{comment}{//\ 1MB\ for\ desktop}}
-\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_ALL\_LIBS\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \textcolor{comment}{//\ Full\ Lua\ libraries}}
-\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_FILE\_IO\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ File\ operations\ allowed}}
-\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_DEBUG\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Debug\ facilities}}
-\DoxyCodeLine{00043\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
-\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MEMORY\_LIMIT\ =\ 64\ *\ 1024;\ \ \ \ \textcolor{comment}{//\ 64KB\ for\ ESP32}}
-\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_ALL\_LIBS\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \textcolor{comment}{//\ Minimal\ libraries\ only}}
-\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_FILE\_IO\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \textcolor{comment}{//\ No\ file\ I/O\ for\ security}}
-\DoxyCodeLine{00047\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_DEBUG\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ No\ debug\ to\ save\ memory}}
-\DoxyCodeLine{00048\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00049\ \ \ \ \ }
-\DoxyCodeLine{00050\ \ \ \ \ \textcolor{comment}{//\ Common\ settings}}
-\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ STACK\_SIZE\ =\ 8192;\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ 8KB\ Lua\ stack}}
-\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{int}\ MAX\_RECURSION\_DEPTH\ =\ 32;\ \ \ \ \ \ \ \textcolor{comment}{//\ Prevent\ stack\ overflow}}
-\DoxyCodeLine{00053\ \};}
-\DoxyCodeLine{00054\ }
-\DoxyCodeLine{00058\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1LuaPlatform}{LuaPlatform}}\ \{}
-\DoxyCodeLine{00059\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keyword}{static}\ lua\_State*\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_abe12267b6e5619431b77f0142469c555}{createState}}(lua\_Alloc\ allocator\ =\ \textcolor{keyword}{nullptr},\ \textcolor{keywordtype}{void}*\ ud\ =\ \textcolor{keyword}{nullptr});}
-\DoxyCodeLine{00067\ \ \ \ \ }
-\DoxyCodeLine{00072\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a363dfb8a638ca79572071591abb03b4c}{openLibraries}}(lua\_State*\ L);}
-\DoxyCodeLine{00073\ \ \ \ \ }
-\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_ac009ab1ecbff4d9673d63474f26ea309}{configureSecurityRestrictions}}(lua\_State*\ L);}
-\DoxyCodeLine{00079\ \ \ \ \ }
-\DoxyCodeLine{00085\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a787eaf195ab403daaab5fe2685296639}{getMemoryUsage}}(lua\_State*\ L);}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}../core/types.hpp"{}}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{comment}{//\ Platform-\/specific\ Lua\ includes}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
+\DoxyCodeLine{00016\ \ \ \ \ \textcolor{comment}{//\ LuaJIT\ for\ VCV\ Rack\ (desktop)}}
+\DoxyCodeLine{00017\ \ \ \ \ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}\ \{}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lua.h"{}}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lauxlib.h"{}}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lualib.h"{}}}
+\DoxyCodeLine{00021\ \ \ \ \ \}}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{comment}{//\ LuaJIT\ compatibility:\ map\ lua\_pcallk\ to\ lua\_pcall\ only\ for\ Lua\ 5.1}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\ \ \ \ \#if\ !defined(LUA\_VERSION\_NUM)\ ||\ LUA\_VERSION\_NUM\ <\ 502}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#ifndef\ lua\_pcallk}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#define\ lua\_pcallk(L,n,r,c,ctx,k)\ lua\_pcall(L,n,r,c)}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#endif}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\ \ \ \ \#endif}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{comment}{//\ ESP32-\/specific\ Lua\ implementation}}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}\ \{}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lua.h"{}}}
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lauxlib.h"{}}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ \#include\ "{}lualib.h"{}}}
+\DoxyCodeLine{00034\ \ \ \ \ \}}
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\ \ \ \ \#error\ "{}Platform\ not\ supported\ for\ Lua\ integration"{}}}
+\DoxyCodeLine{00037\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{namespace\ }enjin2\ \{}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00044\ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structenjin2_1_1LuaPlatformConfig}{LuaPlatformConfig}}\ \{}
+\DoxyCodeLine{00045\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
+\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MEMORY\_LIMIT\ =\ 1024\ *\ 1024;\ \ }
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_ALL\_LIBS\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_FILE\_IO\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_DEBUG\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00050\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
+\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ MEMORY\_LIMIT\ =\ 64\ *\ 1024;\ \ \ \ \ }
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_ALL\_LIBS\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_FILE\_IO\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00054\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{bool}\ ENABLE\_DEBUG\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00055\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{comment}{//\ Common\ settings}}
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{structenjin2_1_1LuaPlatformConfig_a8106382fd5a1d4d2071f9d35a4960ad2}{STACK\_SIZE}}\ =\ 8192;\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{constexpr}\ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{structenjin2_1_1LuaPlatformConfig_a88f7912ef3805973182f2a40b122f15b}{MAX\_RECURSION\_DEPTH}}\ =\ 32;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00060\ \};}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00065\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1LuaPlatform}{LuaPlatform}}\ \{}
+\DoxyCodeLine{00066\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00073\ \ \ \ \ \textcolor{keyword}{static}\ lua\_State*\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_abe12267b6e5619431b77f0142469c555}{createState}}(lua\_Alloc\ allocator\ =\ \textcolor{keyword}{nullptr},\ \textcolor{keywordtype}{void}*\ ud\ =\ \textcolor{keyword}{nullptr});}
+\DoxyCodeLine{00074\ \ \ \ \ }
+\DoxyCodeLine{00079\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a363dfb8a638ca79572071591abb03b4c}{openLibraries}}(lua\_State*\ L);}
+\DoxyCodeLine{00080\ \ \ \ \ }
+\DoxyCodeLine{00085\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_ac009ab1ecbff4d9673d63474f26ea309}{configureSecurityRestrictions}}(lua\_State*\ L);}
 \DoxyCodeLine{00086\ \ \ \ \ }
-\DoxyCodeLine{00091\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a8da15c9cd1deb575ee0ac06dfabd078a}{tuneGarbageCollector}}(lua\_State*\ L);}
-\DoxyCodeLine{00092\ }
-\DoxyCodeLine{00093\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00094\ \ \ \ \ \textcolor{comment}{//\ Platform-\/specific\ implementations}}
-\DoxyCodeLine{00095\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
-\DoxyCodeLine{00096\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ openDesktopLibraries(lua\_State*\ L);}
-\DoxyCodeLine{00097\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
-\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ openEmbeddedLibraries(lua\_State*\ L);}
-\DoxyCodeLine{00099\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ configureESP32Memory(lua\_State*\ L);}
-\DoxyCodeLine{00100\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00101\ \};}
-\DoxyCodeLine{00102\ }
-\DoxyCodeLine{00106\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem}{LuaFileSystem}}\ \{}
-\DoxyCodeLine{00107\ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem_ad87b60fbc6c94cc232534f81c95bde7a}{isFileIOSupported}}();}
-\DoxyCodeLine{00113\ \ \ \ \ }
-\DoxyCodeLine{00120\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem_a599eab6e2128c727895d5c1570f353a0}{readScriptFile}}(\textcolor{keyword}{const}\ std::string\&\ filename,\ std::string\&\ content);}
-\DoxyCodeLine{00121\ \ \ \ \ }
-\DoxyCodeLine{00127\ \ \ \ \ \textcolor{keyword}{static}\ std::vector<std::string>\ \doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem_a20480897410e29d61edf60264f90878f}{listScriptFiles}}(\textcolor{keyword}{const}\ std::string\&\ path\ =\ \textcolor{stringliteral}{"{}"{}});}
-\DoxyCodeLine{00128\ }
-\DoxyCodeLine{00129\ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00130\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
-\DoxyCodeLine{00131\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ readDesktopFile(\textcolor{keyword}{const}\ std::string\&\ filename,\ std::string\&\ content);}
-\DoxyCodeLine{00132\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
-\DoxyCodeLine{00133\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ readESP32File(\textcolor{keyword}{const}\ std::string\&\ filename,\ std::string\&\ content);}
-\DoxyCodeLine{00134\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00135\ \};}
-\DoxyCodeLine{00136\ }
-\DoxyCodeLine{00137\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
+\DoxyCodeLine{00092\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a787eaf195ab403daaab5fe2685296639}{getMemoryUsage}}(lua\_State*\ L);}
+\DoxyCodeLine{00093\ \ \ \ \ }
+\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classenjin2_1_1LuaPlatform_a8da15c9cd1deb575ee0ac06dfabd078a}{tuneGarbageCollector}}(lua\_State*\ L);}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00100\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00101\ \ \ \ \ \textcolor{comment}{//\ Platform-\/specific\ implementations}}
+\DoxyCodeLine{00102\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ openDesktopLibraries(lua\_State*\ L);}
+\DoxyCodeLine{00104\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ openEmbeddedLibraries(lua\_State*\ L);}
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ configureESP32Memory(lua\_State*\ L);}
+\DoxyCodeLine{00107\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00108\ \};}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00113\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem}{LuaFileSystem}}\ \{}
+\DoxyCodeLine{00114\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem_ad87b60fbc6c94cc232534f81c95bde7a}{isFileIOSupported}}();}
+\DoxyCodeLine{00120\ \ \ \ \ }
+\DoxyCodeLine{00127\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem_a599eab6e2128c727895d5c1570f353a0}{readScriptFile}}(\textcolor{keyword}{const}\ std::string\&\ filename,\ std::string\&\ content);}
+\DoxyCodeLine{00128\ \ \ \ \ }
+\DoxyCodeLine{00134\ \ \ \ \ \textcolor{keyword}{static}\ std::vector<std::string>\ \doxymbox{\hyperlink{classenjin2_1_1LuaFileSystem_a20480897410e29d61edf60264f90878f}{listScriptFiles}}(\textcolor{keyword}{const}\ std::string\&\ path\ =\ \textcolor{stringliteral}{"{}"{}});}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00136\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00137\ \textcolor{preprocessor}{\#ifdef\ VCV\_RACK}}
+\DoxyCodeLine{00138\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ readDesktopFile(\textcolor{keyword}{const}\ std::string\&\ filename,\ std::string\&\ content);}
+\DoxyCodeLine{00139\ \textcolor{preprocessor}{\#elif\ defined(ESP32)}}
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ readESP32File(\textcolor{keyword}{const}\ std::string\&\ filename,\ std::string\&\ content);}
+\DoxyCodeLine{00141\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00142\ \};}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00144\ \}\ \textcolor{comment}{//\ namespace\ enjin2}}
 
 \end{DoxyCode}
