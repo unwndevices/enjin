@@ -1,6 +1,8 @@
 #include <emscripten/bind.h>
+#ifdef ENJIN2_BUILD_LUA
 #include "../../include/enjin2/scripting/lua_engine.hpp"
 #include "../../include/enjin2/scripting/bindings.hpp"
+#endif
 #include "../../include/enjin2/graphics/canvas.hpp"
 #include "../../include/enjin2/core/types.hpp"
 
@@ -19,6 +21,7 @@ int testFunction() {
     return 42;
 }
 
+#ifdef ENJIN2_BUILD_LUA
 // Force linking of key classes by referencing them
 static void forceSymbolLinking() {
     // Create instances to force symbol inclusion
@@ -27,14 +30,17 @@ static void forceSymbolLinking() {
     LuaCanvas dummy3(&dummy2);
     // Don't actually call anything, just reference the types
     (void)dummy1;
-    (void)dummy2; 
+    (void)dummy2;
     (void)dummy3;
 }
+#endif
 
 EMSCRIPTEN_BINDINGS(enjin2_test) {
+#ifdef ENJIN2_BUILD_LUA
     // Force symbol linking
     forceSymbolLinking();
-    
+#endif
+
     // Simple test function first
     function("testFunction", &testFunction);
     // Pixel4 value type - 4-bit pixel for memory-efficient graphics
@@ -44,6 +50,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         .function("getValue", +[](const Pixel4& p) { return static_cast<uint8_t>(p.value); })
         .function("setValue", +[](Pixel4& p, uint8_t v) { p = Pixel4(v); });
 
+#ifdef ENJIN2_BUILD_LUA
     // LuaResult value object
     value_object<LuaResult>("LuaResult")
         .field("success", &LuaResult::success)
@@ -60,7 +67,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         .function("getMemoryUsage", &LuaEngine::getMemoryUsage)
         .function("clearScripts", &LuaEngine::clearScripts);
 
-    // LuaCanvas class  
+    // LuaCanvas class
     class_<LuaCanvas>("LuaCanvas")
         .function("getWidth", &LuaCanvas::getWidth)
         .function("getHeight", &LuaCanvas::getHeight)
@@ -92,6 +99,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         .function("executeScript", &LuaScriptSystem::executeScript)
         .function("loadScript", &LuaScriptSystem::loadScript)
         .function("getMemoryUsage", &LuaScriptSystem::getMemoryUsage);
+#endif
 
     // Canvas4 template specialization for 128x128 (even width required for 4-bit packing)
     class_<Canvas4<128, 128>>("Canvas4_128x128")
@@ -119,12 +127,13 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
             return static_cast<uint8_t>(canvas.getPixel(x, y));
         });
 
-    // Factory functions for creating LuaCanvas with specific canvas types  
+#ifdef ENJIN2_BUILD_LUA
+    // Factory functions for creating LuaCanvas with specific canvas types
     function("createLuaCanvas128", +[]() -> LuaCanvas* {
         static Canvas4<128, 128> canvas;
         return new LuaCanvas(&canvas);
     }, allow_raw_pointers());
-    
+
     // Function to create LuaCanvas from existing Canvas4_128x128
     function("createLuaCanvasFromCanvas128", +[](Canvas4<128, 128>& canvas) -> LuaCanvas* {
         return new LuaCanvas(&canvas);
@@ -134,6 +143,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         static Canvas4<64, 32> canvas;
         return new LuaCanvas(&canvas);
     }, allow_raw_pointers());
+#endif
 
     // Helper functions for getting canvas data as typed array
     function("getCanvasData128", +[](Canvas4<128, 128>& canvas) -> val {
@@ -294,6 +304,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         }
     });
 
+#ifdef ENJIN2_BUILD_LUA
     // Helper to debug Lua function bindings
     function("debugLuaBindings", +[](LuaScriptSystem& scriptSystem) -> bool {
         auto result = scriptSystem.executeScript(R"(
@@ -368,4 +379,5 @@ end
 )");
         return result.success;
     });
+#endif
 }
