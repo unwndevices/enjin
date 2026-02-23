@@ -16,10 +16,10 @@ Requirements for tech debt cleanup milestone. Each maps to roadmap phases.
 
 ### Documentation Generation Fix
 
-- [ ] **DOCG-01**: `extractText()` filters xml2js `$` attribute objects to prevent text garbling
-- [ ] **DOCG-02**: `formatMethod()` eliminates `const const` duplication in method signatures
+- [x] **DOCG-01**: `extractText()` filters xml2js `$` attribute objects to prevent text garbling
+- [x] **DOCG-02**: `formatMethod()` eliminates `const const` duplication in method signatures
 - [ ] **DOCG-03**: All API markdown files regenerated with clean output
-- [ ] **DOCG-04**: Cross-reference text no longer produces fused/garbled strings
+- [x] **DOCG-04**: Cross-reference text no longer produces fused/garbled strings
 
 ### Build System Fix
 
@@ -58,10 +58,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEAD-02 | Phase 16 | Complete |
 | DEAD-03 | Phase 16 | Complete |
 | DEAD-04 | Phase 16 | Complete |
-| DOCG-01 | Phase 17 | Pending |
-| DOCG-02 | Phase 17 | Pending |
+| DOCG-01 | Phase 17 | Complete |
+| DOCG-02 | Phase 17 | Complete |
 | DOCG-03 | Phase 17 | Pending |
-| DOCG-04 | Phase 17 | Pending |
+| DOCG-04 | Phase 17 | Complete |
 | BLDS-01 | Phase 18 | Pending |
 | REPO-01 | Phase 16 | Complete |
 | REPO-02 | Phase 16 | Complete |

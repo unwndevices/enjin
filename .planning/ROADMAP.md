@@ -114,7 +114,7 @@ Phases execute in numeric order: 16 → 17 → 18
 | 14. Fix extractText() | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 15. Cleanup CI/README | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 16. Repository Cleanup | 2/2 | Complete    | 2026-02-23 | - |
-| 17. Doc Generation Fix | v1.2 | 0/? | Not started | - |
+| 17. Doc Generation Fix | 1/2 | In Progress|  | - |
 | 18. Build System Fix | v1.2 | 0/? | Not started | - |
 
 **Total Progress:**
