@@ -154,7 +154,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13
   | 9. Documentation Coverage | v1.1 | 5/5 | Complete | 2026-02-03 |
    | 10. Module Overview Generation | v1.1 | 2/2 | Complete | 2026-02-03 |
    | 11. Documentation Tracking Improvements | 1/1 | Complete    | 2026-02-23 | - |
-   | 12. Fix Doxygen Warning Regression | 1/2 | In Progress|  | - |
+   | 12. Fix Doxygen Warning Regression | 2/2 | Complete   | 2026-02-23 | - |
    | 13. Fix Documentation Pipeline & API Landing | v1.1 | 0/0 | Pending | - |
 
 **Total Progress:**

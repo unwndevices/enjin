@@ -22,7 +22,7 @@ Requirements for Project Infrastructure & Documentation Enhancement. Each maps t
 
 - [x] **DOC-01**: Doxygen warnings are reduced from 372 to < 20 (addressing actual missing documentation issues) — unsatisfied per audit 2026-02-23
 - [ ] **DOC-02**: All public APIs are documented with Doxygen comments (complete coverage) — partial per audit 2026-02-23
-- [ ] **DOC-03**: Documentation follows consistent style (formatting, parameter descriptions, return values) — partial per audit 2026-02-23
+- [x] **DOC-03**: Documentation follows consistent style (formatting, parameter descriptions, return values) — partial per audit 2026-02-23
 - [ ] **DOC-04**: Module overviews added for each module (Core, Graphics, UI, Utils, etc.) explaining purpose and usage — partial per audit 2026-02-23
 
 ## Out of Scope
@@ -48,7 +48,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BLD-02 | Phase 8 | Complete |
 | DOC-01 | Phase 12 | Complete |
 | DOC-02 | Phase 13 | Pending |
-| DOC-03 | Phase 12 | Pending |
+| DOC-03 | Phase 12 | Complete |
 | DOC-04 | Phase 13 | Pending |
 
 **Coverage:**
