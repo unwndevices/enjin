@@ -79,7 +79,10 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   3. The WASM JavaScript renderer reads palette colors via getPaletteRGB() and applies them during canvas-to-screen compositing
   4. The default palette provides 15 distinct colors (indices 0-14) visible on screen before any script call
   5. Palette swap at runtime does not require canvas re-render or reallocation
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 19-01-PLAN.md — Palette core struct, presets, hex parser, unit test
+- [ ] 19-02-PLAN.md — Lua and WASM palette bindings
 
 ### Phase 20: Input Abstraction
 **Goal**: A platform-agnostic input interface compiles cleanly on ESP32, WASM, and SDL3 — with a shared InputState, button bitmask, float axes, and edge detection
@@ -135,7 +138,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 | 16. Repository Cleanup | v1.2 | 2/2 | Complete | 2026-02-23 |
 | 17. Doc Generation Fix | v1.2 | 2/2 | Complete | 2026-02-23 |
 | 18. Build System Fix | v1.2 | 1/1 | Complete | 2026-02-23 |
-| 19. Palette Foundation | v1.3 | 0/? | Not started | - |
+| 19. Palette Foundation | v1.3 | 0/2 | Planned | - |
 | 20. Input Abstraction | v1.3 | 0/? | Not started | - |
 | 21. SDL3 CMake + Runner | v1.3 | 0/? | Not started | - |
 | 22. Lua Integration + E2E Validation | v1.3 | 0/? | Not started | - |
