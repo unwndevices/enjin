@@ -54,23 +54,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEAD-01 | — | Pending |
-| DEAD-02 | — | Pending |
-| DEAD-03 | — | Pending |
-| DEAD-04 | — | Pending |
-| DOCG-01 | — | Pending |
-| DOCG-02 | — | Pending |
-| DOCG-03 | — | Pending |
-| DOCG-04 | — | Pending |
-| BLDS-01 | — | Pending |
-| REPO-01 | — | Pending |
-| REPO-02 | — | Pending |
+| DEAD-01 | Phase 16 | Pending |
+| DEAD-02 | Phase 16 | Pending |
+| DEAD-03 | Phase 16 | Pending |
+| DEAD-04 | Phase 16 | Pending |
+| DOCG-01 | Phase 17 | Pending |
+| DOCG-02 | Phase 17 | Pending |
+| DOCG-03 | Phase 17 | Pending |
+| DOCG-04 | Phase 17 | Pending |
+| BLDS-01 | Phase 18 | Pending |
+| REPO-01 | Phase 16 | Pending |
+| REPO-02 | Phase 16 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 11 total
-- Mapped to phases: 0
-- Unmapped: 11 ⚠️
+- Mapped to phases: 11
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 after initial definition*
+*Last updated: 2026-02-23 after roadmap creation*

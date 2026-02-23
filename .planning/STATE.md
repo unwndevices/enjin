@@ -5,41 +5,38 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** v1.2 Tech Debt Cleanup
+**Current focus:** Phase 16 - Repository Cleanup
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 16 of 18 (Repository Cleanup)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-02-23 — Milestone v1.2 started
+Status: Ready to plan
+Last activity: 2026-02-23 — Roadmap created for v1.2
 
 Milestone: v1.2 Tech Debt Cleanup
 Previous: v1.1 shipped (2026-02-23)
 
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 38
+- v1.0: 21 plans
+- v1.1: 17 plans
+
+*Updated after each plan completion*
+
 ## Accumulated Context
 
-### Previous Milestone Summaries
+### Decisions
 
-**v1.1 Milestone (2026-02-23):**
-- Professional README with badges, features, documentation links
-- Lua build dependency resolved, all dependencies documented
-- 0 Doxygen warnings (down from 372) with CI gate
-- 76+ clean API pages with module overviews
-- Documentation pipeline fully operational
-- 9 phases, 17 plans, 86 commits
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
 
-**v1.0 Milestone (2026-02-01):**
-- Shipped enjin2 as fully independent library
-- Comprehensive documentation with Doxygen + Docusaurus (59 API pages)
-- All 14 v1 requirements satisfied
-- 6 phases completed: Dependency Analysis, Core Migration, Feature Support, Validation, Final Cleanup, Documentation
-
-### Roadmap Evolution
-
-- v1.0 milestone complete (2026-02-01)
-- v1.1 milestone complete (2026-02-23)
-- Ready for next milestone planning
+- [v1.1 Phase 14]: extractText() $ filter — skip xml2js attribute objects in text extraction
+- [v1.1 Phase 13]: classNameToXmlFilename encoding for Doxygen XML
 
 ### Pending Todos
 
@@ -47,18 +44,18 @@ None yet.
 
 ### Blockers/Concerns
 
-None — both milestones complete.
+None.
 
-### Technical Debt
+### Technical Debt (being addressed in v1.2)
 
-Deferred items for future milestones:
-- Compat headers cleanup (enjin2/compat/ - minimal usage)
-- Examples cleanup (examples/enjin_comparison_benchmark.cpp has enjin1 references)
+- Compat headers cleanup (enjin2/compat/)
+- Dead examples with enjin1 references
 - extractText() cosmetic issues: brief description duplication, template param concatenation, const const duplication
 - WASM+LUA OFF CMake edge case
+- Generated LaTeX files tracked in git
 
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: v1.1 milestone completed
+Stopped at: v1.2 roadmap created, ready to plan Phase 16
 Resume file: None
