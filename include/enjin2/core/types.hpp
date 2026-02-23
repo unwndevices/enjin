@@ -9,7 +9,8 @@ namespace enjin2 {
  * @brief 2D point with integer coordinates
  */
 struct Point {
-    int16_t x, y; ///< X and Y coordinates
+    int16_t x;  ///< X coordinate
+    int16_t y;  ///< Y coordinate
     
     /** @brief Default constructor initializes to origin (0,0) */
     Point() : x(0), y(0) {}
@@ -21,24 +22,40 @@ struct Point {
      */
     Point(int16_t x_, int16_t y_) : x(x_), y(y_) {}
     
-    /** @brief Addition operator */
+    /**
+     * @brief Addition operator
+     * @param other Point to add
+     * @return Sum of both points
+     */
     Point operator+(const Point& other) const {
         return Point(x + other.x, y + other.y);
     }
-    
-    /** @brief Subtraction operator */
+
+    /**
+     * @brief Subtraction operator
+     * @param other Point to subtract
+     * @return Difference of both points
+     */
     Point operator-(const Point& other) const {
         return Point(x - other.x, y - other.y);
     }
-    
-    /** @brief Addition assignment operator */
+
+    /**
+     * @brief Addition assignment operator
+     * @param other Point to add
+     * @return Reference to this point
+     */
     Point& operator+=(const Point& other) {
         x += other.x;
         y += other.y;
         return *this;
     }
-    
-    /** @brief Subtraction assignment operator */
+
+    /**
+     * @brief Subtraction assignment operator
+     * @param other Point to subtract
+     * @return Reference to this point
+     */
     Point& operator-=(const Point& other) {
         x -= other.x;
         y -= other.y;
@@ -50,7 +67,8 @@ struct Point {
  * @brief 2D size with width and height
  */
 struct Size {
-    uint16_t width, height; ///< Width and height dimensions
+    uint16_t width;  ///< Width dimension
+    uint16_t height; ///< Height dimension
     
     /** @brief Default constructor initializes to zero size */
     Size() : width(0), height(0) {}
@@ -67,8 +85,10 @@ struct Size {
  * @brief Rectangle defined by position and size
  */
 struct Rect {
-    int16_t x, y;           ///< Top-left corner position
-    uint16_t width, height; ///< Rectangle dimensions
+    int16_t x;              ///< Top-left X coordinate
+    int16_t y;              ///< Top-left Y coordinate
+    uint16_t width;         ///< Rectangle width
+    uint16_t height;        ///< Rectangle height
     
     /** @brief Default constructor initializes to empty rectangle at origin */
     Rect() : x(0), y(0), width(0), height(0) {}

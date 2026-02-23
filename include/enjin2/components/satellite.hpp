@@ -83,6 +83,7 @@ public:
     
     /**
      * @brief Update satellite position and animation
+     * @param deltaTime Time elapsed since last update in milliseconds
      */
     void update(uint16_t deltaTime) override {
         Component::update(deltaTime);
@@ -139,6 +140,7 @@ public:
     
     /**
      * @brief Draw satellite to 4-bit canvas
+     * @param canvas Target 4-bit canvas
      */
     void draw(ICanvas<Pixel4>& canvas) override {
         if (!isVisible()) return;
@@ -184,6 +186,7 @@ public:
     
     /**
      * @brief Draw satellite to 8-bit canvas
+     * @param canvas Target 8-bit canvas
      */
     void draw(ICanvas<uint8_t>& canvas) override {
         if (!isVisible()) return;
@@ -221,6 +224,7 @@ public:
     
     /**
      * @brief Set parameter value (0.0 to 1.0)
+     * @param value Normalized parameter value, clamped to [0, 1]
      */
     void setParameterValue(float value) {
         parameterValue = value < 0.0f ? 0.0f : (value > 1.0f ? 1.0f : value);
@@ -228,6 +232,7 @@ public:
     
     /**
      * @brief Get parameter value
+     * @return Normalized parameter value (0.0 to 1.0)
      */
     float getParameterValue() const {
         return parameterValue;
@@ -235,6 +240,8 @@ public:
     
     /**
      * @brief Set parameter range
+     * @param min Minimum value
+     * @param max Maximum value
      */
     void setParameterRange(float min, float max) {
         minValue = min;
@@ -243,6 +250,7 @@ public:
     
     /**
      * @brief Get scaled parameter value in range
+     * @return Value scaled to [minValue, maxValue]
      */
     float getScaledValue() const {
         return minValue + parameterValue * (maxValue - minValue);
@@ -250,6 +258,7 @@ public:
     
     /**
      * @brief Set from scaled value
+     * @param scaledValue Value in [minValue, maxValue] range
      */
     void setScaledValue(float scaledValue) {
         if (maxValue != minValue) {
@@ -259,6 +268,9 @@ public:
     
     /**
      * @brief Set orbital properties
+     * @param radius Orbit radius in pixels
+     * @param speed Orbital speed in radians per second
+     * @param clockwiseDirection Orbit direction
      */
     void setOrbit(float radius, float speed, bool clockwiseDirection = true) {
         orbitRadius = radius;
@@ -268,6 +280,9 @@ public:
     
     /**
      * @brief Set visual properties
+     * @param radius Satellite display radius
+     * @param color Satellite color
+     * @param showOrbitalTrail Whether to display orbital trail
      */
     void setAppearance(float radius, Pixel4 color, bool showOrbitalTrail = true) {
         satelliteRadius = radius;
@@ -277,6 +292,9 @@ public:
     
     /**
      * @brief Enable parameter-based effects
+     * @param radiusEffect Control orbit radius from parameter
+     * @param speedEffect Control orbit speed from parameter
+     * @param colorEffect Control color from parameter
      */
     void setParameterEffects(bool radiusEffect, bool speedEffect, bool colorEffect) {
         radiusFromParameter = radiusEffect;
@@ -286,6 +304,8 @@ public:
     
     /**
      * @brief Set trail appearance
+     * @param enabled Whether to show trail
+     * @param color Trail color
      */
     void setTrail(bool enabled, Pixel4 color = Pixel4(8)) {
         showTrail = enabled;
@@ -294,6 +314,7 @@ public:
     
     /**
      * @brief Set connection line to planet
+     * @param enabled Whether to show connection line
      */
     void setConnection(bool enabled) {
         showConnection = enabled;
@@ -301,6 +322,7 @@ public:
     
     /**
      * @brief Get current orbital angle
+     * @return Current angle in radians
      */
     float getAngle() const {
         return currentAngle;
@@ -308,6 +330,7 @@ public:
     
     /**
      * @brief Set orbital angle
+     * @param angle Angle in radians
      */
     void setAngle(float angle) {
         currentAngle = angle;

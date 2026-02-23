@@ -110,13 +110,17 @@ struct Entity {
     
     /**
      * @brief Equality comparison
+     * @param other Entity to compare with
+     * @return true if both entities are identical
      */
     bool operator==(const Entity& other) const {
         return id == other.id && generation == other.generation;
     }
-    
+
     /**
      * @brief Inequality comparison
+     * @param other Entity to compare with
+     * @return true if entities differ
      */
     bool operator!=(const Entity& other) const {
         return !(*this == other);
@@ -272,24 +276,42 @@ public:
         size_t index;
         
     public:
+        /**
+         * @brief Construct iterator at position
+         * @param s Storage to iterate
+         * @param i Starting index
+         */
         Iterator(const ComponentStorage* s, size_t i) : storage(s), index(i) {}
-        
+
+        /**
+         * @brief Dereference iterator
+         * @return Pair of entity and component pointer
+         */
         std::pair<Entity, T*> operator*() const {
-            return {storage->entities[index], 
+            return {storage->entities[index],
                     storage->getComponent(storage->entities[index])};
         }
-        
+
+        /// @brief Advance iterator
+        /// @return Reference to this iterator
         Iterator& operator++() { ++index; return *this; }
+        /**
+         * @brief Inequality comparison
+         * @param other Iterator to compare with
+         * @return true if iterators differ
+         */
         bool operator!=(const Iterator& other) const { return index != other.index; }
     };
     
     /**
      * @brief Get iterator to beginning
+     * @return Iterator to first component
      */
     Iterator begin() const { return Iterator(this, 0); }
-    
+
     /**
      * @brief Get iterator to end
+     * @return Iterator past last component
      */
     Iterator end() const { return Iterator(this, compactCount); }
 };

@@ -246,25 +246,29 @@ struct InputComponent : public Component<InputComponent> {
  * @brief Shape rendering component for geometric primitives
  */
 struct ShapeComponent : public Component<ShapeComponent> {
+    /// @brief Shape type enumeration
     enum ShapeType {
-        RECTANGLE,
-        CIRCLE,
-        TRIANGLE,
-        LINE
-    } type;
-    
+        RECTANGLE,   ///< Rectangle shape
+        CIRCLE,      ///< Circle shape
+        TRIANGLE,    ///< Triangle shape
+        LINE         ///< Line shape
+    } type;          ///< Current shape type
+
     bool filled;         ///< Whether shape is filled or outline
     uint8_t thickness;   ///< Line thickness for outlines
-    
-    // Shape-specific parameters
-    uint16_t radius;     // For circles
-    Point p1, p2, p3;    // For triangles
-    Point start, end;    // For lines
+
+    uint16_t radius;     ///< Circle radius
+    Point p1;            ///< First vertex (triangles)
+    Point p2;            ///< Second vertex (triangles)
+    Point p3;            ///< Third vertex (triangles)
+    Point start;         ///< Start point (lines)
+    Point end;           ///< End point (lines)
     
     /**
-     * @brief Constructor for rectangle
+     * @brief Create rectangle shape
      * @param fill Whether to fill the rectangle
      * @param thick Line thickness
+     * @return Configured ShapeComponent
      */
     static ShapeComponent rectangle(bool fill = true, uint8_t thick = 1) {
         ShapeComponent comp;
@@ -275,10 +279,11 @@ struct ShapeComponent : public Component<ShapeComponent> {
     }
     
     /**
-     * @brief Constructor for circle
+     * @brief Create circle shape
      * @param radius Circle radius
      * @param fill Whether to fill the circle
      * @param thick Line thickness
+     * @return Configured ShapeComponent
      */
     static ShapeComponent circle(uint16_t radius, bool fill = true, uint8_t thick = 1) {
         ShapeComponent comp;
@@ -290,12 +295,13 @@ struct ShapeComponent : public Component<ShapeComponent> {
     }
     
     /**
-     * @brief Constructor for triangle
-     * @param p1 First vertex
-     * @param p2 Second vertex  
-     * @param p3 Third vertex
+     * @brief Create triangle shape
+     * @param pt1 First vertex
+     * @param pt2 Second vertex
+     * @param pt3 Third vertex
      * @param fill Whether to fill the triangle
      * @param thick Line thickness
+     * @return Configured ShapeComponent
      */
     static ShapeComponent triangle(Point pt1, Point pt2, Point pt3, bool fill = true, uint8_t thick = 1) {
         ShapeComponent comp;
@@ -309,10 +315,11 @@ struct ShapeComponent : public Component<ShapeComponent> {
     }
     
     /**
-     * @brief Constructor for line
-     * @param start Start point
-     * @param end End point
+     * @brief Create line shape
+     * @param startPt Start point
+     * @param endPt End point
      * @param thick Line thickness
+     * @return Configured ShapeComponent
      */
     static ShapeComponent line(Point startPt, Point endPt, uint8_t thick = 1) {
         ShapeComponent comp;

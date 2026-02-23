@@ -63,7 +63,8 @@ protected:
     BlendMode blend_mode;       ///< Blend mode
     Anchor anchor;              ///< Anchor point
     bool is_visible;            ///< Visibility flag
-    uint8_t width, height;      ///< Dimensions
+    uint8_t width;              ///< Drawable width in pixels
+    uint8_t height;             ///< Drawable height in pixels
     
 public:
     /**
@@ -91,31 +92,55 @@ public:
      */
     virtual bool continueToDraw() const;
     
-    // Method names match original Enjin exactly
+    /// @brief Set the sort order for drawing priority
     void SetSortOrder(int order) { sort_order = order; }
+    /// @brief Get the sort order
+    /// @return Current sort order
     int GetSortOrder() const { return sort_order; }
-    
+
+    /// @brief Set the blend mode
     void SetBlendMode(BlendMode mode) { blend_mode = mode; }
+    /// @brief Get the blend mode
+    /// @return Current blend mode
     BlendMode GetBlendMode() const { return blend_mode; }
-    
+
+    /// @brief Set the draw layer
     void SetDrawLayer(DrawLayer drawLayer) { layer = drawLayer; }
+    /// @brief Get the draw layer
+    /// @return Current draw layer
     DrawLayer GetDrawLayer() const { return layer; }
-    
+
+    /// @brief Set the visibility
     void SetVisibility(bool visibility) { is_visible = visibility; }
+    /// @brief Get the visibility
+    /// @return Current visibility state
     bool GetVisibility() const { return is_visible; }
+    /// @brief Check if visible
+    /// @return true if visible
     bool isVisible() const { return is_visible; }
-    
+
+    /// @brief Set the anchor point for positioning
     void SetAnchorPoint(Anchor anchor);
-    
+
+    /// @brief Add offset to current anchor offset
     void AddOffset(Point offset) { anchor_offset -= offset; }
+    /// @brief Set the anchor offset
     void SetOffset(Point offset) { anchor_offset = offset; }
-    
+
+    /// @brief Get position adjusted for offset
+    /// @return Offset-adjusted position
     Point GetOffsetPosition() const;
-    
+
+    /// @brief Set the X component of anchor offset
     void SetXOffset(int16_t x) { anchor_offset.x = x; }
+    /// @brief Set the Y component of anchor offset
     void SetYOffset(int16_t y) { anchor_offset.y = y; }
-    
+
+    /// @brief Get drawable width
+    /// @return Width in pixels
     uint8_t GetWidth() const { return width; }
+    /// @brief Get drawable height
+    /// @return Height in pixels
     uint8_t GetHeight() const { return height; }
     
     /**
