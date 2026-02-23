@@ -1,6 +1,6 @@
 ![CI](https://img.shields.io/github/actions/workflow/status/unwndevices/enjin/docs.yml?branch=main)
 ![Docs](https://img.shields.io/badge/docs-latest-blue)
-![License](https://img.shields.io/badge/license-TBD-green)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 # enjin2 - Lightweight C++ game engine for embedded devices
 
@@ -105,4 +105,4 @@ scripts/           # Utility scripts (API generation, etc.)
 
 ## License
 
-[Add license information]
+MIT License
