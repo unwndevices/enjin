@@ -1,5 +1,27 @@
 # Milestones
 
+## v1.2 Tech Debt Cleanup (Shipped: 2026-02-23)
+
+**Phases completed:** 3 phases (16-18), 5 plans
+**Timeline:** 1 day (2026-02-23)
+**Git range:** 18 commits, 330 files changed, +2,787 / -36,083 lines
+
+**Key accomplishments:**
+- Removed dead enjin1 compat headers, benchmark files, and CMake references
+- Untracked generated LaTeX files from git and updated .gitignore
+- Fixed xml2js ordered parsing and rewrote extractText() for correct document-order traversal
+- Eliminated const const duplication in formatMethod() and regenerated 84 clean API pages
+- Made WASM build Lua-optional with CMake generator expressions and C++ preprocessor guards
+
+**Tech debt (non-blocking):**
+- API navigation disabled in Docusaurus due to MDX syntax issues (carried from v1.0)
+- parameterlist name/description concatenation in 5 API docs (Doxygen XML limitation)
+- Full Emscripten toolchain build not verified (code inspection conclusive, toolchain not in dev env)
+
+**See:** [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) | [milestones/v1.2-REQUIREMENTS.md](milestones/v1.2-REQUIREMENTS.md)
+
+---
+
 ## v1.1 Project Infrastructure & Documentation Enhancement (Shipped: 2026-02-23)
 
 **Phases completed:** 9 phases (7-15), 17 plans

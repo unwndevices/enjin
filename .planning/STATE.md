@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Phase 18 - Build System Fix (complete)
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 18 of 18 (Build System Fix)
-Plan: 1 of 1 (complete)
-Status: Complete
-Last activity: 2026-02-23 — Completed 18-01 (WASM build made Lua-optional via generator expressions and preprocessor guards)
+Phase: All 18 phases complete
+Plan: All complete
+Status: Between milestones
+Last activity: 2026-02-23 — Completed v1.2 milestone (Tech Debt Cleanup)
 
-Milestone: v1.2 Tech Debt Cleanup
-Previous: v1.1 shipped (2026-02-23)
+Milestone: v1.2 shipped (2026-02-23)
+Previous: v1.1 shipped (2026-02-23), v1.0 shipped (2026-02-01)
 
-Progress: [██████████] 100%
+Progress: [██████████] 100% (all milestones shipped)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 41
+- Total plans completed: 43
 - v1.0: 21 plans
 - v1.1: 17 plans
 - v1.2: 5 plans
@@ -34,37 +34,24 @@ Progress: [██████████] 100%
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [v1.1 Phase 14]: extractText() $ filter — skip xml2js attribute objects in text extraction
-- [v1.1 Phase 13]: classNameToXmlFilename encoding for Doxygen XML
-- [Phase 16]: Generated LaTeX docs excluded from git tracking via .gitignore
-- [Phase 17-01]: xml2js ordered parsing: all three options (explicitChildren + preserveChildrenOrder + charsAsChildren) required together for correct $$ mixed-content traversal
-- [Phase 17-01]: extractText() primary path uses $$ array traversal — Object.entries() loses document order for mixed-content nodes
-- [Phase 17-01]: formatMethod() strips trailing ' const' from argsstring when $.const=yes to avoid const const duplication
-- [Phase 17-02]: formatMethod() must extract ._ from xml2js object nodes for name and argsstring — ordered parsing wraps text nodes as { _: 'text', $$: [...] }
-- [Phase 18-01]: CMake generator expressions ($<$<BOOL:${ENJIN2_BUILD_LUA}>:...>) used for WASM conditional Lua linking — consistent with existing enjin2 interface target pattern
-- [Phase 18-01]: ENJIN2_BUILD_LUA=1 injected as compile definition from CMake so C++ source detects Lua availability at compile time
+No active decisions — between milestones.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
 None.
 
-### Technical Debt (being addressed in v1.2)
+### Technical Debt
 
-- ~~Compat headers cleanup (enjin2/compat/)~~ (fixed in 16-01)
-- ~~Dead examples with enjin1 references~~ (fixed in 16-01)
-- ~~extractText() cosmetic issues: brief description duplication, template param concatenation, const const duplication~~ (fixed in 17-01)
-- ~~84 API markdown pages regenerated with clean text~~ (completed in 17-02)
-- ~~WASM+LUA OFF CMake edge case~~ (fixed in 18-01)
-- ~~Generated LaTeX files tracked in git~~ (fixed in 16-02)
+- API navigation disabled in Docusaurus due to MDX syntax issues (carried from v1.0)
+- parameterlist name/description concatenation in 5 API docs (Doxygen XML limitation)
+- Full Emscripten toolchain build not verified (code inspection conclusive)
 
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 18-01-PLAN.md
+Stopped at: Completed v1.2 milestone
 Resume file: None

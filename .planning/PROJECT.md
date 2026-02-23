@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Complete migration from enjin to enjin2 - making enjin2 fully self-contained with Lua/WASM integration, non-dynamic memory allocation, and clean intelligent structure. enjin2 is now a fully independent library with comprehensive documentation deployed to GitHub Pages, professional README, and zero Doxygen warnings.
+Complete migration from enjin to enjin2 - making enjin2 fully self-contained with Lua/WASM integration, non-dynamic memory allocation, and clean intelligent structure. enjin2 is now a fully independent library with comprehensive documentation deployed to GitHub Pages, professional README, zero Doxygen warnings, and a clean codebase with no enjin1 remnants.
 
 ## Core Value
 
@@ -10,13 +10,20 @@ enjin2 works independently without any enjin1 dependencies.
 
 ## Current State
 
-**Shipped: v1.1 Project Infrastructure & Documentation Enhancement (2026-02-23)**
+**Shipped: v1.2 Tech Debt Cleanup (2026-02-23)**
+- Dead enjin1 compat headers, benchmarks, and CMake references removed
+- extractText() rewritten with xml2js ordered parsing for correct document-order traversal
+- formatMethod() const const duplication eliminated, 84 API pages regenerated clean
+- WASM build made Lua-optional via CMake generator expressions and C++ preprocessor guards
+- Generated LaTeX files untracked from git
+- 3 phases, 5 plans, 330 files changed, -33k net lines (cleanup)
+
+**Previously shipped: v1.1 Project Infrastructure & Documentation Enhancement (2026-02-23)**
 - Professional README with badges, features, and documentation links
 - Lua build dependency resolved with CMake options
 - 0 Doxygen warnings (down from 372) with CI threshold gate
 - 76+ clean API pages across 9 modules with module overviews
 - Documentation pipeline fully operational: Doxygen XML → generate-api-docs.js → Docusaurus → GitHub Pages
-- 9 phases completed over 22 days
 
 **Previously shipped: v1.0 Migration + Documentation (2026-02-01)**
 - enjin2 fully independent with zero enjin1 dependencies
@@ -47,19 +54,20 @@ enjin2 works independently without any enjin1 dependencies.
 - ✓ Public APIs documented — v1.1 (Phases 9, 13, 14, DOC-02)
 - ✓ Consistent documentation style — v1.1 (Phase 12, DOC-03)
 - ✓ Module overviews added — v1.1 (Phases 9, 10, 13, DOC-04)
+- ✓ Dead compat headers removed — v1.2 (Phase 16, DEAD-01)
+- ✓ Dead benchmark examples removed — v1.2 (Phase 16, DEAD-02/DEAD-03)
+- ✓ Dead file references cleaned up — v1.2 (Phase 16, DEAD-04)
+- ✓ extractText() filters xml2js attribute objects — v1.2 (Phase 17, DOCG-01)
+- ✓ formatMethod() eliminates const const duplication — v1.2 (Phase 17, DOCG-02)
+- ✓ All API markdown files regenerated clean — v1.2 (Phase 17, DOCG-03)
+- ✓ Cross-reference text renders correctly — v1.2 (Phase 17, DOCG-04)
+- ✓ WASM build succeeds with LUA=OFF — v1.2 (Phase 18, BLDS-01)
+- ✓ Generated LaTeX files removed from git — v1.2 (Phase 16, REPO-01)
+- ✓ .gitignore updated for LaTeX exclusion — v1.2 (Phase 16, REPO-02)
 
 ### Active
 
-## Current Milestone: v1.2 Tech Debt Cleanup
-
-**Goal:** Eliminate all enjin1 remnants and fix documentation generation issues, preparing a clean codebase for Tomodachi integration.
-
-**Target features:**
-- Remove dead compat headers (enjin1 compatibility wrappers)
-- Delete dead example files with enjin1 dependencies
-- Fix extractText() documentation generation issues (const const, cross-reference garbling)
-- Fix WASM+LUA OFF CMake edge case
-- Clean up generated LaTeX files from git tracking
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -72,17 +80,18 @@ enjin2 works independently without any enjin1 dependencies.
 
 ## Context
 
-**After v1.1:**
-enjin2 is a fully independent, self-contained library with:
-- Zero enjin1 dependencies (verified at source and build levels)
+**After v1.2:**
+enjin2 is a fully independent, clean library with:
+- Zero enjin1 dependencies or remnants (compat headers, dead benchmarks all removed)
 - Professional README with badges, features, and documentation navigation
-- Comprehensive API documentation (76+ pages across 9 modules with overviews)
+- Comprehensive API documentation (84 clean pages across 9 modules with overviews)
 - 0 Doxygen warnings with CI gate to prevent regression
 - Deployment pipeline to GitHub Pages (fully operational)
-- Technical debt: compat headers, examples cleanup, extractText() cosmetic issues
+- WASM build with optional Lua support via CMake generator expressions
+- No tech debt blocking Tomodachi integration
 
 **Upcoming: Tomodachi**
-enjin2 will serve as the graphics engine for Tomodachi — a portable MIDI/audio control gadget with Lua scripting. v1.2 cleans up tech debt; v1.3 will address Tomodachi-specific readiness (multi-layer composition, WASM build, API surface gaps).
+enjin2 will serve as the graphics engine for Tomodachi — a portable MIDI/audio control gadget with Lua scripting. v1.3 will address Tomodachi-specific readiness (multi-layer composition, WASM build, API surface gaps).
 
 ## Constraints
 
@@ -105,6 +114,11 @@ enjin2 will serve as the graphics engine for Tomodachi — a portable MIDI/audio
 | CI Doxygen warning gate | Prevents regression above 20 warnings | ✓ Working - Phase 11 |
 | classNameToXmlFilename encoding | Encodes underscores before _1_1 join for Doxygen XML | ✓ Working - Phase 13 |
 | extractText() $ filter | Skip xml2js attribute objects in text extraction | ✓ Working - Phase 14 |
+| xml2js ordered parsing | explicitChildren + preserveChildrenOrder + charsAsChildren for correct mixed-content traversal | ✓ Working - Phase 17 |
+| extractText() $$ array traversal | Object.entries() loses document order for mixed-content nodes | ✓ Working - Phase 17 |
+| formatMethod() const dedup | Strip trailing ' const' from argsstring when $.const=yes | ✓ Working - Phase 17 |
+| CMake generator expressions for WASM Lua | $<$<BOOL:${ENJIN2_BUILD_LUA}>:...> consistent with existing target pattern | ✓ Working - Phase 18 |
+| ENJIN2_BUILD_LUA compile definition | CMake injects ENJIN2_BUILD_LUA=1 so C++ preprocessor gates Lua code | ✓ Working - Phase 18 |
 
 ---
-*Last updated: 2026-02-23 after v1.2 milestone started*
+*Last updated: 2026-02-23 after v1.2 milestone*
