@@ -89,7 +89,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. CMake configuration succeeds with `-DENJIN2_BUILD_WASM=ON -DENJIN2_BUILD_LUA=OFF`
   2. Build completes without errors under the WASM+LUA-OFF configuration
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — Guard WASM block Lua dependencies in CMake and emscripten_bindings.cpp
 
 ## Progress
 
@@ -115,9 +117,9 @@ Phases execute in numeric order: 16 → 17 → 18
 | 15. Cleanup CI/README | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 16. Repository Cleanup | 2/2 | Complete    | 2026-02-23 | - |
 | 17. Doc Generation Fix | 2/2 | Complete    | 2026-02-23 | - |
-| 18. Build System Fix | v1.2 | 0/? | Not started | - |
+| 18. Build System Fix | v1.2 | 0/1 | Not started | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
 - v1.1: 17/17 plans complete (100%)
-- v1.2: 0/? plans complete (0%)
+- v1.2: 0/1 plans complete (0%)
