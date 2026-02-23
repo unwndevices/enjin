@@ -112,7 +112,11 @@ Plans:
   1. Doxygen runs with fewer than 20 warnings
   2. All @param mismatches in lua_engine.hpp resolved
   3. Undocumented classes (Canvas8, Canvas4_ESP32S3) and typedefs (PositionTrack, FloatTrack, ColorTrack) documented
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 12-01-PLAN.md — Document top 10 highest-warning header files (graphics, UI, components, core)
+- [ ] 12-02-PLAN.md — Fix style mismatches, document remaining files, verify final warning count under 20
 
 #### Phase 13: Fix Documentation Pipeline & API Landing
 **Goal**: Fix generate-api-docs.js encoding bugs and create API landing page
