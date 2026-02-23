@@ -10,8 +10,6 @@ Predefined color constants for 4-bit grayscale graphics.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2::Colors`

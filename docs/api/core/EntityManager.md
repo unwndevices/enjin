@@ -6,7 +6,7 @@ sidebar_label: EntityManager
 
 # EntityManager
 
- manager for creating and destroying entities. Entity
+Entity manager for creating and destroying entities. 
 
 
 Manages entity lifecycle and component associations. Uses generation counters to prevent accessing destroyed entities. 
@@ -23,16 +23,13 @@ Manages entity lifecycle and component associations. Uses generation counters to
 
 Constructor initializes entity manager. 
 
-
-        
-
 ---
 
 ### `Entity createEntity()`
 
 Create new entity. 
 
- handle, invalid if no slots available Entity
+Entity handle, invalid if no slots available 
 
 ---
 
@@ -40,27 +37,27 @@ Create new entity.
 
 Destroy entity and free its slot. 
 
-entity to destroy Entity
+entityEntity to destroy 
 
 ---
 
-### `bool isValid(Entity entity) const const`
+### `bool isValid(Entity entity) const`
 
 Check if entity is valid. 
 
-entity to validate Entitytrue if entity is valid 
+entityEntity to validate true if entity is valid 
 
 ---
 
-### `size_t getEntityCount() const const`
+### `size_t getEntityCount() const`
 
 Get total number of active entities. 
 
- count Entity
+Entity count 
 
 ---
 
-### `size_t getMaxEntities() const const`
+### `size_t getMaxEntities() const`
 
 Get maximum entity capacity. 
 

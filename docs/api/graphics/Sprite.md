@@ -6,7 +6,7 @@ sidebar_label: Sprite
 
 # Sprite
 
- class for bitmap image rendering (matches original Enjin ). SpriteSprite
+Sprite class for bitmap image rendering (matches original Enjin Sprite). 
 
 
 Handles rendering of bitmap images with frame animation support, blend modes, and transparency (matte) functionality. 
@@ -22,9 +22,6 @@ Handles rendering of bitmap images with frame animation support, blend modes, an
 ### ` Sprite()`
 
 Default constructor. 
-
-
-        
 
 ---
 
@@ -108,7 +105,7 @@ matte_colorColor value to treat as transparent
 
 ---
 
-### `const uint8_t * GetTexture() const const`
+### `const uint8_t * GetTexture() const`
 
 Get pointer to current frame texture data. 
 
@@ -116,7 +113,7 @@ Pointer to texture data, or nullptr if no texture set
 
 ---
 
-### `uint8_t GetWidth() const const`
+### `uint8_t GetWidth() const`
 
 Get sprite width. 
 
@@ -124,7 +121,7 @@ Width in pixels
 
 ---
 
-### `uint8_t GetHeight() const const`
+### `uint8_t GetHeight() const`
 
 Get sprite height. 
 
@@ -132,7 +129,7 @@ Height in pixels
 
 ---
 
-### `uint8_t getFrame() const const`
+### `uint8_t getFrame() const`
 
 Get current frame index. 
 
@@ -140,7 +137,7 @@ Frame index
 
 ---
 
-### `Point getPosition() const const`
+### `Point getPosition() const`
 
 Get sprite position. 
 
@@ -148,7 +145,7 @@ Current position
 
 ---
 
-### `uint8_t getMatte() const const`
+### `uint8_t getMatte() const`
 
 Get matte (transparent) color. 
 

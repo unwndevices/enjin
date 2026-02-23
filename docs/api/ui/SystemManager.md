@@ -6,11 +6,11 @@ sidebar_label: SystemManager
 
 # SystemManager
 
- manager for organizing and updating systems. System
+System manager for organizing and updating systems. 
 
 
-
-Manages system lifecycle and provides ordered updating. Systems are automatically sorted by priority. MAX_SYSTEMSMaximum number of systems
+MAX_SYSTEMSMaximum number of systems
+Manages system lifecycle and provides ordered updating. Systems are automatically sorted by priority. 
 
 ---
 
@@ -24,16 +24,13 @@ Manages system lifecycle and provides ordered updating. Systems are automaticall
 
 Constructor initializes empty system manager. 
 
-
-        
-
 ---
 
 ### `bool addSystem(T *system)`
 
 Add system to manager. 
 
-T type Systemsystem instance Systemtrue if system was added successfully 
+TSystem type systemSystem instance true if system was added successfully 
 
 ---
 
@@ -41,7 +38,7 @@ T type Systemsystem instance Systemtrue if system was added successfully
 
 Remove system from manager. 
 
-T type SystemPointer to removed system, nullptr if not found 
+TSystem type Pointer to removed system, nullptr if not found 
 
 ---
 
@@ -49,7 +46,7 @@ T type SystemPointer to removed system, nullptr if not found
 
 Get system by type. 
 
-T type SystemPointer to system, nullptr if not found 
+TSystem type Pointer to system, nullptr if not found 
 
 ---
 
@@ -61,11 +58,11 @@ deltaTimeTime since last update
 
 ---
 
-### `size_t getSystemCount() const const`
+### `size_t getSystemCount() const`
 
 Get number of active systems. 
 
- count System
+System count 
 
 ---
 
@@ -74,9 +71,6 @@ Get number of active systems.
 ### `void sortSystems()`
 
 Sort systems by priority (bubble sort for small arrays). 
-
-
-        
 
 ---
 

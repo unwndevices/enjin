@@ -10,8 +10,6 @@ Easing function utilities.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2`
@@ -57,9 +55,6 @@ aStart color bEnd color tInterpolation factor (0.0 to 1.0) Interpolated color
 ### `static float clamp01(float t)`
 
 Clamp value between 0.0 and 1.0. 
-
-
-        
 
 ---
 

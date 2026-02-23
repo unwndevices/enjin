@@ -23,17 +23,11 @@ Provides a centralized system for managing multiple scenes, handling transitions
 
 Constructor. 
 
-
-        
-
 ---
 
 ### ` ~SceneStateMachine()=default`
 
 Destructor. 
-
-
-        
 
 ---
 
@@ -41,7 +35,7 @@ Destructor.
 
 Add a scene to the state machine. 
 
-T type (must derive from ) SceneSceneArgsConstructor argument types sceneIdUnique scene identifier argsConstructor arguments Pointer to created scene or nullptr if failed 
+TScene type (must derive from Scene) ArgsConstructor argument types sceneIdUnique scene identifier argsConstructor arguments Pointer to created scene or nullptr if failed 
 
 ---
 
@@ -49,7 +43,7 @@ T type (must derive from ) SceneSceneArgsConstructor argument types sceneIdUniqu
 
 Remove a scene from the state machine. 
 
-sceneId identifier to remove SceneTrue if scene was removed 
+sceneIdScene identifier to remove True if scene was removed 
 
 ---
 
@@ -77,7 +71,7 @@ canvasTarget canvas for rendering
 
 ---
 
-### ` *Scene getCurrentScene()`
+### `Scene * getCurrentScene()`
 
 Get current scene. 
 
@@ -85,15 +79,15 @@ Pointer to current scene or nullptr
 
 ---
 
-### ` *Scene getScene(uint32_t sceneId)`
+### `Scene * getScene(uint32_t sceneId)`
 
 Get scene by ID. 
 
-sceneId identifier ScenePointer to scene or nullptr if not found 
+sceneIdScene identifier Pointer to scene or nullptr if not found 
 
 ---
 
-### `bool isTransitioning() const const`
+### `bool isTransitioning() const`
 
 Check if a transition is currently active. 
 
@@ -101,7 +95,7 @@ True if transitioning
 
 ---
 
-### `float getTransitionProgress() const const`
+### `float getTransitionProgress() const`
 
 Get current transition progress. 
 
@@ -109,35 +103,35 @@ Progress value from 0.0 to 1.0
 
 ---
 
-### `&lt;  *,  * &gt;SignalConnectionSceneScene connectOnSceneChangeStart(std::function&lt; void(Scene *, Scene *)&gt; callback)`
+### `SignalConnection&lt; Scene *, Scene * &gt; connectOnSceneChangeStart(std::function&lt; void(Scene *, Scene *)&gt; callback)`
 
 Connect to scene change start event. 
 
-callbackFunction called with (from_scene, to_scene)  connection handle Signal
+callbackFunction called with (from_scene, to_scene) Signal connection handle 
 
 ---
 
-### `&lt;  *,  * &gt;SignalConnectionSceneScene connectOnSceneChangeComplete(std::function&lt; void(Scene *, Scene *)&gt; callback)`
+### `SignalConnection&lt; Scene *, Scene * &gt; connectOnSceneChangeComplete(std::function&lt; void(Scene *, Scene *)&gt; callback)`
 
 Connect to scene change complete event. 
 
-callbackFunction called with (from_scene, to_scene)  connection handle Signal
+callbackFunction called with (from_scene, to_scene) Signal connection handle 
 
 ---
 
-### `&lt;  &gt;SignalConnectionTransitionType connectOnTransitionStart(std::function&lt; void(TransitionType)&gt; callback)`
+### `SignalConnection&lt; TransitionType &gt; connectOnTransitionStart(std::function&lt; void(TransitionType)&gt; callback)`
 
 Connect to transition start event. 
 
-callbackFunction called with transition type  connection handle Signal
+callbackFunction called with transition type Signal connection handle 
 
 ---
 
-### `&lt; float &gt;SignalConnection connectOnTransitionProgress(std::function&lt; void(float)&gt; callback)`
+### `SignalConnection&lt; float &gt; connectOnTransitionProgress(std::function&lt; void(float)&gt; callback)`
 
 Connect to transition progress event. 
 
-callbackFunction called with progress value (0.0-1.0)  connection handle Signal
+callbackFunction called with progress value (0.0-1.0) Signal connection handle 
 
 ---
 
@@ -146,9 +140,6 @@ callbackFunction called with progress value (0.0-1.0)  connection handle Signal
 ### `void startTransition()`
 
 Start a transition. 
-
-
-        
 
 ---
 
@@ -163,9 +154,6 @@ deltaTimeTime since last frame
 ### `void completeTransition()`
 
 Complete the current transition. 
-
-
-        
 
 ---
 

@@ -10,8 +10,6 @@ Fast integer math utilities namespace.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2::math`

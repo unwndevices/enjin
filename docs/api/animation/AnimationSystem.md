@@ -9,7 +9,7 @@ sidebar_label: AnimationSystem
 Animation system for updating time-based animations. 
 
 
-Updates all entities with , handling timing, looping, and ping-pong behavior. AnimationComponent
+Updates all entities with AnimationComponent, handling timing, looping, and ping-pong behavior. 
 
 ---
 

@@ -6,11 +6,11 @@ sidebar_label: ComponentStorage
 
 # ComponentStorage
 
- storage using static memory pools. Component
+Component storage using static memory pools. 
 
 
-
-Efficient storage for components with O(1) allocation/deallocation. Uses packed arrays for cache-friendly iteration. T type ComponentCAPACITYMaximum number of components
+TComponent type CAPACITYMaximum number of components
+Efficient storage for components with O(1) allocation/deallocation. Uses packed arrays for cache-friendly iteration. 
 
 ---
 
@@ -24,24 +24,21 @@ Efficient storage for components with O(1) allocation/deallocation. Uses packed 
 
 Constructor initializes empty storage. 
 
-
-        
-
 ---
 
 ### `T * addComponent(Entity entity, Args &&... args)`
 
 Add component for entity. 
 
-entity to add component to EntityargsConstructor arguments for component Pointer to created component, nullptr if pool full 
+entityEntity to add component to argsConstructor arguments for component Pointer to created component, nullptr if pool full 
 
 ---
 
-### `T * getComponent(Entity entity) const const`
+### `T * getComponent(Entity entity) const`
 
 Get component for entity. 
 
-entity to get component for EntityPointer to component, nullptr if not found 
+entityEntity to get component for Pointer to component, nullptr if not found 
 
 ---
 
@@ -49,27 +46,27 @@ entity to get component for EntityPointer to component, nullptr if not found
 
 Remove component for entity. 
 
-entity to remove component from Entitytrue if component was removed 
+entityEntity to remove component from true if component was removed 
 
 ---
 
-### `bool hasComponent(Entity entity) const const`
+### `bool hasComponent(Entity entity) const`
 
 Check if entity has component. 
 
-entity to check Entitytrue if entity has component 
+entityEntity to check true if entity has component 
 
 ---
 
-### `size_t size() const const`
+### `size_t size() const`
 
 Get number of active components. 
 
- count Component
+Component count 
 
 ---
 
-### `bool empty() const const`
+### `bool empty() const`
 
 Check if storage is empty. 
 
@@ -77,19 +74,19 @@ true if no components
 
 ---
 
-### `Iterator begin() const const`
+### `Iterator begin() const`
 
 Get iterator to beginning. 
 
- to first component Iterator
+Iterator to first component 
 
 ---
 
-### `Iterator end() const const`
+### `Iterator end() const`
 
 Get iterator to end. 
 
- past last component Iterator
+Iterator past last component 
 
 ---
 

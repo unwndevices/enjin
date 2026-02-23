@@ -7,11 +7,9 @@ slug: ComponentStorage_Iterator
 
 # ComponentStorage::Iterator
 
- for efficient component iteration. Iterator
+Iterator for efficient component iteration. 
 
 
-
-    
 
 ---
 
@@ -29,7 +27,7 @@ sStorage to iterate iStarting index
 
 ---
 
-### `std::pair&lt; , T * &gt;Entity operator*() const const`
+### `std::pair&lt; Entity, T * &gt; operator*() const`
 
 Dereference iterator. 
 
@@ -37,7 +35,7 @@ Pair of entity and component pointer
 
 ---
 
-### ` &Iterator operator++()`
+### `Iterator & operator++()`
 
 Advance iterator. 
 
@@ -45,11 +43,11 @@ Reference to this iterator
 
 ---
 
-### `bool operator!=(const Iterator &other) const const`
+### `bool operator!=(const Iterator &other) const`
 
 Inequality comparison. 
 
-other to compare with Iteratortrue if iterators differ 
+otherIterator to compare with true if iterators differ 
 
 ---
 

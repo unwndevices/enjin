@@ -184,9 +184,13 @@ function formatType(type) {
 
 // Format method signature
 function formatMethod(method) {
-  const name = method.name[0];
+  // With ordered xml2js parsing (explicitChildren+preserveChildrenOrder+charsAsChildren),
+  // simple text nodes become objects with { _: 'text', $$: [...] }. Extract the plain string.
+  const nameRaw = method.name[0];
+  const name = (nameRaw && typeof nameRaw === 'object') ? (nameRaw._ || '') : (nameRaw || '');
   const type = formatType(method.type);
-  let args = method.argsstring ? method.argsstring[0] : '()';
+  const argsRaw = method.argsstring ? method.argsstring[0] : '()';
+  let args = (argsRaw && typeof argsRaw === 'object') ? (argsRaw._ || '') : (argsRaw || '()');
   const isConst = method.$.const === 'yes';
   // Strip trailing const from argsstring to avoid duplication
   // (Doxygen includes it in argsstring AND as a separate attribute)

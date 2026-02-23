@@ -9,7 +9,7 @@ sidebar_label: Primitives
 Drawing primitives for geometric shapes. 
 
 
-TPixelPixel type (e.g., , uint8_t) Pixel4
+TPixelPixel type (e.g., Pixel4, uint8_t) 
 
 ---
 

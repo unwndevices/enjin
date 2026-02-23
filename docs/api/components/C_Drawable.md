@@ -6,7 +6,7 @@ sidebar_label: C_Drawable
 
 # C_Drawable
 
-Base class for all drawable components (matches original Enjin ). C_Drawable
+Base class for all drawable components (matches original Enjin C_Drawable). 
 
 
 Provides common functionality for components that can be rendered, including layer management, blending, anchoring, and visibility. 
@@ -31,9 +31,6 @@ ownerOwner object widthWidth of drawable area heightHeight of drawable area
 
 Virtual destructor. 
 
-
-        
-
 ---
 
 ### `void draw(ICanvas&lt; uint8_t &gt; &canvas)=0`
@@ -44,7 +41,7 @@ canvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8)
 
 ---
 
-### `virtual bool continueToDraw() const const`
+### `virtual bool continueToDraw() const`
 
 Check if this drawable should continue to be drawn. 
 
@@ -60,7 +57,7 @@ orderSort order value
 
 ---
 
-### `int GetSortOrder() const const`
+### `int GetSortOrder() const`
 
 Get the sort order. 
 
@@ -76,7 +73,7 @@ modeBlend mode to use
 
 ---
 
-### `BlendMode GetBlendMode() const const`
+### `BlendMode GetBlendMode() const`
 
 Get the blend mode. 
 
@@ -92,7 +89,7 @@ drawLayerDraw layer to assign
 
 ---
 
-### `DrawLayer GetDrawLayer() const const`
+### `DrawLayer GetDrawLayer() const`
 
 Get the draw layer. 
 
@@ -108,7 +105,7 @@ visibilityVisibility state
 
 ---
 
-### `bool GetVisibility() const const`
+### `bool GetVisibility() const`
 
 Get the visibility. 
 
@@ -116,7 +113,7 @@ Current visibility state
 
 ---
 
-### `bool isVisible() const const`
+### `bool isVisible() const`
 
 Check if visible. 
 
@@ -148,7 +145,7 @@ offsetNew offset value
 
 ---
 
-### `Point GetOffsetPosition() const const`
+### `Point GetOffsetPosition() const`
 
 Get position adjusted for offset. 
 
@@ -172,7 +169,7 @@ yY offset value
 
 ---
 
-### `uint8_t GetWidth() const const`
+### `uint8_t GetWidth() const`
 
 Get drawable width. 
 
@@ -180,7 +177,7 @@ Width in pixels
 
 ---
 
-### `uint8_t GetHeight() const const`
+### `uint8_t GetHeight() const`
 
 Get drawable height. 
 
@@ -188,7 +185,7 @@ Height in pixels
 
 ---
 
-### `bool shouldDrawBefore(const C_Drawable &other) const const`
+### `bool shouldDrawBefore(const C_Drawable &other) const`
 
 Determine if this drawable should be drawn before another drawable. 
 

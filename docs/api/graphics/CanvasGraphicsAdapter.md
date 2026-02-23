@@ -9,7 +9,7 @@ sidebar_label: CanvasGraphicsAdapter
 Graphics adapter for enjin2 canvases. 
 
 
-Implements  interface using enjin2 canvas types. Allows scripts to draw on any enjin2 canvas through the common interface. IScriptGraphics
+Implements IScriptGraphics interface using enjin2 canvas types. Allows scripts to draw on any enjin2 canvas through the common interface. 
 
 ---
 

@@ -23,9 +23,6 @@ Provides drawing functions that work across different canvas types and can be im
 
 Virtual destructor. 
 
-
-        
-
 ---
 
 ### `uint16_t getWidth() const =0 const`

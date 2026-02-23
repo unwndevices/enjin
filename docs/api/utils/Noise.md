@@ -6,7 +6,7 @@ sidebar_label: Noise
 
 # Noise
 
- generation utilities. Noise
+Noise generation utilities. 
 
 
 Provides Perlin noise and various noise functions for procedural generation and visual effects. Based on original Enjin noise implementation. 
@@ -31,7 +31,7 @@ hashHash value xX coordinate yY coordinate Gradient value
 
 2D Perlin noise function 
 
-xX coordinate yY coordinate pxPeriod in X direction (for tiling) pyPeriod in Y direction (for tiling)  value in range [-1, 1] Noise
+xX coordinate yY coordinate pxPeriod in X direction (for tiling) pyPeriod in Y direction (for tiling) Noise value in range [-1, 1] 
 
 ---
 
@@ -39,7 +39,7 @@ xX coordinate yY coordinate pxPeriod in X direction (for tiling) pyPeriod in Y d
 
 Warped Perlin noise for more organic patterns. 
 
-nxX coordinate nyY coordinate pxPeriod in X direction pyPeriod in Y direction seedRandom seed warp_strengthWarping strength (0.0 - 1.0)  value in range [0, 255] Noise
+nxX coordinate nyY coordinate pxPeriod in X direction pyPeriod in Y direction seedRandom seed warp_strengthWarping strength (0.0 - 1.0) Noise value in range [0, 255] 
 
 ---
 
@@ -47,7 +47,7 @@ nxX coordinate nyY coordinate pxPeriod in X direction pyPeriod in Y direction se
 
 Simple value noise. 
 
-xX coordinate yY coordinate seedRandom seed  value in range [0, 255] Noise
+xX coordinate yY coordinate seedRandom seed Noise value in range [0, 255] 
 
 ---
 
@@ -55,7 +55,7 @@ xX coordinate yY coordinate seedRandom seed  value in range [0, 255] Noise
 
 Fractal Brownian Motion (FBM) noise. 
 
-xX coordinate yY coordinate octavesNumber of octaves persistenceAmplitude multiplier per octave lacunarityFrequency multiplier per octave  value in range [0, 255] Noise
+xX coordinate yY coordinate octavesNumber of octaves persistenceAmplitude multiplier per octave lacunarityFrequency multiplier per octave Noise value in range [0, 255] 
 
 ---
 
@@ -79,7 +79,7 @@ noise_value8-bit noise value 4-bit noise value (0-15)
 
 Generate noise texture into buffer. 
 
-bufferOutput buffer widthTexture width heightTexture height scale scale Noiseoffset_xX offset for animation offset_yY offset for animation noise_type0=perlin, 1=value, 2=fbm, 3=cellular 
+bufferOutput buffer widthTexture width heightTexture height scaleNoise scale offset_xX offset for animation offset_yY offset for animation noise_type0=perlin, 1=value, 2=fbm, 3=cellular 
 
 ---
 

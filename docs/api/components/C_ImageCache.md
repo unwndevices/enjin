@@ -9,7 +9,7 @@ sidebar_label: C_ImageCache
 Image cache component for sprite management. 
 
 
-Provides static memory allocation for 4-bit image data with efficient caching and frame-based animation support. Based on original Enjin  design. C_ImageCache
+Provides static memory allocation for 4-bit image data with efficient caching and frame-based animation support. Based on original Enjin C_ImageCache design. 
 
 ---
 
@@ -30,9 +30,6 @@ ownerParent object
 ### ` ~C_ImageCache()=default`
 
 Destructor. 
-
-
-        
 
 ---
 
@@ -64,7 +61,7 @@ deltaTimeTime since last frame in milliseconds
 
 Add image to cache from file. 
 
-fileFile interface to read from widthImage width in pixels heightImage height in pixels frameCountNumber of animation frames ImageCacheExceptionon allocation or I/O errors  descriptor for cached image ImageEntry
+fileFile interface to read from widthImage width in pixels heightImage height in pixels frameCountNumber of animation frames ImageEntry descriptor for cached image ImageCacheExceptionon allocation or I/O errors 
 
 ---
 
@@ -80,7 +77,7 @@ entryImage entry to release ImageCacheExceptionif entry is inactive
 
 Get pointer to image data in cache. 
 
-entryImage entry descriptor frameOffsetFrame number (0-based) ImageCacheExceptionon invalid access Pointer to 4-bit image data 
+entryImage entry descriptor frameOffsetFrame number (0-based) Pointer to 4-bit image data ImageCacheExceptionon invalid access 
 
 ---
 
@@ -96,50 +93,23 @@ Pair of (used_bytes, total_bytes)
 
 Clear entire cache. 
 
-
-        
-
 ---
 
 ## Private Methods
 
 ### `static size_t FindFreeSpace(size_t requiredSize)`
 
-
-        
-
-
-        
-
 ---
 
 ### `static void ValidateImageParameters(uint16_t width, uint16_t height, uint16_t frameCount, size_t fileSize)`
-
-
-        
-
-
-        
 
 ---
 
 ### `static void SerialLog(const char *message)`
 
-
-        
-
-
-        
-
 ---
 
 ### `static void InitializeCache()`
-
-
-        
-
-
-        
 
 ---
 

@@ -10,8 +10,6 @@ Platform-specific file system interface for Lua scripts.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2`

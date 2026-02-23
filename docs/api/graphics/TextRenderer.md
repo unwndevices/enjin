@@ -10,8 +10,6 @@ Text renderer for drawing text to canvas.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2`
@@ -22,10 +20,7 @@ Text renderer for drawing text to canvas.
 
 ### ` TextRenderer()`
 
-Construct a new . TextRenderer
-
-
-        
+Construct a new TextRenderer. 
 
 ---
 
@@ -57,7 +52,7 @@ colorText color bgcolorBackground color
 
 Set text size. 
 
-size multiplier (1 = normal, 2 = double, etc.) Size
+sizeSize multiplier (1 = normal, 2 = double, etc.) 
 
 ---
 

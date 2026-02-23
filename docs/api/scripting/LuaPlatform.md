@@ -10,8 +10,6 @@ Platform abstraction for Lua initialization.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2`

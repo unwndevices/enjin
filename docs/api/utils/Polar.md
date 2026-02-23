@@ -6,7 +6,7 @@ sidebar_label: Polar
 
 # Polar
 
- coordinate utilities (matches original Enjin  utilities). PolarPolar
+Polar coordinate utilities (matches original Enjin Polar utilities). 
 
 
 Provides functions for converting between polar and cartesian coordinates, useful for circular UI elements and orbital motion. 
@@ -23,7 +23,7 @@ Provides functions for converting between polar and cartesian coordinates, usefu
 
 Convert radial coordinates to cartesian coordinates (matches original Enjin). 
 
-phasePhase value from 0.0 to 1.0 (0.0 = 0 degrees, 1.0 = 360 degrees) radiusDistance from center centerCenter point for conversion (default is 63,63 for 128x128 displays) Cartesian coordinates as  Point
+phasePhase value from 0.0 to 1.0 (0.0 = 0 degrees, 1.0 = 360 degrees) radiusDistance from center centerCenter point for conversion (default is 63,63 for 128x128 displays) Cartesian coordinates as Point
 
 ---
 
@@ -39,7 +39,7 @@ pointCartesian point centerCenter point for conversion phaseOutput phase value (
 
 Get a point on a circle at specified angle and radius. 
 
-centerXCenter X coordinate centerYCenter Y coordinate angleAngle in radians radiusDistance from center  on the circle Point
+centerXCenter X coordinate centerYCenter Y coordinate angleAngle in radians radiusDistance from center Point on the circle 
 
 ---
 
@@ -47,7 +47,7 @@ centerXCenter X coordinate centerYCenter Y coordinate angleAngle in radians radi
 
 Get a point on an ellipse. 
 
-centerXCenter X coordinate centerYCenter Y coordinate angleAngle in radians radiusXHorizontal radius radiusYVertical radius  on the ellipse Point
+centerXCenter X coordinate centerYCenter Y coordinate angleAngle in radians radiusXHorizontal radius radiusYVertical radius Point on the ellipse 
 
 ---
 

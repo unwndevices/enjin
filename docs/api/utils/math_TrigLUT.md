@@ -48,11 +48,5 @@ radiansAngle in radians Index in range [0, 255] for lookup table
 
 ### `static int16_t getSineValue(uint8_t index)`
 
-
-        
-
-
-        
-
 ---
 

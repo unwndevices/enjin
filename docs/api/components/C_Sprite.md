@@ -6,10 +6,10 @@ sidebar_label: C_Sprite
 
 # C_Sprite
 
- component for bitmap rendering (matches original Enjin ). SpriteC_Sprite
+Sprite component for bitmap rendering (matches original Enjin C_Sprite). 
 
 
- wrapper around the  class, providing ECS integration for bitmap image rendering with frame animation support. ComponentSprite
+Component wrapper around the Sprite class, providing ECS integration for bitmap image rendering with frame animation support. 
 
 ---
 
@@ -21,7 +21,7 @@ sidebar_label: C_Sprite
 
 ### ` C_Sprite(Object *owner, uint8_t width, uint8_t height)`
 
-Construct a new  component. Sprite
+Construct a new Sprite component. 
 
 ownerThe object that owns this component widthWidth of the sprite in pixels heightHeight of the sprite in pixels 
 
@@ -53,7 +53,7 @@ frameIdFrame index to load
 
 ### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
 
-Draw the sprite to canvas (overrides ). C_Drawable
+Draw the sprite to canvas (overrides C_Drawable). 
 
 canvasThe canvas to draw to 
 
@@ -83,7 +83,7 @@ matteMatte color value
 
 ---
 
-### ` &Sprite getSprite()`
+### `Sprite & getSprite()`
 
 Get the underlying sprite object. 
 
@@ -91,7 +91,7 @@ Reference to the sprite
 
 ---
 
-### `const  &Sprite getSprite() const const`
+### `const Sprite & getSprite() const`
 
 Get the underlying sprite object (const). 
 

@@ -9,8 +9,8 @@ sidebar_label: ComponentQuery
 Query builder for component-based entity selection. 
 
 
-
-Provides efficient iteration over entities with specific component combinations. Components... types to query forComponent
+Components...Component types to query for
+Provides efficient iteration over entities with specific component combinations. 
 
 ---
 
@@ -28,15 +28,15 @@ entityFilterFunction to test if entity matches query
 
 ---
 
-### `Iterator begin() const const`
+### `Iterator begin() const`
 
 Get iterator to beginning of query results. 
 
- to first matching entity Iterator
+Iterator to first matching entity 
 
 ---
 
-### `Iterator end() const const`
+### `Iterator end() const`
 
 Get iterator to end of query results. 
 

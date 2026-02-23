@@ -21,12 +21,6 @@ WIDTHCanvas width in pixels HEIGHTCanvas height in pixels
 
 ### ` Canvas8()`
 
-
-        
-
-
-        
-
 ---
 
 ### `virtual uint16_t getWidth() const override const`
@@ -77,7 +71,7 @@ rectRectangle to fill colorColor to fill with
 
 ---
 
-### `void convertTo4bit(Canvas4&lt; WIDTH, HEIGHT &gt; &dst) const const`
+### `void convertTo4bit(Canvas4&lt; WIDTH, HEIGHT &gt; &dst) const`
 
 Convert canvas contents to 4-bit format. 
 
@@ -85,7 +79,7 @@ dstDestination 4-bit canvas
 
 ---
 
-### `const uint8_t * getBuffer() const const`
+### `const uint8_t * getBuffer() const`
 
 Get read-only pointer to pixel buffer. 
 
@@ -117,7 +111,7 @@ xX coordinate yY coordinate colorPixel color
 
 ---
 
-### `uint16_t width() const const`
+### `uint16_t width() const`
 
 Get canvas width (Adafruit_GFX compatibility). 
 
@@ -125,7 +119,7 @@ Width in pixels
 
 ---
 
-### `uint16_t height() const const`
+### `uint16_t height() const`
 
 Get canvas height (Adafruit_GFX compatibility). 
 
@@ -157,7 +151,7 @@ xX coordinate yY coordinate
 
 ---
 
-### `int16_t getCursorX() const const`
+### `int16_t getCursorX() const`
 
 Get cursor X position. 
 
@@ -165,7 +159,7 @@ Current cursor X coordinate
 
 ---
 
-### `int16_t getCursorY() const const`
+### `int16_t getCursorY() const`
 
 Get cursor Y position. 
 
@@ -381,7 +375,7 @@ xDestination X coordinate yDestination Y coordinate texturePointer to texture da
 
 ---
 
-### `void exportToPGM(const char *filename) const const`
+### `void exportToPGM(const char *filename) const`
 
 Export canvas to PGM format with proper color scaling. 
 
@@ -389,7 +383,7 @@ filenameOutput filename
 
 ---
 
-### `void exportToBMP(const char *filename) const const`
+### `void exportToBMP(const char *filename) const`
 
 Export canvas to BMP format (24-bit RGB, grayscale as gray=R=G=B). 
 
@@ -401,7 +395,7 @@ filenameOutput filename
 
 Set GFX font for text rendering. 
 
-fontPointer to  structure (nullptr for built-in font) GFXfont
+fontPointer to GFXfont structure (nullptr for built-in font) 
 
 ---
 

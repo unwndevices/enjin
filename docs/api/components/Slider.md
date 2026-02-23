@@ -21,7 +21,7 @@ A drawable slider component that displays a linear slider with a filled portion 
 
 ### ` Slider(Object *owner, uint8_t width, uint8_t height)`
 
-Construct a new  component. Slider
+Construct a new Slider component. 
 
 ownerThe object that owns this component widthWidth of the slider in pixels heightHeight of the slider in pixels 
 
@@ -30,9 +30,6 @@ ownerThe object that owns this component widthWidth of the slider in pixels heig
 ### `void onCreate() override`
 
 Initialize the slider. 
-
-
-        
 
 ---
 
@@ -60,7 +57,7 @@ newValueValue between 0.0 and 1.0
 
 ---
 
-### `float getValue() const const`
+### `float getValue() const`
 
 Get the current slider value. 
 

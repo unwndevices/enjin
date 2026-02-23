@@ -23,7 +23,7 @@ TDerived system type
 
 Get system type ID. 
 
- type identifier System
+System type identifier 
 
 ---
 
@@ -31,7 +31,7 @@ Get system type ID.
 
 Get static system type ID. 
 
- type identifier System
+System type identifier 
 
 ---
 

@@ -6,7 +6,7 @@ sidebar_label: C_Draw
 
 # C_Draw
 
-Draw component for lambda-based custom rendering (matches original Enjin ). C_Draw
+Draw component for lambda-based custom rendering (matches original Enjin C_Draw). 
 
 
 Allows custom drawing operations to be performed via lambda functions, providing flexibility for procedural graphics and custom visual effects. 
@@ -51,7 +51,7 @@ drawFuncFunction to execute when drawing
 
 ---
 
-### `const  &DrawFunction GetDrawFunction() const const`
+### `const DrawFunction & GetDrawFunction() const`
 
 Get the current draw function. 
 

@@ -6,10 +6,10 @@ sidebar_label: Object
 
 # Object
 
- base class for game entities. Object
+Object base class for game entities. 
 
 
-The  class is the base class for all game entities in the Enjin system. It manages components using static allocation and provides lifecycle methods. Object
+The Object class is the base class for all game entities in the Enjin system. It manages components using static allocation and provides lifecycle methods. 
 
 ---
 
@@ -23,17 +23,11 @@ The  class is the base class for all game entities in the Enjin system. It manag
 
 Constructor. 
 
-
-        
-
 ---
 
 ### `virtual  ~Object()=default`
 
 Virtual destructor. 
-
-
-        
 
 ---
 
@@ -69,7 +63,7 @@ deltaTimeTime since last frame in milliseconds
 
 ---
 
-### `bool isQueuedForRemoval() const const`
+### `bool isQueuedForRemoval() const`
 
 Check if object is queued for removal (matches original Enjin). 
 
@@ -81,7 +75,7 @@ True if object should be removed
 
 Add a component to this object. 
 
-T type (must derive from ) ComponentComponentArgsConstructor argument types argsConstructor arguments Pointer to the created component or nullptr if failed 
+TComponent type (must derive from Component) ArgsConstructor argument types argsConstructor arguments Pointer to the created component or nullptr if failed 
 
 ---
 
@@ -89,15 +83,15 @@ T type (must derive from ) ComponentComponentArgsConstructor argument types args
 
 Get a component of specified type. 
 
-T type ComponentPointer to component or nullptr if not found 
+TComponent type Pointer to component or nullptr if not found 
 
 ---
 
-### `bool hasComponent() const const`
+### `bool hasComponent() const`
 
 Check if object has a component of specified type. 
 
-T type ComponentTrue if component exists 
+TComponent type True if component exists 
 
 ---
 
@@ -105,11 +99,11 @@ T type ComponentTrue if component exists
 
 Remove a component of specified type. 
 
-T type ComponentTrue if component was removed 
+TComponent type True if component was removed 
 
 ---
 
-### ` *C_Position getPosition() const const`
+### `C_Position * getPosition() const`
 
 Get position component (cached for performance). 
 
@@ -117,7 +111,7 @@ Position component pointer or nullptr
 
 ---
 
-### `const  *const *C_Drawable getDrawables() const const`
+### `const C_Drawable *const * getDrawables() const`
 
 Get all drawable components. 
 
@@ -125,7 +119,7 @@ Array of drawable component pointers
 
 ---
 
-### `size_t getDrawableCount() const const`
+### `size_t getDrawableCount() const`
 
 Get number of drawable components. 
 
@@ -133,7 +127,7 @@ Number of drawable components
 
 ---
 
-### ` *C_Drawable getDrawable(size_t index) const const`
+### `C_Drawable * getDrawable(size_t index) const`
 
 Get drawable component by index. 
 
@@ -141,7 +135,7 @@ indexIndex of drawable component Pointer to drawable component or nullptr if inv
 
 ---
 
-### `bool isActive() const const`
+### `bool isActive() const`
 
 Check if object is active. 
 
@@ -157,41 +151,29 @@ isActiveNew active state
 
 ---
 
-### `size_t getComponentCount() const const`
+### `size_t getComponentCount() const`
 
 Get total number of components. 
 
- count Component
+Component count 
 
 ---
 
 ## Private Methods
 
-### `std::enable_if&lt; std::is_same&lt; T,  &gt;::value &gt;::typeC_Position cachePositionIfType(T *componentPtr)`
+### `std::enable_if&lt; std::is_same&lt; T, C_Position &gt;::value &gt;::type cachePositionIfType(T *componentPtr)`
 
-Helper to cache position component only if T is  using SFINAE. C_Position
-
-
-        
+Helper to cache position component only if T is C_Position using SFINAE. 
 
 ---
 
-### `std::enable_if&lt;!std::is_same&lt; T,  &gt;::value &gt;::typeC_Position cachePositionIfType(T *componentPtr)`
-
-
-        
-
-
-        
+### `std::enable_if&lt;!std::is_same&lt; T, C_Position &gt;::value &gt;::type cachePositionIfType(T *componentPtr)`
 
 ---
 
 ### `void initializeComponentCache()`
 
 Initialize cached component pointers. 
-
-
-        
 
 ---
 

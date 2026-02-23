@@ -9,7 +9,7 @@ sidebar_label: PackedPixel4
 Packed storage for two 4-bit pixels in a single byte. 
 
 
-Efficiently stores two  values in one byte, achieving 50% memory savings compared to storing each pixel in a separate byte. Pixel4
+Efficiently stores two Pixel4 values in one byte, achieving 50% memory savings compared to storing each pixel in a separate byte. 
 
 ---
 
@@ -23,9 +23,6 @@ Efficiently stores two  values in one byte, achieving 50% memory savings compare
 
 Default constructor initializes both pixels to 0. 
 
-
-        
-
 ---
 
 ### ` PackedPixel4(uint8_t byte)`
@@ -36,7 +33,7 @@ byteRaw byte containing packed pixel data
 
 ---
 
-### `Pixel4 getLow() const const`
+### `Pixel4 getLow() const`
 
 Get the low nibble pixel (bits 0-3). 
 
@@ -44,7 +41,7 @@ Pixel stored in lower 4 bits
 
 ---
 
-### `Pixel4 getHigh() const const`
+### `Pixel4 getHigh() const`
 
 Get the high nibble pixel (bits 4-7). 
 
@@ -68,7 +65,7 @@ pixelPixel value to store in upper 4 bits
 
 ---
 
-### `uint8_t getByte() const const`
+### `uint8_t getByte() const`
 
 Get raw byte containing both pixels. 
 

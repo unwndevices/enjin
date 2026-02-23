@@ -6,10 +6,10 @@ sidebar_label: Signal
 
 # Signal
 
- class for observer pattern implementation. Signal
+Signal class for observer pattern implementation. 
 
 
-Provides a lightweight event system using static allocation.  can be emitted with parameters and connected to callbacks. Signals
+Provides a lightweight event system using static allocation. Signals can be emitted with parameters and connected to callbacks. 
 
 ---
 
@@ -22,9 +22,6 @@ Provides a lightweight event system using static allocation.  can be emitted wit
 ### ` Signal()`
 
 Constructor. 
-
-
-        
 
 ---
 
@@ -40,7 +37,7 @@ callbackFunction to call when signal is emitted Connection ID (can be used to di
 
 Disconnect a callback by connection ID. 
 
-connectionIdConnection ID returned by  connect()
+connectionIdConnection ID returned by connect()
 
 ---
 
@@ -56,12 +53,9 @@ argsArguments to pass to callbacks
 
 Disconnect all callbacks. 
 
-
-        
-
 ---
 
-### `size_t getConnectionCount() const const`
+### `size_t getConnectionCount() const`
 
 Get number of active connections. 
 
@@ -69,7 +63,7 @@ Number of connected callbacks
 
 ---
 
-### `bool hasConnections() const const`
+### `bool hasConnections() const`
 
 Check if signal has any connections. 
 

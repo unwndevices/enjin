@@ -23,17 +23,11 @@ Lightweight Lua implementation for ESP32 with reduced memory footprint and essen
 
 Constructor. 
 
-
-        
-
 ---
 
 ### ` ~MinimalLuaInterpreter() override`
 
 Destructor. 
-
-
-        
 
 ---
 
@@ -56,9 +50,6 @@ True if initialization successful
 ### `virtual void shutdown() override`
 
 Shutdown the minimal Lua interpreter. 
-
-
-        
 
 ---
 
@@ -164,16 +155,13 @@ Type name string
 
 Register minimal graphics functions. 
 
-
-        
-
 ---
 
 ### `void * allocateMemory(size_t size)`
 
 Allocate memory from pool. 
 
-size to allocate SizeAllocated memory or nullptr 
+sizeSize to allocate Allocated memory or nullptr 
 
 ---
 

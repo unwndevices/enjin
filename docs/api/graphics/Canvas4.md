@@ -23,9 +23,6 @@ WIDTHCanvas width in pixels (must be even) HEIGHTCanvas height in pixels
 
 Constructor initializes clear canvas. 
 
-
-        
-
 ---
 
 ### `virtual uint16_t getWidth() const override const`
@@ -108,7 +105,7 @@ rectRectangle to fill colorColor to fill with
 
 ---
 
-### `const  *PackedPixel4 getBuffer() const const`
+### `const PackedPixel4 * getBuffer() const`
 
 Get read-only pointer to pixel buffer. 
 
@@ -116,7 +113,7 @@ Pointer to packed pixel data
 
 ---
 
-### ` *PackedPixel4 getBuffer()`
+### `PackedPixel4 * getBuffer()`
 
 Get mutable pointer to pixel buffer. 
 
@@ -124,7 +121,7 @@ Pointer to packed pixel data
 
 ---
 
-### `size_t getBufferSize() const const`
+### `size_t getBufferSize() const`
 
 Get buffer size in bytes. 
 
@@ -150,23 +147,11 @@ spriteSource canvas to blit xDestination X coordinate yDestination Y coordinate 
 
 ## Private Methods
 
-### `size_t getIndex(int16_t x, int16_t y) const const`
-
-
-        
-
-
-        
+### `size_t getIndex(int16_t x, int16_t y) const`
 
 ---
 
-### `bool isLowPixel(int16_t x) const const`
-
-
-        
-
-
-        
+### `bool isLowPixel(int16_t x) const`
 
 ---
 

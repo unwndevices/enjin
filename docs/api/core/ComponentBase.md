@@ -23,16 +23,13 @@ Components are pure data containers without behavior. This base class provides R
 
 Get unique component type ID. 
 
- type identifier Component
+Component type identifier 
 
 ---
 
 ### `virtual  ~ComponentBase()=default`
 
 Virtual destructor for proper cleanup. 
-
-
-        
 
 ---
 
@@ -42,7 +39,7 @@ Virtual destructor for proper cleanup.
 
 Generate unique component type ID. 
 
-T type ComponentUnique ID for component type T 
+TComponent type Unique ID for component type T 
 
 ---
 

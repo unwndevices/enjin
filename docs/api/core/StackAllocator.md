@@ -9,7 +9,7 @@ sidebar_label: StackAllocator
 Stack-based allocator for temporary allocations. 
 
 
-Allocates memory linearly from a fixed buffer. All allocations can be freed at once with , ideal for frame-based allocations. reset()
+Allocates memory linearly from a fixed buffer. All allocations can be freed at once with reset(), ideal for frame-based allocations. 
 
 ---
 
@@ -39,12 +39,9 @@ sizeNumber of bytes to allocate alignmentAlignment requirement in bytes (default
 
 Reset allocator, freeing all allocations. 
 
-
-        
-
 ---
 
-### `size_t getUsed() const const`
+### `size_t getUsed() const`
 
 Get currently used memory. 
 
@@ -52,7 +49,7 @@ Number of bytes currently allocated
 
 ---
 
-### `size_t getRemaining() const const`
+### `size_t getRemaining() const`
 
 Get remaining free memory. 
 

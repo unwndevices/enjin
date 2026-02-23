@@ -23,9 +23,6 @@ Pre-allocates storage for a fixed number of objects of type T. All allocations c
 
 Constructor initializes empty pool. 
 
-
-        
-
 ---
 
 ### `T * allocate()`
@@ -44,7 +41,7 @@ ptrPointer to object to deallocate (may be nullptr)
 
 ---
 
-### `size_t size() const const`
+### `size_t size() const`
 
 Get current number of allocated objects. 
 
@@ -52,7 +49,7 @@ Current allocation count
 
 ---
 
-### `size_t capacity() const const`
+### `size_t capacity() const`
 
 Get maximum capacity of the pool. 
 
@@ -60,7 +57,7 @@ Total capacity (CAPACITY template parameter)
 
 ---
 
-### `bool empty() const const`
+### `bool empty() const`
 
 Check if pool has no allocations. 
 
@@ -68,7 +65,7 @@ true if pool is empty, false otherwise
 
 ---
 
-### `bool full() const const`
+### `bool full() const`
 
 Check if pool is at maximum capacity. 
 

@@ -10,8 +10,6 @@ Exception class for ImageCache errors.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2`

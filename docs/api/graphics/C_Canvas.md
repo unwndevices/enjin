@@ -9,7 +9,7 @@ sidebar_label: C_Canvas
 Canvas component for custom drawing operations. 
 
 
-A drawable component that wraps an internal canvas for custom graphics operations. Supports multiple blend modes for composition. Based on original Enjin . C_Canvas
+A drawable component that wraps an internal canvas for custom graphics operations. Supports multiple blend modes for composition. Based on original Enjin C_Canvas. 
 
 ---
 
@@ -30,9 +30,6 @@ ownerParent object widthCanvas width in pixels heightCanvas height in pixels
 ### ` ~C_Canvas()=default`
 
 Destructor. 
-
-
-        
 
 ---
 
@@ -84,7 +81,7 @@ True if should continue drawing, false otherwise
 
 ---
 
-### `&lt; W, H &gt; &Canvas8 getCanvas()`
+### `Canvas8&lt; W, H &gt; & getCanvas()`
 
 Get access to internal canvas for drawing. 
 
@@ -92,7 +89,7 @@ Reference to internal canvas
 
 ---
 
-### `const &lt; W, H &gt; &Canvas8 getCanvas() const const`
+### `const Canvas8&lt; W, H &gt; & getCanvas() const`
 
 Get const access to internal canvas. 
 
@@ -108,7 +105,7 @@ colorFill color (0-15)
 
 ---
 
-### `uint8_t getWidth() const const`
+### `uint8_t getWidth() const`
 
 Get canvas width. 
 
@@ -116,7 +113,7 @@ Width in pixels
 
 ---
 
-### `uint8_t getHeight() const const`
+### `uint8_t getHeight() const`
 
 Get canvas height. 
 
@@ -132,7 +129,7 @@ matteMatte color value (default: 16 for compatibility)
 
 ---
 
-### `uint8_t getMatteColor() const const`
+### `uint8_t getMatteColor() const`
 
 Get current matte color. 
 

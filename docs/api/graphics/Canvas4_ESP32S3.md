@@ -21,21 +21,9 @@ WIDTHCanvas width in pixels HEIGHTCanvas height in pixels
 
 ### ` Canvas4_ESP32S3()`
 
-
-        
-
-
-        
-
 ---
 
 ### ` ~Canvas4_ESP32S3()`
-
-
-        
-
-
-        
 
 ---
 
@@ -47,7 +35,7 @@ xX coordinate yY coordinate colorPixel color
 
 ---
 
-### `IRAM_ATTR Pixel4 getPixel(int16_t x, int16_t y) const const`
+### `IRAM_ATTR Pixel4 getPixel(int16_t x, int16_t y) const`
 
 Fast pixel reading using lookup tables. 
 
@@ -95,7 +83,7 @@ colorColor to fill canvas with
 
 ---
 
-### `const uint8_t * getData() const const`
+### `const uint8_t * getData() const`
 
 Get raw data pointer for DMA transfers. 
 
@@ -103,7 +91,7 @@ Pointer to pixel buffer
 
 ---
 
-### `constexpr size_t getDataSize() const const`
+### `constexpr size_t getDataSize() const`
 
 Get data size in bytes. 
 
@@ -116,9 +104,6 @@ Data size
 ### `IRAM_ATTR void setPixelDirect(uint8_t *row, int16_t x, uint8_t color)`
 
 Direct pixel setting without bounds checking. 
-
-
-        
 
 ---
 

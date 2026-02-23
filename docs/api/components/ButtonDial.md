@@ -21,7 +21,7 @@ A drawable dial component with multiple buttons arranged in a circle. Used for s
 
 ### ` ButtonDial(Object *owner, uint8_t outerRadius, uint8_t innerRadius, uint8_t buttonCount)`
 
-Construct a new  component. ButtonDial
+Construct a new ButtonDial component. 
 
 ownerThe object that owns this component outerRadiusOuter radius of the dial innerRadiusInner radius of the dial buttonCountNumber of buttons around the circumference 
 
@@ -30,9 +30,6 @@ ownerThe object that owns this component outerRadiusOuter radius of the dial inn
 ### `void onCreate() override`
 
 Initialize the button dial. 
-
-
-        
 
 ---
 
@@ -60,7 +57,7 @@ idButton ID (0 to buttonCount-1, -1 for no selection)
 
 ---
 
-### `int getSelectedButton() const const`
+### `int getSelectedButton() const`
 
 Get the currently selected button. 
 
@@ -76,7 +73,7 @@ newColorColor value (0-15 for 4-bit grayscale)
 
 ---
 
-### `uint8_t getButtonCount() const const`
+### `uint8_t getButtonCount() const`
 
 Get the number of buttons. 
 

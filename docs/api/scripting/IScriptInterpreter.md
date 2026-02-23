@@ -23,9 +23,6 @@ Abstract interface for script interpreters to allow platform-specific implementa
 
 Virtual destructor. 
 
-
-        
-
 ---
 
 ### `bool initialize()=0`
@@ -39,9 +36,6 @@ True if initialization successful
 ### `void shutdown()=0`
 
 Shutdown the interpreter. 
-
-
-        
 
 ---
 

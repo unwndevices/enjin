@@ -9,7 +9,7 @@ sidebar_label: LuaScriptSystem
 High-level Lua scripting interface. 
 
 
-Combines  and  for easy script execution with graphics and UI capabilities. LuaEngineLuaBindings
+Combines LuaEngine and LuaBindings for easy script execution with graphics and UI capabilities. 
 
 ---
 
@@ -22,9 +22,6 @@ Combines  and  for easy script execution with graphics and UI capabilities. LuaE
 ### ` LuaScriptSystem()`
 
 Constructor. 
-
-
-        
 
 ---
 
@@ -39,9 +36,6 @@ True if successful
 ### `void shutdown()`
 
 Shutdown the script system. 
-
-
-        
 
 ---
 
@@ -77,7 +71,7 @@ functionNameFunction name argsFunction arguments Execution result
 
 ---
 
-### `size_t getMemoryUsage() const const`
+### `size_t getMemoryUsage() const`
 
 Get script system memory usage. 
 
@@ -85,7 +79,7 @@ Memory usage in bytes
 
 ---
 
-### ` &LuaEngine getEngine()`
+### `LuaEngine & getEngine()`
 
 Get Lua engine reference. 
 
@@ -93,7 +87,7 @@ Lua engine
 
 ---
 
-### ` &LuaBindings getBindings()`
+### `LuaBindings & getBindings()`
 
 Get bindings reference. 
 

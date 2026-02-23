@@ -10,8 +10,6 @@ Common signal types for UI events.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2::Signals`

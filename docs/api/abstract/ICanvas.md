@@ -9,9 +9,9 @@ sidebar_label: ICanvas
 Abstract canvas interface for drawing operations. 
 
 
-
-Provides a hardware-independent interface for all drawing operations. Both enjin1 and enjin2 can implement this interface for compile-time polymorphism.TPixelPixel type (e.g., , uint8_t)Pixel4
-Provides a hardware-independent interface for all drawing operations. Concrete implementations handle the actual pixel storage and formatting. TPixelPixel type (e.g., , uint8_t)Pixel4
+TPixelPixel type (e.g., Pixel4, uint8_t)
+Provides a hardware-independent interface for all drawing operations. Both enjin1 and enjin2 can implement this interface for compile-time polymorphism.TPixelPixel type (e.g., Pixel4, uint8_t)
+Provides a hardware-independent interface for all drawing operations. Concrete implementations handle the actual pixel storage and formatting. 
 
 ---
 
@@ -24,9 +24,6 @@ Provides a hardware-independent interface for all drawing operations. Concrete i
 ### `virtual  ~ICanvas()=default`
 
 Virtual destructor for proper cleanup through base pointer. 
-
-
-        
 
 ---
 
@@ -160,12 +157,6 @@ bitmapPointer to bitmap data matteMatte color (pixels matching this are skipped)
 
 ### `virtual  ~ICanvas()=default`
 
-
-        
-
-
-        
-
 ---
 
 ### `uint16_t getWidth() const =0 const`
@@ -216,7 +207,7 @@ rectRectangle to fill colorColor to fill with
 
 ---
 
-### `bool inBounds(int16_t x, int16_t y) const const`
+### `bool inBounds(int16_t x, int16_t y) const`
 
 Check if coordinates are within canvas bounds. 
 
@@ -224,7 +215,7 @@ xX coordinate to check yY coordinate to check true if coordinates are valid, fal
 
 ---
 
-### `Rect getBounds() const const`
+### `Rect getBounds() const`
 
 Get canvas bounds as rectangle. 
 

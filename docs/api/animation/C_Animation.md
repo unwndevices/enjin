@@ -31,23 +31,17 @@ ownerOwner object
 
 Destructor. 
 
-
-        
-
 ---
 
 ### `virtual void start() override`
 
- start - set up animation connections. Component
-
-
-        
+Component start - set up animation connections. 
 
 ---
 
 ### `virtual void update(uint16_t deltaTime) override`
 
- update - update all active tracks. Component
+Component update - update all active tracks. 
 
 deltaTimeTime elapsed since last update in milliseconds 
 
@@ -113,17 +107,11 @@ fromColorStarting color toColorEnding color durationAnimation duration in millis
 
 Play all animations. 
 
-
-        
-
 ---
 
 ### `void pauseAll()`
 
 Pause all animations. 
-
-
-        
 
 ---
 
@@ -131,12 +119,9 @@ Pause all animations.
 
 Stop all animations. 
 
-
-        
-
 ---
 
-### ` &PositionTrack getPositionTrack()`
+### `PositionTrack & getPositionTrack()`
 
 Get position track. 
 
@@ -144,7 +129,7 @@ Reference to position animation track
 
 ---
 
-### ` &FloatTrack getScaleTrack()`
+### `FloatTrack & getScaleTrack()`
 
 Get scale track. 
 
@@ -152,7 +137,7 @@ Reference to scale animation track
 
 ---
 
-### ` &FloatTrack getRotationTrack()`
+### `FloatTrack & getRotationTrack()`
 
 Get rotation track. 
 
@@ -160,7 +145,7 @@ Reference to rotation animation track
 
 ---
 
-### ` &ColorTrack getColorTrack()`
+### `ColorTrack & getColorTrack()`
 
 Get color track. 
 

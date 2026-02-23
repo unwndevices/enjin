@@ -9,7 +9,7 @@ sidebar_label: InputSystem
 Input system for handling user interaction. 
 
 
-Processes input events and updates  states. Handles hit testing against entity bounds. InputComponent
+Processes input events and updates InputComponent states. Handles hit testing against entity bounds. 
 
 ---
 
@@ -23,9 +23,6 @@ Processes input events and updates  states. Handles hit testing against entity b
 
 Constructor initializes input state. 
 
-
-        
-
 ---
 
 ### `virtual void update(float deltaTime) override`
@@ -38,7 +35,7 @@ deltaTimeTime since last update
 
 ### `void onMouseMove(Point pos)`
 
- mouse move event. Handle
+Handle mouse move event. 
 
 posNew mouse position 
 
@@ -46,7 +43,7 @@ posNew mouse position
 
 ### `void onMousePress(Point pos)`
 
- mouse button press. Handle
+Handle mouse button press. 
 
 posMouse position 
 
@@ -54,7 +51,7 @@ posMouse position
 
 ### `void onMouseRelease(Point pos)`
 
- mouse button release. Handle
+Handle mouse button release. 
 
 posMouse position 
 

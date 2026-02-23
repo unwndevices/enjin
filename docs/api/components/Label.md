@@ -6,11 +6,10 @@ sidebar_label: Label
 
 # Label
 
- component for text display with word wrapping and styling. Label
+Label component for text display with word wrapping and styling. 
 
 
-A versatile text display component that supports:
-Custom fonts (GFX-style fonts)Text wrapping and alignmentBackground colors and bordersTooltip-style pointersOpacity/blend modes 
+A versatile text display component that supports:Custom fonts (GFX-style fonts)Text wrapping and alignmentBackground colors and bordersTooltip-style pointersOpacity/blend modes 
 
 ---
 
@@ -22,7 +21,7 @@ Custom fonts (GFX-style fonts)Text wrapping and alignmentBackground colors and b
 
 ### ` Label(Object *owner, uint16_t w, uint16_t h, const GFXfont *textFont=nullptr, uint8_t fontSize=1, uint8_t textColor=14, uint8_t backgroundColor=0, uint8_t pointerHeight=0)`
 
-Construct a new  component. Label
+Construct a new Label component. 
 
 ownerThe object that owns this component wWidth of the label in pixels hHeight of the label in pixels textFontFont to use (nullptr for default) fontSizeFont size multiplier textColorText color (0-15 for 4-bit grayscale) backgroundColorBackground color (0 for transparent) pointerHeightHeight of tooltip pointer (0 for no pointer) 
 
@@ -44,7 +43,7 @@ newTextText to display
 
 ---
 
-### `const std::string & getText() const const`
+### `const std::string & getText() const`
 
 Get the current text. 
 
@@ -110,13 +109,7 @@ heightHeight of pointer in pixels (0 for no pointer)
 
 ## Private Methods
 
-### `std::vector&lt; std::string &gt; split(const std::string &s, char delimiter) const const`
-
-
-        
-
-
-        
+### `std::vector&lt; std::string &gt; split(const std::string &s, char delimiter) const`
 
 ---
 
@@ -124,26 +117,17 @@ heightHeight of pointer in pixels (0 for no pointer)
 
 Layout and render text to internal canvas. 
 
-
-        
-
 ---
 
 ### `void renderText(int16_t padding, int16_t line_spacing, int16_t box_height)`
 
 Render text with word wrapping and alignment. 
 
-
-        
-
 ---
 
 ### `int16_t calculateLineX(const std::string &line, int16_t padding)`
 
 Calculate X position for a line based on alignment. 
-
-
-        
 
 ---
 

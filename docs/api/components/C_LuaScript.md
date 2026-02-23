@@ -23,7 +23,7 @@ A drawable component that executes scripts for custom UI rendering. Uses platfor
 
 Constructor with automatic interpreter selection. 
 
-ownerOwner object width width Componentheight height Component
+ownerOwner object widthComponent width heightComponent height 
 
 ---
 
@@ -31,16 +31,13 @@ ownerOwner object width width Componentheight height Component
 
 Constructor with specific interpreter type. 
 
-ownerOwner object width width Componentheight height ComponentinterpreterTypeSpecific interpreter to use 
+ownerOwner object widthComponent width heightComponent height interpreterTypeSpecific interpreter to use 
 
 ---
 
 ### ` ~C_LuaScript()`
 
 Destructor. 
-
-
-        
 
 ---
 
@@ -72,12 +69,9 @@ True if reloaded successfully
 
 Clear current script. 
 
-
-        
-
 ---
 
-### `bool hasLoadedScript() const const`
+### `bool hasLoadedScript() const`
 
 Check if script is loaded. 
 
@@ -85,7 +79,7 @@ True if script is loaded
 
 ---
 
-### `bool hasErrors() const const`
+### `bool hasErrors() const`
 
 Check if script has errors. 
 
@@ -93,7 +87,7 @@ True if script has errors
 
 ---
 
-### `const std::string & getErrorMessage() const const`
+### `const std::string & getErrorMessage() const`
 
 Get last error message. 
 
@@ -181,7 +175,7 @@ canvas8-bit canvas to draw on
 
 ---
 
-### ` *IScriptInterpreter getInterpreter()`
+### `IScriptInterpreter * getInterpreter()`
 
 Get script interpreter for advanced operations. 
 
@@ -189,7 +183,7 @@ Script interpreter reference
 
 ---
 
-### ` *IScriptGraphics getGraphics()`
+### `IScriptGraphics * getGraphics()`
 
 Get graphics interface. 
 
@@ -197,7 +191,7 @@ Graphics interface reference
 
 ---
 
-### `const char * getInterpreterType() const const`
+### `const char * getInterpreterType() const`
 
 Get interpreter type name. 
 
@@ -205,7 +199,7 @@ Type name string
 
 ---
 
-### `uint32_t getDrawCalls() const const`
+### `uint32_t getDrawCalls() const`
 
 Get performance stats. 
 
@@ -249,7 +243,7 @@ canvasCanvas to wrap
 
 ### `void handleScriptError(const ScriptResult &result)`
 
- script error. Handle
+Handle script error. 
 
 resultScript execution result 
 

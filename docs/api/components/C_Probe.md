@@ -113,17 +113,11 @@ radiusScan beam radius speedScan rotation speed
 
 Update movement based on pattern. 
 
-
-        
-
 ---
 
 ### `void updateTrail(Point newPoint)`
 
 Update trail points. 
-
-
-        
 
 ---
 
@@ -131,77 +125,35 @@ Update trail points.
 
 Draw trail. 
 
-
-        
-
 ---
 
 ### `void drawDot(ICanvas&lt; PixelType &gt; &canvas, Point center, float size, PixelType color)`
 
 Draw different probe shapes. 
 
-
-        
-
 ---
 
 ### `void drawDiamond(ICanvas&lt; PixelType &gt; &canvas, Point center, float size, PixelType color)`
-
-
-        
-
-
-        
 
 ---
 
 ### `void drawCross(ICanvas&lt; PixelType &gt; &canvas, Point center, float size, PixelType color)`
 
-
-        
-
-
-        
-
 ---
 
 ### `void drawTriangle(ICanvas&lt; PixelType &gt; &canvas, Point center, float size, PixelType color)`
-
-
-        
-
-
-        
 
 ---
 
 ### `void drawScanner(ICanvas&lt; PixelType &gt; &canvas, Point center, float size, PixelType color)`
 
-
-        
-
-
-        
-
 ---
 
 ### `void drawParticle(ICanvas&lt; PixelType &gt; &canvas, Point center, float size, PixelType color)`
 
-
-        
-
-
-        
-
 ---
 
 ### `void drawLine(ICanvas&lt; PixelType &gt; &canvas, Point from, Point to, PixelType color)`
-
-
-        
-
-
-        
 
 ---
 

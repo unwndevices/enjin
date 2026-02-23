@@ -91,7 +91,7 @@ enabledTrue to enable rings innerRadiusInner ring radius as multiple of planet r
 
 ---
 
-### `float getRadius() const const`
+### `float getRadius() const`
 
 Get planet radius. 
 
@@ -99,7 +99,7 @@ Planet radius in pixels
 
 ---
 
-### `Point getCenterPosition() const const`
+### `Point getCenterPosition() const`
 
 Get planet center position in world coordinates. 
 
@@ -113,26 +113,17 @@ Center point of the planet
 
 Draw filled circle. 
 
-
-        
-
 ---
 
 ### `void drawRing(ICanvas&lt; PixelType &gt; &canvas, Point center, float innerR, float outerR, PixelType color)`
 
 Draw ring (hollow circle). 
 
-
-        
-
 ---
 
 ### `void drawSurfaceDetails(ICanvas&lt; PixelType &gt; &canvas, Point center, float r)`
 
 Draw surface details that rotate with the planet. 
-
-
-        
 
 ---
 

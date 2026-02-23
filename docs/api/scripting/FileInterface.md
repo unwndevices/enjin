@@ -21,12 +21,6 @@ Allows ImageCache to work with different file systems (embedded flash, SD card, 
 
 ### `virtual  ~FileInterface()=default`
 
-
-        
-
-
-        
-
 ---
 
 ### `bool open()=0`
@@ -40,9 +34,6 @@ True if file opened successfully
 ### `void close()=0`
 
 Close the file. 
-
-
-        
 
 ---
 

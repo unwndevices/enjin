@@ -23,7 +23,7 @@ RAII wrapper that automatically disconnects when destroyed.
 
 Constructor. 
 
-sig to connect to SignalcallbackCallback function 
+sigSignal to connect to callbackCallback function 
 
 ---
 
@@ -35,7 +35,7 @@ otherConnection to move from
 
 ---
 
-### ` &SignalConnection operator=(SignalConnection &&other) noexcept`
+### `SignalConnection & operator=(SignalConnection &&other) noexcept`
 
 Move assignment operator. 
 
@@ -47,21 +47,15 @@ otherConnection to move from Reference to this connection
 
 Destructor - automatically disconnects. 
 
-
-        
-
 ---
 
 ### `void disconnect()`
 
 Manually disconnect. 
 
-
-        
-
 ---
 
-### `bool isConnected() const const`
+### `bool isConnected() const`
 
 Check if connection is valid. 
 
@@ -71,21 +65,9 @@ True if connected
 
 ### ` SignalConnection(const SignalConnection &)=delete`
 
-
-        
-
-
-        
-
 ---
 
-### ` &SignalConnection operator=(const SignalConnection &)=delete`
-
-
-        
-
-
-        
+### `SignalConnection & operator=(const SignalConnection &)=delete`
 
 ---
 

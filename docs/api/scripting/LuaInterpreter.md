@@ -23,17 +23,11 @@ Desktop/VCV implementation using full Lua with complete enjin2 bindings. Provide
 
 Constructor. 
 
-
-        
-
 ---
 
 ### ` ~LuaInterpreter() override`
 
 Destructor. 
-
-
-        
 
 ---
 
@@ -56,9 +50,6 @@ True if initialization successful
 ### `virtual void shutdown() override`
 
 Shutdown the Lua interpreter. 
-
-
-        
 
 ---
 
@@ -158,7 +149,7 @@ Type name string
 
 ---
 
-### ` *LuaEngine getLuaEngine()`
+### `LuaEngine * getLuaEngine()`
 
 Get access to underlying Lua engine (for advanced operations). 
 
@@ -166,7 +157,7 @@ Lua engine reference
 
 ---
 
-### ` *LuaBindings getLuaBindings()`
+### `LuaBindings * getLuaBindings()`
 
 Get access to Lua bindings. 
 
@@ -178,7 +169,7 @@ Lua bindings reference
 
 ### `ScriptResult convertResult(const LuaResult &luaResult)`
 
-Convert  to . LuaResultScriptResult
+Convert LuaResult to ScriptResult. 
 
 luaResultLua execution result Script execution result 
 

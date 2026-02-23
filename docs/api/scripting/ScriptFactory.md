@@ -10,8 +10,6 @@ Script system factory for creating platform-specific interpreters.
 
 
 
-    
-
 ---
 
 **Namespace:** `enjin2`
@@ -20,7 +18,7 @@ Script system factory for creating platform-specific interpreters.
 
 ## Public Methods
 
-### `static std::unique_ptr&lt;  &gt;IScriptInterpreter createInterpreter(InterpreterType type)`
+### `static std::unique_ptr&lt; IScriptInterpreter &gt; createInterpreter(InterpreterType type)`
 
 Create interpreter for current platform. 
 

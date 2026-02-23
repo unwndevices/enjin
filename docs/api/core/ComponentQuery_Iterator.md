@@ -7,11 +7,9 @@ slug: ComponentQuery_Iterator
 
 # ComponentQuery::Iterator
 
- for query results. Iterator
+Iterator for query results. 
 
 
-
-    
 
 ---
 
@@ -25,11 +23,11 @@ slug: ComponentQuery_Iterator
 
 Construct iterator with filter and starting position. 
 
-f filter function EntitystartStarting entity indexStarting entity index 
+fEntity filter function startStarting entity indexStarting entity index 
 
 ---
 
-### `Entity operator*() const const`
+### `Entity operator*() const`
 
 Dereference to get current entity. 
 
@@ -37,7 +35,7 @@ Current entity
 
 ---
 
-### ` &Iterator operator++()`
+### `Iterator & operator++()`
 
 Advance to next matching entity. 
 
@@ -45,23 +43,17 @@ Reference to this iterator
 
 ---
 
-### `bool operator!=(const Iterator &other) const const`
+### `bool operator!=(const Iterator &other) const`
 
 Inequality comparison. 
 
-other to compare with IteratorTrue if iterators are at different positions 
+otherIterator to compare with True if iterators are at different positions 
 
 ---
 
 ## Private Methods
 
 ### `void findNext()`
-
-
-        
-
-
-        
 
 ---
 

@@ -23,9 +23,6 @@ Systems contain the logic and operate on components. They are stateless and proc
 
 Virtual destructor. 
 
-
-        
-
 ---
 
 ### `void update(float deltaTime)=0`
@@ -36,7 +33,7 @@ deltaTimeTime since last update in seconds
 
 ---
 
-### `virtual int getPriority() const const`
+### `virtual int getPriority() const`
 
 Get system priority for update ordering. 
 
@@ -48,7 +45,7 @@ Priority value (lower = earlier execution)
 
 Get unique system ID. 
 
- identifier System
+System identifier 
 
 ---
 
@@ -58,7 +55,7 @@ Get unique system ID.
 
 Generate unique system type ID. 
 
-T type SystemUnique ID for system type T 
+TSystem type Unique ID for system type T 
 
 ---
 

@@ -6,11 +6,11 @@ sidebar_label: Component
 
 # Component
 
- base class. Component
+Component base class. 
 
 
-Template base for typed components.All components in the Enjin system derive from this base class. Components provide specific functionality to Objects through composition.
-Provides automatic type ID generation and type safety. TDerived component type
+Template base for typed components.All components in the Enjin system derive from this base class. Components provide specific functionality to Objects through composition.TDerived component type
+Provides automatic type ID generation and type safety. 
 
 ---
 
@@ -32,12 +32,9 @@ ownerThe object that owns this component
 
 Virtual destructor. 
 
-
-        
-
 ---
 
-### ` *Object getOwner() const const`
+### `Object * getOwner() const`
 
 Get the owner object. 
 
@@ -45,7 +42,7 @@ Pointer to owner object
 
 ---
 
-### `bool isEnabled() const const`
+### `bool isEnabled() const`
 
 Check if component is enabled. 
 
@@ -97,17 +94,11 @@ deltaTimeTime since last frame in milliseconds
 
 Called when component is enabled. 
 
-
-        
-
 ---
 
 ### `virtual void onDisable()`
 
 Called when component is disabled. 
-
-
-        
 
 ---
 
@@ -115,7 +106,7 @@ Called when component is disabled.
 
 Get component type ID for this component type. 
 
- type identifier Component
+Component type identifier 
 
 ---
 
@@ -123,7 +114,7 @@ Get component type ID for this component type.
 
 Get static component type ID. 
 
- type identifier Component
+Component type identifier 
 
 ---
 

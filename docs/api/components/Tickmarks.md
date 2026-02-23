@@ -6,7 +6,7 @@ sidebar_label: Tickmarks
 
 # Tickmarks
 
- component for drawing measurement scales. Tickmarks
+Tickmarks component for drawing measurement scales. 
 
 
 A component that draws tickmarks around a circular arc, useful for creating dial scales, meters, and other measurement indicators. 
@@ -21,7 +21,7 @@ A component that draws tickmarks around a circular arc, useful for creating dial
 
 ### ` Tickmarks(Object *owner, Vector2 centerPoint, int16_t startAngle, int16_t stopAngle, uint8_t tickSpacing, uint8_t tickLength, uint8_t arcRadius)`
 
-Construct a new  component. Tickmarks
+Construct a new Tickmarks component. 
 
 ownerThe object that owns this component centerPointCenter point for the tickmarks arc startAngleStarting angle in degrees stopAngleEnding angle in degrees tickSpacingSpacing between tickmarks in degrees tickLengthLength of the tickmarks in pixels arcRadiusRadius of the arc on which tickmarks are drawn 
 
@@ -30,9 +30,6 @@ ownerThe object that owns this component centerPointCenter point for the tickmar
 ### `void onCreate() override`
 
 Initialize the tickmarks. 
-
-
-        
 
 ---
 
@@ -60,7 +57,7 @@ valueValue that affects tickmark positioning (typically 0.0-1.0)
 
 ---
 
-### `float getValue() const const`
+### `float getValue() const`
 
 Get the current value. 
 

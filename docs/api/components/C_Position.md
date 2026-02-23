@@ -37,7 +37,7 @@ ownerOwner object xInitial X position yInitial Y position
 
 ### ` C_Position(Object *owner, const Point &pos)`
 
-Constructor with . Point
+Constructor with Point. 
 
 ownerOwner object posInitial position 
 
@@ -59,7 +59,7 @@ posNew position
 
 ---
 
-### `const  &Point getPosition() const const`
+### `const Point & getPosition() const`
 
 Get position. 
 
@@ -91,7 +91,7 @@ anchorNew anchor point
 
 ---
 
-### `Anchor getAnchor() const const`
+### `Anchor getAnchor() const`
 
 Get anchor point. 
 
@@ -107,7 +107,7 @@ offsetOffset from anchor point
 
 ---
 
-### `const  &Point getAnchorOffset() const const`
+### `const Point & getAnchorOffset() const`
 
 Get anchor offset. 
 
@@ -115,11 +115,11 @@ Current anchor offset
 
 ---
 
-### `Point calculateRenderPosition(const Size &size) const const`
+### `Point calculateRenderPosition(const Size &size) const`
 
 Calculate final rendering position based on anchor and size. 
 
-size of the object for anchor calculation SizeFinal rendering position 
+sizeSize of the object for anchor calculation Final rendering position 
 
 ---
 
@@ -131,7 +131,7 @@ targetTarget position tInterpolation factor (0.0 to 1.0)
 
 ---
 
-### `float distanceTo(const Point &other) const const`
+### `float distanceTo(const Point &other) const`
 
 Calculate distance to another position. 
 
@@ -139,7 +139,7 @@ otherOther position Distance in pixels
 
 ---
 
-### `int32_t distanceSquaredTo(const Point &other) const const`
+### `int32_t distanceSquaredTo(const Point &other) const`
 
 Calculate squared distance to another position (faster than distanceTo). 
 

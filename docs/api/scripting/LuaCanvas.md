@@ -35,7 +35,7 @@ WCanvas width HCanvas height canvas8-bit canvas pointer
 
 ---
 
-### `uint16_t getWidth() const const`
+### `uint16_t getWidth() const`
 
 Get canvas width. 
 
@@ -43,7 +43,7 @@ Canvas width in pixels
 
 ---
 
-### `uint16_t getHeight() const const`
+### `uint16_t getHeight() const`
 
 Get canvas height. 
 
@@ -51,7 +51,7 @@ Canvas height in pixels
 
 ---
 
-### `bool is4BitCanvas() const const`
+### `bool is4BitCanvas() const`
 
 Check if this is a 4-bit canvas. 
 
@@ -75,7 +75,7 @@ xX coordinate yY coordinate colorPixel color
 
 ---
 
-### `uint8_t getPixel(int16_t x, int16_t y) const const`
+### `uint8_t getPixel(int16_t x, int16_t y) const`
 
 Get pixel at coordinates. 
 

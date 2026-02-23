@@ -9,7 +9,7 @@ sidebar_label: PostFx
 Post-processing effects system. 
 
 
-Provides various visual effects that can be applied to canvases including CRT simulation, noise, blur, glow, etc. Based on original Enjin  with expanded functionality. PostFx
+Provides various visual effects that can be applied to canvases including CRT simulation, noise, blur, glow, etc. Based on original Enjin PostFx with expanded functionality. 
 
 ---
 
@@ -23,9 +23,6 @@ Provides various visual effects that can be applied to canvases including CRT si
 
 Constructor. 
 
-
-        
-
 ---
 
 ### `void update(uint16_t deltaTime)`
@@ -36,7 +33,7 @@ deltaTimeTime since last update in milliseconds
 
 ---
 
-### `uint32_t getTime() const const`
+### `uint32_t getTime() const`
 
 Get current animation time for time-based effects. 
 

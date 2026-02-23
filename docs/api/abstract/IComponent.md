@@ -23,9 +23,6 @@ Both enjin1 and enjin2 can implement this interface for compile-time polymorphis
 
 Virtual destructor for proper cleanup through base pointer. 
 
-
-        
-
 ---
 
 ### `void awake()=0`
@@ -64,21 +61,15 @@ deltaTimeTime since last frame in milliseconds
 
 Called when component is enabled. 
 
-
-        
-
 ---
 
 ### `void onDisable()=0`
 
 Called when component is disabled. 
 
-
-        
-
 ---
 
-### ` *Object getOwner() const =0 const`
+### `Object * getOwner() const =0 const`
 
 Get owner object. 
 

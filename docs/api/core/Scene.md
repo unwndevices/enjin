@@ -31,9 +31,6 @@ idUnique scene identifier
 
 Virtual destructor. 
 
-
-        
-
 ---
 
 ### `void initialize()`
@@ -80,7 +77,7 @@ canvasTarget canvas for rendering
 
 Add an object to the scene. 
 
-T type (must derive from ) ObjectObjectArgsConstructor argument types argsConstructor arguments Pointer to created object or nullptr if failed 
+TObject type (must derive from Object) ArgsConstructor argument types argsConstructor arguments Pointer to created object or nullptr if failed 
 
 ---
 
@@ -88,7 +85,7 @@ T type (must derive from ) ObjectObjectArgsConstructor argument types argsConstr
 
 Remove an object from the scene. 
 
-object to remove ObjectTrue if object was removed 
+objectObject to remove True if object was removed 
 
 ---
 
@@ -96,27 +93,27 @@ object to remove ObjectTrue if object was removed
 
 Find first object of specified type. 
 
-T type ObjectPointer to object or nullptr if not found 
+TObject type Pointer to object or nullptr if not found 
 
 ---
 
-### ` *Object findObjectWithComponent()`
+### `Object * findObjectWithComponent()`
 
 Find object with component of specified type. 
 
-T type ComponentPointer to object or nullptr if not found 
+TComponent type Pointer to object or nullptr if not found 
 
 ---
 
-### `uint32_t getId() const const`
+### `uint32_t getId() const`
 
 Get scene ID. 
 
- identifier Scene
+Scene identifier 
 
 ---
 
-### `bool isActive() const const`
+### `bool isActive() const`
 
 Check if scene is active. 
 
@@ -124,7 +121,7 @@ True if scene is active
 
 ---
 
-### `bool isInitialized() const const`
+### `bool isInitialized() const`
 
 Check if scene is initialized. 
 
@@ -132,7 +129,7 @@ True if scene is initialized
 
 ---
 
-### ` &ObjectCollection getObjects()`
+### `ObjectCollection & getObjects()`
 
 Get object collection. 
 
@@ -140,7 +137,7 @@ Reference to object collection
 
 ---
 
-### `const  &ObjectCollection getObjects() const const`
+### `const ObjectCollection & getObjects() const`
 
 Get object collection (const). 
 
@@ -148,35 +145,35 @@ Const reference to object collection
 
 ---
 
-### `&lt;  * &gt;SignalConnectionScene connectOnCreate(std::function&lt; void(Scene *)&gt; callback)`
+### `SignalConnection&lt; Scene * &gt; connectOnCreate(std::function&lt; void(Scene *)&gt; callback)`
 
 Connect to scene create event. 
 
-callbackFunction called when scene is created  connection handle Signal
+callbackFunction called when scene is created Signal connection handle 
 
 ---
 
-### `&lt;  * &gt;SignalConnectionScene connectOnActivate(std::function&lt; void(Scene *)&gt; callback)`
+### `SignalConnection&lt; Scene * &gt; connectOnActivate(std::function&lt; void(Scene *)&gt; callback)`
 
 Connect to scene activate event. 
 
-callbackFunction called when scene becomes active  connection handle Signal
+callbackFunction called when scene becomes active Signal connection handle 
 
 ---
 
-### `&lt;  * &gt;SignalConnectionScene connectOnDeactivate(std::function&lt; void(Scene *)&gt; callback)`
+### `SignalConnection&lt; Scene * &gt; connectOnDeactivate(std::function&lt; void(Scene *)&gt; callback)`
 
 Connect to scene deactivate event. 
 
-callbackFunction called when scene becomes inactive  connection handle Signal
+callbackFunction called when scene becomes inactive Signal connection handle 
 
 ---
 
-### `&lt;  * &gt;SignalConnectionScene connectOnDestroy(std::function&lt; void(Scene *)&gt; callback)`
+### `SignalConnection&lt; Scene * &gt; connectOnDestroy(std::function&lt; void(Scene *)&gt; callback)`
 
 Connect to scene destroy event. 
 
-callbackFunction called when scene is destroyed  connection handle Signal
+callbackFunction called when scene is destroyed Signal connection handle 
 
 ---
 
@@ -218,8 +215,8 @@ Use this to clean up scene-specific resources.
 
 Called every frame (override in derived classes). 
 
-
-Use this for scene-specific update logic that should happen before object updates. deltaTimeTime since last frame in milliseconds
+deltaTimeTime since last frame in milliseconds
+Use this for scene-specific update logic that should happen before object updates. 
 
 ---
 
@@ -227,8 +224,8 @@ Use this for scene-specific update logic that should happen before object update
 
 Called during rendering for 4-bit canvas (override in derived classes). 
 
-
-Use this for scene-specific rendering like backgrounds or UI overlays. canvasTarget canvas for rendering
+canvasTarget canvas for rendering
+Use this for scene-specific rendering like backgrounds or UI overlays. 
 
 ---
 
@@ -236,8 +233,8 @@ Use this for scene-specific rendering like backgrounds or UI overlays. canvasTar
 
 Called during rendering for 8-bit canvas (override in derived classes). 
 
-
-Use this for scene-specific rendering like backgrounds or UI overlays. canvasTarget canvas for rendering
+canvasTarget canvas for rendering
+Use this for scene-specific rendering like backgrounds or UI overlays. 
 
 ---
 

@@ -9,8 +9,8 @@ sidebar_label: RenderSystem
 Rendering system for drawing entities to canvas. 
 
 
-
-Renders all visible entities with  to the target canvas. Handles z-ordering and shape rendering. TCanvasCanvas type for renderingRenderComponent
+TCanvasCanvas type for rendering
+Renders all visible entities with RenderComponent to the target canvas. Handles z-ordering and shape rendering. 
 
 ---
 
@@ -50,7 +50,7 @@ Priority value
 
 Render individual entity. 
 
-entity to render Entity
+entityEntity to render 
 
 ---
 
@@ -58,7 +58,7 @@ entity to render Entity
 
 Render shape component. 
 
-posPosition component size component (may be null) SizerenderRender component shapeShape component 
+posPosition component sizeSize component (may be null) renderRender component shapeShape component 
 
 ---
 
@@ -66,7 +66,7 @@ posPosition component size component (may be null) SizerenderRender component sh
 
 Render simple rectangle. 
 
-posPosition component size component SizerenderRender component 
+posPosition component sizeSize component renderRender component 
 
 ---
 

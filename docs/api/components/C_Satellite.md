@@ -59,7 +59,7 @@ valueNormalized parameter value, clamped to [0, 1]
 
 ---
 
-### `float getParameterValue() const const`
+### `float getParameterValue() const`
 
 Get parameter value. 
 
@@ -75,7 +75,7 @@ minMinimum value maxMaximum value
 
 ---
 
-### `float getScaledValue() const const`
+### `float getScaledValue() const`
 
 Get scaled parameter value in range. 
 
@@ -131,7 +131,7 @@ enabledWhether to show connection line
 
 ---
 
-### `float getAngle() const const`
+### `float getAngle() const`
 
 Get current orbital angle. 
 
@@ -153,17 +153,11 @@ angleAngle in radians
 
 Update trail points. 
 
-
-        
-
 ---
 
 ### `void drawTrail(ICanvas&lt; PixelType &gt; &canvas)`
 
 Draw orbital trail. 
-
-
-        
 
 ---
 
@@ -171,17 +165,11 @@ Draw orbital trail.
 
 Draw line between two points. 
 
-
-        
-
 ---
 
 ### `void drawCircle(ICanvas&lt; PixelType &gt; &canvas, Point center, float r, PixelType color, bool filled)`
 
 Draw filled circle. 
-
-
-        
 
 ---
 

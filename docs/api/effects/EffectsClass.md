@@ -10,7 +10,7 @@ slug: EffectsClass
 Graphics effects for pixel manipulation. 
 
 
-TPixelPixel type (e.g., , uint8_t) Pixel4
+TPixelPixel type (e.g., Pixel4, uint8_t) 
 
 ---
 

@@ -23,17 +23,11 @@ Provides a lightweight Lua scripting environment optimized for embedded systems.
 
 Constructor initializes Lua state. 
 
-
-        
-
 ---
 
 ### ` ~LuaEngine()`
 
 Destructor cleans up Lua state. 
-
-
-        
 
 ---
 
@@ -49,12 +43,9 @@ True if initialization successful
 
 Shutdown the Lua engine. 
 
-
-        
-
 ---
 
-### `bool isInitialized() const const`
+### `bool isInitialized() const`
 
 Check if engine is initialized. 
 
@@ -158,7 +149,7 @@ functionNameName of Lua function argsFunction arguments Execution result
 
 ---
 
-### `size_t getMemoryUsage() const const`
+### `size_t getMemoryUsage() const`
 
 Get current memory usage. 
 
@@ -166,7 +157,7 @@ Memory usage in bytes
 
 ---
 
-### `const std::vector&lt; std::string &gt; & getLoadedScripts() const const`
+### `const std::vector&lt; std::string &gt; & getLoadedScripts() const`
 
 Get list of loaded scripts. 
 
@@ -177,9 +168,6 @@ Vector of script names
 ### `void clearScripts()`
 
 Clear all loaded scripts. 
-
-
-        
 
 ---
 
@@ -197,13 +185,13 @@ Lua state pointer
 
 Custom Lua allocator using static memory pool. 
 
-udUser data ( instance) LuaEngineptrPointer to reallocate osizeOriginal size nsizeNew size Allocated memory or nullptr 
+udUser data (LuaEngine instance) ptrPointer to reallocate osizeOriginal size nsizeNew size Allocated memory or nullptr 
 
 ---
 
 ### `static int luaPanic(lua_State *L)`
 
- Lua panic. Handle
+Handle Lua panic. 
 
 LLua state Never returns 
 
@@ -227,20 +215,11 @@ argArgument to push
 
 ### `void pushArgs(T &&first, Args &&... rest)`
 
-
-        
-
-
-        
-
 ---
 
 ### `void pushArgs()`
 
 Base case for pushArgs (no arguments). 
-
-
-        
 
 ---
 
@@ -248,7 +227,7 @@ Base case for pushArgs (no arguments).
 
 Check Lua execution result. 
 
-resultLua function result code  with success/error information LuaResult
+resultLua function result code LuaResult with success/error information 
 
 ---
 

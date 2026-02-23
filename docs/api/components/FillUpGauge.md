@@ -21,7 +21,7 @@ A visual gauge that fills up to represent a value, similar to a VU meter. Suppor
 
 ### ` FillUpGauge(Object *owner, uint16_t w, uint16_t h, uint16_t gaugeColor, GaugeMode gaugeMode)`
 
-Construct a new  component. FillUpGauge
+Construct a new FillUpGauge component. 
 
 ownerThe object that owns this component wWidth of the gauge in pixels hHeight of the gauge in pixels gaugeColorColor for the gauge outline and indicator gaugeModeMode of operation (unidirectional or bidirectional) 
 
@@ -30,9 +30,6 @@ ownerThe object that owns this component wWidth of the gauge in pixels hHeight o
 ### `void onCreate() override`
 
 Initialize the gauge. 
-
-
-        
 
 ---
 
@@ -60,7 +57,7 @@ valueValue to display (0.0-1.0 for unidirectional, -1.0-1.0 for bidirectional)
 
 ---
 
-### `float getValue() const const`
+### `float getValue() const`
 
 Get the current gauge value. 
 
@@ -76,7 +73,7 @@ newModeNew mode (unidirectional or bidirectional)
 
 ---
 
-### `GaugeMode getMode() const const`
+### `GaugeMode getMode() const`
 
 Get the current gauge mode. 
 
@@ -98,17 +95,11 @@ newColorColor value (0-15 for 4-bit grayscale)
 
 Draw unidirectional gauge (fills from bottom). 
 
-
-        
-
 ---
 
 ### `void drawBidirectional()`
 
 Draw bidirectional gauge (fills from center). 
-
-
-        
 
 ---
 

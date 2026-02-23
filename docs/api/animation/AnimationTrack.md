@@ -9,7 +9,7 @@ sidebar_label: AnimationTrack
 Template animation track for keyframe-based animations. 
 
 
-TValue type (, float, , etc.) PointPixel4KeyframeTypeKeyframe type (, , etc.) PositionKeyframeFloatKeyframe
+TValue type (Point, float, Pixel4, etc.) KeyframeTypeKeyframe type (PositionKeyframe, FloatKeyframe, etc.) 
 
 ---
 
@@ -22,9 +22,6 @@ TValue type (, float, , etc.) PointPixel4KeyframeTypeKeyframe type (, , etc.) Po
 ### ` AnimationTrack()`
 
 Constructor. 
-
-
-        
 
 ---
 
@@ -40,17 +37,11 @@ keyframeKeyframe to add True if keyframe was added successfully
 
 Clear all keyframes. 
 
-
-        
-
 ---
 
 ### `void play()`
 
 Start animation playback. 
-
-
-        
 
 ---
 
@@ -58,17 +49,11 @@ Start animation playback.
 
 Pause animation playback. 
 
-
-        
-
 ---
 
 ### `void stop()`
 
 Stop animation playback and reset to beginning. 
-
-
-        
 
 ---
 
@@ -88,7 +73,7 @@ deltaTimeTime elapsed since last update in milliseconds
 
 ---
 
-### `T getCurrentValue() const const`
+### `T getCurrentValue() const`
 
 Get current animation value. 
 
@@ -96,7 +81,7 @@ Current interpolated value
 
 ---
 
-### `AnimationState getState() const const`
+### `AnimationState getState() const`
 
 Get animation state. 
 
@@ -104,7 +89,7 @@ Current animation state
 
 ---
 
-### `uint16_t getCurrentTime() const const`
+### `uint16_t getCurrentTime() const`
 
 Get current time. 
 
@@ -112,7 +97,7 @@ Current playback time in milliseconds
 
 ---
 
-### `uint16_t getDuration() const const`
+### `uint16_t getDuration() const`
 
 Get animation duration. 
 
@@ -120,7 +105,7 @@ Total duration in milliseconds
 
 ---
 
-### `float getProgress() const const`
+### `float getProgress() const`
 
 Get normalized progress (0.0 to 1.0). 
 
@@ -132,7 +117,7 @@ Animation progress
 
 Connect to animation start event. 
 
-callbackFunction to call when animation starts  connection for disconnecting callback Signal
+callbackFunction to call when animation starts Signal connection for disconnecting callback 
 
 ---
 
@@ -140,15 +125,15 @@ callbackFunction to call when animation starts  connection for disconnecting cal
 
 Connect to animation complete event. 
 
-callbackFunction to call when animation completes  connection for disconnecting callback Signal
+callbackFunction to call when animation completes Signal connection for disconnecting callback 
 
 ---
 
-### `&lt; T &gt;SignalConnection connectOnUpdate(std::function&lt; void(T)&gt; callback)`
+### `SignalConnection&lt; T &gt; connectOnUpdate(std::function&lt; void(T)&gt; callback)`
 
 Connect to animation update event. 
 
-callbackFunction to call when animation value updates  connection for disconnecting callback Signal
+callbackFunction to call when animation value updates Signal connection for disconnecting callback 
 
 ---
 
@@ -156,14 +141,11 @@ callbackFunction to call when animation value updates  connection for disconnect
 
 ### `void handleLoopBoundary()`
 
- reaching loop boundary. Handle
-
-
-        
+Handle reaching loop boundary. 
 
 ---
 
-### `T evaluateAtTime(uint16_t time) const const`
+### `T evaluateAtTime(uint16_t time) const`
 
 Evaluate animation value at specific time. 
 
@@ -171,51 +153,27 @@ timeTime to evaluate at Interpolated value at time
 
 ---
 
-### `T getValue(const KeyframeType &keyframe) const const`
+### `T getValue(const KeyframeType &keyframe) const`
 
 Get value from keyframe (specialized for each keyframe type). 
 
-
-        
-
 ---
 
-### `T interpolateBetween(const KeyframeType &from, const KeyframeType &to, uint16_t time) const const`
+### `T interpolateBetween(const KeyframeType &from, const KeyframeType &to, uint16_t time) const`
 
 Interpolate between two keyframes. 
 
+---
 
-        
+### `Point getValue(const PositionKeyframe &keyframe) const`
 
 ---
 
-### `Point getValue(const PositionKeyframe &keyframe) const const`
-
-
-        
-
-
-        
+### `float getValue(const FloatKeyframe &keyframe) const`
 
 ---
 
-### `float getValue(const FloatKeyframe &keyframe) const const`
-
-
-        
-
-
-        
-
----
-
-### `Pixel4 getValue(const ColorKeyframe &keyframe) const const`
-
-
-        
-
-
-        
+### `Pixel4 getValue(const ColorKeyframe &keyframe) const`
 
 ---
 

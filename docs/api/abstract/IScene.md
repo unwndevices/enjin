@@ -9,8 +9,8 @@ sidebar_label: IScene
 Abstract scene interface for scene lifecycle. 
 
 
-
-Both enjin1 and enjin2 can implement this interface for compile-time polymorphism. Provides standard scene lifecycle methods (onCreate, onUpdate, onRender, etc.). PixelTypePixel type for rendering (e.g., , uint8_t)Pixel4
+PixelTypePixel type for rendering (e.g., Pixel4, uint8_t)
+Both enjin1 and enjin2 can implement this interface for compile-time polymorphism. Provides standard scene lifecycle methods (onCreate, onUpdate, onRender, etc.). 
 
 ---
 
@@ -23,9 +23,6 @@ Both enjin1 and enjin2 can implement this interface for compile-time polymorphis
 ### `virtual  ~IScene()=default`
 
 Virtual destructor for proper cleanup through base pointer. 
-
-
-        
 
 ---
 
@@ -65,8 +62,8 @@ Use this to clean up scene-specific resources.
 
 Called every frame during update. 
 
-
-Use this for scene-specific update logic that should happen before object updates. deltaTimeTime since last frame in milliseconds
+deltaTimeTime since last frame in milliseconds
+Use this for scene-specific update logic that should happen before object updates. 
 
 ---
 
@@ -74,8 +71,8 @@ Use this for scene-specific update logic that should happen before object update
 
 Called during rendering. 
 
-
-Use this for scene-specific rendering like backgrounds or UI overlays. canvasTarget canvas for rendering
+canvasTarget canvas for rendering
+Use this for scene-specific rendering like backgrounds or UI overlays. 
 
 ---
 
@@ -83,7 +80,7 @@ Use this for scene-specific rendering like backgrounds or UI overlays. canvasTar
 
 Get scene ID. 
 
- identifier Scene
+Scene identifier 
 
 ---
 
