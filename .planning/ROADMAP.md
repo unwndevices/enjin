@@ -64,7 +64,9 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   2. `enjin_comparison_benchmark.cpp` and `eisei_game_benchmark.cpp` no longer exist in `examples/`
   3. CMake configuration succeeds with no references to removed files (no broken includes, no missing targets)
   4. `docs/latex/` is not tracked by git and is listed in `.gitignore`
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 16-01-PLAN.md — Remove dead compat headers, benchmark files, and clean CMake/doc references
+- [ ] 16-02-PLAN.md — Untrack LaTeX files from git and update .gitignore
 
 ### Phase 17: Documentation Generation Fix
 **Goal**: API documentation pages render with correct text -- no garbled strings, no duplicated keywords
