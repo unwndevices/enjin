@@ -52,6 +52,27 @@ jobs:
           cmake .. -DCMAKE_BUILD_TYPE=Release -DENJIN2_BUILD_LUA=OFF
           cmake --build . --target docs
 
+      - name: Check Doxygen warning count
+        run: |
+          WARNING_FILE="doxygen-warnings.log"
+          THRESHOLD=20
+          if [ ! -f "$WARNING_FILE" ]; then
+            echo "::error::Doxygen warning log not found at $WARNING_FILE"
+            exit 1
+          fi
+          COUNT=$(grep -c ": warning:" "$WARNING_FILE" || true)
+          echo "Doxygen warnings: $COUNT (threshold: $THRESHOLD)"
+          if [ "$COUNT" -gt "$THRESHOLD" ]; then
+            echo "::error::Doxygen warning count ($COUNT) exceeds threshold ($THRESHOLD)"
+            echo "## Doxygen Warning Summary" >> $GITHUB_STEP_SUMMARY
+            echo "Warning count: **$COUNT** (threshold: $THRESHOLD)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -30 "$WARNING_FILE" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "::notice::Doxygen warning count ($COUNT) is within threshold ($THRESHOLD)"
+
       - name: Generate API documentation
         run: |
           node scripts/generate-api-docs.js
