@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Complete migration from enjin to enjin2 - making enjin2 fully self-contained with Lua/WASM integration, non-dynamic memory allocation, and clean intelligent structure. enjin2 is now a fully independent library with comprehensive documentation deployed to GitHub Pages.
+Complete migration from enjin to enjin2 - making enjin2 fully self-contained with Lua/WASM integration, non-dynamic memory allocation, and clean intelligent structure. enjin2 is now a fully independent library with comprehensive documentation deployed to GitHub Pages, professional README, and zero Doxygen warnings.
 
 ## Core Value
 
@@ -10,23 +10,19 @@ enjin2 works independently without any enjin1 dependencies.
 
 ## Current State
 
-**Shipped: v1.0 Migration + Documentation (2026-02-01)**
-- enjin2 is fully independent with zero enjin1 dependencies
+**Shipped: v1.1 Project Infrastructure & Documentation Enhancement (2026-02-23)**
+- Professional README with badges, features, and documentation links
+- Lua build dependency resolved with CMake options
+- 0 Doxygen warnings (down from 372) with CI threshold gate
+- 76+ clean API pages across 9 modules with module overviews
+- Documentation pipeline fully operational: Doxygen XML → generate-api-docs.js → Docusaurus → GitHub Pages
+- 9 phases completed over 22 days
+
+**Previously shipped: v1.0 Migration + Documentation (2026-02-01)**
+- enjin2 fully independent with zero enjin1 dependencies
 - 28,271 LOC C++ codebase
-- Comprehensive documentation: 59 API pages across 9 modules
+- Documentation pipeline: Doxygen + Docusaurus (59 initial API pages)
 - All 14 v1 requirements validated
-- 6 phases completed: Dependency Analysis, Core Migration, Feature Support, Validation, Final Cleanup, Documentation
-
-## Current Milestone: v1.1 Project Infrastructure & Documentation Enhancement
-
-**Goal:** Improve project accessibility with comprehensive README, fix build dependencies, and enhance documentation coverage.
-
-**Target features:**
-- Professional README with project description, features, and links to documentation
-- Fixed build system (Lua dependency resolved)
-- Comprehensive Doxygen documentation (reduced warnings, complete coverage)
-- Usage examples in API documentation
-- Filled documentation gaps
 
 ## Requirements
 
@@ -42,45 +38,45 @@ enjin2 works independently without any enjin1 dependencies.
 - ✓ enjin2-only build system — v1.0 (all USE_ENJIN1 references removed)
 - ✓ BMP export capability — v1.0 (stb_image_write integration)
 - ✓ Documentation pipeline — v1.0 (Doxygen + Docusaurus + GitHub Pages)
+- ✓ README provides clear project description — v1.1 (Phase 7, RDME-01)
+- ✓ Features list highlighting key capabilities — v1.1 (Phase 7, RDME-02)
+- ✓ Documentation links to API, guides, GitHub Pages — v1.1 (Phase 7, RDME-03)
+- ✓ Lua dependency resolved — v1.1 (Phase 8, BLD-01)
+- ✓ Dependencies documented — v1.1 (Phase 8, BLD-02)
+- ✓ Doxygen warnings reduced to 0 (target was < 20) — v1.1 (Phase 12, DOC-01)
+- ✓ Public APIs documented — v1.1 (Phases 9, 13, 14, DOC-02)
+- ✓ Consistent documentation style — v1.1 (Phase 12, DOC-03)
+- ✓ Module overviews added — v1.1 (Phases 9, 10, 13, DOC-04)
 
 ### Active
 
-- [ ] README provides clear project description — v1.1 (Phase 7, RDME-01)
-- [ ] Features list highlighting key capabilities — v1.1 (Phase 7, RDME-02)
-- [ ] Documentation links to API, guides, GitHub Pages — v1.1 (Phase 7, RDME-03)
-- [ ] Lua dependency resolved — v1.1 (Phase 8, BLD-01)
-- [ ] Dependencies documented — v1.1 (Phase 8, BLD-02)
-- [ ] Doxygen warnings reduced (< 20) — v1.1 (Phase 9, DOC-01)
-- [ ] Public APIs documented — v1.1 (Phase 9, DOC-02)
-- [ ] Consistent documentation style — v1.1 (Phase 9, DOC-03)
-- [ ] Module overviews added — v1.1 (Phase 9, DOC-04)
+(None — planning next milestone)
 
 ### Out of Scope
 
-- [Keeping enjin1] — Target is enjin2-only ✓
-- [Features not already in enjin2] — Focus on migration, not new features ✓
+- [Keeping enjin1] — Target is enjin2-only
+- [Features not already in enjin2] — Focus on migration, not new features
 - Strangler Fig incremental migration — Pivoted to enjin2-only approach
 - Dual-backend compile-time switching — Removed in Phase 5
+- Usage examples in API documentation — Deferred to future milestone
+- Getting started guide — Deferred to future milestone
 
 ## Context
 
-**Before v1.0:**
-Two libraries existed in separate directories:
-- enjin1: Original implementation, fully functional
-- enjin2: New implementation with Lua/WASM integration and non-dynamic memory allocation, but depended on enjin1 for core infrastructure, utilities, and feature code
-
-**After v1.0:**
+**After v1.1:**
 enjin2 is a fully independent, self-contained library with:
 - Zero enjin1 dependencies (verified at source and build levels)
-- Comprehensive API documentation (59 pages)
-- Deployment pipeline to GitHub Pages
-- Technical debt: compat headers, examples cleanup
+- Professional README with badges, features, and documentation navigation
+- Comprehensive API documentation (76+ pages across 9 modules with overviews)
+- 0 Doxygen warnings with CI gate to prevent regression
+- Deployment pipeline to GitHub Pages (fully operational)
+- Technical debt: compat headers, examples cleanup, minor extractText() cosmetic issues
 
 ## Constraints
 
 - **Structure**: Clean and intelligent organization, no fuss
 - **Validation**: Manual testing (no automated test suite)
-- **Outcome**: Only enjin2 directory remains ✓
+- **Outcome**: Only enjin2 directory remains
 
 ## Key Decisions
 
@@ -92,6 +88,11 @@ enjin2 is a fully independent, self-contained library with:
 | xml2js for Doxygen XML parsing | Handles C++ templates, namespaces, overloads | ✓ Working - Phase 6 |
 | Module-based API organization | Better navigation than alphabetical A-Z | ✓ Working - Phase 6 |
 | Docusaurus dual-plugin setup | Separate guides and API reference | ✓ Working - Phase 6 |
+| Optional Lua via CMake | find_package(Lua QUIET) allows ENJIN2_BUILD_LUA=OFF | ✓ Working - Phase 8 |
+| Essential-level doc standard | @brief, @param, @return only — no verbose descriptions | ✓ Good - achieves 0 warnings |
+| CI Doxygen warning gate | Prevents regression above 20 warnings | ✓ Working - Phase 11 |
+| classNameToXmlFilename encoding | Encodes underscores before _1_1 join for Doxygen XML | ✓ Working - Phase 13 |
+| extractText() $ filter | Skip xml2js attribute objects in text extraction | ✓ Working - Phase 14 |
 
 ---
-*Last updated: 2026-02-01 after v1.1 roadmap creation*
+*Last updated: 2026-02-23 after v1.1 milestone*
