@@ -43,7 +43,14 @@ struct PostFxParams {
     bool enabled = true;         ///< Effect enabled flag
     
     PostFxParams() = default;
-    PostFxParams(float i, float s = 1.0f, uint8_t t = 8, uint8_t c = 2) 
+    /**
+     * @brief Construct with parameters
+     * @param i Effect intensity
+     * @param s Animation speed
+     * @param t Effect threshold
+     * @param c Effect color
+     */
+    PostFxParams(float i, float s = 1.0f, uint8_t t = 8, uint8_t c = 2)
         : intensity(i), speed(s), threshold(t), color(c) {}
 };
 

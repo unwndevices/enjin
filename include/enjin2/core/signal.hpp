@@ -177,6 +177,7 @@ public:
     
     /**
      * @brief Move constructor
+     * @param other Connection to move from
      */
     SignalConnection(SignalConnection&& other) noexcept
         : signal(other.signal), connectionId(other.connectionId) {
@@ -185,7 +186,9 @@ public:
     }
     
     /**
-     * @brief Move assignment
+     * @brief Move assignment operator
+     * @param other Connection to move from
+     * @return Reference to this connection
      */
     SignalConnection& operator=(SignalConnection&& other) noexcept {
         if (this != &other) {

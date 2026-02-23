@@ -27,10 +27,26 @@ class Object;
 class FileInterface {
 public:
     virtual ~FileInterface() = default;
+    /// @brief Open the file for reading
+    /// @return True if file opened successfully
     virtual bool open() = 0;
+    /// @brief Close the file
     virtual void close() = 0;
+    /**
+     * @brief Read data from the file
+     * @param buffer Output buffer for read data
+     * @param length Number of bytes to read
+     * @return Number of bytes actually read
+     */
     virtual size_t read(uint8_t* buffer, size_t length) = 0;
+    /**
+     * @brief Seek to position in the file
+     * @param position Byte offset from beginning of file
+     * @return True if seek successful
+     */
     virtual bool seek(size_t position) = 0;
+    /// @brief Get file size
+    /// @return File size in bytes
     virtual size_t size() const = 0;
 };
 
@@ -53,6 +69,8 @@ struct ImageEntry {
  */
 class ImageCacheException : public std::runtime_error {
 public:
+    /// @brief Construct with error message
+    /// @param message Error description
     explicit ImageCacheException(const char* message) : std::runtime_error(message) {}
 };
 

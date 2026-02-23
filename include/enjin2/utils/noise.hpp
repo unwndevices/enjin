@@ -21,13 +21,13 @@ namespace enjin2 {
  */
 namespace Noise {
 
-// Fast floor function for noise calculations
+/** @brief Fast floor function for noise calculations */
 #define FASTFLOOR(x) (((x) > 0) ? ((int)x) : ((int)x - 1))
 
-// Linear interpolation
+/** @brief Linear interpolation between two values */
 #define LERP(t, a, b) ((a) + (t) * ((b) - (a)))
 
-// Fade function for smooth interpolation
+/** @brief Fade function for smooth Perlin noise interpolation */
 #define FADE(t) (t * t * t * (t * (t * 6 - 15) + 10))
 
 /**

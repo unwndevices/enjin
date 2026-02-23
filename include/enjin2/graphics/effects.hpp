@@ -73,7 +73,9 @@ public:
     }
 };
 
+/// @brief Effects specialization for 4-bit pixel canvas
 using Effects4 = Effects<Pixel4>;
+/// @brief Effects specialization for 8-bit pixel canvas
 using Effects8 = Effects<uint8_t>;
 
 } // namespace enjin2

@@ -156,7 +156,8 @@ public:
      * Provides basic vector operations for 2D graphics and physics.
      */
     struct Vector2 {
-        float x, y;
+        float x; ///< X component
+        float y; ///< Y component
 
         /**
          * @brief Default constructor creates zero vector

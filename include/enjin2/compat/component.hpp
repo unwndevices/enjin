@@ -13,7 +13,7 @@
 
 namespace enjin {
 
-// Type alias for enjin1 compatibility
+/// @brief Component alias mapping to enjin2::Component
 using Component = enjin2::Component;
 
 /**

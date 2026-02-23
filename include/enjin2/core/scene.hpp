@@ -207,23 +207,40 @@ public:
     }
     
     /**
-     * @brief Connect to scene lifecycle events
+     * @brief Connect to scene create event
+     * @param callback Function called when scene is created
+     * @return Signal connection handle
      */
     template<typename... Args>
     SignalConnection<Scene*> connectOnCreate(std::function<void(Scene*)> callback) {
         return SignalConnection<Scene*>(&onCreateSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to scene activate event
+     * @param callback Function called when scene becomes active
+     * @return Signal connection handle
+     */
     template<typename... Args>
     SignalConnection<Scene*> connectOnActivate(std::function<void(Scene*)> callback) {
         return SignalConnection<Scene*>(&onActivateSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to scene deactivate event
+     * @param callback Function called when scene becomes inactive
+     * @return Signal connection handle
+     */
     template<typename... Args>
     SignalConnection<Scene*> connectOnDeactivate(std::function<void(Scene*)> callback) {
         return SignalConnection<Scene*>(&onDeactivateSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to scene destroy event
+     * @param callback Function called when scene is destroyed
+     * @return Signal connection handle
+     */
     template<typename... Args>
     SignalConnection<Scene*> connectOnDestroy(std::function<void(Scene*)> callback) {
         return SignalConnection<Scene*>(&onDestroySignal, callback);

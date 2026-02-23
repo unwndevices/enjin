@@ -99,6 +99,7 @@ public:
     
     /**
      * @brief Update probe movement and animation
+     * @param deltaTime Time elapsed since last update in milliseconds
      */
     void update(uint16_t deltaTime) override {
         Component::update(deltaTime);
@@ -128,6 +129,7 @@ public:
     
     /**
      * @brief Draw probe to 4-bit canvas
+     * @param canvas Target 4-bit canvas
      */
     void draw(ICanvas<Pixel4>& canvas) override {
         if (!isVisible()) return;
@@ -183,6 +185,7 @@ public:
     
     /**
      * @brief Draw probe to 8-bit canvas
+     * @param canvas Target 8-bit canvas
      */
     void draw(ICanvas<uint8_t>& canvas) override {
         if (!isVisible()) return;
@@ -230,6 +233,10 @@ public:
     
     /**
      * @brief Set probe appearance
+     * @param type Visual type of probe
+     * @param size Probe size in pixels
+     * @param color Primary probe color
+     * @param accent Secondary accent color
      */
     void setAppearance(ProbeType type, float size, Pixel4 color, Pixel4 accent = Pixel4(10)) {
         probeType = type;
@@ -243,6 +250,8 @@ public:
     
     /**
      * @brief Set movement pattern
+     * @param pattern Movement pattern type
+     * @param speed Movement speed multiplier
      */
     void setMovement(MovementPattern pattern, float speed = 1.0f) {
         movement = pattern;
@@ -257,6 +266,7 @@ public:
     
     /**
      * @brief Set linear velocity (for LINEAR movement)
+     * @param vel Velocity vector
      */
     void setVelocity(Point vel) {
         velocity = vel;
@@ -264,6 +274,8 @@ public:
     
     /**
      * @brief Enable pulsing effect
+     * @param enabled True to enable pulsing
+     * @param speed Pulse frequency multiplier
      */
     void setPulsing(bool enabled, float speed = 2.0f) {
         pulsing = enabled;
@@ -272,6 +284,7 @@ public:
     
     /**
      * @brief Enable particle trail
+     * @param enabled True to enable trail rendering
      */
     void setTrail(bool enabled) {
         hasTrail = enabled;
@@ -279,6 +292,8 @@ public:
     
     /**
      * @brief Set movement bounds
+     * @param bounds Bounding rectangle for movement
+     * @param constrain True to constrain movement within bounds
      */
     void setMovementBounds(const Rect& bounds, bool constrain = true) {
         movementBounds = bounds;
@@ -287,6 +302,8 @@ public:
     
     /**
      * @brief Set scanner properties (for SCANNER type)
+     * @param radius Scan beam radius
+     * @param speed Scan rotation speed
      */
     void setScanner(float radius, float speed = 1.0f) {
         scanRadius = radius;

@@ -69,6 +69,7 @@ public:
     
     /**
      * @brief Update planet animations
+     * @param deltaTime Time elapsed since last update in milliseconds
      */
     void update(uint16_t deltaTime) override {
         Component::update(deltaTime);
@@ -86,6 +87,7 @@ public:
     
     /**
      * @brief Draw planet to 4-bit canvas
+     * @param canvas Target 4-bit canvas
      */
     void draw(ICanvas<Pixel4>& canvas) override {
         if (!isVisible()) return;
@@ -123,6 +125,7 @@ public:
     
     /**
      * @brief Draw planet to 8-bit canvas
+     * @param canvas Target 8-bit canvas
      */
     void draw(ICanvas<uint8_t>& canvas) override {
         if (!isVisible()) return;
@@ -160,6 +163,7 @@ public:
     
     /**
      * @brief Set planet core color
+     * @param color New core color
      */
     void setCoreColor(Pixel4 color) {
         coreColor = color;
@@ -168,6 +172,9 @@ public:
     
     /**
      * @brief Set atmosphere properties
+     * @param enabled True to enable atmosphere rendering
+     * @param radiusMultiplier Atmosphere radius as multiple of core radius
+     * @param color Atmosphere color (0 = derive from core color)
      */
     void setAtmosphere(bool enabled, float radiusMultiplier = 1.5f, Pixel4 color = Pixel4(0)) {
         hasAtmosphere = enabled;
@@ -179,6 +186,9 @@ public:
     
     /**
      * @brief Enable pulsing animation
+     * @param enabled True to enable pulsing
+     * @param speed Pulse frequency multiplier
+     * @param amount Pulse intensity (0.0 to 1.0)
      */
     void setPulsing(bool enabled, float speed = 2.0f, float amount = 0.2f) {
         pulsing = enabled;
@@ -188,6 +198,8 @@ public:
     
     /**
      * @brief Enable rotation animation
+     * @param enabled True to enable rotation
+     * @param speed Rotation speed in radians per second
      */
     void setRotation(bool enabled, float speed = 0.5f) {
         rotating = enabled;
@@ -196,6 +208,10 @@ public:
     
     /**
      * @brief Add rings around planet
+     * @param enabled True to enable rings
+     * @param innerRadius Inner ring radius as multiple of planet radius
+     * @param outerRadius Outer ring radius as multiple of planet radius
+     * @param color Ring color
      */
     void setRings(bool enabled, float innerRadius = 1.3f, float outerRadius = 1.7f, Pixel4 color = Pixel4(8)) {
         hasRings = enabled;
@@ -206,6 +222,7 @@ public:
     
     /**
      * @brief Get planet radius
+     * @return Planet radius in pixels
      */
     float getRadius() const {
         return radius;
@@ -213,6 +230,7 @@ public:
     
     /**
      * @brief Get planet center position in world coordinates
+     * @return Center point of the planet
      */
     Point getCenterPosition() const {
         Point center = getRenderPosition();

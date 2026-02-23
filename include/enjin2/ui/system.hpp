@@ -302,19 +302,32 @@ public:
         size_t entityIndex;
         
     public:
-        Iterator(std::function<bool(Entity)> f, Entity start, size_t index) 
+        /**
+         * @brief Construct iterator with filter and starting position
+         * @param f Entity filter function
+         * @param start Starting entity
+         * @param index Starting entity index
+         */
+        Iterator(std::function<bool(Entity)> f, Entity start, size_t index)
             : filter(f), currentEntity(start), entityIndex(index) {
             findNext();
         }
-        
+
+        /// @brief Dereference to get current entity
+        /// @return Current entity
         Entity operator*() const { return currentEntity; }
-        
+
+        /// @brief Advance to next matching entity
+        /// @return Reference to this iterator
         Iterator& operator++() {
             entityIndex++;
             findNext();
             return *this;
         }
         
+        /// @brief Inequality comparison
+        /// @param other Iterator to compare with
+        /// @return True if iterators are at different positions
         bool operator!=(const Iterator& other) const {
             return entityIndex != other.entityIndex;
         }
@@ -328,13 +341,15 @@ public:
     
     /**
      * @brief Get iterator to beginning of query results
+     * @return Iterator to first matching entity
      */
     Iterator begin() const {
         return Iterator(filter, Entity(), 0);
     }
     
     /**
-     * @brief Get iterator to end of query results  
+     * @brief Get iterator to end of query results
+     * @return Past-the-end iterator
      */
     Iterator end() const {
         return Iterator(filter, Entity(), SIZE_MAX);

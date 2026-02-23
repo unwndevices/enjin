@@ -60,8 +60,11 @@ public:
         position = owner->getComponent<Position>();
     }
 
+    /// @brief Initialize the tickmarks
     void onCreate() override {}
 
+    /// @brief Update the tickmarks state
+    /// @param deltaTime Time elapsed since last update in seconds
     void onUpdate(float deltaTime) override {}
 
     /**

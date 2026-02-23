@@ -414,6 +414,8 @@ public:
 
     /**
      * @brief Get character width
+     * @param c Character to measure
+     * @return Width in pixels
      */
     uint16_t getCharWidth(unsigned char c) {
         if (gfx_font) {
@@ -427,6 +429,7 @@ public:
 
     /**
      * @brief Get character height
+     * @return Height in pixels
      */
     uint8_t getCharHeight() {
         if (gfx_font) {

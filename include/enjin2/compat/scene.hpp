@@ -13,7 +13,7 @@
 
 namespace enjin {
 
-// Type alias for enjin1 compatibility
+/// @brief Scene alias mapping to enjin2::Scene
 using Scene = enjin2::Scene;
 
 /**

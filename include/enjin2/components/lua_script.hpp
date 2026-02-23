@@ -116,7 +116,13 @@ public:
      * @param value Variable value
      */
     void setScriptVar(const std::string& name, double value);
+    /// @brief Set script string variable
+    /// @param name Variable name
+    /// @param value String value
     void setScriptVar(const std::string& name, const std::string& value);
+    /// @brief Set script boolean variable
+    /// @param name Variable name
+    /// @param value Boolean value
     void setScriptVar(const std::string& name, bool value);
     
     /**
@@ -126,7 +132,19 @@ public:
      * @return Variable value
      */
     double getScriptNumber(const std::string& name, double defaultValue = 0.0);
+    /**
+     * @brief Get script string variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return String value
+     */
     std::string getScriptString(const std::string& name, const std::string& defaultValue = "");
+    /**
+     * @brief Get script boolean variable
+     * @param name Variable name
+     * @param defaultValue Default value if not found
+     * @return Boolean value
+     */
     bool getScriptBool(const std::string& name, bool defaultValue = false);
     
     /**

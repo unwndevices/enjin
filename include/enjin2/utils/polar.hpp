@@ -22,6 +22,7 @@ namespace enjin2 {
 namespace Polar {
 
 #ifndef PI
+/** @brief Mathematical constant pi */
 #define PI 3.1415926535897932384626433832795
 #endif
 

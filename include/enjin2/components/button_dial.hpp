@@ -52,8 +52,11 @@ public:
         position = owner->getComponent<Position>();
     }
 
+    /// @brief Initialize the button dial
     void onCreate() override {}
 
+    /// @brief Update the button dial state
+    /// @param deltaTime Time elapsed since last update in seconds
     void onUpdate(float deltaTime) override {}
 
     /**

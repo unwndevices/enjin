@@ -254,20 +254,37 @@ public:
     }
     
     /**
-     * @brief Connect to transition events
+     * @brief Connect to scene change start event
+     * @param callback Function called with (from_scene, to_scene)
+     * @return Signal connection handle
      */
     SignalConnection<Scene*, Scene*> connectOnSceneChangeStart(std::function<void(Scene*, Scene*)> callback) {
         return SignalConnection<Scene*, Scene*>(&onSceneChangeStartSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to scene change complete event
+     * @param callback Function called with (from_scene, to_scene)
+     * @return Signal connection handle
+     */
     SignalConnection<Scene*, Scene*> connectOnSceneChangeComplete(std::function<void(Scene*, Scene*)> callback) {
         return SignalConnection<Scene*, Scene*>(&onSceneChangeCompleteSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to transition start event
+     * @param callback Function called with transition type
+     * @return Signal connection handle
+     */
     SignalConnection<TransitionType> connectOnTransitionStart(std::function<void(TransitionType)> callback) {
         return SignalConnection<TransitionType>(&onTransitionStartSignal, callback);
     }
-    
+
+    /**
+     * @brief Connect to transition progress event
+     * @param callback Function called with progress value (0.0-1.0)
+     * @return Signal connection handle
+     */
     SignalConnection<float> connectOnTransitionProgress(std::function<void(float)> callback) {
         return SignalConnection<float>(&onTransitionProgressSignal, callback);
     }
