@@ -20,6 +20,7 @@ namespace enjin2
 template<typename TCanvas>
 class CanvasExtended {
 public:
+    /// @brief Pixel type derived from the canvas
     using PixelType = typename TCanvas::PixelType;
 
     /**
@@ -367,6 +368,13 @@ public:
 
     /**
      * @brief Draw bitmap at specified location
+     * @param canvas Target canvas
+     * @param x Destination X coordinate
+     * @param y Destination Y coordinate
+     * @param bitmap Pointer to 1-bit bitmap data
+     * @param w Bitmap width
+     * @param h Bitmap height
+     * @param color Foreground color
      */
     static void drawBitmap(TCanvas& canvas, int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h, PixelType color) {
         for (int16_t j = 0; j < h; j++) {
@@ -380,6 +388,12 @@ public:
 
     /**
      * @brief Draw grayscale bitmap (Enjin-style)
+     * @param canvas Target canvas
+     * @param x Destination X coordinate
+     * @param y Destination Y coordinate
+     * @param bitmap Pointer to grayscale bitmap data
+     * @param w Bitmap width
+     * @param h Bitmap height
      */
     static void drawGrayscaleBitmap(TCanvas& canvas, int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h) {
         for (int16_t j = 0; j < h; j++) {
@@ -394,6 +408,13 @@ public:
 
     /**
      * @brief Draw grayscale bitmap with mask
+     * @param canvas Target canvas
+     * @param x Destination X coordinate
+     * @param y Destination Y coordinate
+     * @param bitmap Pointer to grayscale bitmap data
+     * @param mask Pointer to mask data
+     * @param w Bitmap width
+     * @param h Bitmap height
      */
     static void drawGrayscaleBitmap(TCanvas& canvas, int16_t x, int16_t y, const uint8_t* bitmap, const uint8_t* mask, int16_t w, int16_t h) {
         for (int16_t j = 0; j < h; j++) {
@@ -410,6 +431,11 @@ public:
 
     /**
      * @brief Blit (copy) from one canvas to another
+     * @tparam TSrcCanvas Source canvas type
+     * @param dst Destination canvas
+     * @param src Source canvas
+     * @param dx Destination X coordinate
+     * @param dy Destination Y coordinate
      */
     template<typename TSrcCanvas>
     static void blit(TCanvas& dst, const TSrcCanvas& src, int16_t dx, int16_t dy) {
@@ -418,6 +444,15 @@ public:
 
     /**
      * @brief Blit with specified dimensions and source offset
+     * @tparam TSrcCanvas Source canvas type
+     * @param dst Destination canvas
+     * @param src Source canvas
+     * @param dx Destination X coordinate
+     * @param dy Destination Y coordinate
+     * @param w Width to copy
+     * @param h Height to copy
+     * @param sx Source X offset
+     * @param sy Source Y offset
      */
     template<typename TSrcCanvas>
     static void blit(TCanvas& dst, const TSrcCanvas& src, int16_t dx, int16_t dy, int16_t w, int16_t h, int16_t sx = 0, int16_t sy = 0) {

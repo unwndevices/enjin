@@ -89,11 +89,11 @@ struct RenderCommand {
 template<uint16_t WIDTH, uint16_t HEIGHT>
 class Canvas4_ESP32S3 {
 public:
-    static constexpr uint16_t width = WIDTH;
-    static constexpr uint16_t height = HEIGHT;
-    static constexpr size_t dataSize = (WIDTH * HEIGHT + 1) / 2;
-    
-    // Ensure cache line alignment (32 bytes on ESP32-S3)
+    static constexpr uint16_t width = WIDTH;       ///< Canvas width in pixels
+    static constexpr uint16_t height = HEIGHT;     ///< Canvas height in pixels
+    static constexpr size_t dataSize = (WIDTH * HEIGHT + 1) / 2; ///< Raw data size in bytes
+
+    /// @brief Cache-line aligned data size (32 bytes on ESP32-S3)
     static constexpr size_t alignedSize = ((dataSize + 31) / 32) * 32;
     
 private:
@@ -351,6 +351,7 @@ public:
     
     /**
      * @brief Get data size in bytes
+     * @return Data size
      */
     constexpr size_t getDataSize() const { return dataSize; }
     

@@ -93,24 +93,28 @@ public:
     virtual bool continueToDraw() const;
     
     /// @brief Set the sort order for drawing priority
+    /// @param order Sort order value
     void SetSortOrder(int order) { sort_order = order; }
     /// @brief Get the sort order
     /// @return Current sort order
     int GetSortOrder() const { return sort_order; }
 
     /// @brief Set the blend mode
+    /// @param mode Blend mode to use
     void SetBlendMode(BlendMode mode) { blend_mode = mode; }
     /// @brief Get the blend mode
     /// @return Current blend mode
     BlendMode GetBlendMode() const { return blend_mode; }
 
     /// @brief Set the draw layer
+    /// @param drawLayer Draw layer to assign
     void SetDrawLayer(DrawLayer drawLayer) { layer = drawLayer; }
     /// @brief Get the draw layer
     /// @return Current draw layer
     DrawLayer GetDrawLayer() const { return layer; }
 
     /// @brief Set the visibility
+    /// @param visibility Visibility state
     void SetVisibility(bool visibility) { is_visible = visibility; }
     /// @brief Get the visibility
     /// @return Current visibility state
@@ -120,11 +124,14 @@ public:
     bool isVisible() const { return is_visible; }
 
     /// @brief Set the anchor point for positioning
+    /// @param anchor Anchor point
     void SetAnchorPoint(Anchor anchor);
 
     /// @brief Add offset to current anchor offset
+    /// @param offset Offset to add
     void AddOffset(Point offset) { anchor_offset -= offset; }
     /// @brief Set the anchor offset
+    /// @param offset New offset value
     void SetOffset(Point offset) { anchor_offset = offset; }
 
     /// @brief Get position adjusted for offset
@@ -132,8 +139,10 @@ public:
     Point GetOffsetPosition() const;
 
     /// @brief Set the X component of anchor offset
+    /// @param x X offset value
     void SetXOffset(int16_t x) { anchor_offset.x = x; }
     /// @brief Set the Y component of anchor offset
+    /// @param y Y offset value
     void SetYOffset(int16_t y) { anchor_offset.y = y; }
 
     /// @brief Get drawable width
