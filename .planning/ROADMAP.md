@@ -49,7 +49,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 
 **Milestone Goal:** Eliminate all enjin1 remnants and fix documentation generation issues, preparing a clean codebase for Tomodachi integration.
 
-- [ ] **Phase 16: Repository Cleanup** - Remove dead compat headers, dead examples, and generated LaTeX from git tracking
+- [x] **Phase 16: Repository Cleanup** - Remove dead compat headers, dead examples, and generated LaTeX from git tracking (completed 2026-02-23)
 - [ ] **Phase 17: Documentation Generation Fix** - Fix extractText() and formatMethod() issues, regenerate all API docs clean
 - [ ] **Phase 18: Build System Fix** - Fix WASM build with ENJIN2_BUILD_LUA=OFF
 
@@ -110,7 +110,7 @@ Phases execute in numeric order: 16 → 17 → 18
 | 13. Fix Doc Pipeline & API | v1.1 | 2/2 | Complete | 2026-02-23 |
 | 14. Fix extractText() | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 15. Cleanup CI/README | v1.1 | 1/1 | Complete | 2026-02-23 |
-| 16. Repository Cleanup | 1/2 | In Progress|  | - |
+| 16. Repository Cleanup | 2/2 | Complete   | 2026-02-23 | - |
 | 17. Doc Generation Fix | v1.2 | 0/? | Not started | - |
 | 18. Build System Fix | v1.2 | 0/? | Not started | - |
 

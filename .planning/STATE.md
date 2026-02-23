@@ -10,22 +10,22 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 16 of 18 (Repository Cleanup)
-Plan: 2 of 2
-Status: In progress
-Last activity: 2026-02-23 — Completed 16-02 (LaTeX cleanup)
+Plan: 2 of 2 (all complete)
+Status: Phase complete
+Last activity: 2026-02-23 — Completed 16-01 (dead code removal)
 
 Milestone: v1.2 Tech Debt Cleanup
 Previous: v1.1 shipped (2026-02-23)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39
+- Total plans completed: 40
 - v1.0: 21 plans
 - v1.1: 17 plans
-- v1.2: 1 plan
+- v1.2: 2 plans
 
 *Updated after each plan completion*
 
@@ -50,8 +50,8 @@ None.
 
 ### Technical Debt (being addressed in v1.2)
 
-- Compat headers cleanup (enjin2/compat/)
-- Dead examples with enjin1 references
+- ~~Compat headers cleanup (enjin2/compat/)~~ (fixed in 16-01)
+- ~~Dead examples with enjin1 references~~ (fixed in 16-01)
 - extractText() cosmetic issues: brief description duplication, template param concatenation, const const duplication
 - WASM+LUA OFF CMake edge case
 - ~~Generated LaTeX files tracked in git~~ (fixed in 16-02)
@@ -59,5 +59,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 16-02-PLAN.md
+Stopped at: Completed 16-01-PLAN.md (Phase 16 fully complete)
 Resume file: None

@@ -9,10 +9,10 @@ Requirements for tech debt cleanup milestone. Each maps to roadmap phases.
 
 ### Dead Code Removal
 
-- [ ] **DEAD-01**: Compat header files removed from `include/enjin2/compat/`
-- [ ] **DEAD-02**: `enjin_comparison_benchmark.cpp` deleted from examples
-- [ ] **DEAD-03**: `eisei_game_benchmark.cpp` deleted from examples
-- [ ] **DEAD-04**: Any remaining references to removed files cleaned up (CMake, includes, docs)
+- [x] **DEAD-01**: Compat header files removed from `include/enjin2/compat/`
+- [x] **DEAD-02**: `enjin_comparison_benchmark.cpp` deleted from examples
+- [x] **DEAD-03**: `eisei_game_benchmark.cpp` deleted from examples
+- [x] **DEAD-04**: Any remaining references to removed files cleaned up (CMake, includes, docs)
 
 ### Documentation Generation Fix
 
@@ -54,10 +54,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEAD-01 | Phase 16 | Pending |
-| DEAD-02 | Phase 16 | Pending |
-| DEAD-03 | Phase 16 | Pending |
-| DEAD-04 | Phase 16 | Pending |
+| DEAD-01 | Phase 16 | Complete |
+| DEAD-02 | Phase 16 | Complete |
+| DEAD-03 | Phase 16 | Complete |
+| DEAD-04 | Phase 16 | Complete |
 | DOCG-01 | Phase 17 | Pending |
 | DOCG-02 | Phase 17 | Pending |
 | DOCG-03 | Phase 17 | Pending |
