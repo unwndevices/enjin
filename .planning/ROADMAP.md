@@ -77,7 +77,10 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   2. Cross-reference text in documentation renders as readable, properly-spaced strings (no fused words)
   3. `extractText()` output does not include xml2js `$` attribute object content
   4. All API markdown files are regenerated and the documentation site builds without errors
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 17-01-PLAN.md — Fix extractText() ordered parsing, formatMethod() const const, and remove stale compat config
+- [ ] 17-02-PLAN.md — Regenerate all API docs and verify Docusaurus build
 
 ### Phase 18: Build System Fix
 **Goal**: WASM build path works correctly when Lua is disabled
