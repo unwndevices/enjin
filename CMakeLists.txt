@@ -186,12 +186,17 @@ if(ENJIN2_BUILD_WASM)
     target_sources(enjin2_wasm PRIVATE
         src/bindings/emscripten_bindings.cpp
     )
-    target_include_directories(enjin2_wasm PRIVATE luajit/src)
+    target_include_directories(enjin2_wasm PRIVATE
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:luajit/src>
+    )
+    target_compile_definitions(enjin2_wasm PRIVATE
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
+    )
     target_link_libraries(enjin2_wasm PRIVATE
         enjin2_core
         enjin2_graphics
         enjin2_ui
-        enjin2_lua
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
     )
     
     # Emscripten-specific settings
