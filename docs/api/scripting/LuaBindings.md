@@ -23,7 +23,7 @@ Provides love2d.graphics-style API for familiar Lua scripting. All functions are
 
 Constructor. 
 
-paramluaEngineLua engine to bind to 
+luaEngineLua engine to bind to 
 
 ---
 
@@ -40,15 +40,15 @@ Register all bindings with Lua engine.
 
 Set current canvas for drawing operations. 
 
-paramcanvasCanvas to draw on 
+canvasCanvas to draw on 
 
 ---
 
-### ` *LuaCanvasclassenjin2_1_1LuaCanvascompound getCanvas() const const`
+### ` *LuaCanvas getCanvas() const const`
 
 Get current canvas. 
 
-returnCurrent canvas or nullptr 
+Current canvas or nullptr 
 
 ---
 
@@ -284,11 +284,11 @@ returnCurrent canvas or nullptr
 
 ---
 
-### `static  *LuaBindingsclassenjin2_1_1LuaBindings_1ad0fe51d446be4e1b488a3319b421098cmember getBindings(lua_State *L)`
+### `static  *LuaBindings getBindings(lua_State *L)`
 
-Get  instance from Lua state. LuaBindingsclassenjin2_1_1LuaBindingscompound
+Get  instance from Lua state. LuaBindings
 
-paramLLua state return instance LuaBindingsclassenjin2_1_1LuaBindingscompound
+LLua state  instance LuaBindings
 
 ---
 
@@ -296,7 +296,7 @@ paramLLua state return instance LuaBindingsclassenjin2_1_1LuaBindingscompound
 
 Register bindings in a table. 
 
-paramtableNameName of table to create functionsArray of function bindings 
+tableNameName of table to create functionsArray of function bindings 
 
 ---
 

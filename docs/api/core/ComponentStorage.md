@@ -6,11 +6,11 @@ sidebar_label: ComponentStorage
 
 # ComponentStorage
 
- storage using static memory pools. Componentclassenjin2_1_1Componentcompound
+ storage using static memory pools. Component
 
 
 
-Efficient storage for components with O(1) allocation/deallocation. Uses packed arrays for cache-friendly iteration. templateparamT type Componentclassenjin2_1_1ComponentcompoundCAPACITYMaximum number of components
+Efficient storage for components with O(1) allocation/deallocation. Uses packed arrays for cache-friendly iteration. T type ComponentCAPACITYMaximum number of components
 
 ---
 
@@ -33,7 +33,7 @@ Constructor initializes empty storage.
 
 Add component for entity. 
 
-paramentity to add component to Entitystructenjin2_1_1EntitycompoundargsConstructor arguments for component returnPointer to created component, nullptr if pool full 
+entity to add component to EntityargsConstructor arguments for component Pointer to created component, nullptr if pool full 
 
 ---
 
@@ -41,7 +41,7 @@ paramentity to add component to Entitystructenjin2_1_1EntitycompoundargsConstruc
 
 Get component for entity. 
 
-paramentity to get component for Entitystructenjin2_1_1EntitycompoundreturnPointer to component, nullptr if not found 
+entity to get component for EntityPointer to component, nullptr if not found 
 
 ---
 
@@ -49,7 +49,7 @@ paramentity to get component for Entitystructenjin2_1_1EntitycompoundreturnPoint
 
 Remove component for entity. 
 
-paramentity to remove component from Entitystructenjin2_1_1Entitycompoundreturntrue if component was removed 
+entity to remove component from Entitytrue if component was removed 
 
 ---
 
@@ -57,7 +57,7 @@ paramentity to remove component from Entitystructenjin2_1_1Entitycompoundreturnt
 
 Check if entity has component. 
 
-paramentity to check Entitystructenjin2_1_1Entitycompoundreturntrue if entity has component 
+entity to check Entitytrue if entity has component 
 
 ---
 
@@ -65,7 +65,7 @@ paramentity to check Entitystructenjin2_1_1Entitycompoundreturntrue if entity ha
 
 Get number of active components. 
 
-return count Componentclassenjin2_1_1Componentcompound
+ count Component
 
 ---
 
@@ -73,25 +73,23 @@ return count Componentclassenjin2_1_1Componentcompound
 
 Check if storage is empty. 
 
-returntrue if no components 
+true if no components 
 
 ---
 
-### `Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompound begin() const const`
+### `Iterator begin() const const`
 
 Get iterator to beginning. 
 
-
-        
+ to first component Iterator
 
 ---
 
-### `Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompound end() const const`
+### `Iterator end() const const`
 
 Get iterator to end. 
 
-
-        
+ past last component Iterator
 
 ---
 

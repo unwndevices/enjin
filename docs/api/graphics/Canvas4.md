@@ -9,7 +9,7 @@ sidebar_label: Canvas4
 4-bit canvas with packed pixel storage 
 
 
-templateparamWIDTHCanvas width in pixels (must be even) HEIGHTCanvas height in pixels 
+WIDTHCanvas width in pixels (must be even) HEIGHTCanvas height in pixels 
 
 ---
 
@@ -32,7 +32,7 @@ Constructor initializes clear canvas.
 
 Get canvas width in pixels. 
 
-returnWidth in pixels 
+Width in pixels 
 
 ---
 
@@ -40,7 +40,7 @@ returnWidth in pixels
 
 Get canvas height in pixels. 
 
-returnHeight in pixels 
+Height in pixels 
 
 ---
 
@@ -48,15 +48,15 @@ returnHeight in pixels
 
 Set pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate colorPixel color to set 
+xX coordinate yY coordinate colorPixel color to set 
 
 ---
 
-### `virtual Pixel4structenjin2_1_1Pixel4compound getPixel(int16_t x, int16_t y) const override const`
+### `virtual Pixel4 getPixel(int16_t x, int16_t y) const override const`
 
 Get pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate returnPixel color at the specified location 
+xX coordinate yY coordinate Pixel color at the specified location 
 
 ---
 
@@ -64,7 +64,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 Clear entire canvas to specified color. 
 
-paramcolorColor to fill canvas with (default: black/zero) 
+colorColor to fill canvas with (default: black/zero) 
 
 ---
 
@@ -72,7 +72,7 @@ paramcolorColor to fill canvas with (default: black/zero)
 
 Optimized horizontal line drawing with batch operations. 
 
-paramxStarting x coordinate yY coordinate widthLine width in pixels colorLine color 
+xStarting x coordinate yY coordinate widthLine width in pixels colorLine color 
 
 ---
 
@@ -80,7 +80,7 @@ paramxStarting x coordinate yY coordinate widthLine width in pixels colorLine co
 
 Optimized vertical line drawing. 
 
-paramxX coordinate yStarting y coordinate heightLine height in pixels colorLine color 
+xX coordinate yStarting y coordinate heightLine height in pixels colorLine color 
 
 ---
 
@@ -88,7 +88,7 @@ paramxX coordinate yStarting y coordinate heightLine height in pixels colorLine 
 
 Optimized rectangle filling with batch operations. 
 
-paramxStarting x coordinate yStarting y coordinate widthRectangle width heightRectangle height colorFill color 
+xStarting x coordinate yStarting y coordinate widthRectangle width heightRectangle height colorFill color 
 
 ---
 
@@ -96,7 +96,7 @@ paramxStarting x coordinate yStarting y coordinate widthRectangle width heightRe
 
 Batch pixel setting for arrays of data. 
 
-paramxStarting x coordinate yY coordinate pixelsArray of pixel values countNumber of pixels to set 
+xStarting x coordinate yY coordinate pixelsArray of pixel values countNumber of pixels to set 
 
 ---
 
@@ -104,57 +104,47 @@ paramxStarting x coordinate yY coordinate pixelsArray of pixel values countNumbe
 
 Fill rectangular region with specified color. 
 
-paramrectRectangle to fill colorColor to fill with 
+rectRectangle to fill colorColor to fill with 
 
 ---
 
-### `const  *PackedPixel4classenjin2_1_1PackedPixel4compound getBuffer() const const`
+### `const  *PackedPixel4 getBuffer() const const`
 
+Get read-only pointer to pixel buffer. 
 
-        
-
-
-        
+Pointer to packed pixel data 
 
 ---
 
-### ` *PackedPixel4classenjin2_1_1PackedPixel4compound getBuffer()`
+### ` *PackedPixel4 getBuffer()`
 
+Get mutable pointer to pixel buffer. 
 
-        
-
-
-        
+Pointer to packed pixel data 
 
 ---
 
 ### `size_t getBufferSize() const const`
 
+Get buffer size in bytes. 
 
-        
-
-
-        
+Buffer size 
 
 ---
 
 ### `void copyFrom(const Canvas4 &other, int16_t dst_x=0, int16_t dst_y=0)`
 
+Copy pixels from another canvas. 
 
-        
-
-
-        
+otherSource canvas to copy from dst_xDestination X offset dst_yDestination Y offset 
 
 ---
 
 ### `void blit(const Canvas4 &sprite, int16_t x, int16_t y, Pixel4 transparent=Pixel4(0))`
 
+Blit sprite with transparency. 
 
-        
-
-
-        
+spriteSource canvas to blit xDestination X coordinate yDestination Y coordinate transparentColor to treat as transparent 
 
 ---
 

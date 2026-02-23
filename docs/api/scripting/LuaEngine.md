@@ -41,7 +41,7 @@ Destructor cleans up Lua state.
 
 Initialize the Lua engine. 
 
-returnTrue if initialization successful 
+True if initialization successful 
 
 ---
 
@@ -58,23 +58,23 @@ Shutdown the Lua engine.
 
 Check if engine is initialized. 
 
-returnTrue if initialized 
+True if initialized 
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound executeString(const std::string &code)`
+### `LuaResult executeString(const std::string &code)`
 
 Execute Lua code string. 
 
-paramcodeLua code to execute returnExecution result 
+codeLua code to execute Execution result 
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound executeFile(const std::string &filename)`
+### `LuaResult executeFile(const std::string &filename)`
 
 Load and execute Lua script file. 
 
-paramfilenamePath to Lua script file returnExecution result 
+filenamePath to Lua script file Execution result 
 
 ---
 
@@ -82,7 +82,7 @@ paramfilenamePath to Lua script file returnExecution result
 
 Register C function with Lua. 
 
-paramnameFunction name in Lua callbackC function callback 
+nameFunction name in Lua callbackC function callback 
 
 ---
 
@@ -90,7 +90,7 @@ paramnameFunction name in Lua callbackC function callback
 
 Register C function with Lua (C-style). 
 
-paramnameFunction name in Lua funcC function pointer 
+nameFunction name in Lua funcC function pointer 
 
 ---
 
@@ -98,7 +98,7 @@ paramnameFunction name in Lua funcC function pointer
 
 Create Lua table. 
 
-paramnameTable name 
+nameTable name 
 
 ---
 
@@ -106,7 +106,7 @@ paramnameTable name
 
 Set global number variable in Lua. 
 
-paramnameVariable name valueNumber value to set returnvoid 
+nameVariable name valueNumber value to set 
 
 ---
 
@@ -114,7 +114,7 @@ paramnameVariable name valueNumber value to set returnvoid
 
 Set global string variable in Lua. 
 
-paramnameVariable name valueString value to set returnvoid 
+nameVariable name valueString value to set 
 
 ---
 
@@ -122,7 +122,7 @@ paramnameVariable name valueString value to set returnvoid
 
 Set global boolean variable in Lua. 
 
-paramnameVariable name valueBoolean value to set returnvoid 
+nameVariable name valueBoolean value to set 
 
 ---
 
@@ -130,7 +130,7 @@ paramnameVariable name valueBoolean value to set returnvoid
 
 Get global number variable from Lua. 
 
-paramnameVariable name defaultValueDefault value if variable not found returnNumber value (or default if not found) 
+nameVariable name defaultValueDefault value if variable not found Number value (or default if not found) 
 
 ---
 
@@ -138,7 +138,7 @@ paramnameVariable name defaultValueDefault value if variable not found returnNum
 
 Get global string variable from Lua. 
 
-paramnameVariable name defaultValueDefault value if variable not found returnString value (or default if not found) 
+nameVariable name defaultValueDefault value if variable not found String value (or default if not found) 
 
 ---
 
@@ -146,15 +146,15 @@ paramnameVariable name defaultValueDefault value if variable not found returnStr
 
 Get global boolean variable from Lua. 
 
-paramnameVariable name defaultValueDefault value if variable not found returnBoolean value (or default if not found) 
+nameVariable name defaultValueDefault value if variable not found Boolean value (or default if not found) 
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound callFunction(const std::string &functionName, Args... args)`
+### `LuaResult callFunction(const std::string &functionName, Args... args)`
 
 Call Lua function. 
 
-paramfunctionNameName of Lua function argsFunction arguments returnExecution result 
+functionNameName of Lua function argsFunction arguments Execution result 
 
 ---
 
@@ -162,7 +162,7 @@ paramfunctionNameName of Lua function argsFunction arguments returnExecution res
 
 Get current memory usage. 
 
-returnMemory usage in bytes 
+Memory usage in bytes 
 
 ---
 
@@ -170,7 +170,7 @@ returnMemory usage in bytes
 
 Get list of loaded scripts. 
 
-returnVector of script names 
+Vector of script names 
 
 ---
 
@@ -187,7 +187,7 @@ Clear all loaded scripts.
 
 Get Lua state (for advanced operations). 
 
-returnLua state pointer 
+Lua state pointer 
 
 ---
 
@@ -197,31 +197,31 @@ returnLua state pointer
 
 Custom Lua allocator using static memory pool. 
 
-paramudUser data ( instance) LuaEngineclassenjin2_1_1LuaEnginecompoundptrPointer to reallocate osizeOriginal size nsizeNew size returnAllocated memory or nullptr 
+udUser data ( instance) LuaEngineptrPointer to reallocate osizeOriginal size nsizeNew size Allocated memory or nullptr 
 
 ---
 
 ### `static int luaPanic(lua_State *L)`
 
- Lua panic. Handlestructenjin2_1_1Handlecompound
+ Lua panic. Handle
 
-paramLLua state returnNever returns 
+LLua state Never returns 
 
 ---
 
 ### `void pushArg(T &&arg)`
 
-Push arguments to Lua stack. 
+Push single argument to Lua stack. 
 
-paramargsArguments to push 
+argArgument to push 
 
 ---
 
 ### `void pushArgs(T &&arg)`
 
-Push multiple arguments to Lua stack. 
+Push single argument to Lua stack (base case). 
 
-paramfirstFirst argument restRemaining arguments 
+argArgument to push 
 
 ---
 
@@ -244,11 +244,11 @@ Base case for pushArgs (no arguments).
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound checkResult(int result)`
+### `LuaResult checkResult(int result)`
 
 Check Lua execution result. 
 
-paramresultLua function result code return with success/error information LuaResultstructenjin2_1_1LuaResultcompound
+resultLua function result code  with success/error information LuaResult
 
 ---
 

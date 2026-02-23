@@ -9,7 +9,7 @@ sidebar_label: CanvasExtended
 Extended canvas functionality for advanced graphics operations. 
 
 
-templateparamTCanvasCanvas type that implements  ICanvas<TPixel>classenjin2_1_1ICanvascompound
+TCanvasCanvas type that implements  ICanvas<TPixel>
 
 ---
 
@@ -23,7 +23,7 @@ templateparamTCanvasCanvas type that implements  ICanvas<TPixel>classenjin2_1_1I
 
 Draw a line using Bresenham's algorithm. 
 
-paramcanvasTarget canvas x0Starting X coordinate y0Starting Y coordinate x1Ending X coordinate y1Ending Y coordinate colorLine color 
+canvasTarget canvas x0Starting X coordinate y0Starting Y coordinate x1Ending X coordinate y1Ending Y coordinate colorLine color 
 
 ---
 
@@ -31,7 +31,7 @@ paramcanvasTarget canvas x0Starting X coordinate y0Starting Y coordinate x1Endin
 
 Draw a horizontal line. 
 
-paramcanvasTarget canvas xStarting X coordinate yY coordinate wLine width in pixels colorLine color 
+canvasTarget canvas xStarting X coordinate yY coordinate wLine width in pixels colorLine color 
 
 ---
 
@@ -39,7 +39,7 @@ paramcanvasTarget canvas xStarting X coordinate yY coordinate wLine width in pix
 
 Draw a vertical line. 
 
-paramcanvasTarget canvas xX coordinate yStarting Y coordinate hLine height in pixels colorLine color 
+canvasTarget canvas xX coordinate yStarting Y coordinate hLine height in pixels colorLine color 
 
 ---
 
@@ -47,7 +47,7 @@ paramcanvasTarget canvas xX coordinate yStarting Y coordinate hLine height in pi
 
 Draw a rectangle outline. 
 
-paramcanvasTarget canvas xX coordinate of top-left corner yY coordinate of top-left corner wWidth in pixels hHeight in pixels colorRectangle outline color 
+canvasTarget canvas xX coordinate of top-left corner yY coordinate of top-left corner wWidth in pixels hHeight in pixels colorRectangle outline color 
 
 ---
 
@@ -55,7 +55,7 @@ paramcanvasTarget canvas xX coordinate of top-left corner yY coordinate of top-l
 
 Fill a rectangle. 
 
-paramcanvasTarget canvas xX coordinate of top-left corner yY coordinate of top-left corner wWidth in pixels hHeight in pixels colorFill color 
+canvasTarget canvas xX coordinate of top-left corner yY coordinate of top-left corner wWidth in pixels hHeight in pixels colorFill color 
 
 ---
 
@@ -63,7 +63,7 @@ paramcanvasTarget canvas xX coordinate of top-left corner yY coordinate of top-l
 
 Draw a circle using midpoint circle algorithm. 
 
-paramcanvasTarget canvas x0Circle center X coordinate y0Circle center Y coordinate rCircle radius in pixels colorCircle outline color 
+canvasTarget canvas x0Circle center X coordinate y0Circle center Y coordinate rCircle radius in pixels colorCircle outline color 
 
 ---
 
@@ -71,8 +71,7 @@ paramcanvasTarget canvas x0Circle center X coordinate y0Circle center Y coordina
 
 Fill a circle. 
 
-
-        
+canvasTarget canvas x0Circle center X coordinate y0Circle center Y coordinate rCircle radius in pixels colorFill color 
 
 ---
 
@@ -80,8 +79,7 @@ Fill a circle.
 
 Circle helper for fill operations. 
 
-
-        
+canvasTarget canvas x0Circle center X coordinate y0Circle center Y coordinate rCircle radius cornersBitmask of corners to fill deltaOffset for fill extent colorFill color 
 
 ---
 
@@ -89,8 +87,7 @@ Circle helper for fill operations.
 
 Draw circle helper for rounded rectangles. 
 
-
-        
+canvasTarget canvas x0Circle center X coordinate y0Circle center Y coordinate rCircle radius cornernameBitmask of corners to draw colorOutline color 
 
 ---
 
@@ -98,8 +95,7 @@ Draw circle helper for rounded rectangles.
 
 Draw a triangle outline. 
 
-
-        
+canvasTarget canvas x0First vertex X y0First vertex Y x1Second vertex X y1Second vertex Y x2Third vertex X y2Third vertex Y colorOutline color 
 
 ---
 
@@ -107,8 +103,7 @@ Draw a triangle outline.
 
 Fill a triangle with scanline algorithm. 
 
-
-        
+canvasTarget canvas x0First vertex X y0First vertex Y x1Second vertex X y1Second vertex Y x2Third vertex X y2Third vertex Y colorFill color 
 
 ---
 
@@ -116,8 +111,7 @@ Fill a triangle with scanline algorithm.
 
 Draw a rounded rectangle. 
 
-
-        
+canvasTarget canvas xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels radiusCorner radius colorOutline color 
 
 ---
 
@@ -125,8 +119,7 @@ Draw a rounded rectangle.
 
 Fill a rounded rectangle. 
 
-
-        
+canvasTarget canvas xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels radiusCorner radius colorFill color 
 
 ---
 
@@ -134,8 +127,7 @@ Fill a rounded rectangle.
 
 Draw bitmap at specified location. 
 
-
-        
+canvasTarget canvas xDestination X coordinate yDestination Y coordinate bitmapPointer to 1-bit bitmap data wBitmap width hBitmap height colorForeground color 
 
 ---
 
@@ -143,8 +135,7 @@ Draw bitmap at specified location.
 
 Draw grayscale bitmap (Enjin-style). 
 
-
-        
+canvasTarget canvas xDestination X coordinate yDestination Y coordinate bitmapPointer to grayscale bitmap data wBitmap width hBitmap height 
 
 ---
 
@@ -152,8 +143,7 @@ Draw grayscale bitmap (Enjin-style).
 
 Draw grayscale bitmap with mask. 
 
-
-        
+canvasTarget canvas xDestination X coordinate yDestination Y coordinate bitmapPointer to grayscale bitmap data maskPointer to mask data wBitmap width hBitmap height 
 
 ---
 
@@ -161,8 +151,7 @@ Draw grayscale bitmap with mask.
 
 Blit (copy) from one canvas to another. 
 
-
-        
+TSrcCanvasSource canvas type dstDestination canvas srcSource canvas dxDestination X coordinate dyDestination Y coordinate 
 
 ---
 
@@ -170,8 +159,7 @@ Blit (copy) from one canvas to another.
 
 Blit with specified dimensions and source offset. 
 
-
-        
+TSrcCanvasSource canvas type dstDestination canvas srcSource canvas dxDestination X coordinate dyDestination Y coordinate wWidth to copy hHeight to copy sxSource X offset sySource Y offset 
 
 ---
 

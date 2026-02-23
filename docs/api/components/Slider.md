@@ -21,16 +21,15 @@ A drawable slider component that displays a linear slider with a filled portion 
 
 ### ` Slider(Object *owner, uint8_t width, uint8_t height)`
 
-Construct a new  component. Sliderclassenjin2_1_1Slidercompound
+Construct a new  component. Slider
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe object that owns this component widthWidth of the slider in pixels heightHeight of the slider in pixels 
+ownerThe object that owns this component widthWidth of the slider in pixels heightHeight of the slider in pixels 
 
 ---
 
 ### `void onCreate() override`
 
-
-        
+Initialize the slider. 
 
 
         
@@ -39,11 +38,9 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ### `void onUpdate(float deltaTime) override`
 
+Update the slider state. 
 
-        
-
-
-        
+deltaTimeTime elapsed since last update in seconds 
 
 ---
 
@@ -51,7 +48,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 Draw the slider to the canvas. 
 
-paramcanvasThe canvas to draw to 
+canvasThe canvas to draw to 
 
 ---
 
@@ -59,7 +56,7 @@ paramcanvasThe canvas to draw to
 
 Set the slider value. 
 
-paramnewValueValue between 0.0 and 1.0 
+newValueValue between 0.0 and 1.0 
 
 ---
 
@@ -67,7 +64,7 @@ paramnewValueValue between 0.0 and 1.0
 
 Get the current slider value. 
 
-returnValue between 0.0 and 1.0 
+Value between 0.0 and 1.0 
 
 ---
 
@@ -75,7 +72,7 @@ returnValue between 0.0 and 1.0
 
 Set the slider color. 
 
-paramnewColorColor value (0-15 for 4-bit grayscale) 
+newColorColor value (0-15 for 4-bit grayscale) 
 
 ---
 

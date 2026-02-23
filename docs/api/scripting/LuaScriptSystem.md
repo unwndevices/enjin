@@ -9,7 +9,7 @@ sidebar_label: LuaScriptSystem
 High-level Lua scripting interface. 
 
 
-Combines  and  for easy script execution with graphics and UI capabilities. LuaEngineclassenjin2_1_1LuaEnginecompoundLuaBindingsclassenjin2_1_1LuaBindingscompound
+Combines  and  for easy script execution with graphics and UI capabilities. LuaEngineLuaBindings
 
 ---
 
@@ -32,7 +32,7 @@ Constructor.
 
 Initialize the script system. 
 
-returnTrue if successful 
+True if successful 
 
 ---
 
@@ -49,31 +49,31 @@ Shutdown the script system.
 
 Set canvas for drawing operations. 
 
-paramcanvasCanvas to use 
+canvasCanvas to use 
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound executeScript(const std::string &code)`
+### `LuaResult executeScript(const std::string &code)`
 
 Execute Lua script string. 
 
-paramcodeLua code to execute returnExecution result 
+codeLua code to execute Execution result 
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound loadScript(const std::string &filename)`
+### `LuaResult loadScript(const std::string &filename)`
 
 Load and execute Lua script file. 
 
-paramfilenameScript file path returnExecution result 
+filenameScript file path Execution result 
 
 ---
 
-### `LuaResultstructenjin2_1_1LuaResultcompound callFunction(const std::string &functionName, Args... args)`
+### `LuaResult callFunction(const std::string &functionName, Args... args)`
 
 Call Lua function. 
 
-paramfunctionNameFunction name argsFunction arguments returnExecution result 
+functionNameFunction name argsFunction arguments Execution result 
 
 ---
 
@@ -81,23 +81,23 @@ paramfunctionNameFunction name argsFunction arguments returnExecution result
 
 Get script system memory usage. 
 
-returnMemory usage in bytes 
+Memory usage in bytes 
 
 ---
 
-### ` &LuaEngineclassenjin2_1_1LuaEnginecompound getEngine()`
+### ` &LuaEngine getEngine()`
 
 Get Lua engine reference. 
 
-returnLua engine 
+Lua engine 
 
 ---
 
-### ` &LuaBindingsclassenjin2_1_1LuaBindingscompound getBindings()`
+### ` &LuaBindings getBindings()`
 
 Get bindings reference. 
 
-returnLua bindings 
+Lua bindings 
 
 ---
 

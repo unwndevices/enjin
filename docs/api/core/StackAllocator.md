@@ -9,7 +9,7 @@ sidebar_label: StackAllocator
 Stack-based allocator for temporary allocations. 
 
 
-Allocates memory linearly from a fixed buffer. All allocations can be freed at once with , ideal for frame-based allocations. reset()classenjin2_1_1StackAllocator_1a414bd82160cf508b285c74351a91ed42member
+Allocates memory linearly from a fixed buffer. All allocations can be freed at once with , ideal for frame-based allocations. reset()
 
 ---
 
@@ -23,7 +23,7 @@ Allocates memory linearly from a fixed buffer. All allocations can be freed at o
 
 Construct stack allocator with provided buffer. 
 
-parammemPointer to pre-allocated memory buffer capTotal capacity of buffer in bytes 
+memPointer to pre-allocated memory buffer capTotal capacity of buffer in bytes 
 
 ---
 
@@ -31,7 +31,7 @@ parammemPointer to pre-allocated memory buffer capTotal capacity of buffer in by
 
 Allocate memory from stack. 
 
-paramsizeNumber of bytes to allocate alignmentAlignment requirement in bytes (default: pointer size) returnPointer to allocated memory, or nullptr if out of space 
+sizeNumber of bytes to allocate alignmentAlignment requirement in bytes (default: pointer size) Pointer to allocated memory, or nullptr if out of space 
 
 ---
 
@@ -48,7 +48,7 @@ Reset allocator, freeing all allocations.
 
 Get currently used memory. 
 
-returnNumber of bytes currently allocated 
+Number of bytes currently allocated 
 
 ---
 
@@ -56,7 +56,7 @@ returnNumber of bytes currently allocated
 
 Get remaining free memory. 
 
-returnNumber of bytes available for allocation 
+Number of bytes available for allocation 
 
 ---
 

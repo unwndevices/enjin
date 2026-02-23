@@ -9,7 +9,7 @@ sidebar_label: System
 Template base for typed systems. 
 
 
-templateparamTDerived system type 
+TDerived system type 
 
 ---
 
@@ -23,7 +23,7 @@ templateparamTDerived system type
 
 Get system type ID. 
 
-return type identifier Systemclassenjin2_1_1Systemcompound
+ type identifier System
 
 ---
 
@@ -31,7 +31,7 @@ return type identifier Systemclassenjin2_1_1Systemcompound
 
 Get static system type ID. 
 
-return type identifier Systemclassenjin2_1_1Systemcompound
+ type identifier System
 
 ---
 

@@ -41,7 +41,7 @@ Destructor.
 
 Add a scene to the state machine. 
 
-templateparamT type (must derive from ) Sceneclassenjin2_1_1ScenecompoundSceneclassenjin2_1_1ScenecompoundArgsConstructor argument types paramsceneIdUnique scene identifier argsConstructor arguments returnPointer to created scene or nullptr if failed 
+T type (must derive from ) SceneSceneArgsConstructor argument types sceneIdUnique scene identifier argsConstructor arguments Pointer to created scene or nullptr if failed 
 
 ---
 
@@ -49,7 +49,7 @@ templateparamT type (must derive from ) Sceneclassenjin2_1_1ScenecompoundScenecl
 
 Remove a scene from the state machine. 
 
-paramsceneId identifier to remove Sceneclassenjin2_1_1ScenecompoundreturnTrue if scene was removed 
+sceneId identifier to remove SceneTrue if scene was removed 
 
 ---
 
@@ -57,7 +57,7 @@ paramsceneId identifier to remove Sceneclassenjin2_1_1ScenecompoundreturnTrue if
 
 Change to a different scene. 
 
-paramsceneIdTarget scene identifier transitionTransition type to use durationTransition duration in milliseconds (0 = use default) returnTrue if transition started successfully 
+sceneIdTarget scene identifier transitionTransition type to use durationTransition duration in milliseconds (0 = use default) True if transition started successfully 
 
 ---
 
@@ -65,7 +65,7 @@ paramsceneIdTarget scene identifier transitionTransition type to use durationTra
 
 Update the state machine. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -73,23 +73,23 @@ paramdeltaTimeTime since last frame in milliseconds
 
 Render the current scene with transition effects. 
 
-paramcanvasTarget canvas for rendering 
+canvasTarget canvas for rendering 
 
 ---
 
-### ` *Sceneclassenjin2_1_1Scenecompound getCurrentScene()`
+### ` *Scene getCurrentScene()`
 
 Get current scene. 
 
-returnPointer to current scene or nullptr 
+Pointer to current scene or nullptr 
 
 ---
 
-### ` *Sceneclassenjin2_1_1Scenecompound getScene(uint32_t sceneId)`
+### ` *Scene getScene(uint32_t sceneId)`
 
 Get scene by ID. 
 
-paramsceneId identifier Sceneclassenjin2_1_1ScenecompoundreturnPointer to scene or nullptr if not found 
+sceneId identifier ScenePointer to scene or nullptr if not found 
 
 ---
 
@@ -97,7 +97,7 @@ paramsceneId identifier Sceneclassenjin2_1_1ScenecompoundreturnPointer to scene 
 
 Check if a transition is currently active. 
 
-returnTrue if transitioning 
+True if transitioning 
 
 ---
 
@@ -105,46 +105,39 @@ returnTrue if transitioning
 
 Get current transition progress. 
 
-returnProgress value from 0.0 to 1.0 
+Progress value from 0.0 to 1.0 
 
 ---
 
-### `&lt;  *,  * &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1ScenecompoundSceneclassenjin2_1_1Scenecompound connectOnSceneChangeStart(std::function&lt; void(Scene *, Scene *)&gt; callback)`
+### `&lt;  *,  * &gt;SignalConnectionSceneScene connectOnSceneChangeStart(std::function&lt; void(Scene *, Scene *)&gt; callback)`
 
-Connect to transition events. 
+Connect to scene change start event. 
 
-
-        
-
----
-
-### `&lt;  *,  * &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1ScenecompoundSceneclassenjin2_1_1Scenecompound connectOnSceneChangeComplete(std::function&lt; void(Scene *, Scene *)&gt; callback)`
-
-
-        
-
-
-        
+callbackFunction called with (from_scene, to_scene)  connection handle Signal
 
 ---
 
-### `&lt;  &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompoundTransitionTypeclassenjin2_1_1SceneStateMachine_1ac0494c42046b4b5aad9d77883aee936amember connectOnTransitionStart(std::function&lt; void(TransitionType)&gt; callback)`
+### `&lt;  *,  * &gt;SignalConnectionSceneScene connectOnSceneChangeComplete(std::function&lt; void(Scene *, Scene *)&gt; callback)`
 
+Connect to scene change complete event. 
 
-        
-
-
-        
+callbackFunction called with (from_scene, to_scene)  connection handle Signal
 
 ---
 
-### `&lt; float &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnTransitionProgress(std::function&lt; void(float)&gt; callback)`
+### `&lt;  &gt;SignalConnectionTransitionType connectOnTransitionStart(std::function&lt; void(TransitionType)&gt; callback)`
 
+Connect to transition start event. 
 
-        
+callbackFunction called with transition type  connection handle Signal
 
+---
 
-        
+### `&lt; float &gt;SignalConnection connectOnTransitionProgress(std::function&lt; void(float)&gt; callback)`
+
+Connect to transition progress event. 
+
+callbackFunction called with progress value (0.0-1.0)  connection handle Signal
 
 ---
 
@@ -163,7 +156,7 @@ Start a transition.
 
 Update transition state. 
 
-paramdeltaTimeTime since last frame 
+deltaTimeTime since last frame 
 
 ---
 
@@ -180,7 +173,7 @@ Complete the current transition.
 
 Render scenes with transition effects. 
 
-paramcanvasTarget canvas 
+canvasTarget canvas 
 
 ---
 
@@ -188,7 +181,7 @@ paramcanvasTarget canvas
 
 Render fade transition. 
 
-paramcanvasTarget canvas 
+canvasTarget canvas 
 
 ---
 
@@ -196,7 +189,7 @@ paramcanvasTarget canvas
 
 Render slide transition. 
 
-paramcanvasTarget canvas 
+canvasTarget canvas 
 
 ---
 

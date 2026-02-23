@@ -6,7 +6,7 @@ sidebar_label: Tickmarks
 
 # Tickmarks
 
- component for drawing measurement scales. Tickmarksclassenjin2_1_1Tickmarkscompound
+ component for drawing measurement scales. Tickmarks
 
 
 A component that draws tickmarks around a circular arc, useful for creating dial scales, meters, and other measurement indicators. 
@@ -21,16 +21,15 @@ A component that draws tickmarks around a circular arc, useful for creating dial
 
 ### ` Tickmarks(Object *owner, Vector2 centerPoint, int16_t startAngle, int16_t stopAngle, uint8_t tickSpacing, uint8_t tickLength, uint8_t arcRadius)`
 
-Construct a new  component. Tickmarksclassenjin2_1_1Tickmarkscompound
+Construct a new  component. Tickmarks
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe object that owns this component centerPointCenter point for the tickmarks arc startAngleStarting angle in degrees stopAngleEnding angle in degrees tickSpacingSpacing between tickmarks in degrees tickLengthLength of the tickmarks in pixels arcRadiusRadius of the arc on which tickmarks are drawn 
+ownerThe object that owns this component centerPointCenter point for the tickmarks arc startAngleStarting angle in degrees stopAngleEnding angle in degrees tickSpacingSpacing between tickmarks in degrees tickLengthLength of the tickmarks in pixels arcRadiusRadius of the arc on which tickmarks are drawn 
 
 ---
 
 ### `void onCreate() override`
 
-
-        
+Initialize the tickmarks. 
 
 
         
@@ -39,11 +38,9 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ### `void onUpdate(float deltaTime) override`
 
+Update the tickmarks state. 
 
-        
-
-
-        
+deltaTimeTime elapsed since last update in seconds 
 
 ---
 
@@ -51,7 +48,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 Draw the tickmarks to the canvas. 
 
-paramcanvasThe canvas to draw to 
+canvasThe canvas to draw to 
 
 ---
 
@@ -59,7 +56,7 @@ paramcanvasThe canvas to draw to
 
 Set the current value for tickmark positioning. 
 
-paramvalueValue that affects tickmark positioning (typically 0.0-1.0) 
+valueValue that affects tickmark positioning (typically 0.0-1.0) 
 
 ---
 
@@ -67,7 +64,7 @@ paramvalueValue that affects tickmark positioning (typically 0.0-1.0)
 
 Get the current value. 
 
-returnCurrent value 
+Current value 
 
 ---
 
@@ -75,7 +72,7 @@ returnCurrent value
 
 Set the center point of the tickmarks. 
 
-paramnewCenterNew center point 
+newCenterNew center point 
 
 ---
 
@@ -83,7 +80,7 @@ paramnewCenterNew center point
 
 Set the angle range for the tickmarks. 
 
-paramstartAngleStarting angle in degrees stopAngleEnding angle in degrees 
+startAngleStarting angle in degrees stopAngleEnding angle in degrees 
 
 ---
 
@@ -91,7 +88,7 @@ paramstartAngleStarting angle in degrees stopAngleEnding angle in degrees
 
 Set the tickmark spacing. 
 
-paramnewSpacingSpacing between tickmarks in degrees 
+newSpacingSpacing between tickmarks in degrees 
 
 ---
 
@@ -99,7 +96,7 @@ paramnewSpacingSpacing between tickmarks in degrees
 
 Set the tickmark length. 
 
-paramnewLengthLength of the tickmarks in pixels 
+newLengthLength of the tickmarks in pixels 
 
 ---
 
@@ -107,7 +104,7 @@ paramnewLengthLength of the tickmarks in pixels
 
 Set the arc radius. 
 
-paramnewRadiusRadius of the arc on which tickmarks are drawn 
+newRadiusRadius of the arc on which tickmarks are drawn 
 
 ---
 

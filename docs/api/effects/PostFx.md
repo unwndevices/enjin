@@ -9,7 +9,7 @@ sidebar_label: PostFx
 Post-processing effects system. 
 
 
-Provides various visual effects that can be applied to canvases including CRT simulation, noise, blur, glow, etc. Based on original Enjin  with expanded functionality. PostFxclassenjin2_1_1PostFxcompound
+Provides various visual effects that can be applied to canvases including CRT simulation, noise, blur, glow, etc. Based on original Enjin  with expanded functionality. PostFx
 
 ---
 
@@ -32,7 +32,7 @@ Constructor.
 
 Update effect animations. 
 
-paramdeltaTimeTime since last update in milliseconds 
+deltaTimeTime since last update in milliseconds 
 
 ---
 
@@ -40,7 +40,7 @@ paramdeltaTimeTime since last update in milliseconds
 
 Get current animation time for time-based effects. 
 
-returnCurrent time in milliseconds 
+Current time in milliseconds 
 
 ---
 
@@ -48,7 +48,7 @@ returnCurrent time in milliseconds
 
 Apply CRT scanlines effect. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters 
+canvasTarget canvas to modify paramsEffect parameters 
 
 ---
 
@@ -56,7 +56,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters
 
 Apply moving scanlines effect. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters timeCurrent time for animation 
+canvasTarget canvas to modify paramsEffect parameters timeCurrent time for animation 
 
 ---
 
@@ -64,7 +64,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters timeCurrent time for 
 
 Apply barrel distortion effect. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters (intensity controls distortion strength) 
+canvasTarget canvas to modify paramsEffect parameters (intensity controls distortion strength) 
 
 ---
 
@@ -72,7 +72,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters (intensity controls d
 
 Apply noise overlay. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters 
+canvasTarget canvas to modify paramsEffect parameters 
 
 ---
 
@@ -80,7 +80,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters
 
 Apply simple blur effect. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters 
+canvasTarget canvas to modify paramsEffect parameters 
 
 ---
 
@@ -88,7 +88,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters
 
 Apply glow/bloom effect. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters 
+canvasTarget canvas to modify paramsEffect parameters 
 
 ---
 
@@ -96,7 +96,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters
 
 Apply dithering pattern. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters 
+canvasTarget canvas to modify paramsEffect parameters 
 
 ---
 
@@ -104,7 +104,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters
 
 Apply contrast adjustment. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters (intensity = contrast multiplier) 
+canvasTarget canvas to modify paramsEffect parameters (intensity = contrast multiplier) 
 
 ---
 
@@ -112,7 +112,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters (intensity = contrast
 
 Apply brightness adjustment. 
 
-paramcanvasTarget canvas to modify paramsEffect parameters (intensity = brightness offset) 
+canvasTarget canvas to modify paramsEffect parameters (intensity = brightness offset) 
 
 ---
 
@@ -120,7 +120,7 @@ paramcanvasTarget canvas to modify paramsEffect parameters (intensity = brightne
 
 Apply multiple effects in sequence. 
 
-paramcanvasTarget canvas to modify effectsVector of effect type and parameter pairs timeCurrent time for animated effects 
+canvasTarget canvas to modify effectsVector of effect type and parameter pairs timeCurrent time for animated effects 
 
 ---
 
@@ -130,7 +130,7 @@ paramcanvasTarget canvas to modify effectsVector of effect type and parameter pa
 
 Simple random number generator for effects. 
 
-returnRandom value 0-255 
+Random value 0-255 
 
 ---
 
@@ -138,7 +138,7 @@ returnRandom value 0-255
 
 Clamp value to 4-bit range (0-15). 
 
-paramvalueInput value returnClamped value 
+valueInput value Clamped value 
 
 ---
 
@@ -146,7 +146,7 @@ paramvalueInput value returnClamped value
 
 Get dither pattern value for coordinates. 
 
-paramxX coordinate yY coordinate returnDither pattern value 
+xX coordinate yY coordinate Dither pattern value 
 
 ---
 

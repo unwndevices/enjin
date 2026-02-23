@@ -32,7 +32,7 @@ Virtual destructor.
 
 Get canvas width. 
 
-returnCanvas width in pixels 
+Canvas width in pixels 
 
 ---
 
@@ -40,7 +40,7 @@ returnCanvas width in pixels
 
 Get canvas height. 
 
-returnCanvas height in pixels 
+Canvas height in pixels 
 
 ---
 
@@ -48,7 +48,7 @@ returnCanvas height in pixels
 
 Clear canvas with specified color. 
 
-paramcolorClear color 
+colorClear color 
 
 ---
 
@@ -56,7 +56,7 @@ paramcolorClear color
 
 Set pixel at coordinates. 
 
-paramxX coordinate yY coordinate colorPixel color 
+xX coordinate yY coordinate colorPixel color 
 
 ---
 
@@ -64,7 +64,7 @@ paramxX coordinate yY coordinate colorPixel color
 
 Get pixel at coordinates. 
 
-paramxX coordinate yY coordinate returnPixel color value 
+xX coordinate yY coordinate Pixel color value 
 
 ---
 
@@ -72,7 +72,7 @@ paramxX coordinate yY coordinate returnPixel color value
 
 Draw line. 
 
-paramx1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordinate colorLine color 
+x1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordinate colorLine color 
 
 ---
 
@@ -80,7 +80,7 @@ paramx1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordi
 
 Draw rectangle outline. 
 
-paramxX coordinate yY coordinate widthRectangle width heightRectangle height colorRectangle color 
+xX coordinate yY coordinate widthRectangle width heightRectangle height colorRectangle color 
 
 ---
 
@@ -88,7 +88,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 Fill rectangle. 
 
-paramxX coordinate yY coordinate widthRectangle width heightRectangle height colorFill color 
+xX coordinate yY coordinate widthRectangle width heightRectangle height colorFill color 
 
 ---
 
@@ -96,7 +96,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 Draw circle outline. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle color 
 
 ---
 
@@ -104,7 +104,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle c
 
 Fill circle. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
 
 ---
 

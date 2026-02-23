@@ -2,12 +2,11 @@
 id: ComponentQuery::Iterator
 title: ComponentQuery::Iterator
 sidebar_label: ComponentQuery::Iterator
-slug: ComponentQuery_Iterator
 ---
 
 # ComponentQuery::Iterator
 
- for query results. Iteratorclassenjin2_1_1ComponentQuery_1_1Iteratorcompound
+ for query results. Iterator
 
 
 
@@ -25,23 +24,23 @@ slug: ComponentQuery_Iterator
 
 Construct iterator with filter and starting position. 
 
-paramf filter function Entitystructenjin2_1_1EntitycompoundstartStarting entity indexStarting entity index 
+f filter function EntitystartStarting entity indexStarting entity index 
 
 ---
 
-### `Entitystructenjin2_1_1Entitycompound operator*() const const`
+### `Entity operator*() const const`
 
 Dereference to get current entity. 
 
-returnCurrent entity 
+Current entity 
 
 ---
 
-### ` &Iteratorclassenjin2_1_1ComponentQuery_1_1Iterator_1a5e3129905c0b001f80c94fb7cbf49707member operator++()`
+### ` &Iterator operator++()`
 
 Advance to next matching entity. 
 
-returnReference to this iterator 
+Reference to this iterator 
 
 ---
 
@@ -49,7 +48,7 @@ returnReference to this iterator
 
 Inequality comparison. 
 
-paramother to compare with Iteratorclassenjin2_1_1ComponentQuery_1_1IteratorcompoundreturnTrue if iterators are at different positions 
+other to compare with IteratorTrue if iterators are at different positions 
 
 ---
 

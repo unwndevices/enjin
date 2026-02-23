@@ -23,7 +23,7 @@ A drawable component that executes scripts for custom UI rendering. Uses platfor
 
 Constructor with automatic interpreter selection. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object widthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmember width Componentclassenjin2_1_1Componentcompoundheightclassenjin2_1_1C__Drawable_1ae67d8735cdc3935c362d48f4973caf75member height Componentclassenjin2_1_1Componentcompound
+ownerOwner object width width Componentheight height Component
 
 ---
 
@@ -31,7 +31,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner
 
 Constructor with specific interpreter type. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object widthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmember width Componentclassenjin2_1_1Componentcompoundheightclassenjin2_1_1C__Drawable_1ae67d8735cdc3935c362d48f4973caf75member height Componentclassenjin2_1_1ComponentcompoundinterpreterTypeSpecific interpreter to use 
+ownerOwner object width width Componentheight height ComponentinterpreterTypeSpecific interpreter to use 
 
 ---
 
@@ -48,7 +48,7 @@ Destructor.
 
 Load script from string. 
 
-paramcodeLua script code returnTrue if loaded successfully 
+codeLua script code True if loaded successfully 
 
 ---
 
@@ -56,7 +56,7 @@ paramcodeLua script code returnTrue if loaded successfully
 
 Load script from file. 
 
-paramfilenamePath to Lua script file returnTrue if loaded successfully 
+filenamePath to Lua script file True if loaded successfully 
 
 ---
 
@@ -64,7 +64,7 @@ paramfilenamePath to Lua script file returnTrue if loaded successfully
 
 Reload current script (useful for development). 
 
-returnTrue if reloaded successfully 
+True if reloaded successfully 
 
 ---
 
@@ -81,7 +81,7 @@ Clear current script.
 
 Check if script is loaded. 
 
-returnTrue if script is loaded 
+True if script is loaded 
 
 ---
 
@@ -89,7 +89,7 @@ returnTrue if script is loaded
 
 Check if script has errors. 
 
-returnTrue if script has errors 
+True if script has errors 
 
 ---
 
@@ -97,7 +97,7 @@ returnTrue if script has errors
 
 Get last error message. 
 
-returnError message string 
+Error message string 
 
 ---
 
@@ -105,7 +105,7 @@ returnError message string
 
 Set script variable (expose game state to script). 
 
-paramnameVariable name valueVariable value 
+nameVariable name valueVariable value 
 
 ---
 
@@ -113,7 +113,7 @@ paramnameVariable name valueVariable value
 
 Set script string variable. 
 
-paramnameVariable name valueString value 
+nameVariable name valueString value 
 
 ---
 
@@ -121,7 +121,7 @@ paramnameVariable name valueString value
 
 Set script boolean variable. 
 
-paramnameVariable name valueBoolean value 
+nameVariable name valueBoolean value 
 
 ---
 
@@ -129,7 +129,7 @@ paramnameVariable name valueBoolean value
 
 Get script variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnVariable value 
+nameVariable name defaultValueDefault value if not found Variable value 
 
 ---
 
@@ -137,7 +137,7 @@ paramnameVariable name defaultValueDefault value if not found returnVariable val
 
 Get script string variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnString value 
+nameVariable name defaultValueDefault value if not found String value 
 
 ---
 
@@ -145,7 +145,7 @@ paramnameVariable name defaultValueDefault value if not found returnString value
 
 Get script boolean variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnBoolean value 
+nameVariable name defaultValueDefault value if not found Boolean value 
 
 ---
 
@@ -153,7 +153,7 @@ paramnameVariable name defaultValueDefault value if not found returnBoolean valu
 
 Call custom script function. 
 
-paramfunctionNameFunction name to call returnTrue if call was successful 
+functionNameFunction name to call True if call was successful 
 
 ---
 
@@ -161,7 +161,7 @@ paramfunctionNameFunction name to call returnTrue if call was successful
 
 Update component (calls script update function). 
 
-paramdeltaTimeTime since last update 
+deltaTimeTime since last update 
 
 ---
 
@@ -169,7 +169,7 @@ paramdeltaTimeTime since last update
 
 Draw component using 4-bit canvas. 
 
-paramcanvas4-bit canvas to draw on 
+canvas4-bit canvas to draw on 
 
 ---
 
@@ -177,23 +177,23 @@ paramcanvas4-bit canvas to draw on
 
 Draw component using 8-bit canvas. 
 
-paramcanvas8-bit canvas to draw on 
+canvas8-bit canvas to draw on 
 
 ---
 
-### ` *IScriptInterpreterclassenjin2_1_1IScriptInterpretercompound getInterpreter()`
+### ` *IScriptInterpreter getInterpreter()`
 
 Get script interpreter for advanced operations. 
 
-returnScript interpreter reference 
+Script interpreter reference 
 
 ---
 
-### ` *IScriptGraphicsclassenjin2_1_1IScriptGraphicscompound getGraphics()`
+### ` *IScriptGraphics getGraphics()`
 
 Get graphics interface. 
 
-returnGraphics interface reference 
+Graphics interface reference 
 
 ---
 
@@ -201,7 +201,7 @@ returnGraphics interface reference
 
 Get interpreter type name. 
 
-returnType name string 
+Type name string 
 
 ---
 
@@ -209,7 +209,7 @@ returnType name string
 
 Get performance stats. 
 
-returnNumber of draw calls since creation 
+Number of draw calls since creation 
 
 ---
 
@@ -219,7 +219,7 @@ returnNumber of draw calls since creation
 
 Initialize script interpreter and graphics. 
 
-paraminterpreterTypeType of interpreter to create returnTrue if initialization successful 
+interpreterTypeType of interpreter to create True if initialization successful 
 
 ---
 
@@ -227,7 +227,7 @@ paraminterpreterTypeType of interpreter to create returnTrue if initialization s
 
 Execute script with error handling. 
 
-paramcodeScript code to execute returnTrue if execution successful 
+codeScript code to execute True if execution successful 
 
 ---
 
@@ -235,7 +235,7 @@ paramcodeScript code to execute returnTrue if execution successful
 
 Call script function with error handling. 
 
-paramfunctionNameFunction name returnTrue if call successful 
+functionNameFunction name True if call successful 
 
 ---
 
@@ -243,15 +243,15 @@ paramfunctionNameFunction name returnTrue if call successful
 
 Setup Lua canvas for current drawing context. 
 
-paramcanvasCanvas to wrap 
+canvasCanvas to wrap 
 
 ---
 
 ### `void handleScriptError(const ScriptResult &result)`
 
- script error. Handlestructenjin2_1_1Handlecompound
+ script error. Handle
 
-paramresultScript execution result 
+resultScript execution result 
 
 ---
 

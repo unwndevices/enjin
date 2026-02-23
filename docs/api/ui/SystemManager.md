@@ -6,11 +6,11 @@ sidebar_label: SystemManager
 
 # SystemManager
 
- manager for organizing and updating systems. Systemclassenjin2_1_1Systemcompound
+ manager for organizing and updating systems. System
 
 
 
-Manages system lifecycle and provides ordered updating. Systems are automatically sorted by priority. templateparamMAX_SYSTEMSMaximum number of systems
+Manages system lifecycle and provides ordered updating. Systems are automatically sorted by priority. MAX_SYSTEMSMaximum number of systems
 
 ---
 
@@ -33,7 +33,7 @@ Constructor initializes empty system manager.
 
 Add system to manager. 
 
-templateparamT type Systemclassenjin2_1_1Systemcompoundparamsystem instance Systemclassenjin2_1_1Systemcompoundreturntrue if system was added successfully 
+T type Systemsystem instance Systemtrue if system was added successfully 
 
 ---
 
@@ -41,7 +41,7 @@ templateparamT type Systemclassenjin2_1_1Systemcompoundparamsystem instance Syst
 
 Remove system from manager. 
 
-templateparamT type Systemclassenjin2_1_1SystemcompoundreturnPointer to removed system, nullptr if not found 
+T type SystemPointer to removed system, nullptr if not found 
 
 ---
 
@@ -49,7 +49,7 @@ templateparamT type Systemclassenjin2_1_1SystemcompoundreturnPointer to removed 
 
 Get system by type. 
 
-templateparamT type Systemclassenjin2_1_1SystemcompoundreturnPointer to system, nullptr if not found 
+T type SystemPointer to system, nullptr if not found 
 
 ---
 
@@ -57,7 +57,7 @@ templateparamT type Systemclassenjin2_1_1SystemcompoundreturnPointer to system, 
 
 Update all systems in priority order. 
 
-paramdeltaTimeTime since last update 
+deltaTimeTime since last update 
 
 ---
 
@@ -65,7 +65,7 @@ paramdeltaTimeTime since last update
 
 Get number of active systems. 
 
-return count Systemclassenjin2_1_1Systemcompound
+ count System
 
 ---
 

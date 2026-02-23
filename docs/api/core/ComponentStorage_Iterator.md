@@ -2,12 +2,11 @@
 id: ComponentStorage::Iterator
 title: ComponentStorage::Iterator
 sidebar_label: ComponentStorage::Iterator
-slug: ComponentStorage_Iterator
 ---
 
 # ComponentStorage::Iterator
 
- for efficient component iteration. Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompound
+ for efficient component iteration. Iterator
 
 
 
@@ -25,23 +24,23 @@ slug: ComponentStorage_Iterator
 
 Construct iterator at position. 
 
-paramsStorage to iterate iStarting index 
+sStorage to iterate iStarting index 
 
 ---
 
-### `std::pair&lt; , T * &gt;Entitystructenjin2_1_1Entitycompound operator*() const const`
+### `std::pair&lt; , T * &gt;Entity operator*() const const`
 
 Dereference iterator. 
 
-returnPair of entity and component pointer 
+Pair of entity and component pointer 
 
 ---
 
-### ` &Iteratorclassenjin2_1_1ComponentStorage_1_1Iterator_1a56daaafb0b37279672174c24a082c172member operator++()`
+### ` &Iterator operator++()`
 
 Advance iterator. 
 
-returnReference to this iterator 
+Reference to this iterator 
 
 ---
 
@@ -49,7 +48,7 @@ returnReference to this iterator
 
 Inequality comparison. 
 
-paramother to compare with Iteratorclassenjin2_1_1ComponentStorage_1_1Iteratorcompoundreturntrue if iterators differ 
+other to compare with Iteratortrue if iterators differ 
 
 ---
 

@@ -24,7 +24,7 @@ Exception class for ImageCache errors.
 
 Construct with error message. 
 
-parammessageError description 
+messageError description 
 
 ---
 

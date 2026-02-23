@@ -21,16 +21,15 @@ A visual gauge that fills up to represent a value, similar to a VU meter. Suppor
 
 ### ` FillUpGauge(Object *owner, uint16_t w, uint16_t h, uint16_t gaugeColor, GaugeMode gaugeMode)`
 
-Construct a new  component. FillUpGaugeclassenjin2_1_1FillUpGaugecompound
+Construct a new  component. FillUpGauge
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe object that owns this component wWidth of the gauge in pixels hHeight of the gauge in pixels gaugeColorColor for the gauge outline and indicator gaugeModeMode of operation (unidirectional or bidirectional) 
+ownerThe object that owns this component wWidth of the gauge in pixels hHeight of the gauge in pixels gaugeColorColor for the gauge outline and indicator gaugeModeMode of operation (unidirectional or bidirectional) 
 
 ---
 
 ### `void onCreate() override`
 
-
-        
+Initialize the gauge. 
 
 
         
@@ -39,11 +38,9 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ### `void onUpdate(float deltaTime) override`
 
+Update the gauge state. 
 
-        
-
-
-        
+deltaTimeTime elapsed since last update in seconds 
 
 ---
 
@@ -51,7 +48,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 Draw the gauge to the canvas. 
 
-paramcanvasThe canvas to draw to 
+canvasThe canvas to draw to 
 
 ---
 
@@ -59,7 +56,7 @@ paramcanvasThe canvas to draw to
 
 Set the gauge value. 
 
-paramvalueValue to display (0.0-1.0 for unidirectional, -1.0-1.0 for bidirectional) 
+valueValue to display (0.0-1.0 for unidirectional, -1.0-1.0 for bidirectional) 
 
 ---
 
@@ -67,7 +64,7 @@ paramvalueValue to display (0.0-1.0 for unidirectional, -1.0-1.0 for bidirection
 
 Get the current gauge value. 
 
-returnCurrent value 
+Current value 
 
 ---
 
@@ -75,15 +72,15 @@ returnCurrent value
 
 Set the gauge mode. 
 
-paramnewModeNew mode (unidirectional or bidirectional) 
+newModeNew mode (unidirectional or bidirectional) 
 
 ---
 
-### `GaugeModefill__up__gauge_8hpp_1aea3621225504f1d151e5e5f17ec98acbmember getMode() const const`
+### `GaugeMode getMode() const const`
 
 Get the current gauge mode. 
 
-returnCurrent mode 
+Current mode 
 
 ---
 
@@ -91,7 +88,7 @@ returnCurrent mode
 
 Set the gauge color. 
 
-paramnewColorColor value (0-15 for 4-bit grayscale) 
+newColorColor value (0-15 for 4-bit grayscale) 
 
 ---
 
@@ -119,7 +116,7 @@ Draw bidirectional gauge (fills from center).
 
 Draw a rectangle with dither pattern. 
 
-paramxX coordinate yY coordinate wWidth hHeight 
+xX coordinate yY coordinate wWidth hHeight 
 
 ---
 

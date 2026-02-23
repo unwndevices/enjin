@@ -23,7 +23,7 @@ Provides a type-erased canvas interface that can hold either 4-bit or 8-bit canv
 
 Constructor for 4-bit canvas. 
 
-templateparamWCanvas width HCanvas height paramcanvas4-bit canvas pointer 
+WCanvas width HCanvas height canvas4-bit canvas pointer 
 
 ---
 
@@ -31,7 +31,7 @@ templateparamWCanvas width HCanvas height paramcanvas4-bit canvas pointer
 
 Constructor for 8-bit canvas. 
 
-templateparamWCanvas width HCanvas height paramcanvas8-bit canvas pointer 
+WCanvas width HCanvas height canvas8-bit canvas pointer 
 
 ---
 
@@ -39,7 +39,7 @@ templateparamWCanvas width HCanvas height paramcanvas8-bit canvas pointer
 
 Get canvas width. 
 
-returnCanvas width in pixels 
+Canvas width in pixels 
 
 ---
 
@@ -47,7 +47,7 @@ returnCanvas width in pixels
 
 Get canvas height. 
 
-returnCanvas height in pixels 
+Canvas height in pixels 
 
 ---
 
@@ -55,7 +55,7 @@ returnCanvas height in pixels
 
 Check if this is a 4-bit canvas. 
 
-returnTrue if 4-bit, false if 8-bit 
+True if 4-bit, false if 8-bit 
 
 ---
 
@@ -63,7 +63,7 @@ returnTrue if 4-bit, false if 8-bit
 
 Clear canvas with specified color. 
 
-paramcolorClear color (0-15 for 4-bit, 0-255 for 8-bit) 
+colorClear color (0-15 for 4-bit, 0-255 for 8-bit) 
 
 ---
 
@@ -71,7 +71,7 @@ paramcolorClear color (0-15 for 4-bit, 0-255 for 8-bit)
 
 Set pixel at coordinates. 
 
-paramxX coordinate yY coordinate colorPixel color 
+xX coordinate yY coordinate colorPixel color 
 
 ---
 
@@ -79,7 +79,7 @@ paramxX coordinate yY coordinate colorPixel color
 
 Get pixel at coordinates. 
 
-paramxX coordinate yY coordinate returnPixel color value 
+xX coordinate yY coordinate Pixel color value 
 
 ---
 
@@ -87,7 +87,7 @@ paramxX coordinate yY coordinate returnPixel color value
 
 Draw line. 
 
-paramx1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordinate colorLine color 
+x1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordinate colorLine color 
 
 ---
 
@@ -95,7 +95,7 @@ paramx1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordi
 
 Draw rectangle outline. 
 
-paramxX coordinate yY coordinate widthRectangle width heightRectangle height colorRectangle color 
+xX coordinate yY coordinate widthRectangle width heightRectangle height colorRectangle color 
 
 ---
 
@@ -103,7 +103,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 Fill rectangle. 
 
-paramxX coordinate yY coordinate widthRectangle width heightRectangle height colorFill color 
+xX coordinate yY coordinate widthRectangle width heightRectangle height colorFill color 
 
 ---
 
@@ -111,7 +111,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 Draw circle outline. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle color 
 
 ---
 
@@ -119,7 +119,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle c
 
 Fill circle. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
 
 ---
 
@@ -127,7 +127,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill col
 
 Draw triangle outline. 
 
-paramx1First vertex X y1First vertex Y x2Second vertex X y2Second vertex Y x3Third vertex X y3Third vertex Y colorTriangle color 
+x1First vertex X y1First vertex Y x2Second vertex X y2Second vertex Y x3Third vertex X y3Third vertex Y colorTriangle color 
 
 ---
 
@@ -135,7 +135,7 @@ paramx1First vertex X y1First vertex Y x2Second vertex X y2Second vertex Y x3Thi
 
 Fill triangle. 
 
-paramx1First vertex X y1First vertex Y x2Second vertex X y2Second vertex Y x3Third vertex X y3Third vertex Y colorFill color 
+x1First vertex X y1First vertex Y x2Second vertex X y2Second vertex Y x3Third vertex X y3Third vertex Y colorFill color 
 
 ---
 

@@ -6,7 +6,7 @@ sidebar_label: EntityManager
 
 # EntityManager
 
- manager for creating and destroying entities. Entitystructenjin2_1_1Entitycompound
+ manager for creating and destroying entities. Entity
 
 
 Manages entity lifecycle and component associations. Uses generation counters to prevent accessing destroyed entities. 
@@ -28,11 +28,11 @@ Constructor initializes entity manager.
 
 ---
 
-### `Entitystructenjin2_1_1Entitycompound createEntity()`
+### `Entity createEntity()`
 
 Create new entity. 
 
-return handle, invalid if no slots available Entitystructenjin2_1_1Entitycompound
+ handle, invalid if no slots available Entity
 
 ---
 
@@ -40,7 +40,7 @@ return handle, invalid if no slots available Entitystructenjin2_1_1Entitycompoun
 
 Destroy entity and free its slot. 
 
-paramentity to destroy Entitystructenjin2_1_1Entitycompound
+entity to destroy Entity
 
 ---
 
@@ -48,7 +48,7 @@ paramentity to destroy Entitystructenjin2_1_1Entitycompound
 
 Check if entity is valid. 
 
-paramentity to validate Entitystructenjin2_1_1Entitycompoundreturntrue if entity is valid 
+entity to validate Entitytrue if entity is valid 
 
 ---
 
@@ -56,7 +56,7 @@ paramentity to validate Entitystructenjin2_1_1Entitycompoundreturntrue if entity
 
 Get total number of active entities. 
 
-return count Entitystructenjin2_1_1Entitycompound
+ count Entity
 
 ---
 
@@ -64,7 +64,7 @@ return count Entitystructenjin2_1_1Entitycompound
 
 Get maximum entity capacity. 
 
-returnMaximum entities 
+Maximum entities 
 
 ---
 

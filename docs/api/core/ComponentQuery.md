@@ -10,7 +10,7 @@ Query builder for component-based entity selection.
 
 
 
-Provides efficient iteration over entities with specific component combinations. templateparamComponents... types to query forComponentclassenjin2_1_1Componentcompound
+Provides efficient iteration over entities with specific component combinations. Components... types to query forComponent
 
 ---
 
@@ -24,25 +24,23 @@ Provides efficient iteration over entities with specific component combinations.
 
 Constructor with entity filter. 
 
-paramentityFilterFunction to test if entity matches query 
+entityFilterFunction to test if entity matches query 
 
 ---
 
-### `Iteratorclassenjin2_1_1ComponentQuery_1_1Iteratorcompound begin() const const`
+### `Iterator begin() const const`
 
 Get iterator to beginning of query results. 
 
-
-        
+ to first matching entity Iterator
 
 ---
 
-### `Iteratorclassenjin2_1_1ComponentQuery_1_1Iteratorcompound end() const const`
+### `Iterator end() const const`
 
 Get iterator to end of query results. 
 
-
-        
+Past-the-end iterator 
 
 ---
 

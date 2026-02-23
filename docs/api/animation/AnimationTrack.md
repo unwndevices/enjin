@@ -9,7 +9,7 @@ sidebar_label: AnimationTrack
 Template animation track for keyframe-based animations. 
 
 
-templateparamTValue type (, float, , etc.) Pointstructenjin2_1_1PointcompoundPixel4structenjin2_1_1Pixel4compoundKeyframeTypeKeyframe type (, , etc.) PositionKeyframestructenjin2_1_1PositionKeyframecompoundFloatKeyframestructenjin2_1_1FloatKeyframecompound
+TValue type (, float, , etc.) PointPixel4KeyframeTypeKeyframe type (, , etc.) PositionKeyframeFloatKeyframe
 
 ---
 
@@ -32,7 +32,7 @@ Constructor.
 
 Add a keyframe to the track. 
 
-paramkeyframeKeyframe to add returnTrue if keyframe was added successfully 
+keyframeKeyframe to add True if keyframe was added successfully 
 
 ---
 
@@ -76,7 +76,7 @@ Stop animation playback and reset to beginning.
 
 Set loop mode. 
 
-parammodeLoop mode to set 
+modeLoop mode to set 
 
 ---
 
@@ -84,7 +84,7 @@ parammodeLoop mode to set
 
 Update animation by time delta. 
 
-paramdeltaTimeTime elapsed since last update in milliseconds 
+deltaTimeTime elapsed since last update in milliseconds 
 
 ---
 
@@ -92,15 +92,15 @@ paramdeltaTimeTime elapsed since last update in milliseconds
 
 Get current animation value. 
 
-returnCurrent interpolated value 
+Current interpolated value 
 
 ---
 
-### `AnimationStatekeyframe_8hpp_1a13cd37f1102dde201f8ebf9824dedd5dmember getState() const const`
+### `AnimationState getState() const const`
 
 Get animation state. 
 
-returnCurrent animation state 
+Current animation state 
 
 ---
 
@@ -108,7 +108,7 @@ returnCurrent animation state
 
 Get current time. 
 
-returnCurrent playback time in milliseconds 
+Current playback time in milliseconds 
 
 ---
 
@@ -116,7 +116,7 @@ returnCurrent playback time in milliseconds
 
 Get animation duration. 
 
-returnTotal duration in milliseconds 
+Total duration in milliseconds 
 
 ---
 
@@ -124,31 +124,31 @@ returnTotal duration in milliseconds
 
 Get normalized progress (0.0 to 1.0). 
 
-returnAnimation progress 
+Animation progress 
 
 ---
 
-### `SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnStart(std::function&lt; void()&gt; callback)`
+### `SignalConnection connectOnStart(std::function&lt; void()&gt; callback)`
 
 Connect to animation start event. 
 
-paramcallbackFunction to call when animation starts return connection for disconnecting callback Signalclassenjin2_1_1Signalcompound
+callbackFunction to call when animation starts  connection for disconnecting callback Signal
 
 ---
 
-### `SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnComplete(std::function&lt; void()&gt; callback)`
+### `SignalConnection connectOnComplete(std::function&lt; void()&gt; callback)`
 
 Connect to animation complete event. 
 
-paramcallbackFunction to call when animation completes return connection for disconnecting callback Signalclassenjin2_1_1Signalcompound
+callbackFunction to call when animation completes  connection for disconnecting callback Signal
 
 ---
 
-### `&lt; T &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompound connectOnUpdate(std::function&lt; void(T)&gt; callback)`
+### `&lt; T &gt;SignalConnection connectOnUpdate(std::function&lt; void(T)&gt; callback)`
 
 Connect to animation update event. 
 
-paramcallbackFunction to call when animation value updates return connection for disconnecting callback Signalclassenjin2_1_1Signalcompound
+callbackFunction to call when animation value updates  connection for disconnecting callback Signal
 
 ---
 
@@ -156,7 +156,7 @@ paramcallbackFunction to call when animation value updates return connection for
 
 ### `void handleLoopBoundary()`
 
- reaching loop boundary. Handlestructenjin2_1_1Handlecompound
+ reaching loop boundary. Handle
 
 
         
@@ -167,7 +167,7 @@ paramcallbackFunction to call when animation value updates return connection for
 
 Evaluate animation value at specific time. 
 
-paramtimeTime to evaluate at returnInterpolated value at time 
+timeTime to evaluate at Interpolated value at time 
 
 ---
 
@@ -189,7 +189,7 @@ Interpolate between two keyframes.
 
 ---
 
-### `Pointstructenjin2_1_1Pointcompound getValue(const PositionKeyframe &keyframe) const const`
+### `Point getValue(const PositionKeyframe &keyframe) const const`
 
 
         
@@ -209,7 +209,7 @@ Interpolate between two keyframes.
 
 ---
 
-### `Pixel4structenjin2_1_1Pixel4compound getValue(const ColorKeyframe &keyframe) const const`
+### `Pixel4 getValue(const ColorKeyframe &keyframe) const const`
 
 
         

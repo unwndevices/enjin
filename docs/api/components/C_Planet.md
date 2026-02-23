@@ -23,7 +23,7 @@ Represents a central planet or control hub in the space-themed UI. Can have sate
 
 Constructor. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object planetRadiusPlanet radius in pixels colorPlanet core color 
+ownerOwner object planetRadiusPlanet radius in pixels colorPlanet core color 
 
 ---
 
@@ -31,7 +31,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner
 
 Update planet animations. 
 
-paramdeltaTimeTime elapsed since last update in milliseconds 
+deltaTimeTime elapsed since last update in milliseconds 
 
 ---
 
@@ -39,7 +39,7 @@ paramdeltaTimeTime elapsed since last update in milliseconds
 
 Draw planet to 4-bit canvas. 
 
-paramcanvasTarget 4-bit canvas 
+canvasTarget 4-bit canvas 
 
 ---
 
@@ -47,7 +47,7 @@ paramcanvasTarget 4-bit canvas
 
 Draw planet to 8-bit canvas. 
 
-paramcanvasTarget 8-bit canvas 
+canvasTarget 8-bit canvas 
 
 ---
 
@@ -55,7 +55,7 @@ paramcanvasTarget 8-bit canvas
 
 Set planet core color. 
 
-paramcolorNew core color 
+colorNew core color 
 
 ---
 
@@ -63,7 +63,7 @@ paramcolorNew core color
 
 Set atmosphere properties. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTrue to enable atmosphere rendering radiusMultiplierAtmosphere radius as multiple of core radius colorAtmosphere color (0 = derive from core color) 
+enabledTrue to enable atmosphere rendering radiusMultiplierAtmosphere radius as multiple of core radius colorAtmosphere color (0 = derive from core color) 
 
 ---
 
@@ -71,7 +71,7 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTru
 
 Enable pulsing animation. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTrue to enable pulsing speedPulse frequency multiplier amountPulse intensity (0.0 to 1.0) 
+enabledTrue to enable pulsing speedPulse frequency multiplier amountPulse intensity (0.0 to 1.0) 
 
 ---
 
@@ -79,7 +79,7 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTru
 
 Enable rotation animation. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTrue to enable rotation speedRotation speed in radians per second 
+enabledTrue to enable rotation speedRotation speed in radians per second 
 
 ---
 
@@ -87,7 +87,7 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTru
 
 Add rings around planet. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTrue to enable rings innerRadiusInner ring radius as multiple of planet radius outerRadiusOuter ring radius as multiple of planet radius colorRing color 
+enabledTrue to enable rings innerRadiusInner ring radius as multiple of planet radius outerRadiusOuter ring radius as multiple of planet radius colorRing color 
 
 ---
 
@@ -95,15 +95,15 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTru
 
 Get planet radius. 
 
-returnPlanet radius in pixels 
+Planet radius in pixels 
 
 ---
 
-### `Pointstructenjin2_1_1Pointcompound getCenterPosition() const const`
+### `Point getCenterPosition() const const`
 
 Get planet center position in world coordinates. 
 
-returnCenter point of the planet 
+Center point of the planet 
 
 ---
 

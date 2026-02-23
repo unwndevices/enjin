@@ -22,7 +22,7 @@ Text renderer for drawing text to canvas.
 
 ### ` TextRenderer()`
 
-Construct a new . TextRendererclassenjin2_1_1TextRenderercompound
+Construct a new . TextRenderer
 
 
         
@@ -33,7 +33,7 @@ Construct a new . TextRendererclassenjin2_1_1TextRenderercompound
 
 Set the GFX font. 
 
-paramfontPointer to GFX font structure (nullptr for default built-in font) 
+fontPointer to GFX font structure (nullptr for default built-in font) 
 
 ---
 
@@ -41,7 +41,7 @@ paramfontPointer to GFX font structure (nullptr for default built-in font)
 
 Set text color (transparent background). 
 
-paramcolorText color 
+colorText color 
 
 ---
 
@@ -49,7 +49,7 @@ paramcolorText color
 
 Set text color with background. 
 
-paramcolorText color bgcolorBackground color 
+colorText color bgcolorBackground color 
 
 ---
 
@@ -57,7 +57,7 @@ paramcolorText color bgcolorBackground color
 
 Set text size. 
 
-paramsize multiplier (1 = normal, 2 = double, etc.) Sizestructenjin2_1_1Sizecompound
+size multiplier (1 = normal, 2 = double, etc.) Size
 
 ---
 
@@ -65,7 +65,7 @@ paramsize multiplier (1 = normal, 2 = double, etc.) Sizestructenjin2_1_1Sizecomp
 
 Set text size with separate X/Y scaling. 
 
-paramsxX size multiplier syY size multiplier 
+sxX size multiplier syY size multiplier 
 
 ---
 
@@ -73,7 +73,7 @@ paramsxX size multiplier syY size multiplier
 
 Set cursor position. 
 
-paramxX coordinate yY coordinate 
+xX coordinate yY coordinate 
 
 ---
 
@@ -81,7 +81,7 @@ paramxX coordinate yY coordinate
 
 Set text wrapping. 
 
-paramwrapTrue to enable text wrapping 
+wrapTrue to enable text wrapping 
 
 ---
 
@@ -89,7 +89,7 @@ paramwrapTrue to enable text wrapping
 
 Draw a single character (Adafruit GFX style). 
 
-paramcanvasCanvas to draw to xX position yY position cCharacter to draw 
+canvasCanvas to draw to xX position yY position cCharacter to draw 
 
 ---
 
@@ -97,7 +97,7 @@ paramcanvasCanvas to draw to xX position yY position cCharacter to draw
 
 Draw a string. 
 
-paramcanvasCanvas to draw to xX position yY position strString to draw 
+canvasCanvas to draw to xX position yY position strString to draw 
 
 ---
 
@@ -105,7 +105,7 @@ paramcanvasCanvas to draw to xX position yY position strString to draw
 
 Draw a string with automatic wrapping. 
 
-paramcanvasCanvas to draw to xX position yY position widthMaximum width before wrapping strString to draw 
+canvasCanvas to draw to xX position yY position widthMaximum width before wrapping strString to draw 
 
 ---
 
@@ -113,7 +113,7 @@ paramcanvasCanvas to draw to xX position yY position widthMaximum width before w
 
 Get text bounds for a string. 
 
-paramstrString to measure xX position yY position x1Output: left bound y1Output: top bound wOutput: width hOutput: height 
+strString to measure xX position yY position x1Output: left bound y1Output: top bound wOutput: width hOutput: height 
 
 ---
 
@@ -121,7 +121,7 @@ paramstrString to measure xX position yY position x1Output: left bound y1Output:
 
 Get width of a string in pixels. 
 
-paramstrString to measure returnWidth in pixels 
+strString to measure Width in pixels 
 
 ---
 
@@ -129,7 +129,7 @@ paramstrString to measure returnWidth in pixels
 
 Write a character at current cursor position. 
 
-paramcanvasCanvas to draw to cCharacter to write 
+canvasCanvas to draw to cCharacter to write 
 
 ---
 
@@ -137,8 +137,7 @@ paramcanvasCanvas to draw to cCharacter to write
 
 Get character width. 
 
-
-        
+cCharacter to measure Width in pixels 
 
 ---
 
@@ -146,8 +145,7 @@ Get character width.
 
 Get character height. 
 
-
-        
+Height in pixels 
 
 ---
 

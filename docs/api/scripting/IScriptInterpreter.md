@@ -32,7 +32,7 @@ Virtual destructor.
 
 Initialize the interpreter. 
 
-returnTrue if initialization successful 
+True if initialization successful 
 
 ---
 
@@ -49,31 +49,31 @@ Shutdown the interpreter.
 
 Check if interpreter is initialized. 
 
-returnTrue if initialized 
+True if initialized 
 
 ---
 
-### `ScriptResultstructenjin2_1_1ScriptResultcompound executeString(const std::string &code)=0`
+### `ScriptResult executeString(const std::string &code)=0`
 
 Execute script code string. 
 
-paramcodeScript code to execute returnExecution result 
+codeScript code to execute Execution result 
 
 ---
 
-### `ScriptResultstructenjin2_1_1ScriptResultcompound executeFile(const std::string &filename)=0`
+### `ScriptResult executeFile(const std::string &filename)=0`
 
 Load and execute script file. 
 
-paramfilenamePath to script file returnExecution result 
+filenamePath to script file Execution result 
 
 ---
 
-### `ScriptResultstructenjin2_1_1ScriptResultcompound callFunction(const std::string &functionName)=0`
+### `ScriptResult callFunction(const std::string &functionName)=0`
 
 Call script function. 
 
-paramfunctionNameName of function to call returnExecution result 
+functionNameName of function to call Execution result 
 
 ---
 
@@ -81,7 +81,7 @@ paramfunctionNameName of function to call returnExecution result
 
 Set global number variable. 
 
-paramnameVariable name valueNumber value to set 
+nameVariable name valueNumber value to set 
 
 ---
 
@@ -89,7 +89,7 @@ paramnameVariable name valueNumber value to set
 
 Set global string variable. 
 
-paramnameVariable name valueString value to set 
+nameVariable name valueString value to set 
 
 ---
 
@@ -97,7 +97,7 @@ paramnameVariable name valueString value to set
 
 Set global boolean variable. 
 
-paramnameVariable name valueBoolean value to set 
+nameVariable name valueBoolean value to set 
 
 ---
 
@@ -105,7 +105,7 @@ paramnameVariable name valueBoolean value to set
 
 Get global number variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnNumber value 
+nameVariable name defaultValueDefault value if not found Number value 
 
 ---
 
@@ -113,7 +113,7 @@ paramnameVariable name defaultValueDefault value if not found returnNumber value
 
 Get global string variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnString value 
+nameVariable name defaultValueDefault value if not found String value 
 
 ---
 
@@ -121,7 +121,7 @@ paramnameVariable name defaultValueDefault value if not found returnString value
 
 Get global boolean variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnBoolean value 
+nameVariable name defaultValueDefault value if not found Boolean value 
 
 ---
 
@@ -129,7 +129,7 @@ paramnameVariable name defaultValueDefault value if not found returnBoolean valu
 
 Get current memory usage. 
 
-returnMemory usage in bytes 
+Memory usage in bytes 
 
 ---
 
@@ -137,7 +137,7 @@ returnMemory usage in bytes
 
 Get interpreter type name. 
 
-returnType name string (e.g., "Lua", "JavaScript", "MicroPython") 
+Type name string (e.g., "Lua", "JavaScript", "MicroPython") 
 
 ---
 

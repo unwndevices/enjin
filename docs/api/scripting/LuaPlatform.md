@@ -24,7 +24,7 @@ Platform abstraction for Lua initialization.
 
 Create platform-appropriate Lua state. 
 
-paramallocatorCustom allocator function (nullptr for default) udUser data for allocator returnLua state or nullptr on failure 
+allocatorCustom allocator function (nullptr for default) udUser data for allocator Lua state or nullptr on failure 
 
 ---
 
@@ -32,7 +32,7 @@ paramallocatorCustom allocator function (nullptr for default) udUser data for al
 
 Open platform-appropriate standard libraries. 
 
-paramLLua state 
+LLua state 
 
 ---
 
@@ -40,7 +40,7 @@ paramLLua state
 
 Configure platform-specific security restrictions. 
 
-paramLLua state 
+LLua state 
 
 ---
 
@@ -48,7 +48,7 @@ paramLLua state
 
 Get platform memory statistics. 
 
-paramLLua state returnMemory usage in bytes 
+LLua state Memory usage in bytes 
 
 ---
 
@@ -56,7 +56,7 @@ paramLLua state returnMemory usage in bytes
 
 Platform-specific garbage collection tuning. 
 
-paramLLua state 
+LLua state 
 
 ---
 

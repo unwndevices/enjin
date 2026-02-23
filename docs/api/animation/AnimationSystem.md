@@ -9,7 +9,7 @@ sidebar_label: AnimationSystem
 Animation system for updating time-based animations. 
 
 
-Updates all entities with , handling timing, looping, and ping-pong behavior. AnimationComponentstructenjin2_1_1AnimationComponentcompound
+Updates all entities with , handling timing, looping, and ping-pong behavior. AnimationComponent
 
 ---
 
@@ -23,7 +23,7 @@ Updates all entities with , handling timing, looping, and ping-pong behavior. An
 
 Update all animations. 
 
-paramdeltaTimeTime since last update in seconds 
+deltaTimeTime since last update in seconds 
 
 ---
 
@@ -31,7 +31,7 @@ paramdeltaTimeTime since last update in seconds
 
 Get system priority (animations should run early). 
 
-returnPriority value 
+Priority value 
 
 ---
 
@@ -41,7 +41,7 @@ returnPriority value
 
 Update individual animation component. 
 
-paramanimationAnimation to update deltaTimeDelta time 
+animationAnimation to update deltaTimeDelta time 
 
 ---
 

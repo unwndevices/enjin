@@ -6,12 +6,10 @@ sidebar_label: Canvas8
 
 # Canvas8
 
-
-    
-
+8-bit canvas with per-pixel byte storage 
 
 
-    
+WIDTHCanvas width in pixels HEIGHTCanvas height in pixels 
 
 ---
 
@@ -35,7 +33,7 @@ sidebar_label: Canvas8
 
 Get canvas width in pixels. 
 
-returnWidth in pixels 
+Width in pixels 
 
 ---
 
@@ -43,7 +41,7 @@ returnWidth in pixels
 
 Get canvas height in pixels. 
 
-returnHeight in pixels 
+Height in pixels 
 
 ---
 
@@ -51,7 +49,7 @@ returnHeight in pixels
 
 Set pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate colorPixel color to set 
+xX coordinate yY coordinate colorPixel color to set 
 
 ---
 
@@ -59,7 +57,7 @@ paramxX coordinate yY coordinate colorPixel color to set
 
 Get pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate returnPixel color at the specified location 
+xX coordinate yY coordinate Pixel color at the specified location 
 
 ---
 
@@ -67,7 +65,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 Clear entire canvas to specified color. 
 
-paramcolorColor to fill canvas with (default: black/zero) 
+colorColor to fill canvas with (default: black/zero) 
 
 ---
 
@@ -75,37 +73,31 @@ paramcolorColor to fill canvas with (default: black/zero)
 
 Fill rectangular region with specified color. 
 
-paramrectRectangle to fill colorColor to fill with 
+rectRectangle to fill colorColor to fill with 
 
 ---
 
 ### `void convertTo4bit(Canvas4&lt; WIDTH, HEIGHT &gt; &dst) const const`
 
+Convert canvas contents to 4-bit format. 
 
-        
-
-
-        
+dstDestination 4-bit canvas 
 
 ---
 
 ### `const uint8_t * getBuffer() const const`
 
+Get read-only pointer to pixel buffer. 
 
-        
-
-
-        
+Pointer to pixel data 
 
 ---
 
 ### `uint8_t * getBuffer()`
 
+Get mutable pointer to pixel buffer. 
 
-        
-
-
-        
+Pointer to pixel data 
 
 ---
 
@@ -113,8 +105,7 @@ paramrectRectangle to fill colorColor to fill with
 
 Fill entire canvas (Adafruit_GFX compatibility). 
 
-
-        
+colorFill color 
 
 ---
 
@@ -122,8 +113,7 @@ Fill entire canvas (Adafruit_GFX compatibility).
 
 Draw single pixel (Adafruit_GFX compatibility). 
 
-
-        
+xX coordinate yY coordinate colorPixel color 
 
 ---
 
@@ -131,8 +121,7 @@ Draw single pixel (Adafruit_GFX compatibility).
 
 Get canvas width (Adafruit_GFX compatibility). 
 
-
-        
+Width in pixels 
 
 ---
 
@@ -140,8 +129,7 @@ Get canvas width (Adafruit_GFX compatibility).
 
 Get canvas height (Adafruit_GFX compatibility). 
 
-
-        
+Height in pixels 
 
 ---
 
@@ -149,8 +137,7 @@ Get canvas height (Adafruit_GFX compatibility).
 
 Set text color. 
 
-
-        
+colorText color value 
 
 ---
 
@@ -158,8 +145,7 @@ Set text color.
 
 Set text color with background. 
 
-
-        
+colorText color value bgBackground color value 
 
 ---
 
@@ -167,8 +153,7 @@ Set text color with background.
 
 Set cursor position. 
 
-
-        
+xX coordinate yY coordinate 
 
 ---
 
@@ -176,8 +161,7 @@ Set cursor position.
 
 Get cursor X position. 
 
-
-        
+Current cursor X coordinate 
 
 ---
 
@@ -185,8 +169,7 @@ Get cursor X position.
 
 Get cursor Y position. 
 
-
-        
+Current cursor Y coordinate 
 
 ---
 
@@ -194,8 +177,7 @@ Get cursor Y position.
 
 Write a single character (Adafruit_GFX compatible). 
 
-
-        
+cCharacter to write Number of bytes written 
 
 ---
 
@@ -203,8 +185,7 @@ Write a single character (Adafruit_GFX compatible).
 
 Print text at cursor position (Adafruit_GFX compatible). 
 
-
-        
+textNull-terminated string to print 
 
 ---
 
@@ -212,8 +193,7 @@ Print text at cursor position (Adafruit_GFX compatible).
 
 Print text with newline (basic implementation). 
 
-
-        
+textNull-terminated string to print 
 
 ---
 
@@ -221,18 +201,15 @@ Print text with newline (basic implementation).
 
 Draw a single character (Adafruit_GFX compatible). 
 
-
-        
+xX coordinate yY coordinate cCharacter to draw colorText color bgBackground color size_xHorizontal scale factor size_yVertical scale factor 
 
 ---
 
 ### `void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size)`
 
+Draw a single character with uniform scaling. 
 
-        
-
-
-        
+xX coordinate yY coordinate cCharacter to draw colorText color bgBackground color sizeScale factor for both axes 
 
 ---
 
@@ -240,18 +217,15 @@ Draw a single character (Adafruit_GFX compatible).
 
 Set text size scaling. 
 
-
-        
+sUniform scale factor 
 
 ---
 
 ### `void setTextSize(uint8_t s_x, uint8_t s_y)`
 
+Set text size scaling with independent axes. 
 
-        
-
-
-        
+s_xHorizontal scale factor s_yVertical scale factor 
 
 ---
 
@@ -259,8 +233,7 @@ Set text size scaling.
 
 Set text wrap mode. 
 
-
-        
+wEnable or disable text wrapping 
 
 ---
 
@@ -268,8 +241,7 @@ Set text wrap mode.
 
 Get text width (6 pixels per character times size). 
 
-
-        
+textNull-terminated string to measure Width in pixels 
 
 ---
 
@@ -277,8 +249,7 @@ Get text width (6 pixels per character times size).
 
 Fill rectangle. 
 
-
-        
+xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels colorFill color 
 
 ---
 
@@ -286,8 +257,7 @@ Fill rectangle.
 
 Draw rectangle outline. 
 
-
-        
+xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels colorOutline color 
 
 ---
 
@@ -295,8 +265,7 @@ Draw rectangle outline.
 
 Draw a line using Bresenham's algorithm. 
 
-
-        
+x0Start X coordinate y0Start Y coordinate x1End X coordinate y1End Y coordinate colorLine color 
 
 ---
 
@@ -304,8 +273,7 @@ Draw a line using Bresenham's algorithm.
 
 Draw a filled circle using midpoint circle algorithm. 
 
-
-        
+x0Center X coordinate y0Center Y coordinate radiusCircle radius colorFill color 
 
 ---
 
@@ -313,8 +281,7 @@ Draw a filled circle using midpoint circle algorithm.
 
 Draw circle outline using midpoint circle algorithm. 
 
-
-        
+x0Center X coordinate y0Center Y coordinate radiusCircle radius colorOutline color 
 
 ---
 
@@ -322,8 +289,7 @@ Draw circle outline using midpoint circle algorithm.
 
 Draw rounded rectangle outline. 
 
-
-        
+xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels radiusCorner radius colorOutline color 
 
 ---
 
@@ -331,8 +297,7 @@ Draw rounded rectangle outline.
 
 Fill rounded rectangle. 
 
-
-        
+xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels radiusCorner radius colorFill color 
 
 ---
 
@@ -340,8 +305,7 @@ Fill rounded rectangle.
 
 Fill rectangle with repeating pattern. 
 
-
-        
+xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels patternPointer to pattern data patternWidthPattern width in pixels patternHeightPattern height in pixels 
 
 ---
 
@@ -349,8 +313,7 @@ Fill rectangle with repeating pattern.
 
 Draw grayscale bitmap with basic parameters. 
 
-
-        
+xDestination X coordinate yDestination Y coordinate bitmapPointer to bitmap data wBitmap width hBitmap height 
 
 ---
 
@@ -358,8 +321,7 @@ Draw grayscale bitmap with basic parameters.
 
 Draw grayscale bitmap with matte threshold. 
 
-
-        
+xDestination X coordinate yDestination Y coordinate bitmapPointer to bitmap data matteTransparent color value to skip wBitmap width hBitmap height 
 
 ---
 
@@ -367,8 +329,7 @@ Draw grayscale bitmap with matte threshold.
 
 Draw grayscale bitmap with mask. 
 
-
-        
+xDestination X coordinate yDestination Y coordinate bitmapPointer to bitmap data maskPointer to mask data (non-zero values allow drawing) wBitmap width hBitmap height 
 
 ---
 
@@ -376,8 +337,7 @@ Draw grayscale bitmap with mask.
 
 Draw grayscale bitmap with opacity. 
 
-
-        
+xDestination X coordinate yDestination Y coordinate bitmapPointer to bitmap data matteTransparent color value to skip wBitmap width hBitmap height opacity_divisorOpacity divisor (higher = more transparent) 
 
 ---
 
@@ -385,8 +345,7 @@ Draw grayscale bitmap with opacity.
 
 Add blending operation with another canvas. 
 
-
-        
+overCanvas to blend over this one 
 
 ---
 
@@ -394,8 +353,7 @@ Add blending operation with another canvas.
 
 Add blending operation with texture data. 
 
-
-        
+texturePointer to texture data 
 
 ---
 
@@ -403,8 +361,7 @@ Add blending operation with texture data.
 
 Subtract blending operation with another canvas. 
 
-
-        
+overCanvas to subtract from this one 
 
 ---
 
@@ -412,8 +369,7 @@ Subtract blending operation with another canvas.
 
 Subtract blending operation with texture data. 
 
-
-        
+texturePointer to texture data 
 
 ---
 
@@ -421,8 +377,7 @@ Subtract blending operation with texture data.
 
 Difference blending operation with texture data. 
 
-
-        
+xDestination X coordinate yDestination Y coordinate texturePointer to texture data wTexture width hTexture height 
 
 ---
 
@@ -430,7 +385,7 @@ Difference blending operation with texture data.
 
 Export canvas to PGM format with proper color scaling. 
 
-paramfilenameOutput filename 
+filenameOutput filename 
 
 ---
 
@@ -438,7 +393,7 @@ paramfilenameOutput filename
 
 Export canvas to BMP format (24-bit RGB, grayscale as gray=R=G=B). 
 
-paramfilenameOutput filename 
+filenameOutput filename 
 
 ---
 
@@ -446,7 +401,7 @@ paramfilenameOutput filename
 
 Set GFX font for text rendering. 
 
-paramfontPointer to  structure (nullptr for built-in font) GFXfontstructenjin2_1_1GFXfontcompound
+fontPointer to  structure (nullptr for built-in font) GFXfont
 
 ---
 
@@ -454,8 +409,7 @@ paramfontPointer to  structure (nullptr for built-in font) GFXfontstructenjin2_1
 
 Helper to determine character bounds (Adafruit_GFX compatible). 
 
-
-        
+cCharacter to measure xCurrent X cursor position (updated) yCurrent Y cursor position (updated) minxMinimum X bound (updated) minyMinimum Y bound (updated) maxxMaximum X bound (updated) maxyMaximum Y bound (updated) 
 
 ---
 
@@ -463,8 +417,7 @@ Helper to determine character bounds (Adafruit_GFX compatible).
 
 Get text bounds (Adafruit_GFX compatible). 
 
-
-        
+strNull-terminated string to measure xStarting X position yStarting Y position x1Output minimum X bound y1Output minimum Y bound wOutput text width hOutput text height 
 
 ---
 
@@ -472,8 +425,7 @@ Get text bounds (Adafruit_GFX compatible).
 
 Fill triangle (basic implementation). 
 
-
-        
+x0First vertex X y0First vertex Y x1Second vertex X y1Second vertex Y x2Third vertex X y2Third vertex Y colorFill color 
 
 ---
 

@@ -6,10 +6,10 @@ sidebar_label: C_Sprite
 
 # C_Sprite
 
- component for bitmap rendering (matches original Enjin ). Spriteclassenjin2_1_1SpritecompoundC_Spriteclassenjin2_1_1C__Spritecompound
+ component for bitmap rendering (matches original Enjin ). SpriteC_Sprite
 
 
- wrapper around the  class, providing ECS integration for bitmap image rendering with frame animation support. Componentclassenjin2_1_1ComponentcompoundSpriteclassenjin2_1_1Spritecompound
+ wrapper around the  class, providing ECS integration for bitmap image rendering with frame animation support. ComponentSprite
 
 ---
 
@@ -21,9 +21,9 @@ sidebar_label: C_Sprite
 
 ### ` C_Sprite(Object *owner, uint8_t width, uint8_t height)`
 
-Construct a new  component. Spriteclassenjin2_1_1Spritecompound
+Construct a new  component. Sprite
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe object that owns this component widthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmemberWidth of the sprite in pixels heightclassenjin2_1_1C__Drawable_1ae67d8735cdc3935c362d48f4973caf75memberHeight of the sprite in pixels 
+ownerThe object that owns this component widthWidth of the sprite in pixels heightHeight of the sprite in pixels 
 
 ---
 
@@ -31,7 +31,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 Load texture data into the sprite. 
 
-paramtexturePointer to texture bitmap data widthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmemberWidth in pixels heightclassenjin2_1_1C__Drawable_1ae67d8735cdc3935c362d48f4973caf75memberHeight in pixels 
+texturePointer to texture bitmap data widthWidth in pixels heightHeight in pixels 
 
 ---
 
@@ -39,7 +39,7 @@ paramtexturePointer to texture bitmap data widthclassenjin2_1_1C__Drawable_1ac6e
 
 Load a specific frame from texture data. 
 
-paramtexturePointer to texture bitmap data frameIdFrame index to load 
+texturePointer to texture bitmap data frameIdFrame index to load 
 
 ---
 
@@ -47,15 +47,15 @@ paramtexturePointer to texture bitmap data frameIdFrame index to load
 
 Load a specific frame (texture already set). 
 
-paramframeIdFrame index to load 
+frameIdFrame index to load 
 
 ---
 
 ### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
 
-Draw the sprite to canvas (overrides ). C_Drawableclassenjin2_1_1C__Drawablecompound
+Draw the sprite to canvas (overrides ). C_Drawable
 
-paramcanvasThe canvas to draw to 
+canvasThe canvas to draw to 
 
 ---
 
@@ -63,7 +63,7 @@ paramcanvasThe canvas to draw to
 
 Check if should continue drawing (matches original Enjin). 
 
-returnTrue if object is not queued for removal 
+True if object is not queued for removal 
 
 ---
 
@@ -71,7 +71,7 @@ returnTrue if object is not queued for removal
 
 Late update method for animation (matches original Enjin). 
 
-paramdeltaTimeTime delta in milliseconds 
+deltaTimeTime delta in milliseconds 
 
 ---
 
@@ -79,23 +79,23 @@ paramdeltaTimeTime delta in milliseconds
 
 Set the matte (transparent) color. 
 
-parammatteMatte color value 
+matteMatte color value 
 
 ---
 
-### ` &Spriteclassenjin2_1_1Spritecompound getSprite()`
+### ` &Sprite getSprite()`
 
 Get the underlying sprite object. 
 
-returnReference to the sprite 
+Reference to the sprite 
 
 ---
 
-### `const  &Spriteclassenjin2_1_1Spritecompound getSprite() const const`
+### `const  &Sprite getSprite() const const`
 
 Get the underlying sprite object (const). 
 
-returnConst reference to the sprite 
+Const reference to the sprite 
 
 ---
 

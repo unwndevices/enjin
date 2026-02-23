@@ -23,7 +23,7 @@ Components are pure data containers without behavior. This base class provides R
 
 Get unique component type ID. 
 
-return type identifier Componentclassenjin2_1_1Componentcompound
+ type identifier Component
 
 ---
 
@@ -42,7 +42,7 @@ Virtual destructor for proper cleanup.
 
 Generate unique component type ID. 
 
-templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnUnique ID for component type T 
+T type ComponentUnique ID for component type T 
 
 ---
 

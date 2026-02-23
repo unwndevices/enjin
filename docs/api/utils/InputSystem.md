@@ -9,7 +9,7 @@ sidebar_label: InputSystem
 Input system for handling user interaction. 
 
 
-Processes input events and updates  states. Handles hit testing against entity bounds. InputComponentstructenjin2_1_1InputComponentcompound
+Processes input events and updates  states. Handles hit testing against entity bounds. InputComponent
 
 ---
 
@@ -32,31 +32,31 @@ Constructor initializes input state.
 
 Update input processing. 
 
-paramdeltaTimeTime since last update 
+deltaTimeTime since last update 
 
 ---
 
 ### `void onMouseMove(Point pos)`
 
- mouse move event. Handlestructenjin2_1_1Handlecompound
+ mouse move event. Handle
 
-paramposNew mouse position 
+posNew mouse position 
 
 ---
 
 ### `void onMousePress(Point pos)`
 
- mouse button press. Handlestructenjin2_1_1Handlecompound
+ mouse button press. Handle
 
-paramposMouse position 
+posMouse position 
 
 ---
 
 ### `void onMouseRelease(Point pos)`
 
- mouse button release. Handlestructenjin2_1_1Handlecompound
+ mouse button release. Handle
 
-paramposMouse position 
+posMouse position 
 
 ---
 
@@ -64,7 +64,7 @@ paramposMouse position
 
 Get system priority (input should run first). 
 
-returnPriority value 
+Priority value 
 
 ---
 

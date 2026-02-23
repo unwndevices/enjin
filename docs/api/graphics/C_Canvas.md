@@ -9,7 +9,7 @@ sidebar_label: C_Canvas
 Canvas component for custom drawing operations. 
 
 
-A drawable component that wraps an internal canvas for custom graphics operations. Supports multiple blend modes for composition. Based on original Enjin . C_Canvasclassenjin2_1_1C__Canvascompound
+A drawable component that wraps an internal canvas for custom graphics operations. Supports multiple blend modes for composition. Based on original Enjin . C_Canvas
 
 ---
 
@@ -23,7 +23,7 @@ A drawable component that wraps an internal canvas for custom graphics operation
 
 Constructor. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberParent object widthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmemberCanvas width in pixels heightclassenjin2_1_1C__Drawable_1ae67d8735cdc3935c362d48f4973caf75memberCanvas height in pixels 
+ownerParent object widthCanvas width in pixels heightCanvas height in pixels 
 
 ---
 
@@ -56,7 +56,7 @@ Use this for initialization that depends on other components or objects being fu
 
 Update is called once per frame. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -64,7 +64,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 LateUpdate is called after all Update calls. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -72,7 +72,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 Pure virtual draw method - must be implemented by derived classes. 
 
-paramcanvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8) 
+canvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8) 
 
 ---
 
@@ -80,23 +80,23 @@ paramcanvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8)
 
 Check if this drawable should continue to be drawn. 
 
-returnTrue if should continue drawing, false otherwise 
+True if should continue drawing, false otherwise 
 
 ---
 
-### `&lt; W, H &gt; &Canvas8classenjin2_1_1Canvas8compound getCanvas()`
+### `&lt; W, H &gt; &Canvas8 getCanvas()`
 
 Get access to internal canvas for drawing. 
 
-returnReference to internal canvas 
+Reference to internal canvas 
 
 ---
 
-### `const &lt; W, H &gt; &Canvas8classenjin2_1_1Canvas8compound getCanvas() const const`
+### `const &lt; W, H &gt; &Canvas8 getCanvas() const const`
 
 Get const access to internal canvas. 
 
-returnConst reference to internal canvas 
+Const reference to internal canvas 
 
 ---
 
@@ -104,7 +104,7 @@ returnConst reference to internal canvas
 
 Clear the canvas. 
 
-paramcolorFill color (0-15) 
+colorFill color (0-15) 
 
 ---
 
@@ -112,7 +112,7 @@ paramcolorFill color (0-15)
 
 Get canvas width. 
 
-returnWidth in pixels 
+Width in pixels 
 
 ---
 
@@ -120,7 +120,7 @@ returnWidth in pixels
 
 Get canvas height. 
 
-returnHeight in pixels 
+Height in pixels 
 
 ---
 
@@ -128,7 +128,7 @@ returnHeight in pixels
 
 Set matte color (transparent color that won't be drawn). 
 
-parammatteMatte color value (default: 16 for compatibility) 
+matteMatte color value (default: 16 for compatibility) 
 
 ---
 
@@ -136,7 +136,7 @@ parammatteMatte color value (default: 16 for compatibility)
 
 Get current matte color. 
 
-returnCurrent matte color 
+Current matte color 
 
 ---
 
@@ -146,7 +146,7 @@ returnCurrent matte color
 
 Create internal canvas of specified size. 
 
-paramwidthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmemberCanvas width heightclassenjin2_1_1C__Drawable_1ae67d8735cdc3935c362d48f4973caf75memberCanvas height 
+widthCanvas width heightCanvas height 
 
 ---
 
@@ -154,7 +154,7 @@ paramwidthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmemberCan
 
 Apply blend mode when drawing to target canvas. 
 
-paramtarget_canvasTarget canvas to draw to 
+target_canvasTarget canvas to draw to 
 
 ---
 

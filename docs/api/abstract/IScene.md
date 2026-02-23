@@ -10,7 +10,7 @@ Abstract scene interface for scene lifecycle.
 
 
 
-Both enjin1 and enjin2 can implement this interface for compile-time polymorphism. Provides standard scene lifecycle methods (onCreate, onUpdate, onRender, etc.). templateparamPixelTypePixel type for rendering (e.g., , uint8_t)Pixel4structenjin2_1_1Pixel4compound
+Both enjin1 and enjin2 can implement this interface for compile-time polymorphism. Provides standard scene lifecycle methods (onCreate, onUpdate, onRender, etc.). PixelTypePixel type for rendering (e.g., , uint8_t)Pixel4
 
 ---
 
@@ -66,7 +66,7 @@ Use this to clean up scene-specific resources.
 Called every frame during update. 
 
 
-Use this for scene-specific update logic that should happen before object updates. paramdeltaTimeTime since last frame in milliseconds
+Use this for scene-specific update logic that should happen before object updates. deltaTimeTime since last frame in milliseconds
 
 ---
 
@@ -75,7 +75,7 @@ Use this for scene-specific update logic that should happen before object update
 Called during rendering. 
 
 
-Use this for scene-specific rendering like backgrounds or UI overlays. paramcanvasTarget canvas for rendering
+Use this for scene-specific rendering like backgrounds or UI overlays. canvasTarget canvas for rendering
 
 ---
 
@@ -83,7 +83,7 @@ Use this for scene-specific rendering like backgrounds or UI overlays. paramcanv
 
 Get scene ID. 
 
-return identifier Sceneclassenjin2_1_1Scenecompound
+ identifier Scene
 
 ---
 
@@ -91,7 +91,7 @@ return identifier Sceneclassenjin2_1_1Scenecompound
 
 Check if scene is active. 
 
-returnTrue if scene is active 
+True if scene is active 
 
 ---
 
@@ -99,7 +99,7 @@ returnTrue if scene is active
 
 Check if scene is initialized. 
 
-returnTrue if scene is initialized 
+True if scene is initialized 
 
 ---
 

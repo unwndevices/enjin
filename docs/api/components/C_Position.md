@@ -23,7 +23,7 @@ Manages the position and anchor point of an object in 2D space. This is a fundam
 
 Constructor with default position. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object 
+ownerOwner object 
 
 ---
 
@@ -31,15 +31,15 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner
 
 Constructor with initial position. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object xInitial X position yInitial Y position 
+ownerOwner object xInitial X position yInitial Y position 
 
 ---
 
 ### ` C_Position(Object *owner, const Point &pos)`
 
-Constructor with . Pointstructenjin2_1_1Pointcompound
+Constructor with . Point
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object posInitial position 
+ownerOwner object posInitial position 
 
 ---
 
@@ -47,7 +47,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner
 
 Set position. 
 
-paramxX coordinate yY coordinate 
+xX coordinate yY coordinate 
 
 ---
 
@@ -55,15 +55,15 @@ paramxX coordinate yY coordinate
 
 Set position. 
 
-paramposNew position 
+posNew position 
 
 ---
 
-### `const  &Pointstructenjin2_1_1Pointcompound getPosition() const const`
+### `const  &Point getPosition() const const`
 
 Get position. 
 
-returnCurrent position 
+Current position 
 
 ---
 
@@ -71,7 +71,7 @@ returnCurrent position
 
 Move position by offset. 
 
-paramdxX offset dyY offset 
+dxX offset dyY offset 
 
 ---
 
@@ -79,7 +79,7 @@ paramdxX offset dyY offset
 
 Move position by offset. 
 
-paramoffsetOffset vector 
+offsetOffset vector 
 
 ---
 
@@ -87,7 +87,7 @@ paramoffsetOffset vector
 
 Set anchor point. 
 
-paramanchorNew anchor point 
+anchorNew anchor point 
 
 ---
 
@@ -95,7 +95,7 @@ paramanchorNew anchor point
 
 Get anchor point. 
 
-returnCurrent anchor point 
+Current anchor point 
 
 ---
 
@@ -103,23 +103,23 @@ returnCurrent anchor point
 
 Set anchor offset. 
 
-paramoffsetOffset from anchor point 
+offsetOffset from anchor point 
 
 ---
 
-### `const  &Pointstructenjin2_1_1Pointcompound getAnchorOffset() const const`
+### `const  &Point getAnchorOffset() const const`
 
 Get anchor offset. 
 
-returnCurrent anchor offset 
+Current anchor offset 
 
 ---
 
-### `Pointstructenjin2_1_1Pointcompound calculateRenderPosition(const Size &size) const const`
+### `Point calculateRenderPosition(const Size &size) const const`
 
 Calculate final rendering position based on anchor and size. 
 
-paramsize of the object for anchor calculation Sizestructenjin2_1_1SizecompoundreturnFinal rendering position 
+size of the object for anchor calculation SizeFinal rendering position 
 
 ---
 
@@ -127,7 +127,7 @@ paramsize of the object for anchor calculation Sizestructenjin2_1_1Sizecompoundr
 
 Linear interpolation to target position. 
 
-paramtargetTarget position tInterpolation factor (0.0 to 1.0) 
+targetTarget position tInterpolation factor (0.0 to 1.0) 
 
 ---
 
@@ -135,7 +135,7 @@ paramtargetTarget position tInterpolation factor (0.0 to 1.0)
 
 Calculate distance to another position. 
 
-paramotherOther position returnDistance in pixels 
+otherOther position Distance in pixels 
 
 ---
 
@@ -143,7 +143,7 @@ paramotherOther position returnDistance in pixels
 
 Calculate squared distance to another position (faster than distanceTo). 
 
-paramotherOther position returnSquared distance 
+otherOther position Squared distance 
 
 ---
 

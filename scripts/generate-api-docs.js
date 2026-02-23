@@ -109,7 +109,10 @@ function extractText(node) {
     return node.map(extractText).join('');
   }
   if (typeof node === 'object') {
-    return Object.values(node).map(extractText).join('');
+    return Object.entries(node)
+      .filter(([key]) => key !== '$')
+      .map(([, value]) => extractText(value))
+      .join('');
   }
   return '';
 }

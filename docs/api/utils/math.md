@@ -24,7 +24,7 @@ Fast integer math utilities namespace.
 
 Fast integer square root using Newton's method. 
 
-paramnNon-negative integer to compute square root of returnInteger square root of n 
+nNon-negative integer to compute square root of Integer square root of n 
 
 ---
 
@@ -32,7 +32,7 @@ paramnNon-negative integer to compute square root of returnInteger square root o
 
 Fast absolute value for signed types. 
 
-templateparamTSigned numeric type paramvalueValue to get absolute value of returnAbsolute value of input 
+TSigned numeric type valueValue to get absolute value of Absolute value of input 
 
 ---
 
@@ -40,7 +40,7 @@ templateparamTSigned numeric type paramvalueValue to get absolute value of retur
 
 Clamp value to specified range. 
 
-templateparamTNumeric type paramvalueValue to clamp min_valMinimum allowed value max_valMaximum allowed value returnClamped value within [min_val, max_val] 
+TNumeric type valueValue to clamp min_valMinimum allowed value max_valMaximum allowed value Clamped value within [min_val, max_val] 
 
 ---
 
@@ -48,7 +48,7 @@ templateparamTNumeric type paramvalueValue to clamp min_valMinimum allowed value
 
 Linear interpolation between two values. 
 
-templateparamTNumeric type paramaStart value (when t=0) bEnd value (when t=1) tInterpolation factor (0-1) returnInterpolated value between a and b 
+TNumeric type aStart value (when t=0) bEnd value (when t=1) tInterpolation factor (0-1) Interpolated value between a and b 
 
 ---
 
@@ -56,7 +56,7 @@ templateparamTNumeric type paramaStart value (when t=0) bEnd value (when t=1) tI
 
 Map value from one range to another. 
 
-templateparamTNumeric type paramvalueInput value to map in_minMinimum of input range in_maxMaximum of input range out_minMinimum of output range out_maxMaximum of output range returnValue mapped from input range to output range 
+TNumeric type valueInput value to map in_minMinimum of input range in_maxMaximum of input range out_minMinimum of output range out_maxMaximum of output range Value mapped from input range to output range 
 
 ---
 
@@ -64,7 +64,7 @@ templateparamTNumeric type paramvalueInput value to map in_minMinimum of input r
 
 Calculate Euclidean distance between two points. 
 
-paramx1X coordinate of first point y1Y coordinate of first point x2X coordinate of second point y2Y coordinate of second point returnEuclidean distance between points 
+x1X coordinate of first point y1Y coordinate of first point x2X coordinate of second point y2Y coordinate of second point Euclidean distance between points 
 
 ---
 

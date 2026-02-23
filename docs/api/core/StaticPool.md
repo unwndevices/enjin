@@ -9,7 +9,7 @@ sidebar_label: StaticPool
 Static memory pool for embedded systems. 
 
 
-Pre-allocates storage for a fixed number of objects of type T. All allocations come from the pre-allocated pool, avoiding dynamic memory.templateparamTType of objects to allocate CAPACITYMaximum number of objects that can be allocated 
+Pre-allocates storage for a fixed number of objects of type T. All allocations come from the pre-allocated pool, avoiding dynamic memory.TType of objects to allocate CAPACITYMaximum number of objects that can be allocated 
 
 ---
 
@@ -32,7 +32,7 @@ Constructor initializes empty pool.
 
 Allocate memory for an object of type T. 
 
-returnPointer to allocated memory, or nullptr if pool is exhausted 
+Pointer to allocated memory, or nullptr if pool is exhausted 
 
 ---
 
@@ -40,7 +40,7 @@ returnPointer to allocated memory, or nullptr if pool is exhausted
 
 Deallocate memory and call object destructor. 
 
-paramptrPointer to object to deallocate (may be nullptr) 
+ptrPointer to object to deallocate (may be nullptr) 
 
 ---
 
@@ -48,7 +48,7 @@ paramptrPointer to object to deallocate (may be nullptr)
 
 Get current number of allocated objects. 
 
-returnCurrent allocation count 
+Current allocation count 
 
 ---
 
@@ -56,7 +56,7 @@ returnCurrent allocation count
 
 Get maximum capacity of the pool. 
 
-returnTotal capacity (CAPACITY template parameter) 
+Total capacity (CAPACITY template parameter) 
 
 ---
 
@@ -64,7 +64,7 @@ returnTotal capacity (CAPACITY template parameter)
 
 Check if pool has no allocations. 
 
-returntrue if pool is empty, false otherwise 
+true if pool is empty, false otherwise 
 
 ---
 
@@ -72,7 +72,7 @@ returntrue if pool is empty, false otherwise
 
 Check if pool is at maximum capacity. 
 
-returntrue if pool is full, false otherwise 
+true if pool is full, false otherwise 
 
 ---
 

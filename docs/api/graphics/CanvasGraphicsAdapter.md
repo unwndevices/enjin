@@ -9,7 +9,7 @@ sidebar_label: CanvasGraphicsAdapter
 Graphics adapter for enjin2 canvases. 
 
 
-Implements  interface using enjin2 canvas types. Allows scripts to draw on any enjin2 canvas through the common interface. IScriptGraphicsclassenjin2_1_1IScriptGraphicscompound
+Implements  interface using enjin2 canvas types. Allows scripts to draw on any enjin2 canvas through the common interface. IScriptGraphics
 
 ---
 
@@ -23,7 +23,7 @@ Implements  interface using enjin2 canvas types. Allows scripts to draw on any e
 
 Constructor. 
 
-paramtargetCanvasCanvas to draw on 
+targetCanvasCanvas to draw on 
 
 ---
 
@@ -31,7 +31,7 @@ paramtargetCanvasCanvas to draw on
 
 Set target canvas. 
 
-paramtargetCanvasNew canvas to draw on 
+targetCanvasNew canvas to draw on 
 
 ---
 
@@ -39,7 +39,7 @@ paramtargetCanvasNew canvas to draw on
 
 Set current drawing color. 
 
-paramcolorColor to use for drawing 
+colorColor to use for drawing 
 
 ---
 
@@ -47,7 +47,7 @@ paramcolorColor to use for drawing
 
 Get canvas width. 
 
-returnCanvas width in pixels 
+Canvas width in pixels 
 
 ---
 
@@ -55,7 +55,7 @@ returnCanvas width in pixels
 
 Get canvas height. 
 
-returnCanvas height in pixels 
+Canvas height in pixels 
 
 ---
 
@@ -63,7 +63,7 @@ returnCanvas height in pixels
 
 Clear canvas with specified color. 
 
-paramcolorClear color 
+colorClear color 
 
 ---
 
@@ -71,7 +71,7 @@ paramcolorClear color
 
 Set pixel at coordinates. 
 
-paramxX coordinate yY coordinate colorPixel color 
+xX coordinate yY coordinate colorPixel color 
 
 ---
 
@@ -79,7 +79,7 @@ paramxX coordinate yY coordinate colorPixel color
 
 Get pixel at coordinates. 
 
-paramxX coordinate yY coordinate returnPixel color value 
+xX coordinate yY coordinate Pixel color value 
 
 ---
 
@@ -87,7 +87,7 @@ paramxX coordinate yY coordinate returnPixel color value
 
 Draw line. 
 
-paramx1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordinate colorLine color 
+x1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordinate colorLine color 
 
 ---
 
@@ -95,7 +95,7 @@ paramx1Start X coordinate y1Start Y coordinate x2End X coordinate y2End Y coordi
 
 Draw rectangle outline. 
 
-paramxX coordinate yY coordinate widthRectangle width heightRectangle height colorRectangle color 
+xX coordinate yY coordinate widthRectangle width heightRectangle height colorRectangle color 
 
 ---
 
@@ -103,7 +103,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 Fill rectangle. 
 
-paramxX coordinate yY coordinate widthRectangle width heightRectangle height colorFill color 
+xX coordinate yY coordinate widthRectangle width heightRectangle height colorFill color 
 
 ---
 
@@ -111,7 +111,7 @@ paramxX coordinate yY coordinate widthRectangle width heightRectangle height col
 
 Draw circle outline. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle color 
 
 ---
 
@@ -119,7 +119,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorCircle c
 
 Fill circle. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
 
 ---
 

@@ -10,8 +10,8 @@ Abstract canvas interface for drawing operations.
 
 
 
-Provides a hardware-independent interface for all drawing operations. Both enjin1 and enjin2 can implement this interface for compile-time polymorphism.templateparamTPixelPixel type (e.g., , uint8_t)Pixel4structenjin2_1_1Pixel4compound
-Provides a hardware-independent interface for all drawing operations. Concrete implementations handle the actual pixel storage and formatting. templateparamTPixelPixel type (e.g., , uint8_t)Pixel4structenjin2_1_1Pixel4compound
+Provides a hardware-independent interface for all drawing operations. Both enjin1 and enjin2 can implement this interface for compile-time polymorphism.TPixelPixel type (e.g., , uint8_t)Pixel4
+Provides a hardware-independent interface for all drawing operations. Concrete implementations handle the actual pixel storage and formatting. TPixelPixel type (e.g., , uint8_t)Pixel4
 
 ---
 
@@ -34,7 +34,7 @@ Virtual destructor for proper cleanup through base pointer.
 
 Get canvas width in pixels. 
 
-returnWidth in pixels 
+Width in pixels 
 
 ---
 
@@ -42,7 +42,7 @@ returnWidth in pixels
 
 Get canvas height in pixels. 
 
-returnHeight in pixels 
+Height in pixels 
 
 ---
 
@@ -50,7 +50,7 @@ returnHeight in pixels
 
 Set pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate colorPixel color to set 
+xX coordinate yY coordinate colorPixel color to set 
 
 ---
 
@@ -58,7 +58,7 @@ paramxX coordinate yY coordinate colorPixel color to set
 
 Get pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate returnPixel color at the specified location 
+xX coordinate yY coordinate Pixel color at the specified location 
 
 ---
 
@@ -66,7 +66,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 Clear entire canvas to specified color. 
 
-paramcolorColor to fill canvas with (default: black/zero) 
+colorColor to fill canvas with (default: black/zero) 
 
 ---
 
@@ -74,7 +74,7 @@ paramcolorColor to fill canvas with (default: black/zero)
 
 Fill rectangular region with specified color. 
 
-paramrectRectangle to fill colorColor to fill with 
+rectRectangle to fill colorColor to fill with 
 
 ---
 
@@ -82,7 +82,7 @@ paramrectRectangle to fill colorColor to fill with
 
 Draw text at specified position. 
 
-paramtextText to draw xX coordinate yY coordinate colorText color 
+textText to draw xX coordinate yY coordinate colorText color 
 
 ---
 
@@ -90,7 +90,7 @@ paramtextText to draw xX coordinate yY coordinate colorText color
 
 Set text color for subsequent text operations. 
 
-paramcolorText color 
+colorText color 
 
 ---
 
@@ -98,7 +98,7 @@ paramcolorText color
 
 Set text size for subsequent text operations. 
 
-paramsizeText scaling factor 
+sizeText scaling factor 
 
 ---
 
@@ -106,7 +106,7 @@ paramsizeText scaling factor
 
 Draw a line from (x0, y0) to (x1, y1). 
 
-paramx0Start X coordinate y0Start Y coordinate x1End X coordinate y1End Y coordinate colorLine color 
+x0Start X coordinate y0Start Y coordinate x1End X coordinate y1End Y coordinate colorLine color 
 
 ---
 
@@ -114,7 +114,7 @@ paramx0Start X coordinate y0Start Y coordinate x1End X coordinate y1End Y coordi
 
 Draw rectangle outline. 
 
-paramxTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRectangle height colorLine color 
+xTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRectangle height colorLine color 
 
 ---
 
@@ -122,7 +122,7 @@ paramxTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRe
 
 Draw filled rectangle. 
 
-paramxTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRectangle height colorFill color 
+xTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRectangle height colorFill color 
 
 ---
 
@@ -130,7 +130,7 @@ paramxTop-left X coordinate yTop-left Y coordinate widthRectangle width heightRe
 
 Draw circle outline. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorLine color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorLine color 
 
 ---
 
@@ -138,7 +138,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorLine col
 
 Draw filled circle. 
 
-paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
+xCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill color 
 
 ---
 
@@ -146,7 +146,7 @@ paramxCenter X coordinate yCenter Y coordinate radiusCircle radius colorFill col
 
 Draw bitmap image at specified position. 
 
-parambitmapPointer to bitmap data xDestination X coordinate yDestination Y coordinate widthImage width heightImage height colorImage color 
+bitmapPointer to bitmap data xDestination X coordinate yDestination Y coordinate widthImage width heightImage height colorImage color 
 
 ---
 
@@ -154,7 +154,7 @@ parambitmapPointer to bitmap data xDestination X coordinate yDestination Y coord
 
 Draw bitmap with transparency (skip pixels matching matte color). 
 
-parambitmapPointer to bitmap data matteMatte color (pixels matching this are skipped) xDestination X coordinate yDestination Y coordinate widthImage width heightImage height 
+bitmapPointer to bitmap data matteMatte color (pixels matching this are skipped) xDestination X coordinate yDestination Y coordinate widthImage width heightImage height 
 
 ---
 
@@ -172,7 +172,7 @@ parambitmapPointer to bitmap data matteMatte color (pixels matching this are ski
 
 Get canvas width in pixels. 
 
-returnWidth in pixels 
+Width in pixels 
 
 ---
 
@@ -180,7 +180,7 @@ returnWidth in pixels
 
 Get canvas height in pixels. 
 
-returnHeight in pixels 
+Height in pixels 
 
 ---
 
@@ -188,7 +188,7 @@ returnHeight in pixels
 
 Set pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate colorPixel color to set 
+xX coordinate yY coordinate colorPixel color to set 
 
 ---
 
@@ -196,7 +196,7 @@ paramxX coordinate yY coordinate colorPixel color to set
 
 Get pixel color at specified coordinates. 
 
-paramxX coordinate yY coordinate returnPixel color at the specified location 
+xX coordinate yY coordinate Pixel color at the specified location 
 
 ---
 
@@ -204,7 +204,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 Clear entire canvas to specified color. 
 
-paramcolorColor to fill canvas with (default: black) 
+colorColor to fill canvas with (default: black) 
 
 ---
 
@@ -212,7 +212,7 @@ paramcolorColor to fill canvas with (default: black)
 
 Fill rectangular region with specified color. 
 
-paramrectRectangle to fill colorColor to fill with 
+rectRectangle to fill colorColor to fill with 
 
 ---
 
@@ -220,15 +220,15 @@ paramrectRectangle to fill colorColor to fill with
 
 Check if coordinates are within canvas bounds. 
 
-paramxX coordinate to check yY coordinate to check returntrue if coordinates are valid, false otherwise 
+xX coordinate to check yY coordinate to check true if coordinates are valid, false otherwise 
 
 ---
 
-### `Rectstructenjin2_1_1Rectcompound getBounds() const const`
+### `Rect getBounds() const const`
 
 Get canvas bounds as rectangle. 
 
-returnRectangle representing entire canvas area 
+Rectangle representing entire canvas area 
 
 ---
 

@@ -23,7 +23,7 @@ Provides basic image export functionality to visualize the canvas content as act
 
 Export 4-bit canvas to PGM (Portable Graymap) format. 
 
-paramcanvasCanvas to export filenameOutput filename scaleScale factor for output image (1 = 1:1, 2 = 2x size, etc.) returnTrue if export succeeded 
+canvasCanvas to export filenameOutput filename scaleScale factor for output image (1 = 1:1, 2 = 2x size, etc.) True if export succeeded 
 
 ---
 
@@ -31,7 +31,7 @@ paramcanvasCanvas to export filenameOutput filename scaleScale factor for output
 
 Export 8-bit canvas to PGM format. 
 
-paramcanvasCanvas to export filenameOutput filename scaleScale factor for output image returnTrue if export succeeded 
+canvasCanvas to export filenameOutput filename scaleScale factor for output image True if export succeeded 
 
 ---
 
@@ -39,7 +39,7 @@ paramcanvasCanvas to export filenameOutput filename scaleScale factor for output
 
 Export 4-bit canvas to simple visual ASCII format (better than before). 
 
-paramcanvasCanvas to export titleTitle to display above the visualization 
+canvasCanvas to export titleTitle to display above the visualization 
 
 ---
 
@@ -47,7 +47,7 @@ paramcanvasCanvas to export titleTitle to display above the visualization
 
 Create a color-coded terminal visualization using ANSI colors. 
 
-paramcanvasCanvas to display titleTitle to display 
+canvasCanvas to display titleTitle to display 
 
 ---
 

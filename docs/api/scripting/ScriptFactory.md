@@ -20,19 +20,19 @@ Script system factory for creating platform-specific interpreters.
 
 ## Public Methods
 
-### `static std::unique_ptr&lt;  &gt;IScriptInterpreterclassenjin2_1_1IScriptInterpretercompound createInterpreter(InterpreterType type)`
+### `static std::unique_ptr&lt;  &gt;IScriptInterpreter createInterpreter(InterpreterType type)`
 
 Create interpreter for current platform. 
 
-paramtypeInterpreter type to create returnUnique pointer to interpreter instance 
+typeInterpreter type to create Unique pointer to interpreter instance 
 
 ---
 
-### `static InterpreterTypeclassenjin2_1_1ScriptFactory_1a93634331864cee4a0924b2a1982b702amember getRecommendedInterpreter()`
+### `static InterpreterType getRecommendedInterpreter()`
 
 Get recommended interpreter for current platform. 
 
-returnRecommended interpreter type 
+Recommended interpreter type 
 
 ---
 
@@ -40,7 +40,7 @@ returnRecommended interpreter type
 
 Check if interpreter type is available on current platform. 
 
-paramtypeInterpreter type to check returnTrue if available 
+typeInterpreter type to check True if available 
 
 ---
 

@@ -9,7 +9,7 @@ sidebar_label: Canvas4_ESP32S3
 ESP32-S3 optimized 4-bit canvas. 
 
 
-templateparamWIDTHCanvas width in pixels HEIGHTCanvas height in pixels 
+WIDTHCanvas width in pixels HEIGHTCanvas height in pixels 
 
 ---
 
@@ -43,15 +43,15 @@ templateparamWIDTHCanvas width in pixels HEIGHTCanvas height in pixels
 
 Fast pixel setting using lookup tables. 
 
-paramxX coordinate yY coordinate colorPixel color 
+xX coordinate yY coordinate colorPixel color 
 
 ---
 
-### `IRAM_ATTR Pixel4structenjin2_1_1Pixel4compound getPixel(int16_t x, int16_t y) const const`
+### `IRAM_ATTR Pixel4 getPixel(int16_t x, int16_t y) const const`
 
 Fast pixel reading using lookup tables. 
 
-paramxX coordinate yY coordinate returnPixel color at the specified location 
+xX coordinate yY coordinate Pixel color at the specified location 
 
 ---
 
@@ -59,7 +59,7 @@ paramxX coordinate yY coordinate returnPixel color at the specified location
 
 Vectorized horizontal line drawing. 
 
-paramx1Start X coordinate x2End X coordinate yY coordinate colorLine color 
+x1Start X coordinate x2End X coordinate yY coordinate colorLine color 
 
 ---
 
@@ -67,7 +67,7 @@ paramx1Start X coordinate x2End X coordinate yY coordinate colorLine color
 
 Optimized vertical line drawing. 
 
-paramxX coordinate y1Start Y coordinate y2End Y coordinate colorLine color 
+xX coordinate y1Start Y coordinate y2End Y coordinate colorLine color 
 
 ---
 
@@ -75,7 +75,7 @@ paramxX coordinate y1Start Y coordinate y2End Y coordinate colorLine color
 
 Fast rectangle filling using vectorized horizontal lines. 
 
-paramxTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels colorFill color 
+xTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in pixels colorFill color 
 
 ---
 
@@ -83,7 +83,7 @@ paramxTop-left X coordinate yTop-left Y coordinate wWidth in pixels hHeight in p
 
 Optimized circle filling using scanline algorithm. 
 
-paramcxCenter X coordinate cyCenter Y coordinate radiusCircle radius colorFill color 
+cxCenter X coordinate cyCenter Y coordinate radiusCircle radius colorFill color 
 
 ---
 
@@ -91,7 +91,7 @@ paramcxCenter X coordinate cyCenter Y coordinate radiusCircle radius colorFill c
 
 Fast clear using optimized memory operations. 
 
-paramcolorColor to fill canvas with 
+colorColor to fill canvas with 
 
 ---
 
@@ -99,7 +99,7 @@ paramcolorColor to fill canvas with
 
 Get raw data pointer for DMA transfers. 
 
-returnPointer to pixel buffer 
+Pointer to pixel buffer 
 
 ---
 
@@ -107,7 +107,7 @@ returnPointer to pixel buffer
 
 Get data size in bytes. 
 
-returnData size 
+Data size 
 
 ---
 

@@ -23,7 +23,7 @@ Represents small probes, particles, or indicators that can move freely in space,
 
 Constructor. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object typeProbe visual type sizeProbe size 
+ownerOwner object typeProbe visual type sizeProbe size 
 
 ---
 
@@ -31,7 +31,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner
 
 Update probe movement and animation. 
 
-paramdeltaTimeTime elapsed since last update in milliseconds 
+deltaTimeTime elapsed since last update in milliseconds 
 
 ---
 
@@ -39,7 +39,7 @@ paramdeltaTimeTime elapsed since last update in milliseconds
 
 Draw probe to 4-bit canvas. 
 
-paramcanvasTarget 4-bit canvas 
+canvasTarget 4-bit canvas 
 
 ---
 
@@ -47,7 +47,7 @@ paramcanvasTarget 4-bit canvas
 
 Draw probe to 8-bit canvas. 
 
-paramcanvasTarget 8-bit canvas 
+canvasTarget 8-bit canvas 
 
 ---
 
@@ -55,7 +55,7 @@ paramcanvasTarget 8-bit canvas
 
 Set probe appearance. 
 
-paramtypeVisual type of probe sizeProbe size in pixels colorPrimary probe color accentSecondary accent color 
+typeVisual type of probe sizeProbe size in pixels colorPrimary probe color accentSecondary accent color 
 
 ---
 
@@ -63,7 +63,7 @@ paramtypeVisual type of probe sizeProbe size in pixels colorPrimary probe color 
 
 Set movement pattern. 
 
-parampatternMovement pattern type speedMovement speed multiplier 
+patternMovement pattern type speedMovement speed multiplier 
 
 ---
 
@@ -71,7 +71,7 @@ parampatternMovement pattern type speedMovement speed multiplier
 
 Set linear velocity (for LINEAR movement). 
 
-paramvelVelocity vector 
+velVelocity vector 
 
 ---
 
@@ -79,7 +79,7 @@ paramvelVelocity vector
 
 Enable pulsing effect. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTrue to enable pulsing speedPulse frequency multiplier 
+enabledTrue to enable pulsing speedPulse frequency multiplier 
 
 ---
 
@@ -87,7 +87,7 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTru
 
 Enable particle trail. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTrue to enable trail rendering 
+enabledTrue to enable trail rendering 
 
 ---
 
@@ -95,7 +95,7 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberTru
 
 Set movement bounds. 
 
-paramboundsBounding rectangle for movement constrainTrue to constrain movement within bounds 
+boundsBounding rectangle for movement constrainTrue to constrain movement within bounds 
 
 ---
 
@@ -103,7 +103,7 @@ paramboundsBounding rectangle for movement constrainTrue to constrain movement w
 
 Set scanner properties (for SCANNER type). 
 
-paramradiusScan beam radius speedScan rotation speed 
+radiusScan beam radius speedScan rotation speed 
 
 ---
 

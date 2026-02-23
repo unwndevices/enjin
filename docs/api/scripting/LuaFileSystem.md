@@ -24,7 +24,7 @@ Platform-specific file system interface for Lua scripts.
 
 Check if file operations are supported on this platform. 
 
-returnTrue if file I/O is available 
+True if file I/O is available 
 
 ---
 
@@ -32,7 +32,7 @@ returnTrue if file I/O is available
 
 Read script file content (platform-specific). 
 
-paramfilenameScript file path contentOutput buffer for file content returnTrue if successful 
+filenameScript file path contentOutput buffer for file content True if successful 
 
 ---
 
@@ -40,7 +40,7 @@ paramfilenameScript file path contentOutput buffer for file content returnTrue i
 
 List available script files (platform-specific). 
 
-parampathDirectory path to search returnVector of script filenames 
+pathDirectory path to search Vector of script filenames 
 
 ---
 

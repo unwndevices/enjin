@@ -49,7 +49,7 @@ Calls awake() on all objects in the collection.
 
 Start the collection. 
 
-Calls  on all objects in the collection. start()classenjin2_1_1ObjectCollection_1a521f62105480089464d8bc7c13c7911emember
+Calls  on all objects in the collection. start()
 
 ---
 
@@ -57,7 +57,7 @@ Calls  on all objects in the collection. start()classenjin2_1_1ObjectCollection_
 
 Update all objects in the collection. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -65,7 +65,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 Late update all objects in the collection. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -73,7 +73,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 Add an object to the collection. 
 
-templateparamT type (must derive from ) Objectclassenjin2_1_1ObjectcompoundObjectclassenjin2_1_1ObjectcompoundArgsConstructor argument types paramargsConstructor arguments returnPointer to created object or nullptr if failed 
+T type (must derive from ) ObjectObjectArgsConstructor argument types argsConstructor arguments Pointer to created object or nullptr if failed 
 
 ---
 
@@ -81,7 +81,7 @@ templateparamT type (must derive from ) Objectclassenjin2_1_1ObjectcompoundObjec
 
 Remove an object from the collection. 
 
-paramobject to remove Objectclassenjin2_1_1ObjectcompoundreturnTrue if object was removed 
+object to remove ObjectTrue if object was removed 
 
 ---
 
@@ -89,7 +89,7 @@ paramobject to remove Objectclassenjin2_1_1ObjectcompoundreturnTrue if object wa
 
 Find first object of specified type. 
 
-templateparamT type Objectclassenjin2_1_1ObjectcompoundreturnPointer to object or nullptr if not found 
+T type ObjectPointer to object or nullptr if not found 
 
 ---
 
@@ -97,15 +97,15 @@ templateparamT type Objectclassenjin2_1_1ObjectcompoundreturnPointer to object o
 
 Find all objects of specified type. 
 
-templateparamT type Objectclassenjin2_1_1ObjectcompoundparamresultsArray to store results maxResultsMaximum number of results returnNumber of objects found 
+T type ObjectresultsArray to store results maxResultsMaximum number of results Number of objects found 
 
 ---
 
-### ` *Objectclassenjin2_1_1Objectcompound findObjectWithComponent()`
+### ` *Object findObjectWithComponent()`
 
 Find object with component of specified type. 
 
-templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to object or nullptr if not found 
+T type ComponentPointer to object or nullptr if not found 
 
 ---
 
@@ -113,7 +113,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to ob
 
 Apply function to all objects. 
 
-paramfuncFunction to apply (takes Object* parameter) 
+funcFunction to apply (takes Object* parameter) 
 
 ---
 
@@ -121,7 +121,7 @@ paramfuncFunction to apply (takes Object* parameter)
 
 Apply function to all active objects. 
 
-paramfuncFunction to apply (takes Object* parameter) 
+funcFunction to apply (takes Object* parameter) 
 
 ---
 
@@ -138,7 +138,7 @@ Clear all objects from the collection.
 
 Get number of objects in collection. 
 
-return count Objectclassenjin2_1_1Objectcompound
+ count Object
 
 ---
 
@@ -146,23 +146,23 @@ return count Objectclassenjin2_1_1Objectcompound
 
 Check if collection is empty. 
 
-returnTrue if empty 
+True if empty 
 
 ---
 
-### ` *Objectclassenjin2_1_1Objectcompound getObject(size_t index)`
+### ` *Object getObject(size_t index)`
 
 Get object at index. 
 
-paramindex index Objectclassenjin2_1_1ObjectcompoundreturnPointer to object or nullptr if invalid index 
+index index ObjectPointer to object or nullptr if invalid index 
 
 ---
 
-### `const  *Objectclassenjin2_1_1Objectcompound getObject(size_t index) const const`
+### `const  *Object getObject(size_t index) const const`
 
 Get const object at index. 
 
-paramindex index Objectclassenjin2_1_1ObjectcompoundreturnPointer to object or nullptr if invalid index 
+index index ObjectPointer to object or nullptr if invalid index 
 
 ---
 

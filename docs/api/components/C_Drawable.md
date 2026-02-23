@@ -6,7 +6,7 @@ sidebar_label: C_Drawable
 
 # C_Drawable
 
-Base class for all drawable components (matches original Enjin ). C_Drawableclassenjin2_1_1C__Drawablecompound
+Base class for all drawable components (matches original Enjin ). C_Drawable
 
 
 Provides common functionality for components that can be rendered, including layer management, blending, anchoring, and visibility. 
@@ -23,7 +23,7 @@ Provides common functionality for components that can be rendered, including lay
 
 Constructor (matches original Enjin). 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object widthclassenjin2_1_1C__Drawable_1ac6e1a43e762d6c1ba2f9b04b981517ffmemberWidth of drawable area heightclassenjin2_1_1C__Drawable_1ae67d8735cdc3935c362d48f4973caf75memberHeight of drawable area 
+ownerOwner object widthWidth of drawable area heightHeight of drawable area 
 
 ---
 
@@ -40,7 +40,7 @@ Virtual destructor.
 
 Pure virtual draw method - must be implemented by derived classes. 
 
-paramcanvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8) 
+canvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8) 
 
 ---
 
@@ -48,7 +48,7 @@ paramcanvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8)
 
 Check if this drawable should continue to be drawn. 
 
-returnTrue if should continue drawing, false otherwise 
+True if should continue drawing, false otherwise 
 
 ---
 
@@ -56,7 +56,7 @@ returnTrue if should continue drawing, false otherwise
 
 Set the sort order for drawing priority. 
 
-paramorderSort order value 
+orderSort order value 
 
 ---
 
@@ -64,7 +64,7 @@ paramorderSort order value
 
 Get the sort order. 
 
-returnCurrent sort order 
+Current sort order 
 
 ---
 
@@ -72,15 +72,15 @@ returnCurrent sort order
 
 Set the blend mode. 
 
-parammodeBlend mode to use 
+modeBlend mode to use 
 
 ---
 
-### `BlendModedrawable_8hpp_1a93eabee0843e21302c246269da3374dfmember GetBlendMode() const const`
+### `BlendMode GetBlendMode() const const`
 
 Get the blend mode. 
 
-returnCurrent blend mode 
+Current blend mode 
 
 ---
 
@@ -88,15 +88,15 @@ returnCurrent blend mode
 
 Set the draw layer. 
 
-paramdrawLayerDraw layer to assign 
+drawLayerDraw layer to assign 
 
 ---
 
-### `DrawLayerdrawable_8hpp_1abc9fd42ae01df89be2b46fc64ace9b64member GetDrawLayer() const const`
+### `DrawLayer GetDrawLayer() const const`
 
 Get the draw layer. 
 
-returnCurrent draw layer 
+Current draw layer 
 
 ---
 
@@ -104,7 +104,7 @@ returnCurrent draw layer
 
 Set the visibility. 
 
-paramvisibilityVisibility state 
+visibilityVisibility state 
 
 ---
 
@@ -112,7 +112,7 @@ paramvisibilityVisibility state
 
 Get the visibility. 
 
-returnCurrent visibility state 
+Current visibility state 
 
 ---
 
@@ -120,7 +120,7 @@ returnCurrent visibility state
 
 Check if visible. 
 
-returntrue if visible 
+true if visible 
 
 ---
 
@@ -128,7 +128,7 @@ returntrue if visible
 
 Set the anchor point for positioning. 
 
-paramanchorclassenjin2_1_1C__Drawable_1a2b6f351b7f70a5f7270711462172b696memberAnchor point 
+anchorAnchor point 
 
 ---
 
@@ -136,7 +136,7 @@ paramanchorclassenjin2_1_1C__Drawable_1a2b6f351b7f70a5f7270711462172b696memberAn
 
 Add offset to current anchor offset. 
 
-paramoffsetOffset to add 
+offsetOffset to add 
 
 ---
 
@@ -144,15 +144,15 @@ paramoffsetOffset to add
 
 Set the anchor offset. 
 
-paramoffsetNew offset value 
+offsetNew offset value 
 
 ---
 
-### `Pointstructenjin2_1_1Pointcompound GetOffsetPosition() const const`
+### `Point GetOffsetPosition() const const`
 
 Get position adjusted for offset. 
 
-returnOffset-adjusted position 
+Offset-adjusted position 
 
 ---
 
@@ -160,7 +160,7 @@ returnOffset-adjusted position
 
 Set the X component of anchor offset. 
 
-paramxX offset value 
+xX offset value 
 
 ---
 
@@ -168,7 +168,7 @@ paramxX offset value
 
 Set the Y component of anchor offset. 
 
-paramyY offset value 
+yY offset value 
 
 ---
 
@@ -176,7 +176,7 @@ paramyY offset value
 
 Get drawable width. 
 
-returnWidth in pixels 
+Width in pixels 
 
 ---
 
@@ -184,7 +184,7 @@ returnWidth in pixels
 
 Get drawable height. 
 
-returnHeight in pixels 
+Height in pixels 
 
 ---
 
@@ -192,7 +192,7 @@ returnHeight in pixels
 
 Determine if this drawable should be drawn before another drawable. 
 
-paramotherThe other drawable to compare against returnTrue if this should be drawn before other, false otherwise 
+otherThe other drawable to compare against True if this should be drawn before other, false otherwise 
 
 ---
 

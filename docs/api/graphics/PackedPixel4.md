@@ -9,7 +9,7 @@ sidebar_label: PackedPixel4
 Packed storage for two 4-bit pixels in a single byte. 
 
 
-Efficiently stores two  values in one byte, achieving 50% memory savings compared to storing each pixel in a separate byte. Pixel4structenjin2_1_1Pixel4compound
+Efficiently stores two  values in one byte, achieving 50% memory savings compared to storing each pixel in a separate byte. Pixel4
 
 ---
 
@@ -32,23 +32,23 @@ Default constructor initializes both pixels to 0.
 
 Constructor from raw byte data. 
 
-parambyteRaw byte containing packed pixel data 
+byteRaw byte containing packed pixel data 
 
 ---
 
-### `Pixel4structenjin2_1_1Pixel4compound getLow() const const`
+### `Pixel4 getLow() const const`
 
 Get the low nibble pixel (bits 0-3). 
 
-returnPixel stored in lower 4 bits 
+Pixel stored in lower 4 bits 
 
 ---
 
-### `Pixel4structenjin2_1_1Pixel4compound getHigh() const const`
+### `Pixel4 getHigh() const const`
 
 Get the high nibble pixel (bits 4-7). 
 
-returnPixel stored in upper 4 bits 
+Pixel stored in upper 4 bits 
 
 ---
 
@@ -56,7 +56,7 @@ returnPixel stored in upper 4 bits
 
 Set the low nibble pixel (bits 0-3). 
 
-parampixelPixel value to store in lower 4 bits 
+pixelPixel value to store in lower 4 bits 
 
 ---
 
@@ -64,7 +64,7 @@ parampixelPixel value to store in lower 4 bits
 
 Set the high nibble pixel (bits 4-7). 
 
-parampixelPixel value to store in upper 4 bits 
+pixelPixel value to store in upper 4 bits 
 
 ---
 
@@ -72,7 +72,7 @@ parampixelPixel value to store in upper 4 bits
 
 Get raw byte containing both pixels. 
 
-returnRaw byte data 
+Raw byte data 
 
 ---
 

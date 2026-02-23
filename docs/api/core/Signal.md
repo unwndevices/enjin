@@ -6,10 +6,10 @@ sidebar_label: Signal
 
 # Signal
 
- class for observer pattern implementation. Signalclassenjin2_1_1Signalcompound
+ class for observer pattern implementation. Signal
 
 
-Provides a lightweight event system using static allocation.  can be emitted with parameters and connected to callbacks. Signalsnamespaceenjin2_1_1Signalscompound
+Provides a lightweight event system using static allocation.  can be emitted with parameters and connected to callbacks. Signals
 
 ---
 
@@ -32,7 +32,7 @@ Constructor.
 
 Connect a callback to this signal. 
 
-paramcallbackFunction to call when signal is emitted returnConnection ID (can be used to disconnect) or -1 if failed 
+callbackFunction to call when signal is emitted Connection ID (can be used to disconnect) or -1 if failed 
 
 ---
 
@@ -40,7 +40,7 @@ paramcallbackFunction to call when signal is emitted returnConnection ID (can be
 
 Disconnect a callback by connection ID. 
 
-paramconnectionIdConnection ID returned by  connect()classenjin2_1_1Signal_1a3842d5435fcb3bef84a5eb16531e7aabmember
+connectionIdConnection ID returned by  connect()
 
 ---
 
@@ -48,7 +48,7 @@ paramconnectionIdConnection ID returned by  connect()classenjin2_1_1Signal_1a384
 
 Emit the signal, calling all connected callbacks. 
 
-paramargsArguments to pass to callbacks 
+argsArguments to pass to callbacks 
 
 ---
 
@@ -65,7 +65,7 @@ Disconnect all callbacks.
 
 Get number of active connections. 
 
-returnNumber of connected callbacks 
+Number of connected callbacks 
 
 ---
 
@@ -73,7 +73,7 @@ returnNumber of connected callbacks
 
 Check if signal has any connections. 
 
-returnTrue if there are active connections 
+True if there are active connections 
 
 ---
 
@@ -81,7 +81,7 @@ returnTrue if there are active connections
 
 Operator() for emitting signals. 
 
-paramargsArguments to pass to callbacks 
+argsArguments to pass to callbacks 
 
 ---
 

@@ -23,7 +23,7 @@ Manages multiple animation tracks for different properties (position, scale, rot
 
 Constructor. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object 
+ownerOwner object 
 
 ---
 
@@ -38,7 +38,7 @@ Destructor.
 
 ### `virtual void start() override`
 
- start - set up animation connections. Componentclassenjin2_1_1Componentcompound
+ start - set up animation connections. Component
 
 
         
@@ -47,9 +47,9 @@ Destructor.
 
 ### `virtual void update(uint16_t deltaTime) override`
 
- update - update all active tracks. Componentclassenjin2_1_1Componentcompound
+ update - update all active tracks. Component
 
-paramdeltaTimeTime elapsed since last update in milliseconds 
+deltaTimeTime elapsed since last update in milliseconds 
 
 ---
 
@@ -57,7 +57,7 @@ paramdeltaTimeTime elapsed since last update in milliseconds
 
 Add position keyframe. 
 
-paramtimeTime in milliseconds positionPosition at keyframe easingEasing function to next keyframe returnTrue if keyframe was added 
+timeTime in milliseconds positionPosition at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
@@ -65,7 +65,7 @@ paramtimeTime in milliseconds positionPosition at keyframe easingEasing function
 
 Add scale keyframe. 
 
-paramtimeTime in milliseconds scaleScale factor at keyframe easingEasing function to next keyframe returnTrue if keyframe was added 
+timeTime in milliseconds scaleScale factor at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
@@ -73,7 +73,7 @@ paramtimeTime in milliseconds scaleScale factor at keyframe easingEasing functio
 
 Add rotation keyframe. 
 
-paramtimeTime in milliseconds rotationRotation in radians at keyframe easingEasing function to next keyframe returnTrue if keyframe was added 
+timeTime in milliseconds rotationRotation in radians at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
@@ -81,7 +81,7 @@ paramtimeTime in milliseconds rotationRotation in radians at keyframe easingEasi
 
 Add color keyframe. 
 
-paramtimeTime in milliseconds colorColor at keyframe easingEasing function to next keyframe returnTrue if keyframe was added 
+timeTime in milliseconds colorColor at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
@@ -89,7 +89,7 @@ paramtimeTime in milliseconds colorColor at keyframe easingEasing function to ne
 
 Create orbital animation around a center point. 
 
-paramcenterCenter of orbit radiusOrbit radius durationAnimation duration in milliseconds startAngleStarting angle in radians clockwiseTrue for clockwise rotation returnTrue if animation was created 
+centerCenter of orbit radiusOrbit radius durationAnimation duration in milliseconds startAngleStarting angle in radians clockwiseTrue for clockwise rotation True if animation was created 
 
 ---
 
@@ -97,7 +97,7 @@ paramcenterCenter of orbit radiusOrbit radius durationAnimation duration in mill
 
 Create pulsing scale animation. 
 
-paramminScaleMinimum scale factor maxScaleMaximum scale factor durationPulse duration in milliseconds returnTrue if animation was created 
+minScaleMinimum scale factor maxScaleMaximum scale factor durationPulse duration in milliseconds True if animation was created 
 
 ---
 
@@ -105,7 +105,7 @@ paramminScaleMinimum scale factor maxScaleMaximum scale factor durationPulse dur
 
 Create color fade animation. 
 
-paramfromColorStarting color toColorEnding color durationAnimation duration in milliseconds pingPongTrue to fade back and forth returnTrue if animation was created 
+fromColorStarting color toColorEnding color durationAnimation duration in milliseconds pingPongTrue to fade back and forth True if animation was created 
 
 ---
 
@@ -136,35 +136,35 @@ Stop all animations.
 
 ---
 
-### ` &PositionTrackanimation__track_8hpp_1a705bce4c4d55a7271e6efce902ed58a7member getPositionTrack()`
+### ` &PositionTrack getPositionTrack()`
 
 Get position track. 
 
-returnReference to position animation track 
+Reference to position animation track 
 
 ---
 
-### ` &FloatTrackanimation__track_8hpp_1a81f4d3d5d4fc690b738247c59d607058member getScaleTrack()`
+### ` &FloatTrack getScaleTrack()`
 
 Get scale track. 
 
-returnReference to scale animation track 
+Reference to scale animation track 
 
 ---
 
-### ` &FloatTrackanimation__track_8hpp_1a81f4d3d5d4fc690b738247c59d607058member getRotationTrack()`
+### ` &FloatTrack getRotationTrack()`
 
 Get rotation track. 
 
-returnReference to rotation animation track 
+Reference to rotation animation track 
 
 ---
 
-### ` &ColorTrackanimation__track_8hpp_1a475c8c4e4bdf2545136e90a1955ba0abmember getColorTrack()`
+### ` &ColorTrack getColorTrack()`
 
 Get color track. 
 
-returnReference to color animation track 
+Reference to color animation track 
 
 ---
 
@@ -172,7 +172,7 @@ returnReference to color animation track
 
 Set auto-start behavior. 
 
-paramautoStartTrue to auto-start animations on component start 
+autoStartTrue to auto-start animations on component start 
 
 ---
 
@@ -180,7 +180,7 @@ paramautoStartTrue to auto-start animations on component start
 
 Enable/disable position updates. 
 
-paramupdateclassenjin2_1_1C__Animation_1af045b100ac6c4d25bec1f4bafcb90aa7memberTrue to update position component from animation 
+updateTrue to update position component from animation 
 
 ---
 
@@ -188,7 +188,7 @@ paramupdateclassenjin2_1_1C__Animation_1af045b100ac6c4d25bec1f4bafcb90aa7memberT
 
 Enable/disable color updates. 
 
-paramupdateclassenjin2_1_1C__Animation_1af045b100ac6c4d25bec1f4bafcb90aa7memberTrue to update drawable color from animation 
+updateTrue to update drawable color from animation 
 
 ---
 

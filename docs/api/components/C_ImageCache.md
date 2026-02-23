@@ -9,7 +9,7 @@ sidebar_label: C_ImageCache
 Image cache component for sprite management. 
 
 
-Provides static memory allocation for 4-bit image data with efficient caching and frame-based animation support. Based on original Enjin  design. C_ImageCacheclassenjin2_1_1C__ImageCachecompound
+Provides static memory allocation for 4-bit image data with efficient caching and frame-based animation support. Based on original Enjin  design. C_ImageCache
 
 ---
 
@@ -23,7 +23,7 @@ Provides static memory allocation for 4-bit image data with efficient caching an
 
 Constructor. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberParent object 
+ownerParent object 
 
 ---
 
@@ -56,15 +56,15 @@ Use this for initialization that depends on other components or objects being fu
 
 Update is called once per frame. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
-### `static ImageEntrystructenjin2_1_1ImageEntrycompound AddImage(FileInterface &file, uint16_t width, uint16_t height, uint16_t frameCount)`
+### `static ImageEntry AddImage(FileInterface &file, uint16_t width, uint16_t height, uint16_t frameCount)`
 
 Add image to cache from file. 
 
-paramfileFile interface to read from widthImage width in pixels heightImage height in pixels frameCountNumber of animation frames exceptionImageCacheExceptionclassenjin2_1_1ImageCacheExceptioncompoundon allocation or I/O errors return descriptor for cached image ImageEntrystructenjin2_1_1ImageEntrycompound
+fileFile interface to read from widthImage width in pixels heightImage height in pixels frameCountNumber of animation frames ImageCacheExceptionon allocation or I/O errors  descriptor for cached image ImageEntry
 
 ---
 
@@ -72,7 +72,7 @@ paramfileFile interface to read from widthImage width in pixels heightImage heig
 
 Release cached image entry. 
 
-paramentryImage entry to release exceptionImageCacheExceptionclassenjin2_1_1ImageCacheExceptioncompoundif entry is inactive 
+entryImage entry to release ImageCacheExceptionif entry is inactive 
 
 ---
 
@@ -80,7 +80,7 @@ paramentryImage entry to release exceptionImageCacheExceptionclassenjin2_1_1Imag
 
 Get pointer to image data in cache. 
 
-paramentryImage entry descriptor frameOffsetFrame number (0-based) exceptionImageCacheExceptionclassenjin2_1_1ImageCacheExceptioncompoundon invalid access returnPointer to 4-bit image data 
+entryImage entry descriptor frameOffsetFrame number (0-based) ImageCacheExceptionon invalid access Pointer to 4-bit image data 
 
 ---
 
@@ -88,7 +88,7 @@ paramentryImage entry descriptor frameOffsetFrame number (0-based) exceptionImag
 
 Get cache statistics. 
 
-returnPair of (used_bytes, total_bytes) 
+Pair of (used_bytes, total_bytes) 
 
 ---
 

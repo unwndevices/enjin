@@ -6,11 +6,11 @@ sidebar_label: Component
 
 # Component
 
- base class. Componentclassenjin2_1_1Componentcompound
+ base class. Component
 
 
 Template base for typed components.All components in the Enjin system derive from this base class. Components provide specific functionality to Objects through composition.
-Provides automatic type ID generation and type safety. templateparamTDerived component type
+Provides automatic type ID generation and type safety. TDerived component type
 
 ---
 
@@ -24,7 +24,7 @@ Provides automatic type ID generation and type safety. templateparamTDerived com
 
 Constructor. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe object that owns this component 
+ownerThe object that owns this component 
 
 ---
 
@@ -37,11 +37,11 @@ Virtual destructor.
 
 ---
 
-### ` *Objectclassenjin2_1_1Objectcompound getOwner() const const`
+### ` *Object getOwner() const const`
 
 Get the owner object. 
 
-returnPointer to owner object 
+Pointer to owner object 
 
 ---
 
@@ -49,7 +49,7 @@ returnPointer to owner object
 
 Check if component is enabled. 
 
-returnTrue if enabled 
+True if enabled 
 
 ---
 
@@ -57,7 +57,7 @@ returnTrue if enabled
 
 Set component enabled state. 
 
-paramisEnabledclassenjin2_1_1Component_1a9816f093b126432025a7e0316b34ff6amemberNew enabled state 
+isEnabledNew enabled state 
 
 ---
 
@@ -81,7 +81,7 @@ Use this for initialization that depends on other components or objects being fu
 
 Update is called once per frame. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -89,7 +89,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 LateUpdate is called after all Update calls. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -115,7 +115,7 @@ Called when component is disabled.
 
 Get component type ID for this component type. 
 
-return type identifier Componentclassenjin2_1_1Componentcompound
+ type identifier Component
 
 ---
 
@@ -123,7 +123,7 @@ return type identifier Componentclassenjin2_1_1Componentcompound
 
 Get static component type ID. 
 
-return type identifier Componentclassenjin2_1_1Componentcompound
+ type identifier Component
 
 ---
 

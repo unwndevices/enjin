@@ -6,7 +6,7 @@ sidebar_label: Label
 
 # Label
 
- component for text display with word wrapping and styling. Labelclassenjin2_1_1Labelcompound
+ component for text display with word wrapping and styling. Label
 
 
 A versatile text display component that supports:
@@ -22,9 +22,9 @@ Custom fonts (GFX-style fonts)Text wrapping and alignmentBackground colors and b
 
 ### ` Label(Object *owner, uint16_t w, uint16_t h, const GFXfont *textFont=nullptr, uint8_t fontSize=1, uint8_t textColor=14, uint8_t backgroundColor=0, uint8_t pointerHeight=0)`
 
-Construct a new  component. Labelclassenjin2_1_1Labelcompound
+Construct a new  component. Label
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe object that owns this component wWidth of the label in pixels hHeight of the label in pixels textFontFont to use (nullptr for default) fontSizeFont size multiplier textColorText color (0-15 for 4-bit grayscale) backgroundColorBackground color (0 for transparent) pointerHeightHeight of tooltip pointer (0 for no pointer) 
+ownerThe object that owns this component wWidth of the label in pixels hHeight of the label in pixels textFontFont to use (nullptr for default) fontSizeFont size multiplier textColorText color (0-15 for 4-bit grayscale) backgroundColorBackground color (0 for transparent) pointerHeightHeight of tooltip pointer (0 for no pointer) 
 
 ---
 
@@ -32,7 +32,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 Draw the label to the canvas. 
 
-paramcanvasThe canvas to draw to 
+canvasThe canvas to draw to 
 
 ---
 
@@ -40,7 +40,7 @@ paramcanvasThe canvas to draw to
 
 Set the label text. 
 
-paramnewTextText to display 
+newTextText to display 
 
 ---
 
@@ -48,7 +48,7 @@ paramnewTextText to display
 
 Get the current text. 
 
-returnCurrent text string 
+Current text string 
 
 ---
 
@@ -56,7 +56,7 @@ returnCurrent text string
 
 Set text color. 
 
-paramcolorNew text color (0-15) 
+colorNew text color (0-15) 
 
 ---
 
@@ -64,7 +64,7 @@ paramcolorNew text color (0-15)
 
 Set background color. 
 
-paramcolorBackground color (0 for transparent) 
+colorBackground color (0 for transparent) 
 
 ---
 
@@ -72,7 +72,7 @@ paramcolorBackground color (0 for transparent)
 
 Set text alignment. 
 
-paramalignText alignment mode 
+alignText alignment mode 
 
 ---
 
@@ -80,7 +80,7 @@ paramalignText alignment mode
 
 Set margins. 
 
-paramleftLeft margin in pixels rightRight margin in pixels (defaults to left margin) 
+leftLeft margin in pixels rightRight margin in pixels (defaults to left margin) 
 
 ---
 
@@ -88,7 +88,7 @@ paramleftLeft margin in pixels rightRight margin in pixels (defaults to left mar
 
 Enable or disable word wrapping. 
 
-paramwrapTrue to enable word wrapping 
+wrapTrue to enable word wrapping 
 
 ---
 
@@ -96,7 +96,7 @@ paramwrapTrue to enable word wrapping
 
 Set font size. 
 
-paramsizeFont size multiplier (1 = normal, 2 = double, etc.) 
+sizeFont size multiplier (1 = normal, 2 = double, etc.) 
 
 ---
 
@@ -104,7 +104,7 @@ paramsizeFont size multiplier (1 = normal, 2 = double, etc.)
 
 Set pointer height for tooltip-style labels. 
 
-paramheightHeight of pointer in pixels (0 for no pointer) 
+heightHeight of pointer in pixels (0 for no pointer) 
 
 ---
 

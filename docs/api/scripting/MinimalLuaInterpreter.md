@@ -41,21 +41,21 @@ Destructor.
 
 Set graphics interface. 
 
-paramgfxGraphics interface to use 
+gfxGraphics interface to use 
 
 ---
 
 ### `virtual bool initialize() override`
 
-Initialize the interpreter. 
+Initialize the minimal Lua interpreter. 
 
-returnTrue if initialization successful 
+True if initialization successful 
 
 ---
 
 ### `virtual void shutdown() override`
 
-Shutdown the interpreter. 
+Shutdown the minimal Lua interpreter. 
 
 
         
@@ -66,31 +66,31 @@ Shutdown the interpreter.
 
 Check if interpreter is initialized. 
 
-returnTrue if initialized 
+True if initialized 
 
 ---
 
-### `virtual ScriptResultstructenjin2_1_1ScriptResultcompound executeString(const std::string &code) override`
+### `virtual ScriptResult executeString(const std::string &code) override`
 
-Execute script code string. 
+Execute Lua code string. 
 
-paramcodeScript code to execute returnExecution result 
-
----
-
-### `virtual ScriptResultstructenjin2_1_1ScriptResultcompound executeFile(const std::string &filename) override`
-
-Load and execute script file. 
-
-paramfilenamePath to script file returnExecution result 
+codeLua code to execute Execution result 
 
 ---
 
-### `virtual ScriptResultstructenjin2_1_1ScriptResultcompound callFunction(const std::string &functionName) override`
+### `virtual ScriptResult executeFile(const std::string &filename) override`
 
-Call script function. 
+Execute Lua script file. 
 
-paramfunctionNameName of function to call returnExecution result 
+filenamePath to script file Execution result 
+
+---
+
+### `virtual ScriptResult callFunction(const std::string &functionName) override`
+
+Call named Lua function. 
+
+functionNameName of function to call Execution result 
 
 ---
 
@@ -98,7 +98,7 @@ paramfunctionNameName of function to call returnExecution result
 
 Set global number variable. 
 
-paramnameVariable name valueNumber value to set returnvoid 
+nameVariable name valueNumber value to set 
 
 ---
 
@@ -106,7 +106,7 @@ paramnameVariable name valueNumber value to set returnvoid
 
 Set global string variable. 
 
-paramnameVariable name valueString value to set returnvoid 
+nameVariable name valueString value to set 
 
 ---
 
@@ -114,7 +114,7 @@ paramnameVariable name valueString value to set returnvoid
 
 Set global boolean variable. 
 
-paramnameVariable name valueBoolean value to set returnvoid 
+nameVariable name valueBoolean value to set 
 
 ---
 
@@ -122,7 +122,7 @@ paramnameVariable name valueBoolean value to set returnvoid
 
 Get global number variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnNumber value (or default if not found) 
+nameVariable name defaultValueDefault value if not found Number value (or default if not found) 
 
 ---
 
@@ -130,7 +130,7 @@ paramnameVariable name defaultValueDefault value if not found returnNumber value
 
 Get global string variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnString value (or default if not found) 
+nameVariable name defaultValueDefault value if not found String value (or default if not found) 
 
 ---
 
@@ -138,7 +138,7 @@ paramnameVariable name defaultValueDefault value if not found returnString value
 
 Get global boolean variable. 
 
-paramnameVariable name defaultValueDefault value if not found returnBoolean value (or default if not found) 
+nameVariable name defaultValueDefault value if not found Boolean value (or default if not found) 
 
 ---
 
@@ -146,7 +146,7 @@ paramnameVariable name defaultValueDefault value if not found returnBoolean valu
 
 Get current memory usage. 
 
-returnMemory usage in bytes 
+Memory usage in bytes 
 
 ---
 
@@ -154,7 +154,7 @@ returnMemory usage in bytes
 
 Get interpreter type name. 
 
-returnType name string (e.g., "Lua", "JavaScript", "MicroPython") 
+Type name string 
 
 ---
 
@@ -173,7 +173,7 @@ Register minimal graphics functions.
 
 Allocate memory from pool. 
 
-paramsize to allocate Sizestructenjin2_1_1SizecompoundreturnAllocated memory or nullptr 
+size to allocate SizeAllocated memory or nullptr 
 
 ---
 
@@ -181,7 +181,7 @@ paramsize to allocate Sizestructenjin2_1_1SizecompoundreturnAllocated memory or 
 
 Free memory back to pool. 
 
-paramptrMemory to free 
+ptrMemory to free 
 
 ---
 

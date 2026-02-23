@@ -24,7 +24,7 @@ Easing function utilities.
 
 Apply easing function to normalized time (0.0 to 1.0). 
 
-paramtNormalized time (0.0 to 1.0) easeTypeType of easing to apply returnEased value (0.0 to 1.0) 
+tNormalized time (0.0 to 1.0) easeTypeType of easing to apply Eased value (0.0 to 1.0) 
 
 ---
 
@@ -32,23 +32,23 @@ paramtNormalized time (0.0 to 1.0) easeTypeType of easing to apply returnEased v
 
 Linear interpolation between two values. 
 
-paramaStart value bEnd value tInterpolation factor (0.0 to 1.0) returnInterpolated value 
+aStart value bEnd value tInterpolation factor (0.0 to 1.0) Interpolated value 
 
 ---
 
-### `static Pointstructenjin2_1_1Pointcompound lerp(const Point &a, const Point &b, float t)`
+### `static Point lerp(const Point &a, const Point &b, float t)`
 
 Linear interpolation between two points. 
 
-paramaStart point bEnd point tInterpolation factor (0.0 to 1.0) returnInterpolated point 
+aStart point bEnd point tInterpolation factor (0.0 to 1.0) Interpolated point 
 
 ---
 
-### `static Pixel4structenjin2_1_1Pixel4compound lerp(const Pixel4 &a, const Pixel4 &b, float t)`
+### `static Pixel4 lerp(const Pixel4 &a, const Pixel4 &b, float t)`
 
 Linear interpolation between two colors. 
 
-paramaStart color bEnd color tInterpolation factor (0.0 to 1.0) returnInterpolated color 
+aStart color bEnd color tInterpolation factor (0.0 to 1.0) Interpolated color 
 
 ---
 

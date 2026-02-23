@@ -23,7 +23,7 @@ Manages a collection of objects and provides lifecycle methods for scene initial
 
 Constructor. 
 
-paramidUnique scene identifier 
+idUnique scene identifier 
 
 ---
 
@@ -64,7 +64,7 @@ Called when the scene is no longer active.
 
 Update the scene. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -72,7 +72,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 Render the scene. 
 
-paramcanvasTarget canvas for rendering 
+canvasTarget canvas for rendering 
 
 ---
 
@@ -80,7 +80,7 @@ paramcanvasTarget canvas for rendering
 
 Add an object to the scene. 
 
-templateparamT type (must derive from ) Objectclassenjin2_1_1ObjectcompoundObjectclassenjin2_1_1ObjectcompoundArgsConstructor argument types paramargsConstructor arguments returnPointer to created object or nullptr if failed 
+T type (must derive from ) ObjectObjectArgsConstructor argument types argsConstructor arguments Pointer to created object or nullptr if failed 
 
 ---
 
@@ -88,7 +88,7 @@ templateparamT type (must derive from ) Objectclassenjin2_1_1ObjectcompoundObjec
 
 Remove an object from the scene. 
 
-paramobject to remove Objectclassenjin2_1_1ObjectcompoundreturnTrue if object was removed 
+object to remove ObjectTrue if object was removed 
 
 ---
 
@@ -96,15 +96,15 @@ paramobject to remove Objectclassenjin2_1_1ObjectcompoundreturnTrue if object wa
 
 Find first object of specified type. 
 
-templateparamT type Objectclassenjin2_1_1ObjectcompoundreturnPointer to object or nullptr if not found 
+T type ObjectPointer to object or nullptr if not found 
 
 ---
 
-### ` *Objectclassenjin2_1_1Objectcompound findObjectWithComponent()`
+### ` *Object findObjectWithComponent()`
 
 Find object with component of specified type. 
 
-templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to object or nullptr if not found 
+T type ComponentPointer to object or nullptr if not found 
 
 ---
 
@@ -112,7 +112,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to ob
 
 Get scene ID. 
 
-return identifier Sceneclassenjin2_1_1Scenecompound
+ identifier Scene
 
 ---
 
@@ -120,7 +120,7 @@ return identifier Sceneclassenjin2_1_1Scenecompound
 
 Check if scene is active. 
 
-returnTrue if scene is active 
+True if scene is active 
 
 ---
 
@@ -128,62 +128,55 @@ returnTrue if scene is active
 
 Check if scene is initialized. 
 
-returnTrue if scene is initialized 
+True if scene is initialized 
 
 ---
 
-### ` &ObjectCollectionclassenjin2_1_1ObjectCollectioncompound getObjects()`
+### ` &ObjectCollection getObjects()`
 
 Get object collection. 
 
-returnReference to object collection 
+Reference to object collection 
 
 ---
 
-### `const  &ObjectCollectionclassenjin2_1_1ObjectCollectioncompound getObjects() const const`
+### `const  &ObjectCollection getObjects() const const`
 
 Get object collection (const). 
 
-returnConst reference to object collection 
+Const reference to object collection 
 
 ---
 
-### `&lt;  * &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnCreate(std::function&lt; void(Scene *)&gt; callback)`
+### `&lt;  * &gt;SignalConnectionScene connectOnCreate(std::function&lt; void(Scene *)&gt; callback)`
 
-Connect to scene lifecycle events. 
+Connect to scene create event. 
 
-
-        
-
----
-
-### `&lt;  * &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnActivate(std::function&lt; void(Scene *)&gt; callback)`
-
-
-        
-
-
-        
+callbackFunction called when scene is created  connection handle Signal
 
 ---
 
-### `&lt;  * &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnDeactivate(std::function&lt; void(Scene *)&gt; callback)`
+### `&lt;  * &gt;SignalConnectionScene connectOnActivate(std::function&lt; void(Scene *)&gt; callback)`
 
+Connect to scene activate event. 
 
-        
-
-
-        
+callbackFunction called when scene becomes active  connection handle Signal
 
 ---
 
-### `&lt;  * &gt;SignalConnectionclassenjin2_1_1SignalConnectioncompoundSceneclassenjin2_1_1Scene_1a4a7dcc3e8b941246279ad1c3fda6ed09member connectOnDestroy(std::function&lt; void(Scene *)&gt; callback)`
+### `&lt;  * &gt;SignalConnectionScene connectOnDeactivate(std::function&lt; void(Scene *)&gt; callback)`
 
+Connect to scene deactivate event. 
 
-        
+callbackFunction called when scene becomes inactive  connection handle Signal
 
+---
 
-        
+### `&lt;  * &gt;SignalConnectionScene connectOnDestroy(std::function&lt; void(Scene *)&gt; callback)`
+
+Connect to scene destroy event. 
+
+callbackFunction called when scene is destroyed  connection handle Signal
 
 ---
 
@@ -226,7 +219,7 @@ Use this to clean up scene-specific resources.
 Called every frame (override in derived classes). 
 
 
-Use this for scene-specific update logic that should happen before object updates. paramdeltaTimeTime since last frame in milliseconds
+Use this for scene-specific update logic that should happen before object updates. deltaTimeTime since last frame in milliseconds
 
 ---
 
@@ -235,7 +228,7 @@ Use this for scene-specific update logic that should happen before object update
 Called during rendering for 4-bit canvas (override in derived classes). 
 
 
-Use this for scene-specific rendering like backgrounds or UI overlays. paramcanvasTarget canvas for rendering
+Use this for scene-specific rendering like backgrounds or UI overlays. canvasTarget canvas for rendering
 
 ---
 
@@ -244,7 +237,7 @@ Use this for scene-specific rendering like backgrounds or UI overlays. paramcanv
 Called during rendering for 8-bit canvas (override in derived classes). 
 
 
-Use this for scene-specific rendering like backgrounds or UI overlays. paramcanvasTarget canvas for rendering
+Use this for scene-specific rendering like backgrounds or UI overlays. canvasTarget canvas for rendering
 
 ---
 
@@ -254,7 +247,7 @@ Use this for scene-specific rendering like backgrounds or UI overlays. paramcanv
 
 Render all objects in the scene. 
 
-paramcanvasTarget canvas for rendering 
+canvasTarget canvas for rendering 
 
 ---
 

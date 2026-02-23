@@ -48,7 +48,7 @@ Use this for initialization that depends on other components or objects being fu
 
 Update is called once per frame. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -56,7 +56,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 LateUpdate is called after all Update calls. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -78,11 +78,11 @@ Called when component is disabled.
 
 ---
 
-### ` *Objectclassenjin2_1_1Objectcompound getOwner() const =0 const`
+### ` *Object getOwner() const =0 const`
 
 Get owner object. 
 
-returnPointer to owner object 
+Pointer to owner object 
 
 ---
 
@@ -90,7 +90,7 @@ returnPointer to owner object
 
 Check if component is enabled. 
 
-returnTrue if enabled 
+True if enabled 
 
 ---
 
@@ -98,7 +98,7 @@ returnTrue if enabled
 
 Set component enabled state. 
 
-paramisEnabledclassenjin2_1_1IComponent_1a269f00448b8fed57fc53a3c25b74ed13memberNew enabled state 
+isEnabledNew enabled state 
 
 ---
 

@@ -32,7 +32,7 @@ Virtual destructor.
 
 Update system with delta time. 
 
-paramdeltaTimeTime since last update in seconds 
+deltaTimeTime since last update in seconds 
 
 ---
 
@@ -40,7 +40,7 @@ paramdeltaTimeTime since last update in seconds
 
 Get system priority for update ordering. 
 
-returnPriority value (lower = earlier execution) 
+Priority value (lower = earlier execution) 
 
 ---
 
@@ -48,7 +48,7 @@ returnPriority value (lower = earlier execution)
 
 Get unique system ID. 
 
-return identifier Systemclassenjin2_1_1Systemcompound
+ identifier System
 
 ---
 
@@ -58,7 +58,7 @@ return identifier Systemclassenjin2_1_1Systemcompound
 
 Generate unique system type ID. 
 
-templateparamT type Systemclassenjin2_1_1SystemcompoundreturnUnique ID for system type T 
+T type SystemUnique ID for system type T 
 
 ---
 

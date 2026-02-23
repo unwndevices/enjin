@@ -21,16 +21,15 @@ A drawable dial component with multiple buttons arranged in a circle. Used for s
 
 ### ` ButtonDial(Object *owner, uint8_t outerRadius, uint8_t innerRadius, uint8_t buttonCount)`
 
-Construct a new  component. ButtonDialclassenjin2_1_1ButtonDialcompound
+Construct a new  component. ButtonDial
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe object that owns this component outerRadiusOuter radius of the dial innerRadiusInner radius of the dial buttonCountNumber of buttons around the circumference 
+ownerThe object that owns this component outerRadiusOuter radius of the dial innerRadiusInner radius of the dial buttonCountNumber of buttons around the circumference 
 
 ---
 
 ### `void onCreate() override`
 
-
-        
+Initialize the button dial. 
 
 
         
@@ -39,11 +38,9 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 ### `void onUpdate(float deltaTime) override`
 
+Update the button dial state. 
 
-        
-
-
-        
+deltaTimeTime elapsed since last update in seconds 
 
 ---
 
@@ -51,7 +48,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberThe o
 
 Draw the button dial to the canvas. 
 
-paramcanvasThe canvas to draw to 
+canvasThe canvas to draw to 
 
 ---
 
@@ -59,7 +56,7 @@ paramcanvasThe canvas to draw to
 
 Set the selected button. 
 
-paramidButton ID (0 to buttonCount-1, -1 for no selection) 
+idButton ID (0 to buttonCount-1, -1 for no selection) 
 
 ---
 
@@ -67,7 +64,7 @@ paramidButton ID (0 to buttonCount-1, -1 for no selection)
 
 Get the currently selected button. 
 
-returnButton ID (-1 if no selection) 
+Button ID (-1 if no selection) 
 
 ---
 
@@ -75,7 +72,7 @@ returnButton ID (-1 if no selection)
 
 Set the dial color. 
 
-paramnewColorColor value (0-15 for 4-bit grayscale) 
+newColorColor value (0-15 for 4-bit grayscale) 
 
 ---
 
@@ -83,7 +80,7 @@ paramnewColorColor value (0-15 for 4-bit grayscale)
 
 Get the number of buttons. 
 
-returnNumber of buttons around the circumference 
+Number of buttons around the circumference 
 
 ---
 

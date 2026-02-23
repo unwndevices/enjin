@@ -23,7 +23,7 @@ Represents a small satellite that orbits around a planet. Used for audio paramet
 
 Constructor. 
 
-paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner object planetPlanet to orbit (can be nullptr) radiusOrbit radius startAngleInitial orbital angle 
+ownerOwner object planetPlanet to orbit (can be nullptr) radiusOrbit radius startAngleInitial orbital angle 
 
 ---
 
@@ -31,7 +31,7 @@ paramownerclassenjin2_1_1Component_1a3349b9210509e148f9f7625f6a39b022memberOwner
 
 Update satellite position and animation. 
 
-paramdeltaTimeTime elapsed since last update in milliseconds 
+deltaTimeTime elapsed since last update in milliseconds 
 
 ---
 
@@ -39,7 +39,7 @@ paramdeltaTimeTime elapsed since last update in milliseconds
 
 Draw satellite to 4-bit canvas. 
 
-paramcanvasTarget 4-bit canvas 
+canvasTarget 4-bit canvas 
 
 ---
 
@@ -47,7 +47,7 @@ paramcanvasTarget 4-bit canvas
 
 Draw satellite to 8-bit canvas. 
 
-paramcanvasTarget 8-bit canvas 
+canvasTarget 8-bit canvas 
 
 ---
 
@@ -55,7 +55,7 @@ paramcanvasTarget 8-bit canvas
 
 Set parameter value (0.0 to 1.0). 
 
-paramvalueNormalized parameter value, clamped to [0, 1] 
+valueNormalized parameter value, clamped to [0, 1] 
 
 ---
 
@@ -63,7 +63,7 @@ paramvalueNormalized parameter value, clamped to [0, 1]
 
 Get parameter value. 
 
-returnNormalized parameter value (0.0 to 1.0) 
+Normalized parameter value (0.0 to 1.0) 
 
 ---
 
@@ -71,7 +71,7 @@ returnNormalized parameter value (0.0 to 1.0)
 
 Set parameter range. 
 
-paramminMinimum value maxMaximum value 
+minMinimum value maxMaximum value 
 
 ---
 
@@ -79,7 +79,7 @@ paramminMinimum value maxMaximum value
 
 Get scaled parameter value in range. 
 
-returnValue scaled to [minValue, maxValue] 
+Value scaled to [minValue, maxValue] 
 
 ---
 
@@ -87,7 +87,7 @@ returnValue scaled to [minValue, maxValue]
 
 Set from scaled value. 
 
-paramscaledValueValue in [minValue, maxValue] range 
+scaledValueValue in [minValue, maxValue] range 
 
 ---
 
@@ -95,7 +95,7 @@ paramscaledValueValue in [minValue, maxValue] range
 
 Set orbital properties. 
 
-paramradiusOrbit radius in pixels speedOrbital speed in radians per second clockwiseDirectionOrbit direction 
+radiusOrbit radius in pixels speedOrbital speed in radians per second clockwiseDirectionOrbit direction 
 
 ---
 
@@ -103,7 +103,7 @@ paramradiusOrbit radius in pixels speedOrbital speed in radians per second clock
 
 Set visual properties. 
 
-paramradiusSatellite display radius colorSatellite color showOrbitalTrailWhether to display orbital trail 
+radiusSatellite display radius colorSatellite color showOrbitalTrailWhether to display orbital trail 
 
 ---
 
@@ -111,7 +111,7 @@ paramradiusSatellite display radius colorSatellite color showOrbitalTrailWhether
 
 Enable parameter-based effects. 
 
-paramradiusEffectControl orbit radius from parameter speedEffectControl orbit speed from parameter colorEffectControl color from parameter 
+radiusEffectControl orbit radius from parameter speedEffectControl orbit speed from parameter colorEffectControl color from parameter 
 
 ---
 
@@ -119,7 +119,7 @@ paramradiusEffectControl orbit radius from parameter speedEffectControl orbit sp
 
 Set trail appearance. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberWhether to show trail colorTrail color 
+enabledWhether to show trail colorTrail color 
 
 ---
 
@@ -127,7 +127,7 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberWhe
 
 Set connection line to planet. 
 
-paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberWhether to show connection line 
+enabledWhether to show connection line 
 
 ---
 
@@ -135,7 +135,7 @@ paramenabledclassenjin2_1_1Component_1ad05479377756fa07b8de93b1a4687d84memberWhe
 
 Get current orbital angle. 
 
-returnCurrent angle in radians 
+Current angle in radians 
 
 ---
 
@@ -143,7 +143,7 @@ returnCurrent angle in radians
 
 Set orbital angle. 
 
-paramangleAngle in radians 
+angleAngle in radians 
 
 ---
 

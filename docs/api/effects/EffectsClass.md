@@ -9,7 +9,7 @@ sidebar_label: Effects
 Graphics effects for pixel manipulation. 
 
 
-templateparamTPixelPixel type (e.g., , uint8_t) Pixel4structenjin2_1_1Pixel4compound
+TPixelPixel type (e.g., , uint8_t) Pixel4
 
 ---
 
@@ -23,7 +23,7 @@ templateparamTPixelPixel type (e.g., , uint8_t) Pixel4structenjin2_1_1Pixel4comp
 
 Dither pattern for anti-aliasing. 
 
-paramcanvasTarget canvas rectRegion to dither color1First color in pattern color2Second color in pattern patternDithering pattern bitmask (default: 0xAA checkerboard) 
+canvasTarget canvas rectRegion to dither color1First color in pattern color2Second color in pattern patternDithering pattern bitmask (default: 0xAA checkerboard) 
 
 ---
 
@@ -31,7 +31,7 @@ paramcanvasTarget canvas rectRegion to dither color1First color in pattern color
 
 Apply simple blur effect (box filter). 
 
-paramcanvasTarget canvas rectRegion to blur radiusBlur radius in pixels (default: 1) noteCurrently a placeholder for future implementation 
+canvasTarget canvas rectRegion to blur radiusBlur radius in pixels (default: 1) Currently a placeholder for future implementation 
 
 ---
 
@@ -39,7 +39,7 @@ paramcanvasTarget canvas rectRegion to blur radiusBlur radius in pixels (default
 
 Invert colors in a region. 
 
-paramcanvasTarget canvas rectRegion to invert 
+canvasTarget canvas rectRegion to invert 
 
 ---
 

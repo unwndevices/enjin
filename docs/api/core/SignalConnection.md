@@ -23,7 +23,7 @@ RAII wrapper that automatically disconnects when destroyed.
 
 Constructor. 
 
-paramsig to connect to Signalclassenjin2_1_1SignalcompoundcallbackCallback function 
+sig to connect to SignalcallbackCallback function 
 
 ---
 
@@ -31,17 +31,15 @@ paramsig to connect to Signalclassenjin2_1_1SignalcompoundcallbackCallback funct
 
 Move constructor. 
 
-
-        
+otherConnection to move from 
 
 ---
 
-### ` &SignalConnectionclassenjin2_1_1SignalConnection_1accd0db24b7bbb5ff69ec86b2a5c846bamember operator=(SignalConnection &&other) noexcept`
+### ` &SignalConnection operator=(SignalConnection &&other) noexcept`
 
-Move assignment. 
+Move assignment operator. 
 
-
-        
+otherConnection to move from Reference to this connection 
 
 ---
 
@@ -67,7 +65,7 @@ Manually disconnect.
 
 Check if connection is valid. 
 
-returnTrue if connected 
+True if connected 
 
 ---
 
@@ -81,7 +79,7 @@ returnTrue if connected
 
 ---
 
-### ` &SignalConnectionclassenjin2_1_1SignalConnection_1accd0db24b7bbb5ff69ec86b2a5c846bamember operator=(const SignalConnection &)=delete`
+### ` &SignalConnection operator=(const SignalConnection &)=delete`
 
 
         

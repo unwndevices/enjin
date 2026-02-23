@@ -12,5 +12,5 @@ Provides visual effects, particles, and special effect implementations for game 
 
 ## Classes
 
-- [Effects](./EffectsClass)
+- [EffectsClass](./EffectsClass)
 - [PostFx](./PostFx)

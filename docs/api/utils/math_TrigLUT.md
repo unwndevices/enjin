@@ -2,7 +2,6 @@
 id: math::TrigLUT
 title: math::TrigLUT
 sidebar_label: math::TrigLUT
-slug: math_TrigLUT
 ---
 
 # math::TrigLUT
@@ -24,7 +23,7 @@ Provides sine and cosine functions optimized for embedded systems. Uses 256-step
 
 Fast sine function using 0-255 angle range. 
 
-paramangleAngle value (0-255 representing 0-2π) returnSine value in range [-32767, 32767] (Q15 fixed-point) 
+angleAngle value (0-255 representing 0-2π) Sine value in range [-32767, 32767] (Q15 fixed-point) 
 
 ---
 
@@ -32,7 +31,7 @@ paramangleAngle value (0-255 representing 0-2π) returnSine value in range [-327
 
 Fast cosine function using 0-255 angle range. 
 
-paramangleAngle value (0-255 representing 0-2π) returnCosine value in range [-32767, 32767] (Q15 fixed-point) 
+angleAngle value (0-255 representing 0-2π) Cosine value in range [-32767, 32767] (Q15 fixed-point) 
 
 ---
 
@@ -40,7 +39,7 @@ paramangleAngle value (0-255 representing 0-2π) returnCosine value in range [-3
 
 Convert float radians to lookup table index. 
 
-paramradiansAngle in radians returnIndex in range [0, 255] for lookup table 
+radiansAngle in radians Index in range [0, 255] for lookup table 
 
 ---
 

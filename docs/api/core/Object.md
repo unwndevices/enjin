@@ -6,10 +6,10 @@ sidebar_label: Object
 
 # Object
 
- base class for game entities. Objectclassenjin2_1_1Objectcompound
+ base class for game entities. Object
 
 
-The  class is the base class for all game entities in the Enjin system. It manages components using static allocation and provides lifecycle methods. Objectclassenjin2_1_1Objectcompound
+The  class is the base class for all game entities in the Enjin system. It manages components using static allocation and provides lifecycle methods. Object
 
 ---
 
@@ -57,7 +57,7 @@ Use this for initialization that depends on other objects being fully set up.
 
 Update is called once per frame. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -65,7 +65,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 LateUpdate is called after all Update calls. 
 
-paramdeltaTimeTime since last frame in milliseconds 
+deltaTimeTime since last frame in milliseconds 
 
 ---
 
@@ -73,7 +73,7 @@ paramdeltaTimeTime since last frame in milliseconds
 
 Check if object is queued for removal (matches original Enjin). 
 
-returnTrue if object should be removed 
+True if object should be removed 
 
 ---
 
@@ -81,7 +81,7 @@ returnTrue if object should be removed
 
 Add a component to this object. 
 
-templateparamT type (must derive from ) Componentclassenjin2_1_1ComponentcompoundComponentclassenjin2_1_1ComponentcompoundArgsConstructor argument types paramargsConstructor arguments returnPointer to the created component or nullptr if failed 
+T type (must derive from ) ComponentComponentArgsConstructor argument types argsConstructor arguments Pointer to the created component or nullptr if failed 
 
 ---
 
@@ -89,7 +89,7 @@ templateparamT type (must derive from ) Componentclassenjin2_1_1Componentcompoun
 
 Get a component of specified type. 
 
-templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to component or nullptr if not found 
+T type ComponentPointer to component or nullptr if not found 
 
 ---
 
@@ -97,7 +97,7 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnPointer to co
 
 Check if object has a component of specified type. 
 
-templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnTrue if component exists 
+T type ComponentTrue if component exists 
 
 ---
 
@@ -105,23 +105,23 @@ templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnTrue if compo
 
 Remove a component of specified type. 
 
-templateparamT type Componentclassenjin2_1_1ComponentcompoundreturnTrue if component was removed 
+T type ComponentTrue if component was removed 
 
 ---
 
-### ` *C_Positionclassenjin2_1_1C__Positioncompound getPosition() const const`
+### ` *C_Position getPosition() const const`
 
 Get position component (cached for performance). 
 
-returnPosition component pointer or nullptr 
+Position component pointer or nullptr 
 
 ---
 
-### `const  *const *C_Drawableclassenjin2_1_1C__Drawablecompound getDrawables() const const`
+### `const  *const *C_Drawable getDrawables() const const`
 
 Get all drawable components. 
 
-returnArray of drawable component pointers 
+Array of drawable component pointers 
 
 ---
 
@@ -129,15 +129,15 @@ returnArray of drawable component pointers
 
 Get number of drawable components. 
 
-returnNumber of drawable components 
+Number of drawable components 
 
 ---
 
-### ` *C_Drawableclassenjin2_1_1C__Drawablecompound getDrawable(size_t index) const const`
+### ` *C_Drawable getDrawable(size_t index) const const`
 
 Get drawable component by index. 
 
-paramindexIndex of drawable component returnPointer to drawable component or nullptr if invalid index 
+indexIndex of drawable component Pointer to drawable component or nullptr if invalid index 
 
 ---
 
@@ -145,7 +145,7 @@ paramindexIndex of drawable component returnPointer to drawable component or nul
 
 Check if object is active. 
 
-returnTrue if active 
+True if active 
 
 ---
 
@@ -153,7 +153,7 @@ returnTrue if active
 
 Set object active state. 
 
-paramisActiveclassenjin2_1_1Object_1a49d28edf30e20db1c42d10851fe4d63amemberNew active state 
+isActiveNew active state 
 
 ---
 
@@ -161,22 +161,22 @@ paramisActiveclassenjin2_1_1Object_1a49d28edf30e20db1c42d10851fe4d63amemberNew a
 
 Get total number of components. 
 
-return count Componentclassenjin2_1_1Componentcompound
+ count Component
 
 ---
 
 ## Private Methods
 
-### `std::enable_if&lt; std::is_same&lt; T,  &gt;::value &gt;::typeC_Positionclassenjin2_1_1C__Positioncompound cachePositionIfType(T *componentPtr)`
+### `std::enable_if&lt; std::is_same&lt; T,  &gt;::value &gt;::typeC_Position cachePositionIfType(T *componentPtr)`
 
-Helper to cache position component only if T is  using SFINAE. C_Positionclassenjin2_1_1C__Positioncompound
+Helper to cache position component only if T is  using SFINAE. C_Position
 
 
         
 
 ---
 
-### `std::enable_if&lt;!std::is_same&lt; T,  &gt;::value &gt;::typeC_Positionclassenjin2_1_1C__Positioncompound cachePositionIfType(T *componentPtr)`
+### `std::enable_if&lt;!std::is_same&lt; T,  &gt;::value &gt;::typeC_Position cachePositionIfType(T *componentPtr)`
 
 
         

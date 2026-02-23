@@ -10,7 +10,7 @@ Rendering system for drawing entities to canvas.
 
 
 
-Renders all visible entities with  to the target canvas. Handles z-ordering and shape rendering. templateparamTCanvasCanvas type for renderingRenderComponentstructenjin2_1_1RenderComponentcompound
+Renders all visible entities with  to the target canvas. Handles z-ordering and shape rendering. TCanvasCanvas type for renderingRenderComponent
 
 ---
 
@@ -24,7 +24,7 @@ Renders all visible entities with  to the target canvas. Handles z-ordering and 
 
 Constructor with target canvas. 
 
-paramtargetCanvasCanvas to render to 
+targetCanvasCanvas to render to 
 
 ---
 
@@ -32,7 +32,7 @@ paramtargetCanvasCanvas to render to
 
 Update rendering. 
 
-paramdeltaTimeTime since last update 
+deltaTimeTime since last update 
 
 ---
 
@@ -40,7 +40,7 @@ paramdeltaTimeTime since last update
 
 Get system priority (rendering should run last). 
 
-returnPriority value 
+Priority value 
 
 ---
 
@@ -50,7 +50,7 @@ returnPriority value
 
 Render individual entity. 
 
-paramentity to render Entitystructenjin2_1_1Entitycompound
+entity to render Entity
 
 ---
 
@@ -58,7 +58,7 @@ paramentity to render Entitystructenjin2_1_1Entitycompound
 
 Render shape component. 
 
-paramposPosition component size component (may be null) Sizestructenjin2_1_1SizecompoundrenderRender component shapeShape component 
+posPosition component size component (may be null) SizerenderRender component shapeShape component 
 
 ---
 
@@ -66,7 +66,7 @@ paramposPosition component size component (may be null) Sizestructenjin2_1_1Size
 
 Render simple rectangle. 
 
-paramposPosition component size component Sizestructenjin2_1_1SizecompoundrenderRender component 
+posPosition component size component SizerenderRender component 
 
 ---
 

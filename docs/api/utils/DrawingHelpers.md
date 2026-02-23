@@ -23,7 +23,7 @@ Provides optimized drawing functions for complex shapes that aren't covered by t
 
 Draw a circle with a stroke of specified width (matches original Enjin). 
 
-paramcanvasThe canvas to draw on x0The x-coordinate of the center of the circle y0The y-coordinate of the center of the circle radiusThe radius of the circle colorThe color of the stroke strokeWidthThe width of the stroke (will be rounded down to nearest odd number) 
+canvasThe canvas to draw on x0The x-coordinate of the center of the circle y0The y-coordinate of the center of the circle radiusThe radius of the circle colorThe color of the stroke strokeWidthThe width of the stroke (will be rounded down to nearest odd number) 
 
 ---
 
@@ -31,7 +31,7 @@ paramcanvasThe canvas to draw on x0The x-coordinate of the center of the circle 
 
 Draw an arc with stroke. 
 
-paramcanvasThe canvas to draw on x0Center X coordinate y0Center Y coordinate radiusArc radius startAngleStart angle in radians endAngleEnd angle in radians colorStroke color strokeWidthStroke width 
+canvasThe canvas to draw on x0Center X coordinate y0Center Y coordinate radiusArc radius startAngleStart angle in radians endAngleEnd angle in radians colorStroke color strokeWidthStroke width 
 
 ---
 
@@ -39,7 +39,7 @@ paramcanvasThe canvas to draw on x0Center X coordinate y0Center Y coordinate rad
 
 Draw a polygon from a set of points. 
 
-paramcanvasThe canvas to draw on pointsArray of points defining the polygon numPointsNumber of points in the array colorLine color filledWhether to fill the polygon 
+canvasThe canvas to draw on pointsArray of points defining the polygon numPointsNumber of points in the array colorLine color filledWhether to fill the polygon 
 
 ---
 
@@ -47,7 +47,7 @@ paramcanvasThe canvas to draw on pointsArray of points defining the polygon numP
 
 Draw a rounded rectangle. 
 
-paramcanvasThe canvas to draw on xX coordinate of top-left corner yY coordinate of top-left corner widthRectangle width heightRectangle height radiusCorner radius colorDraw color filledWhether to fill the rectangle 
+canvasThe canvas to draw on xX coordinate of top-left corner yY coordinate of top-left corner widthRectangle width heightRectangle height radiusCorner radius colorDraw color filledWhether to fill the rectangle 
 
 ---
 
@@ -55,7 +55,7 @@ paramcanvasThe canvas to draw on xX coordinate of top-left corner yY coordinate 
 
 Draw a thick line with rounded end caps. 
 
-paramcanvasThe canvas to draw on x0Start X coordinate y0Start Y coordinate x1End X coordinate y1End Y coordinate colorLine color thicknessLine thickness 
+canvasThe canvas to draw on x0Start X coordinate y0Start Y coordinate x1End X coordinate y1End Y coordinate colorLine color thicknessLine thickness 
 
 ---
 
@@ -63,7 +63,7 @@ paramcanvasThe canvas to draw on x0Start X coordinate y0Start Y coordinate x1End
 
 Draw a bezier curve. 
 
-paramcanvasThe canvas to draw on x0Start point X y0Start point Y x1Control point 1 X y1Control point 1 Y x2Control point 2 X y2Control point 2 Y x3End point X y3End point Y colorLine color segmentsNumber of line segments to approximate the curve 
+canvasThe canvas to draw on x0Start point X y0Start point Y x1Control point 1 X y1Control point 1 Y x2Control point 2 X y2Control point 2 Y x3End point X y3End point Y colorLine color segmentsNumber of line segments to approximate the curve 
 
 ---
 
@@ -71,7 +71,7 @@ paramcanvasThe canvas to draw on x0Start point X y0Start point Y x1Control point
 
 Draw a star shape. 
 
-paramcanvasThe canvas to draw on centerXCenter X coordinate centerYCenter Y coordinate outerRadiusOuter radius of star points innerRadiusInner radius between points numPointsNumber of star points colorDraw color filledWhether to fill the star 
+canvasThe canvas to draw on centerXCenter X coordinate centerYCenter Y coordinate outerRadiusOuter radius of star points innerRadiusInner radius between points numPointsNumber of star points colorDraw color filledWhether to fill the star 
 
 ---
 
