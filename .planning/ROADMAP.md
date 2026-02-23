@@ -130,7 +130,11 @@ Plans:
   4. Compat module included in documentation generator config
   5. Effects routing conflict resolved durably (no Effects.md / effects/ conflict)
   6. API landing page exists at docs/api/ — README /api link works
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — Fix XML filename encoding, config entries, sanitizeClassName, compat module, Effects conflict in generate-api-docs.js
+- [ ] 13-02-PLAN.md — Create API landing page and verify Docusaurus build end-to-end
 
 ## Progress
 
