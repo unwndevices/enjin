@@ -75,8 +75,9 @@ A `Palette` maps those 16 indices to concrete RGB values at display time, not at
 This means all canvas drawing code, Lua scripts, and ESP32 pixel buffers remain 4-bit index-only —
 palette application happens only during the final "blit to output" step.
 
-Index 0 is conventionally transparent (skip during blit). The 15 usable color slots (1–15)
-match Tomodachi's 15-color-plus-transparent display requirement.
+Index 15 is transparent (skip during blit). The 15 usable color slots (0–14)
+match Tomodachi's 15-color-plus-transparent display requirement. This preserves
+existing `Colors::BLACK = Pixel4(0)` behavior.
 
 ### Where it lives
 
@@ -103,11 +104,11 @@ struct RGB24 {
 };
 
 // 16-entry indexed color palette
-// Index 0 = transparent (skip on blit)
-// Indices 1-15 = opaque colors
+// Index 15 = transparent (skip on blit)
+// Indices 0-14 = opaque colors
 struct Palette {
     static constexpr uint8_t SIZE = 16;
-    static constexpr uint8_t TRANSPARENT = 0;
+    static constexpr uint8_t TRANSPARENT = 15;
 
     RGB24 entries[SIZE];
 

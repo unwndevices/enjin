@@ -169,19 +169,15 @@ SDL2 CMake integration — first step before writing any SDL2 C++ code.
 **What goes wrong:**
 The current Lua API passes colors as raw integers 0–15 (e.g., `setColor(15)` = white, `setColor(0)` = black). After adding a palette, color index 5 might map to red in one palette and blue in another. The existing `LuaBindings::currentColor` stores the raw index as `uint8_t`. If palette color registration functions are added to Lua (e.g., `setPalette(index, r, g, b)`), Lua scripts will mix two distinct concepts — "index into my palette" and "literal grayscale 0–15" — unless the distinction is explicit in the API design.
 
-The Tomodachi design doc specifies "15 colors + transparent" which exactly fills indices 1–15 (index 0 = transparent). The current `Colors::BLACK = Pixel4(0)` definition conflicts with "index 0 = transparent." Any existing Lua scripts using `setColor(0)` for black will behave differently after palette assignment.
+The Tomodachi design doc specifies "15 colors + transparent" which maps to indices 0–14 as usable colors and index 15 as transparent.
 
-**Why it happens:**
-The grayscale system (0=black, 15=white) and the indexed palette system (0=transparent, 1–15=user colors) both use the same 0–15 value range but with incompatible semantics for index 0. The existing code has `Colors::BLACK = Pixel4(0)` which becomes transparent after palette introduction if the Tomodachi convention is followed.
+**RESOLVED:** Owner decided index 15 = transparent. This preserves existing `Colors::BLACK = Pixel4(0)` behavior — no existing scripts need updating. The existing grayscale range (0=black through 14=near-white) maps naturally to the 15 usable palette slots.
 
-**How to avoid:**
-Decide on the transparent-index convention before writing any palette code. Two options: (a) index 0 = transparent, indices 1–15 = colors (Tomodachi spec), requiring existing scripts to change `setColor(0)` to a non-zero background color; (b) index 15 = transparent, indices 0–14 = colors (preserves existing scripts). Option (a) aligns with the design doc and should be adopted, but must be documented clearly and any existing examples updated. Do not leave this decision implicit.
-
-**Warning signs:**
-- `Colors::BLACK = Pixel4(0)` still present after palette is added
-- Existing examples use `clear(0)` or `setColor(0)` without updating for palette semantics
+**Warning signs (still relevant for implementation):**
+- Blit code skipping index 0 instead of index 15
+- Default palette not assigning a visible color to index 0
 - `setPalette()` and `setColor()` both accept integer 0–15 with no type distinction
-- WASM and SDL2 runners render index 0 differently (one clears to black, one to transparent)
+- WASM and SDL runners render index 15 differently (one draws it, one skips it)
 
 **Phase to address:**
 Palette design phase — resolve index 0 semantics in the design document before writing code.
@@ -263,7 +259,7 @@ Things that appear complete but are missing critical pieces.
 
 - [ ] **Palette system:** Palette defined in C++ but not exposed to Lua — verify `setPalette(index, r, g, b)` callable from scripts
 - [ ] **Palette system:** Palette applied in SDL2 runner but not in WASM blit — verify both rendering paths use the palette
-- [ ] **Palette system:** Index 0 transparent convention documented and all existing examples updated from `setColor(0)` = black
+- [ ] **Palette system:** Index 15 transparent convention documented; verify blit code skips index 15 (not index 0)
 - [ ] **SDL2 runner:** Window creates and renders but input not connected — verify keyboard events reach Lua `on_button` callbacks
 - [ ] **SDL2 runner:** `SDL_TEXTUREACCESS_STREAMING` confirmed on framebuffer texture (not just compiling without error)
 - [ ] **SDL2 runner:** `dt` clamped in game loop — verify scripts don't explode after window drag
@@ -286,7 +282,7 @@ When pitfalls occur despite prevention, how to recover.
 | SDL2 types in input interface | MEDIUM | Extract abstract interface; move SDL2 types to implementation file; recompile all consumers |
 | Missing debounce (button bounce on device) | LOW | Add debounce delay to embedded input backend; test with physical device |
 | WASM palette not updated | LOW | Add palette getter to bindings; update JavaScript renderer to use palette |
-| Index 0 semantic conflict (black vs transparent) | MEDIUM | Audit all existing examples for `setColor(0)` usage; update to use explicit background color |
+| Index 15 transparent (resolved) | LOW | Verify blit code skips index 15; no existing code changes needed |
 
 ---
 
@@ -301,7 +297,7 @@ When pitfalls occur despite prevention, how to recover.
 | Input interface platform leakage | Input abstraction design | Compile input header with `ESP32` defined and no SDL2 present |
 | Missing button debounce | Input abstraction implementation | Verify `wasJustPressed()` returns true exactly once per key-down event |
 | SDL2 CMake contamination | SDL2 CMake integration | Clean build with `ENJIN2_BUILD_SDL=OFF`; confirm no SDL references in core |
-| Lua color API ambiguity | Palette design phase | Document index 0 convention; update all examples before implementing |
+| Lua color API ambiguity | Palette design phase | Document index 15 = transparent convention; verify blit skips index 15 |
 | WASM bindings not updated | Palette implementation | Both SDL2 and WASM renderers show identical colors for same script |
 
 ---

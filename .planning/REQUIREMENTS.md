@@ -10,7 +10,7 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 ### Palette
 
 - [ ] **PAL-01**: Canvas4 palette maps 16 indices to RGB colors at display time (not draw time)
-- [ ] **PAL-02**: Index 0 is transparent, indices 1-15 are user colors
+- [ ] **PAL-02**: Index 15 is transparent, indices 0-14 are user colors
 - [ ] **PAL-03**: Runtime palette swap via setPaletteColor(index, r, g, b) without canvas re-render
 - [ ] **PAL-04**: Lua API exposes setPalette() and getPalette() for scripts
 - [ ] **PAL-05**: WASM bindings expose getPaletteRGB() for JavaScript renderer
@@ -57,33 +57,33 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 | MIDI/audio integration | Tomodachi-side, not enjin2 |
 | SDL2 (legacy) | SDL3 is stable since Jan 2025; SDL2 receives no new features |
 | Input libraries (Gainput, MPG) | Custom IInputProvider is simpler and fits zero-alloc constraint |
-| Full alpha blending per pixel | Chroma-key transparency (index 0) sufficient for 4-bit canvas |
+| Full alpha blending per pixel | Chroma-key transparency (index 15) sufficient for 4-bit canvas |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PAL-01 | — | Pending |
-| PAL-02 | — | Pending |
-| PAL-03 | — | Pending |
-| PAL-04 | — | Pending |
-| PAL-05 | — | Pending |
-| SDL-01 | — | Pending |
-| SDL-02 | — | Pending |
-| SDL-03 | — | Pending |
-| SDL-04 | — | Pending |
-| SDL-05 | — | Pending |
-| INP-01 | — | Pending |
-| INP-02 | — | Pending |
-| INP-03 | — | Pending |
-| INP-04 | — | Pending |
-| INP-05 | — | Pending |
+| PAL-01 | Phase 19 | Pending |
+| PAL-02 | Phase 19 | Pending |
+| PAL-03 | Phase 19 | Pending |
+| PAL-04 | Phase 19 | Pending |
+| PAL-05 | Phase 19 | Pending |
+| SDL-01 | Phase 21 | Pending |
+| SDL-02 | Phase 21 | Pending |
+| SDL-03 | Phase 21 | Pending |
+| SDL-04 | Phase 21 | Pending |
+| SDL-05 | Phase 22 | Pending |
+| INP-01 | Phase 20 | Pending |
+| INP-02 | Phase 20 | Pending |
+| INP-03 | Phase 20 | Pending |
+| INP-04 | Phase 21 | Pending |
+| INP-05 | Phase 22 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15
+- Mapped to phases: 15
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 after initial definition*
+*Last updated: 2026-02-23 after roadmap creation*

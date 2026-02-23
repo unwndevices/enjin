@@ -30,9 +30,9 @@ feature is unusable or broken relative to its stated purpose.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **16-entry RGB color table** | Indexed palette requires a map from 4-bit index to display color | LOW | `uint32_t palette[16]` or `RGB888 palette[16]`; static allocation, no heap. Index 0 = transparent by convention. |
+| **16-entry RGB color table** | Indexed palette requires a map from 4-bit index to display color | LOW | `uint32_t palette[16]` or `RGB888 palette[16]`; static allocation, no heap. Index 15 = transparent by convention. |
 | **Lookup at display/present time** | Pixel values on canvas stay as 4-bit indices; RGB only resolved when pushing to screen | LOW | Display loop reads `Pixel4.value`, looks up `palette[value]` to get RGB. Canvas data never changes when palette changes. |
-| **Index 0 as transparent** | Fantasy console convention (PICO-8, TIC-80, LIKO-12); Tomodachi sprites need transparency | LOW | Already consistent with existing matte/transparency logic in `Canvas4::blit()`. Zero must be reserved transparent. |
+| **Index 15 as transparent** | Tomodachi sprites need transparency; preserves existing `Colors::BLACK = Pixel4(0)` | LOW | Index 15 reserved as transparent/skip during blit. Indices 0–14 are usable colors. |
 | **Palette swap at runtime** | Recolor sprites without redrawing (teams, states, damage flash) | LOW | Update `palette[n] = new_color`; next present uses new color automatically. No re-render needed. |
 | **Default palette defined in code** | First run must display something sensible without user setup | LOW | PICO-8's 16-color palette or a custom set. Should be a constexpr array in the palette header. |
 | **Lua-accessible palette API** | Lua scripts need to set/get palette colors to drive visual behavior | MEDIUM | Expose `setPaletteColor(index, r, g, b)` and `getPaletteColor(index)` through `LuaCanvas` bindings. |
@@ -148,7 +148,7 @@ Features that go beyond the minimum and add meaningful value specific to enjin2'
 Minimum needed to enable Tomodachi integration development on desktop.
 
 - [ ] **16-entry palette with default colors** — Pixel4 indices map to RGB at display time
-- [ ] **Index 0 = transparent** — Consistent with existing blit/matte convention
+- [ ] **Index 15 = transparent** — Consistent with existing blit/matte convention
 - [ ] **Runtime palette swap** — `setPaletteColor(index, r, g, b)` at minimum
 - [ ] **SDL2 window + game loop** — Window, renderer, event polling, clean shutdown
 - [ ] **Canvas4-to-RGB texture blit** — Indexed canvas presented via palette lookup
@@ -218,7 +218,7 @@ but systems that solved the same design problems.
 | Feature | PICO-8 | TIC-80 | Our Approach |
 |---------|--------|--------|--------------|
 | Palette size | 16 colors (fixed) | 16 colors (fixed default) | 16 colors — `Pixel4` is 4-bit, this is the hardware constraint |
-| Transparent index | Index 0 (draw palette flag) | Color 0 = transparent | Index 0 = transparent; consistent with existing Canvas4::blit() matte convention |
+| Transparent index | Index 0 (draw palette flag) | Color 0 = transparent | Index 15 = transparent; consistent with existing Canvas4::blit() matte convention |
 | Palette swap | Two-stage (draw + screen palette) | Screen palette only | Start with screen palette only (index → RGB); add draw palette in v1.3.x |
 | Canvas storage | 4-bit indexed | 4-bit indexed | `Pixel4` packed in `Canvas4` (existing) — identical model |
 | Input API | `btn(n)`, `btnp(n)` (polling) | Same pattern | `isButtonHeld(n)`, `isButtonJustPressed(n)` in Lua — same pattern |

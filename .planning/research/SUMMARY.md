@@ -34,7 +34,7 @@ See `.planning/research/STACK.md` for full rationale, alternatives considered, a
 
 **Must have (v1.3 table stakes):**
 - 16-entry palette with default colors — Pixel4 indices map to RGB at display time, never at draw time
-- Index 0 = transparent — consistent with existing blit/matte convention; requires auditing existing `setColor(0)` usage
+- Index 15 = transparent — preserves existing `Colors::BLACK = Pixel4(0)` behavior; indices 0–14 are usable colors
 - Runtime palette swap — `setPaletteColor(index, r, g, b)` with no canvas re-render
 - SDL3 window + game loop — init, event poll, clean shutdown with `SDL_TEXTUREACCESS_STREAMING`
 - Canvas4-to-RGB texture blit via palette — the core SDL3 render path
@@ -86,7 +86,7 @@ See `.planning/research/ARCHITECTURE.md` for full interface designs, file struct
 
 1. **Palette applied at draw time, not blit time** — modifying `setPixel()` to resolve palette corrupts packed 4-bit storage; canvas stores indices 0–15 only; palette is applied once per frame at the output boundary; never modify the draw path (recovery cost: HIGH)
 
-2. **Index 0 semantic conflict** — existing `Colors::BLACK = Pixel4(0)` conflicts with index 0 = transparent convention; resolve this decision before writing any palette code; audit all existing examples using `setColor(0)` or `clear(0)` for black (recovery cost: MEDIUM)
+2. **Index 15 transparent semantics (RESOLVED)** — index 15 = transparent, indices 0–14 = usable colors; preserves existing `Colors::BLACK = Pixel4(0)` behavior; no existing code changes needed (recovery cost: N/A — decided before implementation)
 
 3. **Input interface leaking platform types** — `SDL_Keycode` or `gpio_num_t` in a shared header breaks compilation on all other platforms; interface header must compile with `-DESP32` and zero SDL2 headers available (recovery cost: MEDIUM)
 
@@ -108,9 +108,9 @@ The dependency graph dictates a clear 4-phase structure. Palette must precede th
 
 **Delivers:** `Palette` struct with default 16-color table, runtime palette swap, `getPaletteRGB()` Emscripten binding, updated WASM JavaScript renderer, Lua `setPalette()` / `getPalette()` API
 
-**Features addressed:** 16-entry palette, index 0 = transparent, runtime palette swap, Lua palette API, WASM palette exposure
+**Features addressed:** 16-entry palette, index 15 = transparent, runtime palette swap, Lua palette API, WASM palette exposure
 
-**Pitfalls to avoid:** Palette at draw time (Pitfall 1), index 0 semantic conflict (Pitfall 8), WASM bindings not updated (Pitfall 9)
+**Pitfalls to avoid:** Palette at draw time (Pitfall 1), index 15 transparent semantics (Pitfall 8), WASM bindings not updated (Pitfall 9)
 
 **Research flag:** Standard patterns — no additional research needed. Direct codebase inspection confirms all integration points. PICO-8 reference well-documented.
 
@@ -185,7 +185,7 @@ The dependency graph dictates a clear 4-phase structure. Palette must precede th
 
 - **SDL3 vs SDL2 naming inconsistency:** FEATURES.md was written referencing SDL2; STACK.md correctly specifies SDL3. Roadmap must adopt SDL3 and `ENJIN2_PLATFORM_SDL` as canonical names throughout. CMake target: `enjin2_sdl` (not `enjin2_sdl2`). Compile define: `ENJIN2_PLATFORM_SDL` (not `SDL2_RUNNER`).
 
-- **Index 0 transparent decision:** Research identifies the conflict between `Colors::BLACK = Pixel4(0)` and the Tomodachi spec (index 0 = transparent) but does not make the final call — that requires project-owner sign-off. Recommendation: adopt option (a), index 0 = transparent, indices 1–15 = user colors, matching Tomodachi spec. All existing examples using `setColor(0)` or `clear(0)` for black must be updated before Phase 1 code lands.
+- **Index 15 transparent decision (RESOLVED):** Owner decided index 15 = transparent, indices 0–14 = usable colors. This preserves existing `Colors::BLACK = Pixel4(0)` behavior — no existing scripts need updating. The Tomodachi spec's "15 colors + transparent" maps to indices 0–14 as colors, index 15 as transparent/skip.
 
 - **WASM palette application ownership:** Whether the palette-to-RGB conversion happens in C++ (`emscripten_bindings.cpp`) or in the JavaScript caller is not fully specified. Must be decided in Phase 1 before the Emscripten binding change is written. Recommendation: expose raw palette data via `getPaletteRGB()` and apply in JavaScript, keeping the C++ binding thin.
 
