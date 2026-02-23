@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Phase 15 - Cleanup CI and README Tech Debt
+**Current focus:** Phase 14 - Fix extractText Cross-References (COMPLETE)
 
 ## Current Position
 
-Phase: 15 of 15 (Cleanup CI and README Tech Debt) - COMPLETE
-Plan: 1 of 1 in current phase (COMPLETE)
-Status: Phase 15 complete - all plans executed
-Last activity: 2026-02-23 - Completed 15-01-PLAN.md
+Phase: 15 of 15 (all phases complete)
+Plan: All plans complete
+Status: Phases 14-15 complete - all plans executed
+Last activity: 2026-02-23 - Completed 14-01-PLAN.md
 
 Milestone: v1.3 Documentation Quality Gates
 Previous: v1.2 Documentation Enhancement (shipped 2026-02-03)
@@ -23,9 +23,9 @@ Progress: [████████████████] 100% (Phase 15 comp
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39 (35 phase plans + 2 quick tasks + 2 additional)
+- Total plans completed: 40 (36 phase plans + 2 quick tasks + 2 additional)
 - Average duration: 5.8 min
-- Total execution time: 3.8 hours
+- Total execution time: 3.9 hours
 
 **By Phase:**
 
@@ -56,6 +56,7 @@ Progress: [████████████████] 100% (Phase 15 comp
 *Updated after each plan completion*
 | Phase 13-01 P01 | 8min | 1 tasks | 26 files |
 | Phase 13-02 P02 | 4min | 1 tasks | 5 files |
+| Phase 14-01 P01 | 6min | 2 tasks | 76 files |
 | Phase 15-01 P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
@@ -145,6 +146,8 @@ Recent decisions:
 - [Phase 13-01]: Removed /__/g collapse from sanitizeClassName to preserve C_ prefix underscores (13-01)
 - [Phase 13-02]: Added slug frontmatter to nested class pages rather than changing README links (13-02)
 - [Phase 13-02]: Merged duplicate Effects/EffectsClass links in effects README into single entry (13-02)
+- [Phase 14-01]: Filter $ key in extractText() object branch to prevent xml2js attribute leak into rendered text (14-01)
+- [Phase 14-01]: Add slug frontmatter in generator for classes with :: to fix Docusaurus broken links (14-01)
 
 ### Roadmap Evolution
 
@@ -178,5 +181,5 @@ Deferred items for future milestones:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 15-01-PLAN.md - Phase 15 complete
+Stopped at: Completed 14-01-PLAN.md - All phases complete
 Resume file: None
