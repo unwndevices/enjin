@@ -22,10 +22,6 @@ const config = {
       classes: ['AnimationSystem', 'AnimationTrack', 'EasingFunctions', 'C_Animation'],
       description: 'Animation system and easing functions',
     },
-    compat: {
-      classes: ['Vector3'],
-      description: 'Compatibility layer for enjin1 integration',
-    },
     components: {
       classes: [
         'ButtonDial', 'C_Draw', 'C_Drawable', 'C_ImageCache', 'C_LuaScript',
@@ -190,8 +186,13 @@ function formatType(type) {
 function formatMethod(method) {
   const name = method.name[0];
   const type = formatType(method.type);
-  const args = method.argsstring ? method.argsstring[0] : '()';
+  let args = method.argsstring ? method.argsstring[0] : '()';
   const isConst = method.$.const === 'yes';
+  // Strip trailing const from argsstring to avoid duplication
+  // (Doxygen includes it in argsstring AND as a separate attribute)
+  if (isConst && args.endsWith(' const')) {
+    args = args.slice(0, -6);
+  }
   const isStatic = method.$.static === 'yes';
   const isVirtual = method.$.virt === 'virtual';
   const isConstexpr = method.$.constexpr === 'yes';
