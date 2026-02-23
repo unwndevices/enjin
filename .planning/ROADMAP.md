@@ -98,7 +98,10 @@ Plans:
   1. Doxygen WARN_LOGFILE properly created during build
   2. CI/CD workflow verifies warning count is under 20
   3. Fails build if warning threshold exceeded
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 11-01-PLAN.md — Add Doxygen warning threshold gate to CI and gitignore warning log
 
 #### Phase 12: Fix Doxygen Warning Regression
 **Goal**: Reduce Doxygen warnings from 304 back to under 20 threshold
