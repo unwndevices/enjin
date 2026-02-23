@@ -11,26 +11,6 @@ target_include_directories(text_demo PRIVATE
     ${CMAKE_SOURCE_DIR}/Libs/Adafruit-GFX-Library
     ${CMAKE_SOURCE_DIR}/include)
 
-# Enjin vs Enjin2 comparison benchmark
-# DISABLED: Requires legacy enjin1 library (Libs/enjin) which is being removed in Phase 5
-# add_executable(enjin_comparison_benchmark enjin_comparison_benchmark.cpp)
-# target_link_libraries(enjin_comparison_benchmark PRIVATE enjin2)
-# target_include_directories(enjin_comparison_benchmark PRIVATE
-#     ${CMAKE_SOURCE_DIR}/../Libs/Adafruit-GFX-Library
-#     ${CMAKE_SOURCE_DIR}/../Libs/enjin)
-# target_compile_definitions(enjin_comparison_benchmark PRIVATE VCV_RACK)
-
-# Eisei Game benchmark (Old Enjin vs Enjin2)
-# DISABLED: Requires legacy enjin1 library (Libs/enjin) which is being removed in Phase 5
-# add_executable(eisei_game_benchmark eisei_game_benchmark.cpp)
-# target_link_libraries(eisei_game_benchmark PRIVATE enjin2)
-# target_include_directories(eisei_game_benchmark PRIVATE
-#     ${CMAKE_SOURCE_DIR}/../Libs/Adafruit-GFX-Library
-#     ${CMAKE_SOURCE_DIR}/../Libs/enjin
-#     ${CMAKE_SOURCE_DIR}/../eisei
-#     ${CMAKE_SOURCE_DIR}/../Libs/unwnlib)
-# target_compile_definitions(eisei_game_benchmark PRIVATE VCV_RACK)
-
 # Performance optimization analysis
 add_executable(performance_optimization_analysis performance_optimization_analysis.cpp)
 target_link_libraries(performance_optimization_analysis PRIVATE enjin2)
