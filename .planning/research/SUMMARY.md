@@ -1,209 +1,216 @@
 # Project Research Summary
 
-**Project:** enjin → enjin2 Migration
-**Domain:** C++ Codebase Migration and Refactoring (Embedded Game Engine)
-**Researched:** 2025-01-30
+**Project:** enjin2 v1.3 — Tomodachi Readiness
+**Domain:** C++ embedded graphics engine — palette system, SDL3 desktop runner, input abstraction
+**Researched:** 2026-02-23
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This project is a C++ embedded game engine migration from enjin (dynamic allocation, std::shared_ptr, 12,488 lines) to enjin2 (static allocation, handle-based, 25,578 lines) across multiple platforms (VCV_RACK, ESP32-S3, WebAssembly). Expert practice for this domain emphasizes incremental migration via Strangler Fig pattern combined with Branch by Abstraction—creating a transitional interface layer that allows both implementations to coexist while gradually diverting flow to the new architecture. A "big bang" rewrite is explicitly rejected across all research sources due to high risk and inability to validate behavior mid-project.
+enjin2 v1.3 adds three tightly coupled features to an existing, stable engine: a 16-color indexed palette system, an SDL3 desktop runner as a third platform backend, and a platform-agnostic input abstraction for physical controls (buttons, pots, joysticks). All three features are strictly additive — existing Canvas4/Canvas8, Lua scripting, WASM, and ESP32 targets are untouched. The correct mental model is a display-time color resolution pipeline: canvas pixels remain 4-bit indices (0–15) throughout all draw operations; the palette converts indices to RGB only at the final blit to the output surface (SDL3 texture, WASM canvas, hardware DMA). This separation is the single most important architectural decision in the milestone and must be established as a contract before any implementation begins.
 
-The recommended approach uses Clang Tooling (LLVM 23.x) for dependency analysis and automated refactoring, IWYU for header dependency cleanup, and CppDepend for architecture visualization. Migration proceeds through six phases: establishing abstraction layers, migrating core infrastructure (types, memory, object system, graphics), migrating utilities, migrating features by category, decoupling enjin1 dependencies, and final cleanup. Key risks include incomplete dependency mapping (which causes subtle runtime bugs), memory model incompatibility (dynamic vs static allocation), and premature enjin1 deletion (eliminates rollback path). These are mitigated through dependency graph creation before any code movement, strict memory model guidelines with compile-time assertions, and a comprehensive deletion checklist validated across all platforms.
+The recommended stack is minimal: SDL3 3.4.2 (system install via `find_package`, opt-in via `ENJIN2_BUILD_SDL=ON`), zero new libraries for the palette (64-byte static array), and zero new libraries for input (thin `IInputProvider` interface with per-platform implementations). All three features follow the same pattern already established for Lua and WASM: optional CMake targets, compile-time platform defines, no changes to core library targets. The SDL3 desktop runner is the primary integration surface — once it works end-to-end with palette and input wired in, the milestone is complete.
 
-Research consensus strongly favors feature-first migration order with shadow mode execution (running both implementations in parallel for output comparison) and strict namespace separation during transition. Manual testing is the specified validation approach—automated testing is not required per project constraints. Transitional architecture should be minimal and clearly marked for removal, with API stability guarantees maintained for external contracts while internals migrate incrementally.
+The critical risks are all design-time decisions, not implementation complexity. Index 0 semantics (transparent vs black) must be resolved before writing any palette code — existing scripts use `setColor(0)` for black, which conflicts with the Tomodachi spec of index 0 = transparent. Input abstraction interface headers must contain zero platform-specific types or the abstraction fails on ESP32. SDL3 pixel format selection must be verified at startup or colors will be silently wrong. None of these are hard to fix if caught early; all are expensive to fix after integration. The research also flags a naming inconsistency: FEATURES.md was written referencing SDL2 while STACK.md correctly specifies SDL3 — the implementation must adopt SDL3 and `ENJIN2_PLATFORM_SDL` as canonical names throughout.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-**Core technologies:**
-- **Clang Tooling (LLVM 23.x):** Static analysis, refactoring, dependency analysis — Industry standard, comprehensive AST-based analysis with modern C++ (C++23) support and automated fixes
-- **Include-What-You-Use (IWYU 0.25):** #include dependency analysis — Automatically identifies missing/unnecessary includes, reduces header coupling, integrates with CMake
-- **CppDepend (2026.x):** Architecture visualization, dependency analysis — Dependency matrices, codebase-wide visualization, AI-assisted insights, enforces coding standards
-- **CMake 3.30+:** Build system management — Generates compile_commands.json required by all Clang tools, supports modular builds for incremental migration
+The v1.3 stack is intentionally minimal. SDL3 3.4.2 (stable since January 2025) is the only new external dependency, used exclusively for the desktop runner. It installs via system package managers on all platforms and ships its own CMake config file — no vendoring, no custom Find module needed. SDL2 is explicitly rejected: it receives no new features and Fedora is replacing it with sdl2-compat in 2026. The palette and input abstraction are pure C++ headers with zero external dependencies. Both follow the same zero-dynamic-allocation constraint that governs the rest of the engine.
 
-**Build integration:** compile_commands.json is critical—enables accurate analysis for all Clang tools by capturing project-specific defines, include paths, and build flags. Tools without this integration cannot accurately parse the codebase.
+**Core technologies:**
+- **SDL3 3.4.2** — window, surface rendering, event loop for desktop runner — only stable SDL option for new projects in 2026; SDL2 is a dead end
+- **Inline `uint32_t palette[16]`** — palette storage — 64 bytes, zero allocation, no library justifies the footprint; pure header implementation
+- **Custom `IInputProvider` interface** — input abstraction — static arrays with compile-time size constants (`MAX_BUTTONS=16`, `MAX_AXES=8`), platform implementations in platform-gated files
+
+**Critical version note:** On macOS, `find_package(SDL3 CONFIG REQUIRED)` must NOT specify `SDL3-shared` as a component — known bug in SDL3Config.cmake (vcpkg issue #45498, reported May 2025).
+
+See `.planning/research/STACK.md` for full rationale, alternatives considered, and CMake integration pattern.
 
 ### Expected Features
 
-**Must have (table stakes — Phase 1):**
-- **Dependency Mapping & Analysis** — Cannot migrate what you don't understand; maps all enjin1 → enjin2 dependencies across infrastructure, utilities, and features
-- **Compilation Isolation** — Prevents accidental enjin1 dependencies during migration; separate build targets, include paths, and namespaces
-- **Namespace Separation** — Prevents naming collisions; both use separate namespaces (`enjin` vs `enjin2`) and must maintain strict separation
-- **API Compatibility Layer** — Enables gradual migration without breaking existing code; compatibility headers alias enjin1 types to enjin2 equivalents
-- **Functional Parity Testing** — Must verify enjin2 provides identical behavior before deprecation; manual testing validation per project constraints
+**Must have (v1.3 table stakes):**
+- 16-entry palette with default colors — Pixel4 indices map to RGB at display time, never at draw time
+- Index 0 = transparent — consistent with existing blit/matte convention; requires auditing existing `setColor(0)` usage
+- Runtime palette swap — `setPaletteColor(index, r, g, b)` with no canvas re-render
+- SDL3 window + game loop — init, event poll, clean shutdown with `SDL_TEXTUREACCESS_STREAMING`
+- Canvas4-to-RGB texture blit via palette — the core SDL3 render path
+- Integer pixel scaling, nearest-neighbor — small canvas readable on desktop monitor
+- Lua scripting in SDL3 runner — same Lua scripts run identically on all platforms
+- Unified InputState struct — buttons (bitmask) + analog axes (float array), edge detection built in
+- Button edge detection — `justPressed`, `held`, `justReleased` per button, shared layer not platform layer
+- SDL3 keyboard-to-button default mapping — arrows, Z/X, Enter
+- Lua input polling API — `isButtonHeld(n)`, `isButtonJustPressed(n)`, `getAxis(n)`
+- Lua palette API — `setPalette(index, r, g, b)` callable from scripts
+- WASM bindings updated for palette — `getPaletteRGB()` exposed to JavaScript in same phase as palette implementation
+- CMake `ENJIN2_BUILD_SDL=ON/OFF` — no impact on WASM or ESP32 builds
 
-**Should have (competitive — Phase 2):**
-- **Strangler Fig Pattern Application** — Incremental replacement without "big bang" risk; gradually divert flow from enjin1 to enjin2 via compatibility seams
-- **Legacy Seams Extraction** — Enables testing in isolation; introduces seams at boundaries to create migration footholds
-- **Shadow Mode Execution** — Validates correctness without commitment; runs both enjin1 and enjin2 implementations in parallel
-- **Component Lifecycle Mapping** — Maps enjin1 (Awake/Start) to enjin2 (awake/start); critical for object-component system
-- **Scene Graph Porting** — Scene management is fundamental; SceneStateMachine, transitions must migrate cleanly
+**Should have (v1.3.x after validation):**
+- Lua hot-reload in SDL3 runner — F5 key shortcut or file mtime watch
+- Two-stage draw palette — index remapping at draw time (PICO-8 model); single-stage is sufficient for v1.3
+- Per-entry transparency flag in draw palette — any index can be transparent, not just index 0
+- Lua keyboard mapping table — `input.setKeyMap(button, scancode)` for SDL3 runner
 
-**Defer (v2+ / Phase 3):**
-- **Performance Regression Guardrails** — Benchmark framework for optimization validation; enjin2 promises non-dynamic memory and 4-bit optimization
-- **Incremental Dependency Inversion** — Breaks circular dependencies; essential for decoupling but can wait until feature migration progresses
-- **Build System Migration** — Remove all enjin1 paths; enables enjin2-only build but can wait until features validated
+**Defer (v1.4+):**
+- Lua input event callbacks (`onButtonPressed` / `onButtonReleased`)
+- Canvas8 palette support (256-color indexed; different memory model)
+- Input device hot-plug (connect/disconnect gamepad at runtime)
+- Multi-layer composition (already deferred per PROJECT.md)
+
+See `.planning/research/FEATURES.md` for full prioritization matrix and competitor analysis.
 
 ### Architecture Approach
 
-**Primary pattern:** Branch by Abstraction + Strangler Fig. Create an abstraction layer that allows enjin1 and enjin2 to coexist, gradually migrating functionality from enjin1 to enjin2 while both implementations can be used by client code. This enables continuous delivery, reduced risk, and incremental value delivery.
+Three new subsystems fit cleanly into the existing four-layer stack without modifying any existing library source. Palette lives in `enjin2_graphics` as a header-only struct (`include/enjin2/graphics/palette.hpp`). Input abstraction lives in `enjin2_ui` as a new parallel system alongside but independent of the existing mouse-oriented UI components. The SDL3 runner is a new `platforms/sdl2/` executable target that links all existing libraries plus SDL3. Three existing files require modification: `lua_platform.hpp/cpp` (add `SDL2_RUNNER` branch mirroring VCV_RACK config) and `CMakeLists.txt` (add `ENJIN2_BUILD_SDL` option + target).
 
-**Major components (migration order):**
-1. **Core Types** (Phase 2) — Point, Rect, Pixel4, Color structures; header-only templates, all code depends on these
-2. **Memory System** (Phase 2) — Static allocation, buffer management; template-based pools, Object/Component require this foundation
-3. **Object/Component System** (Phase 2) — Entity-Component pattern with component arrays; foundation for all features
-4. **Graphics/Canvas Layer** (Phase 2) — Canvas abstraction, drawing primitives; ICanvas<PixelType> specializations, required by all rendering
-5. **Utilities** (Phase 3) — Drawing helpers, math utilities, noise functions; helpers for components/graphics
-6. **Component Library** (Phase 4) — Reusable game logic (C_Position, C_Drawable, C_Sprite); depends on core infrastructure
-7. **UI System** (Phase 4) — User interface widgets, layout managers; depends on components/graphics
-8. **Animation System** (Phase 4) — Keyframe-based animation; Animation, AnimationTrack, Keyframe; depends on components
-9. **Scripting Layer** (Phase 4) — Lua integration; LuaEngine, LuaScript component; depends on components/objects
-10. **Effects** (Phase 4) — Post-processing (CRT, blur, glow); depends on graphics/utils
+**Major components:**
+1. `Palette` (`enjin2_graphics`) — `RGB24 entries[16]`, index 0 = transparent, applied at blit time only; header-only, zero new build artifacts
+2. `InputEvent` / `InputSource` / `InputSystem` (`enjin2_ui`) — event + source + consumer pattern; `SDL2InputSource` and `ESP32InputSource` are platform-gated implementations; edge detection in shared layer
+3. `SDL2Runner` + `SDL2InputSource` (`platforms/sdl2/`) — SDL3 window, `SDL_TEXTUREACCESS_STREAMING` framebuffer texture, game loop with dt clamping, pixel format verified at startup
+4. `LuaPlatform` extension — `SDL2_RUNNER` compile define; mirrors VCV_RACK Lua config (ENABLE_FILE_IO=true, ENABLE_ALL_LIBS=true)
 
-**Data flow critical path:** Type Definitions → Memory Allocation → Scene Graph → Component Lifecycle → Rendering Flow → Script Execution
+**Recommended implementation order within milestone:**
+1. `palette.hpp` — no deps, zero risk, unblocks SDL3 blit; resolve index 0 semantics here
+2. Input interface headers (`input_event.hpp`, `input_system.hpp`) — contracts before platform implementations
+3. `input_system.cpp` — dispatch implementation with edge detection
+4. `lua_platform.hpp/cpp` SDL2_RUNNER case — unblocks LuaScriptSystem in SDL3 build
+5. `SDL2Runner` + `SDL2InputSource` — requires palette + input + Lua all in place
+6. Lua bindings for palette and input — requires runner wired for end-to-end validation
+
+See `.planning/research/ARCHITECTURE.md` for full interface designs, file structure, and data flow diagrams.
 
 ### Critical Pitfalls
 
-1. **Incomplete Dependency Mapping** — Create dependency graph before moving any code; track explicit includes, implicit dependencies (globals, singletons, init order), and verify dependents are moved or stubbed. Moving code without tracking all dependencies results in subtle bugs that surface only during manual testing.
+1. **Palette applied at draw time, not blit time** — modifying `setPixel()` to resolve palette corrupts packed 4-bit storage; canvas stores indices 0–15 only; palette is applied once per frame at the output boundary; never modify the draw path (recovery cost: HIGH)
 
-2. **Premature enjin1 Deletion** — Establish deletion checklist before removing enjin1: all enjin2 examples compile and run on all platforms (VCV_RACK, ESP32, WebAssembly), performance benchmarks match or exceed enjin1, no enjin1 references in enjin2 build. Deleting enjin1 before verification leaves no rollback path.
+2. **Index 0 semantic conflict** — existing `Colors::BLACK = Pixel4(0)` conflicts with index 0 = transparent convention; resolve this decision before writing any palette code; audit all existing examples using `setColor(0)` or `clear(0)` for black (recovery cost: MEDIUM)
 
-3. **Memory Model Incompatibility** — Define memory model guidelines early: no new/delete after initialization phase, use fixed-size arrays, implement pool allocators for temporary buffers, audit all moved code for allocation patterns. Mixing enjin1's dynamic allocation with enjin2's static allocation causes leaks, allocation failures, or crashes.
+3. **Input interface leaking platform types** — `SDL_Keycode` or `gpio_num_t` in a shared header breaks compilation on all other platforms; interface header must compile with `-DESP32` and zero SDL2 headers available (recovery cost: MEDIUM)
 
-4. **Component Lifecycle Drift** — Create lifecycle migration checklist for each component; add static assertions for lifecycle method signatures; audit component initialization in Scene code. enjin1 (Awake/Start) and enjin2 (awake/start) differences cause components to never initialize or update correctly.
+4. **SDL3 pixel format mismatch producing silently wrong colors** — `SDL_PIXELFORMAT_RGBA32` is endian-aliased and produces wrong output on little-endian systems without any error; use `SDL_PIXELFORMAT_RGB24` or explicit `ARGB8888`; add `SDL_QueryTexture` assertion at startup (recovery cost: LOW if caught early)
 
-5. **Platform-Specific Hardcoding** — Establish platform abstraction layer for all platform operations; build and test all targets after each migration batch; use compile-time errors over runtime crashes (static assertions). Hardcoded assumptions (128x128 canvas, PSRAM availability) cause failures on other platforms.
+5. **WASM bindings not updated for palette** — SDL3 runner displays correct colors while WASM stays grayscale; expose `getPaletteRGB()` through Emscripten bindings in the same phase as the C++ palette; verify both rendering paths show identical colors for the same script (recovery cost: LOW)
+
+See `.planning/research/PITFALLS.md` for full pitfall list including texture access mode, CMake contamination, Lua color API ambiguity, and the "looks done but isn't" verification checklist.
+
+---
 
 ## Implications for Roadmap
 
-Based on combined research, suggested phase structure aligns with architecture recommendations while addressing feature priorities and avoiding critical pitfalls:
+The dependency graph dictates a clear 4-phase structure. Palette must precede the SDL3 runner (blit step requires it). Input interface must precede platform implementations. SDL3 CMake setup must precede any SDL3 C++ code. Lua bindings extend existing infrastructure and come last. All four phases are additive — no existing code is deleted, modified in ways that break other platforms, or restructured.
 
-### Phase 1: Dependency Analysis & Infrastructure Foundation
-**Rationale:** Must understand what enjin2 depends on before migrating anything (PITFALLS: Incomplete Dependency Mapping). Dependency Mapping & Analysis (P1 feature) is the foundation—cannot proceed without mapping all enjin1 → enjin2 dependencies across infrastructure, utilities, and feature code. This establishes the critical path for all subsequent phases.
+### Phase 1: Palette Foundation
 
-**Delivers:** Dependency graph, Clang tooling setup, compile_commands.json generation, CMake configuration for enjin2 standalone build, namespace separation validation
+**Rationale:** Zero external dependencies, zero existing code changes, unblocks the SDL3 runner's blit step. The index 0 semantic conflict must be resolved at the start of this phase or it cascades into every subsequent phase. WASM bindings must be updated here — not in Phase 3 — to prevent SDL3 runner and WASM diverging silently in color output.
 
-**Addresses:** Dependency Mapping & Analysis, Compilation Isolation, Namespace Separation (all P1 table stakes)
+**Delivers:** `Palette` struct with default 16-color table, runtime palette swap, `getPaletteRGB()` Emscripten binding, updated WASM JavaScript renderer, Lua `setPalette()` / `getPalette()` API
 
-**Avoids:** Incomplete Dependency Mapping, Memory Model Incompatibility, Platform-Specific Hardcoding
+**Features addressed:** 16-entry palette, index 0 = transparent, runtime palette swap, Lua palette API, WASM palette exposure
 
-**Uses:** Clang Tooling (clang-tidy, IWYU), CppDepend for visualization, CMake 3.30+
+**Pitfalls to avoid:** Palette at draw time (Pitfall 1), index 0 semantic conflict (Pitfall 8), WASM bindings not updated (Pitfall 9)
 
-**Implements:** Core Types, Memory System, Platform Abstraction (ARCHITECTURE Phase 1-2)
+**Research flag:** Standard patterns — no additional research needed. Direct codebase inspection confirms all integration points. PICO-8 reference well-documented.
 
-### Phase 2: Core System Migration
-**Rationale:** Core infrastructure (Object/Component system, Graphics/Canvas, Scene System) must be migrated before features can follow (ARCHITECTURE critical path order). Component Lifecycle Mapping and Scene Graph Porting (P1 features) are blocked by this foundation. Memory model incompatibility is prevented by establishing static allocation patterns now.
+### Phase 2: Input Abstraction
 
-**Delivers:** Working Object/Component system, Canvas abstractions, Scene management, Component Lifecycle implementation, API Compatibility Layer
+**Rationale:** Fully independent of palette and SDL3. Interface-first design ensures SDL3 backend implements against a stable contract. Edge-detection semantics (`wasJustPressed`, `wasJustReleased`) must be in the shared interface from the start — adding them later requires touching all platform backends.
 
-**Addresses:** API Compatibility Layer, Component Lifecycle Mapping, Scene Graph Porting, Memory Layout Equivalence (all P1 table stakes)
+**Delivers:** `InputEvent`, `InputKind`, `InputSource` interface, `InputSystem` with listener dispatch and edge detection, state cache for Lua polling queries
 
-**Avoids:** Memory Model Incompatibility, Component Lifecycle Drift, Template Code Explosion
+**Features addressed:** Unified InputState, button edge detection, ESP32 input injection path, foundation for SDL3 keyboard mapping
 
-**Uses:** clang-rename for symbol updates, clang-tidy with -fix for automated refactoring, clang-format for consistency
+**Pitfalls to avoid:** Platform type leakage into interface (Pitfall 5), missing debounce/edge semantics (Pitfall 6), extending existing mouse InputComponent instead of adding parallel system (Architecture anti-pattern 4)
 
-**Implements:** Object System, Graphics Layer, Scene System (ARCHITECTURE Phase 2-3)
+**Research flag:** Standard patterns — interface + source + consumer pattern is well-established. All integration points identified from codebase inspection.
 
-### Phase 3: Utility & Feature Migration
-**Rationale:** With core infrastructure in place, migrate supporting utilities (Phase 3) then features by category (Phase 4) in parallel streams. This delivers incremental value early and validates architecture. Shadow Mode Execution (P2 differentiator) enables high-confidence validation of migrated features against enjin1 reference.
+### Phase 3: SDL3 CMake + Runner
 
-**Delivers:** Migrated utilities (drawing helpers, math, noise), Component library (C_Position, C_Drawable, C_Sprite), UI system widgets, Animation system, Lua bindings for all migrated features
+**Rationale:** CMake integration must be correct before any SDL3 C++ is written — contaminating core library targets requires significant cleanup to undo. Runner requires Phase 1 (palette) and Phase 2 (input interface) to be complete. `SDL2_RUNNER` define and `lua_platform.hpp` extension unblock Lua in the SDL3 build.
 
-**Addresses:** Legacy Seams Extraction, Shadow Mode Execution, Branch by Abstraction (P2 differentiators); Component Library, UI, Animation, Scripting (P2 features)
+**Delivers:** `ENJIN2_BUILD_SDL=ON/OFF` CMake option, `enjin2_sdl` executable target, `SDL2Runner` with streaming texture + game loop + dt clamping, `SDL2InputSource`, `lua_platform.hpp` SDL2_RUNNER branch, integer pixel scaling, pixel format startup assertion
 
-**Avoids:** Lua Binding Breakage, Platform-Specific Hardcoding, Template Code Explosion
+**Features addressed:** SDL3 window + game loop, Canvas4-to-RGB blit via palette, integer scaling (nearest-neighbor), Lua scripting in SDL3 runner, SDL3 keyboard-to-button default mapping
 
-**Uses:** IWYU for include cleanup during migration, LibTooling for custom analysis if needed, run-clang-tidy.py for validation
+**Pitfalls to avoid:** SDL3 CMake target contaminating core (Pitfall 7), pixel format mismatch (Pitfall 2), texture access mode wrong (Pitfall 3), event loop blocking with unclamped dt (Pitfall 4), VCV_RACK define reused for SDL3 (Architecture anti-pattern 3)
 
-**Implements:** Utilities, Component Library, UI System, Animation System, Scripting Layer (ARCHITECTURE Phase 3-4)
+**Research flag:** Warrants careful checklist execution. Multiple specific failure modes documented in PITFALLS.md. Apply the "looks done but isn't" checklist item by item, particularly: streaming texture confirmed, pixel format assertion in place, `ENJIN2_BUILD_SDL=OFF` clean build verified, SDL3 headers absent from core include paths.
 
-### Phase 4: Decoupling & Validation
-**Rationale:** After all features migrated, decouple enjin1 dependencies and validate across all platforms. This is the safety net before enjin1 deletion. Build System Migration (P3) and Performance Regression Guardrails (P3) validate that enjin2 is truly standalone and doesn't regress performance.
+### Phase 4: Lua Integration + End-to-End Validation
 
-**Delivers:** enjin2 standalone build, removal of all enjin1 includes/references, cross-platform validation (VCV_RACK, ESP32, WebAssembly), performance benchmarks matching or exceeding enjin1, manual testing of all examples
+**Rationale:** Lua bindings extend existing `LuaCanvas` and `LuaScriptSystem`; they require the runner (Phase 3) to be wired before end-to-end validation is possible. This phase is also the integration gate — the same Lua script must produce visually identical output on SDL3 runner and WASM before the milestone is considered complete.
 
-**Addresses:** Build System Migration, Performance Regression Guardrails (P3 features); Incremental Dependency Inversion (P3 differentiator)
+**Delivers:** Lua input polling API (`isButtonHeld`, `isButtonJustPressed`, `getAxis`), Lua palette API callable from scripts, cross-platform color consistency verification (SDL3 vs WASM), full "looks done but isn't" checklist sign-off
 
-**Avoids:** Premature enjin1 Deletion, integration gotchas (Adafruit GFX, ESP32 PSRAM, Emscripten)
+**Features addressed:** Lua input polling, Lua palette API, SDL3 keyboard mapping default (verified via Lua test script)
 
-**Uses:** CppDepend to confirm enjin2 is self-contained, run-clang-tidy.py for full codebase analysis, platform-specific CI/CD
+**Pitfalls to avoid:** Lua color API semantic ambiguity follow-through (Pitfall 8), Lua input binding coupling directly to SDL state (Integration Gotchas — input + Lua row)
 
-**Implements:** Decoupling, Cleanup preparation (ARCHITECTURE Phase 5)
-
-### Phase 5: Final Cleanup
-**Rationale:** Only after all validation is complete (Phase 4), delete enjin1 directory and remove transitional architecture. API Stability Guarantees and Rollback Capability (P3) maintain external contract during cleanup. This is the final milestone—enjin2 remains as the sole engine.
-
-**Delivers:** Deleted enjin1 directory, removed abstraction layer/adapters, clean CMakeLists.txt, enjin2-only codebase, updated documentation
-
-**Addresses:** enjin1 Directory Deletion, API Stability Guarantees, Rollback Capability (P3 features); Transitional Architecture Minimalism (P3 differentiator)
-
-**Avoids:** Premature enjin1 Deletion, Transitional Code Permanence
-
-**Uses:** Git tags for archival, manual verification of final state
-
-**Implements:** Final Cleanup (ARCHITECTURE Phase 6)
+**Research flag:** Standard patterns — extends existing LuaCanvas binding infrastructure. No novel territory.
 
 ### Phase Ordering Rationale
 
-- **Why this order:** Follows critical path dependency order from ARCHITECTURE (types → memory → objects → graphics → utilities → features). Cannot skip ahead because each layer depends on previous. Phase 1 establishes understanding; Phase 2 migrates foundation; Phase 3 adds features incrementally; Phase 4 validates independence; Phase 5 removes legacy.
-- **Why this grouping:** Infrastructure (Phases 1-2) MUST BE FIRST to establish foundation. Features (Phase 3) CAN BE PARALLEL after core is working—delivers value early. Decoupling (Phase 4) BLOCKS deletion—must complete before cleanup. Cleanup (Phase 5) is FINAL—only after all validation.
-- **How this avoids pitfalls:** Dependency mapping before any movement (PITFALL 1). Memory model established early (PITFALL 3). Component lifecycle handled together (PITFALL 4). Deletion criteria enforced before enjin1 removal (PITFALL 2). Platform abstraction prevents hardcoding (PITFALL 6).
+- Palette before runner: the blit step in the SDL3 runner reads the palette; without it the runner cannot display anything correctly
+- Input interface before runner: `SDL2InputSource` implements against the interface; the interface must be stable before the platform backend is written
+- CMake option before C++ runner code: SDL3 target isolation from core library targets cannot be retrofitted without risk
+- WASM bindings updated in Phase 1 (not Phase 3): prevents a cross-platform color discrepancy that makes rendering bugs hard to attribute and is tempting to defer indefinitely
+- Lua bindings last: depend on all prior phases; natural integration validation gate
 
 ### Research Flags
 
-**Phases likely needing deeper research during planning:**
-- **Phase 3 (Feature Migration):** Feature-first order decisions require research into which features provide highest value for validation and user testing. Shadow mode execution implementation details (how to compare outputs, what metrics matter) need planning attention.
-- **Phase 4 (Decoupling & Validation):** Performance benchmarking approach is unspecified—what metrics, what comparisons, what constitutes "match or exceed enjin1"? Cross-platform validation strategy (VCV_RACK, ESP32, WebAssembly) needs detailed planning.
+**Phases with standard, well-documented patterns (no additional research needed):**
+- **Phase 1 (Palette):** Trivial data structure; PICO-8/TIC-80 reference well-documented; codebase integration points confirmed by direct inspection
+- **Phase 2 (Input Abstraction):** Standard interface + source + consumer pattern; all integration points mapped from codebase
+- **Phase 4 (Lua Integration):** Extends existing `LuaCanvas` binding pattern; no novel territory
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 1 (Dependency Analysis):** Clang tooling workflow is well-documented in STACK.md, migration workflow defined with commands. Pattern: use clang-tidy, IWYU, CppDepend in sequence.
-- **Phase 2 (Core System Migration):** Component lifecycle mapping and scene graph porting follow established patterns from object-component systems. Memory model guidelines are clear (static allocation, no new/delete after init).
-- **Phase 5 (Final Cleanup):** Standard deletion cleanup, git archiving, removing transitional code—well-understood patterns.
+**Phases warranting careful checklist execution during task planning:**
+- **Phase 3 (SDL3 CMake + Runner):** Multiple specific, documented failure modes in PITFALLS.md; apply verification checklist at phase completion, not after
+
+---
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Verified from official LLVM/Clang documentation, IWYU official site, CppDepend features. All tools are industry standards with active development. |
-| Features | HIGH | Based on Martin Fowler's Strangler Fig and Legacy Seams patterns (official), Google C++ Style Guide (official), and codebase analysis (ARCHITECTURE.md, CONCERNS.md). Feature dependencies mapped clearly. |
-| Architecture | HIGH | Derived from Martin Fowler's Strangler Fig and Branch by Abstraction patterns (official), Refactoring.Guru patterns (verified), and practical codebase structure. 6-phase migration flow is well-established. |
-| Pitfalls | MEDIUM | Based on codebase analysis (ARCHITECTURE.md, CONCERNS.md), embedded systems best practices (Barr Group), and Herb Sutter's modern C++ guidance. Some pitfall severity estimates require validation during implementation. |
+| Stack | HIGH | SDL3 3.4.2 confirmed stable via official SDL wiki and Phoronix coverage; all integration points verified against live codebase headers and CMakeLists.txt; macOS CMake bug confirmed against vcpkg issue tracker |
+| Features | HIGH | PICO-8/TIC-80 as authoritative reference implementations for palette and input semantics; all Lua API extension points confirmed by direct inspection of `bindings.hpp` and `lua_platform.hpp` |
+| Architecture | HIGH | Based entirely on direct inspection of existing codebase; no inference or approximation required; file locations, interface designs, and build order all grounded in current code |
+| Pitfalls | HIGH | Mix of direct codebase analysis (existing packed-storage constraints, VCV_RACK define patterns) and verified SDL2/SDL3 issue tracker references; specific warning signs documented for each pitfall |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Performance benchmarking specifics:** What metrics constitute "match or exceed enjin1"? How to measure? What's acceptable variance? Gap to address: Define benchmark suite during Phase 4 planning.
-- **Shadow mode execution implementation:** How to run both implementations in parallel? What outputs to compare? How to detect differences automatically? Gap to address: Design comparison framework during Phase 3 planning.
-- **Manual testing scope:** What manual testing is required per project constraints? Which features? On which platforms? Gap to address: Define manual testing checklist during requirements phase.
-- **Lua binding coverage:** What enjin2 APIs must be exposed to Lua? How to verify completeness? Gap to address: Create binding checklist during Phase 3 planning.
+- **SDL3 vs SDL2 naming inconsistency:** FEATURES.md was written referencing SDL2; STACK.md correctly specifies SDL3. Roadmap must adopt SDL3 and `ENJIN2_PLATFORM_SDL` as canonical names throughout. CMake target: `enjin2_sdl` (not `enjin2_sdl2`). Compile define: `ENJIN2_PLATFORM_SDL` (not `SDL2_RUNNER`).
 
-These gaps are not showstoppers—they require attention during detailed phase planning but do not invalidate the overall research-based approach.
+- **Index 0 transparent decision:** Research identifies the conflict between `Colors::BLACK = Pixel4(0)` and the Tomodachi spec (index 0 = transparent) but does not make the final call — that requires project-owner sign-off. Recommendation: adopt option (a), index 0 = transparent, indices 1–15 = user colors, matching Tomodachi spec. All existing examples using `setColor(0)` or `clear(0)` for black must be updated before Phase 1 code lands.
+
+- **WASM palette application ownership:** Whether the palette-to-RGB conversion happens in C++ (`emscripten_bindings.cpp`) or in the JavaScript caller is not fully specified. Must be decided in Phase 1 before the Emscripten binding change is written. Recommendation: expose raw palette data via `getPaletteRGB()` and apply in JavaScript, keeping the C++ binding thin.
+
+---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Martin Fowler — [Strangler Fig Pattern](https://martinfowler.com/bliki/StranglerFigApplication.html) — Core pattern for gradual replacement without "big bang" risk
-- Martin Fowler — [Branch by Abstraction](https://martinfowler.com/bliki/BranchByAbstraction.html) — Pattern for parallel development with merge window
-- Thoughtworks — [Patterns of Legacy Displacement](https://martinfowler.com/articles/patterns-legacy-displacement/) — Comprehensive patterns including Legacy Seams, Event Interception, Divert the Flow
-- [Clang Tools Documentation](https://clang.llvm.org/docs/ClangTools.html) — Overview of Clang tooling ecosystem (official LLVM docs)
-- [Clang-tidy Documentation](https://clang.llvm.org/extra/clang-tidy/) — Clang-tidy with check categories, automated fixes (official LLVM docs)
-- [IWYU Documentation](https://include-what-you-use.org/) — Include-What-You-Use for header dependency analysis (official docs)
-- [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/) — Modern C++ best practices (official ISO C++ docs)
-- [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) — Header self-containment, include ordering, namespace usage
+- Existing codebase — `canvas.hpp`, `canvas_esp32s3.hpp`, `lua_platform.hpp`, `bindings.hpp`, `CMakeLists.txt`, `emscripten_bindings.cpp`, `component.hpp`, `system.hpp` (2026-02-23 direct inspection)
+- `.planning/PROJECT.md` — v1.3 requirements and constraints
+- SDL3 Wiki (wiki.libsdl.org/SDL3) — NewFeatures, README-cmake, SDL_GetKeyboardState, SDL_pixels.h
+- SDL3 Official Release announcement (Phoronix) — confirmed stable January 2025, 3.4.2 current as of Feb 2026
+- PICO-8 Manual (lexaloffle.com/dl/docs/pico-8_manual.html) — two-stage palette system, input API (`btn`, `btnp`), 16-color constraint
 
 ### Secondary (MEDIUM confidence)
-- [CppDepend 2026.1](https://www.cppdepend.com/) — Dependency analysis, AI assistant, codebase visualization (verified official site)
-- Refactoring.Guru — [Adapter Pattern](https://refactoring.guru/design-patterns/adapter), [Facade Pattern](https://refactoring.guru/design-patterns/facade) — Pattern implementation guidance
-- Barr Group — "10 Tips for Embedded Software Development" — Embedded systems best practices
-- Codebase analysis files — ARCHITECTURE.md, CONCERNS.md, STRUCTURE.md (2026-01-29) — Specific enjin/enjin2 structure, coupling, technical debt
+- SDL2 pixel format endianness (wiki.libsdl.org/SDL2/SDL_PixelFormatEnum) — format selection rationale; applies to SDL3
+- SDL2 streaming textures (lazyfoo.net) — `SDL_TEXTUREACCESS_STREAMING` pattern
+- SDL2 window drag blocking (github.com/libsdl-org/SDL/issues/4614) — dt clamping requirement
+- Fantasy console palette survey (lospec.com/palette-list/tag/fantasyconsole) — 16-color conventions
+- SDL2 game loop patterns (thelinuxcode.com, 2026) — delta time via `SDL_GetPerformanceCounter`
 
-### Tertiary (LOW confidence)
-- Compatibility layer analysis — enjin/enjin2_compat.hpp, enjin2/examples/eisei_game_benchmark.cpp — Real examples in codebase, needs validation for broader applicability
-- Known issues in codebase — Hardcoded 128x128 canvas, missing canvas dependencies, TODO comments — Identified concerns, need verification during implementation
+### Tertiary (LOW confidence, needs verification)
+- vcpkg SDL3-shared macOS bug (github.com/microsoft/vcpkg/issues/45498) — macOS-specific; verify on macOS during Phase 3 CMake work
+- SDL2 indexed texture streaming (discourse.libsdl.org archived forum) — needs verification against SDL3 API surface
 
 ---
-*Research completed: 2025-01-30*
+*Research completed: 2026-02-23*
 *Ready for roadmap: yes*

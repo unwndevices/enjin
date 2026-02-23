@@ -1,196 +1,247 @@
 # Feature Research
 
-**Domain:** C++ Codebase Migration (enjin → enjin2)
-**Researched:** 2026-01-30
+**Domain:** enjin2 v1.3 — Palette System, SDL2 Desktop Runner, Input Abstraction
+**Researched:** 2026-02-23
 **Confidence:** HIGH
+
+## Context
+
+This research covers the three new features for the v1.3 Tomodachi Readiness milestone only.
+Existing features (Canvas4/Canvas8, sprites, blend modes, Lua scripting, WASM/ESP32/VCV Rack runners)
+are already built and out of scope here.
+
+Existing codebase state relevant to these features:
+- `Pixel4` stores values 0-15 as grayscale — currently no RGB color mapping exists
+- `Canvas4` / `Canvas8` are statically allocated templates with no palette concept
+- `InputSystem` in `ui/systems.hpp` handles only mouse events (not physical controls)
+- `LuaPlatform` guards are `VCV_RACK` and `ESP32` — no SDL2 platform defined yet
+- CMake targets: `enjin2_core`, `enjin2_graphics`, `enjin2_ui`, `enjin2_lua`, `enjin2_wasm`
+
+---
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Features essential for successful C++ codebase migration. Missing these = migration fails or produces unmaintainable code.
+Features that must exist for each new subsystem to be considered complete. Missing these = the
+feature is unusable or broken relative to its stated purpose.
+
+#### Palette System
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Dependency Mapping & Analysis** | Cannot migrate what you don't understand | HIGH | Map all enjin1 → enjin2 dependencies across infrastructure, utilities, and feature code. Must identify circular dependencies early. |
-| **API Compatibility Layer** | Enables gradual migration without breaking existing code | MEDIUM | Compatibility headers that alias enjin1 types to enjin2 equivalents, allowing staged migration (e.g., `enjin2_compat.hpp`). |
-| **Compilation Isolation** | Prevents accidental enjin1 dependencies during migration | MEDIUM | Separate build targets, include paths, and namespaces. Enjin2 already uses `enjin2` namespace - leverage this strictly. |
-| **Functional Parity Testing** | Must verify enjin2 provides identical behavior before deprecation | HIGH | Manual testing validation specified in constraints. Should verify component lifecycle, rendering, scene transitions, Lua scripting. |
-| **Build System Migration** | CMake must cleanly support enjin2-only builds | MEDIUM | Remove enjin1 paths from CMakeLists.txt, ensure Adafruit-GFX external dependency resolved cleanly. |
-| **Memory Layout Equivalence** | Embedded systems require predictable memory behavior | HIGH | enjin1 uses `std::shared_ptr` for components, enjin2 uses handle-based static allocation. Must ensure same lifetime semantics. |
-| **Namespace Separation** | Prevents naming collisions during migration | LOW | Both use separate namespaces (`enjin` vs `enjin2`). Critical to maintain this separation until deprecation. |
-| **Header Self-Containment** | Required for clean module boundaries | LOW | All enjin2 headers must compile independently (Google C++ Style Guide). Prevents hidden enjin1 dependencies. |
-| **Component Lifecycle Mapping** | Object-Component system is core engine feature | HIGH | enjin1: `Awake()`, `Start()`; enjin2: `awake()`, `start()`. Must map lifecycle hooks correctly. |
-| **Scene Graph Porting** | Scene management is fundamental to engine | HIGH | `SceneStateMachine`, scene transitions, transition effects must all migrate cleanly. |
+| **16-entry RGB color table** | Indexed palette requires a map from 4-bit index to display color | LOW | `uint32_t palette[16]` or `RGB888 palette[16]`; static allocation, no heap. Index 0 = transparent by convention. |
+| **Lookup at display/present time** | Pixel values on canvas stay as 4-bit indices; RGB only resolved when pushing to screen | LOW | Display loop reads `Pixel4.value`, looks up `palette[value]` to get RGB. Canvas data never changes when palette changes. |
+| **Index 0 as transparent** | Fantasy console convention (PICO-8, TIC-80, LIKO-12); Tomodachi sprites need transparency | LOW | Already consistent with existing matte/transparency logic in `Canvas4::blit()`. Zero must be reserved transparent. |
+| **Palette swap at runtime** | Recolor sprites without redrawing (teams, states, damage flash) | LOW | Update `palette[n] = new_color`; next present uses new color automatically. No re-render needed. |
+| **Default palette defined in code** | First run must display something sensible without user setup | LOW | PICO-8's 16-color palette or a custom set. Should be a constexpr array in the palette header. |
+| **Lua-accessible palette API** | Lua scripts need to set/get palette colors to drive visual behavior | MEDIUM | Expose `setPaletteColor(index, r, g, b)` and `getPaletteColor(index)` through `LuaCanvas` bindings. |
+
+#### SDL2 Desktop Runner
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| **Window creation and main loop** | SDL2 runner needs a window to display into | LOW | `SDL_CreateWindow` + `SDL_CreateRenderer` + `SDL_PollEvent` event loop. Standard SDL2 pattern. |
+| **Canvas-to-texture blit with palette** | Must convert enjin2 Canvas4 (indexed) to SDL2 RGB texture for display | MEDIUM | Read each `Pixel4`, look up `palette[index]`, write RGB pixel to SDL2 streaming texture, then `SDL_RenderCopy`. |
+| **Integer pixel scaling** | Tomodachi's pixel display is small (e.g., 128x128); desktop window needs to be visible | LOW | `SDL_RenderSetLogicalSize` or explicit dst rect scale. Nearest-neighbor only — `SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0")`. |
+| **Frame timing / delta time** | Update loop must provide stable delta time to Lua and components | LOW | `SDL_GetPerformanceCounter` before/after frame; pass delta as `float` seconds to engine update. |
+| **Clean shutdown** | Resources must be freed on exit | LOW | `SDL_DestroyTexture`, `SDL_DestroyRenderer`, `SDL_DestroyWindow`, `SDL_Quit`. Standard cleanup. |
+| **Lua scripting integration** | SDL2 runner is a development platform — Lua must work same as other platforms | MEDIUM | Reuse existing `LuaEngine` + `LuaCanvas`. SDL2 platform gets `ENABLE_FILE_IO = true` (same as VCV Rack). |
+| **CMake target for SDL2 runner** | Must integrate with existing CMake build system | LOW | New `enjin2_sdl2` target; `find_package(SDL2 REQUIRED)`; optional via `ENJIN2_BUILD_SDL2=ON`. |
+
+#### Input Abstraction
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| **Unified input state struct** | Game logic must not care which platform provides input | LOW | `InputState` struct with: buttons (bitmask or array), analog axes (float normalized -1..1 or 0..1). |
+| **Button pressed / held / released** | Edge-detection is required for one-shot actions vs. held actions | LOW | Per-button: `justPressed`, `held`, `justReleased`. Computed by diffing previous and current raw state. |
+| **Analog axis for pots/joysticks** | Tomodachi has potentiometers and joysticks — not just digital buttons | LOW | `float axes[N]` in `InputState`. SDL2 maps joystick axes; ESP32 maps ADC reads; keyboard maps to 0/1. |
+| **SDL2 keyboard-to-button mapping** | Desktop runner needs keyboard as input source during development | LOW | Define a default mapping: arrow keys = d-pad, Z/X = A/B, Enter = start. Configurable at startup. |
+| **ESP32 / platform injection** | Platform-specific code (ADC, GPIO) feeds the abstraction from outside | MEDIUM | Platform provides a function or callback that populates `InputState` each frame. Engine consumes it generically. |
+| **Lua input query API** | Lua scripts must be able to read button and axis state | MEDIUM | Expose `isButtonHeld(n)`, `isButtonJustPressed(n)`, `getAxis(n)` through scripting bindings. |
+
+---
 
 ### Differentiators (Competitive Advantage)
 
-Features that set this migration apart from typical "big bang" rewrites.
+Features that go beyond the minimum and add meaningful value specific to enjin2's design goals.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Strangler Fig Pattern Application** | Incremental replacement without "big bang" risk | MEDIUM | Gradually divert flow from enjin1 to enjin2 via compatibility seams. Reduces migration risk significantly. |
-| **Legacy Seams Extraction** | Enables testing in isolation, creates migration footholds | HIGH | Introduce seams at boundaries (component interfaces, canvas abstractions, signal/event system). Allows enjin2 to coexist during migration. |
-| **Performance Regression Guardrails** | enjin2 promises non-dynamic memory and 4-bit optimization | MEDIUM | Benchmark framework to ensure migration doesn't regress performance. Example: `eisei_game_benchmark.cpp`. |
-| **Transitional Architecture Minimalism** | Avoids technical debt accumulation during migration | MEDIUM | Keep compatibility layers thin and temporary. Mark with `// TODO: Remove after migration`. |
-| **Feature-First Migration Order** | Delivers value early, reduces risk | MEDIUM | Migrate high-value features first (e.g., Lua scripting integration) to prove enjin2 viability. |
-| **Branch by Abstraction** | Parallel development with merge window | HIGH | Create abstraction layer that both enjin1 and enjin2 can implement. Example: canvas interfaces. |
-| **Shadow Mode Execution** | Validate correctness without commitment | HIGH | Run both enjin1 and enjin2 implementations in parallel, compare outputs. High confidence builder. |
-| **Incremental Dependency Inversion** | Breaks circular dependencies | HIGH | Identify tight coupling, introduce interfaces or forwarding to invert dependencies. Essential for decoupling. |
-| **API Stability Guarantees** | Maintains external contract during migration | MEDIUM | Public APIs should remain stable while internals migrate. Use deprecation warnings. |
-| **Rollback Capability** | Safe migration requires undo path | MEDIUM | Maintain ability to revert to enjin1 until deprecation complete. Git branches, feature flags. |
+| **Two-stage palette (draw + screen palette)** | PICO-8-style: draw palette remaps indices at draw time; screen palette maps to RGB at display time. Enables sprite recoloring without index changes. | MEDIUM | Draw palette: `drawPalette[16]` remaps `Pixel4` index before writing to canvas. Screen palette: maps screen index to RGB at present. Adds expressive power without canvas format change. |
+| **Per-entry transparency flag in draw palette** | Sprite transparency becomes a palette property, not hardcoded to index 0. Any color can be transparent. | LOW | `bool transparent[16]` in draw palette struct. Consistent with PICO-8 model; avoids hardcoded matte value scattered through draw calls. |
+| **SDL2 + Lua REPL / hot-reload** | Scripts can be reloaded from disk without restarting the runner — critical for fast development iteration on Tomodachi UI | MEDIUM | `LuaEngine::executeFile` already exists. SDL2 runner watches file mtime or listens for key shortcut to reload. Immediate feedback loop. |
+| **Keyboard mapping table in Lua** | Lua scripts can redefine which keyboard keys map to which logical buttons at runtime | LOW | `input.setKeyMap(button_index, sdl_scancode)`. Makes SDL2 runner customizable without recompile. |
+| **Input event callbacks in Lua** | Beyond polling, scripts can register `onButtonPressed` callbacks for event-driven UI | MEDIUM | Complements polling API. Reduces boilerplate in Lua scripts for UI widgets (ButtonDial already exists as a component). |
+
+---
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem good but create problems during C++ migration.
-
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **"Big Bang" Complete Rewrite** | Seems faster to just replace everything | Extremely high risk, impossible to validate behavior, likely to fail mid-project | Strangler Fig pattern with incremental migration |
-| **Feature Parity with enjin1 Bugs** | "If enjin1 does it, enjin2 must too" | enjin1 has known bugs (e.g., hardcoded 128x128 effects, missing canvas dependency warnings) | Fix bugs during migration, don't replicate broken behavior |
-| **Shared Namespace During Migration** | "Just merge namespaces temporarily" | Breaks name lookup rules, makes dependency tracking impossible, leads to subtle bugs | Keep namespaces strict, use compatibility headers with `using` declarations only |
-| **Copy-Paste Implementation** | Fast to just copy enjin1 code to enjin2 | enjin1 uses `std::shared_ptr`, dynamic allocation - violates enjin2 design constraints | Reimplement using enjin2 patterns (static allocation, handle-based) |
-| **Extensive Polymorphism** | Make enjin2 classes inherit from enjin1 to "get reuse" | Creates tight coupling, prevents enjin2 from being deleted, violates Liskov Substitution | Use interface extraction, prefer composition over inheritance |
-| **Automated Mass Refactoring** | "Let tools do bulk find/replace" | C++ refactoring tools are error-prone, may change semantics, hard to review | Manual, careful migration with peer review of each change |
-| **Temporary Global State** | "Just add a global for this migration phase" | enjin2 explicitly avoids global state (unlike enjin1), undermines architecture goals | Pass state explicitly, use dependency injection |
-| **Dynamic Allocation Quick Fixes** | "Use `new` temporarily to make it work" | Violates non-dynamic memory constraint, defeats enjin2 value proposition | Use fixed-size pools, arena allocators, or constexpr where possible |
-| **Parallel Binary Incompatibility** | Build both enjin1 and enjin2 into same executable during migration | Linker conflicts, symbol clashes, impossible to verify which code runs | Separate executables, separate tests, use feature flags at source level |
-| **Transitional Code Permanence** | "We'll clean up this shim layer later" | Technical debt rarely paid off, becomes permanent enjin1 dependency | Mark transitional code clearly, plan deletion milestones, track deprecation timeline |
+| **RGB pixel storage in canvas** | "Just store RGB directly so we don't need palette lookup" | Triples memory per pixel (3 bytes vs 4 bits). Destroys ESP32 viability. Violates zero-dynamic-allocation constraint for large canvases. | Keep canvas as 4-bit indexed. Resolve to RGB only at display time in the runner. |
+| **SDL2 software renderer fallback** | "What if hardware acceleration isn't available?" | Adds complexity for an edge case that doesn't apply to the Tomodachi use case. SDL2 always has some renderer path. | Use `SDL_RENDERER_ACCELERATED | SDL_RENDERER_SOFTWARE` flag combo; SDL2 falls back automatically. |
+| **Full SDL2 event system exposed to Lua** | "Let Lua handle SDL events directly for maximum flexibility" | Creates platform coupling in scripts. Scripts written for SDL2 break on ESP32. | Expose only the platform-agnostic `InputState` API. SDL2-specific events stay in the C++ runner layer. |
+| **Dynamic palette size (more than 16 colors)** | "17 or 32 colors would give more artistic freedom" | `Pixel4` is 4 bits — 16 values is the hardware constraint. Larger palettes require 8-bit canvas, different memory model, different texture format. | Use `Canvas8` for 256-color indexed work. Keep `Canvas4` strictly 16-color. |
+| **Mouse/touch as primary input** | "Add mouse support to the input abstraction for desktop dev" | Tomodachi has no mouse. Adding it creates mismatched API surface between platforms. Existing `InputSystem` in `ui/systems.hpp` already handles mouse for VCV Rack UI. | Keep physical input abstraction (buttons/axes) separate from mouse UI. Use existing `InputSystem` for mouse, new `InputState` for physical controls. |
+| **SDL2 audio integration** | "While we have SDL2, might as well add audio" | Out of scope: PROJECT.md explicitly defers MIDI/audio to Tomodachi-side. SDL_mixer adds a large dependency for no milestone value. | Audio is Tomodachi-side concern. Keep SDL2 runner graphics + input only. |
+| **Cross-platform input configuration files** | "Save button remapping to a config file" | Adds file I/O concerns, path resolution across platforms, serialization. Tomodachi uses fixed physical controls — remapping is a desktop-only convenience. | Hardcode a sensible default keyboard mapping. Expose it as a Lua-settable table for the SDL2 runner only. |
+
+---
 
 ## Feature Dependencies
 
 ```
-[Dependency Mapping & Analysis]
-    └──requires──> [Compilation Isolation]
-                   └──requires──> [Namespace Separation]
+[Palette System: 16-entry RGB table]
+    └──requires──> [Pixel4 / Canvas4 (existing)]
+    └──enables──> [Canvas-to-texture blit with palette]
 
-[API Compatibility Layer]
-    └──enhances──> [Strangler Fig Pattern Application]
-    └──requires──> [Header Self-Containment]
+[Canvas-to-texture blit with palette]
+    └──requires──> [Palette System: 16-entry RGB table]
+    └──requires──> [SDL2 window + renderer]
+    └──enables──> [SDL2 desktop runner (complete)]
 
-[Legacy Seams Extraction]
-    └──enables──> [Branch by Abstraction]
-    └──enables──> [Shadow Mode Execution]
-    └──requires──> [Dependency Mapping & Analysis]
+[SDL2 desktop runner]
+    └──requires──> [Canvas-to-texture blit with palette]
+    └──requires──> [Frame timing / delta time]
+    └──requires──> [Input abstraction: SDL2 keyboard mapping]
+    └──requires──> [Lua integration (existing LuaEngine)]
 
-[Strangler Fig Pattern Application]
-    └──uses──> [API Compatibility Layer]
-    └──uses──> [Legacy Seams Extraction]
-    └──enhances──> [Feature-First Migration Order]
+[Input abstraction: unified InputState]
+    └──standalone (no existing feature required)
+    └──enables──> [SDL2 keyboard-to-button mapping]
+    └──enables──> [ESP32 input injection]
+    └──enables──> [Lua input query API]
 
-[Functional Parity Testing]
-    └──requires──> [Shadow Mode Execution]
-    └──requires──> [Performance Regression Guardrails]
-    └──validates──> ALL_FEATURES
+[Lua palette API]
+    └──requires──> [Palette System]
+    └──requires──> [LuaCanvas bindings (existing)]
 
-[Incremental Dependency Inversion]
-    └──requires──> [Dependency Mapping & Analysis]
-    └──enables──> [Component Lifecycle Mapping]
-    └──enables──> [Scene Graph Porting]
+[Lua input query API]
+    └──requires──> [Input abstraction: unified InputState]
+    └──requires──> [LuaEngine / scripting bindings (existing)]
 
-[Build System Migration]
-    └──requires──> [Compilation Isolation]
-    └──requires──> [Feature-First Migration Order]
-    └──blocks──> enjin1_deletion
+[Two-stage palette (draw + screen)]
+    └──requires──> [Palette System: 16-entry RGB table]
+    └──enhances──> [Palette swap at runtime]
+
+[SDL2 hot-reload]
+    └──requires──> [SDL2 desktop runner]
+    └──requires──> [LuaEngine::executeFile (existing)]
 ```
 
 ### Dependency Notes
 
-- **Dependency Mapping & Analysis requires Compilation Isolation**: Cannot analyze dependencies cleanly if enjin1 and enjin2 intermix at build time.
-- **API Compatibility Layer enhances Strangler Fig Pattern**: Compatibility headers are the "enabling point" for strangler fig implementation (Martin Fowler's enabling point concept).
-- **Legacy Seams enables Branch by Abstraction**: Seams create the abstraction layer that both implementations can target.
-- **Shadow Mode Execution validates Functional Parity**: Running both implementations in parallel provides the comparison data for parity testing.
-- **Incremental Dependency Inversion enables Core Feature Migration**: Many circular dependencies block component lifecycle and scene graph migration. Inversion breaks these cycles.
-- **Feature-First Migration Order uses Strangler Fig**: Strangler fig provides the mechanism for incrementally diverting flow to new features.
-- **Build System Migration blocks enjin1 deletion**: Cannot delete enjin1 directory while CMake still references it.
-- **Transitional Code Permanence anti-pattern conflicts with Rollback Capability**: If transitional code accumulates without cleanup, rollback becomes impossible.
+- **Palette system is prerequisite for SDL2 runner**: The runner's blit step reads the palette to convert 4-bit canvas to RGB texture. Palette must exist before runner works visually.
+- **Input abstraction is independent**: Can be designed and tested without the palette or SDL2 runner. Depends only on the existing core types (`types.hpp`).
+- **Lua APIs depend on both their feature and existing bindings**: `LuaCanvas` already has canvas bindings — palette and input APIs extend it rather than replace it.
+- **Two-stage palette enhances but does not block v1**: Single-stage (screen palette only) is sufficient for MVP. Draw palette is a v1.x add-on.
+- **SDL2 CMake target is separate**: Optional `ENJIN2_BUILD_SDL2=ON` mirrors existing `ENJIN2_BUILD_LUA` pattern. Must not affect ESP32 or WASM builds.
+
+---
 
 ## MVP Definition
 
-### Launch With (Phase 1: Core Infrastructure Migration)
+### Launch With (v1.3 — Tomodachi Readiness)
 
-Minimum viable migration to establish enjin2 independence foundation.
+Minimum needed to enable Tomodachi integration development on desktop.
 
-- [x] **Dependency Mapping & Analysis** — Must understand what enjin2 depends on before migrating anything
-- [x] **Compilation Isolation** — Separate enjin2 build from enjin1, verify clean build
-- [x] **Namespace Separation** — Ensure no `namespace enjin` references in enjin2
-- [x] **API Compatibility Layer** — Create basic compatibility headers for critical types (Point, Rect, Component base)
-- [x] **Functional Parity Testing** — Establish manual testing baseline for core features
+- [ ] **16-entry palette with default colors** — Pixel4 indices map to RGB at display time
+- [ ] **Index 0 = transparent** — Consistent with existing blit/matte convention
+- [ ] **Runtime palette swap** — `setPaletteColor(index, r, g, b)` at minimum
+- [ ] **SDL2 window + game loop** — Window, renderer, event polling, clean shutdown
+- [ ] **Canvas4-to-RGB texture blit** — Indexed canvas presented via palette lookup
+- [ ] **Integer pixel scaling (nearest-neighbor)** — Small canvas readable on desktop monitor
+- [ ] **Lua scripting in SDL2 runner** — `LuaEngine` runs same Lua scripts as other platforms
+- [ ] **Unified InputState struct** — Buttons (bitmask) + analog axes (float array)
+- [ ] **Button edge detection** — `justPressed`, `held`, `justReleased` per button
+- [ ] **SDL2 keyboard-to-button mapping** — Default: arrows, Z/X, Enter
+- [ ] **Lua input polling API** — `isButtonHeld(n)`, `isButtonJustPressed(n)`, `getAxis(n)`
+- [ ] **CMake optional SDL2 target** — `ENJIN2_BUILD_SDL2=ON/OFF`, does not affect other targets
 
-### Add After Validation (Phase 2: Feature Migration)
+### Add After Validation (v1.3.x)
 
-Features to add once core infrastructure is working and tested.
+Features to add once core v1.3 is confirmed working end-to-end.
 
-- [ ] **Legacy Seams Extraction** — Introduce seams at component and scene boundaries
-- [ ] **Branch by Abstraction** — Create canvas abstraction layer
-- [ ] **Component Lifecycle Mapping** — Port component lifecycle from enjin1 to enjin2
-- [ ] **Scene Graph Porting** — Port scene management system
-- [ ] **Shadow Mode Execution** — Implement parallel execution testing
+- [ ] **Lua hot-reload in SDL2 runner** — Triggered by key shortcut (e.g., F5) or file watch
+- [ ] **Draw palette (index remapping)** — Two-stage palette for sprite recoloring without index changes
+- [ ] **Per-entry transparency flag in draw palette** — Any index can be made transparent, not just index 0
+- [ ] **Lua keyboard mapping table** — `input.setKeyMap(button, scancode)` for SDL2 runner
 
-### Future Consideration (Phase 3: Completion & Deletion)
+### Future Consideration (v1.4+)
 
-Features to defer until migration is nearly complete.
+Defer until v1.3 is validated and Tomodachi integration is underway.
 
-- [ ] **Performance Regression Guardrails** — Benchmark framework for optimization validation
-- [ ] **Incremental Dependency Inversion** — Break remaining circular dependencies
-- [ ] **Build System Migration** — Remove all enjin1 paths, enable enjin2-only build
-- [ ] **Rollback Capability** — Maintain branches until deprecation complete
-- [ ] **enjin1 Directory Deletion** — Final step, only after all validation complete
+- [ ] **Lua input event callbacks** — `onButtonPressed` / `onButtonReleased` callbacks
+- [ ] **Canvas8 palette support** — 256-color indexed palette for `Canvas8` (different use case)
+- [ ] **Multi-layer composition** — Already deferred per PROJECT.md
+- [ ] **Input device hot-plug** — Connect/disconnect gamepad at runtime via SDL2 events
+
+---
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Dependency Mapping & Analysis | HIGH | HIGH | P1 |
-| Compilation Isolation | HIGH | LOW | P1 |
-| Namespace Separation | HIGH | LOW | P1 |
-| API Compatibility Layer | MEDIUM | MEDIUM | P1 |
-| Functional Parity Testing | HIGH | HIGH | P1 |
-| Legacy Seams Extraction | MEDIUM | HIGH | P2 |
-| Component Lifecycle Mapping | HIGH | HIGH | P2 |
-| Scene Graph Porting | HIGH | HIGH | P2 |
-| Build System Migration | MEDIUM | MEDIUM | P2 |
-| Shadow Mode Execution | MEDIUM | HIGH | P2 |
-| Branch by Abstraction | LOW | HIGH | P2 |
-| Incremental Dependency Inversion | MEDIUM | HIGH | P3 |
-| Performance Regression Guardrails | MEDIUM | MEDIUM | P3 |
-| Rollback Capability | MEDIUM | LOW | P3 |
-| Strangler Fig Pattern Application | HIGH | MEDIUM | P3 |
-| Transitional Architecture Minimalism | MEDIUM | LOW | P3 |
-| API Stability Guarantees | MEDIUM | MEDIUM | P3 |
-| Feature-First Migration Order | MEDIUM | LOW | P3 |
+| 16-entry palette + default | HIGH | LOW | P1 |
+| Canvas4-to-RGB texture blit | HIGH | MEDIUM | P1 |
+| SDL2 window + game loop | HIGH | LOW | P1 |
+| Integer pixel scaling | HIGH | LOW | P1 |
+| Lua scripting in SDL2 runner | HIGH | LOW | P1 |
+| Unified InputState struct | HIGH | LOW | P1 |
+| Button edge detection | HIGH | LOW | P1 |
+| SDL2 keyboard mapping | HIGH | LOW | P1 |
+| Lua input polling API | HIGH | MEDIUM | P1 |
+| CMake SDL2 target | HIGH | LOW | P1 |
+| Runtime palette swap | MEDIUM | LOW | P1 |
+| Lua palette API | MEDIUM | MEDIUM | P1 |
+| Lua hot-reload | MEDIUM | LOW | P2 |
+| Draw palette (two-stage) | MEDIUM | MEDIUM | P2 |
+| Per-entry transparency flag | MEDIUM | LOW | P2 |
+| Lua keyboard mapping table | LOW | LOW | P2 |
+| Lua input event callbacks | MEDIUM | MEDIUM | P3 |
+| Canvas8 palette support | LOW | MEDIUM | P3 |
 
 **Priority key:**
-- P1: Must have for migration start (foundation)
-- P2: Should have for migration progress (core features)
-- P3: Nice to have for migration completion (optimization)
+- P1: Must have for v1.3 launch (Tomodachi integration enablement)
+- P2: Should have, add before or shortly after launch
+- P3: Nice to have, future milestone
+
+---
 
 ## Competitor Feature Analysis
 
-| Feature | Enjin → Enjin2 Approach | Typical "Big Bang" Rewrite | Google C++ Migration |
-|---------|---------------------------|------------------------|-------------------|
-| Migration Strategy | Incremental via Strangler Fig | Complete replacement then switch | Branch by Abstraction |
-| Dependency Management | Compatibility layers + seams | Copy all dependencies | Forward declarations only |
-| Testing Approach | Manual testing + shadow mode | Integration tests after migration | Unit test driven |
-| Validation | Functional parity + performance | Feature checklist | Style guide conformance |
-| Build Approach | Separate targets, gradual merge | Single build system | Bazel / Blaze |
-| Architecture | Strangler fig + transitional architecture | Monolithic replacement | Modular libraries |
-| Namespace Handling | Strict separation via compat layers | Merge namespaces | Strict separation required |
-| Memory Model | enjin2: static, enjin1: dynamic (mapped) | New memory model | Trivially destructible globals |
+These are reference implementations consulted during research — not competitors in a market sense,
+but systems that solved the same design problems.
 
-**Our Approach:** Strangler Fig with incremental migration, manual validation, compatibility layers. Favors risk reduction over speed.
+| Feature | PICO-8 | TIC-80 | Our Approach |
+|---------|--------|--------|--------------|
+| Palette size | 16 colors (fixed) | 16 colors (fixed default) | 16 colors — `Pixel4` is 4-bit, this is the hardware constraint |
+| Transparent index | Index 0 (draw palette flag) | Color 0 = transparent | Index 0 = transparent; consistent with existing Canvas4::blit() matte convention |
+| Palette swap | Two-stage (draw + screen palette) | Screen palette only | Start with screen palette only (index → RGB); add draw palette in v1.3.x |
+| Canvas storage | 4-bit indexed | 4-bit indexed | `Pixel4` packed in `Canvas4` (existing) — identical model |
+| Input API | `btn(n)`, `btnp(n)` (polling) | Same pattern | `isButtonHeld(n)`, `isButtonJustPressed(n)` in Lua — same pattern |
+| Input source | Keyboard / gamepad | Keyboard / gamepad | Platform-agnostic `InputState` injected per platform; SDL2 maps keyboard |
+| Desktop runner | Runtime (sandboxed) | Runtime (sandboxed) | SDL2 runner as development tool — not sandboxed, full file access |
+| Scripting language | Lua (subset) | Lua (subset) | Lua via LuaJIT — already integrated (existing) |
+
+---
 
 ## Sources
 
-- **Patterns of Legacy Displacement** - Martin Fowler, Ian Cartwright, Rob Horn, James Lewis (HIGH) - Comprehensive patterns for incremental legacy modernization including Strangler Fig, Legacy Seams, Event Interception, Divert the Flow
-- **Strangler Fig Application** - Martin Fowler (HIGH) - Core pattern for gradual replacement without "big bang" risk
-- **Legacy Seam** - Martin Fowler (HIGH) - How to introduce enabling points for testing and migration in legacy systems
-- **Working Effectively with Legacy Code** - Michael Feathers (MEDIUM) - Original source of "seam" concept, though not directly fetched
-- **Google C++ Style Guide** (HIGH) - Header self-containment, include ordering, namespace usage guidelines
-- **Codebase Analysis Files** - `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/CONCERNS.md` (HIGH) - Specific understanding of enjin/enjin2 structure, coupling, and technical debt
-- **Compatibility Layer Analysis** - `enjin/enjin2_compat.hpp`, `enjin2/examples/eisei_game_benchmark.cpp` (HIGH) - Real examples of compatibility approach in this codebase
+- PICO-8 Palette documentation (PICO-8 Wiki): https://pico-8.fandom.com/wiki/Palette — Two-stage palette system (draw palette + screen palette), transparency flag per index (HIGH confidence)
+- PICO-8 Manual (Lexaloffle): https://www.lexaloffle.com/dl/docs/pico-8_manual.html — Input API (`btn`, `btnp`), 16-color constraint (HIGH confidence)
+- SDL2 indexed texture streaming: https://discourse.libsdl.org/t/indexed-texture-streaming-with-custom-palette/25084 — `SDL_PIXELFORMAT_INDEX8` streaming texture approach (MEDIUM confidence — archived forum post)
+- SDL2 pixel art scaling: https://discourse.libsdl.org/t/scaling-resolution-and-pixel-art/21342 — Logical resolution and nearest-neighbor scaling (HIGH confidence)
+- SDL2 game loop patterns: https://thelinuxcode.com/sdl2-in-c-and-c-2026-practical-patterns-real-examples-and-the-mental-model-that-makes-it-click/ — Init/loop/shutdown, delta time via `SDL_GetPerformanceCounter` (MEDIUM confidence)
+- SDL2 framebuffer rendering: https://codersplate.wordpress.com/2025/08/01/creating-a-framebuffer-renderer-in-c-with-sdl2/ — Raw pixel manipulation to SDL2 surface/texture (MEDIUM confidence)
+- SDL2 GameController API: https://blog.rubenwardy.com/2023/01/24/using_sdl_gamecontroller/ — Unified controller abstraction over raw joystick (HIGH confidence)
+- Handmade Penguin input abstraction: https://davidgow.net/handmadepenguin/ch6.html — Keyboard + gamepad unified input pattern (MEDIUM confidence)
+- Fantasy console palette survey: https://lospec.com/palette-list/tag/fantasyconsole — Reference palettes (16-color, PICO-8, etc.) (HIGH confidence)
+- enjin2 codebase direct inspection: `include/enjin2/graphics/canvas.hpp`, `include/enjin2/core/types.hpp`, `include/enjin2/ui/systems.hpp`, `include/enjin2/scripting/lua_platform.hpp` — Existing API surface, constraints, and integration points (HIGH confidence)
 
 ---
-*Feature research for: C++ Codebase Migration (enjin → enjin2)*
-*Researched: 2026-01-30*
+*Feature research for: enjin2 v1.3 — Palette System, SDL2 Desktop Runner, Input Abstraction*
+*Researched: 2026-02-23*
 *Confidence: HIGH*
