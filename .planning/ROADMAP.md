@@ -146,7 +146,10 @@ Plans:
   2. Cross-references render as readable names (e.g. `Sprite` not `Spriteclassenjin2_1_1Spritecompound`)
   3. All 76 API documentation pages contain clean, human-readable text
   4. Docusaurus build passes with regenerated pages
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 14-01-PLAN.md — Fix extractText() $ attribute filter and regenerate all API pages
 
 #### Phase 15: Cleanup CI and README Tech Debt
 **Goal**: Remove redundant CI pipeline step and replace license badge placeholder
@@ -155,7 +158,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. generate-api-docs.js runs only once in CI pipeline (remove duplicate invocation)
   2. License badge in README uses correct license (not TBD placeholder)
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 15-01-PLAN.md — Remove duplicate generate-api-docs.js from CI/deploy and replace README license TBD with MIT
 
 ## Progress
 
