@@ -7,7 +7,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 ## Milestones
 
 - ✅ **v1.0 Migration + Documentation** — Phases 1-6 (shipped 2026-02-01)
-- ✅ **v1.1 Project Infrastructure & Documentation Enhancement** — Phases 7-9 (completed 2026-02-03)
+- **v1.1 Project Infrastructure & Documentation Enhancement** — Phases 7-15 (gap closure in progress)
 
 ## Phases
 
@@ -26,7 +26,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 **Total:** 6 phases, 21 plans, all complete
 </details>
 
-### v1.1 Project Infrastructure & Documentation Enhancement (In Progress - Gap Closure)
+### v1.1 Project Infrastructure & Documentation Enhancement (In Progress — Tech Debt Closure)
 
 **Milestone Goal:** Improve project accessibility with comprehensive README, fix build dependencies, and enhance documentation coverage.
 
@@ -136,6 +136,27 @@ Plans:
 - [x] 13-01-PLAN.md — Fix XML filename encoding, config entries, sanitizeClassName, compat module, Effects conflict in generate-api-docs.js — completed 2026-02-23
 - [x] 13-02-PLAN.md — Create API landing page and verify Docusaurus build end-to-end — completed 2026-02-23
 
+#### Phase 14: Fix extractText() Cross-Reference Rendering
+**Goal**: Fix extractText() to skip xml2js `$` attributes so cross-references render as readable text
+**Depends on**: Phase 13
+**Requirements**: DOC-02
+**Gap Closure**: Closes INT-01 (extractText() XML attribute contamination), broken E2E flow (Doxygen XML → readable Docusaurus pages)
+**Success Criteria** (what must be TRUE):
+  1. extractText() in generate-api-docs.js skips xml2js `$` attribute objects when extracting text
+  2. Cross-references render as readable names (e.g. `Sprite` not `Spriteclassenjin2_1_1Spritecompound`)
+  3. All 76 API documentation pages contain clean, human-readable text
+  4. Docusaurus build passes with regenerated pages
+**Plans**: TBD
+
+#### Phase 15: Cleanup CI and README Tech Debt
+**Goal**: Remove redundant CI pipeline step and replace license badge placeholder
+**Depends on**: Phase 14
+**Gap Closure**: Closes remaining tech debt from v1.1 audit
+**Success Criteria** (what must be TRUE):
+  1. generate-api-docs.js runs only once in CI pipeline (remove duplicate invocation)
+  2. License badge in README uses correct license (not TBD placeholder)
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
@@ -156,7 +177,9 @@ Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13
    | 11. Documentation Tracking Improvements | 1/1 | Complete    | 2026-02-23 | - |
    | 12. Fix Doxygen Warning Regression | 2/2 | Complete    | 2026-02-23 | - |
    | 13. Fix Documentation Pipeline & API Landing | 2/2 | Complete    | 2026-02-23 | - |
+   | 14. Fix extractText() Cross-References | v1.1 | 0/0 | Pending | - |
+   | 15. Cleanup CI and README Tech Debt | v1.1 | 0/0 | Pending | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
-- v1.1: 10/10 plans complete, 3 phases pending (gap closure)
+- v1.1: 13/15 phases complete, 2 phases pending (tech debt closure)
