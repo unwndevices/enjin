@@ -4,20 +4,18 @@
 
 See: .planning/PROJECT.md (updated 2026-02-23)
 
-**Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Planning next milestone
+**Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
+**Current focus:** v1.3 Tomodachi Readiness
 
 ## Current Position
 
-Phase: All 18 phases complete
-Plan: All complete
-Status: Between milestones
-Last activity: 2026-02-23 — Completed v1.2 milestone (Tech Debt Cleanup)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-23 — Milestone v1.3 started
 
-Milestone: v1.2 shipped (2026-02-23)
-Previous: v1.1 shipped (2026-02-23), v1.0 shipped (2026-02-01)
-
-Progress: [██████████] 100% (all milestones shipped)
+Milestone: v1.3 in progress
+Previous: v1.2 shipped (2026-02-23), v1.1 shipped (2026-02-23), v1.0 shipped (2026-02-01)
 
 ## Performance Metrics
 
@@ -34,7 +32,6 @@ Progress: [██████████] 100% (all milestones shipped)
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-No active decisions — between milestones.
 
 ### Pending Todos
 
@@ -53,5 +50,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed v1.2 milestone
+Stopped at: Starting v1.3 milestone
 Resume file: None

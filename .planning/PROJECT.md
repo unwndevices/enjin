@@ -2,11 +2,11 @@
 
 ## What This Is
 
-Complete migration from enjin to enjin2 - making enjin2 fully self-contained with Lua/WASM integration, non-dynamic memory allocation, and clean intelligent structure. enjin2 is now a fully independent library with comprehensive documentation deployed to GitHub Pages, professional README, zero Doxygen warnings, and a clean codebase with no enjin1 remnants.
+enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded devices and WASM. It runs on ESP32, WebAssembly (Emscripten), and VCV Rack, with Lua scripting support. enjin2 powers Tomodachi — a portable MIDI/audio control gadget with a pixel display.
 
 ## Core Value
 
-enjin2 works independently without any enjin1 dependencies.
+enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation.
 
 ## Current State
 
@@ -65,9 +65,20 @@ enjin2 works independently without any enjin1 dependencies.
 - ✓ Generated LaTeX files removed from git — v1.2 (Phase 16, REPO-01)
 - ✓ .gitignore updated for LaTeX exclusion — v1.2 (Phase 16, REPO-02)
 
+## Current Milestone: v1.3 Tomodachi Readiness
+
+**Goal:** Make enjin2 ready for Tomodachi integration with color palettes, desktop development, and flexible input.
+
+**Target features:**
+- 16-color indexed palette system (15 colors + transparent, lookup at display time)
+- SDL2 desktop runner (C++ app with Lua scripting, third platform backend)
+- Flexible input abstraction (buttons, pots, joysticks, touchpads, keyboard — platform-agnostic)
+
 ### Active
 
-(None — planning next milestone)
+- [ ] 16-color indexed palette system
+- [ ] SDL2 desktop runner with Lua scripting
+- [ ] Platform-agnostic input abstraction
 
 ### Out of Scope
 
@@ -77,27 +88,33 @@ enjin2 works independently without any enjin1 dependencies.
 - Dual-backend compile-time switching — Removed in Phase 5
 - Usage examples in API documentation — Deferred to future milestone
 - Getting started guide — Deferred to future milestone
+- Multi-layer composition — Deferred to v1.4+
+- MIDI/audio integration — Tomodachi-side, not enjin2
 
 ## Context
 
 **After v1.2:**
 enjin2 is a fully independent, clean library with:
-- Zero enjin1 dependencies or remnants (compat headers, dead benchmarks all removed)
-- Professional README with badges, features, and documentation navigation
-- Comprehensive API documentation (84 clean pages across 9 modules with overviews)
-- 0 Doxygen warnings with CI gate to prevent regression
-- Deployment pipeline to GitHub Pages (fully operational)
-- WASM build with optional Lua support via CMake generator expressions
+- Zero enjin1 dependencies or remnants
+- 84 clean API pages, 0 Doxygen warnings, CI gate
+- WASM build with optional Lua support
 - No tech debt blocking Tomodachi integration
 
-**Upcoming: Tomodachi**
-enjin2 will serve as the graphics engine for Tomodachi — a portable MIDI/audio control gadget with Lua scripting. v1.3 will address Tomodachi-specific readiness (multi-layer composition, WASM build, API surface gaps).
+**Current architecture (relevant to v1.3):**
+- Canvas system: 4-bit (Canvas4) and 8-bit (Canvas8) templates, Pixel4 stores values 0-15 as grayscale
+- Platform backends: WASM (Emscripten bindings), ESP32 (Arduino), VCV Rack — no SDL2
+- Input: UI-level InputComponent/InputSystem (mouse-only, not a general input abstraction)
+- Build: CMake multi-target (enjin2_core, enjin2_graphics, enjin2_ui, enjin2_lua, enjin2_wasm)
+
+**Tomodachi context:**
+Portable MIDI/audio control gadget with pixel display and Lua scripting. Physical inputs include buttons, potentiometers, joysticks, and touchpads. Desktop development via SDL2 enables rapid iteration before deploying to ESP32.
 
 ## Constraints
 
 - **Structure**: Clean and intelligent organization, no fuss
 - **Validation**: Manual testing (no automated test suite)
-- **Outcome**: Only enjin2 directory remains
+- **Memory**: No dynamic allocation (static arrays, no heap)
+- **Platforms**: Must work on ESP32, WASM, and SDL2 desktop
 
 ## Key Decisions
 
@@ -121,4 +138,4 @@ enjin2 will serve as the graphics engine for Tomodachi — a portable MIDI/audio
 | ENJIN2_BUILD_LUA compile definition | CMake injects ENJIN2_BUILD_LUA=1 so C++ preprocessor gates Lua code | ✓ Working - Phase 18 |
 
 ---
-*Last updated: 2026-02-23 after v1.2 milestone*
+*Last updated: 2026-02-23 after starting v1.3 milestone*
