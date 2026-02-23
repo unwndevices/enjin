@@ -73,10 +73,6 @@ jobs:
           fi
           echo "::notice::Doxygen warning count ($COUNT) is within threshold ($THRESHOLD)"
 
-      - name: Generate API documentation
-        run: |
-          node scripts/generate-api-docs.js
-
       - name: Build Docusaurus site
         run: |
           cd docs

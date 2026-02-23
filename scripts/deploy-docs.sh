@@ -14,9 +14,6 @@ cmake .. -DCMAKE_BUILD_TYPE=Release 2>/dev/null || cmake ..
 cmake --build . --target docs
 cd ..
 
-echo "Generating API documentation..."
-node scripts/generate-api-docs.js
-
 echo "Building Docusaurus site..."
 cd docs
 npm run build
