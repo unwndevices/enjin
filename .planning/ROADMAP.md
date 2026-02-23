@@ -51,7 +51,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 
 - [x] **Phase 16: Repository Cleanup** - Remove dead compat headers, dead examples, and generated LaTeX from git tracking (completed 2026-02-23)
 - [x] **Phase 17: Documentation Generation Fix** - Fix extractText() and formatMethod() issues, regenerate all API docs clean (completed 2026-02-23)
-- [ ] **Phase 18: Build System Fix** - Fix WASM build with ENJIN2_BUILD_LUA=OFF
+- [x] **Phase 18: Build System Fix** - Fix WASM build with ENJIN2_BUILD_LUA=OFF (completed 2026-02-23)
 
 ## Phase Details
 
@@ -117,7 +117,7 @@ Phases execute in numeric order: 16 → 17 → 18
 | 15. Cleanup CI/README | v1.1 | 1/1 | Complete | 2026-02-23 |
 | 16. Repository Cleanup | 2/2 | Complete    | 2026-02-23 | - |
 | 17. Doc Generation Fix | 2/2 | Complete    | 2026-02-23 | - |
-| 18. Build System Fix | v1.2 | 0/1 | Not started | - |
+| 18. Build System Fix | 1/1 | Complete   | 2026-02-23 | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)

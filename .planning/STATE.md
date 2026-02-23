@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Phase 17 - Documentation Generation Fix
+**Current focus:** Phase 18 - Build System Fix (complete)
 
 ## Current Position
 
-Phase: 17 of 18 (Documentation Generation Fix)
-Plan: 2 of 2 (complete)
+Phase: 18 of 18 (Build System Fix)
+Plan: 1 of 1 (complete)
 Status: Complete
-Last activity: 2026-02-23 — Completed 17-02 (regenerated 84 API docs; fixed formatMethod() xml2js object nodes)
+Last activity: 2026-02-23 — Completed 18-01 (WASM build made Lua-optional via generator expressions and preprocessor guards)
 
 Milestone: v1.2 Tech Debt Cleanup
 Previous: v1.1 shipped (2026-02-23)
@@ -25,7 +25,7 @@ Progress: [██████████] 100%
 - Total plans completed: 41
 - v1.0: 21 plans
 - v1.1: 17 plans
-- v1.2: 4 plans
+- v1.2: 5 plans
 
 *Updated after each plan completion*
 
@@ -43,6 +43,8 @@ Recent decisions affecting current work:
 - [Phase 17-01]: extractText() primary path uses $$ array traversal — Object.entries() loses document order for mixed-content nodes
 - [Phase 17-01]: formatMethod() strips trailing ' const' from argsstring when $.const=yes to avoid const const duplication
 - [Phase 17-02]: formatMethod() must extract ._ from xml2js object nodes for name and argsstring — ordered parsing wraps text nodes as { _: 'text', $$: [...] }
+- [Phase 18-01]: CMake generator expressions ($<$<BOOL:${ENJIN2_BUILD_LUA}>:...>) used for WASM conditional Lua linking — consistent with existing enjin2 interface target pattern
+- [Phase 18-01]: ENJIN2_BUILD_LUA=1 injected as compile definition from CMake so C++ source detects Lua availability at compile time
 
 ### Pending Todos
 
@@ -58,11 +60,11 @@ None.
 - ~~Dead examples with enjin1 references~~ (fixed in 16-01)
 - ~~extractText() cosmetic issues: brief description duplication, template param concatenation, const const duplication~~ (fixed in 17-01)
 - ~~84 API markdown pages regenerated with clean text~~ (completed in 17-02)
-- WASM+LUA OFF CMake edge case
+- ~~WASM+LUA OFF CMake edge case~~ (fixed in 18-01)
 - ~~Generated LaTeX files tracked in git~~ (fixed in 16-02)
 
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 17-02-PLAN.md
+Stopped at: Completed 18-01-PLAN.md
 Resume file: None

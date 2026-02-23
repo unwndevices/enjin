@@ -23,7 +23,7 @@ Requirements for tech debt cleanup milestone. Each maps to roadmap phases.
 
 ### Build System Fix
 
-- [ ] **BLDS-01**: WASM build succeeds with `ENJIN2_BUILD_LUA=OFF`
+- [x] **BLDS-01**: WASM build succeeds with `ENJIN2_BUILD_LUA=OFF`
 
 ### Repository Hygiene
 
@@ -62,7 +62,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCG-02 | Phase 17 | Complete |
 | DOCG-03 | Phase 17 | Complete |
 | DOCG-04 | Phase 17 | Complete |
-| BLDS-01 | Phase 18 | Pending |
+| BLDS-01 | Phase 18 | Complete |
 | REPO-01 | Phase 16 | Complete |
 | REPO-02 | Phase 16 | Complete |
 
