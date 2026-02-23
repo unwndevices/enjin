@@ -183,8 +183,8 @@ Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13
    | 11. Documentation Tracking Improvements | 1/1 | Complete    | 2026-02-23 | - |
    | 12. Fix Doxygen Warning Regression | 2/2 | Complete    | 2026-02-23 | - |
    | 13. Fix Documentation Pipeline & API Landing | 2/2 | Complete    | 2026-02-23 | - |
-   | 14. Fix extractText() Cross-References | 1/1 | Complete   | 2026-02-23 | - |
-   | 15. Cleanup CI and README Tech Debt | 1/1 | Complete   | 2026-02-23 | - |
+   | 14. Fix extractText() Cross-References | 1/1 | Complete    | 2026-02-23 | - |
+   | 15. Cleanup CI and README Tech Debt | 1/1 | Complete    | 2026-02-23 | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
