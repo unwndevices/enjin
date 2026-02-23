@@ -157,6 +157,11 @@ public:
 
     /**
      * @brief Fill a circle
+     * @param canvas Target canvas
+     * @param x0 Circle center X coordinate
+     * @param y0 Circle center Y coordinate
+     * @param r Circle radius in pixels
+     * @param color Fill color
      */
     static void fillCircle(TCanvas& canvas, int16_t x0, int16_t y0, int16_t r, PixelType color) {
         drawVLine(canvas, x0, y0 - r, 2 * r + 1, color);
@@ -165,6 +170,13 @@ public:
 
     /**
      * @brief Circle helper for fill operations
+     * @param canvas Target canvas
+     * @param x0 Circle center X coordinate
+     * @param y0 Circle center Y coordinate
+     * @param r Circle radius
+     * @param corners Bitmask of corners to fill
+     * @param delta Offset for fill extent
+     * @param color Fill color
      */
     static void fillCircleHelper(TCanvas& canvas, int16_t x0, int16_t y0, int16_t r, uint8_t corners, int16_t delta, PixelType color) {
         int16_t f = 1 - r;
@@ -202,6 +214,12 @@ public:
 
     /**
      * @brief Draw circle helper for rounded rectangles
+     * @param canvas Target canvas
+     * @param x0 Circle center X coordinate
+     * @param y0 Circle center Y coordinate
+     * @param r Circle radius
+     * @param cornername Bitmask of corners to draw
+     * @param color Outline color
      */
     static void drawCircleHelper(TCanvas& canvas, int16_t x0, int16_t y0, int16_t r, uint8_t cornername, PixelType color) {
         int16_t f = 1 - r;
@@ -241,6 +259,14 @@ public:
 
     /**
      * @brief Draw a triangle outline
+     * @param canvas Target canvas
+     * @param x0 First vertex X
+     * @param y0 First vertex Y
+     * @param x1 Second vertex X
+     * @param y1 Second vertex Y
+     * @param x2 Third vertex X
+     * @param y2 Third vertex Y
+     * @param color Outline color
      */
     static void drawTriangle(TCanvas& canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, PixelType color) {
         drawLine(canvas, x0, y0, x1, y1, color);
@@ -250,6 +276,14 @@ public:
 
     /**
      * @brief Fill a triangle with scanline algorithm
+     * @param canvas Target canvas
+     * @param x0 First vertex X
+     * @param y0 First vertex Y
+     * @param x1 Second vertex X
+     * @param y1 Second vertex Y
+     * @param x2 Third vertex X
+     * @param y2 Third vertex Y
+     * @param color Fill color
      */
     static void fillTriangle(TCanvas& canvas, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, PixelType color) {
         // Sort vertices by y-coordinate
@@ -284,6 +318,13 @@ public:
 
     /**
      * @brief Draw a rounded rectangle
+     * @param canvas Target canvas
+     * @param x Top-left X coordinate
+     * @param y Top-left Y coordinate
+     * @param w Width in pixels
+     * @param h Height in pixels
+     * @param radius Corner radius
+     * @param color Outline color
      */
     static void drawRoundRect(TCanvas& canvas, int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, PixelType color) {
         // Draw corners as quarter circles
@@ -301,6 +342,13 @@ public:
 
     /**
      * @brief Fill a rounded rectangle
+     * @param canvas Target canvas
+     * @param x Top-left X coordinate
+     * @param y Top-left Y coordinate
+     * @param w Width in pixels
+     * @param h Height in pixels
+     * @param radius Corner radius
+     * @param color Fill color
      */
     static void fillRoundRect(TCanvas& canvas, int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, PixelType color) {
         // Fill center rectangle

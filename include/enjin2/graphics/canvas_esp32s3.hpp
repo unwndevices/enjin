@@ -62,18 +62,22 @@ static constexpr PixelLUT pixelLUT{};
  * @brief Render command for dual-core pipeline
  */
 struct RenderCommand {
+    /// @brief Render command type enumeration
     enum Type {
-        CLEAR,
-        SET_PIXEL,
-        HORIZONTAL_LINE,
-        VERTICAL_LINE,
-        FILL_RECT,
-        FILL_CIRCLE
+        CLEAR,            ///< Clear canvas
+        SET_PIXEL,        ///< Set single pixel
+        HORIZONTAL_LINE,  ///< Draw horizontal line
+        VERTICAL_LINE,    ///< Draw vertical line
+        FILL_RECT,        ///< Fill rectangle
+        FILL_CIRCLE       ///< Fill circle
     };
-    
-    Type type;
-    int16_t x, y, w, h;
-    uint8_t color;
+
+    Type type;            ///< Command type
+    int16_t x;            ///< X coordinate
+    int16_t y;            ///< Y coordinate
+    int16_t w;            ///< Width or radius
+    int16_t h;            ///< Height
+    uint8_t color;        ///< Color value
 };
 
 /**
@@ -123,6 +127,9 @@ public:
     
     /**
      * @brief Fast pixel setting using lookup tables
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Pixel color
      */
     IRAM_ATTR inline void setPixel(int16_t x, int16_t y, Pixel4 color) {
         if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
@@ -136,6 +143,9 @@ public:
     
     /**
      * @brief Fast pixel reading using lookup tables
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @return Pixel color at the specified location
      */
     IRAM_ATTR inline Pixel4 getPixel(int16_t x, int16_t y) const {
         if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
@@ -154,6 +164,10 @@ public:
     
     /**
      * @brief Vectorized horizontal line drawing
+     * @param x1 Start X coordinate
+     * @param x2 End X coordinate
+     * @param y Y coordinate
+     * @param color Line color
      */
     IRAM_ATTR void drawHorizontalLine(int16_t x1, int16_t x2, int16_t y, Pixel4 color) {
         if (y < 0 || y >= HEIGHT) return;
@@ -214,6 +228,10 @@ public:
     
     /**
      * @brief Optimized vertical line drawing
+     * @param x X coordinate
+     * @param y1 Start Y coordinate
+     * @param y2 End Y coordinate
+     * @param color Line color
      */
     IRAM_ATTR void drawVerticalLine(int16_t x, int16_t y1, int16_t y2, Pixel4 color) {
         if (x < 0 || x >= WIDTH) return;
@@ -235,6 +253,11 @@ public:
     
     /**
      * @brief Fast rectangle filling using vectorized horizontal lines
+     * @param x Top-left X coordinate
+     * @param y Top-left Y coordinate
+     * @param w Width in pixels
+     * @param h Height in pixels
+     * @param color Fill color
      */
     IRAM_ATTR void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, Pixel4 color) {
         if (w <= 0 || h <= 0) return;
@@ -249,6 +272,10 @@ public:
     
     /**
      * @brief Optimized circle filling using scanline algorithm
+     * @param cx Center X coordinate
+     * @param cy Center Y coordinate
+     * @param radius Circle radius
+     * @param color Fill color
      */
     IRAM_ATTR void fillCircle(int16_t cx, int16_t cy, int16_t radius, Pixel4 color) {
         if (radius <= 0) return;
@@ -290,6 +317,7 @@ public:
     
     /**
      * @brief Fast clear using optimized memory operations
+     * @param color Color to fill canvas with
      */
     IRAM_ATTR void clear(Pixel4 color) {
         const uint8_t doubleColor = pixelLUT.doubleMasks[color.value];
@@ -317,6 +345,7 @@ public:
     
     /**
      * @brief Get raw data pointer for DMA transfers
+     * @return Pointer to pixel buffer
      */
     const uint8_t* getData() const { return data; }
     
@@ -410,9 +439,11 @@ private:
 #endif
 };
 
-// Type aliases for common canvas sizes
+/// @brief ESP32-S3 optimized 128x64 canvas type alias
 using Canvas4_128x64_ESP32S3 = Canvas4_ESP32S3<128, 64>;
+/// @brief ESP32-S3 optimized 256x128 canvas type alias
 using Canvas4_256x128_ESP32S3 = Canvas4_ESP32S3<256, 128>;
+/// @brief ESP32-S3 optimized 320x240 canvas type alias
 using Canvas4_320x240_ESP32S3 = Canvas4_ESP32S3<320, 240>;
 
 } // namespace enjin2

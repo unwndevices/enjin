@@ -154,52 +154,91 @@ public:
         }
     }
 
-    // Setters (match original Enjin method names exactly)
+    /**
+     * @brief Set texture data with dimensions
+     * @param texture_data Pointer to texture bitmap data
+     * @param w Width in pixels
+     * @param h Height in pixels
+     */
     void setTexture(const uint8_t* texture_data, uint8_t w, uint8_t h) {
         texture = texture_data;
         width = w;
         height = h;
     }
 
+    /**
+     * @brief Set texture data and frame
+     * @param texture_data Pointer to texture bitmap data
+     * @param frame_id Frame index to display
+     */
     void setTexture(const uint8_t* texture_data, uint8_t frame_id) {
         texture = texture_data;
         frame = frame_id;
     }
 
+    /**
+     * @brief Set current animation frame
+     * @param frame_id Frame index to display
+     */
     void setTexture(uint8_t frame_id) {
         frame = frame_id;
     }
 
+    /**
+     * @brief Set sprite position
+     * @param x X coordinate
+     * @param y Y coordinate
+     */
     void setPosition(int16_t x, int16_t y) {
         position.x = x;
         position.y = y;
     }
 
+    /**
+     * @brief Set sprite position from point
+     * @param pos New position
+     */
     void setPosition(Point pos) {
         position = pos;
     }
 
+    /**
+     * @brief Set matte (transparent) color
+     * @param matte_color Color value to treat as transparent
+     */
     void setMatte(uint8_t matte_color) {
         matte = matte_color;
     }
 
-    // Getters (match original Enjin)
+    /// @brief Get pointer to current frame texture data
+    /// @return Pointer to texture data, or nullptr if no texture set
     const uint8_t* GetTexture() const {
         if (!texture) return nullptr;
         return texture + (frame * width * height);
     }
 
+    /// @brief Get sprite width
+    /// @return Width in pixels
     uint8_t GetWidth() const { return width; }
+    /// @brief Get sprite height
+    /// @return Height in pixels
     uint8_t GetHeight() const { return height; }
+    /// @brief Get current frame index
+    /// @return Frame index
     uint8_t getFrame() const { return frame; }
+    /// @brief Get sprite position
+    /// @return Current position
     Point getPosition() const { return position; }
+    /// @brief Get matte (transparent) color
+    /// @return Matte color value
     uint8_t getMatte() const { return matte; }
 
-    // Public members (matches original Enjin public interface)
-    uint8_t _width, _height, _frame;
-    Point _position;
-    uint8_t _matte;
-    BlendMode _mode;
+    uint8_t _width;      ///< Legacy public width
+    uint8_t _height;     ///< Legacy public height
+    uint8_t _frame;      ///< Legacy public frame
+    Point _position;     ///< Legacy public position
+    uint8_t _matte;      ///< Legacy public matte
+    BlendMode _mode;     ///< Legacy public blend mode
 
 private:
     const uint8_t* texture;     ///< Pointer to texture data

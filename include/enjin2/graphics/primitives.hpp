@@ -58,7 +58,12 @@ public:
         }
     }
     
-    // Rectangle outline
+    /**
+     * @brief Draw rectangle outline
+     * @param canvas Target canvas
+     * @param rect Rectangle bounds
+     * @param color Outline color
+     */
     static void drawRect(ICanvas<TPixel>& canvas, const Rect& rect, TPixel color) {
         int16_t x1 = rect.x;
         int16_t y1 = rect.y;
@@ -74,13 +79,25 @@ public:
         drawLine(canvas, x2, y1, x2, y2, color);
     }
     
-    // Filled rectangle
+    /**
+     * @brief Fill a rectangle
+     * @param canvas Target canvas
+     * @param rect Rectangle bounds
+     * @param color Fill color
+     */
     static void fillRect(ICanvas<TPixel>& canvas, const Rect& rect, TPixel color) {
         canvas.fill(rect, color);
     }
     
-    // Circle using midpoint algorithm
-    static void drawCircle(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy, 
+    /**
+     * @brief Draw circle outline using midpoint algorithm
+     * @param canvas Target canvas
+     * @param cx Center X coordinate
+     * @param cy Center Y coordinate
+     * @param radius Circle radius
+     * @param color Outline color
+     */
+    static void drawCircle(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
                           int16_t radius, TPixel color) {
         int16_t x = 0;
         int16_t y = radius;
@@ -107,8 +124,15 @@ public:
         }
     }
     
-    // Filled circle using scanline algorithm
-    static void fillCircle(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy, 
+    /**
+     * @brief Fill circle using scanline algorithm
+     * @param canvas Target canvas
+     * @param cx Center X coordinate
+     * @param cy Center Y coordinate
+     * @param radius Circle radius
+     * @param color Fill color
+     */
+    static void fillCircle(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
                           int16_t radius, TPixel color) {
         for (int16_t y = -radius; y <= radius; ++y) {
             int32_t y_sq = y * y;
@@ -120,7 +144,17 @@ public:
         }
     }
     
-    // Triangle outline
+    /**
+     * @brief Draw triangle outline
+     * @param canvas Target canvas
+     * @param x0 First vertex X
+     * @param y0 First vertex Y
+     * @param x1 Second vertex X
+     * @param y1 Second vertex Y
+     * @param x2 Third vertex X
+     * @param y2 Third vertex Y
+     * @param color Outline color
+     */
     static void drawTriangle(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
                             int16_t x1, int16_t y1, int16_t x2, int16_t y2, TPixel color) {
         drawLine(canvas, x0, y0, x1, y1, color);
@@ -128,7 +162,17 @@ public:
         drawLine(canvas, x2, y2, x0, y0, color);
     }
     
-    // Filled triangle using scanline algorithm
+    /**
+     * @brief Fill triangle using scanline algorithm
+     * @param canvas Target canvas
+     * @param x0 First vertex X
+     * @param y0 First vertex Y
+     * @param x1 Second vertex X
+     * @param y1 Second vertex Y
+     * @param x2 Third vertex X
+     * @param y2 Third vertex Y
+     * @param color Fill color
+     */
     static void fillTriangle(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
                             int16_t x1, int16_t y1, int16_t x2, int16_t y2, TPixel color) {
         // Sort vertices by y-coordinate
@@ -158,7 +202,15 @@ public:
         }
     }
     
-    // Ellipse using midpoint algorithm
+    /**
+     * @brief Draw ellipse using midpoint algorithm
+     * @param canvas Target canvas
+     * @param cx Center X coordinate
+     * @param cy Center Y coordinate
+     * @param rx Horizontal radius
+     * @param ry Vertical radius
+     * @param color Outline color
+     */
     static void drawEllipse(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
                            int16_t rx, int16_t ry, TPixel color) {
         int32_t rx2 = rx * rx;
@@ -210,7 +262,16 @@ public:
         }
     }
     
-    // Arc drawing
+    /**
+     * @brief Draw arc segment
+     * @param canvas Target canvas
+     * @param cx Center X coordinate
+     * @param cy Center Y coordinate
+     * @param radius Arc radius
+     * @param start_angle Start angle in radians
+     * @param end_angle End angle in radians
+     * @param color Outline color
+     */
     static void drawArc(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
                        int16_t radius, float start_angle, float end_angle, TPixel color) {
         // Convert angles to 0-2π range
@@ -229,8 +290,14 @@ public:
         }
     }
     
-    // Simple polygon outline
-    static void drawPolygon(ICanvas<TPixel>& canvas, const Point* vertices, 
+    /**
+     * @brief Draw polygon outline
+     * @param canvas Target canvas
+     * @param vertices Array of polygon vertices
+     * @param vertex_count Number of vertices
+     * @param color Outline color
+     */
+    static void drawPolygon(ICanvas<TPixel>& canvas, const Point* vertices,
                            size_t vertex_count, TPixel color) {
         if (vertex_count < 3) return;
         
@@ -242,8 +309,9 @@ public:
     }
 };
 
-// Type aliases for common pixel types
+/// @brief Drawing primitives for 4-bit pixel type
 using Primitives4 = Primitives<Pixel4>;
+/// @brief Drawing primitives for 8-bit pixel type
 using Primitives8 = Primitives<uint8_t>;
 
 } // namespace enjin2

@@ -36,6 +36,7 @@ namespace enjin2
     class ICanvas
     {
     public:
+        /// @brief Pixel type used by this canvas
         using PixelType = TPixel;
         virtual ~ICanvas() = default;
 
@@ -110,6 +111,7 @@ namespace enjin2
     class Canvas4 : public ICanvas<Pixel4>
     {
     public:
+        /// @brief Pixel type used by this canvas
         using PixelType = Pixel4;
 
     private:
@@ -325,12 +327,22 @@ namespace enjin2
             }
         }
 
-        // Direct buffer access for advanced operations
+        /// @brief Get read-only pointer to pixel buffer
+        /// @return Pointer to packed pixel data
         const PackedPixel4 *getBuffer() const { return buffer; }
+        /// @brief Get mutable pointer to pixel buffer
+        /// @return Pointer to packed pixel data
         PackedPixel4 *getBuffer() { return buffer; }
+        /// @brief Get buffer size in bytes
+        /// @return Buffer size
         size_t getBufferSize() const { return BUFFER_SIZE; }
 
-        // Copy operations
+        /**
+         * @brief Copy pixels from another canvas
+         * @param other Source canvas to copy from
+         * @param dst_x Destination X offset
+         * @param dst_y Destination Y offset
+         */
         void copyFrom(const Canvas4 &other, int16_t dst_x = 0, int16_t dst_y = 0)
         {
             for (int16_t y = 0; y < HEIGHT && y < other.getHeight(); ++y)
@@ -342,7 +354,13 @@ namespace enjin2
             }
         }
 
-        // Blit operation for sprites
+        /**
+         * @brief Blit sprite with transparency
+         * @param sprite Source canvas to blit
+         * @param x Destination X coordinate
+         * @param y Destination Y coordinate
+         * @param transparent Color to treat as transparent
+         */
         void blit(const Canvas4 &sprite, int16_t x, int16_t y, Pixel4 transparent = Pixel4(0))
         {
             for (int16_t sy = 0; sy < sprite.getHeight(); ++sy)
@@ -359,11 +377,16 @@ namespace enjin2
         }
     };
 
-    // 8-bit canvas for compatibility and higher precision
+    /**
+     * @brief 8-bit canvas with per-pixel byte storage
+     * @tparam WIDTH Canvas width in pixels
+     * @tparam HEIGHT Canvas height in pixels
+     */
     template <uint16_t WIDTH, uint16_t HEIGHT>
     class Canvas8 : public ICanvas<uint8_t>
     {
     public:
+        /// @brief Pixel type used by this canvas
         using PixelType = uint8_t;
 
     private:
@@ -424,7 +447,10 @@ namespace enjin2
             }
         }
 
-        // Convert to 4-bit
+        /**
+         * @brief Convert canvas contents to 4-bit format
+         * @param dst Destination 4-bit canvas
+         */
         void convertTo4bit(Canvas4<WIDTH, HEIGHT> &dst) const
         {
             for (int16_t y = 0; y < HEIGHT; ++y)
@@ -436,13 +462,18 @@ namespace enjin2
             }
         }
 
+        /// @brief Get read-only pointer to pixel buffer
+        /// @return Pointer to pixel data
         const uint8_t *getBuffer() const { return buffer; }
+        /// @brief Get mutable pointer to pixel buffer
+        /// @return Pointer to pixel data
         uint8_t *getBuffer() { return buffer; }
 
         // === Adafruit_GFX Compatibility Methods ===
 
         /**
          * @brief Fill entire canvas (Adafruit_GFX compatibility)
+         * @param color Fill color
          */
         void fillScreen(uint8_t color)
         {
@@ -451,6 +482,9 @@ namespace enjin2
 
         /**
          * @brief Draw single pixel (Adafruit_GFX compatibility)
+         * @param x X coordinate
+         * @param y Y coordinate
+         * @param color Pixel color
          */
         void drawPixel(int16_t x, int16_t y, uint8_t color)
         {
@@ -459,16 +493,19 @@ namespace enjin2
 
         /**
          * @brief Get canvas width (Adafruit_GFX compatibility)
+         * @return Width in pixels
          */
         uint16_t width() const { return WIDTH; }
 
         /**
          * @brief Get canvas height (Adafruit_GFX compatibility)
+         * @return Height in pixels
          */
         uint16_t height() const { return HEIGHT; }
 
         /**
          * @brief Set text color
+         * @param color Text color value
          */
         void setTextColor(uint16_t color)
         {
@@ -478,6 +515,8 @@ namespace enjin2
 
         /**
          * @brief Set text color with background
+         * @param color Text color value
+         * @param bg Background color value
          */
         void setTextColor(uint16_t color, uint16_t bg)
         {
@@ -487,6 +526,8 @@ namespace enjin2
 
         /**
          * @brief Set cursor position
+         * @param x X coordinate
+         * @param y Y coordinate
          */
         void setCursor(int16_t x, int16_t y)
         {
@@ -496,16 +537,20 @@ namespace enjin2
 
         /**
          * @brief Get cursor X position
+         * @return Current cursor X coordinate
          */
         int16_t getCursorX() const { return cursor_x; }
 
         /**
          * @brief Get cursor Y position
+         * @return Current cursor Y coordinate
          */
         int16_t getCursorY() const { return cursor_y; }
 
         /**
          * @brief Write a single character (Adafruit_GFX compatible)
+         * @param c Character to write
+         * @return Number of bytes written
          */
         size_t write(uint8_t c)
         {
@@ -544,6 +589,7 @@ namespace enjin2
 
         /**
          * @brief Print text at cursor position (Adafruit_GFX compatible)
+         * @param text Null-terminated string to print
          */
         void print(const char *text)
         {
@@ -557,6 +603,7 @@ namespace enjin2
 
         /**
          * @brief Print text with newline (basic implementation)
+         * @param text Null-terminated string to print
          */
         void println(const char *text)
         {
@@ -567,6 +614,13 @@ namespace enjin2
 
         /**
          * @brief Draw a single character (Adafruit_GFX compatible)
+         * @param x X coordinate
+         * @param y Y coordinate
+         * @param c Character to draw
+         * @param color Text color
+         * @param bg Background color
+         * @param size_x Horizontal scale factor
+         * @param size_y Vertical scale factor
          */
         void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size_x, uint8_t size_y)
         {
@@ -621,6 +675,15 @@ namespace enjin2
             }
         }
 
+        /**
+         * @brief Draw a single character with uniform scaling
+         * @param x X coordinate
+         * @param y Y coordinate
+         * @param c Character to draw
+         * @param color Text color
+         * @param bg Background color
+         * @param size Scale factor for both axes
+         */
         void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size)
         {
             drawChar(x, y, c, color, bg, size, size);
@@ -628,8 +691,14 @@ namespace enjin2
 
         /**
          * @brief Set text size scaling
+         * @param s Uniform scale factor
          */
         void setTextSize(uint8_t s) { setTextSize(s, s); }
+        /**
+         * @brief Set text size scaling with independent axes
+         * @param s_x Horizontal scale factor
+         * @param s_y Vertical scale factor
+         */
         void setTextSize(uint8_t s_x, uint8_t s_y)
         {
             textsize_x = s_x;
@@ -638,11 +707,14 @@ namespace enjin2
 
         /**
          * @brief Set text wrap mode
+         * @param w Enable or disable text wrapping
          */
         void setTextWrap(bool w) { wrap = w; }
 
         /**
          * @brief Get text width (6 pixels per character times size)
+         * @param text Null-terminated string to measure
+         * @return Width in pixels
          */
         int16_t getTextWidth(const char *text)
         {
@@ -653,6 +725,11 @@ namespace enjin2
 
         /**
          * @brief Fill rectangle
+         * @param x Top-left X coordinate
+         * @param y Top-left Y coordinate
+         * @param w Width in pixels
+         * @param h Height in pixels
+         * @param color Fill color
          */
         void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color)
         {
@@ -670,6 +747,11 @@ namespace enjin2
 
         /**
          * @brief Draw rectangle outline
+         * @param x Top-left X coordinate
+         * @param y Top-left Y coordinate
+         * @param w Width in pixels
+         * @param h Height in pixels
+         * @param color Outline color
          */
         void drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color)
         {
@@ -681,6 +763,11 @@ namespace enjin2
 
         /**
          * @brief Draw a line using Bresenham's algorithm
+         * @param x0 Start X coordinate
+         * @param y0 Start Y coordinate
+         * @param x1 End X coordinate
+         * @param y1 End Y coordinate
+         * @param color Line color
          */
         void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint8_t color)
         {
@@ -713,6 +800,10 @@ namespace enjin2
 
         /**
          * @brief Draw a filled circle using midpoint circle algorithm
+         * @param x0 Center X coordinate
+         * @param y0 Center Y coordinate
+         * @param radius Circle radius
+         * @param color Fill color
          */
         void fillCircle(int16_t x0, int16_t y0, int16_t radius, uint8_t color)
         {
@@ -749,6 +840,10 @@ namespace enjin2
 
         /**
          * @brief Draw circle outline using midpoint circle algorithm
+         * @param x0 Center X coordinate
+         * @param y0 Center Y coordinate
+         * @param radius Circle radius
+         * @param color Outline color
          */
         void drawCircle(int16_t x0, int16_t y0, int16_t radius, uint8_t color)
         {
@@ -782,6 +877,12 @@ namespace enjin2
 
         /**
          * @brief Draw rounded rectangle outline
+         * @param x Top-left X coordinate
+         * @param y Top-left Y coordinate
+         * @param w Width in pixels
+         * @param h Height in pixels
+         * @param radius Corner radius
+         * @param color Outline color
          */
         void drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, uint8_t color)
         {
@@ -809,6 +910,12 @@ namespace enjin2
 
         /**
          * @brief Fill rounded rectangle
+         * @param x Top-left X coordinate
+         * @param y Top-left Y coordinate
+         * @param w Width in pixels
+         * @param h Height in pixels
+         * @param radius Corner radius
+         * @param color Fill color
          */
         void fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t radius, uint8_t color)
         {
@@ -835,6 +942,13 @@ namespace enjin2
 
         /**
          * @brief Fill rectangle with repeating pattern
+         * @param x Top-left X coordinate
+         * @param y Top-left Y coordinate
+         * @param w Width in pixels
+         * @param h Height in pixels
+         * @param pattern Pointer to pattern data
+         * @param patternWidth Pattern width in pixels
+         * @param patternHeight Pattern height in pixels
          */
         void fillRectWithPattern(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t *pattern, int16_t patternWidth, int16_t patternHeight)
         {
@@ -862,6 +976,11 @@ namespace enjin2
 
         /**
          * @brief Draw grayscale bitmap with basic parameters
+         * @param x Destination X coordinate
+         * @param y Destination Y coordinate
+         * @param bitmap Pointer to bitmap data
+         * @param w Bitmap width
+         * @param h Bitmap height
          */
         void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h)
         {
@@ -878,6 +997,12 @@ namespace enjin2
 
         /**
          * @brief Draw grayscale bitmap with matte threshold
+         * @param x Destination X coordinate
+         * @param y Destination Y coordinate
+         * @param bitmap Pointer to bitmap data
+         * @param matte Transparent color value to skip
+         * @param w Bitmap width
+         * @param h Bitmap height
          */
         void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, uint8_t matte, uint8_t w, uint8_t h)
         {
@@ -896,6 +1021,12 @@ namespace enjin2
 
         /**
          * @brief Draw grayscale bitmap with mask
+         * @param x Destination X coordinate
+         * @param y Destination Y coordinate
+         * @param bitmap Pointer to bitmap data
+         * @param mask Pointer to mask data (non-zero values allow drawing)
+         * @param w Bitmap width
+         * @param h Bitmap height
          */
         void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, const uint8_t *mask, uint8_t w, uint8_t h)
         {
@@ -915,6 +1046,13 @@ namespace enjin2
 
         /**
          * @brief Draw grayscale bitmap with opacity
+         * @param x Destination X coordinate
+         * @param y Destination Y coordinate
+         * @param bitmap Pointer to bitmap data
+         * @param matte Transparent color value to skip
+         * @param w Bitmap width
+         * @param h Bitmap height
+         * @param opacity_divisor Opacity divisor (higher = more transparent)
          */
         void drawGrayscaleBitmap(int16_t x, int16_t y, const uint8_t *bitmap, uint8_t matte, uint8_t w, uint8_t h, uint8_t opacity_divisor)
         {
@@ -934,6 +1072,7 @@ namespace enjin2
 
         /**
          * @brief Add blending operation with another canvas
+         * @param over Canvas to blend over this one
          */
         void add(Canvas8 *over)
         {
@@ -953,6 +1092,7 @@ namespace enjin2
 
         /**
          * @brief Add blending operation with texture data
+         * @param texture Pointer to texture data
          */
         void add(const uint8_t *texture)
         {
@@ -972,6 +1112,7 @@ namespace enjin2
 
         /**
          * @brief Subtract blending operation with another canvas
+         * @param over Canvas to subtract from this one
          */
         void subtract(Canvas8 *over)
         {
@@ -991,6 +1132,7 @@ namespace enjin2
 
         /**
          * @brief Subtract blending operation with texture data
+         * @param texture Pointer to texture data
          */
         void subtract(const uint8_t *texture)
         {
@@ -1010,6 +1152,11 @@ namespace enjin2
 
         /**
          * @brief Difference blending operation with texture data
+         * @param x Destination X coordinate
+         * @param y Destination Y coordinate
+         * @param texture Pointer to texture data
+         * @param w Texture width
+         * @param h Texture height
          */
         void difference(int16_t x, int16_t y, const uint8_t *texture, uint8_t w, uint8_t h)
         {
@@ -1085,6 +1232,13 @@ namespace enjin2
 
         /**
          * @brief Helper to determine character bounds (Adafruit_GFX compatible)
+         * @param c Character to measure
+         * @param x Current X cursor position (updated)
+         * @param y Current Y cursor position (updated)
+         * @param minx Minimum X bound (updated)
+         * @param miny Minimum Y bound (updated)
+         * @param maxx Maximum X bound (updated)
+         * @param maxy Maximum Y bound (updated)
          */
         void charBounds(unsigned char c, int16_t *x, int16_t *y, int16_t *minx, int16_t *miny, int16_t *maxx, int16_t *maxy)
         {
@@ -1159,6 +1313,13 @@ namespace enjin2
 
         /**
          * @brief Get text bounds (Adafruit_GFX compatible)
+         * @param str Null-terminated string to measure
+         * @param x Starting X position
+         * @param y Starting Y position
+         * @param x1 Output minimum X bound
+         * @param y1 Output minimum Y bound
+         * @param w Output text width
+         * @param h Output text height
          */
         void getTextBounds(const char *str, int16_t x, int16_t y, int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h)
         {
@@ -1194,6 +1355,13 @@ namespace enjin2
 
         /**
          * @brief Fill triangle (basic implementation)
+         * @param x0 First vertex X
+         * @param y0 First vertex Y
+         * @param x1 Second vertex X
+         * @param y1 Second vertex Y
+         * @param x2 Third vertex X
+         * @param y2 Third vertex Y
+         * @param color Fill color
          */
         void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color)
         {
@@ -1264,10 +1432,13 @@ namespace enjin2
         }
     };
 
-    // Type aliases for common canvas sizes
+    /// @brief 4-bit 128x64 canvas type alias
     using Canvas4_128x64 = Canvas4<128, 64>;
+    /// @brief 4-bit 128x128 canvas type alias
     using Canvas4_128x128 = Canvas4<128, 128>;
+    /// @brief 8-bit 128x64 canvas type alias
     using Canvas8_128x64 = Canvas8<128, 64>;
+    /// @brief 8-bit 128x128 canvas type alias
     using Canvas8_128x128 = Canvas8<128, 128>;
 
 } // namespace enjin2

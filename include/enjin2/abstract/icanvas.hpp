@@ -21,6 +21,7 @@ namespace enjin2 {
 template <typename TPixel>
 class ICanvas {
 public:
+    /// @brief Pixel type used by this canvas
     using PixelType = TPixel;
 
     /**
