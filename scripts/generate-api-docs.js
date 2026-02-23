@@ -94,7 +94,11 @@ Object.keys(config.modules).forEach(module => {
 function parseXmlFile(filePath) {
   const xmlContent = fs.readFileSync(filePath, 'utf-8');
   return new Promise((resolve, reject) => {
-    xml2js.parseString(xmlContent, (err, result) => {
+    xml2js.parseString(xmlContent, {
+      explicitChildren: true,
+      preserveChildrenOrder: true,
+      charsAsChildren: true
+    }, (err, result) => {
       if (err) reject(err);
       else resolve(result);
     });
@@ -105,12 +109,21 @@ function parseXmlFile(filePath) {
 function extractText(node) {
   if (!node) return '';
   if (typeof node === 'string') return node;
-  if (Array.isArray(node)) {
-    return node.map(extractText).join('');
-  }
+  if (Array.isArray(node)) return node.map(extractText).join('');
   if (typeof node === 'object') {
+    // Ordered children available — walk in document order
+    if (node.$$) {
+      return node.$$.map(child => {
+        if (child['#name'] === '__text__') return child._ || '';
+        // For element children (ref, para, etc.), recurse
+        return extractText(child);
+      }).join('');
+    }
+    // Fallback: use _ property (leaf text content)
+    if (node._ !== undefined) return String(node._);
+    // Fallback: iterate non-$ properties (preserves Phase 14's $ filter)
     return Object.entries(node)
-      .filter(([key]) => key !== '$')
+      .filter(([key]) => key !== '$' && key !== '#name' && key !== '$$')
       .map(([, value]) => extractText(value))
       .join('');
   }
