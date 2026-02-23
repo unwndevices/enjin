@@ -155,7 +155,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13
    | 10. Module Overview Generation | v1.1 | 2/2 | Complete | 2026-02-03 |
    | 11. Documentation Tracking Improvements | 1/1 | Complete    | 2026-02-23 | - |
    | 12. Fix Doxygen Warning Regression | 2/2 | Complete    | 2026-02-23 | - |
-   | 13. Fix Documentation Pipeline & API Landing | v1.1 | 0/0 | Pending | - |
+   | 13. Fix Documentation Pipeline & API Landing | 1/2 | In Progress|  | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)

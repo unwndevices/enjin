@@ -5,20 +5,20 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Phase 12 - Fix Doxygen Warning Regression
+**Current focus:** Phase 13 - Fix Documentation Pipeline API Landing
 
 ## Current Position
 
-Phase: 12 of 13 (Fix Doxygen Warning Regression)
-Plan: 2 of 2 in current phase (COMPLETE)
-Status: Phase 12 complete
-Last activity: 2026-02-23 - Completed 12-02-PLAN.md
+Phase: 13 of 13 (Fix Documentation Pipeline API Landing)
+Plan: 1 of 2 in current phase (COMPLETE)
+Status: Plan 13-01 complete, continuing to 13-02
+Last activity: 2026-02-23 - Completed 13-01-PLAN.md
 
 Milestone: v1.3 Documentation Quality Gates
 Previous: v1.2 Documentation Enhancement (shipped 2026-02-03)
 
-Progress: [██████████████] 96% (Phase 12 complete, 2 of 2 plans)
-(v1.0 complete, v1.1 phases 7-9 complete, v1.2 phase 10 complete, v1.3 phases 11-12 complete)
+Progress: [███████████████] 98% (Phase 13 in progress, 1 of 2 plans)
+(v1.0 complete, v1.1 phases 7-9 complete, v1.2 phase 10 complete, v1.3 phases 11-13 in progress)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [██████████████] 96% (Phase 12 complete, 2
    - Trend: Module overview generation complete
 
 *Updated after each plan completion*
+| Phase 13-01 P01 | 8min | 1 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,9 @@ Recent decisions:
    - Split compound member declarations for individual Doxygen documentation (12-01)
    - Doxygen requires explicit @param even in one-liner /// comments for methods with parameters (12-01)
    - Fixed all remaining warnings beyond plan scope to reach 0 (plan target was <20) (12-02)
+- [Phase 13-01]: classNameToXmlFilename encodes underscores before joining with _1_1 to match Doxygen convention (13-01)
+- [Phase 13-01]: Effects class-module conflict resolved by renaming output to EffectsClass.md instead of slug workaround (13-01)
+- [Phase 13-01]: Removed /__/g collapse from sanitizeClassName to preserve C_ prefix underscores (13-01)
 
 ### Roadmap Evolution
 
@@ -170,5 +174,5 @@ Deferred items for future milestones:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 12-02-PLAN.md (Phase 12 complete)
+Stopped at: Completed 13-01-PLAN.md
 Resume file: None
