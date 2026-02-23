@@ -50,7 +50,16 @@ enjin2 works independently without any enjin1 dependencies.
 
 ### Active
 
-(None — planning next milestone)
+## Current Milestone: v1.2 Tech Debt Cleanup
+
+**Goal:** Eliminate all enjin1 remnants and fix documentation generation issues, preparing a clean codebase for Tomodachi integration.
+
+**Target features:**
+- Remove dead compat headers (enjin1 compatibility wrappers)
+- Delete dead example files with enjin1 dependencies
+- Fix extractText() documentation generation issues (const const, cross-reference garbling)
+- Fix WASM+LUA OFF CMake edge case
+- Clean up generated LaTeX files from git tracking
 
 ### Out of Scope
 
@@ -70,7 +79,10 @@ enjin2 is a fully independent, self-contained library with:
 - Comprehensive API documentation (76+ pages across 9 modules with overviews)
 - 0 Doxygen warnings with CI gate to prevent regression
 - Deployment pipeline to GitHub Pages (fully operational)
-- Technical debt: compat headers, examples cleanup, minor extractText() cosmetic issues
+- Technical debt: compat headers, examples cleanup, extractText() cosmetic issues
+
+**Upcoming: Tomodachi**
+enjin2 will serve as the graphics engine for Tomodachi — a portable MIDI/audio control gadget with Lua scripting. v1.2 cleans up tech debt; v1.3 will address Tomodachi-specific readiness (multi-layer composition, WASM build, API surface gaps).
 
 ## Constraints
 
@@ -95,4 +107,4 @@ enjin2 is a fully independent, self-contained library with:
 | extractText() $ filter | Skip xml2js attribute objects in text extraction | ✓ Working - Phase 14 |
 
 ---
-*Last updated: 2026-02-23 after v1.1 milestone*
+*Last updated: 2026-02-23 after v1.2 milestone started*

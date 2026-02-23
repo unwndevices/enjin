@@ -5,19 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** enjin2 works independently without any enjin1 dependencies
-**Current focus:** Planning next milestone
+**Current focus:** v1.2 Tech Debt Cleanup
 
 ## Current Position
 
-Phase: 15 of 15 (all phases complete)
-Plan: All plans complete
-Status: v1.1 milestone shipped
-Last activity: 2026-02-23 - v1.1 milestone completed
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-23 — Milestone v1.2 started
 
-Milestone: v1.1 shipped (2026-02-23)
-Previous: v1.0 shipped (2026-02-01)
-
-Progress: All milestones complete. Ready for next milestone.
+Milestone: v1.2 Tech Debt Cleanup
+Previous: v1.1 shipped (2026-02-23)
 
 ## Accumulated Context
 
