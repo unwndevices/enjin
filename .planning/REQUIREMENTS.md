@@ -27,8 +27,8 @@ Requirements for tech debt cleanup milestone. Each maps to roadmap phases.
 
 ### Repository Hygiene
 
-- [ ] **REPO-01**: Generated LaTeX files (`docs/latex/`) removed from git tracking
-- [ ] **REPO-02**: `.gitignore` updated to exclude generated LaTeX files
+- [x] **REPO-01**: Generated LaTeX files (`docs/latex/`) removed from git tracking
+- [x] **REPO-02**: `.gitignore` updated to exclude generated LaTeX files
 
 ## Future Requirements
 
@@ -63,8 +63,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCG-03 | Phase 17 | Pending |
 | DOCG-04 | Phase 17 | Pending |
 | BLDS-01 | Phase 18 | Pending |
-| REPO-01 | Phase 16 | Pending |
-| REPO-02 | Phase 16 | Pending |
+| REPO-01 | Phase 16 | Complete |
+| REPO-02 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 11 total
