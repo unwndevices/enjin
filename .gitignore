@@ -42,6 +42,7 @@
 
 # Generated documentation
 docs/xml/
+docs/latex/
 
 # Docusaurus build artifacts
 docs/build/
