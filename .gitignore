@@ -47,3 +47,6 @@ docs/xml/
 docs/build/
 docs/.docusaurus/
 docs/node_modules/
+/build
+/build_wasm
+/node_modules
