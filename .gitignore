@@ -50,3 +50,6 @@ docs/node_modules/
 /build
 /build_wasm
 /node_modules
+
+# Doxygen build artifacts
+doxygen-warnings.log
