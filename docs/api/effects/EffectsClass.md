@@ -2,6 +2,7 @@
 id: EffectsClass
 title: Effects
 sidebar_label: Effects
+slug: EffectsClass
 ---
 
 # Effects

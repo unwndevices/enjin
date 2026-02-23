@@ -2,6 +2,7 @@
 id: ComponentStorage::Iterator
 title: ComponentStorage::Iterator
 sidebar_label: ComponentStorage::Iterator
+slug: ComponentStorage_Iterator
 ---
 
 # ComponentStorage::Iterator

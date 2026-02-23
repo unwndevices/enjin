@@ -2,6 +2,7 @@
 id: math::TrigLUT
 title: math::TrigLUT
 sidebar_label: math::TrigLUT
+slug: math_TrigLUT
 ---
 
 # math::TrigLUT

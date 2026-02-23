@@ -2,6 +2,7 @@
 id: ComponentQuery::Iterator
 title: ComponentQuery::Iterator
 sidebar_label: ComponentQuery::Iterator
+slug: ComponentQuery_Iterator
 ---
 
 # ComponentQuery::Iterator

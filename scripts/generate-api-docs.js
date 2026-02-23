@@ -285,10 +285,11 @@ async function processClass(className, module, classInfo) {
       outputName = `${sanitized}Class`;
     }
     const idValue = outputName !== sanitized ? outputName : className;
+    const slugLine = className.includes('::') || outputName !== sanitized ? `\nslug: ${outputName}` : '';
     let markdown = `---
 id: ${idValue}
 title: ${className}
-sidebar_label: ${className}
+sidebar_label: ${className}${slugLine}
 ---
 
 # ${className}
