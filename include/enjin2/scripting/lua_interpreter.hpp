@@ -44,20 +44,38 @@ public:
      */
     void setGraphics(IScriptGraphics* gfx);
     
-    // IScriptInterpreter implementation
+    /// @brief Initialize the Lua interpreter
+    /// @return True if initialization successful
     bool initialize() override;
+    /// @brief Shutdown the Lua interpreter
     void shutdown() override;
+    /// @brief Check if interpreter is initialized
+    /// @return True if initialized
     bool isInitialized() const override { return initialized; }
 
+    /**
+     * @brief Execute Lua code string
+     * @param code Lua code to execute
+     * @return Execution result
+     */
     ScriptResult executeString(const std::string& code) override;
+    /**
+     * @brief Execute Lua script file
+     * @param filename Path to script file
+     * @return Execution result
+     */
     ScriptResult executeFile(const std::string& filename) override;
+    /**
+     * @brief Call named Lua function
+     * @param functionName Name of function to call
+     * @return Execution result
+     */
     ScriptResult callFunction(const std::string& functionName) override;
 
     /**
      * @brief Set global number variable
      * @param name Variable name
      * @param value Number value to set
-     * @return void
      */
     void setGlobal(const std::string& name, double value) override;
 
@@ -65,7 +83,6 @@ public:
      * @brief Set global string variable
      * @param name Variable name
      * @param value String value to set
-     * @return void
      */
     void setGlobal(const std::string& name, const std::string& value) override;
 
@@ -73,7 +90,6 @@ public:
      * @brief Set global boolean variable
      * @param name Variable name
      * @param value Boolean value to set
-     * @return void
      */
     void setGlobal(const std::string& name, bool value) override;
 
@@ -101,15 +117,19 @@ public:
      */
     bool getGlobalBool(const std::string& name, bool defaultValue = false) override;
 
+    /// @brief Get current memory usage
+    /// @return Memory usage in bytes
     size_t getMemoryUsage() const override;
+    /// @brief Get interpreter type name
+    /// @return Type name string
     const char* getTypeName() const override { return "Lua"; }
-    
+
     /**
      * @brief Get access to underlying Lua engine (for advanced operations)
      * @return Lua engine reference
      */
     LuaEngine* getLuaEngine() { return engine.get(); }
-    
+
     /**
      * @brief Get access to Lua bindings
      * @return Lua bindings reference
@@ -127,7 +147,7 @@ private:
 
 /**
  * @brief Minimal Lua interpreter for ESP32
- * 
+ *
  * Lightweight Lua implementation for ESP32 with reduced memory footprint
  * and essential graphics functions only.
  */
@@ -137,43 +157,61 @@ private:
     void* interpreterState;                  ///< Platform-specific interpreter state
     IScriptGraphics* graphics;               ///< Graphics interface
     bool initialized;                        ///< Initialization state
-    
+
     // Memory management for ESP32
     static constexpr size_t ESP32_MEMORY_LIMIT = 16 * 1024; ///< 16KB memory limit
     char memoryPool[ESP32_MEMORY_LIMIT];    ///< Static memory pool
     size_t memoryUsed;                      ///< Current memory usage
-    
+
 public:
     /**
      * @brief Constructor
      */
     MinimalLuaInterpreter();
-    
+
     /**
      * @brief Destructor
      */
     ~MinimalLuaInterpreter() override;
-    
+
     /**
      * @brief Set graphics interface
      * @param gfx Graphics interface to use
      */
     void setGraphics(IScriptGraphics* gfx);
-    
-    // IScriptInterpreter implementation
+
+    /// @brief Initialize the minimal Lua interpreter
+    /// @return True if initialization successful
     bool initialize() override;
+    /// @brief Shutdown the minimal Lua interpreter
     void shutdown() override;
+    /// @brief Check if interpreter is initialized
+    /// @return True if initialized
     bool isInitialized() const override { return initialized; }
 
+    /**
+     * @brief Execute Lua code string
+     * @param code Lua code to execute
+     * @return Execution result
+     */
     ScriptResult executeString(const std::string& code) override;
+    /**
+     * @brief Execute Lua script file
+     * @param filename Path to script file
+     * @return Execution result
+     */
     ScriptResult executeFile(const std::string& filename) override;
+    /**
+     * @brief Call named Lua function
+     * @param functionName Name of function to call
+     * @return Execution result
+     */
     ScriptResult callFunction(const std::string& functionName) override;
 
     /**
      * @brief Set global number variable
      * @param name Variable name
      * @param value Number value to set
-     * @return void
      */
     void setGlobal(const std::string& name, double value) override;
 
@@ -181,7 +219,6 @@ public:
      * @brief Set global string variable
      * @param name Variable name
      * @param value String value to set
-     * @return void
      */
     void setGlobal(const std::string& name, const std::string& value) override;
 
@@ -189,7 +226,6 @@ public:
      * @brief Set global boolean variable
      * @param name Variable name
      * @param value Boolean value to set
-     * @return void
      */
     void setGlobal(const std::string& name, bool value) override;
 
@@ -217,7 +253,11 @@ public:
      */
     bool getGlobalBool(const std::string& name, bool defaultValue = false) override;
 
+    /// @brief Get current memory usage
+    /// @return Memory usage in bytes
     size_t getMemoryUsage() const override;
+    /// @brief Get interpreter type name
+    /// @return Type name string
     const char* getTypeName() const override { return "MinimalLua"; }
 
 private:

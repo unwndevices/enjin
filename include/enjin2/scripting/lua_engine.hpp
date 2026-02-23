@@ -122,7 +122,6 @@ public:
      * @brief Set global number variable in Lua
      * @param name Variable name
      * @param value Number value to set
-     * @return void
      */
     void setGlobal(const std::string& name, double value);
 
@@ -130,7 +129,6 @@ public:
      * @brief Set global string variable in Lua
      * @param name Variable name
      * @param value String value to set
-     * @return void
      */
     void setGlobal(const std::string& name, const std::string& value);
 
@@ -138,7 +136,6 @@ public:
      * @brief Set global boolean variable in Lua
      * @param name Variable name
      * @param value Boolean value to set
-     * @return void
      */
     void setGlobal(const std::string& name, bool value);
     
@@ -234,18 +231,17 @@ private:
     static int luaPanic(lua_State* L);
     
     /**
-     * @brief Push arguments to Lua stack
-     * @param args Arguments to push
+     * @brief Push single argument to Lua stack
+     * @param arg Argument to push
      */
     template<typename T>
     void pushArg(T&& arg);
     
     /**
-     * @brief Push multiple arguments to Lua stack
-     * @param first First argument
-     * @param rest Remaining arguments
+     * @brief Push single argument to Lua stack (base case)
+     * @param arg Argument to push
      */
-    // Simplified recursive template for C++11 compatibility  
+    // Simplified recursive template for C++11 compatibility
     template<typename T>
     void pushArgs(T&& arg) {
         pushArg(std::forward<T>(arg));

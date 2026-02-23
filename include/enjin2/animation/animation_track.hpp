@@ -319,9 +319,11 @@ inline Pixel4 AnimationTrack<Pixel4, ColorKeyframe>::getValue(const ColorKeyfram
     return keyframe.color;
 }
 
-// Convenience type aliases
+/// @brief Animation track for 2D position keyframes
 using PositionTrack = AnimationTrack<Point, PositionKeyframe>;
+/// @brief Animation track for scalar float keyframes
 using FloatTrack = AnimationTrack<float, FloatKeyframe>;
+/// @brief Animation track for 4-bit color keyframes
 using ColorTrack = AnimationTrack<Pixel4, ColorKeyframe>;
 
 } // namespace enjin2

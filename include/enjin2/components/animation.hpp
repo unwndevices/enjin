@@ -108,6 +108,7 @@ public:
     
     /**
      * @brief Component update - update all active tracks
+     * @param deltaTime Time elapsed since last update in milliseconds
      */
     void update(uint16_t deltaTime) override {
         Component::update(deltaTime);
@@ -280,26 +281,31 @@ public:
     
     /**
      * @brief Get position track
+     * @return Reference to position animation track
      */
     PositionTrack& getPositionTrack() { return positionTrack; }
-    
+
     /**
      * @brief Get scale track
+     * @return Reference to scale animation track
      */
     FloatTrack& getScaleTrack() { return scaleTrack; }
-    
+
     /**
      * @brief Get rotation track
+     * @return Reference to rotation animation track
      */
     FloatTrack& getRotationTrack() { return rotationTrack; }
-    
+
     /**
      * @brief Get color track
+     * @return Reference to color animation track
      */
     ColorTrack& getColorTrack() { return colorTrack; }
-    
+
     /**
      * @brief Set auto-start behavior
+     * @param autoStart True to auto-start animations on component start
      */
     void setAutoStart(bool autoStart) {
         this->autoStart = autoStart;
@@ -307,6 +313,7 @@ public:
     
     /**
      * @brief Enable/disable position updates
+     * @param update True to update position component from animation
      */
     void setUpdatePosition(bool update) {
         updatePosition = update;
@@ -314,6 +321,7 @@ public:
     
     /**
      * @brief Enable/disable color updates
+     * @param update True to update drawable color from animation
      */
     void setUpdateColor(bool update) {
         updateColor = update;

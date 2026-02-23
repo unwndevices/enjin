@@ -13,8 +13,9 @@
 
 namespace enjin {
 
-// Type aliases for enjin1 compatibility
+/// @brief 2D vector alias mapping to enjin2::Point
 using Vector2 = enjin2::Point;
+/// @brief Size alias mapping to enjin2::Size
 using Size = enjin2::Size;
 
 /**
@@ -24,7 +25,9 @@ using Size = enjin2::Size;
  * so this is provided as a simple compatibility struct.
  */
 struct Vector3 {
-    float x, y, z;
+    float x; ///< X coordinate
+    float y; ///< Y coordinate
+    float z; ///< Z coordinate
 
     /** @brief Default constructor initializes to zero */
     Vector3() : x(0.0f), y(0.0f), z(0.0f) {}
@@ -37,12 +40,20 @@ struct Vector3 {
      */
     Vector3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
 
-    /** @brief Addition operator */
+    /**
+     * @brief Addition operator
+     * @param other Vector to add
+     * @return Sum of both vectors
+     */
     Vector3 operator+(const Vector3& other) const {
         return Vector3(x + other.x, y + other.y, z + other.z);
     }
 
-    /** @brief Subtraction operator */
+    /**
+     * @brief Subtraction operator
+     * @param other Vector to subtract
+     * @return Difference of both vectors
+     */
     Vector3 operator-(const Vector3& other) const {
         return Vector3(x - other.x, y - other.y, z - other.z);
     }
