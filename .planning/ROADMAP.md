@@ -100,10 +100,35 @@ Plans:
   3. Fails build if warning threshold exceeded
 **Plans**: TBD
 
+#### Phase 12: Fix Doxygen Warning Regression
+**Goal**: Reduce Doxygen warnings from 304 back to under 20 threshold
+**Depends on**: Phase 9
+**Requirements**: DOC-01, DOC-03
+**Gap Closure**: Closes gaps from v1.1 audit — DOC-01 unsatisfied (304 warnings vs <20 threshold), DOC-03 partial (@param mismatches)
+**Success Criteria** (what must be TRUE):
+  1. Doxygen runs with fewer than 20 warnings
+  2. All @param mismatches in lua_engine.hpp resolved
+  3. Undocumented classes (Canvas8, Canvas4_ESP32S3) and typedefs (PositionTrack, FloatTrack, ColorTrack) documented
+**Plans**: TBD
+
+#### Phase 13: Fix Documentation Pipeline & API Landing
+**Goal**: Fix generate-api-docs.js encoding bugs and create API landing page
+**Depends on**: Phase 12
+**Requirements**: DOC-02, DOC-04
+**Gap Closure**: Closes gaps from v1.1 audit — DOC-02 partial (12+ classes missing from Docusaurus), DOC-04 partial (compat excluded, Effects conflict), integration gaps, broken E2E flows
+**Success Criteria** (what must be TRUE):
+  1. generate-api-docs.js correctly handles C_* prefixed classes (underscore encoding fixed)
+  2. Nested class config uses :: notation (ComponentQuery::Iterator, ComponentStorage::Iterator)
+  3. math::TrigLUT config entry corrected
+  4. Compat module included in documentation generator config
+  5. Effects routing conflict resolved durably (no Effects.md / effects/ conflict)
+  6. API landing page exists at docs/api/ — README /api link works
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 7 → 8 → 9 → 10 → 11
+Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -118,7 +143,9 @@ Phases execute in numeric order: 7 → 8 → 9 → 10 → 11
   | 9. Documentation Coverage | v1.1 | 5/5 | Complete | 2026-02-03 |
    | 10. Module Overview Generation | v1.1 | 2/2 | Complete | 2026-02-03 |
    | 11. Documentation Tracking Improvements | v1.1 | 0/0 | Pending | - |
+   | 12. Fix Doxygen Warning Regression | v1.1 | 0/0 | Pending | - |
+   | 13. Fix Documentation Pipeline & API Landing | v1.1 | 0/0 | Pending | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
-- v1.1: 10/10 plans complete (100%) - v1.1 milestone complete
+- v1.1: 10/10 plans complete, 3 phases pending (gap closure)
