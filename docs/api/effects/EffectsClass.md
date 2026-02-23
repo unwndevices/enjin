@@ -1,8 +1,7 @@
 ---
-id: Effects
+id: EffectsClass
 title: Effects
 sidebar_label: Effects
-slug: /effects/Effects
 ---
 
 # Effects

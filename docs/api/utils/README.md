@@ -16,6 +16,7 @@ Provides helper functions and utility classes for common operations throughout t
 - [DrawingHelpers](./DrawingHelpers)
 - [InputSystem](./InputSystem)
 - [math](./math)
+- [math_TrigLUT](./math_TrigLUT)
 - [Noise](./Noise)
 - [Polar](./Polar)
 - [Signals](./Signals)

@@ -12,7 +12,9 @@ Provides canvas rendering, fonts, colors, and visual output capabilities for the
 
 ## Classes
 
+- [C_Canvas](./C_Canvas)
 - [Canvas4](./Canvas4)
+- [Canvas4_ESP32S3](./Canvas4_ESP32S3)
 - [Canvas8](./Canvas8)
 - [CanvasExtended](./CanvasExtended)
 - [CanvasGraphicsAdapter](./CanvasGraphicsAdapter)

@@ -22,18 +22,22 @@ const config = {
       classes: ['AnimationSystem', 'AnimationTrack', 'EasingFunctions', 'C_Animation'],
       description: 'Animation system and easing functions',
     },
+    compat: {
+      classes: ['Vector3'],
+      description: 'Compatibility layer for enjin1 integration',
+    },
     components: {
       classes: [
         'ButtonDial', 'C_Draw', 'C_Drawable', 'C_ImageCache', 'C_LuaScript',
         'C_Planet', 'C_Position', 'C_Probe', 'C_Satellite', 'C_Sprite',
-        'FillUpGauge', 'Label', 'Slider', 'Tickmarks'
+        'FillUpGauge', 'ImageCacheException', 'Label', 'Slider', 'Tickmarks'
       ],
       description: 'Component types for game objects',
     },
     core: {
       classes: [
-        'Component', 'ComponentBase', 'ComponentQuery', 'ComponentQuery_Iterator',
-        'ComponentStorage', 'ComponentStorage_Iterator', 'EntityManager', 'HandlePool',
+        'Component', 'ComponentBase', 'ComponentQuery', 'ComponentQuery::Iterator',
+        'ComponentStorage', 'ComponentStorage::Iterator', 'EntityManager', 'HandlePool',
         'Object', 'ObjectCollection', 'Scene', 'SceneStateMachine',
         'Signal', 'SignalConnection', 'StackAllocator', 'StaticPool'
       ],
@@ -64,7 +68,7 @@ const config = {
       description: 'UI system management',
     },
     utils: {
-      classes: ['InputSystem', 'math_TrigLUT', 'Colors', 'DrawingHelpers', 'Noise', 'Polar', 'Signals'],
+      classes: ['InputSystem', 'math::TrigLUT', 'Colors', 'DrawingHelpers', 'Noise', 'Polar', 'Signals'],
       description: 'Utility functions and helpers',
     },
   },
@@ -190,8 +194,7 @@ function sanitizeClassName(name) {
   return name
     .replace(/::/g, '_')
     .replace(/<[^>]*>/g, '')
-    .replace(/\s+/g, '')
-    .replace(/__/g, '_');
+    .replace(/\s+/g, '');
 }
 
 // Convert to PascalCase for display
@@ -201,14 +204,23 @@ function toPascalCase(name) {
     .replace(/^([a-z])/, (_, c) => c.toUpperCase());
 }
 
+// Convert class name to Doxygen XML filename
+function classNameToXmlFilename(className, prefix) {
+  const parts = className.split('::');
+  const encodedParts = parts.map(part => part.replace(/_/g, '__'));
+  return `${prefix}${encodedParts.join('_1_1')}.xml`;
+}
+
 // Process class XML and generate markdown
 async function processClass(className, module, classInfo) {
   try {
     // Try different filename patterns
     let xmlFile;
     const possibleNames = [
-      `classenjin2_1_1${className.replace(/::/g, '_1_1')}.xml`,
-      `classenjin_1_1${className.replace(/::/g, '_1_1')}.xml`,
+      classNameToXmlFilename(className, 'classenjin2_1_1'),
+      classNameToXmlFilename(className, 'classenjin_1_1'),
+      classNameToXmlFilename(className, 'structenjin2_1_1'),
+      classNameToXmlFilename(className, 'structenjin_1_1'),
     ];
 
     for (const name of possibleNames) {
@@ -263,16 +275,18 @@ async function processClass(className, module, classInfo) {
       }
     }
 
-    // Generate markdown (add slug only when class name matches module)
+    // Generate markdown - rename file if class name conflicts with module directory
     const sanitized = sanitizeClassName(className);
-    const needsSlug = sanitized.toLowerCase() === module.toLowerCase();
-    // Use absolute slug to avoid duplicating module path in nested docs.
-    const slugLine = needsSlug ? `slug: /${module}/${sanitized}\n` : '';
+    let outputName = sanitized;
+    if (sanitized.toLowerCase() === module.toLowerCase()) {
+      outputName = `${sanitized}Class`;
+    }
+    const idValue = outputName !== sanitized ? outputName : className;
     let markdown = `---
-id: ${className}
+id: ${idValue}
 title: ${className}
 sidebar_label: ${className}
-${slugLine}---
+---
 
 # ${className}
 
@@ -334,9 +348,9 @@ ${detailedDesc ? '\n' + detailedDesc : ''}
     }
 
     // Write markdown file
-    const outputFile = path.join(config.outputDir, module, `${sanitized}.md`);
+    const outputFile = path.join(config.outputDir, module, `${outputName}.md`);
     fs.writeFileSync(outputFile, markdown);
-    console.log(`Generated: ${module}/${sanitized}.md`);
+    console.log(`Generated: ${module}/${outputName}.md`);
 
     return outputFile;
   } catch (error) {

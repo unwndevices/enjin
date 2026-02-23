@@ -14,4 +14,5 @@ Provides animation classes and tweening functionality for animating game objects
 
 - [AnimationSystem](./AnimationSystem)
 - [AnimationTrack](./AnimationTrack)
+- [C_Animation](./C_Animation)
 - [EasingFunctions](./EasingFunctions)
