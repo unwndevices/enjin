@@ -53,8 +53,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 **Coverage:**
 - v1.1 requirements: 9 total
-- Satisfied: 5 (RDME-01, RDME-02, RDME-03, BLD-01, BLD-02)
-- Pending gap closure: 4 (DOC-01, DOC-02, DOC-03, DOC-04)
+- Satisfied: 9 (RDME-01, RDME-02, RDME-03, BLD-01, BLD-02, DOC-01, DOC-02, DOC-03, DOC-04)
+- Pending gap closure: 0
 - Unmapped: 0
 
 ---

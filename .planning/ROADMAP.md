@@ -133,8 +133,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 13-01-PLAN.md — Fix XML filename encoding, config entries, sanitizeClassName, compat module, Effects conflict in generate-api-docs.js
-- [ ] 13-02-PLAN.md — Create API landing page and verify Docusaurus build end-to-end
+- [x] 13-01-PLAN.md — Fix XML filename encoding, config entries, sanitizeClassName, compat module, Effects conflict in generate-api-docs.js — completed 2026-02-23
+- [x] 13-02-PLAN.md — Create API landing page and verify Docusaurus build end-to-end — completed 2026-02-23
 
 ## Progress
 
@@ -155,7 +155,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10 → 11 → 12 → 13
    | 10. Module Overview Generation | v1.1 | 2/2 | Complete | 2026-02-03 |
    | 11. Documentation Tracking Improvements | 1/1 | Complete    | 2026-02-23 | - |
    | 12. Fix Doxygen Warning Regression | 2/2 | Complete    | 2026-02-23 | - |
-   | 13. Fix Documentation Pipeline & API Landing | 1/2 | In Progress|  | - |
+   | 13. Fix Documentation Pipeline & API Landing | 2/2 | Complete    | 2026-02-23 | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
