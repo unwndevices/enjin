@@ -57,6 +57,7 @@ add_library(enjin2_graphics STATIC)
 target_sources(enjin2_graphics PRIVATE
     src/graphics/canvas.cpp
     src/graphics/primitives.cpp
+    src/graphics/palette.cpp
     src/graphics/effects.cpp
 )
 # Private include directories for strict isolation
