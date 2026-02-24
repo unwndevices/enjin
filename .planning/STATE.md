@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 23 — Docusaurus Navigation Fix
+**Current focus:** Phase 24 — Sprite System Rework
 
 ## Current Position
 
-Phase: 23 of 26 (Docusaurus Navigation Fix)
-Plan: 1 of 1 in current phase — COMPLETE
-Status: Phase 23 complete; ready for Phase 24
-Last activity: 2026-02-24 — Phase 23 Plan 01 complete (generator escape fix + API doc regeneration)
+Phase: 24 of 26 (Sprite System Rework)
+Plan: 1 of 3 in current phase — COMPLETE
+Status: Phase 24 Plan 01 complete; ready for Plan 02 (C_Sprite component)
+Last activity: 2026-02-24 — Phase 24 Plan 01 complete (SpriteSheet struct + AnimMode enum replacing legacy Sprite class)
 
 Progress: [████████░░] 80% (22/26 phases through v1.3; 4 phases remaining in v1.4)
 
@@ -38,6 +38,7 @@ Recent decisions affecting v1.4 work:
 - [Phase 22]: All new Lua bindings use lua_CFunction exclusively — never LuaCallback (std::function)
 - [Research]: Compositor replaces expand_canvas_to_rgb() wholesale — partial integration silently drops layers 1-3
 - [Phase 23]: generate-api-docs.js — always use escapeForMdx(extractText(...)) for briefDesc/detailedDesc; namespace names must not appear in module.classes arrays (only in config.namespaces)
+- [Phase 24-01]: SpriteSheet draw() inline in header (no .cpp); transparency index 15 is compile-time constant baked into draw(), no matte parameter; AnimMode defined before SpriteSheet for standalone use
 
 ### Pending Todos
 
@@ -57,5 +58,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 23-01-PLAN.md — Phase 23 Docusaurus Navigation Fix complete
+Stopped at: Completed 24-01-PLAN.md — SpriteSheet struct + AnimMode enum (sprite system foundation)
 Resume file: None

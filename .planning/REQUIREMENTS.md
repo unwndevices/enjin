@@ -23,9 +23,9 @@ Requirements for v1.4 milestone. Each maps to roadmap phases.
 
 ### SPR — Sprites Rework
 
-- [ ] **SPR-01**: Sprite class redesigned with clean API (no legacy public members, consistent naming, targets `ICanvas<Pixel4>`)
-- [ ] **SPR-02**: Sprite sheet loaded as uniform grid defined by cell width, cell height, rows, and cols
-- [ ] **SPR-03**: Frame addressed by linear index or (row, col) grid position
+- [x] **SPR-01**: Sprite class redesigned with clean API (no legacy public members, consistent naming, targets `ICanvas<Pixel4>`)
+- [x] **SPR-02**: Sprite sheet loaded as uniform grid defined by cell width, cell height, rows, and cols
+- [x] **SPR-03**: Frame addressed by linear index or (row, col) grid position
 - [ ] **SPR-04**: Frame animation with FPS playback rate and loop modes (once, loop, ping-pong)
 - [ ] **SPR-05**: C_Sprite component updated to use new Sprite API
 - [ ] **SPR-06**: Lua API exposes sprite sheet draw and frame animation control via static sprite pool
@@ -71,9 +71,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | DOC-01 | Phase 23 | Complete |
 | DOC-02 | Phase 23 | Complete |
-| SPR-01 | Phase 24 | Pending |
-| SPR-02 | Phase 24 | Pending |
-| SPR-03 | Phase 24 | Pending |
+| SPR-01 | Phase 24 | Complete |
+| SPR-02 | Phase 24 | Complete |
+| SPR-03 | Phase 24 | Complete |
 | SPR-04 | Phase 24 | Pending |
 | SPR-05 | Phase 24 | Pending |
 | SPR-06 | Phase 24 | Pending |

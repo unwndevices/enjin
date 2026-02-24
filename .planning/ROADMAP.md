@@ -163,7 +163,7 @@ Plans:
 | 21. SDL3 CMake + Runner | v1.3 | 2/2 | Complete | 2026-02-24 |
 | 22. Lua Integration + E2E Validation | v1.3 | 2/2 | Complete | 2026-02-24 |
 | 23. Docusaurus Navigation Fix | 1/1 | Complete    | 2026-02-24 | - |
-| 24. Sprite System Rework | v1.4 | 0/TBD | Not started | - |
+| 24. Sprite System Rework | 1/3 | In Progress|  | - |
 | 25. Multi-Layer Canvas Composition | v1.4 | 0/TBD | Not started | - |
 | 26. Lua Hot Reload | v1.4 | 0/TBD | Not started | - |
 
