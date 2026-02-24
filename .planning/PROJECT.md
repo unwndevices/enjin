@@ -8,6 +8,16 @@ enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded de
 
 enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation.
 
+## Current Milestone: v1.4 Engine Capabilities
+
+**Goal:** Rework the sprite system, add multi-layer canvas composition, fix Docusaurus navigation, and add Lua hot reload to SDL3.
+
+**Target features:**
+- Multi-layer composition (4 independent Canvas4 buffers composited at blit)
+- Sprites system rework (clean API, sprite sheets, frame animation)
+- Docusaurus MDX navigation fix
+- Lua hot reload in SDL3 runner (F5 full reset)
+
 ## Current State
 
 **Shipped: v1.3 Tomodachi Readiness (2026-02-24)**
@@ -90,7 +100,10 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ### Active
 
-(No active requirements — planning next milestone)
+- [ ] LAYER-01–06: Multi-layer Canvas4 composition with Lua API
+- [ ] DOC-01–02: Docusaurus API navigation fix
+- [ ] SPR-01–06: Sprites system rework (clean API, sprite sheets, frame animation)
+- [ ] HOT-01–03: Lua hot reload in SDL3 runner (F5)
 
 ### Out of Scope
 
@@ -160,4 +173,4 @@ enjin2 is Tomodachi-ready with:
 | enjin2_sdl conditional Lua link via generator expressions | Zero impact on non-Lua builds; consistent with Phase 18 pattern | ✓ Working - Phase 22 |
 
 ---
-*Last updated: 2026-02-24 after v1.3 milestone*
+*Last updated: 2026-02-24 after v1.4 milestone start*
