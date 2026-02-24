@@ -17,7 +17,7 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 
 ### SDL Runner
 
-- [ ] **SDL-01**: CMake ENJIN2_BUILD_SDL=ON/OFF option with no impact on WASM or ESP32 builds
+- [x] **SDL-01**: CMake ENJIN2_BUILD_SDL=ON/OFF option with no impact on WASM or ESP32 builds
 - [ ] **SDL-02**: SDL3 window with Canvas4-to-RGB texture blit via palette lookup
 - [ ] **SDL-03**: Integer pixel scaling with nearest-neighbor filtering
 - [ ] **SDL-04**: Game loop with event polling, delta time, and clean shutdown
@@ -68,7 +68,7 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 | PAL-03 | Phase 19 | Complete |
 | PAL-04 | Phase 19 | Complete |
 | PAL-05 | Phase 19 | Complete |
-| SDL-01 | Phase 21 | Pending |
+| SDL-01 | Phase 21 | Complete |
 | SDL-02 | Phase 21 | Pending |
 | SDL-03 | Phase 21 | Pending |
 | SDL-04 | Phase 21 | Pending |
