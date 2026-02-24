@@ -7,6 +7,11 @@
 #include <enjin2/graphics/palette.hpp>
 #include <enjin2/input/input_state.hpp>
 
+#ifdef ENJIN2_BUILD_LUA
+#include <enjin2/scripting/bindings.hpp>
+#include <iostream>
+#endif
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -39,6 +44,11 @@ enum : int {
 static enjin2::Canvas4<CANVAS_W, CANVAS_H> g_canvas;
 static enjin2::InputState                   g_input{};
 static uint8_t g_rgb_staging[CANVAS_W * CANVAS_H * 3];
+
+#ifdef ENJIN2_BUILD_LUA
+static enjin2::LuaScriptSystem g_lua;
+static enjin2::LuaCanvas       g_lua_canvas(&g_canvas);
+#endif
 
 // ---------------------------------------------------------------------------
 // input_platform_poll — SDL3 keyboard -> InputState mapping (INP-04)
@@ -102,9 +112,8 @@ int main(int argc, char* argv[]) {
     }
 
     const float frame_ms = 1000.0f / static_cast<float>(fps);
-    // max_dt = 4-frame ceiling for delta-time clamping (available for game logic integration)
+    // max_dt = 4-frame ceiling for delta-time clamping
     const float max_dt   = 4.0f / static_cast<float>(fps);
-    (void)max_dt;
 
     // --- SDL init ---
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -145,8 +154,30 @@ int main(int argc, char* argv[]) {
         static_cast<float>(DEFAULT_SCALE),
         static_cast<float>(DEFAULT_SCALE));
 
+    // --- Lua initialization ---
+#ifdef ENJIN2_BUILD_LUA
+    if (!g_lua.initialize()) {
+        SDL_Log("Lua init failed");
+        SDL_DestroyTexture(texture);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    g_lua.setCanvas(&g_lua_canvas);
+    g_lua.getBindings().setInput(&g_input);
+    {
+        enjin2::LuaResult load_result = g_lua.loadScript("scripts/e2e_parity.lua");
+        if (!load_result.success) {
+            std::cerr << "Lua script load error: " << load_result.error << "\n";
+            g_canvas.clear(enjin2::Pixel4(14));
+        }
+    }
+#endif
+
     // --- Game loop ---
     bool running = true;
+    Uint64 prev_ticks = SDL_GetTicks();
 
     while (running) {
         Uint64 frame_start = SDL_GetTicks();
@@ -165,11 +196,35 @@ int main(int argc, char* argv[]) {
 
         if (!running) break;
 
+        // --- Compute delta-time ---
+        float dt = static_cast<float>(frame_start - prev_ticks) / 1000.0f;
+        if (dt > max_dt) dt = max_dt;
+        prev_ticks = frame_start;
+
         // --- Input: advance frame (snapshot prev), then poll current ---
         // Order MUST be: advance first (clears current), then poll (writes current).
         // Reversing would cause all inputs to appear as justReleased every frame.
         enjin2::input_advance_frame(&g_input);
         enjin2::input_platform_poll(&g_input);
+
+        // --- Lua per-frame calls ---
+#ifdef ENJIN2_BUILD_LUA
+        g_lua.getBindings().setInput(&g_input);  // wire current-frame input AFTER poll
+        {
+            enjin2::LuaResult r = g_lua.callFunction("update", dt);
+            if (!r.success) {
+                std::cerr << "Lua update error: " << r.error << "\n";
+                g_canvas.clear(enjin2::Pixel4(14));
+            }
+        }
+        {
+            enjin2::LuaResult r = g_lua.callFunction("draw");
+            if (!r.success) {
+                std::cerr << "Lua draw error: " << r.error << "\n";
+                g_canvas.clear(enjin2::Pixel4(14));
+            }
+        }
+#endif
 
         // --- Render ---
         expand_canvas_to_rgb();
@@ -189,6 +244,9 @@ int main(int argc, char* argv[]) {
     }
 
     // --- Clean shutdown ---
+#ifdef ENJIN2_BUILD_LUA
+    g_lua.shutdown();
+#endif
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

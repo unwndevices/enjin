@@ -270,11 +270,16 @@ if(ENJIN2_BUILD_SDL)
     )
     target_include_directories(enjin2_sdl PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:${LUA_INCLUDE_DIRS}>
     )
     target_link_libraries(enjin2_sdl PRIVATE
         enjin2_core
         enjin2_graphics
         enjin2_input
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
         SDL3::SDL3
+    )
+    target_compile_definitions(enjin2_sdl PRIVATE
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
     )
 endif()
