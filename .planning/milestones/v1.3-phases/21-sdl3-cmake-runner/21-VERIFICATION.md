@@ -1,23 +1,25 @@
 ---
 phase: 21-sdl3-cmake-runner
 verified: 2026-02-24T14:40:07Z
-status: human_needed
-score: 12/13 must-haves verified
+status: passed
+score: 13/13 must-haves verified
 human_verification:
   - test: "Run ./build_on/enjin2_sdl and visually confirm the 512x512 window opens titled 'Enjin2', the canvas displays without blur or garbling, and pressing arrows/WASD/Z/X/Enter does not crash"
     expected: "512x512 window titled 'Enjin2' appears; pressing all mapped keys works without crash; Escape closes cleanly; --fps 60 changes frame rate"
-    why_human: "Window creation, nearest-neighbor pixel rendering quality, and runtime input handling cannot be verified programmatically from source alone"
+    result: passed
+    confirmed: 2026-02-24
   - test: "Confirm SDL3 is NOT present in core library object files: nm build_off/libenjin2_core.a 2>/dev/null | grep -i sdl && echo FAIL || echo PASS"
     expected: "PASS: no SDL in core"
-    why_human: "Requires building with ENJIN2_BUILD_SDL=OFF and inspecting object symbols — build environment not available to verifier"
+    result: passed
+    confirmed: 2026-02-24
 ---
 
 # Phase 21: SDL3 CMake Runner Verification Report
 
 **Phase Goal:** Deliver the SDL3 desktop runner so the engine can be developed and tested on a standard desktop. The enjin2_sdl executable must open a window, display Canvas4 pixels at 4x nearest-neighbor scale, run a fixed-rate game loop, and map keyboard input to InputState — all without any SDL3 dependency bleeding into the core libraries.
 **Verified:** 2026-02-24T14:40:07Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Status:** passed
+**Re-verification:** Yes — human runtime checks confirmed 2026-02-24
 
 ---
 
@@ -41,7 +43,7 @@ human_verification:
 | 12 | The game loop runs at default 30fps with delta-time clamped to 4-frame ceiling; --fps N overrides | VERIFIED | Lines 125-137: --fps parse + clamp to 1..300; `max_dt = 4.0f / fps`; SDL_Delay frame pacing present |
 | 13 | SDL3 headers are only included in sdl_main.cpp — zero SDL includes in any core library header | VERIFIED | `grep -r '#include.*SDL' include/` → 0 results; `grep -r '#include.*SDL' src/ --include="*.hpp"` → 0 results |
 
-**Score:** 9/13 automated truths verified; 4 require human confirmation (all have correct source-level implementation)
+**Score:** 13/13 truths verified (9 automated + 4 human runtime confirmed 2026-02-24)
 
 ---
 
