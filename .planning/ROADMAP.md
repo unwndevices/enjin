@@ -138,7 +138,7 @@ Plans:
 | 16. Repository Cleanup | v1.2 | 2/2 | Complete | 2026-02-23 |
 | 17. Doc Generation Fix | v1.2 | 2/2 | Complete | 2026-02-23 |
 | 18. Build System Fix | v1.2 | 1/1 | Complete | 2026-02-23 |
-| 19. Palette Foundation | 2/2 | Complete   | 2026-02-24 | - |
+| 19. Palette Foundation | 2/2 | Complete    | 2026-02-24 | - |
 | 20. Input Abstraction | v1.3 | 0/? | Not started | - |
 | 21. SDL3 CMake + Runner | v1.3 | 0/? | Not started | - |
 | 22. Lua Integration + E2E Validation | v1.3 | 0/? | Not started | - |
