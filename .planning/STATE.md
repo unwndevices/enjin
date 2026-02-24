@@ -5,25 +5,25 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 21 — SDL3 CMake + Runner (v1.3 Tomodachi Readiness)
+**Current focus:** Phase 22 — Lua Integration + E2E Validation (v1.3 Tomodachi Readiness)
 
 ## Current Position
 
-Phase: 21 of 22 (SDL3 CMake + Runner)
-Plan: 2 of 2 in current phase (complete)
+Phase: 22 of 22 (Lua Integration + E2E Validation)
+Plan: 1 of 1 in current phase (complete)
 Status: In Progress
-Last activity: 2026-02-24 — Phase 21 Plan 02 complete (SDL3 runner: sdl_main.cpp, Canvas4->RGB24 blit, game loop, input_platform_poll — enjin2_sdl binary verified)
+Last activity: 2026-02-24 — Phase 22 Plan 01 complete (LuaBindings input polling API: isButtonHeld/isButtonJustPressed/isButtonJustReleased/getAxis with null guards; scripts/e2e_parity.lua with 5x3 palette grid and input indicators)
 
-Progress: [████████████░░░░░░░░] ~86% (19/22 phases complete across all milestones)
+Progress: [████████████████░░░░] ~91% (20/22 phases complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 45
+- Total plans completed: 46
 - v1.0: 21 plans
 - v1.1: 17 plans
 - v1.2: 5 plans
-- v1.3: 5 plans (19-01, 19-02, 20-01, 21-01, 21-02)
+- v1.3: 6 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01)
 
 *Updated after each plan completion*
 
@@ -51,6 +51,8 @@ Recent decisions affecting current work:
 - 21-02: SDL_SetRenderScale(4,4) used instead of SDL_SetRenderLogicalPresentation — workaround for SDL3 bug #11335 (logical presentation ignores SCALEMODE_NEAREST)
 - 21-02: SDL_GetKeyboardState used for held-key polling; Escape handled via SDL_EVENT_KEY_DOWN for quit-only, never mapped to InputState
 - 21-02: input_advance_frame called BEFORE input_platform_poll each frame — advance clears current, poll writes new state
+- 22-01: InputState* currentInput initialized to nullptr — null guard in all 4 input bindings returns 0/false before host calls setInput()
+- 22-01: lua_getAxis bounds-checks axis index (0-7) before dereferencing axes[] array
 
 ### Pending Todos
 
@@ -69,5 +71,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 21-02-PLAN.md — SDL3 runner (sdl_main.cpp), Canvas4->RGB24 blit, game loop, input_platform_poll. Phase 21 complete.
+Stopped at: Completed 22-01-PLAN.md — LuaBindings input polling API (4 functions), scripts/e2e_parity.lua. Phase 22 Plan 01 complete.
 Resume file: None

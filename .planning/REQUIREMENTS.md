@@ -21,7 +21,7 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 - [x] **SDL-02**: SDL3 window with Canvas4-to-RGB texture blit via palette lookup
 - [x] **SDL-03**: Integer pixel scaling with nearest-neighbor filtering
 - [x] **SDL-04**: Game loop with event polling, delta time, and clean shutdown
-- [ ] **SDL-05**: Lua scripting works in SDL3 runner (same scripts as WASM/ESP32)
+- [x] **SDL-05**: Lua scripting works in SDL3 runner (same scripts as WASM/ESP32)
 
 ### Input
 
@@ -29,7 +29,7 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 - [x] **INP-02**: InputState with button bitmask and float analog axes
 - [x] **INP-03**: Edge detection (justPressed, held, justReleased) in shared layer
 - [x] **INP-04**: SDL3 keyboard-to-button default mapping (arrows, Z/X, Enter)
-- [ ] **INP-05**: Lua input polling API (isButtonHeld, isButtonJustPressed, getAxis)
+- [x] **INP-05**: Lua input polling API (isButtonHeld, isButtonJustPressed, getAxis)
 
 ## Future Requirements
 
@@ -72,12 +72,12 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 | SDL-02 | Phase 21 | Complete |
 | SDL-03 | Phase 21 | Complete |
 | SDL-04 | Phase 21 | Complete |
-| SDL-05 | Phase 22 | Pending |
+| SDL-05 | Phase 22 | Complete |
 | INP-01 | Phase 20 | Complete |
 | INP-02 | Phase 20 | Complete |
 | INP-03 | Phase 20 | Complete |
 | INP-04 | Phase 21 | Complete |
-| INP-05 | Phase 22 | Pending |
+| INP-05 | Phase 22 | Complete |
 
 **Coverage:**
 - v1.3 requirements: 15 total
