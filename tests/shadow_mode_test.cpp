@@ -15,18 +15,17 @@ namespace enjin2 {
  */
 class C_Rectangle : public C_Drawable {
 private:
-    uint8_t color;
+    Pixel4 color;
 
 public:
     C_Rectangle(Object* owner, uint8_t width, uint8_t height, uint8_t rect_color)
         : C_Drawable(owner, width, height), color(rect_color) {}
 
-    void draw(ICanvas<uint8_t>& canvas) override {
+    void draw(ICanvas<Pixel4>& canvas) override {
         if (!is_visible) return;
 
         if (position) {
             Point render_pos = GetOffsetPosition();
-            // ICanvas has fill method with Rect parameter
             Rect rect(render_pos.x, render_pos.y, width, height);
             canvas.fill(rect, color);
         }
