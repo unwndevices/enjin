@@ -24,7 +24,7 @@ Progress: [████████░░] 80% (22/26 phases through v1.3; 4 pha
 - v1.1: 17 plans
 - v1.2: 5 plans
 - v1.3: 7 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01, 22-02)
-- v1.4: 3 plans completed (24-01, 24-02 skipped, 24-03)
+- v1.4: 3 plans completed (24-01, 24-02, 24-03)
 
 *Updated after each plan completion*
 
