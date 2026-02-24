@@ -160,6 +160,16 @@ if(ENJIN2_BUILD_LUA)
     endif()
 endif()
 
+# Input abstraction library
+add_library(enjin2_input STATIC)
+target_sources(enjin2_input PRIVATE
+    src/input/input.cpp
+)
+target_include_directories(enjin2_input
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
 # Main library
 add_library(enjin2 INTERFACE)
 
@@ -167,6 +177,7 @@ target_link_libraries(enjin2 INTERFACE
     enjin2_core
     enjin2_graphics
     enjin2_ui
+    enjin2_input
     $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
 )
 
