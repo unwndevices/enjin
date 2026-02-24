@@ -10,20 +10,21 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 24 of 26 (Sprite System Rework)
-Plan: 1 of 3 in current phase — COMPLETE
-Status: Phase 24 Plan 01 complete; ready for Plan 02 (C_Sprite component)
-Last activity: 2026-02-24 — Phase 24 Plan 01 complete (SpriteSheet struct + AnimMode enum replacing legacy Sprite class)
+Plan: 3 of 3 in current phase — COMPLETE
+Status: Phase 24 complete (all 3 plans done); ready for Phase 25 (Compositor)
+Last activity: 2026-02-25 — Phase 24 Plan 03 complete (Lua sprite pool: newSprite/drawSprite/updateSprite/setFrame)
 
 Progress: [████████░░] 80% (22/26 phases through v1.3; 4 phases remaining in v1.4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 46
+- Total plans completed: 47
 - v1.0: 21 plans
 - v1.1: 17 plans
 - v1.2: 5 plans
 - v1.3: 7 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01, 22-02)
+- v1.4: 3 plans completed (24-01, 24-02 skipped, 24-03)
 
 *Updated after each plan completion*
 
@@ -39,6 +40,10 @@ Recent decisions affecting v1.4 work:
 - [Research]: Compositor replaces expand_canvas_to_rgb() wholesale — partial integration silently drops layers 1-3
 - [Phase 23]: generate-api-docs.js — always use escapeForMdx(extractText(...)) for briefDesc/detailedDesc; namespace names must not appear in module.classes arrays (only in config.namespaces)
 - [Phase 24-01]: SpriteSheet draw() inline in header (no .cpp); transparency index 15 is compile-time constant baked into draw(), no matte parameter; AnimMode defined before SpriteSheet for standalone use
+- [Phase 24-03]: sprite.hpp uses canvas.hpp instead of icanvas.hpp to avoid ICanvas<TPixel> redefinition when compiled with Lua target
+- [Phase 24-03]: lua_drawSprite blits via LuaCanvas::setPixel (type-erased path) rather than SpriteSheet::draw() directly
+- [Phase 24-sprite-system-rework]: C_Drawable::draw() pure virtual changed from ICanvas<uint8_t>& to ICanvas<Pixel4>& — C_Canvas draw() is a stub (ENG-01 deferred to Phase 25 compositor)
+- [Phase 24-sprite-system-rework]: C_Sprite holds SpriteSheet by value; delta-time accumulator pattern with carry-over; advanceFrame() handles Once/Loop/PingPong
 
 ### Pending Todos
 
@@ -57,6 +62,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: Completed 24-01-PLAN.md — SpriteSheet struct + AnimMode enum (sprite system foundation)
+Last session: 2026-02-25
+Stopped at: Completed 24-03-PLAN.md — Lua sprite pool bindings (newSprite/drawSprite/updateSprite/setFrame)
 Resume file: None

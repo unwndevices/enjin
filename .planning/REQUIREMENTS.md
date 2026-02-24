@@ -28,7 +28,7 @@ Requirements for v1.4 milestone. Each maps to roadmap phases.
 - [x] **SPR-03**: Frame addressed by linear index or (row, col) grid position
 - [ ] **SPR-04**: Frame animation with FPS playback rate and loop modes (once, loop, ping-pong)
 - [ ] **SPR-05**: C_Sprite component updated to use new Sprite API
-- [ ] **SPR-06**: Lua API exposes sprite sheet draw and frame animation control via static sprite pool
+- [x] **SPR-06**: Lua API exposes sprite sheet draw and frame animation control via static sprite pool
 
 ### HOT — Lua Hot Reload
 
@@ -76,7 +76,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SPR-03 | Phase 24 | Complete |
 | SPR-04 | Phase 24 | Pending |
 | SPR-05 | Phase 24 | Pending |
-| SPR-06 | Phase 24 | Pending |
+| SPR-06 | Phase 24 | Complete |
 | LAYER-01 | Phase 25 | Pending |
 | LAYER-02 | Phase 25 | Pending |
 | LAYER-03 | Phase 25 | Pending |
