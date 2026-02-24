@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Palette unit test
+add_executable(palette_test
+    palette_test.cpp
+)
+target_include_directories(palette_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(palette_test PRIVATE
+    enjin2
+)
+add_test(NAME palette_test COMMAND palette_test)
+
 # Image comparison test for shadow mode verification
 add_executable(image_comparison_test
     image_comparison.cpp
