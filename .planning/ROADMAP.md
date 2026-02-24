@@ -106,7 +106,12 @@ Plans:
   2. `C_Sprite` component animates through frames automatically at a configurable FPS rate in once, loop, and ping-pong modes, advancing correctly across game loop ticks
   3. Lua script can create a sprite, draw it at a position, advance its animation, and set a specific frame via `newSprite`, `drawSprite`, `updateSprite`, and `setFrame` bindings
   4. The old `Sprite` API (public `_width`, `_height`, `_frame`, `_position`, `_matte`, `_mode` fields; `ICanvas<uint8_t>` draw target; matte default 16) is gone — the codebase compiles clean with no legacy callers
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 24-01-PLAN.md — Replace legacy Sprite class with SpriteSheet struct + AnimMode enum
+- [ ] 24-02-PLAN.md — Update C_Drawable signature + all derived components + new C_Sprite animation state machine
+- [ ] 24-03-PLAN.md — Add Lua sprite pool (SpriteState[16]) + four lua_CFunction bindings
 
 ### Phase 25: Multi-Layer Canvas Composition
 **Goal**: The engine renders up to 4 independent Canvas4 layers composited in draw order at blit time, with index 15 as the transparency passthrough and a Lua API for layer selection and clearing.
