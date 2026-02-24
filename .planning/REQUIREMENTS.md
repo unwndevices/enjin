@@ -25,9 +25,9 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 
 ### Input
 
-- [ ] **INP-01**: Platform-agnostic input interface with zero platform types in headers
-- [ ] **INP-02**: InputState with button bitmask and float analog axes
-- [ ] **INP-03**: Edge detection (justPressed, held, justReleased) in shared layer
+- [x] **INP-01**: Platform-agnostic input interface with zero platform types in headers
+- [x] **INP-02**: InputState with button bitmask and float analog axes
+- [x] **INP-03**: Edge detection (justPressed, held, justReleased) in shared layer
 - [ ] **INP-04**: SDL3 keyboard-to-button default mapping (arrows, Z/X, Enter)
 - [ ] **INP-05**: Lua input polling API (isButtonHeld, isButtonJustPressed, getAxis)
 
@@ -73,9 +73,9 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 | SDL-03 | Phase 21 | Pending |
 | SDL-04 | Phase 21 | Pending |
 | SDL-05 | Phase 22 | Pending |
-| INP-01 | Phase 20 | Pending |
-| INP-02 | Phase 20 | Pending |
-| INP-03 | Phase 20 | Pending |
+| INP-01 | Phase 20 | Complete |
+| INP-02 | Phase 20 | Complete |
+| INP-03 | Phase 20 | Complete |
 | INP-04 | Phase 21 | Pending |
 | INP-05 | Phase 22 | Pending |
 

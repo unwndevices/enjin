@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 19 — Palette Foundation (v1.3 Tomodachi Readiness)
+**Current focus:** Phase 20 — Input Abstraction (v1.3 Tomodachi Readiness)
 
 ## Current Position
 
-Phase: 19 of 22 (Palette Foundation)
-Plan: 2 of ? in current phase
+Phase: 20 of 22 (Input Abstraction)
+Plan: 1 of 1 in current phase (complete)
 Status: In Progress
-Last activity: 2026-02-24 — Phase 19 Plan 02 complete (Lua palette bindings, WASM bindings, TypeScript types)
+Last activity: 2026-02-24 — Phase 20 Plan 01 complete (InputState header, input_advance_frame, enjin2_input library, host unit tests)
 
 Progress: [████████████░░░░░░░░] ~82% (18/22 phases complete across all milestones)
 
@@ -23,7 +23,7 @@ Progress: [████████████░░░░░░░░] ~82% (1
 - v1.0: 21 plans
 - v1.1: 17 plans
 - v1.2: 5 plans
-- v1.3: 2 plans (19-01, 19-02)
+- v1.3: 3 plans (19-01, 19-02, 20-01)
 
 *Updated after each plan completion*
 
@@ -43,6 +43,10 @@ Recent decisions affecting current work:
 - 19-02: WASM palette bindings placed outside ENJIN2_BUILD_LUA guard — palette is core graphics, not Lua-only
 - 19-02: getPaletteRGB uses static buffer + typed_memory_view for live zero-copy view to JavaScript (not a copy)
 - 19-02: lua_setPaletteColor uses lua_isstring dispatch for hex vs RGB integer overloads
+- 20-01: input_platform_poll declared in header but NOT defined in core — each platform (SDL3, ESP32, WASM) provides exactly one definition
+- 20-01: input_state.hpp includes only <stdint.h> — zero SDL3, Emscripten, Arduino, or ESP32 headers cross the abstraction boundary
+- 20-01: InputState uses uint16_t bitmask (max 16 buttons) and float axes[8] per INP-02 spec
+- 20-01: input_advance_frame uses memcpy/memset for frame snapshot — simple and consistent with zero-allocation constraint
 
 ### Pending Todos
 
@@ -61,5 +65,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 19-02-PLAN.md — Lua bindings, WASM bindings, TypeScript types all done
+Stopped at: Completed 20-01-PLAN.md — InputState header, input_advance_frame, enjin2_input library, host unit tests
 Resume file: None
