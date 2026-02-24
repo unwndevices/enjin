@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 22 of 22 (Lua Integration + E2E Validation)
-Plan: 1 of 1 in current phase (complete)
+Plan: 2 of 2 in current phase (task 1/2 complete, paused at checkpoint)
 Status: In Progress
-Last activity: 2026-02-24 — Phase 22 Plan 01 complete (LuaBindings input polling API: isButtonHeld/isButtonJustPressed/isButtonJustReleased/getAxis with null guards; scripts/e2e_parity.lua with 5x3 palette grid and input indicators)
+Last activity: 2026-02-24 — Phase 22 Plan 02 Task 1 complete (LuaScriptSystem wired into sdl_main.cpp; CMakeLists.txt updated with conditional Lua linking; draw_palette_grid removed; builds cleanly with LUA=ON and OFF)
 
 Progress: [████████████████░░░░] ~91% (20/22 phases complete across all milestones)
 
@@ -71,5 +71,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 22-01-PLAN.md — LuaBindings input polling API (4 functions), scripts/e2e_parity.lua. Phase 22 Plan 01 complete.
+Stopped at: 22-02-PLAN.md Task 2 checkpoint — awaiting manual SDL3 visual parity sign-off. Run ./build_22_sdl_lua/enjin2_sdl from project root to verify.
 Resume file: None
