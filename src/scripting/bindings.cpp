@@ -120,8 +120,8 @@ void LuaCanvas::fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 // LuaBindings Implementation
 //==============================================================================
 
-LuaBindings::LuaBindings(LuaEngine* luaEngine) 
-    : engine(luaEngine), currentCanvas(nullptr), currentColor(15), lineWidth(1) {
+LuaBindings::LuaBindings(LuaEngine* luaEngine)
+    : engine(luaEngine), currentCanvas(nullptr), currentInput(nullptr), currentColor(15), lineWidth(1) {
     g_currentBindings = this;
 }
 
@@ -171,6 +171,12 @@ void LuaBindings::registerAll() {
     engine->registerFunction("loadPalette", lua_loadPalette);
     engine->registerFunction("getPaletteSize", lua_getPaletteSize);
 
+    // Input polling (INP-05)
+    engine->registerFunction("isButtonHeld",        lua_isButtonHeld);
+    engine->registerFunction("isButtonJustPressed",  lua_isButtonJustPressed);
+    engine->registerFunction("isButtonJustReleased", lua_isButtonJustReleased);
+    engine->registerFunction("getAxis",              lua_getAxis);
+
     // Create love2d.graphics-style table for familiarity
     registerTable("love", {
         {"draw", lua_rectangle},  // Basic draw function
@@ -209,6 +215,10 @@ void LuaBindings::registerAll() {
 
 void LuaBindings::setCanvas(LuaCanvas* canvas) {
     currentCanvas = canvas;
+}
+
+void LuaBindings::setInput(InputState* input) {
+    currentInput = input;
 }
 
 LuaBindings* LuaBindings::getBindings(lua_State* L) {
@@ -617,6 +627,43 @@ int LuaBindings::lua_loadPalette(lua_State* L) {
 
 int LuaBindings::lua_getPaletteSize(lua_State* L) {
     lua_pushinteger(L, enjin2::g_palette.getSize());
+    return 1;
+}
+
+//==============================================================================
+// Input Polling Functions (INP-05)
+//==============================================================================
+
+int LuaBindings::lua_isButtonHeld(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
+    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    lua_pushboolean(L, b->currentInput->held(btn) ? 1 : 0);
+    return 1;
+}
+
+int LuaBindings::lua_isButtonJustPressed(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
+    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    lua_pushboolean(L, b->currentInput->justPressed(btn) ? 1 : 0);
+    return 1;
+}
+
+int LuaBindings::lua_isButtonJustReleased(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
+    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    lua_pushboolean(L, b->currentInput->justReleased(btn) ? 1 : 0);
+    return 1;
+}
+
+int LuaBindings::lua_getAxis(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushnumber(L, 0.0); return 1; }
+    int axis = static_cast<int>(luaL_checkinteger(L, 1));
+    float val = (axis >= 0 && axis < 8) ? b->currentInput->axes[axis] : 0.0f;
+    lua_pushnumber(L, static_cast<lua_Number>(val));
     return 1;
 }
 

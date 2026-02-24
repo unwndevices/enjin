@@ -11,6 +11,7 @@
 #include "lua_platform.hpp"
 #include "../graphics/canvas.hpp"
 #include "../graphics/primitives.hpp"
+#include "../input/input_state.hpp"
 // #include "../ui/component.hpp"  // Conflicts with core/component.hpp in VCV build
 // #include "../ui/components.hpp" // Not needed for basic canvas operations
 
@@ -175,34 +176,41 @@ class LuaBindings {
 private:
     LuaEngine* engine;          ///< Lua engine instance
     LuaCanvas* currentCanvas;   ///< Currently active canvas
-    
+    InputState* currentInput;   ///< Current frame's input state (set by host before each Lua call)
+
     // Drawing state
     uint8_t currentColor;       ///< Current drawing color
     uint16_t lineWidth;         ///< Current line width
-    
+
 public:
     /**
      * @brief Constructor
      * @param luaEngine Lua engine to bind to
      */
     LuaBindings(LuaEngine* luaEngine);
-    
+
     /**
      * @brief Register all bindings with Lua engine
      */
     void registerAll();
-    
+
     /**
      * @brief Set current canvas for drawing operations
      * @param canvas Canvas to draw on
      */
     void setCanvas(LuaCanvas* canvas);
-    
+
     /**
      * @brief Get current canvas
      * @return Current canvas or nullptr
      */
     LuaCanvas* getCanvas() const { return currentCanvas; }
+
+    /**
+     * @brief Set input state for this frame
+     * @param input Current InputState pointer (updated by host after input_platform_poll)
+     */
+    void setInput(InputState* input);
 
 private:
     // Canvas management functions
@@ -247,6 +255,12 @@ private:
     static int lua_getPaletteColor(lua_State* L);
     static int lua_loadPalette(lua_State* L);
     static int lua_getPaletteSize(lua_State* L);
+
+    // Input polling functions (INP-05)
+    static int lua_isButtonHeld(lua_State* L);
+    static int lua_isButtonJustPressed(lua_State* L);
+    static int lua_isButtonJustReleased(lua_State* L);
+    static int lua_getAxis(lua_State* L);
 
     /**
      * @brief Get LuaBindings instance from Lua state
