@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 22 — Lua Integration + E2E Validation (v1.3 Tomodachi Readiness)
+**Current focus:** v1.3 Tomodachi Readiness — COMPLETE (Phase 22 finished)
 
 ## Current Position
 
-Phase: 22 of 22 (Lua Integration + E2E Validation)
-Plan: 2 of 2 in current phase (task 1/2 complete, paused at checkpoint)
-Status: In Progress
-Last activity: 2026-02-24 — Phase 22 Plan 02 Task 1 complete (LuaScriptSystem wired into sdl_main.cpp; CMakeLists.txt updated with conditional Lua linking; draw_palette_grid removed; builds cleanly with LUA=ON and OFF)
+Phase: 22 of 22 (Lua Integration + E2E Validation) — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE
+Status: Complete
+Last activity: 2026-02-24 — Phase 22 Plan 02 complete (VERIFICATION.md signed off APPROVED; SDL-05 and INP-05 satisfied; lua_rectangle lua_type bug fixed; Phase 22 and v1.3 milestone complete)
 
-Progress: [████████████████░░░░] ~91% (20/22 phases complete across all milestones)
+Progress: [████████████████████] ~100% (22/22 phases complete across all milestones)
 
 ## Performance Metrics
 
@@ -23,7 +23,7 @@ Progress: [████████████████░░░░] ~91% (2
 - v1.0: 21 plans
 - v1.1: 17 plans
 - v1.2: 5 plans
-- v1.3: 6 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01)
+- v1.3: 7 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01, 22-02)
 
 *Updated after each plan completion*
 
@@ -53,6 +53,8 @@ Recent decisions affecting current work:
 - 21-02: input_advance_frame called BEFORE input_platform_poll each frame — advance clears current, poll writes new state
 - 22-01: InputState* currentInput initialized to nullptr — null guard in all 4 input bindings returns 0/false before host calls setInput()
 - 22-01: lua_getAxis bounds-checks axis index (0-7) before dereferencing axes[] array
+- 22-02: enjin2_sdl uses CMake generator expressions for conditional Lua linking — zero impact on non-Lua builds
+- 22-02: lua_type(L,1)==LUA_TSTRING for strict string detection in Lua C bindings (lua_isstring is too permissive — numbers coerce to strings in Lua)
 
 ### Pending Todos
 
@@ -71,5 +73,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: 22-02-PLAN.md Task 2 checkpoint — awaiting manual SDL3 visual parity sign-off. Run ./build_22_sdl_lua/enjin2_sdl from project root to verify.
+Stopped at: Completed 22-02-PLAN.md — Phase 22 and v1.3 milestone complete
 Resume file: None
