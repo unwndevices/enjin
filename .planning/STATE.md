@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 23 of 26 (Docusaurus Navigation Fix)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-24 — v1.4 roadmap created; Phase 23 is next
+Plan: 1 of 1 in current phase — COMPLETE
+Status: Phase 23 complete; ready for Phase 24
+Last activity: 2026-02-24 — Phase 23 Plan 01 complete (generator escape fix + API doc regeneration)
 
 Progress: [████████░░] 80% (22/26 phases through v1.3; 4 phases remaining in v1.4)
 
@@ -37,6 +37,7 @@ Recent decisions affecting v1.4 work:
 - [Phase 21]: SDL_SetRenderScale(4,4) workaround for SDL3 bug #11335 (logical presentation ignores SCALEMODE_NEAREST)
 - [Phase 22]: All new Lua bindings use lua_CFunction exclusively — never LuaCallback (std::function)
 - [Research]: Compositor replaces expand_canvas_to_rgb() wholesale — partial integration silently drops layers 1-3
+- [Phase 23]: generate-api-docs.js — always use escapeForMdx(extractText(...)) for briefDesc/detailedDesc; namespace names must not appear in module.classes arrays (only in config.namespaces)
 
 ### Pending Todos
 
@@ -56,5 +57,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v1.4 roadmap created; ready to plan Phase 23
+Stopped at: Completed 23-01-PLAN.md — Phase 23 Docusaurus Navigation Fix complete
 Resume file: None

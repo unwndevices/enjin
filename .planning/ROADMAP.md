@@ -76,7 +76,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 
 **Milestone Goal:** Rework the sprite system, add multi-layer canvas composition, fix Docusaurus navigation, and add Lua hot reload to SDL3.
 
-- [ ] **Phase 23: Docusaurus Navigation Fix** - Repair MDX navigation and escape angle brackets in the doc generator
+- [x] **Phase 23: Docusaurus Navigation Fix** - Repair MDX navigation and escape angle brackets in the doc generator (completed 2026-02-24)
 - [ ] **Phase 24: Sprite System Rework** - Clean API, sprite sheets, frame animation, and Lua sprite pool
 - [ ] **Phase 25: Multi-Layer Canvas Composition** - 4 independent Canvas4 buffers composited at blit time with Lua API
 - [ ] **Phase 26: Lua Hot Reload** - F5 full Lua state reset in SDL3 runner with error display
@@ -157,7 +157,7 @@ Plans:
 | 20. Input Abstraction | v1.3 | 1/1 | Complete | 2026-02-24 |
 | 21. SDL3 CMake + Runner | v1.3 | 2/2 | Complete | 2026-02-24 |
 | 22. Lua Integration + E2E Validation | v1.3 | 2/2 | Complete | 2026-02-24 |
-| 23. Docusaurus Navigation Fix | v1.4 | 0/TBD | Not started | - |
+| 23. Docusaurus Navigation Fix | 1/1 | Complete   | 2026-02-24 | - |
 | 24. Sprite System Rework | v1.4 | 0/TBD | Not started | - |
 | 25. Multi-Layer Canvas Composition | v1.4 | 0/TBD | Not started | - |
 | 26. Lua Hot Reload | v1.4 | 0/TBD | Not started | - |

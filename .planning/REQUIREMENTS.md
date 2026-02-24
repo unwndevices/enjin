@@ -18,8 +18,8 @@ Requirements for v1.4 milestone. Each maps to roadmap phases.
 
 ### DOC — Docusaurus Navigation
 
-- [ ] **DOC-01**: API sidebar navigation renders correctly with all module and class pages accessible
-- [ ] **DOC-02**: `generate-api-docs.js` escapes angle brackets in prose text so future regenerations remain MDX-safe
+- [x] **DOC-01**: API sidebar navigation renders correctly with all module and class pages accessible
+- [x] **DOC-02**: `generate-api-docs.js` escapes angle brackets in prose text so future regenerations remain MDX-safe
 
 ### SPR — Sprites Rework
 
@@ -69,8 +69,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOC-01 | Phase 23 | Pending |
-| DOC-02 | Phase 23 | Pending |
+| DOC-01 | Phase 23 | Complete |
+| DOC-02 | Phase 23 | Complete |
 | SPR-01 | Phase 24 | Pending |
 | SPR-02 | Phase 24 | Pending |
 | SPR-03 | Phase 24 | Pending |
