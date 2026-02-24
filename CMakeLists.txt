@@ -249,3 +249,32 @@ endif()
 if(ENJIN2_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+# SDL3 desktop runner
+option(ENJIN2_BUILD_SDL "Build SDL3 desktop runner executable (requires internet on first configure)" OFF)
+
+if(ENJIN2_BUILD_SDL)
+    include(FetchContent)
+    FetchContent_Declare(
+        SDL3
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        GIT_TAG        release-3.4.2
+        GIT_SHALLOW    TRUE
+        EXCLUDE_FROM_ALL
+    )
+    FetchContent_MakeAvailable(SDL3)
+    # FetchContent_MakeAvailable will fail CMake configure if download fails — no fallback needed
+
+    add_executable(enjin2_sdl
+        src/platform/sdl/sdl_main.cpp
+    )
+    target_include_directories(enjin2_sdl PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    )
+    target_link_libraries(enjin2_sdl PRIVATE
+        enjin2_core
+        enjin2_graphics
+        enjin2_input
+        SDL3::SDL3
+    )
+endif()
