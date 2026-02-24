@@ -9,7 +9,7 @@ sidebar_label: CanvasExtended
 Extended canvas functionality for advanced graphics operations. 
 
 
-TCanvasCanvas type that implements ICanvas<TPixel>
+TCanvasCanvas type that implements ICanvas&lt;TPixel&gt;
 
 ---
 
