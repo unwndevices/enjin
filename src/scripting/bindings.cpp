@@ -1,4 +1,5 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
+#include "../../include/enjin2/graphics/palette.hpp"
 #include <chrono>
 #include <iostream>
 
@@ -163,7 +164,13 @@ void LuaBindings::registerAll() {
     // High-performance optimized drawing functions
     engine->registerFunction("fastFillRect", lua_fastFillRect);
     engine->registerFunction("fastDrawLine", lua_fastDrawLine);
-    
+
+    // Palette
+    engine->registerFunction("setPaletteColor", lua_setPaletteColor);
+    engine->registerFunction("getPaletteColor", lua_getPaletteColor);
+    engine->registerFunction("loadPalette", lua_loadPalette);
+    engine->registerFunction("getPaletteSize", lua_getPaletteSize);
+
     // Create love2d.graphics-style table for familiarity
     registerTable("love", {
         {"draw", lua_rectangle},  // Basic draw function
@@ -564,6 +571,53 @@ int LuaBindings::lua_fastDrawLine(lua_State* L) {
     }
     
     return 0;
+}
+
+//==============================================================================
+// Palette Functions
+//==============================================================================
+
+int LuaBindings::lua_setPaletteColor(lua_State* L) {
+    int index = luaL_checkinteger(L, 1);
+    if (lua_isstring(L, 2)) {
+        // Overload: setPaletteColor(index, '#rrggbb')
+        const char* hex = luaL_checkstring(L, 2);
+        uint8_t r = 0, g = 0, b = 0;
+        enjin2::parseHexColor(hex, r, g, b);
+        enjin2::g_palette.setColor(static_cast<uint8_t>(index), r, g, b);
+    } else {
+        // Overload: setPaletteColor(index, r, g, b)
+        int r = luaL_checkinteger(L, 2);
+        int g = luaL_checkinteger(L, 3);
+        int b = luaL_checkinteger(L, 4);
+        enjin2::g_palette.setColor(
+            static_cast<uint8_t>(index),
+            static_cast<uint8_t>(r),
+            static_cast<uint8_t>(g),
+            static_cast<uint8_t>(b));
+    }
+    return 0;
+}
+
+int LuaBindings::lua_getPaletteColor(lua_State* L) {
+    int index = luaL_checkinteger(L, 1);
+    RGB c = enjin2::g_palette.getColor(static_cast<uint8_t>(index));
+    lua_pushinteger(L, c.r);
+    lua_pushinteger(L, c.g);
+    lua_pushinteger(L, c.b);
+    return 3;
+}
+
+int LuaBindings::lua_loadPalette(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+    bool ok = enjin2::g_palette.loadPreset(name);
+    lua_pushboolean(L, ok);
+    return 1;
+}
+
+int LuaBindings::lua_getPaletteSize(lua_State* L) {
+    lua_pushinteger(L, enjin2::g_palette.getSize());
+    return 1;
 }
 
 //==============================================================================

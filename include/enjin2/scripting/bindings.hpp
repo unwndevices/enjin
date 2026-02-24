@@ -241,7 +241,13 @@ private:
     // High-performance optimized drawing functions
     static int lua_fastFillRect(lua_State* L);
     static int lua_fastDrawLine(lua_State* L);
-    
+
+    // Palette functions
+    static int lua_setPaletteColor(lua_State* L);
+    static int lua_getPaletteColor(lua_State* L);
+    static int lua_loadPalette(lua_State* L);
+    static int lua_getPaletteSize(lua_State* L);
+
     /**
      * @brief Get LuaBindings instance from Lua state
      * @param L Lua state
