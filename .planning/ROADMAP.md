@@ -149,7 +149,7 @@ Plans:
 | 19. Palette Foundation | 2/2 | Complete    | 2026-02-24 | - |
 | 20. Input Abstraction | 1/1 | Complete    | 2026-02-24 | - |
 | 21. SDL3 CMake + Runner | 2/2 | Complete    | 2026-02-24 | - |
-| 22. Lua Integration + E2E Validation | 2/2 | Complete   | 2026-02-24 | - |
+| 22. Lua Integration + E2E Validation | 2/2 | Complete    | 2026-02-24 | - |
 
 **Total Progress:**
 - v1.0: 21/21 plans complete (100%)
