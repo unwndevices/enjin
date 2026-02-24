@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Input abstraction unit test
+add_executable(input_test
+    input_test.cpp
+)
+target_include_directories(input_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(input_test PRIVATE
+    enjin2
+)
+add_test(NAME input_test COMMAND input_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp
