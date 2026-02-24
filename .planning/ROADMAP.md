@@ -106,7 +106,10 @@ Plans:
   3. The SDL3 window displays a Canvas4 scene with correct palette colors (not grayscale) at integer-scaled pixels
   4. Pressing arrow keys, Z, X, and Enter during the game loop produces the expected button states in InputState
   5. The game loop runs at a stable rate with delta-time clamping and shuts down cleanly on window close
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 21-01-PLAN.md — CMake ENJIN2_BUILD_SDL option, FetchContent SDL3 at release-3.4.2, enjin2_sdl executable target
+- [ ] 21-02-PLAN.md — SDL3 runner implementation: window, Canvas4→RGB24 blit, game loop, input_platform_poll keyboard mapping
 
 ### Phase 22: Lua Integration + E2E Validation
 **Goal**: Lua scripts run identically on SDL3, WASM, and ESP32 — with input polling and palette APIs available — and a single test script confirms visual and behavioral parity across platforms
