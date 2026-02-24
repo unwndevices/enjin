@@ -64,7 +64,7 @@ const config = {
       description: 'UI system management',
     },
     utils: {
-      classes: ['InputSystem', 'math::TrigLUT', 'Colors', 'DrawingHelpers', 'Noise', 'Polar', 'Signals'],
+      classes: ['InputSystem', 'math::TrigLUT'],  // namespace names removed; handled by config.namespaces
       description: 'Utility functions and helpers',
     },
   },
@@ -260,8 +260,8 @@ async function processClass(className, module, classInfo) {
     const xml = await parseXmlFile(xmlFile);
     const compound = xml.doxygen.compounddef[0];
     const compoundName = extractText(compound.compoundname);
-    const briefDesc = extractText(compound.briefdescription);
-    const detailedDesc = extractText(compound.detaileddescription);
+    const briefDesc = escapeForMdx(extractText(compound.briefdescription));
+    const detailedDesc = escapeForMdx(extractText(compound.detaileddescription));
     const location = compound.location ? compound.location[0].$.file : '';
 
     // Extract methods
@@ -281,8 +281,8 @@ async function processClass(className, module, classInfo) {
           const method = {
             name: extractText(member.name),
             signature: formatMethod(member),
-            briefDesc: extractText(member.briefdescription),
-            detailedDesc: extractText(member.detaileddescription),
+            briefDesc: escapeForMdx(extractText(member.briefdescription)),
+            detailedDesc: escapeForMdx(extractText(member.detaileddescription)),
           };
 
           if (prot === 'public') {
@@ -394,8 +394,8 @@ async function processNamespace(namespaceName, module, namespaceInfo) {
     const xml = await parseXmlFile(xmlFile);
     const compound = xml.doxygen.compounddef[0];
     const compoundName = extractText(compound.compoundname);
-    const briefDesc = extractText(compound.briefdescription);
-    const detailedDesc = extractText(compound.detaileddescription);
+    const briefDesc = escapeForMdx(extractText(compound.briefdescription));
+    const detailedDesc = escapeForMdx(extractText(compound.detaileddescription));
     const location = compound.location ? compound.location[0].$.file : '';
 
     // Extract functions
@@ -411,8 +411,8 @@ async function processNamespace(namespaceName, module, namespaceInfo) {
           functions.push({
             name: extractText(member.name),
             signature: formatMethod(member),
-            briefDesc: extractText(member.briefdescription),
-            detailedDesc: extractText(member.detaileddescription),
+            briefDesc: escapeForMdx(extractText(member.briefdescription)),
+            detailedDesc: escapeForMdx(extractText(member.detaileddescription)),
           });
         }
       }
