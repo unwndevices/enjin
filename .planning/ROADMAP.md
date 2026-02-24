@@ -92,7 +92,10 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   2. Every one of the ~85 generated API pages loads without a 404 or MDX parse error
   3. `npm run build` completes with zero errors and zero MDX warnings
   4. Re-running `generate-api-docs.js` and rebuilding produces the same clean result (angle brackets in template type names are escaped in the generator, not just the output files)
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 23-01-PLAN.md — Fix generator escaping + namespace config, regenerate docs, verify clean build
 
 ### Phase 24: Sprite System Rework
 **Goal**: The sprite system is rebuilt with a clean, zero-alloc API targeting `ICanvas<Pixel4>`, supporting uniform grid sprite sheets, frame animation with three loop modes, and a Lua sprite pool for scripted games.
