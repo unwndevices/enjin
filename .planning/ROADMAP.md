@@ -119,7 +119,10 @@ Plans:
   1. A Lua script calling isButtonHeld(0), isButtonJustPressed(0), and getAxis(0) returns correct values in the SDL3 runner
   2. The same Lua script that draws colored shapes via setPalette and setColor runs without modification on SDL3 runner and WASM, producing visually identical output
   3. Lua scripting in the SDL3 runner uses the same script execution path as WASM and ESP32 (no SDL3-specific Lua extensions required)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 22-01-PLAN.md — Lua input bindings (isButtonHeld/isButtonJustPressed/isButtonJustReleased/getAxis) + e2e_parity.lua script
+- [ ] 22-02-PLAN.md — SDL3 Lua integration (CMakeLists, sdl_main.cpp LuaScriptSystem) + manual parity sign-off
 
 ## Progress
 
