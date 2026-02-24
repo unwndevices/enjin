@@ -9,9 +9,9 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 
 ### Palette
 
-- [ ] **PAL-01**: Canvas4 palette maps 16 indices to RGB colors at display time (not draw time)
-- [ ] **PAL-02**: Index 15 is transparent, indices 0-14 are user colors
-- [ ] **PAL-03**: Runtime palette swap via setPaletteColor(index, r, g, b) without canvas re-render
+- [x] **PAL-01**: Canvas4 palette maps 16 indices to RGB colors at display time (not draw time)
+- [x] **PAL-02**: Index 15 is transparent, indices 0-14 are user colors
+- [x] **PAL-03**: Runtime palette swap via setPaletteColor(index, r, g, b) without canvas re-render
 - [ ] **PAL-04**: Lua API exposes setPalette() and getPalette() for scripts
 - [ ] **PAL-05**: WASM bindings expose getPaletteRGB() for JavaScript renderer
 
@@ -63,9 +63,9 @@ Requirements for Tomodachi Readiness milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PAL-01 | Phase 19 | Pending |
-| PAL-02 | Phase 19 | Pending |
-| PAL-03 | Phase 19 | Pending |
+| PAL-01 | Phase 19 | Complete |
+| PAL-02 | Phase 19 | Complete |
+| PAL-03 | Phase 19 | Complete |
 | PAL-04 | Phase 19 | Pending |
 | PAL-05 | Phase 19 | Pending |
 | SDL-01 | Phase 21 | Pending |
