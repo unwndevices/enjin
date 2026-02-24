@@ -43,115 +43,14 @@ void C_Canvas::lateUpdate(uint16_t deltaTime) {
     // No late update operations needed
 }
 
-void C_Canvas::draw(ICanvas<uint8_t>& target_canvas) {
-    if (!internal_canvas) return;
-    
-    Point draw_pos = GetOffsetPosition();
-    
-    // Apply blend mode when drawing (matches original Enjin exactly)
-    switch (blend_mode) {
-        case BlendMode::Normal:
-            // Normal blit operation - copy pixels directly (skip matte pixels)
-            for (uint8_t y = 0; y < canvas_height; y++) {
-                for (uint8_t x = 0; x < canvas_width; x++) {
-                    int target_x = draw_pos.x + x;
-                    int target_y = draw_pos.y + y;
-                    
-                    if (target_x >= 0 && target_y >= 0 && 
-                        target_x < 128 && target_y < 128) {  // Assume max canvas size
-                        uint8_t pixel = internal_canvas->getPixel(x, y);
-                        if (pixel != matte_color) { // Skip matte color (transparent pixels)
-                            target_canvas.setPixel(target_x, target_y, pixel);
-                        }
-                    }
-                }
-            }
-            break;
-            
-        case BlendMode::Opacity50:
-            // 50% opacity blend
-            for (uint8_t y = 0; y < canvas_height; y++) {
-                for (uint8_t x = 0; x < canvas_width; x++) {
-                    int target_x = draw_pos.x + x;
-                    int target_y = draw_pos.y + y;
-                    
-                    if (target_x >= 0 && target_y >= 0 && 
-                        target_x < 128 && target_y < 128) {
-                        uint8_t src_pixel = internal_canvas->getPixel(x, y);
-                        if (src_pixel != matte_color) { // Skip matte color
-                            uint8_t dst_pixel = target_canvas.getPixel(target_x, target_y);
-                            uint8_t blended = (src_pixel + dst_pixel) / 2;
-                            target_canvas.setPixel(target_x, target_y, blended);
-                        }
-                    }
-                }
-            }
-            break;
-            
-        case BlendMode::Opacity25:
-            // 25% opacity blend  
-            for (uint8_t y = 0; y < canvas_height; y++) {
-                for (uint8_t x = 0; x < canvas_width; x++) {
-                    int target_x = draw_pos.x + x;
-                    int target_y = draw_pos.y + y;
-                    
-                    if (target_x >= 0 && target_y >= 0 && 
-                        target_x < 128 && target_y < 128) {
-                        uint8_t src_pixel = internal_canvas->getPixel(x, y);
-                        if (src_pixel != matte_color) { // Skip matte color
-                            uint8_t dst_pixel = target_canvas.getPixel(target_x, target_y);
-                            uint8_t blended = (src_pixel + dst_pixel * 3) / 4;
-                            target_canvas.setPixel(target_x, target_y, blended);
-                        }
-                    }
-                }
-            }
-            break;
-            
-        case BlendMode::Add:
-            // Additive blending
-            for (uint8_t y = 0; y < canvas_height; y++) {
-                for (uint8_t x = 0; x < canvas_width; x++) {
-                    int target_x = draw_pos.x + x;
-                    int target_y = draw_pos.y + y;
-                    
-                    if (target_x >= 0 && target_y >= 0 && 
-                        target_x < 128 && target_y < 128) {
-                        uint8_t src_pixel = internal_canvas->getPixel(x, y);
-                        if (src_pixel != matte_color) { // Skip matte color
-                            uint8_t dst_pixel = target_canvas.getPixel(target_x, target_y);
-                            uint8_t blended = std::min(15, static_cast<int>(src_pixel + dst_pixel));
-                            target_canvas.setPixel(target_x, target_y, blended);
-                        }
-                    }
-                }
-            }
-            break;
-            
-        case BlendMode::Sub:
-            // Subtractive blending
-            for (uint8_t y = 0; y < canvas_height; y++) {
-                for (uint8_t x = 0; x < canvas_width; x++) {
-                    int target_x = draw_pos.x + x;
-                    int target_y = draw_pos.y + y;
-                    
-                    if (target_x >= 0 && target_y >= 0 && 
-                        target_x < 128 && target_y < 128) {
-                        uint8_t src_pixel = internal_canvas->getPixel(x, y);
-                        if (src_pixel != matte_color) { // Skip matte color
-                            uint8_t dst_pixel = target_canvas.getPixel(target_x, target_y);
-                            uint8_t blended = std::max(0, static_cast<int>(dst_pixel - src_pixel));
-                            target_canvas.setPixel(target_x, target_y, blended);
-                        }
-                    }
-                }
-            }
-            break;
-            
-        default:
-            // Fallback to normal mode
-            break;
-    }
+void C_Canvas::draw(ICanvas<Pixel4>& /*target_canvas*/) {
+    // C_Canvas renders to its own internal Canvas8 buffer.
+    // Compositing Canvas8 -> ICanvas<Pixel4> is deferred to ENG-01 (v2).
+    // This override satisfies the C_Drawable pure virtual contract.
+}
+
+void C_Canvas::applyBlendMode(ICanvas<Pixel4>& /*target_canvas*/) {
+    // Deferred — see draw() stub comment above
 }
 
 bool C_Canvas::continueToDraw() const {

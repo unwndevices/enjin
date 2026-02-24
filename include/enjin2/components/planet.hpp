@@ -124,44 +124,6 @@ public:
     }
     
     /**
-     * @brief Draw planet to 8-bit canvas
-     * @param canvas Target 8-bit canvas
-     */
-    void draw(ICanvas<uint8_t>& canvas) override {
-        if (!isVisible()) return;
-        
-        Point center = getRenderPosition();
-        center.x += getWidth() / 2;
-        center.y += getHeight() / 2;
-        
-        float currentRadius = radius;
-        
-        if (pulsing) {
-            float pulse = std::sin((animationTime / 1000.0f) * pulseSpeed * 2.0f * 3.14159f);
-            currentRadius *= (1.0f + pulse * pulseAmount);
-        }
-        
-        // Convert colors to 8-bit
-        uint8_t coreColor8 = coreColor.to8bit();
-        uint8_t atmColor8 = atmosphereColor.to8bit();
-        uint8_t ringColor8 = ringColor.to8bit();
-        
-        if (hasAtmosphere) {
-            drawCircle(canvas, center, currentRadius * atmosphereRadius, atmColor8, true);
-        }
-        
-        if (hasRings) {
-            drawRing(canvas, center, ringInnerRadius * currentRadius, ringOuterRadius * currentRadius, ringColor8);
-        }
-        
-        drawCircle(canvas, center, currentRadius, coreColor8, true);
-        
-        if (rotating) {
-            drawSurfaceDetails(canvas, center, currentRadius);
-        }
-    }
-    
-    /**
      * @brief Set planet core color
      * @param color New core color
      */

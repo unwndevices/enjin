@@ -48,7 +48,7 @@ namespace enjin2
         void lateUpdate(uint16_t deltaTime) override;
 
         // Drawable interface
-        void draw(ICanvas<uint8_t> &canvas) override;
+        void draw(ICanvas<Pixel4> &canvas) override;
         bool continueToDraw() const override;
 
         /**
@@ -116,10 +116,10 @@ namespace enjin2
         void createCanvas(uint8_t width, uint8_t height);
 
         /**
-         * @brief Apply blend mode when drawing to target canvas
+         * @brief Apply blend mode when drawing to target canvas (deferred — ENG-01)
          * @param target_canvas Target canvas to draw to
          */
-        void applyBlendMode(ICanvas<uint8_t> &target_canvas);
+        void applyBlendMode(ICanvas<Pixel4> &target_canvas);
     };
 
 } // namespace enjin2

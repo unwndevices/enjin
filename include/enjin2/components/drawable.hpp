@@ -82,9 +82,9 @@ public:
     
     /**
      * @brief Pure virtual draw method - must be implemented by derived classes
-     * @param canvas The 8-bit canvas to draw to (matches original Enjin GFXcanvas8)
+     * @param canvas The 4-bit canvas targeting ICanvas<Pixel4>
      */
-    virtual void draw(ICanvas<uint8_t>& canvas) = 0;
+    virtual void draw(ICanvas<Pixel4>& canvas) = 0;
     
     /**
      * @brief Check if this drawable should continue to be drawn

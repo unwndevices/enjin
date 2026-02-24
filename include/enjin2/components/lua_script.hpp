@@ -167,12 +167,6 @@ public:
     void draw(ICanvas<Pixel4>& canvas) override;
     
     /**
-     * @brief Draw component using 8-bit canvas
-     * @param canvas 8-bit canvas to draw on
-     */
-    void draw(ICanvas<uint8_t>& canvas) override;
-    
-    /**
      * @brief Get script interpreter for advanced operations
      * @return Script interpreter reference
      */

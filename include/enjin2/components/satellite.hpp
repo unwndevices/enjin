@@ -185,44 +185,6 @@ public:
     }
     
     /**
-     * @brief Draw satellite to 8-bit canvas
-     * @param canvas Target 8-bit canvas
-     */
-    void draw(ICanvas<uint8_t>& canvas) override {
-        if (!isVisible()) return;
-        
-        Point center = getRenderPosition();
-        center.x += getWidth() / 2;
-        center.y += getHeight() / 2;
-        
-        if (showConnection && orbitPlanet) {
-            Point planetCenter = orbitPlanet->getCenterPosition();
-            drawLine(canvas, planetCenter, center, static_cast<uint8_t>(64));
-        }
-        
-        if (showTrail && trailInitialized) {
-            drawTrail(canvas);
-        }
-        
-        float currentRadius = satelliteRadius;
-        uint8_t currentColor = satelliteColor.to8bit();
-        
-        if (pulsing) {
-            float pulse = std::sin((animationTime / 1000.0f) * 4.0f * 2.0f * 3.14159f);
-            currentRadius *= (1.0f + pulse * 0.3f * parameterValue);
-        }
-        
-        if (colorFromParameter) {
-            currentColor = static_cast<uint8_t>(64 + parameterValue * 191);  // 64 to 255
-        }
-        
-        drawCircle(canvas, center, currentRadius, currentColor, true);
-        
-        Point highlight(center.x - 1, center.y - 1);
-        drawCircle(canvas, highlight, currentRadius * 0.4f, static_cast<uint8_t>(255), true);
-    }
-    
-    /**
      * @brief Set parameter value (0.0 to 1.0)
      * @param value Normalized parameter value, clamped to [0, 1]
      */

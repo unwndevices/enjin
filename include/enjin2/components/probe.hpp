@@ -184,54 +184,6 @@ public:
     }
     
     /**
-     * @brief Draw probe to 8-bit canvas
-     * @param canvas Target 8-bit canvas
-     */
-    void draw(ICanvas<uint8_t>& canvas) override {
-        if (!isVisible()) return;
-        
-        Point center = getRenderPosition();
-        center.x += getWidth() / 2;
-        center.y += getHeight() / 2;
-        
-        if (hasTrail) {
-            drawTrail(canvas);
-        }
-        
-        float currentSize = probeSize;
-        uint8_t currentColor = probeColor.to8bit();
-        
-        if (pulsing) {
-            float pulse = std::sin((animationTime / 1000.0f) * pulseSpeed * 2.0f * 3.14159f);
-            currentSize *= (1.0f + pulse * 0.4f);
-            if (pulse > 0) {
-                currentColor = accentColor.to8bit();
-            }
-        }
-        
-        switch (probeType) {
-            case ProbeType::DOT:
-                drawDot(canvas, center, currentSize, currentColor);
-                break;
-            case ProbeType::DIAMOND:
-                drawDiamond(canvas, center, currentSize, currentColor);
-                break;
-            case ProbeType::CROSS:
-                drawCross(canvas, center, currentSize, currentColor);
-                break;
-            case ProbeType::TRIANGLE:
-                drawTriangle(canvas, center, currentSize, currentColor);
-                break;
-            case ProbeType::SCANNER:
-                drawScanner(canvas, center, currentSize, currentColor);
-                break;
-            case ProbeType::PARTICLE:
-                drawParticle(canvas, center, currentSize, currentColor);
-                break;
-        }
-    }
-    
-    /**
      * @brief Set probe appearance
      * @param type Visual type of probe
      * @param size Probe size in pixels

@@ -333,15 +333,14 @@ private:
         
         // Render all sorted drawables
         for (size_t i = 0; i < drawableCount; ++i) {
-            if constexpr (std::is_same_v<PixelType, uint8_t>) {
-                // Direct drawing for uint8_t canvas
+            if constexpr (std::is_same_v<PixelType, Pixel4>) {
+                // Direct drawing for Pixel4 canvas (primary path)
                 drawables[i]->draw(canvas);
             } else {
-                // For other pixel types, we need to create a temporary uint8_t canvas
-                // and then convert/copy to the target canvas
-                // This is a simplified approach - in practice you'd want a more efficient method
-                static_assert(std::is_same_v<PixelType, uint8_t>, 
-                    "Drawable components currently only support uint8_t canvas. Use uint8_t canvas or implement conversion.");
+                // Drawable::draw() requires ICanvas<Pixel4>. Canvas8 (uint8_t) compositing
+                // will be handled by ENG-01 (Phase 25 compositor). For now, non-Pixel4
+                // canvases do not render drawables.
+                (void)i;  // suppress unused warning
             }
         }
     }

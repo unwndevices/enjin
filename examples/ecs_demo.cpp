@@ -35,19 +35,20 @@ public:
         : C_Drawable(owner, width, height), grayscale(gray) {}
     
     /**
-     * @brief Draw to 8-bit canvas
+     * @brief Draw to 4-bit canvas
      */
-    void draw(ICanvas<uint8_t>& canvas) override {
+    void draw(ICanvas<Pixel4>& canvas) override {
         if (!isVisible()) return;
-        
+
         Point pos = GetOffsetPosition();
         uint8_t w = GetWidth();
         uint8_t h = GetHeight();
-        
-        // Draw filled rectangle
+
+        // Draw filled rectangle using palette index (lower nibble)
+        Pixel4 color(grayscale & 0x0F);
         for (uint16_t y = 0; y < h; ++y) {
             for (uint16_t x = 0; x < w; ++x) {
-                canvas.setPixel(pos.x + x, pos.y + y, grayscale);
+                canvas.setPixel(pos.x + x, pos.y + y, color);
             }
         }
     }

@@ -201,20 +201,6 @@ void C_LuaScript::draw(ICanvas<Pixel4>& canvas) {
     callScriptFunctionSafe(DRAW_FUNCTION);
 }
 
-void C_LuaScript::draw(ICanvas<uint8_t>& canvas) {
-    if (!isVisible() || !hasScript || scriptError || !scriptSystem) {
-        return;
-    }
-    
-    drawCalls++;
-    
-    // Setup canvas for Lua
-    setupLuaCanvas(canvas);
-    
-    // Call draw function if it exists
-    callScriptFunctionSafe(DRAW_FUNCTION);
-}
-
 bool C_LuaScript::callScriptFunctionSafe(const std::string& functionName) {
     if (!scriptSystem) {
         return false;

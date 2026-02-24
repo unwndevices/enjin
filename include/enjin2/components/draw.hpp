@@ -18,11 +18,11 @@ namespace enjin2 {
 /**
  * @brief Function type for custom drawing operations (matches original Enjin DrawFunction)
  */
-using DrawFunction = std::function<void(ICanvas<uint8_t>& canvas)>;
+using DrawFunction = std::function<void(ICanvas<Pixel4>& canvas)>;
 
 /**
  * @brief Draw component for lambda-based custom rendering (matches original Enjin C_Draw)
- * 
+ *
  * Allows custom drawing operations to be performed via lambda functions,
  * providing flexibility for procedural graphics and custom visual effects.
  */
@@ -44,7 +44,7 @@ public:
      * @brief Draw using the stored draw function
      * @param canvas The canvas to draw to
      */
-    void draw(ICanvas<uint8_t>& canvas) override {
+    void draw(ICanvas<Pixel4>& canvas) override {
         if (draw_function && is_visible) {
             draw_function(canvas);
         }
