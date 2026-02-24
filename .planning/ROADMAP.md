@@ -92,7 +92,9 @@ Plans:
   1. The input interface headers compile without SDL3 or ESP32 headers present — zero platform type leakage
   2. InputState holds a button bitmask and float axis array accessible from any platform implementation
   3. justPressed, held, and justReleased return correct values per button across a frame transition
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 20-01-PLAN.md — InputState header, input_advance_frame, enjin2_input CMake library, and host unit tests
 
 ### Phase 21: SDL3 CMake + Runner
 **Goal**: An SDL3 desktop runner builds as an opt-in executable target, displaying a Canvas4 via palette lookup with integer scaling, a working game loop, and SDL3 keyboard mapped to the input abstraction
