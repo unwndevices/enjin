@@ -4,7 +4,9 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
 #endif
 #include "../../include/enjin2/graphics/canvas.hpp"
+#include "../../include/enjin2/graphics/palette.hpp"
 #include "../../include/enjin2/core/types.hpp"
+#include <string>
 
 using namespace emscripten;
 using namespace enjin2;
@@ -126,6 +128,34 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         .function("getPixel", +[](Canvas4<64, 32>& canvas, int x, int y) -> uint8_t {
             return static_cast<uint8_t>(canvas.getPixel(x, y));
         });
+
+    // Palette functions — core graphics, not behind ENJIN2_BUILD_LUA guard
+    function("getPaletteRGB", +[]() -> val {
+        static uint8_t buf[45];
+        for (int i = 0; i < 15; ++i) {
+            enjin2::RGB c = enjin2::g_palette.getColor(i);
+            buf[i*3]   = c.r;
+            buf[i*3+1] = c.g;
+            buf[i*3+2] = c.b;
+        }
+        return val(typed_memory_view(45, buf));
+    });
+
+    function("setPaletteColor", +[](int index, int r, int g, int b) {
+        enjin2::g_palette.setColor(
+            static_cast<uint8_t>(index),
+            static_cast<uint8_t>(r),
+            static_cast<uint8_t>(g),
+            static_cast<uint8_t>(b));
+    });
+
+    function("loadPalette", +[](std::string name) -> bool {
+        return enjin2::g_palette.loadPreset(name.c_str());
+    });
+
+    function("getPaletteSize", +[]() -> int {
+        return enjin2::g_palette.getSize();
+    });
 
 #ifdef ENJIN2_BUILD_LUA
     // Factory functions for creating LuaCanvas with specific canvas types

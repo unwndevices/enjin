@@ -80,6 +80,12 @@ export interface Enjin2Module extends EmscriptenModule {
   getCanvasData64x32(canvas: Canvas4_64x32): Uint8Array;
   setCanvasData128(canvas: Canvas4_128x128, data: Uint8Array): void;
   setCanvasData64x32(canvas: Canvas4_64x32, data: Uint8Array): void;
+
+  // Palette
+  getPaletteRGB(): Uint8Array;
+  setPaletteColor(index: number, r: number, g: number, b: number): void;
+  loadPalette(name: string): boolean;
+  getPaletteSize(): number;
 }
 
 export interface EmscriptenModule {
