@@ -11,6 +11,7 @@
 #include "lua_platform.hpp"
 #include "../graphics/canvas.hpp"
 #include "../graphics/primitives.hpp"
+#include "../graphics/sprite.hpp"
 #include "../input/input_state.hpp"
 // #include "../ui/component.hpp"  // Conflicts with core/component.hpp in VCV build
 // #include "../ui/components.hpp" // Not needed for basic canvas operations
@@ -182,6 +183,23 @@ private:
     uint8_t currentColor;       ///< Current drawing color
     uint16_t lineWidth;         ///< Current line width
 
+    // ── Sprite pool ──────────────────────────────────────────────────────────
+    static constexpr int LUA_SPRITE_POOL_SIZE = 16;  ///< Fixed pool — zero alloc
+
+    /** Per-slot animation state for the Lua sprite pool. */
+    struct SpriteState {
+        SpriteSheet sheet;       ///< Sheet data (pointer to external pixel data)
+        float       fps{8.0f};   ///< Playback rate in frames per second
+        float       accumMs{0.0f}; ///< Accumulated milliseconds since last frame advance
+        uint8_t     frame{0};    ///< Current frame index
+        AnimMode    mode{AnimMode::Loop}; ///< Animation loop mode
+        bool        forward{true};  ///< Ping-pong direction (true = forward)
+        bool        done{false};    ///< Once mode: true when animation has completed
+        bool        active{false};  ///< Whether this slot is in use
+    };
+
+    SpriteState spritePool[LUA_SPRITE_POOL_SIZE]; ///< Zero-alloc fixed sprite pool
+
 public:
     /**
      * @brief Constructor
@@ -261,6 +279,12 @@ private:
     static int lua_isButtonJustPressed(lua_State* L);
     static int lua_isButtonJustReleased(lua_State* L);
     static int lua_getAxis(lua_State* L);
+
+    // Sprite pool bindings (SPR-06)
+    static int lua_newSprite(lua_State* L);
+    static int lua_drawSprite(lua_State* L);
+    static int lua_updateSprite(lua_State* L);
+    static int lua_setFrame(lua_State* L);
 
     /**
      * @brief Get LuaBindings instance from Lua state

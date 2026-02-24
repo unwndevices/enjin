@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../core/types.hpp"
-#include "../abstract/icanvas.hpp"
+#include "../graphics/canvas.hpp"
 #include <cstdint>
 
 namespace enjin2 {
