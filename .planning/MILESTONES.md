@@ -1,5 +1,28 @@
 # Milestones
 
+## v1.3 Tomodachi Readiness (Shipped: 2026-02-24)
+
+**Phases completed:** 4 phases (19-22), 7 plans
+**Timeline:** 1 day (2026-02-24)
+**Git range:** feat(19-01) → feat(22-02), 39 files changed, +5,766/-61 lines
+
+**Key accomplishments:**
+- 16-color indexed PICO-8 palette with transparent index 15, runtime swap, and no canvas re-render
+- Lua and WASM palette bindings: `setPaletteColor`, `getPaletteColor`, `getPaletteRGB`, `loadPalette`
+- Platform-agnostic `InputState` with uint16_t bitmask, float axes[8], and edge detection (justPressed/held/justReleased)
+- SDL3 opt-in runner with Canvas4→RGB24 blit, 4× nearest-neighbor scaling, fixed-rate game loop, and keyboard input
+- Lua input polling API (`isButtonHeld`, `isButtonJustPressed`, `isButtonJustReleased`, `getAxis`) + `e2e_parity.lua` cross-platform test
+- Lua scripting wired into SDL3 runner via conditional CMake linking — same scripts run on SDL3, WASM, and ESP32 without modification
+
+**Tech debt (non-blocking):**
+- `getPaletteRGB()` delivers snapshot buffer (not live view) — callers must re-invoke after palette mutation; SDL runner unaffected
+- Full Emscripten toolchain build not verified (code inspection conclusive)
+- API navigation disabled in Docusaurus due to MDX syntax issues (carried from v1.0)
+
+**See:** [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md) | [milestones/v1.3-REQUIREMENTS.md](milestones/v1.3-REQUIREMENTS.md)
+
+---
+
 ## v1.2 Tech Debt Cleanup (Shipped: 2026-02-23)
 
 **Phases completed:** 3 phases (16-18), 5 plans

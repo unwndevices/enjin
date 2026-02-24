@@ -2,7 +2,7 @@
 
 ## What This Is
 
-enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded devices and WASM. It runs on ESP32, WebAssembly (Emscripten), and VCV Rack, with Lua scripting support. enjin2 powers Tomodachi — a portable MIDI/audio control gadget with a pixel display.
+enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded devices and WASM. It runs on ESP32, WebAssembly (Emscripten), and SDL3 desktop, with Lua scripting support and a 16-color indexed palette system. enjin2 powers Tomodachi — a portable MIDI/audio control gadget with a pixel display.
 
 ## Core Value
 
@@ -10,7 +10,15 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ## Current State
 
-**Shipped: v1.2 Tech Debt Cleanup (2026-02-23)**
+**Shipped: v1.3 Tomodachi Readiness (2026-02-24)**
+- 16-color PICO-8 indexed palette with transparent index 15 and runtime swap
+- Platform-agnostic input abstraction (InputState, bitmask, axes, edge detection)
+- SDL3 opt-in runner with Canvas4→RGB24 blit, 4× nearest-neighbor scaling, game loop
+- Lua input polling API + e2e_parity.lua confirming cross-platform script parity
+- Same Lua scripts run unmodified on SDL3, WASM, and ESP32
+- 4 phases, 7 plans, 39 files changed, ~67k LOC C++
+
+**Previously shipped: v1.2 Tech Debt Cleanup (2026-02-23)**
 - Dead enjin1 compat headers, benchmarks, and CMake references removed
 - extractText() rewritten with xml2js ordered parsing for correct document-order traversal
 - formatMethod() const const duplication eliminated, 84 API pages regenerated clean
@@ -64,57 +72,60 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - ✓ WASM build succeeds with LUA=OFF — v1.2 (Phase 18, BLDS-01)
 - ✓ Generated LaTeX files removed from git — v1.2 (Phase 16, REPO-01)
 - ✓ .gitignore updated for LaTeX exclusion — v1.2 (Phase 16, REPO-02)
-
-## Current Milestone: v1.3 Tomodachi Readiness
-
-**Goal:** Make enjin2 ready for Tomodachi integration with color palettes, desktop development, and flexible input.
-
-**Target features:**
-- 16-color indexed palette system (15 colors + transparent, lookup at display time)
-- SDL2 desktop runner (C++ app with Lua scripting, third platform backend)
-- Flexible input abstraction (buttons, pots, joysticks, touchpads, keyboard — platform-agnostic)
+- ✓ Canvas4 palette maps 16 indices to RGB at display time — v1.3 (Phase 19, PAL-01)
+- ✓ Index 15 is transparent, indices 0-14 are user colors — v1.3 (Phase 19, PAL-02)
+- ✓ Runtime palette swap via setPaletteColor without canvas re-render — v1.3 (Phase 19, PAL-03)
+- ✓ Lua API exposes setPalette() and getPalette() for scripts — v1.3 (Phase 19, PAL-04)
+- ✓ WASM bindings expose getPaletteRGB() for JavaScript renderer — v1.3 (Phase 19, PAL-05)
+- ✓ CMake ENJIN2_BUILD_SDL=ON/OFF option with no impact on WASM or ESP32 builds — v1.3 (Phase 21, SDL-01)
+- ✓ SDL3 window with Canvas4-to-RGB texture blit via palette lookup — v1.3 (Phase 21, SDL-02)
+- ✓ Integer pixel scaling with nearest-neighbor filtering — v1.3 (Phase 21, SDL-03)
+- ✓ Game loop with event polling, delta time, and clean shutdown — v1.3 (Phase 21, SDL-04)
+- ✓ Lua scripting works in SDL3 runner (same scripts as WASM/ESP32) — v1.3 (Phase 22, SDL-05)
+- ✓ Platform-agnostic input interface with zero platform types in headers — v1.3 (Phase 20, INP-01)
+- ✓ InputState with button bitmask and float analog axes — v1.3 (Phase 20, INP-02)
+- ✓ Edge detection (justPressed, held, justReleased) in shared layer — v1.3 (Phase 20, INP-03)
+- ✓ SDL3 keyboard-to-button default mapping (arrows, Z/X, Enter) — v1.3 (Phase 21, INP-04)
+- ✓ Lua input polling API (isButtonHeld, isButtonJustPressed, getAxis) — v1.3 (Phase 22, INP-05)
 
 ### Active
 
-- [ ] 16-color indexed palette system
-- [ ] SDL2 desktop runner with Lua scripting
-- [ ] Platform-agnostic input abstraction
+(No active requirements — planning next milestone)
 
 ### Out of Scope
 
 - [Keeping enjin1] — Target is enjin2-only
-- [Features not already in enjin2] — Focus on migration, not new features
 - Strangler Fig incremental migration — Pivoted to enjin2-only approach
 - Dual-backend compile-time switching — Removed in Phase 5
 - Usage examples in API documentation — Deferred to future milestone
 - Getting started guide — Deferred to future milestone
 - Multi-layer composition — Deferred to v1.4+
 - MIDI/audio integration — Tomodachi-side, not enjin2
+- SDL2 (legacy) — SDL3 is stable since Jan 2025; SDL2 receives no new features
+- Input libraries (Gainput, MPG) — Custom abstraction fits zero-alloc constraint
+- Full alpha blending per pixel — Chroma-key transparency (index 15) sufficient for 4-bit canvas
 
 ## Context
 
-**After v1.2:**
-enjin2 is a fully independent, clean library with:
-- Zero enjin1 dependencies or remnants
-- 84 clean API pages, 0 Doxygen warnings, CI gate
-- WASM build with optional Lua support
-- No tech debt blocking Tomodachi integration
+**After v1.3:**
+enjin2 is Tomodachi-ready with:
+- 16-color PICO-8 indexed palette (index 15 transparent, runtime swap, no re-render)
+- Platform-agnostic input abstraction compiling clean on ESP32, WASM, SDL3
+- SDL3 desktop runner as third platform for rapid Lua iteration before ESP32 deployment
+- Lua scripts portable across all three platforms without modification
+- ~67k LOC C++, CMake multi-target (enjin2_core, enjin2_graphics, enjin2_input, enjin2_lua, enjin2_wasm, enjin2_sdl)
 
-**Current architecture (relevant to v1.3):**
-- Canvas system: 4-bit (Canvas4) and 8-bit (Canvas8) templates, Pixel4 stores values 0-15 as grayscale
-- Platform backends: WASM (Emscripten bindings), ESP32 (Arduino), VCV Rack — no SDL2
-- Input: UI-level InputComponent/InputSystem (mouse-only, not a general input abstraction)
-- Build: CMake multi-target (enjin2_core, enjin2_graphics, enjin2_ui, enjin2_lua, enjin2_wasm)
-
-**Tomodachi context:**
-Portable MIDI/audio control gadget with pixel display and Lua scripting. Physical inputs include buttons, potentiometers, joysticks, and touchpads. Desktop development via SDL2 enables rapid iteration before deploying to ESP32.
+**Known tech debt:**
+- `getPaletteRGB()` snapshot semantics (re-invoke after palette mutation; SDL runner unaffected)
+- API navigation disabled in Docusaurus due to MDX syntax issues (carried from v1.0)
+- Full Emscripten toolchain build not verified in dev environment
 
 ## Constraints
 
 - **Structure**: Clean and intelligent organization, no fuss
 - **Validation**: Manual testing (no automated test suite)
 - **Memory**: No dynamic allocation (static arrays, no heap)
-- **Platforms**: Must work on ESP32, WASM, and SDL2 desktop
+- **Platforms**: Must work on ESP32, WASM, and SDL3 desktop
 
 ## Key Decisions
 
@@ -136,6 +147,17 @@ Portable MIDI/audio control gadget with pixel display and Lua scripting. Physica
 | formatMethod() const dedup | Strip trailing ' const' from argsstring when $.const=yes | ✓ Working - Phase 17 |
 | CMake generator expressions for WASM Lua | $<$<BOOL:${ENJIN2_BUILD_LUA}>:...> consistent with existing target pattern | ✓ Working - Phase 18 |
 | ENJIN2_BUILD_LUA compile definition | CMake injects ENJIN2_BUILD_LUA=1 so C++ preprocessor gates Lua code | ✓ Working - Phase 18 |
+| Index 15 = transparent, 0-14 user colors | Preserves Colors::BLACK = Pixel4(0); transparent as highest index | ✓ Working - Phase 19 |
+| SDL3 (not SDL2) for desktop runner | SDL3 stable since Jan 2025; SDL2 receives no new features | ✓ Working - Phase 21 |
+| WASM palette bindings outside Lua guard | Palette is core graphics, not Lua-only | ✓ Working - Phase 19 |
+| getPaletteRGB uses static buffer | typed_memory_view for zero-copy; snapshot semantics documented | ✓ Working - Phase 19 |
+| input_platform_poll declared not defined in core | Each platform provides exactly one definition | ✓ Working - Phase 20 |
+| InputState uses uint16_t bitmask + float axes[8] | Matches INP-02 spec, no heap | ✓ Working - Phase 20 |
+| SDL_SetRenderScale(4,4) instead of logical presentation | Workaround for SDL3 bug #11335 (logical presentation ignores SCALEMODE_NEAREST) | ✓ Working - Phase 21 |
+| input_advance_frame before input_platform_poll each frame | advance clears current, poll writes new state — correct frame sequence | ✓ Working - Phase 21 |
+| InputState* initialized to nullptr in LuaBindings | Null guard in all input bindings prevents crash before setInput() call | ✓ Working - Phase 22 |
+| lua_type(L,1)==LUA_TSTRING for string detection | lua_isstring is too permissive (numbers coerce to strings) | ✓ Working - Phase 22 |
+| enjin2_sdl conditional Lua link via generator expressions | Zero impact on non-Lua builds; consistent with Phase 18 pattern | ✓ Working - Phase 22 |
 
 ---
-*Last updated: 2026-02-23 after starting v1.3 milestone*
+*Last updated: 2026-02-24 after v1.3 milestone*

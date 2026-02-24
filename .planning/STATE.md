@@ -2,19 +2,18 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-23)
+See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.3 Tomodachi Readiness — COMPLETE (Phase 22 finished)
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 22 of 22 (Lua Integration + E2E Validation) — COMPLETE
-Plan: 2 of 2 in current phase — COMPLETE
-Status: Complete
-Last activity: 2026-02-24 — Phase 22 Plan 02 complete (VERIFICATION.md signed off APPROVED; SDL-05 and INP-05 satisfied; lua_rectangle lua_type bug fixed; Phase 22 and v1.3 milestone complete)
+Phase: — (v1.3 milestone archived 2026-02-24)
+Status: Milestone complete — ready for next milestone planning
+Last activity: 2026-02-24 — v1.3 Tomodachi Readiness archived (4 phases, 7 plans, 15/15 requirements)
 
-Progress: [████████████████████] ~100% (22/22 phases complete across all milestones)
+Progress: [████████████████████] 100% (22/22 phases complete, 4 milestones shipped)
 
 ## Performance Metrics
 
@@ -31,30 +30,7 @@ Progress: [████████████████████] ~100% (
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- v1.3 start: Index 15 = transparent, indices 0-14 are user colors — preserves Colors::BLACK = Pixel4(0)
-- v1.3 start: SDL3 (not SDL2) — canonical names: ENJIN2_PLATFORM_SDL, ENJIN2_BUILD_SDL, enjin2_sdl
-- v1.3 start: WASM palette — expose raw palette via getPaletteRGB(), apply in JavaScript (thin C++ binding)
-- 19-01: Transparency-before-modulo — isTransparent(15) checked BEFORE index % size in all palette methods to prevent index 15 folding into smaller presets
-- 19-01: parseHexColor uses %02x (unsigned) which the C standard specifies accepts both upper and lower hex digits
-- 19-01: debugTransparent stored on Palette struct for future runtime magenta debug mode without API change
-- 19-02: WASM palette bindings placed outside ENJIN2_BUILD_LUA guard — palette is core graphics, not Lua-only
-- 19-02: getPaletteRGB uses static buffer + typed_memory_view for live zero-copy view to JavaScript (not a copy)
-- 19-02: lua_setPaletteColor uses lua_isstring dispatch for hex vs RGB integer overloads
-- 20-01: input_platform_poll declared in header but NOT defined in core — each platform (SDL3, ESP32, WASM) provides exactly one definition
-- 20-01: input_state.hpp includes only <stdint.h> — zero SDL3, Emscripten, Arduino, or ESP32 headers cross the abstraction boundary
-- 20-01: InputState uses uint16_t bitmask (max 16 buttons) and float axes[8] per INP-02 spec
-- 20-01: input_advance_frame uses memcpy/memset for frame snapshot — simple and consistent with zero-allocation constraint
-- [Phase 21-sdl3-cmake-runner]: ENJIN2_BUILD_SDL defaults OFF with FetchContent SDL3 release-3.4.2, EXCLUDE_FROM_ALL, enjin2_lua excluded from enjin2_sdl link
-- 21-02: SDL_SetRenderScale(4,4) used instead of SDL_SetRenderLogicalPresentation — workaround for SDL3 bug #11335 (logical presentation ignores SCALEMODE_NEAREST)
-- 21-02: SDL_GetKeyboardState used for held-key polling; Escape handled via SDL_EVENT_KEY_DOWN for quit-only, never mapped to InputState
-- 21-02: input_advance_frame called BEFORE input_platform_poll each frame — advance clears current, poll writes new state
-- 22-01: InputState* currentInput initialized to nullptr — null guard in all 4 input bindings returns 0/false before host calls setInput()
-- 22-01: lua_getAxis bounds-checks axis index (0-7) before dereferencing axes[] array
-- 22-02: enjin2_sdl uses CMake generator expressions for conditional Lua linking — zero impact on non-Lua builds
-- 22-02: lua_type(L,1)==LUA_TSTRING for strict string detection in Lua C bindings (lua_isstring is too permissive — numbers coerce to strings in Lua)
+All decisions logged in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
@@ -69,9 +45,10 @@ None.
 - API navigation disabled in Docusaurus due to MDX syntax issues (carried from v1.0)
 - parameterlist name/description concatenation in 5 API docs (Doxygen XML limitation)
 - Full Emscripten toolchain build not verified (code inspection conclusive)
+- `getPaletteRGB()` snapshot semantics — callers must re-invoke after palette mutation
 
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 22-02-PLAN.md — Phase 22 and v1.3 milestone complete
+Stopped at: v1.3 milestone archived — use /gsd:new-milestone to start next milestone
 Resume file: None
