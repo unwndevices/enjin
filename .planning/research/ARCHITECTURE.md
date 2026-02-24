@@ -1,551 +1,596 @@
 # Architecture Research
 
-**Domain:** enjin2 v1.3 — Palette system, SDL2 desktop runner, input abstraction
-**Researched:** 2026-02-23
-**Confidence:** HIGH
-
-## System Overview
-
-Current state after v1.2: three library targets, one WASM executable, no SDL2 platform, no palette,
-no general input abstraction.
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                   Application Layer (SDL2 runner / WASM / ESP32)     │
-├──────────────────────────────────────────────────────────────────────┤
-│  ┌───────────────────┐  ┌───────────────────┐  ┌──────────────────┐  │
-│  │  enjin2_lua        │  │  enjin2_wasm       │  │  enjin2_sdl2     │  │
-│  │  LuaScriptSystem  │  │  emscripten_bindings│  │  (NEW)          │  │
-│  │  LuaCanvas        │  │                    │  │  SDL2 main loop │  │
-│  │  LuaBindings      │  │                    │  │  SDL2 input     │  │
-│  └────────┬──────────┘  └────────┬───────────┘  └────────┬─────────┘  │
-│           │                      │                        │            │
-├───────────┴──────────────────────┴────────────────────────┴────────────┤
-│                           enjin2_ui                                    │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  InputSystem (NEW — abstract)  |  InputEvent  |  InputComponent │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-├──────────────────────────────────────────────────────────────────────┤
-│                          enjin2_graphics                               │
-│  ┌────────────┐  ┌─────────────────────────────────────────────────┐  │
-│  │  Palette   │  │  ICanvas<TPixel>  Canvas4  Canvas8              │  │
-│  │  (NEW)     │  │  Canvas4_ESP32S3                                │  │
-│  └────────────┘  └─────────────────────────────────────────────────┘  │
-├──────────────────────────────────────────────────────────────────────┤
-│                           enjin2_core                                  │
-│  types.hpp  math.hpp  memory.hpp  object.hpp  scene.hpp               │
-│  Component  System  EntityManager  SceneStateMachine                  │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-Three new pieces fit into this stack in three distinct places:
-
-| New Feature | Target Library | Fits Above | New Files |
-|-------------|---------------|------------|-----------|
-| Palette | enjin2_graphics | ICanvas / types | `graphics/palette.hpp` |
-| Input abstraction | enjin2_ui | ECS component/system | `ui/input_system.hpp`, `ui/input_event.hpp` |
-| SDL2 runner | new executable | enjin2_lua + input | `platforms/sdl2/` |
+**Domain:** Embedded/WASM 2D graphics engine — v1.4 feature integration
+**Researched:** 2026-02-24
+**Confidence:** HIGH (based on direct codebase inspection, no external lookup required)
 
 ---
 
-## Component Responsibilities
+## Current System Overview
 
-| Component | Responsibility | Status |
-|-----------|---------------|--------|
-| `Palette` | 16-entry RGB lookup table, index 0 = transparent | NEW in enjin2_graphics |
-| `InputEvent` | Platform-agnostic description of a single input event | NEW in enjin2_ui |
-| `InputSource` | Abstract interface: polls events, pushes to queue | NEW in enjin2_ui |
-| `InputSystem` | Drains InputSource, dispatches to listeners | NEW in enjin2_ui |
-| `SDL2Runner` | SDL2 window, event loop, feeds InputSource | NEW executable |
-| `SDL2InputSource` | SDL2 implementation of InputSource | NEW in SDL2 runner |
-| `ICanvas<TPixel>` | Pixel-level drawing surface | UNCHANGED |
-| `Canvas4<W,H>` | 4-bit packed pixel buffer | UNCHANGED |
-| `LuaCanvas` | Type-erased canvas wrapper for Lua | UNCHANGED |
-| `LuaScriptSystem` | Load/execute Lua scripts, call update() | UNCHANGED |
-| `LuaPlatform` | Per-platform Lua state config | NEEDS EXTENSION for SDL2 |
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         SDL3 Runner (sdl_main.cpp)                  │
+│  g_canvas (Canvas4<128,128>)  g_input (InputState)  g_lua          │
+│  expand_canvas_to_rgb() → SDL_UpdateTexture → SDL_RenderTexture     │
+└───────────────────────┬────────────────────────────────────────────┘
+                        │ Canvas4<W,H>* / InputState*
+┌───────────────────────▼────────────────────────────────────────────┐
+│                     Scripting Layer (enjin2_lua)                    │
+│  LuaScriptSystem → LuaEngine → LuaBindings → LuaCanvas            │
+│  LuaCanvas wraps Canvas4* as void* (is4Bit flag)                   │
+│  bindings.cpp: lua_clear, lua_setPixel, lua_rectangle, etc.        │
+│  bindings.cpp: lua_setPaletteColor, input polling                  │
+└───────────────────────┬────────────────────────────────────────────┘
+                        │ ICanvas<Pixel4>&
+┌───────────────────────▼────────────────────────────────────────────┐
+│                    Graphics Layer (enjin2_graphics)                 │
+│  Canvas4<W,H>  Canvas8<W,H>  Palette  Primitives  Effects         │
+│  Single buffer: (WIDTH*HEIGHT)/2 bytes packed 4-bit                │
+└───────────────────────┬────────────────────────────────────────────┘
+                        │ ICanvas<Pixel4> interface
+┌───────────────────────▼────────────────────────────────────────────┐
+│                      Core Layer (enjin2_core)                       │
+│  Object  Component  Scene  SceneStateMachine  Signal               │
+│  ObjectCollection  memory.hpp  types.hpp (Pixel4, Point, Rect)     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Existing render path (v1.3):**
+
+```
+Frame start
+  input_advance_frame(&g_input)
+  input_platform_poll(&g_input)
+  g_lua.callFunction("update", dt)      → Lua update(dt)
+  g_lua.callFunction("draw")            → Lua draw(), writes to g_canvas
+  expand_canvas_to_rgb()                → g_canvas → g_rgb_staging[]
+  SDL_UpdateTexture(texture, ...)       → upload RGB24
+  SDL_RenderTexture(renderer, ...)      → display
+Frame end
+```
 
 ---
 
-## Feature 1: Palette System
+## Feature 1: Multi-Layer Canvas Composition
 
-### What it is
+### What Changes
 
-Pixel values in Canvas4 are 4-bit indices (0–15). Currently they are treated as raw grayscale.
-A `Palette` maps those 16 indices to concrete RGB values at display time, not at draw time.
-This means all canvas drawing code, Lua scripts, and ESP32 pixel buffers remain 4-bit index-only —
-palette application happens only during the final "blit to output" step.
+**Existing:** One `Canvas4<128,128> g_canvas` in `sdl_main.cpp`. All draw calls target it. Blit reads from it directly.
 
-Index 15 is transparent (skip during blit). The 15 usable color slots (0–14)
-match Tomodachi's 15-color-plus-transparent display requirement. This preserves
-existing `Colors::BLACK = Pixel4(0)` behavior.
+**New:** Four `Canvas4<128,128>` buffers, one per logical layer. The `expand_canvas_to_rgb()` step composites them bottom-to-top (Background → Entities → Foreground → UI), treating `PALETTE_TRANSPARENT` (index 15) as passthrough.
 
-### Where it lives
+### New Components
 
-`include/enjin2/graphics/palette.hpp` — header-only, no new .cpp file needed.
-
-```
-enjin2_graphics
-  include/enjin2/graphics/
-    palette.hpp         <-- NEW: Palette struct + RGB24 type
-    canvas.hpp          <-- UNCHANGED
-    canvas_esp32s3.hpp  <-- UNCHANGED
-```
-
-### Interface design
+**`LayerStack` struct (new, in `include/enjin2/graphics/layer_stack.hpp`):**
 
 ```cpp
 namespace enjin2 {
 
-// 24-bit RGB color for palette entries
-struct RGB24 {
-    uint8_t r, g, b;
-    constexpr RGB24() : r(0), g(0), b(0) {}
-    constexpr RGB24(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
+enum class LayerIndex : uint8_t {
+    Background = 0,
+    Entities   = 1,
+    Foreground = 2,
+    UI         = 3,
+    COUNT      = 4
 };
 
-// 16-entry indexed color palette
-// Index 15 = transparent (skip on blit)
-// Indices 0-14 = opaque colors
-struct Palette {
-    static constexpr uint8_t SIZE = 16;
-    static constexpr uint8_t TRANSPARENT = 15;
+template<uint16_t W, uint16_t H>
+struct LayerStack {
+    Canvas4<W, H> layers[static_cast<size_t>(LayerIndex::COUNT)];
 
-    RGB24 entries[SIZE];
-
-    constexpr Palette() : entries{} {}
-
-    void setColor(uint8_t index, RGB24 color) {
-        if (index < SIZE) entries[index] = color;
+    Canvas4<W, H>& get(LayerIndex idx) {
+        return layers[static_cast<size_t>(idx)];
     }
 
-    RGB24 getColor(uint8_t index) const {
-        if (index >= SIZE) return RGB24{};
-        return entries[index];
+    void clearAll(Pixel4 color = Pixel4(0)) {
+        for (auto& layer : layers) layer.clear(color);
     }
 
-    bool isTransparent(uint8_t index) const {
-        return index == TRANSPARENT;
+    void clearLayer(LayerIndex idx, Pixel4 color = Pixel4(0)) {
+        get(idx).clear(color);
     }
 };
-
-// Default greyscale palette (for backward compat during dev)
-constexpr Palette makeGreyscalePalette();
 
 } // namespace enjin2
 ```
 
-### Integration points
+Memory cost: 4 × (128×128)/2 = 4 × 8192 = 32768 bytes (32 KB). Acceptable on SDL3/WASM. Must be gated for bare ESP32 targets without PSRAM.
 
-- **Canvas4**: zero changes. It stores 4-bit indices; palette is applied externally.
-- **SDL2 runner**: at blit time, iterates canvas pixels, maps through palette, writes RGB to SDL_Texture.
-- **WASM**: same blit-time mapping in JS or in the Emscripten binding.
-- **ESP32**: at DMA transfer, map 4-bit index through palette to hardware color format.
-- **Lua API**: expose `setColor(index, r, g, b)` and `getColor(index)` via LuaBindings.
+### Modified Components
 
-### What does NOT change
+**`sdl_main.cpp`:**
+- Replace `Canvas4<128,128> g_canvas` with `LayerStack<128,128> g_layers`
+- Replace `LuaCanvas g_lua_canvas(&g_canvas)` with `LuaCanvas g_lua_canvas(&g_layers.layers[0])` (Background as default)
+- `expand_canvas_to_rgb()` becomes a composite loop: for each pixel, walk layers[0..3] bottom-up, take first non-transparent index
 
-Canvas4 pixel storage, draw calls, LuaCanvas, ICanvas interface — all unchanged.
-Palette is strictly an output-stage concern.
+```cpp
+static void expand_canvas_to_rgb() {
+    for (int y = 0; y < CANVAS_H; y++) {
+        for (int x = 0; x < CANVAS_W; x++) {
+            int i = (y * CANVAS_W + x) * 3;
+            bool hit = false;
+            for (int layer = static_cast<int>(LayerIndex::COUNT) - 1; layer >= 0; --layer) {
+                Pixel4 px = g_layers.layers[layer].getPixel(x, y);
+                if (!g_palette.isTransparent(px.value)) {
+                    RGB rgb = g_palette.resolve(px.value);
+                    g_rgb_staging[i + 0] = rgb.r;
+                    g_rgb_staging[i + 1] = rgb.g;
+                    g_rgb_staging[i + 2] = rgb.b;
+                    hit = true;
+                    break;
+                }
+            }
+            if (!hit) {
+                g_rgb_staging[i + 0] = 0;
+                g_rgb_staging[i + 1] = 0;
+                g_rgb_staging[i + 2] = 0;
+            }
+        }
+    }
+}
+```
+
+**`LuaCanvas` / `LuaBindings` (`include/enjin2/scripting/bindings.hpp`, `src/scripting/bindings.cpp`):**
+
+`LuaCanvas` currently holds `void* canvasPtr` plus `is4Bit` flag. To support layer switching, add:
+- A `LayerStack<W,H>*` pointer alongside the existing canvas pointer
+- `setActiveLayer(uint8_t idx)` which updates `canvasPtr` to point at `layerStack->layers[idx]`
+
+Recommended approach: Add a second constructor for LayerStack and an `activeLayer` field. The `canvas.setLayer(n)` Lua binding calls `LuaCanvas::setActiveLayer(n)`.
+
+**Lua bindings additions (`src/scripting/bindings.cpp`):**
+- `canvas.setLayer(layerIndex)` — switches active draw target (0=Background, 1=Entities, 2=Foreground, 3=UI)
+- `canvas.clearLayer(layerIndex, colorIndex)` — clears one specific layer
+- `canvas.getLayerCount()` — returns 4 (constant)
+
+### Data Flow (Multi-Layer)
+
+```
+Lua draw():
+  canvas.setLayer(0)         → LuaCanvas.activeCanvas = &g_layers.layers[0]
+  canvas.clear(0)            → clears Background layer to black
+  canvas.fillRect(...)       → draws to Background layer
+  canvas.setLayer(1)         → switch to Entities layer
+  canvas.clear(15)           → clear Entities to transparent
+  canvas.circle(...)         → draws to Entities layer
+
+expand_canvas_to_rgb() [modified]:
+  for each pixel (x, y):
+    walk layers top-to-bottom (UI=3 down to Background=0)
+    first non-transparent pixel wins → resolve palette → write RGB
+    no non-transparent pixel found → write black (0,0,0)
+```
+
+### Integration Points
+
+| Touches | What Changes |
+|---------|-------------|
+| `sdl_main.cpp` | `g_canvas` → `g_layers`; compositor replaces direct blit; `g_lua_canvas` constructor updated |
+| `include/enjin2/scripting/bindings.hpp` | `LuaCanvas` gains `setActiveLayer(uint8_t)` method and layer stack pointer |
+| `src/scripting/bindings.cpp` | Add `lua_setLayer`, `lua_clearLayer`, `lua_getLayerCount` |
+| `include/enjin2/graphics/layer_stack.hpp` | **NEW FILE** — header-only, no `.cpp` needed |
+| CMakeLists.txt | No change — `layer_stack.hpp` is header-only |
+| WASM bindings (`emscripten_bindings.cpp`) | Out of scope for v1.4; single-canvas blit unchanged on WASM |
+
+### Zero-Alloc Compliance
+
+`LayerStack` uses the same static template storage as `Canvas4`. Declared as a static global in `sdl_main.cpp` — no heap. The compositor loop writes into the existing `g_rgb_staging[]` static buffer.
 
 ---
 
-## Feature 2: Input Abstraction
+## Feature 2: Sprite System Rework
 
-### The problem
+### Current State
 
-The existing `enjin2_ui` has mouse-only UI components (`InputComponent`, `InputSystem` in
-`ui/component.hpp` and `ui/system.hpp`). These are typed to screen coordinates and click events.
-Tomodachi needs buttons, potentiometers, joysticks, touchpads, and keyboard — none of which fit
-a mouse-click model. SDL2 keyboard/gamepad events also need to be routed through the same path.
+- `graphics/sprite.hpp` — `Sprite` class: raw `const uint8_t* texture`, `frame` index, manual `setTexture()` calls, `draw(ICanvas<uint8_t>&)` — takes 8-bit canvas only
+- `components/sprite.hpp` — `C_Sprite : C_Drawable`: wraps `Sprite`, syncs from `C_Position`, calls `sprite.draw(canvas)`
+- `components/image_cache.hpp` — `C_ImageCache`: 32KB static linear buffer, `ImageEntry` struct (offset, size, width, height, frames)
+- Frame stride: `texture + (frame * width * height)` — sequential flat array, no sheet grid
 
-### Design: event + source + consumer
+**Problems:**
+1. `Sprite::draw()` only accepts `ICanvas<uint8_t>&` — incompatible with `Canvas4` (`ICanvas<Pixel4>`) which is the production format
+2. No sprite sheet support — frames must be stored as sequential raw pixel strips
+3. No time-based animation — frame changes are manual
+4. Duplicate legacy public members (`_width`, `_height`, etc.) alongside private members
+5. `C_Sprite` cannot draw to the new layer-aware canvas without modification
 
-Three concepts, all in `enjin2_ui`:
+### New Components
 
-**InputEvent** — a tagged union of all possible physical input types.
-**InputSource** — abstract interface that produces InputEvents (one per platform).
-**InputConsumer** — callback/handler interface; anything that wants input registers with InputSystem.
+**`SpriteSheet` struct (new, in `include/enjin2/graphics/sprite_sheet.hpp`):**
 
 ```cpp
 namespace enjin2 {
 
-// All physical input kinds Tomodachi cares about
-enum class InputKind : uint8_t {
-    Button,      // pressed/released (buttons, keyboard keys)
-    Pot,         // analog 0.0-1.0 (potentiometer, slider)
-    Joystick,    // two-axis analog (-1.0 to 1.0 each)
-    Touchpad,    // 2D position, optional press
+struct SpriteSheet {
+    const uint8_t* data;   // raw pixel data (4-bit packed or 8-bit flat)
+    uint8_t frameW;        // width of one frame in pixels
+    uint8_t frameH;        // height of one frame in pixels
+    uint8_t cols;          // number of columns in the sheet grid
+    uint8_t rows;          // number of rows in the sheet grid
+    uint8_t frameCount;    // total frames (may be < cols*rows for partial last row)
+
+    // Byte offset for frame N (8-bit storage, sequential)
+    size_t frameOffset(uint8_t frameIdx) const {
+        return static_cast<size_t>(frameIdx) * frameW * frameH;
+    }
 };
 
-struct InputEvent {
-    InputKind kind;
-    uint8_t   id;       // device-specific channel index
+} // namespace enjin2
+```
 
-    union {
-        struct { bool pressed; }            button;
-        struct { float value; }             pot;
-        struct { float x; float y; }        joystick;
-        struct { float x; float y;
-                 bool  pressed; }           touchpad;
-    };
+**`FrameAnimation` struct (new, in `include/enjin2/graphics/frame_animation.hpp`):**
+
+```cpp
+namespace enjin2 {
+
+enum class LoopMode : uint8_t { Once, Loop, PingPong };
+
+struct FrameAnimation {
+    float fps         = 8.0f;
+    uint8_t first     = 0;
+    uint8_t last      = 0;
+    LoopMode mode     = LoopMode::Loop;
+
+    // Mutable playback state
+    float accumulator = 0.0f;
+    uint8_t current   = 0;
+    int8_t direction  = 1;    // +1 or -1 for PingPong
+
+    // Returns true if a full cycle completed this step
+    bool advance(float dt);
+    void reset();
+    bool done() const;   // true when Once mode has reached last frame
 };
 
-// Platform-agnostic source interface
-class InputSource {
+} // namespace enjin2
+```
+
+**New `Sprite` class (replacement in `include/enjin2/graphics/sprite.hpp`):**
+
+```cpp
+namespace enjin2 {
+
+class Sprite {
 public:
-    virtual ~InputSource() = default;
-    // Called once per frame; implementations push events into the provided buffer
-    virtual void poll(InputEvent* buffer, uint8_t& count, uint8_t capacity) = 0;
-};
+    Sprite() = default;
 
-// Consumer callback
-using InputHandler = void(*)(const InputEvent&, void* userData);
+    void setSheet(const SpriteSheet* sheet);
+    void setPosition(int16_t x, int16_t y);
+    void setFrame(uint8_t frameIdx);
+    void setTransparentIndex(uint8_t idx);   // replaces setMatte()
+    void setBlendMode(BlendMode mode);
 
-struct InputListener {
-    InputHandler handler;
-    void*        userData;
-    InputKind    filter;   // only receive this kind (or 0xFF for all)
-};
+    // Template draw: works with Canvas4<W,H> (ICanvas<Pixel4>)
+    // and Canvas8<W,H> (ICanvas<uint8_t>)
+    template<typename TPixel>
+    void draw(ICanvas<TPixel>& canvas) const;
 
-// System: owns listeners[], calls InputSource::poll each frame
-class InputSystem {
-public:
-    static constexpr uint8_t MAX_LISTENERS = 16;
-    static constexpr uint8_t EVENT_BUFFER  = 32;
-
-    void setSource(InputSource* src);
-    void addListener(InputListener listener);
-    void removeListener(InputHandler handler);
-    void update();   // call once per frame; drains source, dispatches
+    const SpriteSheet* getSheet() const;
+    uint8_t getFrame() const;
+    Point getPosition() const;
+    uint8_t getTransparentIndex() const;
 
 private:
-    InputSource*    source = nullptr;
-    InputListener   listeners[MAX_LISTENERS];
-    uint8_t         listenerCount = 0;
-    InputEvent      eventBuffer[EVENT_BUFFER];
+    const SpriteSheet* sheet_          = nullptr;
+    Point position_                    = {0, 0};
+    uint8_t frame_                     = 0;
+    uint8_t transparentIdx_            = 15;   // PALETTE_TRANSPARENT
+    BlendMode blendMode_               = BlendMode::Normal;
 };
 
 } // namespace enjin2
 ```
 
-### Where it lives
+### Modified Components
 
+**`C_Sprite` (`include/enjin2/components/sprite.hpp`):**
+- Gains `FrameAnimation animation_` member (value, not pointer)
+- `update(uint16_t deltaTime)` override calls `animation_.advance(dt / 1000.0f)` then `sprite_.setFrame(animation_.current)`
+- `draw(ICanvas<uint8_t>& canvas)` override unchanged in signature — `Sprite::draw<uint8_t>()` is called internally
+
+**Critical architectural constraint:** `C_Drawable::draw(ICanvas<uint8_t>& canvas)` is the ECS pipeline virtual interface. CONCERNS.md documents that Canvas4 (4-bit) is not supported by `Scene::renderObjects()` — this is a pre-existing limitation. The sprite rework does NOT fix this ECS pipeline gap. `Sprite::draw<TPixel>()` becomes template-capable but `C_Sprite::draw()` keeps the `uint8_t` signature. Lua scripts calling `canvas.drawSprite()` directly bypass `C_Sprite` entirely and call `Sprite::draw<Pixel4>()` on the active layer canvas.
+
+**`C_ImageCache` (`include/enjin2/components/image_cache.hpp`):**
+- `ImageEntry` gains `uint8_t cols` and `uint8_t rows` fields for sheet grid metadata
+- `AddImage()` gains optional `cols` and `rows` parameters, defaulting to `cols=1, rows=frameCount` for backward-compatible sequential storage
+- `GetImageData()` unchanged — returns pointer to frame start, grid interpretation lives in `SpriteSheet`
+
+**`LuaBindings` (`src/scripting/bindings.cpp`):**
+
+Stateless Lua sprite API (preferred over stateful object API — no allocation, no per-sprite Lua table):
+
+```lua
+-- Draw a single frame from raw data
+canvas.drawSprite(data, x, y, frameW, frameH, frameIdx, transparentIdx)
+-- data: lightuserdata pointer to pixel buffer (from ImageCache)
 ```
-enjin2_ui
-  include/enjin2/ui/
-    input_event.hpp     <-- NEW: InputEvent, InputKind, InputSource
-    input_system.hpp    <-- NEW: InputSystem, InputListener
-    component.hpp       <-- UNCHANGED (existing mouse UI components left alone)
-    system.hpp          <-- UNCHANGED
-  src/ui/
-    input_system.cpp    <-- NEW: InputSystem::update() implementation
-```
 
-### Integration points
+This is the simplest zero-alloc design. The Lua script manages frame state in Lua variables (integers), not C++ objects.
 
-- **SDL2 runner**: `SDL2InputSource` implements `InputSource`; maps SDL keyboard/gamepad events to
-  `InputEvent`. Registered with `InputSystem` at runner startup.
-- **ESP32**: `ESP32InputSource` implements `InputSource`; reads GPIO button states,
-  ADC potentiometer values, joystick ADC axes. Same `InputSystem` is used unmodified.
-- **Lua**: expose `enjin.input.getButton(id)`, `enjin.input.getPot(id)`, etc. via LuaBindings.
-  The Lua binding layer queries last-known state; `InputSystem` maintains simple state cache.
-- **Existing UI**: `InputComponent` / existing mouse handling is untouched. The new `InputSystem`
-  is a parallel addition, not a replacement.
+### Integration Points
 
-### No input in enjin2_core
+| Touches | What Changes |
+|---------|-------------|
+| `include/enjin2/graphics/sprite.hpp` | Full rewrite: template `draw<TPixel>()`, clean API, no legacy `_*` members |
+| `include/enjin2/graphics/sprite_sheet.hpp` | **NEW FILE** |
+| `include/enjin2/graphics/frame_animation.hpp` | **NEW FILE** |
+| `src/graphics/sprite.cpp` | **NEW FILE** — `FrameAnimation::advance()` implementation |
+| `include/enjin2/components/sprite.hpp` | Add `FrameAnimation animation_` member; `update()` advances it |
+| `include/enjin2/components/image_cache.hpp` | `ImageEntry` adds `cols`/`rows` |
+| `src/components/image_cache.cpp` | `AddImage()` populates grid metadata |
+| `src/scripting/bindings.cpp` | Add `canvas.drawSprite(...)` Lua binding |
+| `include/enjin2/scripting/bindings.hpp` | Declare `lua_drawSprite` static method |
+| CMakeLists.txt | Add `src/graphics/sprite.cpp` to `enjin2_graphics` sources |
 
-Input is kept in `enjin2_ui` because it is part of the interactive layer, not the core engine.
-This matches the existing library split: core knows nothing about user interaction.
+### Zero-Alloc Compliance
+
+- `SpriteSheet` is a plain struct with a `const uint8_t*` into static `C_ImageCache::textureCache`
+- `FrameAnimation` is a value-type member inside `C_Sprite` — no heap
+- Stateless Lua sprite binding allocates nothing — frame pointer computed on C++ stack per call
 
 ---
 
-## Feature 3: SDL2 Desktop Runner
+## Feature 3: Lua Hot Reload
 
-### What it is
+### Current State
 
-A new CMake executable (`enjin2_sdl2`) that provides the "third platform backend" alongside
-WASM and ESP32. It creates an SDL2 window, runs the main loop, feeds `SDL2InputSource` into
-`InputSystem`, and at each frame maps Canvas4 pixel indices through the `Palette` to an
-SDL_Texture for display.
-
-### Where it lives
-
-```
-platforms/
-  sdl2/
-    main.cpp            <-- SDL2 main loop, window creation
-    sdl2_runner.hpp     <-- SDL2Runner class
-    sdl2_runner.cpp     <-- SDL2Runner implementation
-    sdl2_input.hpp      <-- SDL2InputSource : InputSource
-    sdl2_input.cpp      <-- SDL2InputSource::poll()
-```
-
-Not under `src/` because it is a platform executable, not a library. `examples/` is also
-wrong because it is infrastructure, not a demo. `platforms/` is the correct location and sets
-precedent for future platform ports.
-
-### CMake target
-
-```cmake
-option(ENJIN2_BUILD_SDL2 "Build SDL2 desktop runner" OFF)
-
-if(ENJIN2_BUILD_SDL2)
-    find_package(SDL2 REQUIRED)
-
-    add_executable(enjin2_sdl2)
-    target_sources(enjin2_sdl2 PRIVATE
-        platforms/sdl2/main.cpp
-        platforms/sdl2/sdl2_runner.cpp
-        platforms/sdl2/sdl2_input.cpp
-    )
-    target_include_directories(enjin2_sdl2 PRIVATE
-        include
-        ${SDL2_INCLUDE_DIRS}
-    )
-    target_link_libraries(enjin2_sdl2 PRIVATE
-        enjin2_core
-        enjin2_graphics
-        enjin2_ui
-        $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
-        ${SDL2_LIBRARIES}
-    )
-    target_compile_definitions(enjin2_sdl2 PRIVATE SDL2_RUNNER)
-endif()
-```
-
-Using `SDL2_RUNNER` define instead of `VCV_RACK` separates SDL2 builds cleanly.
-
-### LuaPlatform extension
-
-`lua_platform.hpp` currently compiles only if `VCV_RACK` or `ESP32` is defined; otherwise
-it emits `#error`. SDL2 builds need a third case:
+`sdl_main.cpp` event loop:
 
 ```cpp
-// lua_platform.hpp — extend existing #ifdef chain
-#ifdef VCV_RACK
-    // LuaJIT (existing)
-#elif defined(ESP32)
-    // ESP32 Lua (existing)
-#elif defined(SDL2_RUNNER)
-    // Desktop Lua — same as VCV_RACK; system Lua via find_package
-    extern "C" { #include "lua.h" ... }
-#else
-    #error "Platform not supported for Lua integration"
+while (SDL_PollEvent(&event)) {
+    if (event.type == SDL_EVENT_QUIT) { running = false; }
+    else if (event.type == SDL_EVENT_KEY_DOWN) {
+        if (event.key.key == SDLK_ESCAPE) { running = false; }
+    }
+}
+```
+
+`LuaScriptSystem::shutdown()` calls `LuaEngine::shutdown()` → `lua_close(L)`. `LuaScriptSystem::initialize()` calls `LuaEngine::initialize()` → `lua_newstate(luaAllocator, this)`.
+
+**Key fragility (from CONCERNS.md):** `LuaEngine::memoryPool` and `LuaEngine::memoryUsed` are `static` class members. A second `initialize()` call resets `memoryUsed = 0`. In `sdl_main.cpp` all Lua calls go through `g_lua` exclusively, so this is safe — no external code holds stale `lua_State*` pointers.
+
+**Key fragility:** `static LuaBindings* g_currentBindings = nullptr` in `bindings.cpp` is set by `LuaBindings` constructor. After `shutdown()` + `initialize()`, `registerAll()` must be called to re-register bindings and re-set `g_currentBindings`.
+
+### New Logic
+
+No new files. Changes within `sdl_main.cpp` and `include/enjin2/scripting/bindings.hpp`.
+
+**`LuaScriptSystem` — add reload support:**
+
+```cpp
+// bindings.hpp additions to LuaScriptSystem:
+private:
+    std::string lastScriptPath_;
+
+public:
+    LuaResult loadScript(const std::string& filename) {
+        lastScriptPath_ = filename;
+        return engine.executeFile(filename);
+    }
+
+    LuaResult reload() {
+        if (lastScriptPath_.empty()) return LuaResult("No script loaded");
+        shutdown();
+        if (!initialize()) return LuaResult("Lua init failed on reload");
+        setCanvas(canvas);                         // re-wire canvas
+        bindings.setInput(/* stored input ptr */); // re-wire input
+        return loadScript(lastScriptPath_);
+    }
+```
+
+The SDL runner stores `g_input` as a static global, so after reload `g_lua.getBindings().setInput(&g_input)` re-wires it.
+
+**`sdl_main.cpp` event loop addition:**
+
+```cpp
+} else if (event.type == SDL_EVENT_KEY_DOWN) {
+    if (event.key.key == SDLK_ESCAPE) {
+        running = false;
+#ifdef ENJIN2_BUILD_LUA
+    } else if (event.key.scancode == SDL_SCANCODE_F5) {
+        g_lua.shutdown();
+        if (!g_lua.initialize()) {
+            std::cerr << "[hot reload] Lua init failed\n";
+        } else {
+            g_lua.setCanvas(&g_lua_canvas);
+            g_lua.getBindings().setInput(&g_input);
+            LuaResult r = g_lua.loadScript(last_script_path); // tracked string
+            if (!r.success) {
+                std::cerr << "[hot reload] " << r.error << "\n";
+            }
+        }
 #endif
+    }
+}
 ```
 
-`LuaPlatformConfig` for SDL2 mirrors VCV_RACK (ENABLE_FILE_IO=true, ENABLE_ALL_LIBS=true).
+Alternatively, using `g_lua.reload()` if the method is added to `LuaScriptSystem`. Either approach is valid.
 
-### Main loop data flow
+### Integration Points
 
-```
-SDL_Init → create SDL_Window + SDL_Renderer + SDL_Texture (W*H, ARGB8888)
-               ↓
-main loop:
-  SDL2InputSource::poll()        -- read SDL events, convert to InputEvents
-  InputSystem::update()          -- dispatch events to Lua/app listeners
-  LuaScriptSystem::callFunction("update", delta)
-    → Lua script draws to Canvas4 via LuaCanvas
-  blit Canvas4 → SDL_Texture:
-    for each pixel index in Canvas4::getBuffer():
-      rgb = palette.getColor(index)
-      if not transparent: write ARGB to texture
-  SDL_UpdateTexture → SDL_RenderCopy → SDL_RenderPresent
-```
+| Touches | What Changes |
+|---------|-------------|
+| `src/platform/sdl/sdl_main.cpp` | Add `SDL_SCANCODE_F5` handler in event loop |
+| `include/enjin2/scripting/bindings.hpp` | Add `lastScriptPath_` member and `reload()` to `LuaScriptSystem` |
+| `src/scripting/lua_engine.cpp` | No change — `shutdown()`/`initialize()` already work correctly |
 
-The blit step is the only place the Palette is consulted; drawing code never touches RGB.
+### Zero-Alloc Compliance
 
-### Scale / zoom
-
-SDL2 allows the texture to be rendered at any size via SDL_RenderCopy dst rect.
-A 2x or 4x integer scale renders Tomodachi's small display at desktop-legible size.
-This is a one-liner in `SDL_RenderCopy` — no pixel processing change needed.
+The `reload()` path performs no heap allocation beyond what `LuaEngine::initialize()` already does (Lua memory pool reset). `lastScriptPath_` is `std::string` — consistent with existing `std::string` use throughout `LuaEngine` (see `loadedScripts: std::vector<std::string>`).
 
 ---
 
-## Recommended Project Structure (new files only)
+## Feature 4: Docusaurus MDX Navigation Fix
 
-```
-include/enjin2/
-  graphics/
-    palette.hpp             <-- NEW
-  ui/
-    input_event.hpp         <-- NEW
-    input_system.hpp        <-- NEW
+### Current State
 
-src/ui/
-  input_system.cpp          <-- NEW
+`docusaurus.config.js` navbar item:
 
-platforms/
-  sdl2/
-    main.cpp                <-- NEW
-    sdl2_runner.hpp         <-- NEW
-    sdl2_runner.cpp         <-- NEW
-    sdl2_input.hpp          <-- NEW
-    sdl2_input.cpp          <-- NEW
+```js
+{
+  type: 'docSidebar',
+  docsPluginId: 'api',
+  sidebarId: 'apiSidebar',
+  position: 'left',
+  label: 'API Reference',
+}
 ```
 
-Zero existing files under `src/` or `include/` are deleted. Five files are added to
-existing library locations; five are added under a new `platforms/sdl2/` directory.
+`api-sidebar.js` exports `{ apiSidebar: [{ type: 'autogenerated', dirName: '.' }] }`.
+
+`npm run build` completes without errors. The tech debt note in `PROJECT.md` says "API navigation disabled in Docusaurus due to MDX syntax issues (carried from v1.0)".
+
+### Root Cause Analysis
+
+Docusaurus 3.x uses MDX v3 by default. MDX v3 parses `<` as a JSX tag opener. C++ API docs routinely contain template syntax like `ICanvas<TPixel>`. When `generate-api-docs.js` inserts extracted text containing raw `<` characters into markdown output, the MDX parser fails or produces garbled output.
+
+The build succeeds because `markdown.format: 'detect'` causes `.md` files to be parsed as CommonMark, not MDX — but only when the parser sees no JSX-like tokens. A single unescaped `<TypeName>` in one file is enough to trigger MDX mode parsing on that file, causing a build-time error or blank page.
+
+Inspected: `docs/api/graphics/CanvasExtended.md` line 12 contains `ICanvas<TPixel>` unescaped in a template parameter description. The `escapeForMdx()` function in `generate-api-docs.js` exists but is not called consistently for all text insertion points — specifically template parameter list extraction paths.
+
+### Fix
+
+Two surgical changes to `scripts/generate-api-docs.js`:
+
+1. Audit all locations where `extractText()` result is interpolated directly into the markdown string template. Wrap those insertions with `escapeForMdx()`.
+
+2. In the method signature formatter (`formatMethod()`), ensure return type and parameter type strings go through `escapeForMdx()` after type formatting — `formatType()` already handles HTML entity decode/re-encode but the final output may still emit `<` in rare edge cases.
+
+Then regenerate all API docs:
+
+```bash
+node scripts/generate-api-docs.js
+```
+
+This regeneration must be committed alongside the script fix so the published `docs/api/` files reflect the fix.
+
+**No change to `docusaurus.config.js` or `api-sidebar.js` — the configuration is correct.**
+
+### Integration Points
+
+| Touches | What Changes |
+|---------|-------------|
+| `scripts/generate-api-docs.js` | Wrap template param and description insertions with `escapeForMdx()` |
+| `docs/api/**/*.md` | Regenerated — any unescaped `<Type>` becomes `&lt;Type&gt;` |
+| `docs/docusaurus.config.js` | No change |
+| `docs/api-sidebar.js` | No change |
 
 ---
 
-## Data Flow: Frame Rendering with Palette
+## Build Order (Phase Dependencies)
+
+### Dependency Graph
 
 ```
-Lua update()
-    │
-    ▼
-LuaCanvas::setPixel(x, y, index)      -- index 0-15, no RGB here
-    │
-    ▼
-Canvas4::setPixel(x, y, Pixel4)       -- packed 4-bit buffer
-    │
-    ▼
-SDL2Runner::blit()
-    │  for each (x,y):
-    │    index = canvas.getPixel(x, y)
-    │    if !palette.isTransparent(index):
-    │        rgb = palette.getColor(index)
-    │        texture[x,y] = rgb
-    ▼
-SDL_UpdateTexture → SDL_RenderPresent
+[Phase A: Docusaurus MDX Fix]   — independent, no C++ changes
+        |
+        done
+
+[Phase B: Sprite Rework]        — independent, existing Canvas4/ICanvas unchanged
+        |
+        V
+[Phase C: Multi-Layer Composition] — sdl_main.cpp touches same globals as sprite bindings
+        |
+        V
+[Phase D: Lua Hot Reload]       — reload must re-wire layer canvas pointers; needs C done first
 ```
 
-Drawing code never changes. Palette is applied once per frame at the output boundary.
+### Phase Rationale
+
+**Phase A (Docusaurus):** Zero runtime risk. Pure tooling change. Can be done first or last — no C++ dependency. Do it first to clear the oldest-standing tech debt item before adding new complexity.
+
+**Phase B (Sprite Rework):** Independent of layers. New structs (`SpriteSheet`, `FrameAnimation`) and a reworked `Sprite` class. `C_ImageCache` change is additive. Lua `canvas.drawSprite()` can be added before layer switching exists because it targets whatever canvas is currently active — single or multi-layer.
+
+**Phase C (Multi-Layer):** Modifies `sdl_main.cpp` globals and the `LuaCanvas` layer pointer. Must come after sprite bindings are in place so `canvas.drawSprite()` works correctly with layer-aware canvas. The compositor loop replaces `expand_canvas_to_rgb()` — one focused change.
+
+**Phase D (Hot Reload):** Trivially small if done after Phase C because the canvas re-wiring logic in `reload()` already knows about `g_layers` (not just `g_canvas`). If done before Phase C, `reload()` would need to be updated again when layers land.
 
 ---
 
-## Data Flow: Input to Lua
+## Component Responsibilities After v1.4
 
-```
-SDL keyboard/gamepad events
-    │
-    ▼
-SDL2InputSource::poll()               -- converts SDL events → InputEvent structs
-    │
-    ▼
-InputSystem::update()                 -- dispatches to registered listeners
-    │
-    ▼
-LuaBindings listener                  -- updates internal state table
-    │
-    ▼
-Lua script: enjin.input.getButton(0)  -- queries state table
-```
-
-The Lua API exposes last-known state queries rather than per-frame event callbacks,
-matching the Tomodachi usage pattern (check button state in update loop).
+| Component | Status | What Changes |
+|-----------|--------|-------------|
+| `Canvas4<W,H>` | Unchanged | Instantiated 4× in `LayerStack` |
+| `LayerStack<W,H>` | **NEW** | Owns 4 `Canvas4` buffers, exposes by `LayerIndex` |
+| `expand_canvas_to_rgb()` | Modified | Composite walk: top layer wins per pixel |
+| `Sprite` | Rewritten | Template `draw<TPixel>()`, clean API, no legacy members |
+| `SpriteSheet` | **NEW** | Grid dimensions + frame count descriptor |
+| `FrameAnimation` | **NEW** | FPS, loop mode, float accumulator |
+| `C_Sprite` | Modified | Holds `FrameAnimation`; `update()` advances it |
+| `C_ImageCache` | Modified | `ImageEntry` adds `cols`/`rows`; backward compatible |
+| `LuaCanvas` | Modified | Gains `setActiveLayer(uint8_t)` + layer stack pointer |
+| `LuaBindings` | Modified | + `canvas.setLayer()`, `canvas.clearLayer()`, `canvas.drawSprite()` |
+| `LuaScriptSystem` | Modified | Gains `lastScriptPath_` + `reload()` |
+| `sdl_main.cpp` | Modified | 4-layer global; F5 hot reload; composite blit |
+| `generate-api-docs.js` | Modified | Template param text escaping; regenerate `docs/api/` |
 
 ---
 
-## Integration Points
+## Anti-Patterns to Avoid
 
-### New vs Modified
+### Anti-Pattern 1: Layer Canvas Pointer Dispatch Per Draw Call
 
-| File | New or Modified | Notes |
-|------|----------------|-------|
-| `include/enjin2/graphics/palette.hpp` | NEW | No impact on existing code |
-| `include/enjin2/ui/input_event.hpp` | NEW | No impact on existing code |
-| `include/enjin2/ui/input_system.hpp` | NEW | No impact on existing code |
-| `src/ui/input_system.cpp` | NEW | Added to enjin2_ui sources |
-| `platforms/sdl2/*.cpp/hpp` | NEW | New executable, not a library |
-| `include/enjin2/scripting/lua_platform.hpp` | MODIFIED | Add `SDL2_RUNNER` case |
-| `src/scripting/lua_platform.cpp` | MODIFIED | Add `SDL2_RUNNER` implementations |
-| `CMakeLists.txt` | MODIFIED | Add `ENJIN2_BUILD_SDL2` option + target |
+**What people do:** Store the `LayerStack` pointer in `LuaCanvas` and index it on every draw call using the layer index passed to each drawing function.
 
-Everything else (Canvas4, Canvas8, ICanvas, LuaCanvas, LuaBindings, existing UI, emscripten
-bindings) is untouched.
+**Why it's wrong:** Conflates "which layer am I targeting" with every individual draw operation. Adds a branch and index dereference to every `setPixel`, `fillRect`, etc. Makes the Lua API verbose and error-prone.
 
-### Internal Boundaries
+**Do this instead:** `canvas.setLayer(n)` updates the `Canvas4*` pointer in `LuaCanvas` once. All subsequent draw calls use the cached pointer. Layer switching is explicit and O(1).
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| SDL2 runner → enjin2_graphics | Direct include of palette.hpp + canvas.hpp | No library boundary — runner includes headers |
-| SDL2 runner → enjin2_ui | Links InputSystem, InputEvent | InputSystem owns event dispatch |
-| SDL2 runner → enjin2_lua | Links LuaScriptSystem | Lua still runs all game logic |
-| SDL2InputSource → InputSystem | Pointer injection at startup | Platform provides source, system is generic |
-| LuaBindings → InputSystem | InputSystem pointer held by LuaBindings | Lua queries state, not events |
-| Palette → Canvas4 | No coupling — palette applied externally | Canvas stores indices only |
+### Anti-Pattern 2: Full Canvas Clear on Hot Reload
 
----
+**What people do:** Clear all layer canvases and reset palette on F5.
 
-## Build Order
+**Why it's wrong:** Canvas state is stale for exactly one frame after reload — the next Lua `draw()` call overwrites it. Resetting palette is actively harmful if the user has set a custom palette via Lua.
 
-Dependencies flow strictly bottom-up:
+**Do this instead:** Only reset the Lua state. Do not touch canvas buffers, palette, or input state.
 
-```
-1. enjin2_core         (no changes needed)
-2. enjin2_graphics     (add palette.hpp — header-only, no build impact)
-3. enjin2_ui           (add input_event.hpp + input_system.hpp + input_system.cpp)
-4. enjin2_lua          (add SDL2_RUNNER to lua_platform.hpp / .cpp)
-5. enjin2_sdl2         (new executable; requires all above + SDL2 system lib)
-```
+### Anti-Pattern 3: FrameAnimation as a Separate Component
 
-Recommended implementation order within the milestone:
+**What people do:** Create `C_FrameAnimation : Component` that `C_Sprite` queries via `getComponent<C_FrameAnimation>()`.
 
-| Step | What | Why First |
-|------|------|-----------|
-| 1 | `palette.hpp` | No deps, zero risk, unblocks SDL2 blit |
-| 2 | `input_event.hpp` + `input_system.hpp` (interfaces only) | Contracts needed before platform impl |
-| 3 | `input_system.cpp` | Implementation of InputSystem dispatch |
-| 4 | `lua_platform.hpp/cpp` SDL2 case | Unblocks LuaScriptSystem in SDL2 build |
-| 5 | `SDL2Runner` + `SDL2InputSource` | Needs palette + input + Lua all in place |
-| 6 | LuaBindings input API | Needs InputSystem wired into runner |
+**Why it's wrong:** Consumes one of the hard-capped 16 component slots per `Object`. Requires inter-component `dynamic_cast` lookup (O(n) per frame per component, per CONCERNS.md). Adds complexity for no gain.
+
+**Do this instead:** `FrameAnimation` is a value-type member held directly inside `C_Sprite`. No extra component slot used.
+
+### Anti-Pattern 4: Emitting `.mdx` from generate-api-docs.js
+
+**What people do:** Change the generator to emit `.mdx` files to enable Docusaurus MDX features.
+
+**Why it's wrong:** C++ API docs are dense with template syntax (`Canvas4<W,H>`, `ICanvas<TPixel>`). Every `<` must be escaped in MDX. Every future Doxygen change that introduces new template syntax creates an escaping defect. The maintenance burden is perpetual.
+
+**Do this instead:** Keep `.md` output. The `format: 'detect'` setting already handles this correctly when the generated markdown contains only escaped HTML entities for angle brackets.
 
 ---
 
-## Anti-Patterns
+## Memory Budget
 
-### Anti-Pattern 1: Palette in the draw path
+| Item | Size | Platform |
+|------|------|----------|
+| Existing `Canvas4<128,128>` | 8192 bytes | All |
+| 3 additional layer canvases | 24576 bytes | SDL3/WASM |
+| `LayerStack<128,128>` total | 32768 bytes | SDL3/WASM |
+| `g_rgb_staging[128*128*3]` | 49152 bytes | SDL3 only |
+| `C_ImageCache::textureCache` | 32768 bytes | All |
+| Lua memory pool | 1MB (desktop) / 64KB (ESP32) | Scripting |
 
-**What people do:** Modify `Canvas4::setPixel` to accept RGB and apply the palette on write.
-**Why it's wrong:** Destroys the 4-bit index semantics, breaks Canvas4's packed storage model,
-forces palette knowledge into the canvas, doubles memory if RGB is stored instead of index.
-**Do this instead:** Keep Canvas4 as pure index storage. Apply palette only during the final
-blit to the output surface (SDL_Texture, display DMA, WASM canvas).
-
-### Anti-Pattern 2: Platform-specific input types leaking into enjin2_ui
-
-**What people do:** Put `SDL_Keycode` or ESP32 GPIO pin numbers into InputEvent or InputSystem.
-**Why it's wrong:** Pollutes the platform-agnostic library with platform specifics, breaks
-compilation on other platforms, makes enjin2_ui depend on SDL2.
-**Do this instead:** SDL2InputSource (in `platforms/sdl2/`) translates SDL events to InputEvent.
-Only generic InputKind values cross the boundary into enjin2_ui.
-
-### Anti-Pattern 3: VCV_RACK define used for SDL2
-
-**What people do:** Add `#define VCV_RACK` to the SDL2 build to re-use the desktop Lua path.
-**Why it's wrong:** VCV_RACK is a specific platform identity. Conflating it with SDL2 will
-cause confusion when VCV Rack–specific behaviors are added later.
-**Do this instead:** Add a distinct `SDL2_RUNNER` define; mirror VCV_RACK's Lua config
-explicitly in the `lua_platform.hpp` SDL2_RUNNER branch.
-
-### Anti-Pattern 4: New input system replaces existing mouse UI
-
-**What people do:** Refactor the existing `InputComponent` / mouse handling to use the new
-InputEvent model.
-**Why it's wrong:** Out of scope, risks regression, existing UI components work correctly.
-The new input abstraction is additive — for physical device input only.
-**Do this instead:** Leave existing UI input untouched. New InputSystem is for physical
-hardware inputs (buttons, pots, joystick). These are parallel, not competing systems.
+Adding 3 extra layer canvases costs 24 KB. On SDL3 this is trivial. On bare ESP32 (no PSRAM), the 4-layer approach is likely not viable — multi-layer should be treated as an SDL3/WASM feature for v1.4. The `LayerStack` template can be instantiated with `COUNT=1` as a fallback, or simply not used on ESP32 builds.
 
 ---
 
 ## Sources
 
-- Existing codebase analysis (HIGH — direct inspection of all headers and CMakeLists.txt)
-- `include/enjin2/abstract/icanvas.hpp` — ICanvas interface (HIGH)
-- `include/enjin2/graphics/canvas.hpp` — Canvas4/Canvas8 implementation (HIGH)
-- `include/enjin2/graphics/canvas_esp32s3.hpp` — ESP32S3 canvas variant (HIGH)
-- `include/enjin2/scripting/lua_platform.hpp` — LuaPlatform with VCV_RACK/ESP32 branches (HIGH)
-- `include/enjin2/scripting/bindings.hpp` — LuaCanvas, LuaBindings, LuaScriptSystem (HIGH)
-- `include/enjin2/ui/system.hpp` — SystemManager/EntityManager (HIGH)
-- `include/enjin2/ui/component.hpp` — ComponentStorage, ECS patterns (HIGH)
-- `CMakeLists.txt` — library targets and build structure (HIGH)
-- `.planning/PROJECT.md` — v1.3 requirements and constraints (HIGH)
+- Direct codebase inspection: `include/enjin2/graphics/canvas.hpp`, `graphics/sprite.hpp`, `graphics/palette.hpp`
+- `src/platform/sdl/sdl_main.cpp` — full SDL3 runner logic
+- `include/enjin2/scripting/bindings.hpp`, `src/scripting/bindings.cpp` — Lua binding internals
+- `include/enjin2/scripting/lua_engine.hpp` — `shutdown()`/`initialize()` lifecycle
+- `.planning/codebase/ARCHITECTURE.md` — existing layer/component map (2026-02-23)
+- `.planning/codebase/CONCERNS.md` — Canvas4 in ECS pipeline limitation, static memory pool fragility
+- `docs/docusaurus.config.js`, `scripts/generate-api-docs.js`, `docs/api/` sample files
+- `CMakeLists.txt` — target structure, conditional Lua link
 
 ---
 
-*Architecture research for: enjin2 v1.3 palette, SDL2 runner, input abstraction*
-*Researched: 2026-02-23*
+*Architecture research for: enjin2 v1.4 — multi-layer, sprite rework, hot reload, Docusaurus fix*
+*Researched: 2026-02-24*

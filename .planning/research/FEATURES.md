@@ -1,182 +1,238 @@
 # Feature Research
 
-**Domain:** enjin2 v1.3 — Palette System, SDL2 Desktop Runner, Input Abstraction
-**Researched:** 2026-02-23
-**Confidence:** HIGH
-
-## Context
-
-This research covers the three new features for the v1.3 Tomodachi Readiness milestone only.
-Existing features (Canvas4/Canvas8, sprites, blend modes, Lua scripting, WASM/ESP32/VCV Rack runners)
-are already built and out of scope here.
-
-Existing codebase state relevant to these features:
-- `Pixel4` stores values 0-15 as grayscale — currently no RGB color mapping exists
-- `Canvas4` / `Canvas8` are statically allocated templates with no palette concept
-- `InputSystem` in `ui/systems.hpp` handles only mouse events (not physical controls)
-- `LuaPlatform` guards are `VCV_RACK` and `ESP32` — no SDL2 platform defined yet
-- CMake targets: `enjin2_core`, `enjin2_graphics`, `enjin2_ui`, `enjin2_lua`, `enjin2_wasm`
+**Domain:** Embedded/WASM 2D graphics engine — v1.4 capabilities milestone
+**Researched:** 2026-02-24
+**Confidence:** HIGH (code-verified; all claims grounded in existing src/ and include/ inspection)
 
 ---
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
-
-Features that must exist for each new subsystem to be considered complete. Missing these = the
-feature is unusable or broken relative to its stated purpose.
-
-#### Palette System
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **16-entry RGB color table** | Indexed palette requires a map from 4-bit index to display color | LOW | `uint32_t palette[16]` or `RGB888 palette[16]`; static allocation, no heap. Index 15 = transparent by convention. |
-| **Lookup at display/present time** | Pixel values on canvas stay as 4-bit indices; RGB only resolved when pushing to screen | LOW | Display loop reads `Pixel4.value`, looks up `palette[value]` to get RGB. Canvas data never changes when palette changes. |
-| **Index 15 as transparent** | Tomodachi sprites need transparency; preserves existing `Colors::BLACK = Pixel4(0)` | LOW | Index 15 reserved as transparent/skip during blit. Indices 0–14 are usable colors. |
-| **Palette swap at runtime** | Recolor sprites without redrawing (teams, states, damage flash) | LOW | Update `palette[n] = new_color`; next present uses new color automatically. No re-render needed. |
-| **Default palette defined in code** | First run must display something sensible without user setup | LOW | PICO-8's 16-color palette or a custom set. Should be a constexpr array in the palette header. |
-| **Lua-accessible palette API** | Lua scripts need to set/get palette colors to drive visual behavior | MEDIUM | Expose `setPaletteColor(index, r, g, b)` and `getPaletteColor(index)` through `LuaCanvas` bindings. |
-
-#### SDL2 Desktop Runner
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Window creation and main loop** | SDL2 runner needs a window to display into | LOW | `SDL_CreateWindow` + `SDL_CreateRenderer` + `SDL_PollEvent` event loop. Standard SDL2 pattern. |
-| **Canvas-to-texture blit with palette** | Must convert enjin2 Canvas4 (indexed) to SDL2 RGB texture for display | MEDIUM | Read each `Pixel4`, look up `palette[index]`, write RGB pixel to SDL2 streaming texture, then `SDL_RenderCopy`. |
-| **Integer pixel scaling** | Tomodachi's pixel display is small (e.g., 128x128); desktop window needs to be visible | LOW | `SDL_RenderSetLogicalSize` or explicit dst rect scale. Nearest-neighbor only — `SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0")`. |
-| **Frame timing / delta time** | Update loop must provide stable delta time to Lua and components | LOW | `SDL_GetPerformanceCounter` before/after frame; pass delta as `float` seconds to engine update. |
-| **Clean shutdown** | Resources must be freed on exit | LOW | `SDL_DestroyTexture`, `SDL_DestroyRenderer`, `SDL_DestroyWindow`, `SDL_Quit`. Standard cleanup. |
-| **Lua scripting integration** | SDL2 runner is a development platform — Lua must work same as other platforms | MEDIUM | Reuse existing `LuaEngine` + `LuaCanvas`. SDL2 platform gets `ENABLE_FILE_IO = true` (same as VCV Rack). |
-| **CMake target for SDL2 runner** | Must integrate with existing CMake build system | LOW | New `enjin2_sdl2` target; `find_package(SDL2 REQUIRED)`; optional via `ENJIN2_BUILD_SDL2=ON`. |
-
-#### Input Abstraction
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Unified input state struct** | Game logic must not care which platform provides input | LOW | `InputState` struct with: buttons (bitmask or array), analog axes (float normalized -1..1 or 0..1). |
-| **Button pressed / held / released** | Edge-detection is required for one-shot actions vs. held actions | LOW | Per-button: `justPressed`, `held`, `justReleased`. Computed by diffing previous and current raw state. |
-| **Analog axis for pots/joysticks** | Tomodachi has potentiometers and joysticks — not just digital buttons | LOW | `float axes[N]` in `InputState`. SDL2 maps joystick axes; ESP32 maps ADC reads; keyboard maps to 0/1. |
-| **SDL2 keyboard-to-button mapping** | Desktop runner needs keyboard as input source during development | LOW | Define a default mapping: arrow keys = d-pad, Z/X = A/B, Enter = start. Configurable at startup. |
-| **ESP32 / platform injection** | Platform-specific code (ADC, GPIO) feeds the abstraction from outside | MEDIUM | Platform provides a function or callback that populates `InputState` each frame. Engine consumes it generically. |
-| **Lua input query API** | Lua scripts must be able to read button and axis state | MEDIUM | Expose `isButtonHeld(n)`, `isButtonJustPressed(n)`, `getAxis(n)` through scripting bindings. |
+This milestone adds four independent capability clusters to an already-working engine.
+Each cluster is described separately with its own table-stakes/differentiator/anti-feature breakdown.
 
 ---
 
-### Differentiators (Competitive Advantage)
+## Cluster A: Multi-Layer Canvas Composition
 
-Features that go beyond the minimum and add meaningful value specific to enjin2's design goals.
+**What is being added:** 4 independent `Canvas4<W,H>` buffers (indexed 0–3) composited into
+a single output buffer at blit time, using index-15 passthrough transparency. Index 15 on a
+layer above lets the layer below show through; it does not mean "black."
+
+**Existing baseline:** Single `g_canvas` (`Canvas4<128,128>`), one draw surface, 6 draw layers
+sorted at render time (not independent pixel buffers). The `expand_canvas_to_rgb()` function
+walks one canvas and expands palette values to RGB24.
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Fixed number of layers (4) | Embedded constraints — no dynamic allocation. Layer count must be compile-time or config-time. PICO-8, TIC-80, and similar constrained engines all use a fixed small count. | LOW | 4 is the spec. `Canvas4<W,H>` arrays are static. |
+| Index-15 = transparent in composition | Already established in the palette system (PAL-02). Users expect the same semantic at the compositor: index 15 on layer N reveals layer N-1. | LOW | One condition in the composition loop. No per-pixel alpha math. |
+| Top-down composition order | Layer 0 = bottom (background), layer 3 = top (foreground/HUD). This is the universal convention from every layered 2D system (NES PPU, PICO-8, LÖVE). | LOW | Loop from 0 to 3, skip index-15 pixels. |
+| Clear individual layers | Scripts must be able to clear layer N without touching others. `canvas[N].clear(Pixel4(15))` fills with transparent. | LOW | Wraps existing `Canvas4::clear()`. |
+| Lua API: draw-to-layer by index | `setLayer(n)` selects which canvas receives subsequent draw calls. All existing draw bindings route through `LuaCanvas::canvasPtr`. | MEDIUM | Requires `LuaCanvas` to hold a pointer per layer plus a `currentLayer` index. `setCanvas()` in `LuaBindings` stays the same concept. |
+
+### Differentiators
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Two-stage palette (draw + screen palette)** | PICO-8-style: draw palette remaps indices at draw time; screen palette maps to RGB at display time. Enables sprite recoloring without index changes. | MEDIUM | Draw palette: `drawPalette[16]` remaps `Pixel4` index before writing to canvas. Screen palette: maps screen index to RGB at present. Adds expressive power without canvas format change. |
-| **Per-entry transparency flag in draw palette** | Sprite transparency becomes a palette property, not hardcoded to index 0. Any color can be transparent. | LOW | `bool transparent[16]` in draw palette struct. Consistent with PICO-8 model; avoids hardcoded matte value scattered through draw calls. |
-| **SDL2 + Lua REPL / hot-reload** | Scripts can be reloaded from disk without restarting the runner — critical for fast development iteration on Tomodachi UI | MEDIUM | `LuaEngine::executeFile` already exists. SDL2 runner watches file mtime or listens for key shortcut to reload. Immediate feedback loop. |
-| **Keyboard mapping table in Lua** | Lua scripts can redefine which keyboard keys map to which logical buttons at runtime | LOW | `input.setKeyMap(button_index, sdl_scancode)`. Makes SDL2 runner customizable without recompile. |
-| **Input event callbacks in Lua** | Beyond polling, scripts can register `onButtonPressed` callbacks for event-driven UI | MEDIUM | Complements polling API. Reduces boilerplate in Lua scripts for UI widgets (ButtonDial already exists as a component). |
+| Zero-copy composition into existing RGB24 staging buffer | `expand_canvas_to_rgb()` already does one pass. Multi-layer composition adds N passes (one per layer) over the same staging buffer, writing only non-transparent pixels. No extra heap alloc. | LOW | Walk layers 0..3; write to `g_rgb_staging` only when `px.value != 15`. |
+| Layer clear convenience (`clearLayer(n, color)`) | Lets scripts reset a single layer each frame without rebuilding all layers. Useful for animated foreground layers. | LOW | Calls `canvas[n].clear(Pixel4(color))`. |
 
----
-
-### Anti-Features (Commonly Requested, Often Problematic)
+### Anti-Features
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **RGB pixel storage in canvas** | "Just store RGB directly so we don't need palette lookup" | Triples memory per pixel (3 bytes vs 4 bits). Destroys ESP32 viability. Violates zero-dynamic-allocation constraint for large canvases. | Keep canvas as 4-bit indexed. Resolve to RGB only at display time in the runner. |
-| **SDL2 software renderer fallback** | "What if hardware acceleration isn't available?" | Adds complexity for an edge case that doesn't apply to the Tomodachi use case. SDL2 always has some renderer path. | Use `SDL_RENDERER_ACCELERATED | SDL_RENDERER_SOFTWARE` flag combo; SDL2 falls back automatically. |
-| **Full SDL2 event system exposed to Lua** | "Let Lua handle SDL events directly for maximum flexibility" | Creates platform coupling in scripts. Scripts written for SDL2 break on ESP32. | Expose only the platform-agnostic `InputState` API. SDL2-specific events stay in the C++ runner layer. |
-| **Dynamic palette size (more than 16 colors)** | "17 or 32 colors would give more artistic freedom" | `Pixel4` is 4 bits — 16 values is the hardware constraint. Larger palettes require 8-bit canvas, different memory model, different texture format. | Use `Canvas8` for 256-color indexed work. Keep `Canvas4` strictly 16-color. |
-| **Mouse/touch as primary input** | "Add mouse support to the input abstraction for desktop dev" | Tomodachi has no mouse. Adding it creates mismatched API surface between platforms. Existing `InputSystem` in `ui/systems.hpp` already handles mouse for VCV Rack UI. | Keep physical input abstraction (buttons/axes) separate from mouse UI. Use existing `InputSystem` for mouse, new `InputState` for physical controls. |
-| **SDL2 audio integration** | "While we have SDL2, might as well add audio" | Out of scope: PROJECT.md explicitly defers MIDI/audio to Tomodachi-side. SDL_mixer adds a large dependency for no milestone value. | Audio is Tomodachi-side concern. Keep SDL2 runner graphics + input only. |
-| **Cross-platform input configuration files** | "Save button remapping to a config file" | Adds file I/O concerns, path resolution across platforms, serialization. Tomodachi uses fixed physical controls — remapping is a desktop-only convenience. | Hardcode a sensible default keyboard mapping. Expose it as a Lua-settable table for the SDL2 runner only. |
+| Per-pixel alpha blending (0–255 transparency) | "More flexible than chroma-key" | Requires 8-bit per channel arithmetic per pixel — incompatible with Pixel4 (4-bit indexed). Breaks zero-alloc constraint and palette semantics. Explicitly Out of Scope in PROJECT.md. | Use index-15 chroma-key transparency. It covers the actual use case (sprite cutouts, HUD overlays). |
+| Dynamic layer count at runtime | "Could add more layers when needed" | Dynamic allocation; contradicts zero-alloc constraint. | Fixed 4 layers at compile time. If 4 is insufficient for a future milestone, change the constant and rebuild. |
+| Z-ordering per sprite across layers | "Sprites should sort globally" | Requires a sort pass across all draw calls; incompatible with immediate-mode indexed layers. | Use layer index as the Z-bucket. Draw HUD on layer 3, background on layer 0. |
+| Blend modes between layers (add, multiply) | "Makes layers composable" | 4-bit palette indices are not color values — arithmetic on indices is meaningless. | Layer composition is strictly chroma-key passthrough. |
+
+---
+
+## Cluster B: Sprites System Rework
+
+**What is being added:** Uniform grid sprite sheets (rows × cols), FPS-driven auto-advance
+animation, loop modes (once / loop / ping-pong), clean C++ API with no legacy public members,
+Lua bindings for sprite creation and draw calls.
+
+**Existing baseline:** `Sprite` class in `include/enjin2/graphics/sprite.hpp`. Problems:
+- Frame layout: raw offset `frame * width * height` — no sheet grid concept.
+- Animation: manual only (`setTexture(frame_id)`), no time tracking, no auto-advance.
+- API hygiene: `_width`, `_height`, `_frame`, `_position`, `_matte`, `_mode` are public
+  legacy members alongside private counterparts — causes confusion and breaks encapsulation.
+- No Lua bindings for sprites at all (bindings.cpp has no sprite functions).
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Uniform grid sprite sheet layout (rows x cols) | Every 2D engine from GBA era onward treats sprite sheets as a grid. Users of PICO-8, Aseprite, GB Studio all think in terms of rows x cols, not raw byte offsets. | LOW | `frame_x = (frame % cols) * frame_w`, `frame_y = (frame / cols) * frame_h`. Frame data is still a `const uint8_t*` pointer to the full sheet. |
+| FPS-driven frame auto-advance | Manual `setTexture(frame_id)` every frame is error-prone and non-portable (frame rate varies). Users expect `update(dt)` to advance frames automatically. | MEDIUM | Add `float fps`, `float elapsed`, `uint8_t frameCount` to `SpriteSheet`. `update(dt)`: `elapsed += dt; if elapsed >= 1/fps: advance frame; elapsed -= 1/fps`. |
+| Loop mode: loop (default) | Wraps frame index at `frameCount`. Universal default in Aseprite, Godot, LÖVE, Unity. | LOW | `frame = (frame + 1) % frameCount`. |
+| Loop mode: once (play then stop) | Plays to last frame, stops. Required for one-shot animations (explosions, pickups). | LOW | On last frame, `playing = false`. |
+| Loop mode: ping-pong | Reverses direction at ends. Required for idle animations that should not hard-cut. | LOW | Add `int8_t direction = 1`. Flip at boundaries. |
+| draw(canvas, x, y) clean call | Callers should not need to set position then call draw separately. A single `draw(canvas, x, y)` is the idiom in LÖVE, PICO-8, GB Studio. | LOW | Pass position at call site rather than storing it. Removes state mutation side effect. |
+| No public legacy members | `_width`, `_height`, `_frame`, `_position`, `_matte`, `_mode` are uninitialized public members that shadow private ones. | LOW | Delete them. No callers outside legacy compat code. |
+| Index-15 matte transparency | Already established (Pixel4 semantics). Sprite draw loop must skip pixels where `value == 15`. | LOW | Already in existing `draw()` — preserve the condition, fix the frame offset math. |
+| Lua bindings: newSprite, drawSprite, updateSprite | Scripts cannot use sprites today. This is the primary usage path for Tomodachi. | MEDIUM | `newSprite(data_ptr, frameW, frameH, cols, rows, fps)` returns a sprite ID (integer index into a static pool). `drawSprite(id, layer, x, y)`. `updateSprite(id, dt)`. |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Static sprite pool (no heap) | Consistent with zero-alloc constraint. `SpriteSheet pool[MAX_SPRITES]` as a static array. Lua gets integer handles (indices). | LOW | `MAX_SPRITES = 16` or similar compile-time constant is sufficient for Tomodachi. |
+| setFrame(n) for manual override | Allows scripts to drive animation from game logic (not time), e.g., sync to MIDI beat. `setFrame(n)` bypasses auto-advance. | LOW | Just set `currentFrame = n % frameCount; playing = false`. |
+
+### Anti-Features
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Non-uniform frame sizes in one sheet | "Some frames are different sizes" | Requires per-frame metadata array (heap or large static overhead). Incompatible with simple grid math. | Use multiple sprites with different sheets. Frame size is fixed at sheet creation time. |
+| Runtime texture upload from Lua (passing pixel arrays) | "Load sprites from files at runtime" | ESP32 has no filesystem write path from outside. Lua to C++ array passing is expensive and unsafe with static buffers. | Embed sprite data as `const uint8_t[]` arrays in C++ and pass a pointer to `newSprite`. Lua can reference named globals. |
+| Blend modes (Add, Sub) per sprite in Lua | "Special effects" | The existing `BlendMode::Add/Sub` operates on raw uint8_t values (pixel indices), not colors — mathematically wrong for indexed palette. Confuses users. | Remove Add/Sub blend modes from the reworked API. Index-15 transparency is the correct compositing primitive for 4-bit. |
+| Sprite rotation and scaling | "Need to rotate sprites" | Requires floating-point pixel mapping, bilinear interpolation — unacceptable on ESP32. No hardware rasterizer available. | Pre-rotate frames in the sprite sheet. Rotation at blit time is out of scope for all constrained platforms. |
+
+---
+
+## Cluster C: Lua Hot Reload (SDL3 Runner)
+
+**What is being added:** F5 keypress in the SDL3 runner triggers a full Lua state reset and
+reloads the current script file from disk without restarting the process.
+
+**Existing baseline:** SDL3 event loop in `sdl_main.cpp` handles `SDL_EVENT_QUIT` and
+`SDLK_ESCAPE`. Lua is initialized once at startup via `g_lua.initialize()` and
+`g_lua.loadScript(path)`. `LuaEngine::shutdown()` calls `lua_close(L)` and resets state.
+`LuaEngine::initialize()` creates a fresh `lua_State*`. The script path is currently hardcoded
+to `"scripts/e2e_parity.lua"`.
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| F5 triggers reload | Industry-standard key for "refresh" (browser, IDEs, game engines). PICO-8 uses Ctrl+R. F5 is the SDL3-natural choice since it maps to `SDLK_F5`. | LOW | Detect `SDL_EVENT_KEY_DOWN` with `event.key.key == SDLK_F5`. |
+| Full Lua state teardown then reinit | A partial reload (re-executing script into existing state) leaves stale globals, closures, and upvalues. Full teardown is correct. | LOW | Call `g_lua.shutdown()` then `g_lua.initialize()` + `registerAll()` + `setCanvas()` + `setInput()` + `loadScript()`. |
+| Re-register all bindings after reload | After `lua_close` + `lua_open`, the global table is empty. All C functions and the `enjin_bindings` registry entry must be re-registered. | LOW | `g_lua.getBindings().registerAll()` already does this. The reload sequence is: shutdown, initialize, registerAll, setCanvas, setInput, loadScript. |
+| Script path from argv or config | Hardcoded path `"scripts/e2e_parity.lua"` must become a variable so the runner knows what to reload. | LOW | Parse `argv` for a script path argument (e.g., `--script path/to/script.lua`) and store it in a static `char[]` buffer. |
+| Error display on reload failure | If the reloaded script has a syntax error, the engine must not crash. Show the error and stay running with a cleared canvas. | LOW | `loadScript()` returns `LuaResult`. On failure, log error to `stderr` and clear canvas to a visible error color (e.g., color 13). |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Reload does not restart SDL | The window, renderer, and texture persist across reloads. Users see a seamless reset without window flicker. | LOW | Only `g_lua` is torn down and rebuilt. SDL objects and canvas are untouched. Canvas content is implicitly overwritten on the next draw call. |
+| Console log of reload event | `[reload] script.lua` to stdout gives the developer confirmation the reload fired. | LOW | `printf("[reload] %s\n", scriptPath)`. |
+
+### Anti-Features
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| File-watch auto-reload (inotify/kqueue) | "Reload without pressing F5" | Platform-specific APIs (inotify on Linux, kqueue on macOS, ReadDirectoryChangesW on Windows). Adds OS-specific code to a platform-abstraction layer. Not needed for Tomodachi dev loop. | F5 manual reload is sufficient. The developer explicitly triggers reload after saving. |
+| Partial state reload (hot-patching functions) | "Preserve runtime state across reload" | Impossible to do correctly in general: closures capture upvalues, metatables reference C pointers. Any preserved state from the old Lua universe becomes a dangling reference after `lua_close`. | Full reset is the correct semantic. If state persistence is needed, serialize to canvas pixels or a side channel before reload. |
+| WASM/ESP32 hot reload | "Should work everywhere" | ESP32 has no filesystem write path from outside. WASM runs in a browser sandbox without inotify. Hot reload is a developer tool for the SDL3 runner only. | Scope this exclusively to `#ifdef ENJIN2_BUILD_SDL`. Zero impact on WASM and ESP32 builds. |
+
+---
+
+## Cluster D: Docusaurus MDX Navigation Fix
+
+**What is being added:** The "API Reference" navbar item and sidebar are currently disabled or
+broken. The fix enables the `apiSidebar` so users can navigate the 85 generated API pages.
+
+**Existing baseline:**
+- `docusaurus.config.js` configures a second docs plugin with `id: 'api'`, `path: 'api'`,
+  `sidebarPath: 'api-sidebar.js'`. Navbar has a `docSidebar` item pointing to `apiSidebar`.
+- `api-sidebar.js` uses `{ type: 'autogenerated', dirName: '.' }` — auto-generates from
+  the `docs/api/` directory tree.
+- 85 `.md` files exist across 10 subdirectories (`core`, `graphics`, `scripting`, etc.).
+- Known MDX-unsafe content: `ICanvas<TPixel>`, `ICanvas< Pixel4 >`, `Canvas4< WIDTH, HEIGHT >`
+  appear as raw angle brackets in prose text (non-code-fence contexts). MDX treats these as
+  JSX element open tags and throws a parse error. Evidence: `CanvasExtended.md` line 12 has
+  `ICanvas<TPixel>` raw; `Scene.md` has the same content already escaped as `ICanvas&lt; Pixel4 &gt;`
+  — the generator escapes inconsistently.
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| "API Reference" navbar link is clickable and loads | Documentation sites without working navigation are unusable. This is the primary UX regression from v1.0. | LOW | Fix requires identifying the exact parse failure and patching it. |
+| All 85 API pages reachable via sidebar | If pages exist in the filesystem but are absent from the sidebar tree, users cannot discover them. | LOW | `autogenerated` sidebar handles this automatically once MDX errors are cleared. |
+| Angle brackets escaped in generated markdown | `ICanvas<TPixel>` outside a code fence is invalid MDX (treated as JSX tag). Must be escaped as `ICanvas&lt;TPixel&gt;` or wrapped in a code span. | LOW | The existing `generate-api-docs.js` script already escapes some cases. The gap is in `CanvasExtended.md` and possibly others. |
+| No broken links on build (`onBrokenLinks: 'throw'`) | `docusaurus.config.js` sets `onBrokenLinks: 'throw'`. The build fails if any internal link is invalid. Fix must not introduce new broken links. | LOW | Sidebar uses autogenerated from filesystem; as long as `.md` files have correct `id` frontmatter, links resolve. |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Generator script produces MDX-safe output for all future regenerations | If the fix is only applied to existing files, the next doc regeneration will reintroduce the bug. The correct fix patches `generate-api-docs.js` to escape all `<` / `>` in prose text. | MEDIUM | One pass in the generator to HTML-encode angle brackets in prose text (not in code fences or existing `&lt;` entities). |
+| Category-level sidebar grouping (autogenerated from dirs) | 10 subdirectories map to 10 collapsible sidebar categories without manual maintenance. `autogenerated` handles this. | LOW | Already configured; just needs the MDX parse errors gone. |
+
+### Anti-Features
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Manual sidebar definition for all 85 pages | "More control over ordering" | Every new API page requires a manual sidebar update. 85 entries is unmaintainable. | Keep `autogenerated`. If ordering within a module matters, use numeric prefixes on filenames (Docusaurus respects alphabetical order). |
+| Switching away from MDX format globally | "MDX causes problems" | The `format: 'detect'` setting means `.md` files parse as MDX by default in Docusaurus v3. Changing to CommonMark globally would disable JSX in all docs. | Keep MDX. Fix the specific angle bracket escaping issue in the generator. The `.md` extension with `format: 'detect'` is correct — just escape the offending characters. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Palette System: 16-entry RGB table]
-    └──requires──> [Pixel4 / Canvas4 (existing)]
-    └──enables──> [Canvas-to-texture blit with palette]
+[Multi-Layer Canvas C++ API (4x Canvas4 buffers + compositor)]
+    └──required by──> [Lua Layer Bindings (setLayer, clearLayer)]
+                          └──required by──> [drawSprite(id, layer, x, y)]
 
-[Canvas-to-texture blit with palette]
-    └──requires──> [Palette System: 16-entry RGB table]
-    └──requires──> [SDL2 window + renderer]
-    └──enables──> [SDL2 desktop runner (complete)]
+[Sprite Sheet C++ struct (SpriteSheet)]
+    └──required by──> [FPS auto-advance (update method)]
+    └──required by──> [Lua sprite pool + bindings (newSprite, drawSprite, updateSprite)]
 
-[SDL2 desktop runner]
-    └──requires──> [Canvas-to-texture blit with palette]
-    └──requires──> [Frame timing / delta time]
-    └──requires──> [Input abstraction: SDL2 keyboard mapping]
-    └──requires──> [Lua integration (existing LuaEngine)]
+[Script path as argv variable]
+    └──required by──> [Lua hot reload (F5 knows what to reload)]
 
-[Input abstraction: unified InputState]
-    └──standalone (no existing feature required)
-    └──enables──> [SDL2 keyboard-to-button mapping]
-    └──enables──> [ESP32 input injection]
-    └──enables──> [Lua input query API]
-
-[Lua palette API]
-    └──requires──> [Palette System]
-    └──requires──> [LuaCanvas bindings (existing)]
-
-[Lua input query API]
-    └──requires──> [Input abstraction: unified InputState]
-    └──requires──> [LuaEngine / scripting bindings (existing)]
-
-[Two-stage palette (draw + screen)]
-    └──requires──> [Palette System: 16-entry RGB table]
-    └──enhances──> [Palette swap at runtime]
-
-[SDL2 hot-reload]
-    └──requires──> [SDL2 desktop runner]
-    └──requires──> [LuaEngine::executeFile (existing)]
+[generate-api-docs.js MDX-safe output]
+    └──required by──> [Docusaurus build passes (onBrokenLinks: throw)]
+    └──required by──> [API sidebar autogenerated correctly]
 ```
 
 ### Dependency Notes
 
-- **Palette system is prerequisite for SDL2 runner**: The runner's blit step reads the palette to convert 4-bit canvas to RGB texture. Palette must exist before runner works visually.
-- **Input abstraction is independent**: Can be designed and tested without the palette or SDL2 runner. Depends only on the existing core types (`types.hpp`).
-- **Lua APIs depend on both their feature and existing bindings**: `LuaCanvas` already has canvas bindings — palette and input APIs extend it rather than replace it.
-- **Two-stage palette enhances but does not block v1**: Single-stage (screen palette only) is sufficient for MVP. Draw palette is a v1.x add-on.
-- **SDL2 CMake target is separate**: Optional `ENJIN2_BUILD_SDL2=ON` mirrors existing `ENJIN2_BUILD_LUA` pattern. Must not affect ESP32 or WASM builds.
+- **Multi-layer Lua bindings require multi-layer C++ API first:** `setLayer(n)` in Lua must
+  route through a pointer array of `Canvas4` instances. The C++ composition must exist before
+  the Lua binding can point at individual buffers.
+- **drawSprite(id, layer, x, y) requires both sprite pool and layer API:** It is the
+  intersection of Cluster A and Cluster B. Phase ordering must ship sprite structs and layer
+  pointer array before this binding.
+- **Lua hot reload depends on idempotent initialize/shutdown:** `LuaEngine::shutdown()` and
+  `LuaEngine::initialize()` are already idempotent based on code inspection. The reload
+  sequence is safe to call multiple times.
+- **Docusaurus fix is fully independent:** No C++ changes required. Can be done in any
+  phase order relative to the engine features.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v1.3 — Tomodachi Readiness)
+### Launch With (v1.4)
 
-Minimum needed to enable Tomodachi integration development on desktop.
+All four clusters are the milestone. There is no sub-MVP: each cluster is an atomic deliverable.
 
-- [ ] **16-entry palette with default colors** — Pixel4 indices map to RGB at display time
-- [ ] **Index 15 = transparent** — Consistent with existing blit/matte convention
-- [ ] **Runtime palette swap** — `setPaletteColor(index, r, g, b)` at minimum
-- [ ] **SDL2 window + game loop** — Window, renderer, event polling, clean shutdown
-- [ ] **Canvas4-to-RGB texture blit** — Indexed canvas presented via palette lookup
-- [ ] **Integer pixel scaling (nearest-neighbor)** — Small canvas readable on desktop monitor
-- [ ] **Lua scripting in SDL2 runner** — `LuaEngine` runs same Lua scripts as other platforms
-- [ ] **Unified InputState struct** — Buttons (bitmask) + analog axes (float array)
-- [ ] **Button edge detection** — `justPressed`, `held`, `justReleased` per button
-- [ ] **SDL2 keyboard-to-button mapping** — Default: arrows, Z/X, Enter
-- [ ] **Lua input polling API** — `isButtonHeld(n)`, `isButtonJustPressed(n)`, `getAxis(n)`
-- [ ] **CMake optional SDL2 target** — `ENJIN2_BUILD_SDL2=ON/OFF`, does not affect other targets
+- [ ] **Multi-layer:** 4 Canvas4 buffers composited at blit, index-15 transparent, `setLayer(n)` Lua API, `clearLayer(n)` Lua API
+- [ ] **Sprites:** `SpriteSheet` struct with grid layout + FPS auto-advance + 3 loop modes, clean C++ (no legacy public members), Lua pool (newSprite/drawSprite/updateSprite/setFrame)
+- [ ] **Hot reload:** F5 key in SDL3 runner, full state reset, error display, script path from argv
+- [ ] **Docusaurus:** API sidebar accessible, angle brackets escaped in generator, 85 pages reachable, build passes `onBrokenLinks: 'throw'`
 
-### Add After Validation (v1.3.x)
+### Add After Validation (v1.x)
 
-Features to add once core v1.3 is confirmed working end-to-end.
+- [ ] **Sprite flip (horizontal/vertical)** — useful for Tomodachi character facing direction; low complexity (invert x or y index in frame read)
+- [ ] **Layer visibility toggle** — `setLayerVisible(n, bool)` skip a layer in composition; deferred until a UI-hide use case emerges
+- [ ] **File-watch reload** — only if the SDL3 dev loop is frequently used and F5 is inconvenient
 
-- [ ] **Lua hot-reload in SDL2 runner** — Triggered by key shortcut (e.g., F5) or file watch
-- [ ] **Draw palette (index remapping)** — Two-stage palette for sprite recoloring without index changes
-- [ ] **Per-entry transparency flag in draw palette** — Any index can be made transparent, not just index 0
-- [ ] **Lua keyboard mapping table** — `input.setKeyMap(button, scancode)` for SDL2 runner
+### Future Consideration (v2+)
 
-### Future Consideration (v1.4+)
-
-Defer until v1.3 is validated and Tomodachi integration is underway.
-
-- [ ] **Lua input event callbacks** — `onButtonPressed` / `onButtonReleased` callbacks
-- [ ] **Canvas8 palette support** — 256-color indexed palette for `Canvas8` (different use case)
-- [ ] **Multi-layer composition** — Already deferred per PROJECT.md
-- [ ] **Input device hot-plug** — Connect/disconnect gamepad at runtime via SDL2 events
+- [ ] **Sprite collision detection** — bounding-box overlap checks; needs a clear use case from Tomodachi
+- [ ] **Tiled map rendering** — structured tilemap on top of layered canvases; significant scope expansion
+- [ ] **Getting started guide in docs** — explicitly deferred in PROJECT.md
 
 ---
 
@@ -184,64 +240,47 @@ Defer until v1.3 is validated and Tomodachi integration is underway.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| 16-entry palette + default | HIGH | LOW | P1 |
-| Canvas4-to-RGB texture blit | HIGH | MEDIUM | P1 |
-| SDL2 window + game loop | HIGH | LOW | P1 |
-| Integer pixel scaling | HIGH | LOW | P1 |
-| Lua scripting in SDL2 runner | HIGH | LOW | P1 |
-| Unified InputState struct | HIGH | LOW | P1 |
-| Button edge detection | HIGH | LOW | P1 |
-| SDL2 keyboard mapping | HIGH | LOW | P1 |
-| Lua input polling API | HIGH | MEDIUM | P1 |
-| CMake SDL2 target | HIGH | LOW | P1 |
-| Runtime palette swap | MEDIUM | LOW | P1 |
-| Lua palette API | MEDIUM | MEDIUM | P1 |
-| Lua hot-reload | MEDIUM | LOW | P2 |
-| Draw palette (two-stage) | MEDIUM | MEDIUM | P2 |
-| Per-entry transparency flag | MEDIUM | LOW | P2 |
-| Lua keyboard mapping table | LOW | LOW | P2 |
-| Lua input event callbacks | MEDIUM | MEDIUM | P3 |
-| Canvas8 palette support | LOW | MEDIUM | P3 |
-
-**Priority key:**
-- P1: Must have for v1.3 launch (Tomodachi integration enablement)
-- P2: Should have, add before or shortly after launch
-- P3: Nice to have, future milestone
+| Multi-layer C++ API (4 Canvas4 buffers + compositor) | HIGH | LOW | P1 |
+| Multi-layer Lua bindings (setLayer, clearLayer) | HIGH | LOW | P1 |
+| SpriteSheet struct (grid, FPS, loop modes) | HIGH | LOW | P1 |
+| Lua sprite bindings (newSprite, drawSprite, updateSprite) | HIGH | MEDIUM | P1 |
+| Legacy public member removal | MEDIUM | LOW | P1 (do with sprite rework, not separately) |
+| Hot reload F5 + full state reset | HIGH | LOW | P1 |
+| Script path from argv | MEDIUM | LOW | P1 (prerequisite for reload) |
+| Docusaurus MDX angle bracket fix in generator | HIGH | LOW | P1 |
+| API sidebar autogenerated | HIGH | LOW | P1 (already configured; unblock by fixing MDX) |
+| Sprite flip (H/V) | MEDIUM | LOW | P2 |
+| Layer visibility toggle | LOW | LOW | P3 |
+| File-watch auto-reload | LOW | HIGH | P3 |
 
 ---
 
-## Competitor Feature Analysis
+## Existing System Interfaces (Dependency Context)
 
-These are reference implementations consulted during research — not competitors in a market sense,
-but systems that solved the same design problems.
+These are the key existing APIs that new features must integrate with cleanly:
 
-| Feature | PICO-8 | TIC-80 | Our Approach |
-|---------|--------|--------|--------------|
-| Palette size | 16 colors (fixed) | 16 colors (fixed default) | 16 colors — `Pixel4` is 4-bit, this is the hardware constraint |
-| Transparent index | Index 0 (draw palette flag) | Color 0 = transparent | Index 15 = transparent; consistent with existing Canvas4::blit() matte convention |
-| Palette swap | Two-stage (draw + screen palette) | Screen palette only | Start with screen palette only (index → RGB); add draw palette in v1.3.x |
-| Canvas storage | 4-bit indexed | 4-bit indexed | `Pixel4` packed in `Canvas4` (existing) — identical model |
-| Input API | `btn(n)`, `btnp(n)` (polling) | Same pattern | `isButtonHeld(n)`, `isButtonJustPressed(n)` in Lua — same pattern |
-| Input source | Keyboard / gamepad | Keyboard / gamepad | Platform-agnostic `InputState` injected per platform; SDL2 maps keyboard |
-| Desktop runner | Runtime (sandboxed) | Runtime (sandboxed) | SDL2 runner as development tool — not sandboxed, full file access |
-| Scripting language | Lua (subset) | Lua (subset) | Lua via LuaJIT — already integrated (existing) |
+| System | Relevant Interface | Notes |
+|--------|-------------------|-------|
+| `Canvas4<W,H>` | `clear(Pixel4)`, `setPixel(x,y,Pixel4)`, `getPixel(x,y)` | Multi-layer uses 4 instances of this. |
+| `LuaCanvas` | `canvasPtr`, `is4Bit`, wraps `ICanvas<Pixel4>` | Must be extended to hold pointer per layer. |
+| `LuaBindings` | `setCanvas(LuaCanvas*)`, `registerAll()` | Hot reload calls `registerAll()` after reinit. |
+| `LuaEngine` | `initialize()`, `shutdown()`, `executeFile()` | Hot reload uses the existing teardown/reinit cycle. |
+| `g_rgb_staging[W*H*3]` | RGB24 output buffer for SDL texture upload | Multi-layer compositor writes into this buffer. |
+| `expand_canvas_to_rgb()` | Static function in `sdl_main.cpp` | Becomes `composite_layers_to_rgb()` looping N=4. |
+| `g_palette.isTransparent(v)` | Returns `v == 15` | Compositor skip condition per pixel per layer. |
+| `generate-api-docs.js` | Node.js doc generator writing `.md` files | MDX fix patches the prose text escaping here. |
 
 ---
 
 ## Sources
 
-- PICO-8 Palette documentation (PICO-8 Wiki): https://pico-8.fandom.com/wiki/Palette — Two-stage palette system (draw palette + screen palette), transparency flag per index (HIGH confidence)
-- PICO-8 Manual (Lexaloffle): https://www.lexaloffle.com/dl/docs/pico-8_manual.html — Input API (`btn`, `btnp`), 16-color constraint (HIGH confidence)
-- SDL2 indexed texture streaming: https://discourse.libsdl.org/t/indexed-texture-streaming-with-custom-palette/25084 — `SDL_PIXELFORMAT_INDEX8` streaming texture approach (MEDIUM confidence — archived forum post)
-- SDL2 pixel art scaling: https://discourse.libsdl.org/t/scaling-resolution-and-pixel-art/21342 — Logical resolution and nearest-neighbor scaling (HIGH confidence)
-- SDL2 game loop patterns: https://thelinuxcode.com/sdl2-in-c-and-c-2026-practical-patterns-real-examples-and-the-mental-model-that-makes-it-click/ — Init/loop/shutdown, delta time via `SDL_GetPerformanceCounter` (MEDIUM confidence)
-- SDL2 framebuffer rendering: https://codersplate.wordpress.com/2025/08/01/creating-a-framebuffer-renderer-in-c-with-sdl2/ — Raw pixel manipulation to SDL2 surface/texture (MEDIUM confidence)
-- SDL2 GameController API: https://blog.rubenwardy.com/2023/01/24/using_sdl_gamecontroller/ — Unified controller abstraction over raw joystick (HIGH confidence)
-- Handmade Penguin input abstraction: https://davidgow.net/handmadepenguin/ch6.html — Keyboard + gamepad unified input pattern (MEDIUM confidence)
-- Fantasy console palette survey: https://lospec.com/palette-list/tag/fantasyconsole — Reference palettes (16-color, PICO-8, etc.) (HIGH confidence)
-- enjin2 codebase direct inspection: `include/enjin2/graphics/canvas.hpp`, `include/enjin2/core/types.hpp`, `include/enjin2/ui/systems.hpp`, `include/enjin2/scripting/lua_platform.hpp` — Existing API surface, constraints, and integration points (HIGH confidence)
+- Direct code inspection: `src/scripting/bindings.cpp`, `include/enjin2/graphics/sprite.hpp`, `src/platform/sdl/sdl_main.cpp`, `src/scripting/lua_engine.cpp`
+- Direct config inspection: `docs/docusaurus.config.js`, `docs/api-sidebar.js`, `docs/sidebars.js`
+- MDX content inspection: `docs/api/graphics/CanvasExtended.md`, `docs/api/core/Scene.md` (grep for raw angle brackets vs. escaped)
+- `.planning/PROJECT.md` — authoritative requirements list, out-of-scope decisions, validated constraints
+- Domain knowledge: PICO-8 layer semantics, GBA/NES sprite sheet grid conventions, Docusaurus v3 MDX format detection behavior
 
 ---
-*Feature research for: enjin2 v1.3 — Palette System, SDL2 Desktop Runner, Input Abstraction*
-*Researched: 2026-02-23*
-*Confidence: HIGH*
+
+*Feature research for: enjin2 v1.4 — multi-layer canvas, sprite rework, Lua hot reload, Docusaurus fix*
+*Researched: 2026-02-24*

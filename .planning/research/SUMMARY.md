@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** enjin2 v1.3 — Tomodachi Readiness
-**Domain:** C++ embedded graphics engine — palette system, SDL3 desktop runner, input abstraction
-**Researched:** 2026-02-23
+**Project:** enjin2 v1.4
+**Domain:** Embedded/WASM 2D graphics engine — multi-layer composition, sprite system rework, Lua hot reload, Docusaurus navigation fix
+**Researched:** 2026-02-24
 **Confidence:** HIGH
 
 ## Executive Summary
 
-enjin2 v1.3 adds three tightly coupled features to an existing, stable engine: a 16-color indexed palette system, an SDL3 desktop runner as a third platform backend, and a platform-agnostic input abstraction for physical controls (buttons, pots, joysticks). All three features are strictly additive — existing Canvas4/Canvas8, Lua scripting, WASM, and ESP32 targets are untouched. The correct mental model is a display-time color resolution pipeline: canvas pixels remain 4-bit indices (0–15) throughout all draw operations; the palette converts indices to RGB only at the final blit to the output surface (SDL3 texture, WASM canvas, hardware DMA). This separation is the single most important architectural decision in the milestone and must be established as a contract before any implementation begins.
+enjin2 v1.4 is a capabilities milestone that adds four independent feature clusters to an already-working zero-alloc 2D graphics engine. No new dependencies are required. All four features are implementable with the existing stack (C++17, SDL3 3.4.2, Lua 5.4, Emscripten, Docusaurus 3.9.2). The recommended approach follows zero-alloc principles throughout: static Canvas4 layer arrays in sdl_main.cpp for multi-layer composition, a plain-struct SpriteSheet with compile-time frame layout, a Lua state teardown/reinit cycle for hot reload, and a surgical `generate-api-docs.js` escaping fix for Docusaurus. Every architectural decision is grounded in direct codebase inspection — there are no external library choices to evaluate.
 
-The recommended stack is minimal: SDL3 3.4.2 (system install via `find_package`, opt-in via `ENJIN2_BUILD_SDL=ON`), zero new libraries for the palette (64-byte static array), and zero new libraries for input (thin `IInputProvider` interface with per-platform implementations). All three features follow the same pattern already established for Lua and WASM: optional CMake targets, compile-time platform defines, no changes to core library targets. The SDL3 desktop runner is the primary integration surface — once it works end-to-end with palette and input wired in, the milestone is complete.
+The critical ordering constraint is that multi-layer C++ plumbing must precede multi-layer Lua bindings, and hot reload must come last because it must re-wire the layer canvas array after shutdown. The Docusaurus fix is fully independent and carries the oldest-standing tech debt in the project (carried from v1.0). The sprite rework is also independent of layers at the C++ struct level, though the Lua `drawSprite(id, layer, x, y)` call requires both the sprite pool and the layer canvas pointer array to exist before it can be wired up.
 
-The critical risks are all design-time decisions, not implementation complexity. Index 0 semantics (transparent vs black) must be resolved before writing any palette code — existing scripts use `setColor(0)` for black, which conflicts with the Tomodachi spec of index 0 = transparent. Input abstraction interface headers must contain zero platform-specific types or the abstraction fails on ESP32. SDL3 pixel format selection must be verified at startup or colors will be silently wrong. None of these are hard to fix if caught early; all are expensive to fix after integration. The research also flags a naming inconsistency: FEATURES.md was written referencing SDL2 while STACK.md correctly specifies SDL3 — the implementation must adopt SDL3 and `ENJIN2_PLATFORM_SDL` as canonical names throughout.
+The highest-risk pitfalls are: (1) a pre-existing dangling-pointer bug in `LuaEngine::registerFunction(LuaCallback)` that hot reload will expose — must be fixed before F5 is wired up; (2) the multi-layer compositor must replace `expand_canvas_to_rgb()` wholesale — a partial integration silently renders only layer 0 with no error; and (3) the sprite rework is a hard API break (ICanvas<uint8_t> canvas target → ICanvas<Pixel4>), requiring a grep-and-update of all callers in the same change. All three are preventable with a defined fix sequence and a verification checklist.
 
 ---
 
@@ -19,154 +19,114 @@ The critical risks are all design-time decisions, not implementation complexity.
 
 ### Recommended Stack
 
-The v1.3 stack is intentionally minimal. SDL3 3.4.2 (stable since January 2025) is the only new external dependency, used exclusively for the desktop runner. It installs via system package managers on all platforms and ships its own CMake config file — no vendoring, no custom Find module needed. SDL2 is explicitly rejected: it receives no new features and Fedora is replacing it with sdl2-compat in 2026. The palette and input abstraction are pure C++ headers with zero external dependencies. Both follow the same zero-dynamic-allocation constraint that governs the rest of the engine.
+No new dependencies for v1.4. The existing stack covers all four feature clusters entirely. Implementation patterns are drawn from established fantasy-console references (PICO-8 for sprite grid indexing and layer semantics, LÖVE 2D for draw call shape), but these are reference designs only — not dependencies.
 
 **Core technologies:**
-- **SDL3 3.4.2** — window, surface rendering, event loop for desktop runner — only stable SDL option for new projects in 2026; SDL2 is a dead end
-- **Inline `uint32_t palette[16]`** — palette storage — 64 bytes, zero allocation, no library justifies the footprint; pure header implementation
-- **Custom `IInputProvider` interface** — input abstraction — static arrays with compile-time size constants (`MAX_BUTTONS=16`, `MAX_AXES=8`), platform implementations in platform-gated files
+- **C++17 (existing)** — all new features; static template arrays cover fixed-layer composition; no library adds value
+- **SDL3 3.4.2 (existing)** — hot reload trigger via `SDL_SCANCODE_F5` with `!event.key.repeat` guard; no file-watching API needed
+- **Lua 5.4 (existing)** — hot reload via `lua_close` + `lua_newstate` full state reset; partial reset leaves dangling upvalues and is incorrect
+- **Docusaurus 3.9.2 (existing)** — already at current stable; navigation breakage is stale placeholder text and `<Type>` escaping in the doc generator, not a framework version issue
 
-**Critical version note:** On macOS, `find_package(SDL3 CONFIG REQUIRED)` must NOT specify `SDL3-shared` as a component — known bug in SDL3Config.cmake (vcpkg issue #45498, reported May 2025).
-
-See `.planning/research/STACK.md` for full rationale, alternatives considered, and CMake integration pattern.
+See `.planning/research/STACK.md` for full pattern implementations, alternatives considered, and per-platform notes.
 
 ### Expected Features
 
-**Must have (v1.3 table stakes):**
-- 16-entry palette with default colors — Pixel4 indices map to RGB at display time, never at draw time
-- Index 15 = transparent — preserves existing `Colors::BLACK = Pixel4(0)` behavior; indices 0–14 are usable colors
-- Runtime palette swap — `setPaletteColor(index, r, g, b)` with no canvas re-render
-- SDL3 window + game loop — init, event poll, clean shutdown with `SDL_TEXTUREACCESS_STREAMING`
-- Canvas4-to-RGB texture blit via palette — the core SDL3 render path
-- Integer pixel scaling, nearest-neighbor — small canvas readable on desktop monitor
-- Lua scripting in SDL3 runner — same Lua scripts run identically on all platforms
-- Unified InputState struct — buttons (bitmask) + analog axes (float array), edge detection built in
-- Button edge detection — `justPressed`, `held`, `justReleased` per button, shared layer not platform layer
-- SDL3 keyboard-to-button default mapping — arrows, Z/X, Enter
-- Lua input polling API — `isButtonHeld(n)`, `isButtonJustPressed(n)`, `getAxis(n)`
-- Lua palette API — `setPalette(index, r, g, b)` callable from scripts
-- WASM bindings updated for palette — `getPaletteRGB()` exposed to JavaScript in same phase as palette implementation
-- CMake `ENJIN2_BUILD_SDL=ON/OFF` — no impact on WASM or ESP32 builds
+**Must have (v1.4 table stakes):**
+- Multi-layer: 4 Canvas4 buffers composited at blit time, index-15 transparent passthrough, `setLayer(n)` / `clearLayer(n)` Lua API
+- Sprites: `SpriteSheet` struct with uniform grid layout, FPS auto-advance, 3 loop modes (once/loop/ping-pong), clean C++ API with no legacy public members
+- Sprites: Lua sprite pool — `newSprite`, `drawSprite`, `updateSprite`, `setFrame` bindings
+- Hot reload: F5 key in SDL3 runner, full Lua state reset, script path from argv, error display on syntax failure
+- Docusaurus: angle brackets escaped in `generate-api-docs.js`, all 85 API pages reachable, `npm run build` passes with zero MDX errors
 
-**Should have (v1.3.x after validation):**
-- Lua hot-reload in SDL3 runner — F5 key shortcut or file mtime watch
-- Two-stage draw palette — index remapping at draw time (PICO-8 model); single-stage is sufficient for v1.3
-- Per-entry transparency flag in draw palette — any index can be transparent, not just index 0
-- Lua keyboard mapping table — `input.setKeyMap(button, scancode)` for SDL3 runner
+**Should have (v1.x post-validation):**
+- Sprite flip (horizontal/vertical) — low complexity; useful for Tomodachi character facing direction
+- Layer visibility toggle `setLayerVisible(n, bool)` — skip a layer in compositor; deferred until a concrete hide use case emerges
+- File-watch auto-reload — only if F5 proves inconvenient in practice
 
-**Defer (v1.4+):**
-- Lua input event callbacks (`onButtonPressed` / `onButtonReleased`)
-- Canvas8 palette support (256-color indexed; different memory model)
-- Input device hot-plug (connect/disconnect gamepad at runtime)
-- Multi-layer composition (already deferred per PROJECT.md)
+**Defer (v2+):**
+- Sprite collision detection — bounding-box overlap; needs a concrete use case from Tomodachi
+- Tiled map rendering — significant scope expansion on top of layered canvases
+- Getting started guide (docs) — explicitly deferred in PROJECT.md
 
-See `.planning/research/FEATURES.md` for full prioritization matrix and competitor analysis.
+See `.planning/research/FEATURES.md` for full prioritization matrix, anti-feature rationale, and feature dependency graph.
 
 ### Architecture Approach
 
-Three new subsystems fit cleanly into the existing four-layer stack without modifying any existing library source. Palette lives in `enjin2_graphics` as a header-only struct (`include/enjin2/graphics/palette.hpp`). Input abstraction lives in `enjin2_ui` as a new parallel system alongside but independent of the existing mouse-oriented UI components. The SDL3 runner is a new `platforms/sdl2/` executable target that links all existing libraries plus SDL3. Three existing files require modification: `lua_platform.hpp/cpp` (add `SDL2_RUNNER` branch mirroring VCV_RACK config) and `CMakeLists.txt` (add `ENJIN2_BUILD_SDL` option + target).
+The architecture is additive: three new header-only or small-impl files (`layer_stack.hpp`, `sprite_sheet.hpp`, `frame_animation.hpp`) plus modifications to `sdl_main.cpp`, `bindings.cpp`, `bindings.hpp`, and `generate-api-docs.js`. The compositor replaces `expand_canvas_to_rgb()` with a top-to-bottom layer walk that writes the first non-transparent pixel per position into the existing `g_rgb_staging[]` buffer — no extra allocation. Layer switching in Lua is an O(1) pointer swap on `LuaCanvas`, not a per-draw-call dispatch. Frame animation state is a value-type member inside `C_Sprite`, not a separate ECS component (avoids consuming hard-capped component slots and inter-component dynamic_cast overhead).
 
-**Major components:**
-1. `Palette` (`enjin2_graphics`) — `RGB24 entries[16]`, index 0 = transparent, applied at blit time only; header-only, zero new build artifacts
-2. `InputEvent` / `InputSource` / `InputSystem` (`enjin2_ui`) — event + source + consumer pattern; `SDL2InputSource` and `ESP32InputSource` are platform-gated implementations; edge detection in shared layer
-3. `SDL2Runner` + `SDL2InputSource` (`platforms/sdl2/`) — SDL3 window, `SDL_TEXTUREACCESS_STREAMING` framebuffer texture, game loop with dt clamping, pixel format verified at startup
-4. `LuaPlatform` extension — `SDL2_RUNNER` compile define; mirrors VCV_RACK Lua config (ENABLE_FILE_IO=true, ENABLE_ALL_LIBS=true)
+**Major components after v1.4:**
+1. `LayerStack<W,H>` (new) — owns 4 Canvas4 buffers, exposes by `LayerIndex` enum; declared as static global in `sdl_main.cpp`
+2. `SpriteSheet` + `FrameAnimation` (new) — plain structs, no heap; `FrameAnimation` embedded in `C_Sprite` as a value member
+3. `LuaCanvas` + `LuaBindings` (modified) — gains `setActiveLayer(uint8_t)` + static `LuaCanvas layerCanvases[4]` array; all new Lua bindings use `lua_CFunction`, never `LuaCallback` (std::function)
+4. `LuaScriptSystem` (modified) — gains `lastScriptPath_` + `reload()` method; `g_reload_requested` flag prevents mid-frame teardown
+5. `generate-api-docs.js` (modified) — all template parameter and description text wrapped with `escapeForMdx()` before output; regenerated `docs/api/` files committed alongside
 
-**Recommended implementation order within milestone:**
-1. `palette.hpp` — no deps, zero risk, unblocks SDL3 blit; resolve index 0 semantics here
-2. Input interface headers (`input_event.hpp`, `input_system.hpp`) — contracts before platform implementations
-3. `input_system.cpp` — dispatch implementation with edge detection
-4. `lua_platform.hpp/cpp` SDL2_RUNNER case — unblocks LuaScriptSystem in SDL3 build
-5. `SDL2Runner` + `SDL2InputSource` — requires palette + input + Lua all in place
-6. Lua bindings for palette and input — requires runner wired for end-to-end validation
+**Build order:** Docusaurus fix → Sprite rework (C++ + Lua) → Multi-layer (C++ + Lua) → Hot reload.
 
-See `.planning/research/ARCHITECTURE.md` for full interface designs, file structure, and data flow diagrams.
+See `.planning/research/ARCHITECTURE.md` for full component responsibility table, data flow diagrams, and anti-patterns to avoid.
 
 ### Critical Pitfalls
 
-1. **Palette applied at draw time, not blit time** — modifying `setPixel()` to resolve palette corrupts packed 4-bit storage; canvas stores indices 0–15 only; palette is applied once per frame at the output boundary; never modify the draw path (recovery cost: HIGH)
+1. **Dangling LuaCallback pointer on hot reload** — `registerFunction(LuaCallback)` stores a pointer to a local parameter; after reload the Lua closure holds a dangling pointer. Fix before wiring F5: eliminate all `LuaCallback` (std::function) registrations; use `lua_CFunction` exclusively for all new bindings. Verify by reloading twice in succession with no crash.
 
-2. **Index 15 transparent semantics (RESOLVED)** — index 15 = transparent, indices 0–14 = usable colors; preserves existing `Colors::BLACK = Pixel4(0)` behavior; no existing code changes needed (recovery cost: N/A — decided before implementation)
+2. **Multi-layer compositor silently renders only layer 0** — if `expand_canvas_to_rgb()` is not replaced wholesale, drawing to layers 1–3 is silently discarded. Verify by drawing exclusively to layer 2 and confirming it appears in the SDL3 window.
 
-3. **Input interface leaking platform types** — `SDL_Keycode` or `gpio_num_t` in a shared header breaks compilation on all other platforms; interface header must compile with `-DESP32` and zero SDL2 headers available (recovery cost: MEDIUM)
+3. **Sprite API is a hard compile-time break** — old `Sprite::draw(ICanvas<uint8_t>&)` is incompatible with `Canvas4` (ICanvas<Pixel4>). Grep all callers of legacy `_width`, `_height`, `_frame`, `_position`, `_matte`, `_mode` fields before removing them and update all call sites in the same change. Change `matte` default from 16 to 15 (PALETTE_TRANSPARENT).
 
-4. **SDL3 pixel format mismatch producing silently wrong colors** — `SDL_PIXELFORMAT_RGBA32` is endian-aliased and produces wrong output on little-endian systems without any error; use `SDL_PIXELFORMAT_RGB24` or explicit `ARGB8888`; add `SDL_QueryTexture` assertion at startup (recovery cost: LOW if caught early)
+4. **Hot reload must not execute inside the SDL event handler** — calling `g_lua.shutdown()` directly in the event pump means `update()` and `draw()` run on an empty Lua state in the same frame. Use a `g_reload_requested` flag; execute reload at the top of the next frame before input advance.
 
-5. **WASM bindings not updated for palette** — SDL3 runner displays correct colors while WASM stays grayscale; expose `getPaletteRGB()` through Emscripten bindings in the same phase as the C++ palette; verify both rendering paths show identical colors for the same script (recovery cost: LOW)
+5. **Transparency sentinel is index 15, not 0** — `Canvas4::clear()` defaults to `Pixel4(0)` (opaque black). Every `clearLayer()` call and the compositor skip condition must use `PALETTE_TRANSPARENT = 15` explicitly. Clearing layers with index 0 blocks lower layers and makes solid black undrawable.
 
-See `.planning/research/PITFALLS.md` for full pitfall list including texture access mode, CMake contamination, Lua color API ambiguity, and the "looks done but isn't" verification checklist.
+See `.planning/research/PITFALLS.md` for all 10 critical pitfalls, integration gotchas table, performance traps, and the "looks done but isn't" verification checklist.
 
 ---
 
 ## Implications for Roadmap
 
-The dependency graph dictates a clear 4-phase structure. Palette must precede the SDL3 runner (blit step requires it). Input interface must precede platform implementations. SDL3 CMake setup must precede any SDL3 C++ code. Lua bindings extend existing infrastructure and come last. All four phases are additive — no existing code is deleted, modified in ways that break other platforms, or restructured.
+The dependency graph drives a natural 4-phase sequence. The Docusaurus fix is independent and clears the oldest tech debt before new classes add more API pages. Sprite rework at the C++ level is independent of layers. Multi-layer lands after sprites so that the combined `drawSprite(id, layer, x, y)` binding has both prerequisites. Hot reload comes last because it is trivially small once multi-layer is in place and must re-wire the full layer canvas array.
 
-### Phase 1: Palette Foundation
+### Phase 1: Docusaurus Navigation Fix
 
-**Rationale:** Zero external dependencies, zero existing code changes, unblocks the SDL3 runner's blit step. The index 0 semantic conflict must be resolved at the start of this phase or it cascades into every subsequent phase. WASM bindings must be updated here — not in Phase 3 — to prevent SDL3 runner and WASM diverging silently in color output.
+**Rationale:** Fully independent — zero C++ changes, zero runtime risk. Clears the oldest-standing tech debt item (carried from v1.0 per PROJECT.md). Unblocks the API documentation workflow before new classes (LayerStack, SpriteSheet, FrameAnimation) are added and require their own doc generation runs. Lowest risk, clearest scope.
+**Delivers:** Working "API Reference" navbar link, all 85 API pages accessible in autogenerated sidebar, `generate-api-docs.js` produces MDX-safe output for all future regenerations (angle brackets escaped in prose text for template types), `npm run build` passes with zero MDX errors, guide `.md` placeholder text replaced with real cross-links.
+**Addresses:** DOC-01 / DOC-02 from PROJECT.md; Cluster D from FEATURES.md.
+**Avoids:** Pitfall 7 (MDX angle bracket failures — fix is in the generator, not just the generated files); run `npm run build` as the completion gate.
 
-**Delivers:** `Palette` struct with default 16-color table, runtime palette swap, `getPaletteRGB()` Emscripten binding, updated WASM JavaScript renderer, Lua `setPalette()` / `getPalette()` API
+### Phase 2: Sprite System Rework
 
-**Features addressed:** 16-entry palette, index 15 = transparent, runtime palette swap, Lua palette API, WASM palette exposure
+**Rationale:** Independent of the layer system at the C++ struct level. New structs and the reworked `Sprite` class can be added and verified without any multi-layer code. The hard API break (uint8_t → Pixel4 canvas target) is isolated to this phase, keeping it away from the multi-layer integration surface. Lua `canvas.drawSprite()` in its stateless form targets whatever canvas is currently active — it is immediately usable before layer switching exists.
+**Delivers:** `SpriteSheet` + `FrameAnimation` structs in new header files, rewritten `Sprite` class with template `draw<TPixel>()`, clean API with no legacy public members, `FrameAnimation` value-type member in `C_Sprite` with FPS auto-advance and once/loop/ping-pong loop modes, Lua sprite pool with `newSprite` / `drawSprite` / `updateSprite` / `setFrame`, `sprite.cpp` added to `enjin2_graphics` sources in CMakeLists.txt.
+**Uses:** Zero-alloc pattern from STACK.md; PICO-8 `spr(n, x, y)` API shape.
+**Avoids:** Pitfall 4 (sprite API break — treat as clean break, grep legacy callers, update in same change, change matte default to 15); Pitfall 10 (WASM/ESP32 — all new Lua bindings use lua_CFunction, no lambda captures).
 
-**Pitfalls to avoid:** Palette at draw time (Pitfall 1), index 15 transparent semantics (Pitfall 8), WASM bindings not updated (Pitfall 9)
+### Phase 3: Multi-Layer Canvas Composition
 
-**Research flag:** Standard patterns — no additional research needed. Direct codebase inspection confirms all integration points. PICO-8 reference well-documented.
+**Rationale:** Modifies `sdl_main.cpp` globals and `LuaCanvas` routing — the shared integration point for both sprite bindings and hot reload. Landing after sprites means `canvas.drawSprite()` works correctly with the layer-aware canvas on arrival. Landing before hot reload ensures the reload sequence has the full layer canvas array to re-wire.
+**Delivers:** `LayerStack<W,H>` header-only struct with `LayerIndex` enum, `g_layers[4]` static global replacing `g_canvas` in `sdl_main.cpp`, composite `expand_canvas_to_rgb()` (top-to-bottom layer walk, PALETTE_TRANSPARENT skip, no scratch buffer), `setLayer(n)` / `clearLayer(n)` / `getLayerCount()` Lua bindings, `LuaCanvas::setActiveLayer(uint8_t)`, static `LuaCanvas layerCanvases[4]` pre-allocated in `LuaBindings`.
+**Avoids:** Pitfall 2 (ESP32 SRAM — verify 4×8192 + 64KB Lua pool fits before declaring buffers; gate with PSRAM annotation or compile-time layer count option); Pitfall 3 (template mismatch — add `getRawBuffer()` to ICanvas or template compositor on `<W,H>` before writing the blend loop); Pitfall 5 (LuaCanvas void* routing — pre-allocate static array, no dynamic LuaCanvas allocation); Pitfall 8 (transparency — all clear calls use `Pixel4(PALETTE_TRANSPARENT)`, compositor skip checks `PALETTE_TRANSPARENT` not 0); Pitfall 9 (SDL3 render path — replace expand function wholesale, verify with layer-2-only draw test).
 
-### Phase 2: Input Abstraction
+### Phase 4: Lua Hot Reload
 
-**Rationale:** Fully independent of palette and SDL3. Interface-first design ensures SDL3 backend implements against a stable contract. Edge-detection semantics (`wasJustPressed`, `wasJustReleased`) must be in the shared interface from the start — adding them later requires touching all platform backends.
-
-**Delivers:** `InputEvent`, `InputKind`, `InputSource` interface, `InputSystem` with listener dispatch and edge detection, state cache for Lua polling queries
-
-**Features addressed:** Unified InputState, button edge detection, ESP32 input injection path, foundation for SDL3 keyboard mapping
-
-**Pitfalls to avoid:** Platform type leakage into interface (Pitfall 5), missing debounce/edge semantics (Pitfall 6), extending existing mouse InputComponent instead of adding parallel system (Architecture anti-pattern 4)
-
-**Research flag:** Standard patterns — interface + source + consumer pattern is well-established. All integration points identified from codebase inspection.
-
-### Phase 3: SDL3 CMake + Runner
-
-**Rationale:** CMake integration must be correct before any SDL3 C++ is written — contaminating core library targets requires significant cleanup to undo. Runner requires Phase 1 (palette) and Phase 2 (input interface) to be complete. `SDL2_RUNNER` define and `lua_platform.hpp` extension unblock Lua in the SDL3 build.
-
-**Delivers:** `ENJIN2_BUILD_SDL=ON/OFF` CMake option, `enjin2_sdl` executable target, `SDL2Runner` with streaming texture + game loop + dt clamping, `SDL2InputSource`, `lua_platform.hpp` SDL2_RUNNER branch, integer pixel scaling, pixel format startup assertion
-
-**Features addressed:** SDL3 window + game loop, Canvas4-to-RGB blit via palette, integer scaling (nearest-neighbor), Lua scripting in SDL3 runner, SDL3 keyboard-to-button default mapping
-
-**Pitfalls to avoid:** SDL3 CMake target contaminating core (Pitfall 7), pixel format mismatch (Pitfall 2), texture access mode wrong (Pitfall 3), event loop blocking with unclamped dt (Pitfall 4), VCV_RACK define reused for SDL3 (Architecture anti-pattern 3)
-
-**Research flag:** Warrants careful checklist execution. Multiple specific failure modes documented in PITFALLS.md. Apply the "looks done but isn't" checklist item by item, particularly: streaming texture confirmed, pixel format assertion in place, `ENJIN2_BUILD_SDL=OFF` clean build verified, SDL3 headers absent from core include paths.
-
-### Phase 4: Lua Integration + End-to-End Validation
-
-**Rationale:** Lua bindings extend existing `LuaCanvas` and `LuaScriptSystem`; they require the runner (Phase 3) to be wired before end-to-end validation is possible. This phase is also the integration gate — the same Lua script must produce visually identical output on SDL3 runner and WASM before the milestone is considered complete.
-
-**Delivers:** Lua input polling API (`isButtonHeld`, `isButtonJustPressed`, `getAxis`), Lua palette API callable from scripts, cross-platform color consistency verification (SDL3 vs WASM), full "looks done but isn't" checklist sign-off
-
-**Features addressed:** Lua input polling, Lua palette API, SDL3 keyboard mapping default (verified via Lua test script)
-
-**Pitfalls to avoid:** Lua color API semantic ambiguity follow-through (Pitfall 8), Lua input binding coupling directly to SDL state (Integration Gotchas — input + Lua row)
-
-**Research flag:** Standard patterns — extends existing LuaCanvas binding infrastructure. No novel territory.
+**Rationale:** Smallest change set of the four clusters (F5 event + reload flag + `LuaScriptSystem::reload()`). Must come last because the reload re-wiring must know about `g_layers` (not just the old `g_canvas`). The pre-existing `LuaCallback` dangling-pointer bug must be fixed as the first step of this phase before F5 is wired up.
+**Delivers:** `g_reload_requested` flag pattern, F5 handler in SDL3 event loop (`#ifdef ENJIN2_BUILD_LUA` scoped), `LuaScriptSystem::reload()` with `lastScriptPath_` storage, script path parsed from argv into `static char[256]` buffer, stderr error display on reload failure, console log `[reload] script.lua`.
+**Avoids:** Pitfall 1 (dangling LuaCallback — fix as step 1 before wiring F5; audit and eliminate all LuaCallback registrations); Pitfall 6 (mid-frame reload — reload_requested flag, never shutdown inside event handler; verify with F5 during active Lua update call producing zero "Function not found" errors); Pitfall 10 (Emscripten — scope hot reload to `#ifdef ENJIN2_BUILD_SDL` only, zero WASM/ESP32 impact).
 
 ### Phase Ordering Rationale
 
-- Palette before runner: the blit step in the SDL3 runner reads the palette; without it the runner cannot display anything correctly
-- Input interface before runner: `SDL2InputSource` implements against the interface; the interface must be stable before the platform backend is written
-- CMake option before C++ runner code: SDL3 target isolation from core library targets cannot be retrofitted without risk
-- WASM bindings updated in Phase 1 (not Phase 3): prevents a cross-platform color discrepancy that makes rendering bugs hard to attribute and is tempting to defer indefinitely
-- Lua bindings last: depend on all prior phases; natural integration validation gate
+- Docusaurus first: clears oldest tech debt with zero C++ risk before the codebase gains more classes that need doc generation runs.
+- Sprite rework second: hard API break is safest landed in isolation; Lua sprite pool needed before multi-layer Lua binding intersection (`drawSprite(id, layer, x, y)`) can be wired.
+- Multi-layer third: largest sdl_main.cpp integration surface; benefits from having sprite Lua pool already stable; establishes layer canvas array that hot reload must re-wire.
+- Hot reload last: trivially small once multi-layer is in place; the one pre-existing bug (LuaCallback) must be fixed as its first step regardless of phase order.
 
 ### Research Flags
 
-**Phases with standard, well-documented patterns (no additional research needed):**
-- **Phase 1 (Palette):** Trivial data structure; PICO-8/TIC-80 reference well-documented; codebase integration points confirmed by direct inspection
-- **Phase 2 (Input Abstraction):** Standard interface + source + consumer pattern; all integration points mapped from codebase
-- **Phase 4 (Lua Integration):** Extends existing `LuaCanvas` binding pattern; no novel territory
+**Phases with well-documented patterns — skip research-phase:**
+- **Phase 1 (Docusaurus):** Root cause identified, fix location confirmed (`generate-api-docs.js`), verified by direct file inspection. Standard MDX angle-bracket escaping pattern.
+- **Phase 4 (Hot Reload):** SDL3 F5 pattern from official wiki; Lua shutdown/initialize cycle confirmed idempotent by code inspection; flag pattern is a standard game-loop idiom.
 
-**Phases warranting careful checklist execution during task planning:**
-- **Phase 3 (SDL3 CMake + Runner):** Multiple specific, documented failure modes in PITFALLS.md; apply verification checklist at phase completion, not after
+**Phases that may benefit from targeted micro-research during spec writing:**
+- **Phase 3 (Multi-Layer):** The `ICanvas<TPixel>` interface extension (`getRawBuffer()`) vs. templated compositor decision needs a brief architecture review to choose an approach before writing the compositor. Both options are documented in ARCHITECTURE.md and PITFALLS.md; the final choice should be made explicit in the phase spec before implementation begins.
+- **Phase 2 (Sprite Rework):** The `C_Sprite` / ECS pipeline canvas type mismatch (`C_Drawable::draw(ICanvas<uint8_t>&)` virtual interface) is a known pre-existing limitation in CONCERNS.md. The phase spec must define the scope boundary: sprite rework targets the Lua scripting path only; the ECS pipeline canvas type gap is explicitly out of scope for v1.4.
 
 ---
 
@@ -174,43 +134,52 @@ The dependency graph dictates a clear 4-phase structure. Palette must precede th
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | SDL3 3.4.2 confirmed stable via official SDL wiki and Phoronix coverage; all integration points verified against live codebase headers and CMakeLists.txt; macOS CMake bug confirmed against vcpkg issue tracker |
-| Features | HIGH | PICO-8/TIC-80 as authoritative reference implementations for palette and input semantics; all Lua API extension points confirmed by direct inspection of `bindings.hpp` and `lua_platform.hpp` |
-| Architecture | HIGH | Based entirely on direct inspection of existing codebase; no inference or approximation required; file locations, interface designs, and build order all grounded in current code |
-| Pitfalls | HIGH | Mix of direct codebase analysis (existing packed-storage constraints, VCV_RACK define patterns) and verified SDL2/SDL3 issue tracker references; specific warning signs documented for each pitfall |
+| Stack | HIGH | All four features use existing dependencies; no external source lookup required; verified against current codebase headers and build files |
+| Features | HIGH | Code-verified; all claims grounded in direct src/ and include/ inspection; exact API shapes confirmed against live code |
+| Architecture | HIGH | Based on direct codebase inspection of all relevant source files; integration points enumerated with file-level precision |
+| Pitfalls | HIGH | Sourced from live code analysis: dangling-pointer bug confirmed in lua_engine.cpp, SRAM budget computed from actual BUFFER_SIZE constant, transparency sentinel from palette.hpp |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **SDL3 vs SDL2 naming inconsistency:** FEATURES.md was written referencing SDL2; STACK.md correctly specifies SDL3. Roadmap must adopt SDL3 and `ENJIN2_PLATFORM_SDL` as canonical names throughout. CMake target: `enjin2_sdl` (not `enjin2_sdl2`). Compile define: `ENJIN2_PLATFORM_SDL` (not `SDL2_RUNNER`).
+- **ESP32 PSRAM availability:** The 4-layer memory budget (32 KB for layers + 64 KB Lua pool) fits on SDL3 trivially but requires verification on the specific ESP32-S3 board. The Phase 3 spec should include an `ESP.getFreePsram()` check at startup or a `static_assert` on available memory. If no PSRAM, layer count must be reduced to 2 at compile time via CMake option.
 
-- **Index 15 transparent decision (RESOLVED):** Owner decided index 15 = transparent, indices 0–14 = usable colors. This preserves existing `Colors::BLACK = Pixel4(0)` behavior — no existing scripts need updating. The Tomodachi spec's "15 colors + transparent" maps to indices 0–14 as colors, index 15 as transparent/skip.
+- **`ICanvas<TPixel>` buffer access interface decision:** The compositor can use per-pixel `getPixel()`/`setPixel()` virtual dispatch (65K calls per frame at 128×128 with 4 layers) or a bulk `getRawBuffer()` approach requiring an interface extension. PITFALLS.md recommends the interface extension. The final method signatures should be confirmed in the Phase 3 spec before implementation begins to avoid a mid-phase interface change.
 
-- **WASM palette application ownership:** Whether the palette-to-RGB conversion happens in C++ (`emscripten_bindings.cpp`) or in the JavaScript caller is not fully specified. Must be decided in Phase 1 before the Emscripten binding change is written. Recommendation: expose raw palette data via `getPaletteRGB()` and apply in JavaScript, keeping the C++ binding thin.
+- **ECS canvas type mismatch (deferred, not fixed):** `C_Drawable::draw(ICanvas<uint8_t>&)` is the existing ECS virtual interface; Canvas4 is `ICanvas<Pixel4>`. The sprite rework bypasses ECS for the Lua scripting path, but the gap remains for any ECS-driven rendering. This is a known CONCERNS.md item; explicitly out of scope for v1.4 and must be documented as a known limitation in the Phase 2 spec.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Existing codebase — `canvas.hpp`, `canvas_esp32s3.hpp`, `lua_platform.hpp`, `bindings.hpp`, `CMakeLists.txt`, `emscripten_bindings.cpp`, `component.hpp`, `system.hpp` (2026-02-23 direct inspection)
-- `.planning/PROJECT.md` — v1.3 requirements and constraints
-- SDL3 Wiki (wiki.libsdl.org/SDL3) — NewFeatures, README-cmake, SDL_GetKeyboardState, SDL_pixels.h
-- SDL3 Official Release announcement (Phoronix) — confirmed stable January 2025, 3.4.2 current as of Feb 2026
-- PICO-8 Manual (lexaloffle.com/dl/docs/pico-8_manual.html) — two-stage palette system, input API (`btn`, `btnp`), 16-color constraint
+- `src/scripting/lua_engine.cpp` — luaAllocator, memoryPool, registerFunction(LuaCallback) dangling-pointer bug confirmed
+- `src/scripting/bindings.cpp` — g_currentBindings global, registerAll(), existing lua_CFunction pattern
+- `src/platform/sdl/sdl_main.cpp` — expand_canvas_to_rgb(), event loop structure, single-canvas render path
+- `include/enjin2/graphics/canvas.hpp` — Canvas4<W,H> BUFFER_SIZE, ICanvas interface, missing getRawBuffer()
+- `include/enjin2/graphics/sprite.hpp` — ICanvas<uint8_t> draw target, matte=16 out-of-range, legacy _ fields
+- `include/enjin2/graphics/palette.hpp` — PALETTE_TRANSPARENT = 15 convention confirmed
+- `include/enjin2/scripting/lua_platform.hpp` — MEMORY_LIMIT = 64*1024 on ESP32
+- `include/enjin2/scripting/bindings.hpp` — LuaCanvas void* type erasure, is4Bit discriminator
+- `src/bindings/emscripten_bindings.cpp` — getCanvasData128() reads single canvas, WASM layer exposure gap
+- `docs/docusaurus.config.js` — dual-plugin setup, autogenerated sidebar, onBrokenLinks: 'throw'
+- `docs/api-sidebar.js` — autogenerated sidebar type confirmed
+- `scripts/generate-api-docs.js` — escapeForMdx() function verified; inconsistent application confirmed in CanvasExtended.md
+- [SDL3 BestKeyboardPractices — SDL Wiki](https://wiki.libsdl.org/SDL3/BestKeyboardPractices) — F5 scancode pattern, !event.key.repeat guard
+- [SDL3 SDL_KeyboardEvent — SDL Wiki](https://wiki.libsdl.org/SDL3/SDL_KeyboardEvent) — scancode, repeat, key fields
 
 ### Secondary (MEDIUM confidence)
-- SDL2 pixel format endianness (wiki.libsdl.org/SDL2/SDL_PixelFormatEnum) — format selection rationale; applies to SDL3
-- SDL2 streaming textures (lazyfoo.net) — `SDL_TEXTUREACCESS_STREAMING` pattern
-- SDL2 window drag blocking (github.com/libsdl-org/SDL/issues/4614) — dt clamping requirement
-- Fantasy console palette survey (lospec.com/palette-list/tag/fantasyconsole) — 16-color conventions
-- SDL2 game loop patterns (thelinuxcode.com, 2026) — delta time via `SDL_GetPerformanceCounter`
+- [PICO-8 API reference — pico-8.github.io](https://pico-8.github.io/pico8-api/) — spr(n, x, y) API shape, uniform grid sprite numbering (reference design, not dependency)
+- [BEEP-8 SDK — beep8.github.io](https://beep8.github.io/beep8-sdk/) — C++ embedded PICO-8 port, 4-bit VRAM sprite banks (reference design)
+- [Docusaurus v3 MDX migration](https://docusaurus.io/blog/preparing-your-site-for-docusaurus-v3) — angle bracket escaping cause and fix
+- [Docusaurus 3.9.0 changelog](https://docusaurus.io/changelog/3.9.0) — 3.9.2 confirmed current stable
+- ESP-IDF docs — ESP32-S3 512KB SRAM total; WiFi/BT buffers ~100KB; PSRAM availability board-dependent
 
-### Tertiary (LOW confidence, needs verification)
-- vcpkg SDL3-shared macOS bug (github.com/microsoft/vcpkg/issues/45498) — macOS-specific; verify on macOS during Phase 3 CMake work
-- SDL2 indexed texture streaming (discourse.libsdl.org archived forum) — needs verification against SDL3 API surface
+### Tertiary (LOW confidence — validate during implementation)
+- ESP32 PSRAM availability for 4-layer stack — depends on specific board; must be verified at runtime with `ESP.getFreePsram()` before declaring 4-layer buffers
+- Emscripten `-fno-exceptions` + std::function longjmp interaction — documented UB; practical impact depends on actual build flags in CMakeLists.txt `enjin2_wasm` target
 
 ---
-*Research completed: 2026-02-23*
+*Research completed: 2026-02-24*
 *Ready for roadmap: yes*
