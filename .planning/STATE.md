@@ -7,8 +7,8 @@ last_updated: "2026-02-26"
 progress:
   total_phases: 35
   completed_phases: 26
-  total_plans: 59
-  completed_plans: 59
+  total_plans: 60
+  completed_plans: 60
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 28 Plan 01 complete
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 28 complete
 
 ## Current Position
 
 Phase: 28 of 35 (Float DT Migration)
-Plan: 01 complete (1 of 1 plans for this phase)
-Status: Phase 28 complete — float dt migration done
-Last activity: 2026-02-26 — Phase 28-01 complete: migrate uint16_t deltaTime to float dt
+Plan: 02 complete (2 of 2 plans for this phase)
+Status: Phase 28 complete — float dt migration and -Woverride verification done
+Last activity: 2026-02-26 — Phase 28-02 complete: -Woverride compiler flag added to all CMake targets
 
 Progress: [████████████░░░░░░░░] 74% (26/35 phases complete)
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 1 plan (Phase 28-01 — float dt migration)
+- v1.5: 2 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification)
 
 *Updated after each plan completion*
 
@@ -55,6 +55,7 @@ Recent decisions relevant to v1.5:
 - [Phase 28]: float seconds dt replaces uint16_t milliseconds throughout entire update chain
 - [Phase 28]: Lua updateSprite API now expects dt in seconds (accumSec replaces accumMs)
 - [Phase 28]: PostFx uses noisePeriodAccum sub-accumulator instead of integer modulo on float time
+- [Phase 28-02]: -Woverride is Clang-specific; applied via $<CXX_COMPILER_ID:Clang,AppleClang> generator expression — GCC enforces override correctness as a hard compiler error natively
 
 ### Pending Todos
 
@@ -83,5 +84,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Phase 28-01 — float dt migration complete across entire engine
+Stopped at: Completed Phase 28-02 — -Woverride compiler flag added to all CMake targets; clean build verified
 Resume file: None

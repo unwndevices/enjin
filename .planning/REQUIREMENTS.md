@@ -15,7 +15,7 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 - [ ] **DT-01**: `Object::update()`, `Component::update()`, `Scene::update()`, and `SceneStateMachine` pass `float dt` in seconds (not `uint16_t` milliseconds)
 - [ ] **DT-02**: All concrete Component subclasses compile and run with the new `float dt` signature
-- [ ] **DT-03**: `-Woverride` enabled on all platform builds to catch silent override detachment
+- [x] **DT-03**: `-Woverride` enabled on all platform builds to catch silent override detachment
 
 ### Named Objects
 
@@ -120,7 +120,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RENDER-01 | Phase 27 | Pending |
 | DT-01 | Phase 28 | Pending |
 | DT-02 | Phase 28 | Pending |
-| DT-03 | Phase 28 | Pending |
+| DT-03 | Phase 28 | Complete |
 | OBJ-01 | Phase 29 | Pending |
 | OBJ-02 | Phase 29 | Pending |
 | OBJ-03 | Phase 29 | Pending |

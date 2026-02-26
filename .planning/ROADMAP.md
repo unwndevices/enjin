@@ -91,7 +91,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 **Milestone Goal:** Transform enjin2 from a rendering toolkit into a fully scriptable game runtime — C++ foundations (float dt, named objects, scene self-transitions) plus the complete Lua scripting surface (engine.* table, self proxy, input events, error policy, GC control, dependency assertions).
 
 - [ ] **Phase 27: Fix onRender Pixel4 Bug** - Correctness fix: scene-derived onRender fires for Pixel4 canvas
-- [ ] **Phase 28: float dt Migration** - Pervasive signature change: uint16_t ms -> float seconds everywhere
+- [x] **Phase 28: float dt Migration** - Pervasive signature change: uint16_t ms -> float seconds everywhere (completed 2026-02-26)
 - [ ] **Phase 29: Named Objects + Tags** - Object name field and tag array with collection lookup methods
 - [ ] **Phase 30: Scene Self-Transitions** - SceneStateMachine* injection into Scene; deferred self-transition support
 - [ ] **Phase 31: engine.* Global Table** - Complete engine.scene/input/time/lua/log Lua namespace
@@ -121,7 +121,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   2. All concrete component subclasses compile without override warnings under -Woverride on all three platform builds
   3. No / 1000 division patterns remain in the update call chain — delta time is seconds at the source
   4. A component that accumulates dt to a timer (e.g., 1.0f = one second) works correctly without conversion
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 - [ ] 28-01-PLAN.md — Migrate all update signatures to float dt, convert accumulators, remove /1000 divisions
 - [ ] 28-02-PLAN.md — Add -Woverride to CMake targets and verify clean build
 
@@ -235,7 +235,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 | 25. Multi-Layer Canvas Composition | v1.4 | 3/3 | Complete | 2026-02-26 |
 | 26. Lua Hot Reload | v1.4 | 1/1 | Complete | 2026-02-26 |
 | 27. Fix onRender Pixel4 Bug | v1.5 | 0/? | Not started | - |
-| 28. float dt Migration | 1/2 | In Progress|  | - |
+| 28. float dt Migration | 2/2 | Complete   | 2026-02-26 | - |
 | 29. Named Objects + Tags | v1.5 | 0/? | Not started | - |
 | 30. Scene Self-Transitions | v1.5 | 0/? | Not started | - |
 | 31. engine.* Global Table | v1.5 | 0/? | Not started | - |
