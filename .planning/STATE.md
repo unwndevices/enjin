@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 25 of 26 (Multi-Layer Canvas Composition)
-Plan: 1 of 3 in current phase — COMPLETE (Plan 02 next)
-Status: Phase 25 in progress (1/3 plans done); Plans 02 (SDL3 integration) and 03 (Lua bindings) remain
-Last activity: 2026-02-26 - Completed 25-01: LayerCompositor core infrastructure
+Plan: 2 of 3 in current phase — COMPLETE (Plan 03 next)
+Status: Phase 25 in progress (2/3 plans done); Plan 03 (Lua bindings) remains
+Last activity: 2026-02-26 - Completed 25-02: SDL3 LayerCompositor integration
 
 Progress: [████████░░] 80% (Phase 25 plan 1/3 done; 4 phases remaining in v1.4)
 
@@ -24,7 +24,7 @@ Progress: [████████░░] 80% (Phase 25 plan 1/3 done; 4 phases
 - v1.1: 17 plans
 - v1.2: 5 plans
 - v1.3: 7 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01, 22-02)
-- v1.4: 4 plans completed (24-01, 24-02, 24-03, 25-01)
+- v1.4: 5 plans completed (24-01, 24-02, 24-03, 25-01, 25-02)
 
 *Updated after each plan completion*
 
@@ -47,6 +47,7 @@ Recent decisions affecting v1.4 work:
 - [Phase 25-01]: Canvas4::BUFFER_SIZE is private — LayerCompositor uses getBufferSize() in composite() hot loop
 - [Phase 25-01]: DrawLayer enum deleted entirely; uint8_t buffer_index is a direct layer slot number, not a sort key; sort_order also removed
 - [Phase 25-01]: C_Drawable callers use SetBufferIndex(0/1/2/3); shouldDrawBefore() is a single buffer_index comparison
+- [Phase 25-02]: LuaCanvas wrappers are static locals inside main() (no default constructor); default active canvas = layers[0]; clearAll/composite sandwich in frame loop
 
 ### Pending Todos
 
@@ -75,5 +76,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 25-01-PLAN.md — LayerCompositor core infrastructure (layer_compositor.hpp, drawable.hpp, compositor_test)
+Stopped at: Completed 25-02-PLAN.md — SDL3 LayerCompositor integration (sdl_main.cpp)
 Resume file: None
