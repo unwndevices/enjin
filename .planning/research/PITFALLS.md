@@ -1,277 +1,331 @@
 # Pitfalls Research
 
-**Domain:** Adding multi-layer Canvas4 composition, sprite system rework, Lua hot reload, and Docusaurus MDX navigation fix to enjin2
-**Researched:** 2026-02-24
-**Confidence:** HIGH (based on direct codebase analysis of all relevant source files)
+**Domain:** Adding Lua scripting power + C++ engine foundations to enjin2 (v1.5 Lua Scripting Foundation)
+**Researched:** 2026-02-26
+**Confidence:** HIGH (based on direct codebase analysis of all relevant source files, prior project design documents, and cross-platform embedded constraints)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Linear-Bump Allocator Leaks on Hot Reload — luaAllocator Cannot Free Into Gaps
+### Pitfall 1: Dangling Object* in ScriptProxy After Scene Destruction
 
 **What goes wrong:**
-`LuaEngine::luaAllocator` is a linear bump allocator over a static `char memoryPool[MEMORY_LIMIT]`. Allocations advance `memoryUsed` forward; the "free" path only decrements `memoryUsed` by `osize` — there is no ability to reclaim holes left by freed blocks in the middle of the pool. After `lua_close()` followed by a new `lua_newstate()` (the hot-reload sequence), `memoryUsed` is reset to 0 in `initialize()`, which is correct. However, there is a window between `shutdown()` and `initialize()` where `memoryUsed` is 0 but `L` has already been closed. If any pointer into `memoryPool` is held elsewhere (e.g., `LuaBindings` caching a `lua_State*` raw pointer, or a C closure holding a stale `LuaCallback` address), dereferencing it after `shutdown()` causes undefined behavior.
+`ScriptProxy` userdata holds a raw `Object*` pointing into the scene's `ObjectCollection`. When a scene transition occurs, the old scene's objects are destroyed (the `unique_ptr` array in `ObjectCollection` releases them). Any Lua code that captured `self` across a frame boundary — for example, a coroutine, a callback stored in a table, or a delayed event handler — will dereference a freed `Object*` on its next access. The symptom is a hard fault or silent memory corruption on ESP32, and an ASAN/UBSan hit on SDL3 desktop.
 
-A second problem: `registerFunction(const std::string& name, LuaCallback callback)` stores a pointer to `callback` — a local parameter — into the Lua registry via `lua_pushlightuserdata(L, reinterpret_cast<void*>(&callback))`. The local `callback` object is destroyed at function exit. The Lua closure then holds a dangling pointer. This is already a latent bug; hot reload exposes it because the Lua state is recreated and bindings are re-registered, increasing the chance of the dangling-pointer closure being called.
+This is especially treacherous because the hot path (normal script callbacks) is safe — `self` is injected fresh each call from the current scene's live objects. The bug only surfaces when Lua code stores `self` across a lifetime boundary, which is idiomatic Lua (assigning `local obj = self` at module level is common).
 
 **Why it happens:**
-Hot reload feels straightforward: call `shutdown()`, call `initialize()`, re-register bindings, re-load the script. The allocator reset is in `initialize()`, so it appears clean. The dangling-pointer closure bug was not visible in single-load operation because the stale pointer was never called after the LuaEngine object was destroyed (the program exits before that point).
+C++ object ownership is clear at the C++ level but invisible from Lua. Lua programmers cannot see that `self` is a pointer wrapper, not a value. Storing `self` in an upvalue is the natural Lua pattern for objects.
 
 **How to avoid:**
-1. Fix the `LuaCallback` registration before implementing hot reload: store the callback in a stable collection (e.g., `std::vector<LuaCallback>` member of `LuaEngine`) and store a pointer into that collection — not a pointer to a local. Alternatively, use `lua_CFunction` exclusively in bindings (already the dominant pattern in `bindings.cpp`).
-2. For hot reload: after `shutdown()`, immediately null `g_currentBindings` and any cached `lua_State*` pointers. The SDL main loop must not call `g_lua.callFunction()` between shutdown and the new initialize completing.
-3. Zero the memory pool in `shutdown()` (not just in `initialize()`) to surface use-after-free as a crash rather than silent corruption.
+- `ScriptProxy` userdata must contain a "generation" token alongside `Object*`. Implement a `generation_id` counter on `ObjectCollection` (or Scene). When a scene is destroyed, increment the generation. Every `ScriptProxy` stores the generation it was created in. On `__index`/`__newindex`, compare the stored generation against the current collection generation — if they differ, the proxy is stale; return nil or raise a Lua error instead of dereferencing.
+- Alternatively, use a boolean `valid` flag on the proxy and explicitly invalidate all live proxies when the scene deactivates. The scene would need to maintain a list of issued proxies.
+- Document clearly: `self` must not be stored across frame callbacks. The proxy is valid only for the duration of the callback that received it.
+- Emit a clear Lua error (not a C++ crash) on stale access: `"error: self is no longer valid (object was destroyed)"`.
 
 **Warning signs:**
-- `registerFunction` overload taking `LuaCallback` (std::function) is used in hot-reload path
-- Any code that caches `engine->getState()` across a shutdown/initialize cycle
-- `g_currentBindings` not set to nullptr before `g_lua.shutdown()`
-- Hot reload triggered mid-frame (between `callFunction("update")` and `callFunction("draw")`)
+- `ScriptProxy` stores `Object*` with no validity check
+- No generation/epoch counter on `ObjectCollection` or `Scene`
+- Lua scripts that use `local my_self = self` at module scope (top of script, outside any function)
+- Scene transition triggered while a stored proxy is still referenced
 
 **Phase to address:**
-Lua hot reload phase — fix the dangling-callback bug as step one before wiring F5 reload.
+Self proxy implementation phase — validity check must be part of the initial proxy design, not added retroactively.
 
 ---
 
-### Pitfall 2: Four Canvas4<128,128> Buffers Simultaneously Allocated Exceed ESP32 SRAM
+### Pitfall 2: Pervasive float dt Signature Change — Missed Call Sites Produce Silent Wrong Behavior
 
 **What goes wrong:**
-`Canvas4<128, 128>` has `BUFFER_SIZE = (128 * 128) / 2 = 8192` bytes. Four independent Canvas4 buffers for a 4-layer compositor consume `4 * 8192 = 32,768 bytes` of SRAM as static globals. The ESP32-S3 has 512 KB of SRAM total, but a significant portion is consumed by the Arduino/ESP-IDF stack, WiFi/BT buffers, heap overhead, and the existing Lua pool (64 KB configured in `LuaPlatformConfig::MEMORY_LIMIT`). The existing RGB staging buffer in `sdl_main.cpp` is `128 * 128 * 3 = 49,152 bytes`. Adding four canvas layers on top of the Lua pool, RGB staging, and system overhead likely causes heap exhaustion or stack overflow on ESP32.
+Changing `update(uint16_t deltaTime)` to `update(float dt)` touches every virtual override site across Object, Component, all Component subclasses (animation.hpp, sprite.hpp, canvas.hpp, satellite.hpp, planet.hpp, probe.hpp, effects/postfx.hpp, image_cache.hpp, lua_script.hpp), Scene, ObjectCollection, and SceneStateMachine. Missing a single override produces silent behavioral corruption: the old `uint16_t` override no longer matches the new virtual signature, so the override silently becomes a new (non-virtual) method on the derived class. The base class `update(float dt)` is called instead, which does nothing. The derived class behavior disappears with no compile error.
 
-The compositing step also needs a scratch buffer: blitting four layers into a final output requires either an additional full-canvas scratch or doing the composite in-place, which is not possible without careful ordering. If a scratch buffer is added, the total rises to `5 * 8192 = 40,960 bytes` for canvases alone.
+This is the worst kind of C++ mistake: it compiles cleanly with no warning unless `-Wshadow` or `-Woverride` is enabled, and the failure mode is "feature stops working" not "crash."
 
 **Why it happens:**
-The SDL3 desktop runner has gigabytes of memory — four canvas buffers are imperceptible. Developers test on SDL3, the compositor works perfectly, and the ESP32 impact is not considered until hardware integration.
+C++ does not require `override` keyword. Every existing component that does not use `override` (or uses it on the old `uint16_t` signature) will silently detach from the virtual chain when the base class signature changes. ESP32-IDF toolchains often compile without `-Wall -Wextra` by default.
 
 **How to avoid:**
-- Declare the 4-layer static buffer array in a platform-aware section (`DRAM_ATTR` on ESP32, or in external PSRAM via `EXT_RAM_BSS_ATTR` if the ESP32-S3 board has PSRAM).
-- Do not allocate all 4 layers unconditionally. Allow the layer count to be a compile-time template parameter or a CMake option: desktop can default to 4, ESP32 can use 2 or fewer.
-- Compute the SRAM budget before writing the layer code: `4 * 8192 (layers) + 64*1024 (Lua) + existing system overhead` and verify it fits.
-- The RGB staging buffer in `sdl_main.cpp` (49 KB) is SDL3-only and not present on ESP32, which helps.
+- Add `-Woverride` (or equivalent) to all three platform builds (SDL3, WASM Emscripten, ESP32-IDF) before beginning the signature change. This makes detached overrides a compile error.
+- Change the base class first. Then compile. Every file that fails to compile is a call site that needs updating. Fix each one individually.
+- Use the full list: `Object::update`, `Object::lateUpdate`, `Component::update`, `Component::lateUpdate`, `Scene::update`, `Scene::onUpdate`, `ObjectCollection::update`, `ObjectCollection::lateUpdate`, `SceneStateMachine::update`, `SceneStateMachine::updateTransition`, and every concrete component subclass.
+- Search for `uint16_t deltaTime` and `uint16_t deltaMs` across all headers and source files; also search for the informal variants `ms`, `msec`, `millis`.
+- After the change, any remaining `/ 1000` or `/ 1000.0f` in game update code is a candidate for removal — flag them as leftover from the old millisecond convention.
 
 **Warning signs:**
-- Layer buffers declared as `static Canvas4<W, H> g_layers[4]` unconditionally in a shared header
-- No `EXT_RAM_BSS_ATTR` or PSRAM annotation on layer arrays for ESP32
-- No compile-time layer count option — hardcoded 4 everywhere
-- ESP32 firmware flashes but crashes at boot (stack overflow symptom) or throws `abort() was called` (heap exhaustion)
+- A component's animation or movement stops working after the signature change
+- Builds pass clean but runtime behavior changes — specific feature stops updating
+- Any `update()` method without `override` keyword
+- `deltaTime` parameter names still present in any override (naming convention helps catch stragglers)
 
 **Phase to address:**
-Multi-layer design phase — compute memory budget and define the compile-time layer count constant before writing any compositing code.
+Float dt migration phase — must be a complete, all-at-once change with `-Woverride` enabled. Do not do it incrementally.
 
 ---
 
-### Pitfall 3: Layer System Cannot Use Polymorphism to Hold Canvas4<W,H> — Template Mismatch
+### Pitfall 3: std::string name on Object Violates Zero-Alloc Constraint
 
 **What goes wrong:**
-`Canvas4<W, H>` is a template class. A layer compositor needs to hold multiple canvas instances and iterate over them. The natural C++ approach is a base class pointer array: `ICanvas<Pixel4>* layers[4]`. This works because `Canvas4<W, H>` inherits `ICanvas<Pixel4>`. However, the compositor's compositing function needs access to `getBuffer()` for bulk operations (not just `getPixel()`), and `getBuffer()` is not part of `ICanvas<Pixel4>` — it is defined only on the concrete `Canvas4<W, H>` template.
+Adding `std::string name` to `Object` introduces a heap allocation on every object creation. The heap allocation comes from `std::string`'s SSO (small string optimization) which avoids allocation for strings under ~15 characters, but the exact threshold is implementation-defined and differs between GCC libstdc++ (desktop), Emscripten libc++ (WASM), and ESP32-IDF's xtensa-gcc libstdc++. A name like `"enemy_01"` (8 chars) fits in SSO on desktop. A name like `"enemy_spawner_grid_tile_17"` (25 chars) allocates on the heap — including the ESP32 global heap, not the Lua pool, which is untracked by the custom Lua allocator. This silently breaks the "zero dynamic allocation" invariant.
 
-If the compositor is written to use only the `ICanvas<Pixel4>` interface, compositing devolves to per-pixel `getPixel()`/`setPixel()` calls — `128 * 128 * 4 = 65,536` calls per frame just for compositing. At 30 Hz that is nearly 2 million virtual dispatch calls per second, which is measurable overhead on both ESP32 and WASM.
-
-If the compositor downcast to `Canvas4<128, 128>*` to access `getBuffer()`, it is hardcoded to a single canvas size, defeating the template design.
+Additionally, `std::string` in `ObjectCollection::findByName()` creates temporary strings for comparison, and if name lookup is O(n) linear scan, it runs every frame in scripts that call `engine.scene.find()` repeatedly.
 
 **Why it happens:**
-The `ICanvas<Pixel4>` interface was designed for drawing operations, not bulk buffer access. Adding buffer access to the interface would require a non-template return type (e.g., `const uint8_t*` plus a size accessor), which is a design change to an already-stable interface.
+`std::string` is the natural C++ string type. On desktop it works perfectly. The embedded constraint is invisible in normal C++ development. ESP32-IDF does support dynamic allocation (it has a heap) but enjin2's design goal is to avoid it for object management.
 
 **How to avoid:**
-Add `virtual const uint8_t* getRawBuffer() const = 0` and `virtual size_t getRawBufferSize() const = 0` to `ICanvas<TPixel>` (or to a separate `IBufferCanvas` intermediate interface). Both `Canvas4` and `Canvas8` implement these. The compositor uses `getRawBuffer()` for fast `memcpy`-based blending. This avoids per-pixel virtual dispatch while keeping the interface polymorphic. Alternatively, make the compositor itself a template on `<uint16_t W, uint16_t H>` — all canvases are the same size, so template instantiation is exact and no downcast is needed.
+- Use `char name[32]` (or a compile-time constant `MAX_NAME_LEN`) as a fixed-size array on `Object`. `std::strncpy` for assignment. `std::strcmp` for lookup. Zero allocation, deterministic size, works on all three platforms.
+- For `ObjectCollection` name lookup: store a separate `const char* nameIndex[MAX_OBJECTS]` parallel array pointing into each `Object::name` buffer. Linear scan is O(n) but MAX_OBJECTS is 128 — that is 128 `strcmp` calls, acceptable even on ESP32 for a non-hot-path operation. If O(1) is needed, use a fixed-size hash map with open addressing (no `std::unordered_map`).
+- Tag arrays follow the same rule: `std::array<const char*, 8>` of string literals (pointers to compile-time strings), not `std::string` tags.
+- If `std::string` is used only on desktop (via `#ifdef`) and `char[]` on embedded, this adds complexity. Prefer the `char[]` approach uniformly — it works everywhere and is simpler to reason about.
 
 **Warning signs:**
-- Compositor iterates `getPixel()`/`setPixel()` across all layers (per-pixel dispatch on WASM/ESP32)
-- Compositor stores `ICanvas<Pixel4>*` but calls `static_cast<Canvas4<128,128>*>` to get buffer
-- No bulk buffer access in `ICanvas<TPixel>` or `Canvas4`
-- Compositor templated on a specific size `<128, 128>` hard-coded in the compositor header
+- `std::string name` as a field on `Object` or `ObjectCollection`
+- `std::unordered_map<std::string, Object*>` in `ObjectCollection`
+- `Engine::findByName(std::string)` taking `std::string` by value (creates a copy)
+- ESP32 build shows heap fragmentation or `malloc` failures that did not exist before the named-object phase
 
 **Phase to address:**
-Multi-layer design phase — decide the interface extension before writing the compositor.
+Named objects phase — decide the string representation before writing any name registration code.
 
 ---
 
-### Pitfall 4: Sprite Rework Breaks All Existing Code Using Old Sprite API
+### Pitfall 4: engine.* Table Registration Must Complete Before Any Script Loads
 
 **What goes wrong:**
-The existing `Sprite` class (in `include/enjin2/graphics/sprite.hpp`) uses `ICanvas<uint8_t>` (8-bit canvas) as its draw target, not `ICanvas<Pixel4>` (4-bit canvas). The current `Canvas4` is a 4-bit canvas. The existing `Sprite::draw()` method calls `canvas.setPixel(x, y, pixel)` where `pixel` is a `uint8_t` value from the sprite data. On `ICanvas<Pixel4>`, `setPixel` requires a `Pixel4`, not a `uint8_t`. This is a type mismatch that will cause compile errors the moment any reworked sprite tries to draw to the main Canvas4 framebuffer.
+If the `engine` global table (with sub-tables `engine.scene`, `engine.input`, `engine.time`, `engine.lua`, `engine.log`) is registered after `lua.loadScript()`, any script that accesses `engine.*` at module level (outside any function body) will see `nil` for `engine` and throw a Lua error: `attempt to index a nil value (global 'engine')`. This is a sequencing bug — the script is loaded and executed top-to-bottom during `loadScript()`; any top-level code runs at that point.
 
-Separately, the existing `Sprite` has both private and public versions of all its member fields (`width`/`_width`, `height`/`_height`, etc.) — clear evidence of an incomplete migration from a legacy API. Any code that accessed `sprite._width` directly will silently stop working if the rework removes the legacy `_` prefixed members.
+In the current `performReload()` sequence in `sdl_main.cpp`: `initialize()` → `setLayers()` → `setInput()` → `loadScript()`. The engine table registration happens inside `LuaBindings::registerAll()`, which is called by `initialize()`. If `registerAll()` is restructured or if the `engine.*` sub-tables are added in a separate registration step that happens after `loadScript()`, this silently breaks.
+
+The F5 hot-reload path follows the same sequence. An error in the engine table registration (not exposed if the table was not present before) will cause every reload to fail with a confusing "nil" error in user scripts.
 
 **Why it happens:**
-The sprite was carried over from enjin1 compatibility headers and never fully adapted to the 4-bit pipeline. The `uint8_t` canvas interface works for 8-bit greyscale (256 levels) but not for the 4-bit indexed pipeline (16 palette entries). The sprite's `matte` field defaults to 16, which is outside the 0–15 valid range for Pixel4 — the transparency convention is already inconsistent.
+The `engine.*` table is new infrastructure. Developers add it to `LuaBindings::registerAll()` but may add it at the end of `registerAll()`, after existing function registrations. The problem only appears with scripts that use `engine.*` at module level. Scripts that only use `engine.*` inside `update()` or `draw()` will not expose the bug.
 
 **How to avoid:**
-- Define the new `Sprite` API to target `ICanvas<Pixel4>` explicitly, using `Pixel4` pixel values (0–15) and `PALETTE_TRANSPARENT` (15) as the transparency sentinel — consistent with the established convention.
-- Remove the legacy `_`-prefixed public members in the rework. Do a codebase grep for `_width`, `_height`, `_frame`, `_position`, `_matte`, `_mode` before removing them to catch all callers.
-- The existing `Sprite::draw(ICanvas<uint8_t>& canvas)` signature is a compile-time breakage, not a runtime one — it will fail to compile against Canvas4. Treat this as a hard API break and update all callers at the same time as the rework.
-- `matte` default of `16` must change to `15` (PALETTE_TRANSPARENT).
+- Register the `engine` global table as the absolute first action in `LuaBindings::registerAll()`, before any function or constant registration. Document this with a comment.
+- Use `lua_createtable` + `lua_setglobal` for the top-level `engine` table, then use `lua_getglobal(L, "engine")` / `lua_setfield()` for sub-tables. Ensure all sub-tables exist (even if empty) before the first script load.
+- Add a test script that accesses `engine.time`, `engine.input`, `engine.scene`, `engine.lua`, `engine.log` at module level (not inside any function). If the test script loads without error, the ordering is correct.
+- The `performReload()` function must remain sequenced: initialize → register all (including engine table) → setLayers → setInput → loadScript. Any refactoring that separates registration from initialization must preserve this order.
 
 **Warning signs:**
-- Sprite draw method still accepts `ICanvas<uint8_t>&` after rework
-- `matte` default value is 16 (out-of-range for Pixel4)
-- Legacy `_`-prefixed public fields still present after rework
-- Any code calling `sprite.draw(canvas)` where `canvas` is a `Canvas8` (8-bit) instance — confirms old API dependency
+- Lua error `attempt to index a nil value (global 'engine')` on script load
+- `engine.*` registration added at the bottom of `registerAll()` rather than at the top
+- Scripts that work when `engine.*` is only used inside functions but fail when used at module level
+- `performReload()` calls `loadScript()` before all sub-tables are registered
 
 **Phase to address:**
-Sprite rework phase — this is the primary concern of that phase. Treat it as a clean break.
+engine.* table phase — make sub-table registration the first line of `registerAll()`, tested with a module-level access script before any other engine.* work proceeds.
 
 ---
 
-### Pitfall 5: LuaCanvas Type-Erasure Breaks With Per-Layer Canvas Routing
+### Pitfall 5: update(self, dt) Signature Change Breaks All Existing Lua Scripts
 
 **What goes wrong:**
-`LuaCanvas` is a type-erased wrapper around either `ICanvas<Pixel4>*` or `ICanvas<uint8_t>*`, stored as `void* canvasPtr` with a `bool is4Bit` discriminator. Currently there is one `LuaCanvas` wrapping one `Canvas4<128, 128>` in the SDL3 runner and one per WASM canvas instance.
+The planned design injects `self` as the first parameter to `update`, changing the Lua-visible signature from `update(dt)` to `update(self, dt)`. Every existing Lua script in the repository (reload_test.lua, layer_demo.lua, pikachu_demo.lua, e2e_parity.lua) uses `function update(dt)`. After the change, all existing scripts will silently receive `self` as `dt` and whatever was `dt` as a second ignored argument. `dt` will be a userdata, not a number. Any arithmetic on `dt` (such as animating positions) will throw a Lua runtime error: `attempt to perform arithmetic on a userdata value (local 'dt')`.
 
-With multi-layer composition, Lua scripts need to target specific layers: `setLayer(1)`, draw to it, then `setLayer(0)`. This means `LuaBindings::currentCanvas` must be swappable to point to different `LuaCanvas` instances during a single frame. There is nothing inherently wrong with this — but the existing `LuaCanvas` constructor template `LuaCanvas(Canvas4<W, H>* canvas)` is defined inline in the header; each distinct `<W, H>` instantiation generates a different vtable-free wrapper. If all 4 layers are the same size (they will be — `Canvas4<128, 128>`), there is only one template instantiation, so it works.
-
-However, `LuaCanvas` stores `void*` and casts based on `is4Bit`. If a future layer has a different size (hypothetical), the void-pointer cast is silently wrong — `static_cast<ICanvas<Pixel4>*>(canvasPtr)` with an `ICanvas<Pixel4>` pointing to a `Canvas4<64, 64>` is fine polymorphically, but the void pointer cast loses the concrete type and the virtual dispatch still works. This is safe as long as no raw buffer access is performed through the void pointer.
-
-The real risk is: if the layer API adds a Lua function `getLayerBuffer(n)` for direct buffer access, it must NOT go through the void-pointer path — it must downcast cleanly.
+This is a mandatory breaking change. The question is not "if" but "how to handle it safely."
 
 **Why it happens:**
-The type-erasure via `void*` was a practical shortcut to support both 4-bit and 8-bit canvases without templates in the Lua binding layer. It is fragile by design and the fragility grows as new capabilities (layer routing, direct buffer access) are added.
+This is unavoidable — the new component-style lifecycle requires `self` as the first argument. The existing flat-script style passes only `dt`. These are incompatible conventions.
 
 **How to avoid:**
-- Keep all layer canvases as `Canvas4<128, 128>` (same size). One `LuaCanvas` wrapper per layer, all `is4Bit = true`.
-- For Lua layer switching, maintain a `LuaCanvas* layerCanvases[4]` array in `LuaBindings` and a `currentLayerIndex` integer. `setLayer(n)` sets `currentCanvas = &layerCanvases[n]`.
-- Do not expose raw buffer pointers through `LuaCanvas`. Layer blending is done in C++, not Lua.
+- Accept the break explicitly. Document it. Update all scripts in the repository atomically in the same phase that introduces `self` injection.
+- Consider a transition mechanism: if the engine detects `function update(dt)` (one parameter) vs `function update(self, dt)` (two parameters), it could use `debug.getinfo` to determine arity and adapt the call. However, this adds complexity and the `debug` library may be disabled on ESP32. Prefer explicit migration over detection.
+- After the change, add a comment in `sdl_main.cpp` (or a migration note) explicitly documenting the old and new signatures so future script authors understand why the API uses two parameters.
+- The top-level `update(dt)` / `draw()` in the SDL3 runner (called from the C++ game loop, not from a C_LuaScript component) does NOT get `self` injection — it is a scene-level callback, not a per-component callback. Ensure these two contexts are clearly distinguished.
+- Write the test script for the `self` proxy with the new signature from the start. Never write a test in the old style that will need to be migrated.
 
 **Warning signs:**
-- `LuaCanvas` void pointer cast used to access per-layer buffer data
-- `setLayer()` implemented by replacing `LuaCanvas*` with a freshly allocated (dynamic allocation forbidden) wrapper
-- Any `new LuaCanvas(...)` in the hot path
+- Lua arithmetic error on `dt` after the change (symptom: self received as dt)
+- Any existing script using `function update(dt)` without being updated
+- C++ call site passing `(dt)` instead of `(self_userdata, dt)` — the component callback path and the top-level runner path must be distinguished
+- `draw()` inadvertently receiving `self` as first argument (draw should not receive self unless specifically designed to)
 
 **Phase to address:**
-Multi-layer Lua API phase — design the setLayer/getLayer API before implementing the compositor.
+Self proxy phase — migrate all existing scripts in the same commit that introduces self injection.
 
 ---
 
-### Pitfall 6: Hot Reload Triggers Mid-Frame — draw() and update() Called on Invalid Lua State
+### Pitfall 6: ScriptErrorPolicy and Hot-Reload Error State Interaction
 
 **What goes wrong:**
-The SDL3 game loop in `sdl_main.cpp` calls `g_lua.callFunction("update", dt)` then `g_lua.callFunction("draw")` every frame. Hot reload (F5) is detected as a key event in the event pump, which runs at the start of the frame before update/draw. If F5 triggers `shutdown()` and `initialize()` inline during the event pump, the update and draw calls later in the same frame execute against the freshly initialized (but not yet script-loaded) Lua state — `callFunction("update")` returns "Function not found" because the script has not been loaded yet.
+The current SDL3 runner uses a `lua_ok` boolean flag: if any `callFunction()` returns an error, `lua_ok` is set to `false` and all subsequent update/draw calls are skipped (the engine enters "paused" error state). F5 resets the Lua state and sets `lua_ok` based on whether the script loaded successfully.
 
-Worse: if shutdown/initialize spans the boundary between event pump and the render calls, the sequence becomes: event pump (processes F5, calls shutdown, calls initialize, calls loadScript) → update (succeeds) → draw (succeeds) — which is fine. But if any of these fail and the error path calls `g_canvas.clear(Pixel4(14))` directly, the canvas is cleared without a draw call, producing a single-frame flash of the error color.
+With `ScriptErrorPolicy` added to `C_LuaScript`, there are now two error systems: the global `lua_ok` gate in the runner and the per-component `scriptError` flag in `C_LuaScript`. If they are not coordinated, an error in a component script might be swallowed by the `Disable` policy (component silently disables itself) but the runner's `lua_ok` is also set to `false`, which then prevents ALL components from updating — including components that had no error. Alternatively, if `C_LuaScript` catches errors via its own policy and does not propagate them, the runner's `lua_ok` never learns about errors, masking bugs during development.
+
+A second interaction: F5 hot-reload clears the Lua state (the global state). But `C_LuaScript::scriptError = true` (the per-component flag) may still be set on a component that was NOT reloaded. After F5, the component's error flag should be reset along with the Lua state — but the component is recreated only when the scene reinitializes, which may not happen on every reload.
 
 **Why it happens:**
-SDL3 key events are natural triggers for reload actions. Developers put the reload logic inside the event handling switch, which runs in the middle of frame setup. The frame is not yet "started" from the game loop's perspective, but the canvas and Lua state have already been touched.
+Two independently designed error mechanisms without a defined protocol for how they interact. The global runner mechanism predates the per-component policy.
 
 **How to avoid:**
-Use a `bool g_reload_requested` flag. Set it true on F5 key event. At the top of the next frame (before input advance, before update/draw), check the flag and perform the full reload sequence. This ensures reload happens at a clean frame boundary: event pump → [reload if flagged] → input advance → update → draw → render. Never call `shutdown()` inside the event pump.
+- Define the protocol explicitly: `ScriptErrorPolicy::Disable` affects only the per-component error state, not the global runner state. The runner's `lua_ok` is set to `false` only by panics or Lua state initialization failure — not by per-component script errors.
+- F5 hot-reload performs a full Lua state reset (already implemented). All scenes and components are recreated (or should be) during reload. Ensure `C_LuaScript::scriptError` is reset to `false` in `C_LuaScript`'s constructor, which is called when the component is re-added to the scene during reinitializaiton.
+- `ScriptErrorPolicy::Log` mode should log but not set `lua_ok = false`. `ScriptErrorPolicy::Panic` mode should set `lua_ok = false` and show an error.
+- Document the policy hierarchy in a comment at the point where the policy is evaluated.
 
 **Warning signs:**
-- `g_lua.shutdown()` called directly inside `SDL_EVENT_KEY_DOWN` handler
-- No `reload_requested` flag pattern
-- Error path directly calling `g_canvas.clear()` from within the reload sequence (bypasses Lua draw)
-- Script file path hardcoded — reload always reloads the same file with no mechanism to discover it
+- F5 reload succeeds (Lua state reinitializes) but a component remains visually disabled
+- A single component error stops all other components from updating (over-broad error propagation)
+- `scriptError` flag on `C_LuaScript` is not reset between hot-reloads
+- `lua_ok = false` triggered by a component-level error that should have been swallowed by Disable policy
 
 **Phase to address:**
-Lua hot reload phase — the frame-boundary flag pattern is the first design decision.
+Error policy phase — define the two-level error protocol (global vs per-component) before implementing either.
 
 ---
 
-### Pitfall 7: Docusaurus `type: 'docSidebar'` with `docsPluginId: 'api'` Requires Exact sidebarId Match
+### Pitfall 7: Input Event Callback Ordering — When During the Frame Do on_button_pressed Callbacks Fire?
 
 **What goes wrong:**
-The Docusaurus config declares an API Reference navbar item with `docsPluginId: 'api'` and `sidebarId: 'apiSidebar'`. The `api-sidebar.js` exports `{ apiSidebar: [{ type: 'autogenerated', dirName: '.' }] }`. If any generated markdown file inside `docs/api/` contains unescaped angle brackets (`<` or `>`) in body text — not inside code blocks — the MDX compiler treats them as JSX tags and fails to parse the file. A single broken file causes the entire `autogenerated` sidebar to fail, disabling the "API Reference" nav link for all pages.
+Adding `on_button_pressed(btn)` and `on_button_released(btn)` callback dispatch to the frame loop requires a precise insertion point. The current frame sequence in `sdl_main.cpp` is:
 
-The v1.3 Sprite and Canvas docs already contain C++ template type references in plain text: `ICanvas<TPixel>`, `Canvas4<WIDTH, HEIGHT>`, `ICanvas<uint8_t>`. The Sprite rework and layer addition will introduce more: `LayerCompositor<N>`, `SpriteSheet<W, H, F>`. Each of these will appear in generated API docs as unescaped angle brackets in prose sections.
+1. Event pump (SDL events, F5 detection)
+2. `input_advance_frame()` — clears current, snapshots previous
+3. `input_platform_poll()` — writes new state
+4. `g_compositor.clearAll()` — clears canvases
+5. `setInput(&g_input)` — wires input to Lua bindings
+6. `callFunction("update", dt)` — Lua update
+7. `callFunction("draw")` — Lua draw
+
+If `on_button_pressed` callbacks fire at step 3 (immediately after poll), they run before the canvas is cleared. If they call drawing functions, they draw to the previous frame's canvas. If they fire at step 6 (interleaved with `update`), they modify game state during the update call, creating re-entrancy risk. If they fire after `draw` (step 7), they respond one frame late.
+
+The correct position is between steps 5 and 6: after input is fully polled and wired to Lua, before `update`. This matches the behavior of Defold's `on_input` callback and LOVE2D's `keypressed` callback, both of which fire before `update` in the same frame.
 
 **Why it happens:**
-The Doxygen-to-Markdown generator (`generate-api-docs.js`) processes XML and writes prose text containing C++ template syntax. C++ templates use angle brackets which are valid in HTML (escaped as `&lt;`/`&gt;`) and valid in Markdown code spans, but NOT valid as bare `<` in MDX outside a code block. MDX parses files as JSX, so `ICanvas<TPixel>` looks like an unclosed JSX tag `<TPixel`.
+SDL3 provides key events in the event pump (step 1), not after the poll (step 3). It is tempting to fire `on_button_pressed` in the event pump alongside other SDL event handling. But at that point, `input_advance_frame` has not yet run — the edge detection (justPressed) is stale from the previous frame.
 
 **How to avoid:**
-- In `generate-api-docs.js`, escape all template angle brackets in prose sections: replace `<` with `\<` (MDX escape) or wrap the entire type reference in backticks (code span). Specifically target: parameter descriptions, `@tparam` content, brief descriptions containing type names.
-- Do not place template type references outside of code blocks or inline code spans in handwritten docs.
-- After adding new API files (post-sprite rework, post-layer addition), run `npm run build` in the docs directory to catch MDX parse errors before they reach CI. Add this as a verification step in the phase plan.
-- The `markdown: { format: 'detect' }` config in `docusaurus.config.js` means files are auto-detected as MDX or CommonMark based on content. Files with JSX-like syntax are processed as MDX. Changing this to `format: 'mdx'` explicitly or `format: 'md'` (CommonMark) for the API plugin would eliminate the issue — but changing to CommonMark disables all MDX features in those files, which is acceptable for auto-generated API docs.
+- Fire `on_button_pressed` / `on_button_released` callbacks immediately after `setInput(&g_input)` (step 5) and before `callFunction("update")` (step 6).
+- The detection of which buttons transitioned uses `input_just_pressed()` and `input_just_released()` on the already-advanced-and-polled `InputState` — consistent with how polling functions work.
+- The C++ dispatch is a simple loop over all buttons: if `justPressed(btn)`, call the Lua `on_button_pressed(btn)` global (or per-component callback). This is synchronous, within the same frame, before update.
+- Do NOT attempt to dispatch events from the SDL event pump. The input poll and advance must complete first.
 
 **Warning signs:**
-- API Reference navbar link goes to 404 or blank page after `npm run build`
-- Docusaurus build log contains `MDXError` or `SyntaxError: Unexpected token` for any file in `docs/api/`
-- `generate-api-docs.js` outputs `ICanvas<` or `Canvas4<` without backtick wrapping
-- New template class added to codebase, API regenerated, build not verified before commit
+- `on_button_pressed` callbacks firing with stale edge detection (double-triggering on hold)
+- `on_button_pressed` draws to canvas before `clearAll()` has run (drawing to previous frame's buffer)
+- Callbacks firing after `draw` (one-frame latency in button response)
+- Event dispatch function called from the SDL event pump loop instead of from the main update sequence
 
 **Phase to address:**
-Docusaurus navigation fix phase — this is the root cause of the carried-forward navigation breakage.
+Input events phase — define the exact frame position for callback dispatch in the phase plan before writing any dispatch code.
 
 ---
 
-### Pitfall 8: Compositing Transparent Index 15 Across Layers — Wrong Merge Semantics
+### Pitfall 8: GC Step During Frame Causes Frame Time Spike on ESP32
 
 **What goes wrong:**
-The transparency convention is: index 15 is transparent, indices 0–14 are opaque colors. When compositing 4 layers from bottom to top, the correct rule is: for each pixel position, take the topmost layer that has a non-transparent (non-15) pixel. If all layers have index 15 at position (x,y), the final pixel is transparent (renders as black in SDL3, passes through in WASM).
+Lua's garbage collector can run incrementally or in a full collection cycle. On ESP32 with 64 KB Lua memory pool, a full GC at 60 Hz can consume 1–5 ms depending on live heap size. At 30 Hz (33 ms budget), a 5 ms GC spike is a 15% frame overrun — visible as a dropped frame or jerky animation.
 
-A common implementation mistake is to composite by checking `pixel != 0` (transparent check against black, not against index 15). This causes black pixels drawn intentionally by scripts to be treated as transparent and "punched through" to lower layers, making it impossible to draw solid black in any layer.
+The existing `LuaPlatform::tuneGarbageCollector()` configures GC for the platform. But if `engine.lua.collect()` is exposed to scripts and a script calls `engine.lua.collect()` inside `update()`, the GC runs mid-frame. On ESP32 this will cause the frame deadline to be missed.
 
-A second mistake: clearing a layer with `layer.clear(Pixel4(15))` (correct — marks all pixels transparent) vs. `layer.clear(Pixel4(0))` (incorrect — marks all pixels as color 0/black, which then blocks lower layers). The `Canvas4::clear()` default is `Pixel4(0)`, not `Pixel4(15)`. Layer initialization must use `Pixel4(15)` explicitly.
+Additionally, Lua's automatic GC may trigger during `lua_pcall` (during `callFunction("update")`) at any allocation that crosses the GC threshold. The threshold tuning in `tuneGarbageCollector()` controls this, but the interaction with the custom bump allocator is subtle: the bump allocator does not call the system allocator, so Lua's "memory used" tracking may not trigger GC at the expected time if the pool exhaustion behavior differs from the standard allocator's behavior.
 
 **Why it happens:**
-`Pixel4(0)` looks like "zero/empty/transparent" intuitively. The `Canvas4::clear()` default reinforces this by clearing to `Pixel4(0)`. Developers who don't internalize the transparency convention assume 0 is transparent, which contradicts `PALETTE_TRANSPARENT = 15`.
+GC timing is invisible in SDL3 desktop builds — 5 ms is imperceptible at modern clock speeds. The embedded constraint is only visible on target hardware.
 
 **How to avoid:**
-- The layer compositor's `clearLayer(n)` function must default to `Pixel4(PALETTE_TRANSPARENT)`, not `Pixel4(0)`.
-- The compositing loop: `if (pixel.value != PALETTE_TRANSPARENT) { result = pixel; break; }` — explicitly use the named constant, never magic 0.
-- In Lua, the `setLayer(n)` API should auto-clear the layer to transparent on activation (or document that users must call `clear(15)` themselves at the top of each draw call).
-- Add a named Lua constant `TRANSPARENT = 15` so script authors do not use magic numbers.
+- `engine.lua.collect()` is a valid API but must be documented as "call on scene transitions, not during update or draw." Include a comment in the binding implementation.
+- `engine.lua.collect()` should call `lua_gc(L, LUA_GCSTEP, n)` (incremental step), not `lua_gc(L, LUA_GCCOLLECT, 0)` (full collection). Let scripts request a step, not a full GC.
+- A separate `engine.lua.full_collect()` (or just document that passing a large step count triggers a full cycle) can be used on scene transitions where a frame drop is acceptable.
+- Tune the GC in `tuneGarbageCollector()` for the platform: on ESP32, raise the GC step multiplier to reduce automatic collection frequency. On desktop, lower it for more aggressive incremental GC during development.
+- Add a frame-time measurement in the SDL3 debug runner that logs when a frame exceeds the budget. This surfaces GC spikes during development.
 
 **Warning signs:**
-- Compositor checks `pixel.value != 0` for transparency
-- Layer clear called with default `Pixel4(0)` instead of `Pixel4(15)`
-- No `TRANSPARENT` constant in Lua bindings
-- Black pixels "bleed through" from upper to lower layers in test scripts
+- Scripts calling `engine.lua.collect()` inside `update()` or `draw()`
+- Frame time spikes of 1–5 ms that are not caused by drawing operations
+- `lua_gc(L, LUA_GCCOLLECT, 0)` (full collect) called from a per-frame code path
+- `tuneGarbageCollector()` on ESP32 using the same settings as desktop
 
 **Phase to address:**
-Multi-layer compositor implementation — transparency semantics defined in the compositor spec before writing the blend loop.
+GC control phase — document the safe call sites for `engine.lua.collect()` in the API comment before exposing the binding.
 
 ---
 
-### Pitfall 9: SDL3 Texture Update Pitch Mismatch With Multi-Layer Composite
+### Pitfall 9: float dt on ESP32 — Soft-Float Overhead on ESP32 Without FPU
 
 **What goes wrong:**
-`sdl_main.cpp` calls `SDL_UpdateTexture(texture, nullptr, g_rgb_staging, CANVAS_W * 3)` where the pitch is `CANVAS_W * 3` (3 bytes per RGB24 pixel, no padding). This is correct for a single canvas. After adding multi-layer compositing, the composite step writes the final merged pixel data into `g_rgb_staging` (or a new composite buffer), then calls `SDL_UpdateTexture`. If the composite step produces a buffer with different padding or alignment (e.g., 4-byte aligned rows for SIMD), the pitch argument must be updated to match.
+Some ESP32 variants (original ESP32, ESP32-C3 RISC-V) do not have a hardware FPU. Changing `uint16_t deltaTime` to `float dt` means every `update(float dt)` call now involves floating-point arithmetic on a platform that handles floats in software. Each software-float operation is approximately 10–20 CPU cycles instead of 1–2 cycles for integer operations. On an object-heavy scene with 128 objects each with multiple components, the cumulative float overhead across all `update()` calls can consume a measurable fraction of the frame budget.
 
-A subtler issue: the existing `expand_canvas_to_rgb()` function reads from a single `g_canvas`. After compositing, there is no longer a single authoritative canvas — the compositor produces the final pixel data. If the composite is not integrated into `expand_canvas_to_rgb()`, the function still reads only `g_canvas` (layer 0), ignoring layers 1–3. This is a silent correctness error: the SDL3 window renders only layer 0.
+The ESP32-S3 (the Tomodachi target) DOES have a hardware FPU (Xtensa LX7 with single-precision FPU). So for the primary target, this is not a problem. But the code must run on the base ESP32 as well (per the project constraints), and position updates of the form `x += speed * dt` on the base ESP32 will use soft-float.
 
 **Why it happens:**
-`expand_canvas_to_rgb()` and the SDL update call are in `sdl_main.cpp` and feel like "render plumbing" that is separate from the graphics feature. Developers add the compositor to the graphics module but forget to update the SDL runner's render path to use the composite output.
+Desktop-first development never reveals soft-float overhead. The developer changes `uint16_t` to `float`, everything works correctly at full speed on SDL3, and the ESP32 performance regression is only discovered on device.
 
 **How to avoid:**
-- Replace `expand_canvas_to_rgb()` with a `composite_and_expand_to_rgb()` function that iterates layers top-to-bottom and writes the winning pixel (non-transparent, topmost layer) into `g_rgb_staging`.
-- This function is called from the SDL3 runner's render step instead of the old single-canvas expansion.
-- On WASM: `getCanvasData128()` in `emscripten_bindings.cpp` similarly exposes only a single canvas buffer. After layer composition, the WASM binding must expose the composited output, not the raw layer-0 buffer.
-- Pitch: keep RGB24 (3 bytes per pixel, no padding) — do not change the texture format. This avoids re-examining the pitch arithmetic.
+- For the Tomodachi primary target (ESP32-S3), the hardware FPU makes `float dt` cost-equivalent to integer operations. Proceed with float dt.
+- For base ESP32 compatibility: prefer `float` over `double` everywhere — the soft-float library on Xtensa has hardware acceleration only for single-precision on newer variants. `double` operations are always fully soft-float and twice as slow.
+- Avoid `float` in hot tight loops (per-pixel drawing). The `update()` method is called once per object per frame — the overhead is proportional to object count, not pixel count. At 128 objects, this is 128 float multiplications, which is acceptable.
+- If ESP32 base performance is a concern, provide a compile-time `ENJIN2_DT_TYPE` option: `float` (default) or `uint16_t` (legacy). This is an escape hatch, not the primary path.
+- Measure. Do not optimize speculatively. Establish a frame-time baseline on target hardware before and after the change.
 
 **Warning signs:**
-- `expand_canvas_to_rgb()` not modified when layer compositor added
-- SDL3 window shows only layer 0 content regardless of what other layers contain
-- WASM `getCanvasData128()` still reads `g_canvas` (single buffer) after layer system added
-- Any SIMD or alignment optimization in the composite step that changes row stride
+- `double dt` used anywhere in the update chain (use `float` exclusively)
+- Per-pixel loops using `float` arithmetic (drawing should remain integer-indexed)
+- Frame budget overruns on base ESP32 that did not exist before the float dt change
+- `update(double dt)` signatures (Lua's `lua_Number` is `double`; the C++ → Lua bridge should cast to `float` explicitly)
 
 **Phase to address:**
-Multi-layer compositor integration phase — update SDL3 renderer and WASM bindings in the same phase as the compositor.
+Float dt migration phase — add a note to the phase plan to measure frame timing on ESP32 target before and after if the platform is available.
 
 ---
 
-### Pitfall 10: Emscripten Cannot Compile std::function Closures in Some Configurations
+### Pitfall 10: Component Dependency Assertions in Release/Embedded Builds
 
 **What goes wrong:**
-`LuaEngine::registerFunction(const std::string& name, LuaCallback callback)` stores a `std::function<int(lua_State*)>` as an upvalue via `lua_pushlightuserdata`. Emscripten (WASM target) has restrictions on C++ exception handling, `longjmp`, and some stdlib features when compiled without `-fexceptions`. Lua's error handling uses `longjmp` internally, and wrapping a Lua call inside a `std::function` creates a C++ object on the call stack that may have non-trivial destructor calls in the unwind path.
+The planned `requires<T>()` assertion on `Component::awake()` is designed to fail loudly at construction time when a dependency (e.g., `C_Position`) is missing. In debug builds, this is a `static_assert` or `assert()` that terminates the program with a useful message.
 
-More concretely: if the Emscripten build uses `-fno-exceptions` (common for size optimization), and Lua errors propagate via `longjmp` through a stack frame that contains a `std::function` (which has a destructor), the destructor is not called — this is technically undefined behavior in C++, though Emscripten/LLVM may handle it without visible failure. However, it means the `std::function` memory tracking (reference counting inside `shared_ptr`-based std::function implementations) is skipped, potentially leaking the closure allocation.
+On embedded release builds (ESP32 production firmware), assertions are typically compiled out (`-DNDEBUG`). A missing dependency then becomes the same silent runtime crash that `requires<T>()` was supposed to prevent — the crash just happens later, in `draw()`, with no context.
+
+Furthermore, if `requires<T>()` uses `assert()` and the assertion triggers on ESP32, `abort()` is called. On ESP32, `abort()` by default triggers a watchdog reset — the device reboots silently without any log output unless the serial port is attached. From the user's perspective, the device "crashed" with no information.
 
 **Why it happens:**
-The `LuaCallback` typedef exists for flexibility. The SDL3 runner works fine (native C++ with exceptions). The WASM build has different compiler flags. The divergence is not visible until the WASM build is actually exercised with Lua callbacks registered via the `std::function` overload.
+Debug-vs-release assertion behavior is a known C++ issue. The embedded release build strips assertions for code size and speed. The consequence of a silent missing dependency is a hard-to-debug runtime crash.
 
 **How to avoid:**
-- Avoid the `LuaCallback` (std::function) overload of `registerFunction` in any code that runs on WASM. The `lua_CFunction` (plain C function pointer) overload has no RAII concerns and is safe across all platforms.
-- All bindings in `bindings.cpp` already use `lua_CFunction` via `engine->registerFunction("name", lua_staticFunc)`. Keep this pattern; do not introduce `LuaCallback`-registered functions in the layer or sprite Lua APIs.
-- Mark the `LuaCallback` overload of `registerFunction` as `SDL3-only` in a comment to prevent future use on embedded/WASM targets.
+- Implement `requires<T>()` as a two-mode function: in debug builds, `assert(owner->getComponent<T>() != nullptr)` with a log message. In release builds, fall back to graceful disable: if the dependency is absent, log once (via the platform log channel) and call `this->setEnabled(false)`. The component does nothing, which is better than crashing.
+- Use a platform-appropriate log channel. On ESP32, `ESP_LOGE(TAG, "...")` writes to serial (if available). On desktop, `std::cerr`. On WASM, `printf` (visible in browser console).
+- Do not use `std::string` in the assertion message for embedded builds — use string literals and `typeid(T).name()` (if RTTI is available) or a manually provided `static constexpr const char* TYPE_NAME = "C_Position"` in each component.
+- Mark `requires<T>()` failures as non-fatal in release: log + disable, not crash. A disabled but non-crashing component is always safer than a watchdog reset.
 
 **Warning signs:**
-- New Lua bindings (layer API, sprite API) registered via `registerFunction(name, [capture lambda])` syntax
-- WASM build using `-fno-exceptions` (check `CMakeLists.txt` `enjin2_wasm` target flags)
-- Any lambda with captures registered as a Lua callback
+- `assert()` inside `requires<T>()` without a release-mode fallback
+- `std::string` concatenation in the assertion message (heap allocation in embedded context)
+- `abort()` reachable from component initialization on ESP32 release builds
+- Missing dependency silently produces no log output in a production build (assertions stripped, no fallback behavior)
 
 **Phase to address:**
-Multi-layer Lua API phase and sprite Lua API phase — establish convention to use lua_CFunction only.
+Component dependency assertions phase — define the debug vs release behavior explicitly in the implementation plan.
+
+---
+
+### Pitfall 11: Scene Self-Transition via SceneStateMachine Pointer — Circular Destruction Order
+
+**What goes wrong:**
+The planned design injects a non-owning `SceneStateMachine*` into each `Scene` at activation: `scene->activate(stateMachine)`. A scene can then call `stateMachine->changeScene(OTHER_ID)` during `onUpdate()`.
+
+The destruction order issue: if a scene calls `stateMachine->changeScene(SAME_SCENE_ID)` (a self-transition), `changeScene()` calls `currentScene->deactivate()` and then `currentScene->activate()` on the same object. If `activate()` calls `onCreate()` which re-creates objects via `objects.addObject<T>()` — but `initialized = true` (set in the first activation) prevents `initialize()` from running again. The result is objects added in `onCreate()` are not initialized on subsequent activations. `Scene::initialize()` has an `if (initialized) return;` early exit.
+
+A second issue: `changeScene()` deactivates the old scene. During deactivation, the scene's destructor or `onDeactivate()` runs. If the C++ destructor of a scene-owned object calls back into the `SceneStateMachine` (e.g., via a signal callback registered against the state machine), the state machine is partially through a transition and the re-entrant call corrupts its state.
+
+**Why it happens:**
+The `Scene::initialize()` idempotency guard is correct for the existing use case (a scene is initialized once, activated/deactivated multiple times). But it conflicts with the re-initialization needed for self-transitions. The re-entrant destruction is a signal-safety issue common to event-driven systems.
+
+**How to avoid:**
+- For self-transitions, `changeScene()` should detect `targetScene == currentScene` and perform a reset path: call `deactivate()`, then `reset()` (a new method that sets `initialized = false`), then `initialize()`, then `activate()`. This is distinct from a normal scene transition.
+- Or: explicitly document that `engine.scene.switch(id)` with the current scene's ID is a full reset. Implement it.
+- For re-entrancy: `changeScene()` should set a `transition_pending` flag rather than executing the transition inline. Actual transitions execute at the top of the next `SceneStateMachine::update()` call, not during a nested callback. This is the deferred-transition pattern used by Defold.
+- The `SceneStateMachine*` injected into scenes should be a stable, non-owning pointer valid for the entire program lifetime. Do not inject the pointer at activation and revoke it at deactivation — the pointer must remain valid even during deactivation callbacks.
+
+**Warning signs:**
+- Self-transition causes scene objects to appear with no `awake()`/`start()` called
+- Re-entrant `changeScene()` call during a scene's `onDeactivate()` or destructor
+- `transition_pending` not implemented — transitions execute inline during callbacks
+- `initialized` flag not reset on self-transition
+
+**Phase to address:**
+Scene self-transitions phase — decide deferred-vs-immediate transition semantics before implementing `changeScene()` injection.
 
 ---
 
@@ -281,13 +335,14 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Hardcode 4 layers as `Canvas4 g_layers[4]` unconditionally | Simple, works on SDL3 | Exceeds ESP32 SRAM; compile-time constant cannot be tuned per-platform | Never for unconditional declaration; use `#ifdef` or CMake option |
-| Per-pixel `getPixel()`/`setPixel()` compositing | Correct, simple code | 65K virtual calls per composite on WASM/ESP32 at 128x128 | Never for the main compositor; only acceptable for debugging |
-| Clear layers with `Pixel4(0)` instead of `Pixel4(PALETTE_TRANSPARENT)` | Matches existing clear() default | Black pixels punch through layers; transparency semantics broken | Never |
-| Keep old `Sprite` API alongside new API with deprecation shims | No breaking change | Two parallel APIs diverge; shims rot; cognitive overhead doubles | Only if existing Sprite users cannot be migrated in the same milestone |
-| Trigger hot reload inside SDL event handler (not at frame boundary) | Faster perceived response | Partial-frame Lua state: update called on fresh unloaded Lua | Never |
-| Use `LuaCallback` (std::function) for new Lua binding registrations | Closures with captures | Dangling-pointer bug on reload; WASM/ESP32 exception interaction | Never for production bindings; only for one-off desktop-only tools |
-| Skip `npm run build` after regenerating API docs | Faster iteration | MDX parse errors silently break entire API sidebar on GitHub Pages | Never before milestone completion |
+| `std::string name` on Object | Works on desktop, no API work | Heap allocation on every object; breaks zero-alloc invariant on ESP32 | Never — use `char name[MAX_NAME_LEN]` |
+| ScriptProxy with no validity check | Simple to implement | Use-after-free on scene transition; hard fault on ESP32 | Never — generation check is mandatory |
+| `engine.*` sub-tables registered after loadScript | Shorter initialization sequence | Scripts that access engine.* at module level fail with nil error | Never — engine table must precede script load |
+| `update(self, dt)` change without migrating existing scripts | Avoid migration work | All existing scripts silently receive wrong argument types | Never — migrate all scripts atomically |
+| `assert()` only for requires<T>() with no release fallback | Simpler implementation | Silent crash on ESP32 production builds | Never — always provide a release-mode graceful disable path |
+| GC full collect inside update() | Deterministic memory reclaim | 5 ms frame spike on ESP32 at 64 KB pool size | Never during update/draw; only on scene transitions |
+| `double dt` in update signature | Matches Lua's lua_Number type | Double soft-float on ESP32 without FPU; twice the cost of float | Never — use float uniformly; cast at Lua boundary |
+| Deferred input event dispatch (fire on next frame) | Avoids race condition | 1-frame input latency — noticeable on fast-response interactions | Never — dispatch before update in the same frame |
 
 ---
 
@@ -297,29 +352,30 @@ Common mistakes when connecting the new features to the existing system.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Layer compositor + SDL3 renderer | Forget to update `expand_canvas_to_rgb()` to read composite output | Replace expansion function with composite-then-expand; update SDL3 render step |
-| Layer compositor + WASM | `getCanvasData128()` still reads `g_canvas` directly | Expose composited buffer via new WASM binding or update existing function |
-| Lua hot reload + LuaBindings | `g_currentBindings` not cleared before shutdown; stale pointer | Set `g_currentBindings = nullptr` in shutdown sequence; re-assign in initialize |
-| Lua hot reload + allocator | Reload sequence called mid-frame (after event pump, before update) | Use `reload_requested` flag; execute reload at clean frame boundary |
-| Sprite rework + Canvas4 | Old `Sprite::draw(ICanvas<uint8_t>&)` fails to compile against Canvas4 target | New Sprite targets `ICanvas<Pixel4>` exclusively; update all callers |
-| Sprite rework + transparency | Sprite `matte` default of 16 is outside Pixel4 valid range | New API uses `PALETTE_TRANSPARENT = 15` as default; remove legacy `_`-prefixed fields |
-| Layer Lua API + LuaCanvas | Adding setLayer() requires routing `currentCanvas` to different layer wrappers | Pre-allocate one `LuaCanvas` per layer as static; switch pointer by index |
-| Docusaurus API docs + template types | Regenerated docs for new template classes contain bare `<` in prose | Escape angle brackets in `generate-api-docs.js` for all template parameter text |
-| Docusaurus MDX + new API modules | New `layers` or `sprites` module added to API; sidebar auto-generates but build not verified | Run `npm run build` after every `generate-api-docs.js` run; fix MDX issues before commit |
+| engine.* table + hot reload | engine.* sub-tables registered once; F5 reinitializes Lua state, which destroys all globals | `registerAll()` re-registers all engine.* sub-tables on every reload; `performReload()` calls `registerAll()` after `initialize()` |
+| ScriptProxy + scene destroy | Object* held in proxy becomes dangling when scene destroys ObjectCollection | Generation token or valid flag in proxy; invalidate on scene deactivation |
+| float dt + Lua boundary | `lua_pushnumber(L, dt)` pushes as double; C++ receives as float; silent precision loss | Explicit `static_cast<float>(lua_tonumber(L, -1))` on Lua→C++ boundary; document that dt in Lua is a float-precision number |
+| on_button_pressed + input advance | Firing callbacks before input_advance_frame runs produces stale edge detection | Dispatch after advance + poll + setInput(), before callFunction("update") |
+| ScriptErrorPolicy + lua_ok gate | Per-component Disable policy should not set global lua_ok = false | Global lua_ok = false only for Lua state failure or Panic policy; Disable policy affects only the individual component |
+| requires<T>() + NDEBUG | assert() stripped in release builds; missing dependency crashes mid-frame instead of at startup | Provide release-mode fallback: log + setEnabled(false) when dependency is absent |
+| GC control + bump allocator | Lua GC threshold triggers don't fire as expected with custom bump allocator | Test GC behavior explicitly; use lua_gc(L, LUA_GCCOUNT, 0) before and after heavy allocation to verify the tracking is correct |
+| Scene self-transition + initialized flag | Re-entering a scene after self-transition skips onCreate (initialized guard prevents second init) | Implement reset path that clears initialized flag; or add explicit re-create hook for self-transitions |
+| engine.scene.find() + char[] names | String comparison uses strcmp, not == on std::string; char[] name must be null-terminated | Always use strncpy for name assignment; zero-terminate; use strncmp for lookup |
+| Component name table + typeid | Using typeid(T).name() for component names produces mangled names on some toolchains | Register a manual static constexpr TYPE_NAME in each component; use that for Lua-visible names |
 
 ---
 
 ## Performance Traps
 
-Patterns that work on SDL3 desktop but fail on ESP32 or WASM.
+Patterns that work at small scale but degrade on ESP32 or under embedded constraints.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Per-pixel virtual dispatch in compositor | Visible frame drops; cannot sustain 30 Hz at 128×128 with 4 layers | Use `getRawBuffer()` for bulk memcpy-based blending; no per-pixel virtual calls | ESP32 (~240 MHz, single-core Lua loop); WASM if called 60+ fps |
-| Composite scratch buffer as a 5th static canvas | 5 × 8192 = 40960 bytes for canvases; exceeds ESP32 budget when added to Lua pool | Composite in-place top-to-bottom into layer 0 output buffer; no scratch needed | ESP32 with Lua pool (64KB) + 5 canvas buffers + system overhead |
-| `std::string` usage in hot reload path | Fine on SDL3; `std::string` is heap-allocated; forbidden if allocator is bump pool | Use `const char*` with fixed-size buffers for script paths; avoid `std::string` in reload function | ESP32 if `std::string` triggers malloc outside the Lua pool |
-| Full Lua state recreation on every hot reload | Acceptable 10-50 ms startup delay in SDL3 | This is correct behavior for hot reload; do not optimize away the shutdown/reinitialize cycle | Never — full recreation is mandatory for clean state |
-| Emscripten `emscripten_force_exit()` in error path | Terminates browser tab; no graceful recovery | Use error return + Lua error display; never call exit() from WASM | Always on WASM |
+| engine.scene.find() called every frame from Lua | O(n) string scan * frame rate; 30 Hz * 128 objects = 3840 comparisons/sec | Cache the result in a Lua local: `local player = engine.scene.find("player")` in init() | ESP32 at ~240 MHz with 128 objects; visible at 60 Hz |
+| GC full collect mid-frame | 1–5 ms frame spike on ESP32 at 64 KB pool | Call engine.lua.collect() only in scene transition callbacks | ESP32 with > 32 KB live Lua heap |
+| float accumulator in Lua script with double precision | Precision loss accumulates over time (Lua numbers are double; dt comes in as float) | Document that Lua dt is float-precision; avoid accumulating over thousands of frames | Long-running sessions (> 1 hour at 30 Hz = 108K frames) |
+| Iterating ObjectCollection in update() via forEach() | std::function callback overhead * 128 objects * 60 Hz = 7680 indirect calls/sec | Use indexed loops in C++; only expose named find functions to Lua (not bulk iteration) | Measurable on ESP32; invisible on desktop |
+| Dynamic script proxy creation per callback | Allocating userdata per update/draw call | Reuse a single persistent userdata per C_LuaScript instance; update its Object* pointer each call | Any embedded target — allocation pressure on Lua pool |
 
 ---
 
@@ -327,19 +383,20 @@ Patterns that work on SDL3 desktop but fail on ESP32 or WASM.
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Multi-layer compositor:** All 4 layer buffers clear to `Pixel4(15)` (transparent) at start of each frame — verify black pixels are opaque, not transparent
-- [ ] **Multi-layer compositor:** SDL3 renderer reads composited output, not `g_canvas` directly — verify by drawing exclusively to layer 2 and confirming it appears
-- [ ] **Multi-layer compositor:** WASM `getCanvasData128()` (or equivalent) returns composited data — verify in browser
-- [ ] **Multi-layer compositor:** Memory budget verified on ESP32 — `4 * 8192 (layers) + 64KB (Lua) + system` fits in target SRAM
-- [ ] **Sprite rework:** No `ICanvas<uint8_t>&` signatures remain in new Sprite API — verify compiles against Canvas4 target
-- [ ] **Sprite rework:** Default `matte` is 15 (`PALETTE_TRANSPARENT`), not 16 — verify transparent pixels not drawn
-- [ ] **Sprite rework:** Legacy `_width`, `_height`, `_frame`, `_position`, `_matte`, `_mode` public fields removed — grep confirms no callers remain
-- [ ] **Lua hot reload:** F5 sets flag; reload executes at frame start, not inside event handler — verify no "Function not found" errors on first frame after reload
-- [ ] **Lua hot reload:** After reload, `g_currentBindings` is valid and `g_lua.callFunction("update")` succeeds — verify with console output
-- [ ] **Lua hot reload:** Memory pool reset confirmed — `memoryUsed == 0` after shutdown, non-zero after initialize — verify with debug log
-- [ ] **Docusaurus fix:** `npm run build` succeeds with zero MDX errors after all new API files generated — verify in CI or manually
-- [ ] **Docusaurus fix:** API Reference navbar link resolves to first API page in browser — verify on deployed GitHub Pages
-- [ ] **LuaCallback overload:** No new Lua bindings use the `std::function` overload of `registerFunction` — grep `registerFunction.*\[` confirms none
+- [ ] **float dt:** Every `update(uint16_t deltaTime)` override site updated — grep `uint16_t.*delta` and `uint16_t.*ms` across all headers and sources; zero matches means migration is complete
+- [ ] **float dt:** All `/1000` or `/1000.0f` divisions in update() bodies removed — these are vestiges of the old millisecond convention
+- [ ] **Named objects:** Object name stored as `char[N]`, not `std::string` — grep `std::string name` in object.hpp confirms none
+- [ ] **Named objects:** `findByName()` uses `strcmp`, not `std::string::operator==` — confirm in objectcollection.cpp
+- [ ] **engine.* table:** All five sub-tables (scene, input, time, lua, log) registered before first script load — test with module-level access script
+- [ ] **engine.* table:** F5 hot-reload re-registers all engine.* sub-tables — test reload then access engine.time.delta() in update()
+- [ ] **ScriptProxy:** Accessing `self` after scene destruction raises a Lua error, not a C++ crash — test by storing self in a global table across a transition
+- [ ] **update(self, dt):** All existing scripts (reload_test.lua, layer_demo.lua, pikachu_demo.lua, e2e_parity.lua) updated to new signature — grep `function update(dt)` confirms no old-style signatures remain
+- [ ] **on_button_pressed:** Callback fires in the same frame the button is pressed, not the next frame — test by logging frame count in both callback and update
+- [ ] **ScriptErrorPolicy:** Disabled component does not prevent other components from updating — test by introducing a syntax error in one C_LuaScript; verify sibling components still run
+- [ ] **F5 error clear:** Hot-reload on F5 resets lua_ok to true (if script loads successfully) even after a prior runtime error — test by pressing F5 after intentional error
+- [ ] **GC control:** engine.lua.collect() triggers an incremental step, not a full collection — verify via engine.lua.memory() before and after: small decrease for incremental, large decrease for full
+- [ ] **requires<T>():** Missing dependency in release build logs a message and disables the component — does NOT crash or abort — test by removing a required component from an object in a release-config build
+- [ ] **Scene self-transition:** Re-entering the current scene calls onCreate() again (objects re-created) — test by wiring a self-transition and verifying object count resets
 
 ---
 
@@ -349,13 +406,14 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Dangling LuaCallback pointer on hot reload | MEDIUM | Fix `registerFunction(LuaCallback)` to store callback in stable collection; re-register all bindings; verify reload path |
-| ESP32 boot crash after layer addition (SRAM exceeded) | MEDIUM | Move layer buffers to PSRAM with `EXT_RAM_BSS_ATTR`; or reduce layer count to 2 via compile-time option; measure heap usage |
-| Compositor uses per-pixel dispatch, too slow on ESP32 | MEDIUM | Refactor `ICanvas` to add `getRawBuffer()`; rewrite compositor blend loop to operate on raw packed bytes |
-| Sprite compile failures (uint8_t vs Pixel4 mismatch) | LOW | Change `draw(ICanvas<uint8_t>&)` to `draw(ICanvas<Pixel4>&)`; update `pixel != matte` to `pixel.value != matte`; change matte default to 15 |
-| Docusaurus API sidebar broken after new template classes | LOW | Run `generate-api-docs.js` with angle-bracket escaping; `npm run build`; fix MDX errors; commit fixed generated files |
-| Hot reload triggers mid-frame (update called on empty Lua) | LOW | Add `reload_requested` flag; move reload logic out of event handler; test F5 during active Lua update call |
-| Compositor transparency bug (black punches through) | LOW | Change transparency check from `pixel.value != 0` to `pixel.value != PALETTE_TRANSPARENT`; fix layer clear to use `Pixel4(15)` |
+| Dangling Object* in ScriptProxy (crash on scene transition) | HIGH | Add generation counter to ObjectCollection; modify ScriptProxy.__index to check validity; re-test all script-based scene transitions |
+| Missed update() override (behavior silently disappears after float dt change) | MEDIUM | Enable -Woverride on all targets; fix each detached override; re-test each component type individually |
+| std::string name on Object (heap fragmentation on ESP32) | MEDIUM | Replace std::string with char[MAX_NAME_LEN]; update ObjectCollection::registerByName and findByName; rebuild and measure heap usage |
+| engine.* table missing at module-level script access (nil error) | LOW | Move engine.* table registration to top of registerAll(); reload all scripts; verify with module-level test |
+| Existing scripts broken by update(self, dt) change | LOW | Script migration is mechanical: change function update(dt) to function update(self, dt); run test suite after each script update |
+| GC spike mid-frame (frame budget overrun on ESP32) | LOW | Audit all engine.lua.collect() call sites; move full-collect calls to scene transition callbacks; add frame-time logging |
+| requires<T>() crashes on ESP32 release (assert stripped) | MEDIUM | Wrap assert with #ifdef NDEBUG / #else / #endif; add fallback setEnabled(false) path; rebuild release; test on device |
+| Self-transition skips onCreate (initialized guard) | LOW | Add reset() method to Scene that clears initialized flag; call it in the self-transition code path; verify object count after transition |
 
 ---
 
@@ -363,36 +421,40 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| LuaAllocator dangling-pointer on hot reload | Lua hot reload — Step 1: fix LuaCallback registration | Reload twice in succession; confirm no crash or stale-pointer errors |
-| ESP32 SRAM budget exceeded by 4 layers | Multi-layer design — compute budget before declaring buffers | Verify `4*8192 + 64*1024 + system_overhead < 512KB`; test on device |
-| Template mismatch in layer compositor interface | Multi-layer design — add buffer access to ICanvas interface | Compositor compiles without static_cast to concrete size |
-| Sprite API breaking change (uint8_t → Pixel4) | Sprite rework — define new API targets; grep and update all callers | Clean build; no `ICanvas<uint8_t>` in new sprite code |
-| LuaCanvas routing for layer switching | Multi-layer Lua API — pre-allocate static LuaCanvas array | `setLayer(2); rectangle(...)` draws only to layer 2 in test script |
-| Hot reload mid-frame ordering | Lua hot reload — use reload_requested flag pattern | F5 during running script produces zero "Function not found" errors |
-| Docusaurus MDX angle-bracket failures | Docusaurus fix — update generate-api-docs.js escaping | `npm run build` passes with zero errors; API Reference link works |
-| Compositor transparency semantics (black vs index 15) | Multi-layer compositor implementation — use PALETTE_TRANSPARENT constant | Black fills on lower layer visible when upper layer draws transparent |
-| SDL3 renderer still reads single canvas after layer system | Multi-layer compositor integration — update expand_canvas_to_rgb() | Layer 3-only draw test visible in SDL3 window |
-| WASM binding still reads single canvas after layer system | Multi-layer compositor + WASM binding update | Layer 3-only draw test visible in browser WASM canvas |
-| std::function Lua callbacks on WASM/ESP32 | Sprite Lua API + layer Lua API design | All new bindings use `lua_CFunction`; grep confirms no `LuaCallback` lambda registrations |
+| Dangling Object* in ScriptProxy | Self proxy phase — add generation token to initial design | Store self in global table; trigger scene transition; access stored self; expect Lua error, not C++ crash |
+| float dt missed override sites | float dt phase — enable -Woverride before first change | Zero new compiler warnings after full migration; all existing component behaviors confirmed working |
+| std::string name allocation | Named objects phase — decide char[] vs string before writing Object name field | grep std::string in object.hpp and object_collection.hpp: zero matches |
+| engine.* registration ordering | engine.* table phase — register before loadScript in performReload | Module-level access test script loads without nil error |
+| update(self, dt) breaks existing scripts | Self proxy phase — migrate all scripts atomically | grep `function update(dt)` in scripts/: zero matches |
+| ScriptErrorPolicy + lua_ok interaction | Error policy phase — define two-level error protocol | Introduce error in one component; verify other components still update |
+| Input event callback ordering | Input events phase — define frame position before implementation | Log frame count in callback vs update; confirm same frame delivery |
+| GC spike on ESP32 | GC control phase — document safe call sites in binding comment | Frame-time log shows no spike when engine.lua.collect() in update(); verify only in scene transition |
+| float soft-float on ESP32 | float dt phase — use float not double everywhere | No double-precision temporaries in update chain; review generated assembly if performance regresses |
+| requires<T>() release crash | Component assertions phase — define debug/release behavior in plan | Release-config build with missing dependency: component disables, log appears, no abort |
+| Scene self-transition initialized guard | Scene self-transitions phase — implement reset path | Self-transition test: object count matches fresh scene creation; no objects skipped |
+| Circular destruction on scene transition | Scene self-transitions phase — implement deferred transition | Transition requested during onDeactivate: executes on next update, not inline |
 
 ---
 
 ## Sources
 
-- Codebase analysis: `src/scripting/lua_engine.cpp` — `luaAllocator`, `memoryPool`, `registerFunction(LuaCallback)` dangling-pointer bug (2026-02-24)
-- Codebase analysis: `src/scripting/bindings.cpp` — `g_currentBindings` global, `registerAll()`, input binding pattern (2026-02-24)
-- Codebase analysis: `src/platform/sdl/sdl_main.cpp` — `expand_canvas_to_rgb()`, single-canvas assumption in render path (2026-02-24)
-- Codebase analysis: `include/enjin2/graphics/canvas.hpp` — `Canvas4<W,H>` BUFFER_SIZE, ICanvas interface, missing `getRawBuffer()` (2026-02-24)
-- Codebase analysis: `include/enjin2/graphics/sprite.hpp` — `ICanvas<uint8_t>` draw target, matte=16 out-of-range default, legacy `_` fields (2026-02-24)
-- Codebase analysis: `include/enjin2/scripting/lua_platform.hpp` — `MEMORY_LIMIT = 64*1024` on ESP32 (2026-02-24)
-- Codebase analysis: `include/enjin2/graphics/palette.hpp` — `PALETTE_TRANSPARENT = 15` convention (2026-02-24)
-- Codebase analysis: `docs/docusaurus.config.js` — `markdown: { format: 'detect' }`, dual-plugin setup, navbar `sidebarId: 'apiSidebar'` (2026-02-24)
-- Codebase analysis: `docs/api-sidebar.js` — `type: 'autogenerated'` sidebar pattern (2026-02-24)
-- Codebase analysis: `src/bindings/emscripten_bindings.cpp` — `getCanvasData128()` reads single canvas, WASM layer exposure gap (2026-02-24)
-- ESP32-S3 memory map: ESP-IDF docs — 512KB SRAM total; WiFi/BT buffers consume ~100KB; heap overhead significant
-- Docusaurus MDX parse error behavior: bare `<` outside code blocks treated as JSX open tag; confirmed by MDX v3 parser behavior
-- Lua `longjmp` and C++ destructors: ISO C++ standard; LLVM/Emscripten `-fno-exceptions` UB with stack-allocated RAII objects across longjmp
+- Codebase analysis: `include/enjin2/core/object.hpp` — `update(uint16_t deltaTime)` signature, MAX_COMPONENTS=16, no name field (2026-02-26)
+- Codebase analysis: `include/enjin2/core/component.hpp` — `update(uint16_t deltaTime)` on all overrides; no requires<T>() (2026-02-26)
+- Codebase analysis: `include/enjin2/core/scene.hpp` — `update(uint16_t deltaTime)`, `onUpdate(uint16_t)`, no SceneStateMachine* field (2026-02-26)
+- Codebase analysis: `include/enjin2/core/object_collection.hpp` — `update(uint16_t deltaTime)`, no name map, no tag array (2026-02-26)
+- Codebase analysis: `include/enjin2/core/scene_state_machine.hpp` — `update(uint16_t deltaTime)`, changeScene() executes inline (no deferred transition) (2026-02-26)
+- Codebase analysis: `src/platform/sdl/sdl_main.cpp` — frame sequence: event pump → advance → poll → clearAll → setInput → callFunction("update") → callFunction("draw") (2026-02-26)
+- Codebase analysis: `src/scripting/lua_engine.cpp` — bump allocator, memoryPool, pushArg<float> casts to double (2026-02-26)
+- Codebase analysis: `src/scripting/bindings.cpp` — registerAll() registration order, lua_pushlightuserdata for bindings instance (2026-02-26)
+- Codebase analysis: `include/enjin2/scripting/lua_platform.hpp` — MEMORY_LIMIT=64KB on ESP32, ENABLE_DEBUG=false on ESP32 (2026-02-26)
+- Codebase analysis: `include/enjin2/components/lua_script.hpp` — update(uint16_t deltaTime), scriptError flag, no ScriptErrorPolicy enum (2026-02-26)
+- Project design: `project/lua-embedding-design.md` — update(self, dt) signature rationale, engine.* table design, ScriptProxy userdata design, GC recommendations (2026-02-25)
+- Project design: `project/cpp-engine-improvements.md` — float dt pervasive change rationale, named objects char[] approach, requires<T>() design, SceneStateMachine injection pattern (2026-02-25)
+- Defold documentation: on_input callback fires before update in same frame; deferred message passing pattern
+- ESP32 technical reference: ESP32-S3 (Xtensa LX7) has single-precision FPU; base ESP32 (Xtensa LX6) no FPU; ESP32-C3 (RISC-V) no FPU
+- Lua 5.x reference: lua_gc LUA_GCSTEP vs LUA_GCCOLLECT semantics; lua_Number is double by default
+- C++ standard: virtual override detachment when base signature changes without -Woverride flag; longjmp UB with RAII objects across call frames
 
 ---
-*Pitfalls research for: multi-layer Canvas4 composition, sprite rework, Lua hot reload, Docusaurus MDX fix — enjin2 v1.4*
-*Researched: 2026-02-24*
+*Pitfalls research for: Lua scripting power + C++ engine foundations — enjin2 v1.5 Lua Scripting Foundation*
+*Researched: 2026-02-26*
