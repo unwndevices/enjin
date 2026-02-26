@@ -74,7 +74,7 @@ struct LayerCompositor {
      * getPixel/setPixel calls inside the hot loop.
      */
     void composite() {
-        constexpr size_t BUF_SIZE = Canvas4<W, H>::BUFFER_SIZE;
+        const size_t BUF_SIZE = layers[0].getBufferSize();
 
         // Seed output from layer 0
         if (visible[0]) {

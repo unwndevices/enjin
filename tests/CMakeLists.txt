@@ -60,6 +60,18 @@ target_link_libraries(sprite_test PRIVATE
 )
 add_test(NAME sprite_test COMMAND sprite_test)
 
+# Compositor unit test (LAYER-01, LAYER-02, LAYER-03, LAYER-04)
+add_executable(compositor_test
+    compositor_test.cpp
+)
+target_include_directories(compositor_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(compositor_test PRIVATE
+    enjin2
+)
+add_test(NAME compositor_test COMMAND compositor_test)
+
 # SDL3 sprite visual test (pikachu with palette colors)
 if(ENJIN2_BUILD_SDL)
     add_executable(sprite_sdl_test
