@@ -121,7 +121,9 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   2. All concrete component subclasses compile without override warnings under -Woverride on all three platform builds
   3. No / 1000 division patterns remain in the update call chain — delta time is seconds at the source
   4. A component that accumulates dt to a timer (e.g., 1.0f = one second) works correctly without conversion
-**Plans**: TBD
+**Plans:** 2 plans
+- [ ] 28-01-PLAN.md — Migrate all update signatures to float dt, convert accumulators, remove /1000 divisions
+- [ ] 28-02-PLAN.md — Add -Woverride to CMake targets and verify clean build
 
 ### Phase 29: Named Objects + Tags
 **Goal**: Objects can be named and tagged at construction, and scripts/code can locate them by name or tag with no heap allocation
