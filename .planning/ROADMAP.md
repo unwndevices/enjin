@@ -169,7 +169,7 @@ Plans:
 | 22. Lua Integration + E2E Validation | v1.3 | 2/2 | Complete | 2026-02-24 |
 | 23. Docusaurus Navigation Fix | 1/1 | Complete    | 2026-02-24 | - |
 | 24. Sprite System Rework | 3/3 | Complete    | 2026-02-24 | - |
-| 25. Multi-Layer Canvas Composition | 3/3 | Complete   | 2026-02-26 | - |
+| 25. Multi-Layer Canvas Composition | 3/3 | Complete    | 2026-02-26 | - |
 | 26. Lua Hot Reload | v1.4 | 0/TBD | Not started | - |
 
 **Total Progress: 46/46 plans complete (100%) through v1.3 — v1.4 starting at Phase 23**
