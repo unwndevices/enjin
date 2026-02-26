@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 Phase: 24 of 26 (Sprite System Rework)
 Plan: 3 of 3 in current phase — COMPLETE
 Status: Phase 24 complete (all 3 plans done); ready for Phase 25 (Compositor)
-Last activity: 2026-02-25 — Phase 24 Plan 03 complete (Lua sprite pool: newSprite/drawSprite/updateSprite/setFrame)
+Last activity: 2026-02-26 - Completed quick task 2: Aseprite-to-enjin asset conversion tooling
 
 Progress: [████████░░] 80% (22/26 phases through v1.3; 4 phases remaining in v1.4)
 
@@ -48,6 +48,13 @@ Recent decisions affecting v1.4 work:
 ### Pending Todos
 
 None.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 001 | Write simple design document of the library | 2026-02-03 | 24dd586 | [001-write-simple-design-document](./quick/001-write-simple-design-document-of-the-libr/) |
+| 2 | Aseprite-to-enjin asset conversion tooling | 2026-02-26 | fb6c875 | [2-aseprite-to-enjin-asset-conversion-tooli](./quick/2-aseprite-to-enjin-asset-conversion-tooli/) |
 
 ### Blockers/Concerns
 
