@@ -72,6 +72,21 @@ target_link_libraries(compositor_test PRIVATE
 )
 add_test(NAME compositor_test COMMAND compositor_test)
 
+# Layer binding unit test (Lua layer API: setLayer, getLayer, clearLayer, etc.)
+if(ENJIN2_BUILD_LUA)
+    add_executable(layer_binding_test
+        layer_binding_test.cpp
+    )
+    target_include_directories(layer_binding_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(layer_binding_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME layer_binding_test COMMAND layer_binding_test)
+endif()
+
 # SDL3 sprite visual test (pikachu with palette colors)
 if(ENJIN2_BUILD_SDL)
     add_executable(sprite_sdl_test

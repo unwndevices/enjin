@@ -169,6 +169,111 @@ static void test_layer_visibility()
 }
 
 // ============================================================
+// test_mixed_nibble_transparency
+// ============================================================
+static void test_mixed_nibble_transparency()
+{
+    printf("--- mixed nibble transparency ---\n");
+
+    LayerCompositor<16, 16> comp;
+    comp.clearAll();
+
+    // (0,0) and (1,0) share a packed byte (even/odd x in same byte)
+    // Layer 0: color 5 at both (0,0) and (1,0)
+    comp.layers[0].setPixel(0, 0, Pixel4(5));
+    comp.layers[0].setPixel(1, 0, Pixel4(5));
+    // Layer 1: color 3 at (0,0) only; (1,0) stays transparent (15)
+    comp.layers[1].setPixel(0, 0, Pixel4(3));
+    // Layer 1 at (1,0) is already 15 after clearAll
+
+    comp.composite();
+
+    ASSERT(comp.output.getPixel(0, 0).value == 3,
+           "mixed nibble: output (0,0) should be 3 (layer 1 overrides)");
+    ASSERT(comp.output.getPixel(1, 0).value == 5,
+           "mixed nibble: output (1,0) should be 5 (layer 0 shows through transparent nibble)");
+}
+
+// ============================================================
+// test_layer0_hidden
+// ============================================================
+static void test_layer0_hidden()
+{
+    printf("--- layer 0 hidden ---\n");
+
+    LayerCompositor<16, 16> comp;
+    comp.clearAll();
+
+    // Layer 0 has color 7 at (2,2)
+    comp.layers[0].setPixel(2, 2, Pixel4(7));
+    // Layer 1 has color 3 at (5,5)
+    comp.layers[1].setPixel(5, 5, Pixel4(3));
+
+    // Hide layer 0 — output base should be cleared to 0 (black)
+    comp.visible[0] = false;
+    comp.composite();
+
+    ASSERT(comp.output.getPixel(2, 2).value == 0,
+           "layer0 hidden: output (2,2) should be 0 (layer 0 content not visible)");
+    ASSERT(comp.output.getPixel(5, 5).value == 3,
+           "layer0 hidden: output (5,5) should be 3 (layer 1 still visible)");
+    ASSERT(comp.output.getPixel(0, 0).value == 0,
+           "layer0 hidden: output (0,0) should be 0 (black base)");
+}
+
+// ============================================================
+// test_all_four_layers_same_pixel
+// ============================================================
+static void test_all_four_layers_same_pixel()
+{
+    printf("--- all four layers same pixel ---\n");
+
+    LayerCompositor<16, 16> comp;
+    comp.clearAll();
+
+    // Each layer has a different color at (4,4)
+    comp.layers[0].setPixel(4, 4, Pixel4(1));
+    comp.layers[1].setPixel(4, 4, Pixel4(3));
+    comp.layers[2].setPixel(4, 4, Pixel4(7));
+    comp.layers[3].setPixel(4, 4, Pixel4(9));
+
+    comp.composite();
+
+    // Highest layer (3) wins in painter's order
+    ASSERT(comp.output.getPixel(4, 4).value == 9,
+           "all four layers: output (4,4) should be 9 (layer 3 wins)");
+}
+
+// ============================================================
+// test_composite_preserves_layer_buffers
+// ============================================================
+static void test_composite_preserves_layer_buffers()
+{
+    printf("--- composite preserves layer buffers ---\n");
+
+    LayerCompositor<16, 16> comp;
+    comp.clearAll();
+
+    // Set distinct pixels on different layers
+    comp.layers[0].setPixel(0, 0, Pixel4(2));
+    comp.layers[1].setPixel(3, 3, Pixel4(6));
+    comp.layers[2].setPixel(7, 7, Pixel4(10));
+
+    comp.composite();
+
+    // Verify layer buffers are unchanged after compositing
+    ASSERT(comp.layers[0].getPixel(0, 0).value == 2,
+           "preserves: layer 0 (0,0) should still be 2 after composite");
+    ASSERT(comp.layers[1].getPixel(3, 3).value == 6,
+           "preserves: layer 1 (3,3) should still be 6 after composite");
+    ASSERT(comp.layers[2].getPixel(7, 7).value == 10,
+           "preserves: layer 2 (7,7) should still be 10 after composite");
+    // Layer 1 untouched pixel should still be 15 (transparent)
+    ASSERT(comp.layers[1].getPixel(0, 0).value == 15,
+           "preserves: layer 1 (0,0) should still be 15 (transparent) after composite");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main()
@@ -183,6 +288,10 @@ int main()
     test_transparency_passthrough();
     test_multi_layer_stack();
     test_layer_visibility();
+    test_mixed_nibble_transparency();
+    test_layer0_hidden();
+    test_all_four_layers_same_pixel();
+    test_composite_preserves_layer_buffers();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);
 
