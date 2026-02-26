@@ -73,7 +73,7 @@ public:
           speedFromParameter(false), colorFromParameter(false), pulsing(true),
           animationTime(0), trailIndex(0), trailInitialized(false) {
         
-        setDrawLayer(DrawLayer::ENTITIES);
+        SetBufferIndex(1);
         
         // Initialize trail
         for (size_t i = 0; i < TRAIL_LENGTH; ++i) {

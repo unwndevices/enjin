@@ -65,19 +65,19 @@ int main(int argc, char* argv[]) {
     Object* obj1 = testScene.addObject<Object>();
     C_Position* pos1 = obj1->addComponent<C_Position>(10, 10);
     C_Rectangle* rect1 = obj1->addComponent<C_Rectangle>(30, 30, 80);
-    rect1->SetDrawLayer(DrawLayer::Background);
+    rect1->SetBufferIndex(0);
 
     // Object 2: Center rectangle (medium gray)
     Object* obj2 = testScene.addObject<Object>();
     C_Position* pos2 = obj2->addComponent<C_Position>(49, 49);
     C_Rectangle* rect2 = obj2->addComponent<C_Rectangle>(30, 30, 128);
-    rect2->SetDrawLayer(DrawLayer::Entities);
+    rect2->SetBufferIndex(1);
 
     // Object 3: Bottom-right rectangle (light gray)
     Object* obj3 = testScene.addObject<Object>();
     C_Position* pos3 = obj3->addComponent<C_Position>(88, 88);
     C_Rectangle* rect3 = obj3->addComponent<C_Rectangle>(30, 30, 180);
-    rect3->SetDrawLayer(DrawLayer::Foreground);
+    rect3->SetBufferIndex(2);
 
     std::cout << "  - Object 1: Position (10, 10), Color 80 (dark gray)" << std::endl;
     std::cout << "  - Object 2: Position (49, 49), Color 128 (medium gray)" << std::endl;

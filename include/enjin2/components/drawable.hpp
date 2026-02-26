@@ -17,18 +17,6 @@ namespace enjin2 {
 class Object; // Forward declaration
 
 /**
- * @brief Draw layer enumeration for rendering order (matches original Enjin)
- */
-enum class DrawLayer {
-    Default,
-    Background,
-    Entities,
-    Foreground,
-    Overlay,
-    UI
-};
-
-/**
  * @brief Blend mode enumeration for compositing (matches original Enjin)
  */
 enum class BlendMode {
@@ -58,8 +46,7 @@ protected:
     Point anchor_offset;        ///< Anchor offset
     static Point abs_center;    ///< Absolute center point (63, 63 for 128x128)
     
-    int sort_order;             ///< Sort order for drawing
-    DrawLayer layer;            ///< Draw layer
+    uint8_t buffer_index;       ///< Layer buffer index (0 = background, N-1 = foreground)
     BlendMode blend_mode;       ///< Blend mode
     Anchor anchor;              ///< Anchor point
     bool is_visible;            ///< Visibility flag
@@ -92,12 +79,12 @@ public:
      */
     virtual bool continueToDraw() const;
     
-    /// @brief Set the sort order for drawing priority
-    /// @param order Sort order value
-    void SetSortOrder(int order) { sort_order = order; }
-    /// @brief Get the sort order
-    /// @return Current sort order
-    int GetSortOrder() const { return sort_order; }
+    /// @brief Set the layer buffer index (0 = background, N-1 = foreground)
+    /// @param idx Buffer index value
+    void SetBufferIndex(uint8_t idx) { buffer_index = idx; }
+    /// @brief Get the layer buffer index
+    /// @return Current buffer index
+    uint8_t GetBufferIndex() const { return buffer_index; }
 
     /// @brief Set the blend mode
     /// @param mode Blend mode to use
@@ -105,13 +92,6 @@ public:
     /// @brief Get the blend mode
     /// @return Current blend mode
     BlendMode GetBlendMode() const { return blend_mode; }
-
-    /// @brief Set the draw layer
-    /// @param drawLayer Draw layer to assign
-    void SetDrawLayer(DrawLayer drawLayer) { layer = drawLayer; }
-    /// @brief Get the draw layer
-    /// @return Current draw layer
-    DrawLayer GetDrawLayer() const { return layer; }
 
     /// @brief Set the visibility
     /// @param visibility Visibility state
@@ -158,13 +138,7 @@ public:
      * @return True if this should be drawn before other, false otherwise
      */
     bool shouldDrawBefore(const C_Drawable& other) const {
-        // First sort by layer
-        if (layer != other.layer) {
-            return static_cast<int>(layer) < static_cast<int>(other.layer);
-        }
-        
-        // Then by sort order within the same layer
-        return sort_order < other.sort_order;
+        return buffer_index < other.buffer_index;
     }
 };
 

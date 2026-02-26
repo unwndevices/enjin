@@ -64,7 +64,7 @@ public:
           ringInnerRadius(0.0f), ringOuterRadius(0.0f), ringColor(8),
           animationTime(0) {
         
-        setDrawLayer(DrawLayer::BACKGROUND);
+        SetBufferIndex(0);
     }
     
     /**

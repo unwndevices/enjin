@@ -89,7 +89,7 @@ public:
           trailIndex(0), hasTrail(false), movementBounds(0, 0, 0, 0),
           constrainToBounds(false) {
         
-        setDrawLayer(DrawLayer::FOREGROUND);
+        SetBufferIndex(2);
         
         // Initialize trail
         for (size_t i = 0; i < TRAIL_LENGTH; ++i) {

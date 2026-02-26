@@ -130,9 +130,9 @@ int main() {
     
     // Test 10: Test layer ordering
     printf("Testing layer ordering with DrawLayer...\n");
-    canvas_comp->SetDrawLayer(DrawLayer::Background);
-    canvas2_comp->SetDrawLayer(DrawLayer::Default);
-    canvas3_comp->SetDrawLayer(DrawLayer::Foreground);
+    canvas_comp->SetBufferIndex(0);
+    canvas2_comp->SetBufferIndex(0);
+    canvas3_comp->SetBufferIndex(2);
     
     // Export result
     main_canvas.exportToPGM("canvas_demo.pgm");
