@@ -200,6 +200,13 @@ private:
 
     SpriteState spritePool[LUA_SPRITE_POOL_SIZE]; ///< Zero-alloc fixed sprite pool
 
+    // ── Layer system ─────────────────────────────────────────────────────────
+    static constexpr int MAX_LUA_LAYERS = 8;  ///< Ceiling matching ENJIN_LAYER_COUNT max
+    LuaCanvas* layerCanvases[MAX_LUA_LAYERS]{};  ///< Null-initialized; pointers to per-layer LuaCanvas wrappers
+    bool*      layerVisible{nullptr};            ///< Points to LayerCompositor::visible[] array (set by host)
+    uint8_t    activeLayer{0};                   ///< Current C++ buffer index (0-based)
+    uint8_t    layerCount{0};                    ///< Set by host via setLayers()
+
 public:
     /**
      * @brief Constructor
@@ -229,6 +236,14 @@ public:
      * @param input Current InputState pointer (updated by host after input_platform_poll)
      */
     void setInput(InputState* input);
+
+    /**
+     * @brief Wire layer canvas pointers from host (called once at init)
+     * @param canvases Array of LuaCanvas pointers, one per layer
+     * @param count Number of layers
+     * @param visibleArr Pointer to LayerCompositor::visible[] array
+     */
+    void setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleArr);
 
 private:
     // Canvas management functions
@@ -285,6 +300,14 @@ private:
     static int lua_drawSprite(lua_State* L);
     static int lua_updateSprite(lua_State* L);
     static int lua_setFrame(lua_State* L);
+
+    // Layer system bindings (LAYER-06)
+    static int lua_setLayer(lua_State* L);
+    static int lua_getLayer(lua_State* L);
+    static int lua_clearLayer(lua_State* L);
+    static int lua_getLayerCount(lua_State* L);
+    static int lua_setLayerVisible(lua_State* L);
+    static int lua_isLayerVisible(lua_State* L);
 
     /**
      * @brief Get LuaBindings instance from Lua state
