@@ -54,3 +54,12 @@ docs/node_modules/
 
 # Doxygen build artifacts
 doxygen-warnings.log
+
+# Build variant directories
+build_*/
+
+# Tool caches
+.cache/
+
+# CMake generated
+compile_commands.json
