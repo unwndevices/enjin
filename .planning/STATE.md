@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 Phase: 24 of 26 (Sprite System Rework)
 Plan: 3 of 3 in current phase — COMPLETE
 Status: Phase 24 complete (all 3 plans done); ready for Phase 25 (Compositor)
-Last activity: 2026-02-26 - Completed quick task 3: Aseprite Lua plugin for enjin export
+Last activity: 2026-02-26 - Completed quick task 4: Update .gitignore with build artifact patterns
 
 Progress: [████████░░] 80% (22/26 phases through v1.3; 4 phases remaining in v1.4)
 
@@ -56,6 +56,7 @@ None.
 | 001 | Write simple design document of the library | 2026-02-03 | 24dd586 | [001-write-simple-design-document](./quick/001-write-simple-design-document-of-the-libr/) |
 | 2 | Aseprite-to-enjin asset conversion tooling | 2026-02-26 | fb6c875 | [2-aseprite-to-enjin-asset-conversion-tooli](./quick/2-aseprite-to-enjin-asset-conversion-tooli/) |
 | 3 | Aseprite Lua export plugin for enjin C header format | 2026-02-26 | 5a124e9 | [3-aseprite-lua-plugin-for-enjin-export](./quick/3-aseprite-lua-plugin-for-enjin-export/) |
+| 4 | Update .gitignore with build artifact patterns | 2026-02-26 | 4c1ec72 | [4-update-gitignore](./quick/4-update-gitignore/) |
 
 ### Blockers/Concerns
 
@@ -71,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed quick/3-PLAN.md — Aseprite Lua export plugin for enjin C header format (tools/aseprite/enjin-export.lua)
+Stopped at: Completed quick/4-PLAN.md — Update .gitignore with build artifact patterns (.gitignore)
 Resume file: None
