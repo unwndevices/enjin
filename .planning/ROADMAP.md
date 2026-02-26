@@ -123,7 +123,12 @@ Plans:
   3. `clearLayer(n, color)` clears only the specified layer; pixels on other layers are unaffected and remain visible
   4. `getLayerCount()` returns 4; the layer count is a compile-time constant (default 4) and changing it rebuilds correctly
   5. SDL3 runner blits the composited result — all four layers merged using index 15 as passthrough transparency — with no regression to single-canvas rendering
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 25-01-PLAN.md — LayerCompositor struct + C_Drawable overhaul + compositor unit test
+- [ ] 25-02-PLAN.md — SDL3 runner compositor integration (replace g_canvas with LayerCompositor)
+- [ ] 25-03-PLAN.md — Lua layer API (setLayer, clearLayer, getLayerCount, visibility) + layer demo
 
 ### Phase 26: Lua Hot Reload
 **Goal**: Pressing F5 in the SDL3 runner performs a full Lua state reset and reloads the script from disk without crashing, including graceful error display on syntax or runtime failure.
