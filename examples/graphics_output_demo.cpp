@@ -73,11 +73,11 @@ public:
     /**
      * @brief Update parameters (simulated audio changes)
      */
-    void updateParameters(uint32_t time) {
+    void updateParameters(float time) {
         for (int i = 0; i < 2; ++i) {
             if (satellites[i]) {
                 // Simple sine wave parameter changes
-                float t = (time / 1000.0f) + i * 2.0f;
+                float t = time + i * 2.0f;
                 float param = 0.5f + 0.3f * std::sin(t * (1.0f + i * 0.8f));
                 satellites[i]->setParameterValue(param);
             }
@@ -114,13 +114,13 @@ class GraphicsDemoScene : public Scene {
 private:
     SimpleControlCenter* controlCenter;
     SimpleScanner* scanner;
-    uint32_t sceneTime;
+    float sceneTime;
     
 public:
     /**
      * @brief Constructor
      */
-    GraphicsDemoScene(uint32_t id) : Scene(id), sceneTime(0) {}
+    GraphicsDemoScene(uint32_t id) : Scene(id), sceneTime(0.0f) {}
     
 protected:
     /**
@@ -152,8 +152,8 @@ protected:
     /**
      * @brief Update scene
      */
-    void onUpdate(uint16_t deltaTime) override {
-        sceneTime += deltaTime;
+    void onUpdate(float dt) override {
+        sceneTime += dt;
         
         // Update control center parameters
         if (controlCenter) {
@@ -240,10 +240,10 @@ int main() {
             currentTime - lastTime).count();
         lastTime = currentTime;
         
-        uint16_t deltaMs = static_cast<uint16_t>(std::min(static_cast<long long>(deltaTime), 50LL));
-        
+        float dt = static_cast<float>(std::min(static_cast<long long>(deltaTime), 50LL)) / 1000.0f;
+
         // Update scene
-        sceneManager.update(deltaMs);
+        sceneManager.update(dt);
         
         // Render to canvas
         sceneManager.render(canvas);

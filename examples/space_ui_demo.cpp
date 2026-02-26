@@ -70,11 +70,11 @@ public:
     /**
      * @brief Update parameter values (simulates audio parameter changes)
      */
-    void updateParameters(uint32_t time) {
+    void updateParameters(float time) {
         for (int i = 0; i < 4; ++i) {
             if (satellites[i]) {
                 // Simulate parameter changes with different frequencies
-                float t = (time / 1000.0f) + i * 1.5f;
+                float t = time + i * 1.5f;
                 float param = 0.5f + 0.4f * std::sin(t * (0.5f + i * 0.3f));
                 satellites[i]->setParameterValue(param);
             }
@@ -143,13 +143,13 @@ private:
     AudioControlCenter* controlCenter;
     ScannerProbe* scanner;
     ParticleField* particles;
-    uint32_t sceneTime;
+    float sceneTime;
     
 public:
     /**
      * @brief Constructor
      */
-    SpaceUIScene(uint32_t id) : Scene(id), sceneTime(0) {}
+    SpaceUIScene(uint32_t id) : Scene(id), sceneTime(0.0f) {}
     
 protected:
     /**
@@ -187,17 +187,19 @@ protected:
     /**
      * @brief Update scene
      */
-    void onUpdate(uint16_t deltaTime) override {
-        sceneTime += deltaTime;
-        
+    void onUpdate(float dt) override {
+        sceneTime += dt;
+
         // Update audio parameters (simulated)
         if (controlCenter) {
             controlCenter->updateParameters(sceneTime);
         }
-        
-        // Print status every 2 seconds
-        if (sceneTime % 2000 < deltaTime) {
-            std::cout << "SpaceUIScene: T+" << (sceneTime/1000) << "s - "
+
+        // Print status every 2 seconds using accumulator check
+        static float nextPrint = 2.0f;
+        if (sceneTime >= nextPrint) {
+            nextPrint += 2.0f;
+            std::cout << "SpaceUIScene: T+" << static_cast<int>(sceneTime) << "s - "
                       << getObjects().size() << " objects active\n";
         }
     }
@@ -289,10 +291,10 @@ int main() {
             currentTime - lastTime).count();
         lastTime = currentTime;
         
-        uint16_t deltaMs = static_cast<uint16_t>(std::min(static_cast<long long>(deltaTime), 33LL));
-        
+        float dt = static_cast<float>(std::min(static_cast<long long>(deltaTime), 33LL)) / 1000.0f;
+
         // Update scene manager
-        sceneManager.update(deltaMs);
+        sceneManager.update(dt);
         
         // Render
         sceneManager.render(canvas);
