@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <enjin2/graphics/canvas.hpp>
+#include <enjin2/graphics/layer_compositor.hpp>
 #include <enjin2/graphics/palette.hpp>
 #include <enjin2/input/input_state.hpp>
 
@@ -41,13 +42,12 @@ enum : int {
 // Static globals — no heap allocation
 // ---------------------------------------------------------------------------
 
-static enjin2::Canvas4<CANVAS_W, CANVAS_H> g_canvas;
-static enjin2::InputState                   g_input{};
+static enjin2::LayerCompositor<CANVAS_W, CANVAS_H> g_compositor;
+static enjin2::InputState                           g_input{};
 static uint8_t g_rgb_staging[CANVAS_W * CANVAS_H * 3];
 
 #ifdef ENJIN2_BUILD_LUA
 static enjin2::LuaScriptSystem g_lua;
-static enjin2::LuaCanvas       g_lua_canvas(&g_canvas);
 #endif
 
 // ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ void input_platform_poll(InputState* state) {
 static void expand_canvas_to_rgb() {
     for (int y = 0; y < CANVAS_H; y++) {
         for (int x = 0; x < CANVAS_W; x++) {
-            enjin2::Pixel4 px = g_canvas.getPixel(x, y);
+            enjin2::Pixel4 px = g_compositor.output.getPixel(x, y);
             int i = (y * CANVAS_W + x) * 3;
             if (!enjin2::g_palette.isTransparent(px.value)) {
                 enjin2::RGB rgb = enjin2::g_palette.resolve(px.value);
@@ -156,6 +156,15 @@ int main(int argc, char* argv[]) {
 
     // --- Lua initialization ---
 #ifdef ENJIN2_BUILD_LUA
+    // Per-layer LuaCanvas wrappers — static so their lifetime matches g_compositor
+    static enjin2::LuaCanvas g_lua_layer0(&g_compositor.layers[0]);
+    static enjin2::LuaCanvas g_lua_layer1(&g_compositor.layers[1]);
+    static enjin2::LuaCanvas g_lua_layer2(&g_compositor.layers[2]);
+    static enjin2::LuaCanvas g_lua_layer3(&g_compositor.layers[3]);
+    static enjin2::LuaCanvas* g_lua_layers[enjin2::ENJIN_LAYER_COUNT] = {
+        &g_lua_layer0, &g_lua_layer1, &g_lua_layer2, &g_lua_layer3
+    };
+
     if (!g_lua.initialize()) {
         SDL_Log("Lua init failed");
         SDL_DestroyTexture(texture);
@@ -164,13 +173,14 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
-    g_lua.setCanvas(&g_lua_canvas);
+    // Default active canvas = layer 0 (background) — layer 1 in Lua 1-indexing (CONTEXT.md)
+    g_lua.setCanvas(g_lua_layers[0]);
     g_lua.getBindings().setInput(&g_input);
     {
         enjin2::LuaResult load_result = g_lua.loadScript("scripts/e2e_parity.lua");
         if (!load_result.success) {
             std::cerr << "Lua script load error: " << load_result.error << "\n";
-            g_canvas.clear(enjin2::Pixel4(14));
+            g_compositor.layers[0].clear(enjin2::Pixel4(14));
         }
     }
 #endif
@@ -207,6 +217,10 @@ int main(int argc, char* argv[]) {
         enjin2::input_advance_frame(&g_input);
         enjin2::input_platform_poll(&g_input);
 
+        // --- Auto-clear all layers for this frame ---
+        // Layer 0 -> black (Pixel4(0)), layers 1-3 -> transparent (Pixel4(15))
+        g_compositor.clearAll();
+
         // --- Lua per-frame calls ---
 #ifdef ENJIN2_BUILD_LUA
         g_lua.getBindings().setInput(&g_input);  // wire current-frame input AFTER poll
@@ -214,17 +228,20 @@ int main(int argc, char* argv[]) {
             enjin2::LuaResult r = g_lua.callFunction("update", dt);
             if (!r.success) {
                 std::cerr << "Lua update error: " << r.error << "\n";
-                g_canvas.clear(enjin2::Pixel4(14));
+                g_compositor.layers[0].clear(enjin2::Pixel4(14));
             }
         }
         {
             enjin2::LuaResult r = g_lua.callFunction("draw");
             if (!r.success) {
                 std::cerr << "Lua draw error: " << r.error << "\n";
-                g_canvas.clear(enjin2::Pixel4(14));
+                g_compositor.layers[0].clear(enjin2::Pixel4(14));
             }
         }
 #endif
+
+        // --- Composite layers -> output ---
+        g_compositor.composite();
 
         // --- Render ---
         expand_canvas_to_rgb();
