@@ -1,8 +1,8 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Engine Capabilities
-status: complete
+milestone: v1.5
+milestone_name: Lua Scripting Foundation
+status: active
 last_updated: "2026-02-26"
 progress:
   total_phases: 26
@@ -18,15 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.4 milestone complete — planning next milestone
+**Current focus:** v1.5 Lua Scripting Foundation — defining requirements
 
 ## Current Position
 
-Phase: 26 of 26 — ALL MILESTONES COMPLETE
-Status: v1.4 Engine Capabilities shipped 2026-02-26
-Last activity: 2026-02-26 - Milestone v1.4 archived
-
-Progress: [██████████] 100% (5 milestones, 26 phases, 58 plans)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-26 — Milestone v1.5 started
 
 ## Performance Metrics
 

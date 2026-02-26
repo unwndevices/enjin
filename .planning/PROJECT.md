@@ -104,7 +104,33 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ### Active
 
-(None — planning next milestone)
+<!-- v1.5 Lua Scripting Foundation -->
+
+- [ ] Fix onRender Pixel4 bug — `if constexpr` guard blocks Pixel4 canvas dispatch
+- [ ] float dt everywhere — `uint16_t` ms → `float` seconds across Object, Component, Scene
+- [ ] Named objects + tags — name field + map on ObjectCollection, 8-slot tag array on Object
+- [ ] Scene self-transitions — inject `SceneStateMachine*` into Scene at activation
+- [ ] engine.* global table — `engine.scene`, `engine.input`, `engine.time`, `engine.lua`, `engine.log`
+- [ ] Self proxy — ScriptProxy userdata with `__index`/`__newindex` for component reads/writes
+- [ ] Error policy on C_LuaScript — ScriptErrorPolicy enum (Disable/Log/Panic), default Disable
+- [ ] Input event callbacks — on_button_pressed/on_button_released in Lua scripts
+- [ ] GC control — `engine.lua.collect()`/`engine.lua.memory()` exposed to Lua
+- [ ] Component dependency assertions — `requires<T>()` on Component base class
+
+## Current Milestone: v1.5 Lua Scripting Foundation
+
+**Goal:** Make enjin2 scriptable — C++ engine foundations (float dt, named objects, scene transitions) plus Lua scripting power (engine.* table, self proxy, input events, error policy).
+
+**Target features:**
+- Fix onRender Pixel4 bug (correctness)
+- float dt everywhere (pervasive signature change)
+- Named objects + tags (prerequisite for engine.scene.find())
+- Scene self-transitions (prerequisite for engine.scene.switch())
+- engine.* global table + self proxy (the Lua payoff)
+- Error policy on C_LuaScript (robustness)
+- Input event callbacks (on_button_pressed/released)
+- GC control (engine.lua.collect/memory)
+- Component dependency assertions (requires<T>())
 
 ### Out of Scope
 
@@ -124,6 +150,13 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - File-watch auto-reload — Platform-specific OS APIs; F5 manual reload is sufficient
 - Partial Lua state hot-patch — Produces dangling references; full reset is correct semantic
 - WASM/ESP32 hot reload — Developer tool for SDL3 runner only
+- Persistent objects across scenes — Deferred to v1.6 (independent subsystem)
+- Component signals — Deferred to v1.6 (separate communication pattern)
+- C_Timer component — Deferred to v1.6 (standalone new component)
+- C_StateMachine component — Deferred to v1.6 (medium effort, standalone)
+- ComponentProxy / self:get() — Deferred to v1.6 (heaviest C++ work, needs careful design)
+- Event bus — Deferred to v1.6 (separate communication pattern)
+- Integer layer system — Deferred to v1.6 (independent change)
 
 ## Context
 
@@ -194,4 +227,4 @@ enjin2 is a feature-complete game engine foundation with:
 | lua_ok gate pattern for error recovery | false=paused (error state), F5 retries; runtime errors also set false | ✓ Working - Phase 26 |
 
 ---
-*Last updated: 2026-02-26 after v1.4 milestone*
+*Last updated: 2026-02-26 after v1.5 milestone started*
