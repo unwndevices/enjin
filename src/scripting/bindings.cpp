@@ -129,7 +129,12 @@ void LuaBindings::registerAll() {
     if (!engine || !engine->isInitialized()) {
         return;
     }
-    
+
+    // Reset all per-reload state so every load starts clean
+    resetSpritePool();
+    currentColor = 15;
+    lineWidth = 1;
+
     // Store bindings instance in Lua registry
     lua_State* L = engine->getState();
     lua_pushlightuserdata(L, this);
@@ -249,6 +254,12 @@ void LuaBindings::setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleAr
     layerVisible = visibleArr;
     activeLayer = 0;
     currentCanvas = layerCanvases[0];
+}
+
+void LuaBindings::resetSpritePool() {
+    for (int i = 0; i < LUA_SPRITE_POOL_SIZE; ++i) {
+        spritePool[i] = SpriteState{};
+    }
 }
 
 LuaBindings* LuaBindings::getBindings(lua_State* L) {

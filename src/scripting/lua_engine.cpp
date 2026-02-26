@@ -89,16 +89,11 @@ LuaResult LuaEngine::executeFile(const std::string& filename) {
     return result;
 }
 
-void LuaEngine::registerFunction(const std::string& name, LuaCallback callback) {
+void LuaEngine::registerFunction(const std::string& name, LuaCallback /*callback*/) {
     if (!initialized) return;
-    
-    // Store callback in registry and create wrapper
-    lua_pushlightuserdata(L, reinterpret_cast<void*>(&callback));
-    lua_pushcclosure(L, [](lua_State* L) -> int {
-        LuaCallback* cb = static_cast<LuaCallback*>(lua_touserdata(L, lua_upvalueindex(1)));
-        return (*cb)(L);
-    }, 1);
-    lua_setglobal(L, name.c_str());
+    // LuaCallback overload is vestigial — all bindings use lua_CFunction.
+    // Body intentionally left as no-op to prevent dangling-pointer UB.
+    // The lightuserdata approach stored &local which was invalid after return.
 }
 
 void LuaEngine::registerFunction(const std::string& name, lua_CFunction func) {

@@ -245,6 +245,14 @@ public:
      */
     void setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleArr);
 
+    /**
+     * @brief Reset all sprite pool slots to inactive state
+     *
+     * Called automatically from registerAll() to ensure a clean sprite pool
+     * on every Lua state reload. Also resets drawing state (currentColor, lineWidth).
+     */
+    void resetSpritePool();
+
 private:
     // Canvas management functions
     static int lua_getWidth(lua_State* L);
