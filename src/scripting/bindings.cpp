@@ -183,6 +183,20 @@ void LuaBindings::registerAll() {
     engine->registerFunction("updateSprite", lua_updateSprite);
     engine->registerFunction("setFrame",     lua_setFrame);
 
+    // Layer system (LAYER-06)
+    engine->registerFunction("setLayer",        lua_setLayer);
+    engine->registerFunction("getLayer",        lua_getLayer);
+    engine->registerFunction("clearLayer",      lua_clearLayer);
+    engine->registerFunction("getLayerCount",   lua_getLayerCount);
+    engine->registerFunction("setLayerVisible", lua_setLayerVisible);
+    engine->registerFunction("isLayerVisible",  lua_isLayerVisible);
+
+    // Layer global constants (Lua 1-indexed)
+    lua_pushinteger(L, 1); lua_setglobal(L, "LAYER_BG");
+    lua_pushinteger(L, 2); lua_setglobal(L, "LAYER_MID");
+    lua_pushinteger(L, 3); lua_setglobal(L, "LAYER_FG");
+    lua_pushinteger(L, 4); lua_setglobal(L, "LAYER_UI");
+
     // Create love2d.graphics-style table for familiarity
     registerTable("love", {
         {"draw", lua_rectangle},  // Basic draw function
@@ -225,6 +239,16 @@ void LuaBindings::setCanvas(LuaCanvas* canvas) {
 
 void LuaBindings::setInput(InputState* input) {
     currentInput = input;
+}
+
+void LuaBindings::setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleArr) {
+    layerCount = (count > MAX_LUA_LAYERS) ? static_cast<uint8_t>(MAX_LUA_LAYERS) : count;
+    for (uint8_t i = 0; i < layerCount; ++i) {
+        layerCanvases[i] = canvases[i];
+    }
+    layerVisible = visibleArr;
+    activeLayer = 0;
+    currentCanvas = layerCanvases[0];
 }
 
 LuaBindings* LuaBindings::getBindings(lua_State* L) {
@@ -819,6 +843,92 @@ int LuaBindings::lua_setFrame(lua_State* L) {
     s.frame = static_cast<uint8_t>(requestedFrame);
     s.accumMs = 0.0f;
     return 0;
+}
+
+//==============================================================================
+// Layer System Bindings (LAYER-06)
+//==============================================================================
+
+// setLayer(n)  — Switch the active canvas to layer n (Lua 1-indexed, silently clamped)
+int LuaBindings::lua_setLayer(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || b->layerCount == 0) return 0;
+
+    int lua_idx = static_cast<int>(luaL_checkinteger(L, 1));
+    int cpp_idx = lua_idx - 1;  // convert to 0-based
+    if (cpp_idx < 0) cpp_idx = 0;
+    if (cpp_idx >= static_cast<int>(b->layerCount)) cpp_idx = b->layerCount - 1;
+
+    b->activeLayer  = static_cast<uint8_t>(cpp_idx);
+    b->currentCanvas = b->layerCanvases[cpp_idx];
+    return 0;
+}
+
+// getLayer()  — Return current active layer as 1-indexed Lua integer
+int LuaBindings::lua_getLayer(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushinteger(L, 0); return 1; }
+    lua_pushinteger(L, b->activeLayer + 1);
+    return 1;
+}
+
+// clearLayer(n, color)  — Clear only the specified layer buffer (1-indexed, color optional, defaults to 0)
+int LuaBindings::lua_clearLayer(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || b->layerCount == 0) return 0;
+
+    int lua_idx = static_cast<int>(luaL_checkinteger(L, 1));
+    int cpp_idx = lua_idx - 1;  // convert to 0-based
+    if (cpp_idx < 0) cpp_idx = 0;
+    if (cpp_idx >= static_cast<int>(b->layerCount)) cpp_idx = b->layerCount - 1;
+
+    uint8_t color = static_cast<uint8_t>(luaL_optinteger(L, 2, 0));
+
+    LuaCanvas* target = b->layerCanvases[cpp_idx];
+    if (target) {
+        target->clear(color);
+    }
+    return 0;
+}
+
+// getLayerCount()  — Return the number of layers available
+int LuaBindings::lua_getLayerCount(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushinteger(L, 0); return 1; }
+    lua_pushinteger(L, b->layerCount);
+    return 1;
+}
+
+// setLayerVisible(n, visible)  — Set compositor visibility for layer n (1-indexed)
+int LuaBindings::lua_setLayerVisible(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || b->layerCount == 0 || !b->layerVisible) return 0;
+
+    int lua_idx = static_cast<int>(luaL_checkinteger(L, 1));
+    int cpp_idx = lua_idx - 1;  // convert to 0-based
+    if (cpp_idx < 0) cpp_idx = 0;
+    if (cpp_idx >= static_cast<int>(b->layerCount)) cpp_idx = b->layerCount - 1;
+
+    bool visible = (lua_toboolean(L, 2) != 0);
+    b->layerVisible[cpp_idx] = visible;
+    return 0;
+}
+
+// isLayerVisible(n)  — Return whether layer n (1-indexed) is visible
+int LuaBindings::lua_isLayerVisible(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || b->layerCount == 0 || !b->layerVisible) {
+        lua_pushboolean(L, 1);  // default: visible
+        return 1;
+    }
+
+    int lua_idx = static_cast<int>(luaL_checkinteger(L, 1));
+    int cpp_idx = lua_idx - 1;  // convert to 0-based
+    if (cpp_idx < 0) cpp_idx = 0;
+    if (cpp_idx >= static_cast<int>(b->layerCount)) cpp_idx = b->layerCount - 1;
+
+    lua_pushboolean(L, b->layerVisible[cpp_idx] ? 1 : 0);
+    return 1;
 }
 
 //==============================================================================

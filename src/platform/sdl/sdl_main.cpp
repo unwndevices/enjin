@@ -173,9 +173,9 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
-    // Default active canvas = layer 0 (background) — layer 1 in Lua 1-indexing (CONTEXT.md)
-    g_lua.setCanvas(g_lua_layers[0]);
     g_lua.getBindings().setInput(&g_input);
+    // Wire all 4 layer canvases into bindings; setLayers() sets default canvas to layer 0
+    g_lua.getBindings().setLayers(g_lua_layers, enjin2::ENJIN_LAYER_COUNT, g_compositor.visible);
     {
         enjin2::LuaResult load_result = g_lua.loadScript("scripts/e2e_parity.lua");
         if (!load_result.success) {
