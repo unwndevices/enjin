@@ -158,6 +158,8 @@ if(ENJIN2_BUILD_LUA)
     if(ESP32)
         target_compile_definitions(enjin2_lua PRIVATE ESP32)
     endif()
+
+    target_compile_options(enjin2_lua PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Woverride>)
 endif()
 
 # Input abstraction library
@@ -169,6 +171,12 @@ target_include_directories(enjin2_input
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
+
+# Enable -Woverride on all engine targets to catch detached virtual overrides (DT-03)
+# -Woverride is Clang-specific; GCC enforces override keyword mismatches as hard errors natively
+foreach(tgt enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+    target_compile_options(${tgt} PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Woverride>)
+endforeach()
 
 # Main library
 add_library(enjin2 INTERFACE)
@@ -211,8 +219,9 @@ if(ENJIN2_BUILD_WASM)
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
     )
     
-    # Emscripten-specific settings
+    # Emscripten-specific settings (Emscripten uses Clang, so -Woverride is valid here)
     target_compile_options(enjin2_wasm PRIVATE
+        -Woverride
         -sIMPORTED_MEMORY=1
         -sALLOW_MEMORY_GROWTH=1
         -sMAXIMUM_MEMORY=67108864  # 64MB
@@ -282,4 +291,5 @@ if(ENJIN2_BUILD_SDL)
     target_compile_definitions(enjin2_sdl PRIVATE
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
     )
+    target_compile_options(enjin2_sdl PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Woverride>)
 endif()
