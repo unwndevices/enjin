@@ -32,9 +32,9 @@ Requirements for v1.4 milestone. Each maps to roadmap phases.
 
 ### HOT — Lua Hot Reload
 
-- [ ] **HOT-01**: F5 key in SDL3 runner triggers Lua script reload from disk
-- [ ] **HOT-02**: Reload performs full reset (Lua state destroyed and recreated, all bindings re-registered)
-- [ ] **HOT-03**: Reload error (syntax/runtime) displays error message without crashing the runner
+- [x] **HOT-01**: F5 key in SDL3 runner triggers Lua script reload from disk
+- [x] **HOT-02**: Reload performs full reset (Lua state destroyed and recreated, all bindings re-registered)
+- [x] **HOT-03**: Reload error (syntax/runtime) displays error message without crashing the runner
 
 ## v2 Requirements
 
@@ -83,9 +83,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LAYER-04 | Phase 25 | Complete |
 | LAYER-05 | Phase 25 | Complete |
 | LAYER-06 | Phase 25 | Complete |
-| HOT-01 | Phase 26 | Pending |
-| HOT-02 | Phase 26 | Pending |
-| HOT-03 | Phase 26 | Pending |
+| HOT-01 | Phase 26 | Complete |
+| HOT-02 | Phase 26 | Complete |
+| HOT-03 | Phase 26 | Complete |
 
 **Coverage:**
 - v1.4 requirements: 17 total

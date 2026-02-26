@@ -79,7 +79,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 - [x] **Phase 23: Docusaurus Navigation Fix** - Repair MDX navigation and escape angle brackets in the doc generator (completed 2026-02-24)
 - [x] **Phase 24: Sprite System Rework** - Clean API, sprite sheets, frame animation, and Lua sprite pool (completed 2026-02-24)
 - [x] **Phase 25: Multi-Layer Canvas Composition** - 4 independent Canvas4 buffers composited at blit time with Lua API (completed 2026-02-26)
-- [ ] **Phase 26: Lua Hot Reload** - F5 full Lua state reset in SDL3 runner with error display
+- [x] **Phase 26: Lua Hot Reload** - F5 full Lua state reset in SDL3 runner with error display (completed 2026-02-26)
 
 ## Phase Details
 
@@ -170,6 +170,6 @@ Plans:
 | 23. Docusaurus Navigation Fix | 1/1 | Complete    | 2026-02-24 | - |
 | 24. Sprite System Rework | 3/3 | Complete    | 2026-02-24 | - |
 | 25. Multi-Layer Canvas Composition | 3/3 | Complete    | 2026-02-26 | - |
-| 26. Lua Hot Reload | v1.4 | 0/TBD | Not started | - |
+| 26. Lua Hot Reload | 1/1 | Complete   | 2026-02-26 | - |
 
 **Total Progress: 46/46 plans complete (100%) through v1.3 — v1.4 starting at Phase 23**

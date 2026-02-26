@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Engine Capabilities
 status: unknown
-last_updated: "2026-02-26T11:52:39.584Z"
+last_updated: "2026-02-26T13:27:19.600Z"
 progress:
-  total_phases: 9
-  completed_phases: 8
-  total_plans: 28
-  completed_plans: 27
+  total_phases: 10
+  completed_phases: 9
+  total_plans: 29
+  completed_plans: 28
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 25 — Multi-Layer Canvas Composition
+**Current focus:** Phase 26 complete — v1.4 milestone done
 
 ## Current Position
 
-Phase: 25 of 26 (Multi-Layer Canvas Composition)
-Plan: 3 of 3 in current phase — COMPLETE (Phase 25 done)
-Status: Phase 25 complete (3/3 plans done); Phase 26 (LuaCallback fix) is next
-Last activity: 2026-02-26 - Completed 25-03: Lua layer API bindings
+Phase: 26 of 26 (Lua Hot-Reload) — COMPLETE
+Plan: 1 of 1 in current phase — COMPLETE (Phase 26 done)
+Status: All phases complete; v1.4 milestone done
+Last activity: 2026-02-26 - Completed 26-01: F5 hot-reload, LuaCallback fix, sprite pool reset
 
-Progress: [█████████░] 90% (Phase 25 complete; 1 phase remaining in v1.4)
+Progress: [██████████] 100% (All 26 phases complete)
 
 ## Performance Metrics
 
@@ -37,7 +37,7 @@ Progress: [█████████░] 90% (Phase 25 complete; 1 phase remai
 - v1.1: 17 plans
 - v1.2: 5 plans
 - v1.3: 7 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01, 22-02)
-- v1.4: 6 plans completed (24-01, 24-02, 24-03, 25-01, 25-02, 25-03)
+- v1.4: 7 plans completed (24-01, 24-02, 24-03, 25-01, 25-02, 25-03, 26-01)
 
 *Updated after each plan completion*
 
@@ -63,6 +63,9 @@ Recent decisions affecting v1.4 work:
 - [Phase 25-02]: LuaCanvas wrappers are static locals inside main() (no default constructor); default active canvas = layers[0]; clearAll/composite sandwich in frame loop
 - [Phase 25]: setLayers() replaces setCanvas() in sdl_main.cpp — sets currentCanvas=layerCanvases[0] internally, making explicit setCanvas call redundant
 - [Phase 25]: lua layer indices are 1-indexed in Lua; cpp_idx = lua_idx - 1; out-of-range silently clamped to [0, layerCount-1] matching setFrame pattern
+- [Phase 26-lua-hot-reload]: LuaCallback overload neutered to no-op to eliminate dangling-pointer UB; all bindings use lua_CFunction exclusively
+- [Phase 26-lua-hot-reload]: performReload() encapsulates full Lua lifecycle (shutdown+initialize+setLayers+setInput+loadScript); initial startup and F5 share identical code path
+- [Phase 26-lua-hot-reload]: lua_ok gate pattern: false=paused (error state), F5 retries; runtime errors during update/draw also set lua_ok=false
 
 ### Pending Todos
 
@@ -79,7 +82,7 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 26 prereq] LuaCallback dangling-pointer bug confirmed in lua_engine.cpp — fix as first step of Phase 26; all new bindings use lua_CFunction only
+- [Phase 26 RESOLVED] LuaCallback dangling-pointer bug fixed (no-op body) in Phase 26-01
 - [Phase 25 spec RESOLVED] Buffer access: getBufferSize() + getBuffer() on Canvas4 are sufficient for compositor (no getRawBuffer() extension needed)
 - [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2; ENJIN_LAYER_COUNT constexpr + static_assert already in place
 
@@ -91,5 +94,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 25-03-PLAN.md — Lua layer API bindings (bindings.hpp/cpp, sdl_main.cpp, layer_demo.lua)
+Stopped at: Completed 26-01-PLAN.md — F5 hot-reload, LuaCallback fix, sprite pool reset (sdl_main.cpp, bindings.hpp/cpp, lua_engine.cpp)
 Resume file: None
