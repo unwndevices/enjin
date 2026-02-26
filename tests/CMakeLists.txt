@@ -46,3 +46,47 @@ target_include_directories(shadow_mode_test PRIVATE
 target_link_libraries(shadow_mode_test PRIVATE
     enjin2
 )
+
+# Sprite system unit test (SpriteSheet + C_Sprite animation)
+add_executable(sprite_test
+    sprite_test.cpp
+)
+target_include_directories(sprite_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(sprite_test PRIVATE
+    enjin2
+)
+add_test(NAME sprite_test COMMAND sprite_test)
+
+# SDL3 sprite visual test (pikachu with palette colors)
+if(ENJIN2_BUILD_SDL)
+    add_executable(sprite_sdl_test
+        sprite_sdl_test.cpp
+    )
+    target_include_directories(sprite_sdl_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    target_link_libraries(sprite_sdl_test PRIVATE
+        enjin2_core
+        enjin2_graphics
+        enjin2_input
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
+        SDL3::SDL3
+    )
+    target_compile_definitions(sprite_sdl_test PRIVATE
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA>
+    )
+
+    # Copy Lua demo script to build directory
+    if(ENJIN2_BUILD_LUA)
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/scripts)
+        configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/pikachu_demo.lua
+            ${CMAKE_CURRENT_BINARY_DIR}/scripts/pikachu_demo.lua
+            COPYONLY
+        )
+    endif()
+endif()
