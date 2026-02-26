@@ -733,9 +733,9 @@ int LuaBindings::lua_newSprite(lua_State* L) {
     s.sheet.cellH = static_cast<uint8_t>(luaL_checkinteger(L, 3));
     s.sheet.cols  = static_cast<uint8_t>(luaL_checkinteger(L, 4));
     s.sheet.rows  = static_cast<uint8_t>(luaL_checkinteger(L, 5));
-    s.fps     = 8.0f;
-    s.accumMs = 0.0f;
-    s.frame   = 0;
+    s.fps      = 8.0f;
+    s.accumSec = 0.0f;
+    s.frame    = 0;
     s.mode    = AnimMode::Loop;
     s.forward = true;
     s.done    = false;
@@ -788,12 +788,12 @@ int LuaBindings::lua_updateSprite(lua_State* L) {
     auto& s = b->spritePool[handle];
     if (!s.sheet.data || s.fps <= 0.0f || s.done) return 0;
 
-    float dtMs = static_cast<float>(luaL_checknumber(L, 2));
-    s.accumMs += dtMs;
-    const float frameMs = 1000.0f / s.fps;
+    float dt = static_cast<float>(luaL_checknumber(L, 2));
+    s.accumSec += dt;
+    const float frameSec = 1.0f / s.fps;
 
-    while (s.accumMs >= frameMs) {
-        s.accumMs -= frameMs;  // preserve carry-over
+    while (s.accumSec >= frameSec) {
+        s.accumSec -= frameSec;  // preserve carry-over
 
         const uint8_t total = s.sheet.frameCount();
         if (total == 0) break;
@@ -851,8 +851,8 @@ int LuaBindings::lua_setFrame(lua_State* L) {
     if (requestedFrame < 0) requestedFrame = 0;
     if (requestedFrame >= total) requestedFrame = total - 1;
 
-    s.frame = static_cast<uint8_t>(requestedFrame);
-    s.accumMs = 0.0f;
+    s.frame    = static_cast<uint8_t>(requestedFrame);
+    s.accumSec = 0.0f;
     return 0;
 }
 

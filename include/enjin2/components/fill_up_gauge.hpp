@@ -72,8 +72,8 @@ public:
     void onCreate() override {}
 
     /// @brief Update the gauge state
-    /// @param deltaTime Time elapsed since last update in seconds
-    void onUpdate(float deltaTime) override {}
+    /// @param dt Time elapsed since last update in seconds
+    void onUpdate(float dt) override {}
 
     /**
      * @brief Draw the gauge to the canvas

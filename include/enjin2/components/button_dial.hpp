@@ -56,8 +56,8 @@ public:
     void onCreate() override {}
 
     /// @brief Update the button dial state
-    /// @param deltaTime Time elapsed since last update in seconds
-    void onUpdate(float deltaTime) override {}
+    /// @param dt Time elapsed since last update in seconds
+    void onUpdate(float dt) override {}
 
     /**
      * @brief Draw the button dial to the canvas

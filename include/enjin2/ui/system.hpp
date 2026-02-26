@@ -27,9 +27,9 @@ public:
     
     /**
      * @brief Update system with delta time
-     * @param deltaTime Time since last update in seconds
+     * @param dt Time since last update in seconds
      */
-    virtual void update(float deltaTime) = 0;
+    virtual void update(float dt) = 0;
     
     /**
      * @brief Get system priority for update ordering
@@ -235,17 +235,17 @@ public:
     
     /**
      * @brief Update all systems in priority order
-     * @param deltaTime Time since last update
+     * @param dt Time since last update in seconds
      */
-    void update(float deltaTime) {
+    void update(float dt) {
         if (needsSort) {
             sortSystems();
             needsSort = false;
         }
-        
+
         for (size_t i = 0; i < systemCount; ++i) {
             if (systems[i]) {
-                systems[i]->update(deltaTime);
+                systems[i]->update(dt);
             }
         }
     }

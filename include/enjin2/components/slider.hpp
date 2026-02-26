@@ -52,8 +52,8 @@ public:
     void onCreate() override {}
 
     /// @brief Update the slider state
-    /// @param deltaTime Time elapsed since last update in seconds
-    void onUpdate(float deltaTime) override {}
+    /// @param dt Time elapsed since last update in seconds
+    void onUpdate(float dt) override {}
 
     /**
      * @brief Draw the slider to the canvas

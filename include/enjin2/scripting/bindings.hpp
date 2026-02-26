@@ -190,7 +190,7 @@ private:
     struct SpriteState {
         SpriteSheet sheet;       ///< Sheet data (pointer to external pixel data)
         float       fps{8.0f};   ///< Playback rate in frames per second
-        float       accumMs{0.0f}; ///< Accumulated milliseconds since last frame advance
+        float       accumSec{0.0f}; ///< Accumulated seconds since last frame advance
         uint8_t     frame{0};    ///< Current frame index
         AnimMode    mode{AnimMode::Loop}; ///< Animation loop mode
         bool        forward{true};  ///< Ping-pong direction (true = forward)

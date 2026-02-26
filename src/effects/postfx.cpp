@@ -8,18 +8,19 @@ namespace enjin2
 {
 
     PostFx::PostFx()
-        : elapsed_time(0), scanline_offset(0), noise_seed(static_cast<uint16_t>(std::time(nullptr) & 0xFFFF))
+        : elapsed_time(0.0f), noisePeriodAccum(0.0f), scanline_offset(0),
+          noise_seed(static_cast<uint16_t>(std::time(nullptr) & 0xFFFF))
     {
         // Initialize random seed for effects
         std::srand(static_cast<unsigned int>(std::time(nullptr)));
     }
 
-    void PostFx::update(uint16_t deltaTime)
+    void PostFx::update(float dt)
     {
-        elapsed_time += deltaTime;
+        elapsed_time += dt;
 
-        // Update scanline animation (matches original Enjin timing)
-        if (elapsed_time >= 150)
+        // Update scanline animation (matches original Enjin timing: 150ms = 0.15s)
+        if (elapsed_time >= 0.15f)
         {
             scanline_offset++;
             if (scanline_offset > 127)
@@ -28,9 +29,11 @@ namespace enjin2
             }
         }
 
-        // Update noise seed periodically
-        if ((elapsed_time % 100) == 0)
+        // Update noise seed periodically using sub-accumulator (replaces integer modulo)
+        noisePeriodAccum += dt;
+        if (noisePeriodAccum >= 0.1f)
         {
+            noisePeriodAccum -= 0.1f;
             noise_seed++;
         }
     }

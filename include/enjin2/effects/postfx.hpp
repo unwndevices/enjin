@@ -70,9 +70,9 @@ public:
     
     /**
      * @brief Update effect animations
-     * @param deltaTime Time since last update in milliseconds
+     * @param dt Time since last update in seconds
      */
-    void update(uint16_t deltaTime);
+    void update(float dt);
     
     /**
      * @brief Apply CRT scanlines effect
@@ -150,12 +150,13 @@ public:
     
     /**
      * @brief Get current animation time for time-based effects
-     * @return Current time in milliseconds
+     * @return Current time in seconds
      */
-    uint32_t getTime() const { return elapsed_time; }
+    float getTime() const { return elapsed_time; }
     
 private:
-    uint32_t elapsed_time;          ///< Elapsed time for animations
+    float elapsed_time;             ///< Elapsed time for animations in seconds
+    float noisePeriodAccum;         ///< Sub-accumulator for periodic noise trigger
     uint8_t scanline_offset;        ///< Current scanline offset
     uint16_t noise_seed;            ///< Noise generation seed
     

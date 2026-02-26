@@ -18,9 +18,9 @@ class AnimationSystem : public System<AnimationSystem> {
 public:
     /**
      * @brief Update all animations
-     * @param deltaTime Time since last update in seconds
+     * @param dt Time since last update in seconds
      */
-    void update(float deltaTime) override {
+    void update(float dt) override {
         // In a real implementation, this would iterate over all entities
         // with AnimationComponent using the component storage system
         
@@ -42,12 +42,12 @@ private:
     /**
      * @brief Update individual animation component
      * @param animation Animation to update
-     * @param deltaTime Delta time
+     * @param dt Delta time in seconds
      */
-    void updateAnimation(AnimationComponent& animation, float deltaTime) {
+    void updateAnimation(AnimationComponent& animation, float dt) {
         if (!animation.playing) return;
-        
-        animation.currentTime += deltaTime * animation.speed;
+
+        animation.currentTime += dt * animation.speed;
         
         if (animation.currentTime >= animation.duration) {
             if (animation.looping) {
@@ -92,9 +92,9 @@ public:
     
     /**
      * @brief Update input processing
-     * @param deltaTime Time since last update
+     * @param dt Time since last update in seconds
      */
-    void update(float deltaTime) override {
+    void update(float dt) override {
         // Reset transient states
         mouseClicked = false;
         
@@ -181,9 +181,9 @@ public:
     
     /**
      * @brief Update rendering
-     * @param deltaTime Time since last update
+     * @param dt Time since last update in seconds
      */
-    void update(float deltaTime) override {
+    void update(float dt) override {
         if (!canvas) return;
         
         // Clear canvas

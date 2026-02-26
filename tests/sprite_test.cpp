@@ -181,17 +181,17 @@ static void test_animation_loop()
 
     ASSERT(sprite.getFrame() == 0, "Loop: starts at frame 0");
 
-    sprite.lateUpdate(100);  // advance 1 frame
-    ASSERT(sprite.getFrame() == 1, "Loop: frame 1 after 100ms");
+    sprite.lateUpdate(0.1f);  // advance 1 frame (100ms = 0.1s)
+    ASSERT(sprite.getFrame() == 1, "Loop: frame 1 after 0.1s");
 
-    sprite.lateUpdate(100);  // advance 1 frame
-    ASSERT(sprite.getFrame() == 2, "Loop: frame 2 after 200ms");
+    sprite.lateUpdate(0.1f);  // advance 1 frame
+    ASSERT(sprite.getFrame() == 2, "Loop: frame 2 after 0.2s");
 
-    sprite.lateUpdate(100);  // advance 1 frame
-    ASSERT(sprite.getFrame() == 3, "Loop: frame 3 after 300ms");
+    sprite.lateUpdate(0.1f);  // advance 1 frame
+    ASSERT(sprite.getFrame() == 3, "Loop: frame 3 after 0.3s");
 
-    sprite.lateUpdate(100);  // wrap around
-    ASSERT(sprite.getFrame() == 0, "Loop: wraps to frame 0 after 400ms");
+    sprite.lateUpdate(0.1f);  // wrap around
+    ASSERT(sprite.getFrame() == 0, "Loop: wraps to frame 0 after 0.4s");
 
     ASSERT(!sprite.isDone(), "Loop: isDone should be false");
 }
@@ -216,15 +216,15 @@ static void test_animation_once()
     ASSERT(sprite.getFrame() == 0, "Once: starts at frame 0");
     ASSERT(!sprite.isDone(), "Once: not done at start");
 
-    sprite.lateUpdate(100);  // → frame 1
-    ASSERT(sprite.getFrame() == 1, "Once: frame 1 after 100ms");
+    sprite.lateUpdate(0.1f);  // → frame 1 (100ms = 0.1s)
+    ASSERT(sprite.getFrame() == 1, "Once: frame 1 after 0.1s");
     ASSERT(!sprite.isDone(), "Once: not done at frame 1");
 
-    sprite.lateUpdate(100);  // → frame 2 (last), but not done yet (frame must display)
-    ASSERT(sprite.getFrame() == 2, "Once: frame 2 after 200ms");
+    sprite.lateUpdate(0.1f);  // → frame 2 (last), but not done yet (frame must display)
+    ASSERT(sprite.getFrame() == 2, "Once: frame 2 after 0.2s");
     ASSERT(!sprite.isDone(), "Once: not done yet at last frame (needs one more tick)");
 
-    sprite.lateUpdate(100);  // attempt to advance past last frame → done
+    sprite.lateUpdate(0.1f);  // attempt to advance past last frame → done
     ASSERT(sprite.getFrame() == 2, "Once: stays at frame 2 after done");
     ASSERT(sprite.isDone(), "Once: isDone after attempting to advance past last frame");
 }

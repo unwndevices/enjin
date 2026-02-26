@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 
     // Run scene for 60 frames
     const uint16_t FRAME_COUNT = 60;
-    const uint16_t DELTA_TIME = 16; // ~60 FPS (16ms per frame)
+    const float DELTA_TIME = 0.016f; // ~60 FPS (16ms = 0.016 seconds per frame)
 
     std::cout << "Running simulation for " << FRAME_COUNT << " frames..." << std::endl;
 
