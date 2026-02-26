@@ -1,0 +1,20 @@
+GIMP Palette
+Name: enjin-gameboy
+Columns: 16
+#
+ 15  56  15	0 darkest green
+ 48  98  48	1 dark green
+139 172  15	2 light green
+155 188  15	3 lightest green
+  0   0   0	4 unused
+  0   0   0	5 unused
+  0   0   0	6 unused
+  0   0   0	7 unused
+  0   0   0	8 unused
+  0   0   0	9 unused
+  0   0   0	10 unused
+  0   0   0	11 unused
+  0   0   0	12 unused
+  0   0   0	13 unused
+  0   0   0	14 unused
+255   0 255	15 TRANSPARENT

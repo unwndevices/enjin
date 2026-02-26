@@ -1,0 +1,20 @@
+GIMP Palette
+Name: enjin-default
+Columns: 16
+#
+ 26  28  44	0 dark navy
+ 93  39  93	1 dark purple
+177  62  83	2 dark red
+239 125  87	3 orange
+255 205 117	4 yellow
+167 240 112	5 light green
+ 56 183 100	6 green
+ 37 113 121	7 dark teal
+ 41  54 111	8 dark blue
+ 59  93 201	9 blue
+ 65 166 246	10 light blue
+115 239 247	11 cyan
+244 244 244	12 near-white
+ 86 108 134	13 slate blue-grey
+ 51  60  87	14 dark slate
+255   0 255	15 TRANSPARENT
