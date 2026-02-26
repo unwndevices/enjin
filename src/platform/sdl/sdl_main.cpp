@@ -2,6 +2,7 @@
 #include <SDL3/SDL_main.h>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include <enjin2/graphics/canvas.hpp>
 #include <enjin2/graphics/layer_compositor.hpp>
@@ -96,6 +97,38 @@ static void expand_canvas_to_rgb() {
 }
 
 // ---------------------------------------------------------------------------
+// performReload — full Lua state teardown and reload from disk
+// Returns true on success, false on init failure or script load error.
+// Prints [reload] or [reload error] to stderr.
+// Called at initial startup and on every F5 press (identical code path).
+// ---------------------------------------------------------------------------
+
+#ifdef ENJIN2_BUILD_LUA
+static bool performReload(enjin2::LuaScriptSystem& lua,
+                          enjin2::LuaCanvas** layers,
+                          uint8_t count,
+                          bool* visible,
+                          enjin2::InputState* input,
+                          const std::string& path)
+{
+    lua.shutdown();
+    if (!lua.initialize()) {
+        std::cerr << "[reload error] Lua init failed\n";
+        return false;
+    }
+    lua.getBindings().setLayers(layers, count, visible);
+    lua.getBindings().setInput(input);
+    enjin2::LuaResult r = lua.loadScript(path);
+    if (r.success) {
+        std::cerr << "[reload] " << path << "\n";
+        return true;
+    }
+    std::cerr << "[reload error] " << r.error << "\n";
+    return false;
+}
+#endif
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -108,6 +141,14 @@ int main(int argc, char* argv[]) {
             if (requested >= 1 && requested <= 300) {
                 fps = requested;
             }
+        }
+    }
+
+    // --- Parse --script path ---
+    std::string script_path = "scripts/layer_demo.lua";  // default
+    for (int i = 1; i < argc - 1; i++) {
+        if (strcmp(argv[i], "--script") == 0) {
+            script_path = argv[i + 1];
         }
     }
 
@@ -165,24 +206,11 @@ int main(int argc, char* argv[]) {
         &g_lua_layer0, &g_lua_layer1, &g_lua_layer2, &g_lua_layer3
     };
 
-    if (!g_lua.initialize()) {
-        SDL_Log("Lua init failed");
-        SDL_DestroyTexture(texture);
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-    g_lua.getBindings().setInput(&g_input);
-    // Wire all 4 layer canvases into bindings; setLayers() sets default canvas to layer 0
-    g_lua.getBindings().setLayers(g_lua_layers, enjin2::ENJIN_LAYER_COUNT, g_compositor.visible);
-    {
-        enjin2::LuaResult load_result = g_lua.loadScript("scripts/e2e_parity.lua");
-        if (!load_result.success) {
-            std::cerr << "Lua script load error: " << load_result.error << "\n";
-            g_compositor.layers[0].clear(enjin2::Pixel4(14));
-        }
-    }
+    // lua_ok gates update/draw calls; false = paused (error state, awaiting F5)
+    bool lua_ok = performReload(g_lua, g_lua_layers, enjin2::ENJIN_LAYER_COUNT,
+                                g_compositor.visible, &g_input, script_path);
+    // Initial startup failure behaves identically to reload failure:
+    // window stays open, canvas is blank, F5 retries.
 #endif
 
     // --- Game loop ---
@@ -197,10 +225,18 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
-            } else if (event.type == SDL_EVENT_KEY_DOWN) {
+            } else if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
                 if (event.key.key == SDLK_ESCAPE) {
                     running = false;
                 }
+#ifdef ENJIN2_BUILD_LUA
+                else if (event.key.key == SDLK_F5) {
+                    g_compositor.clearAll();
+                    lua_ok = performReload(g_lua, g_lua_layers, enjin2::ENJIN_LAYER_COUNT,
+                                          g_compositor.visible, &g_input, script_path);
+                    prev_ticks = SDL_GetTicks();  // prevent dt spike on first post-reload frame
+                }
+#endif
             }
         }
 
@@ -223,19 +259,21 @@ int main(int argc, char* argv[]) {
 
         // --- Lua per-frame calls ---
 #ifdef ENJIN2_BUILD_LUA
-        g_lua.getBindings().setInput(&g_input);  // wire current-frame input AFTER poll
-        {
-            enjin2::LuaResult r = g_lua.callFunction("update", dt);
-            if (!r.success) {
-                std::cerr << "Lua update error: " << r.error << "\n";
-                g_compositor.layers[0].clear(enjin2::Pixel4(14));
+        if (lua_ok) {
+            g_lua.getBindings().setInput(&g_input);  // wire current-frame input AFTER poll
+            {
+                enjin2::LuaResult r = g_lua.callFunction("update", dt);
+                if (!r.success) {
+                    std::cerr << "[lua error] " << r.error << "\n";
+                    lua_ok = false;
+                }
             }
-        }
-        {
-            enjin2::LuaResult r = g_lua.callFunction("draw");
-            if (!r.success) {
-                std::cerr << "Lua draw error: " << r.error << "\n";
-                g_compositor.layers[0].clear(enjin2::Pixel4(14));
+            if (lua_ok) {
+                enjin2::LuaResult r = g_lua.callFunction("draw");
+                if (!r.success) {
+                    std::cerr << "[lua error] " << r.error << "\n";
+                    lua_ok = false;
+                }
             }
         }
 #endif
