@@ -1,5 +1,28 @@
 # Milestones
 
+## v1.4 Engine Capabilities (Shipped: 2026-02-26)
+
+**Phases completed:** 4 phases (23-26), 8 plans, 15 tasks
+**Timeline:** 2 days (2026-02-24 → 2026-02-26)
+**Git range:** fedeb12..5a70871, 52 commits, 73 files changed, +9,893 / -750 lines
+
+**Key accomplishments:**
+- Fixed Docusaurus API docs — MDX-safe escaping across 84 pages, zero-error build
+- SpriteSheet zero-alloc struct with grid addressing, frame animation (Once/Loop/PingPong), and 16-slot Lua sprite pool
+- C_Drawable signature migrated from ICanvas<uint8_t> to ICanvas<Pixel4> across all derived classes
+- LayerCompositor with 4 independent Canvas4 buffers, painter's-order composition with index-15 transparency
+- SDL3 multi-layer rendering + Lua layer API (setLayer/clearLayer/getLayerCount/visibility)
+- F5 hot-reload with full Lua state reset, error recovery, and LuaCallback dangling-pointer fix
+
+**Tech debt (non-blocking):**
+- Full Emscripten toolchain build not verified (code inspection conclusive)
+- `getPaletteRGB()` snapshot semantics — callers must re-invoke after palette mutation
+- ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
+
+**See:** [milestones/v1.4-ROADMAP.md](milestones/v1.4-ROADMAP.md) | [milestones/v1.4-REQUIREMENTS.md](milestones/v1.4-REQUIREMENTS.md)
+
+---
+
 ## v1.3 Tomodachi Readiness (Shipped: 2026-02-24)
 
 **Phases completed:** 4 phases (19-22), 7 plans
@@ -84,3 +107,5 @@
 **See:** [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) | [milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-REQUIREMENTS.md)
 
 ---
+
+

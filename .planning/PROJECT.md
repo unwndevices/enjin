@@ -2,52 +2,39 @@
 
 ## What This Is
 
-enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded devices and WASM. It runs on ESP32, WebAssembly (Emscripten), and SDL3 desktop, with Lua scripting support and a 16-color indexed palette system. enjin2 powers Tomodachi — a portable MIDI/audio control gadget with a pixel display.
+enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded devices and WASM. It runs on ESP32, WebAssembly (Emscripten), and SDL3 desktop, with Lua scripting, a 16-color indexed palette system, multi-layer canvas composition, sprite sheets with frame animation, and F5 hot reload for rapid iteration. enjin2 powers Tomodachi — a portable MIDI/audio control gadget with a pixel display.
 
 ## Core Value
 
 enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation.
 
-## Current Milestone: v1.4 Engine Capabilities
-
-**Goal:** Rework the sprite system, add multi-layer canvas composition, fix Docusaurus navigation, and add Lua hot reload to SDL3.
-
-**Target features:**
-- Multi-layer composition (4 independent Canvas4 buffers composited at blit)
-- Sprites system rework (clean API, sprite sheets, frame animation)
-- Docusaurus MDX navigation fix
-- Lua hot reload in SDL3 runner (F5 full reset)
-
 ## Current State
 
-**Shipped: v1.3 Tomodachi Readiness (2026-02-24)**
+**Shipped: v1.4 Engine Capabilities (2026-02-26)**
+- SpriteSheet zero-alloc struct with grid addressing, frame animation (Once/Loop/PingPong), and 16-slot Lua sprite pool
+- LayerCompositor with 4 independent Canvas4 buffers, painter's-order composition with index-15 transparency
+- SDL3 multi-layer rendering + Lua layer API (setLayer/clearLayer/getLayerCount/visibility)
+- F5 hot-reload with full Lua state reset, error recovery, and LuaCallback dangling-pointer fix
+- Docusaurus API docs fully navigable — MDX-safe escaping across 84 pages
+- 4 phases, 8 plans, 73 files changed, ~126k LOC C++
+
+**Previously shipped: v1.3 Tomodachi Readiness (2026-02-24)**
 - 16-color PICO-8 indexed palette with transparent index 15 and runtime swap
 - Platform-agnostic input abstraction (InputState, bitmask, axes, edge detection)
 - SDL3 opt-in runner with Canvas4→RGB24 blit, 4× nearest-neighbor scaling, game loop
 - Lua input polling API + e2e_parity.lua confirming cross-platform script parity
-- Same Lua scripts run unmodified on SDL3, WASM, and ESP32
-- 4 phases, 7 plans, 39 files changed, ~67k LOC C++
 
 **Previously shipped: v1.2 Tech Debt Cleanup (2026-02-23)**
 - Dead enjin1 compat headers, benchmarks, and CMake references removed
-- extractText() rewritten with xml2js ordered parsing for correct document-order traversal
-- formatMethod() const const duplication eliminated, 84 API pages regenerated clean
-- WASM build made Lua-optional via CMake generator expressions and C++ preprocessor guards
-- Generated LaTeX files untracked from git
-- 3 phases, 5 plans, 330 files changed, -33k net lines (cleanup)
+- WASM build made Lua-optional via CMake generator expressions
 
 **Previously shipped: v1.1 Project Infrastructure & Documentation Enhancement (2026-02-23)**
-- Professional README with badges, features, and documentation links
-- Lua build dependency resolved with CMake options
-- 0 Doxygen warnings (down from 372) with CI threshold gate
+- 0 Doxygen warnings with CI threshold gate
 - 76+ clean API pages across 9 modules with module overviews
-- Documentation pipeline fully operational: Doxygen XML → generate-api-docs.js → Docusaurus → GitHub Pages
 
 **Previously shipped: v1.0 Migration + Documentation (2026-02-01)**
 - enjin2 fully independent with zero enjin1 dependencies
-- 28,271 LOC C++ codebase
-- Documentation pipeline: Doxygen + Docusaurus (59 initial API pages)
-- All 14 v1 requirements validated
+- Documentation pipeline: Doxygen + Docusaurus + GitHub Pages
 
 ## Requirements
 
@@ -97,13 +84,27 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - ✓ Edge detection (justPressed, held, justReleased) in shared layer — v1.3 (Phase 20, INP-03)
 - ✓ SDL3 keyboard-to-button default mapping (arrows, Z/X, Enter) — v1.3 (Phase 21, INP-04)
 - ✓ Lua input polling API (isButtonHeld, isButtonJustPressed, getAxis) — v1.3 (Phase 22, INP-05)
+- ✓ API sidebar navigation renders correctly with all pages accessible — v1.4 (Phase 23, DOC-01)
+- ✓ generate-api-docs.js escapes angle brackets for MDX-safe regenerations — v1.4 (Phase 23, DOC-02)
+- ✓ Sprite class redesigned with clean zero-alloc API targeting ICanvas<Pixel4> — v1.4 (Phase 24, SPR-01)
+- ✓ Sprite sheet loaded as uniform grid with cell dimensions — v1.4 (Phase 24, SPR-02)
+- ✓ Frame addressed by linear index or (row, col) position — v1.4 (Phase 24, SPR-03)
+- ✓ Frame animation with FPS rate and loop modes (once, loop, ping-pong) — v1.4 (Phase 24, SPR-04)
+- ✓ C_Sprite component updated to use new SpriteSheet API — v1.4 (Phase 24, SPR-05)
+- ✓ Lua API exposes sprite pool with newSprite/drawSprite/updateSprite/setFrame — v1.4 (Phase 24, SPR-06)
+- ✓ Engine renders up to 4 independent Canvas4 layers composited in draw order — v1.4 (Phase 25, LAYER-01)
+- ✓ Each drawable assigned to exactly one layer via buffer_index — v1.4 (Phase 25, LAYER-02)
+- ✓ Layers composited at blit time using index 15 as passthrough transparency — v1.4 (Phase 25, LAYER-03)
+- ✓ Layer count is compile-time configurable (default 4) — v1.4 (Phase 25, LAYER-04)
+- ✓ SDL3 runner composites all layers before blitting to GPU texture — v1.4 (Phase 25, LAYER-05)
+- ✓ Lua API exposes setLayer/clearLayer/getLayerCount/visibility — v1.4 (Phase 25, LAYER-06)
+- ✓ F5 key in SDL3 runner triggers Lua script reload from disk — v1.4 (Phase 26, HOT-01)
+- ✓ Reload performs full reset (Lua state destroyed and recreated) — v1.4 (Phase 26, HOT-02)
+- ✓ Reload error displays message without crashing the runner — v1.4 (Phase 26, HOT-03)
 
 ### Active
 
-- [ ] LAYER-01–06: Multi-layer Canvas4 composition with Lua API
-- [ ] DOC-01–02: Docusaurus API navigation fix
-- [ ] SPR-01–06: Sprites system rework (clean API, sprite sheets, frame animation)
-- [ ] HOT-01–03: Lua hot reload in SDL3 runner (F5)
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -112,31 +113,39 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - Dual-backend compile-time switching — Removed in Phase 5
 - Usage examples in API documentation — Deferred to future milestone
 - Getting started guide — Deferred to future milestone
-- Multi-layer composition — Deferred to v1.4+
 - MIDI/audio integration — Tomodachi-side, not enjin2
 - SDL2 (legacy) — SDL3 is stable since Jan 2025; SDL2 receives no new features
 - Input libraries (Gainput, MPG) — Custom abstraction fits zero-alloc constraint
 - Full alpha blending per pixel — Chroma-key transparency (index 15) sufficient for 4-bit canvas
+- Per-pixel alpha blending — Incompatible with 4-bit indexed palette
+- Dynamic layer count at runtime — Violates zero-alloc constraint
+- Sprite rotation at blit time — No FPU on ESP32; pre-rotate frames in sheet
+- Non-uniform sprite sheet frames — Requires per-frame metadata, breaks grid math simplicity
+- File-watch auto-reload — Platform-specific OS APIs; F5 manual reload is sufficient
+- Partial Lua state hot-patch — Produces dangling references; full reset is correct semantic
+- WASM/ESP32 hot reload — Developer tool for SDL3 runner only
 
 ## Context
 
-**After v1.3:**
-enjin2 is Tomodachi-ready with:
-- 16-color PICO-8 indexed palette (index 15 transparent, runtime swap, no re-render)
-- Platform-agnostic input abstraction compiling clean on ESP32, WASM, SDL3
-- SDL3 desktop runner as third platform for rapid Lua iteration before ESP32 deployment
+**After v1.4:**
+enjin2 is a feature-complete game engine foundation with:
+- Multi-layer compositor (4 independent Canvas4 buffers, painter's-order, index-15 transparency)
+- SpriteSheet zero-alloc struct with grid addressing, 3 animation modes, 16-slot Lua pool
+- F5 hot-reload in SDL3 runner (full Lua state reset, error recovery, idempotent)
+- 16-color PICO-8 indexed palette, platform-agnostic input, SDL3/WASM/ESP32 targets
 - Lua scripts portable across all three platforms without modification
-- ~67k LOC C++, CMake multi-target (enjin2_core, enjin2_graphics, enjin2_input, enjin2_lua, enjin2_wasm, enjin2_sdl)
+- ~126k LOC C++, CMake multi-target (enjin2_core, enjin2_graphics, enjin2_input, enjin2_lua, enjin2_wasm, enjin2_sdl)
+- Unit test suites: input, palette, sprite, compositor (all passing)
 
 **Known tech debt:**
 - `getPaletteRGB()` snapshot semantics (re-invoke after palette mutation; SDL runner unaffected)
-- API navigation disabled in Docusaurus due to MDX syntax issues (carried from v1.0)
 - Full Emscripten toolchain build not verified in dev environment
+- ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
 
 ## Constraints
 
 - **Structure**: Clean and intelligent organization, no fuss
-- **Validation**: Manual testing (no automated test suite)
+- **Validation**: Manual testing + targeted unit tests (input, palette, sprite, compositor)
 - **Memory**: No dynamic allocation (static arrays, no heap)
 - **Platforms**: Must work on ESP32, WASM, and SDL3 desktop
 
@@ -171,6 +180,18 @@ enjin2 is Tomodachi-ready with:
 | InputState* initialized to nullptr in LuaBindings | Null guard in all input bindings prevents crash before setInput() call | ✓ Working - Phase 22 |
 | lua_type(L,1)==LUA_TSTRING for string detection | lua_isstring is too permissive (numbers coerce to strings) | ✓ Working - Phase 22 |
 | enjin2_sdl conditional Lua link via generator expressions | Zero impact on non-Lua builds; consistent with Phase 18 pattern | ✓ Working - Phase 22 |
+| escapeForMdx at extraction time in generate-api-docs.js | All downstream uses of prose fields are automatically safe | ✓ Working - Phase 23 |
+| SpriteSheet inline draw() in header (no .cpp) | Matches codebase header-only pattern for simple structs | ✓ Working - Phase 24 |
+| Compile-time transparency index 15 in SpriteSheet::draw() | No matte parameter; consistent with LayerCompositor | ✓ Working - Phase 24 |
+| C_Drawable::draw() signature ICanvas<Pixel4>& (not uint8_t) | Enables 4-bit palette pipeline; C_Canvas draw() stubbed for ENG-01 | ✓ Working - Phase 24 |
+| lua_drawSprite via LuaCanvas::setPixel (type-erased) | Avoids ICanvas<Pixel4> cast in binding; works with any canvas type | ✓ Working - Phase 24 |
+| DrawLayer enum deleted; uint8_t buffer_index direct slot | Removes abstraction layer causing legacy naming bugs | ✓ Working - Phase 25 |
+| LayerCompositor composite() uses getBufferSize() not BUFFER_SIZE | BUFFER_SIZE is private on Canvas4; public accessor equivalent | ✓ Working - Phase 25 |
+| setLayers() replaces setCanvas() in SDL3 runner | Sets currentCanvas=layers[0] internally; single call wires all layers | ✓ Working - Phase 25 |
+| Lua layer indices 1-indexed; cpp_idx = lua_idx - 1 | Lua convention; out-of-range clamped to [0, layerCount-1] | ✓ Working - Phase 25 |
+| LuaCallback overload neutered to no-op (not removed) | Preserves ABI; all bindings use lua_CFunction exclusively | ✓ Good - Phase 26 |
+| performReload() encapsulates full Lua lifecycle | shutdown+initialize+setLayers+setInput+loadScript; initial and F5 share path | ✓ Working - Phase 26 |
+| lua_ok gate pattern for error recovery | false=paused (error state), F5 retries; runtime errors also set false | ✓ Working - Phase 26 |
 
 ---
-*Last updated: 2026-02-24 after v1.4 milestone start*
+*Last updated: 2026-02-26 after v1.4 milestone*
