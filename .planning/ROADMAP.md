@@ -235,7 +235,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 | 25. Multi-Layer Canvas Composition | v1.4 | 3/3 | Complete | 2026-02-26 |
 | 26. Lua Hot Reload | v1.4 | 1/1 | Complete | 2026-02-26 |
 | 27. Fix onRender Pixel4 Bug | v1.5 | 0/? | Not started | - |
-| 28. float dt Migration | 2/2 | Complete   | 2026-02-26 | - |
+| 28. float dt Migration | 2/2 | Complete    | 2026-02-26 | - |
 | 29. Named Objects + Tags | v1.5 | 0/? | Not started | - |
 | 30. Scene Self-Transitions | v1.5 | 0/? | Not started | - |
 | 31. engine.* Global Table | v1.5 | 0/? | Not started | - |
