@@ -129,7 +129,7 @@ int main() {
     small_comp->draw(main_canvas);
     
     // Test 10: Test layer ordering
-    printf("Testing layer ordering with DrawLayer...\n");
+    printf("Testing layer ordering with buffer_index...\n");
     canvas_comp->SetBufferIndex(0);
     canvas2_comp->SetBufferIndex(0);
     canvas3_comp->SetBufferIndex(2);
