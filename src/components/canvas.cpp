@@ -39,7 +39,7 @@ void C_Canvas::awake() {
     }
 }
 
-void C_Canvas::lateUpdate(uint16_t deltaTime) {
+void C_Canvas::lateUpdate(float dt) {
     // No late update operations needed
 }
 

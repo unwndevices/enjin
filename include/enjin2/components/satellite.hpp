@@ -48,7 +48,7 @@ private:
     
     // Visual effects
     bool pulsing;               ///< Enable pulsing based on parameter
-    uint32_t animationTime;     ///< Animation timer
+    float animationTime;        ///< Animation timer in seconds
     
     // Trail rendering (simple circular buffer)
     static constexpr size_t TRAIL_LENGTH = 16;
@@ -71,7 +71,7 @@ public:
           showTrail(true), showConnection(false), parameterValue(0.5f),
           minValue(0.0f), maxValue(1.0f), radiusFromParameter(false),
           speedFromParameter(false), colorFromParameter(false), pulsing(true),
-          animationTime(0), trailIndex(0), trailInitialized(false) {
+          animationTime(0.0f), trailIndex(0), trailInitialized(false) {
         
         SetBufferIndex(1);
         
@@ -83,30 +83,30 @@ public:
     
     /**
      * @brief Update satellite position and animation
-     * @param deltaTime Time elapsed since last update in milliseconds
+     * @param dt Time elapsed since last update in seconds
      */
-    void update(uint16_t deltaTime) override {
-        Component::update(deltaTime);
-        
-        animationTime += deltaTime;
-        
+    void update(float dt) override {
+        Component::update(dt);
+
+        animationTime += dt;
+
         // Update orbital position
         if (orbitPlanet) {
             float currentRadius = orbitRadius;
             float currentSpeed = orbitSpeed;
-            
+
             // Modify orbit based on parameter
             if (radiusFromParameter) {
                 float radiusScale = 0.5f + parameterValue;  // 0.5x to 1.5x
                 currentRadius *= radiusScale;
             }
-            
+
             if (speedFromParameter) {
                 currentSpeed *= (0.2f + parameterValue * 1.8f);  // 0.2x to 2.0x speed
             }
-            
+
             // Update angle
-            float deltaAngle = currentSpeed * (deltaTime / 1000.0f);
+            float deltaAngle = currentSpeed * dt;
             if (!clockwise) deltaAngle = -deltaAngle;
             currentAngle += deltaAngle;
             
@@ -166,7 +166,7 @@ public:
         
         // Apply parameter-based effects
         if (pulsing) {
-            float pulse = std::sin((animationTime / 1000.0f) * 4.0f * 2.0f * 3.14159f);
+            float pulse = std::sin(animationTime * 4.0f * 2.0f * 3.14159f);
             currentRadius *= (1.0f + pulse * 0.3f * parameterValue);
         }
         

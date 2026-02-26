@@ -46,7 +46,7 @@ private:
     Pixel4 ringColor;          ///< Ring color
     
     // Animation state
-    uint32_t animationTime;    ///< Internal animation timer
+    float animationTime;       ///< Internal animation timer in seconds
     
 public:
     /**
@@ -62,23 +62,23 @@ public:
           pulseSpeed(2.0f), pulseAmount(0.2f), rotating(false),
           rotationSpeed(0.5f), currentRotation(0.0f), hasRings(false),
           ringInnerRadius(0.0f), ringOuterRadius(0.0f), ringColor(8),
-          animationTime(0) {
+          animationTime(0.0f) {
         
         SetBufferIndex(0);
     }
     
     /**
      * @brief Update planet animations
-     * @param deltaTime Time elapsed since last update in milliseconds
+     * @param dt Time elapsed since last update in seconds
      */
-    void update(uint16_t deltaTime) override {
-        Component::update(deltaTime);
-        
-        animationTime += deltaTime;
-        
+    void update(float dt) override {
+        Component::update(dt);
+
+        animationTime += dt;
+
         // Update rotation
         if (rotating) {
-            currentRotation += rotationSpeed * (deltaTime / 1000.0f);
+            currentRotation += rotationSpeed * dt;
             if (currentRotation >= 2.0f * 3.14159f) {
                 currentRotation -= 2.0f * 3.14159f;
             }
@@ -100,7 +100,7 @@ public:
         
         // Apply pulsing effect
         if (pulsing) {
-            float pulse = std::sin((animationTime / 1000.0f) * pulseSpeed * 2.0f * 3.14159f);
+            float pulse = std::sin(animationTime * pulseSpeed * 2.0f * 3.14159f);
             currentRadius *= (1.0f + pulse * pulseAmount);
         }
         

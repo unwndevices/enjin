@@ -44,8 +44,8 @@ namespace enjin2
         // Component interface
         void awake() override;
         void start() override {}
-        void update(uint16_t deltaTime) override {}
-        void lateUpdate(uint16_t deltaTime) override;
+        void update(float dt) override {}
+        void lateUpdate(float dt) override;
 
         // Drawable interface
         void draw(ICanvas<Pixel4> &canvas) override;

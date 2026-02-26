@@ -9,7 +9,7 @@ C_LuaScript::C_LuaScript(Object* owner, uint16_t width, uint16_t height)
     , luaCanvas(nullptr)
     , hasScript(false)
     , scriptError(false)
-    , lastUpdateTime(0)
+    , lastUpdateTime(0.0f)
     , drawCalls(0) {
     
     // Initialize script system
@@ -163,18 +163,18 @@ bool C_LuaScript::callScriptFunction(const std::string& functionName) {
     return callScriptFunctionSafe(functionName);
 }
 
-void C_LuaScript::update(uint16_t deltaTime) {
-    Component::update(deltaTime);
-    
+void C_LuaScript::update(float dt) {
+    Component::update(dt);
+
     if (!hasScript || scriptError || !scriptSystem) {
         return;
     }
-    
-    lastUpdateTime += deltaTime;
-    
-    // Expose delta time to script
-    setScriptVar("dt", static_cast<double>(deltaTime) / 1000.0); // Convert to seconds
-    setScriptVar("time", static_cast<double>(lastUpdateTime) / 1000.0);
+
+    lastUpdateTime += dt;
+
+    // Expose delta time to script (dt is already seconds)
+    setScriptVar("dt", static_cast<double>(dt));
+    setScriptVar("time", static_cast<double>(lastUpdateTime));
     
     // Call update function if it exists
     callScriptFunctionSafe(UPDATE_FUNCTION);

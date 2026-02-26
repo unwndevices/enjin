@@ -78,15 +78,15 @@ public:
     
     /**
      * @brief Update is called once per frame
-     * @param deltaTime Time since last frame in milliseconds
+     * @param dt Time since last frame in seconds
      */
-    virtual void update(uint16_t deltaTime);
-    
+    virtual void update(float dt);
+
     /**
      * @brief LateUpdate is called after all Update calls
-     * @param deltaTime Time since last frame in milliseconds
+     * @param dt Time since last frame in seconds
      */
-    virtual void lateUpdate(uint16_t deltaTime);
+    virtual void lateUpdate(float dt);
     
     /**
      * @brief Check if object is queued for removal (matches original Enjin)

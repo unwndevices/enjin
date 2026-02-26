@@ -98,14 +98,14 @@ public:
     
     /**
      * @brief Update the scene
-     * @param deltaTime Time since last frame in milliseconds
+     * @param dt Time since last frame in seconds
      */
-    void update(uint16_t deltaTime) {
+    void update(float dt) {
         if (!active) return;
-        
-        onUpdate(deltaTime);
-        objects.update(deltaTime);
-        objects.lateUpdate(deltaTime);
+
+        onUpdate(dt);
+        objects.update(dt);
+        objects.lateUpdate(dt);
     }
     
     /**
@@ -277,12 +277,12 @@ protected:
     
     /**
      * @brief Called every frame (override in derived classes)
-     * @param deltaTime Time since last frame in milliseconds
-     * 
+     * @param dt Time since last frame in seconds
+     *
      * Use this for scene-specific update logic that should happen
      * before object updates.
      */
-    virtual void onUpdate(uint16_t deltaTime) {}
+    virtual void onUpdate(float dt) {}
     
     /**
      * @brief Called during rendering for 4-bit canvas (override in derived classes)

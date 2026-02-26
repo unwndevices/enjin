@@ -40,7 +40,7 @@ private:
     static constexpr const char* DRAW_FUNCTION = "draw";
     
     // Performance tracking
-    uint32_t lastUpdateTime;                      ///< Last update timestamp
+    float lastUpdateTime;                         ///< Last update timestamp in seconds
     uint32_t drawCalls;                          ///< Number of draw calls
     
 public:
@@ -156,9 +156,9 @@ public:
     
     /**
      * @brief Update component (calls script update function)
-     * @param deltaTime Time since last update
+     * @param dt Time since last update in seconds
      */
-    void update(uint16_t deltaTime) override;
+    void update(float dt) override;
     
     /**
      * @brief Draw component using 4-bit canvas

@@ -56,7 +56,7 @@ private:
     Point homePosition;         ///< Base position for patterns
     float movementSpeed;        ///< Movement speed multiplier
     float phase;                ///< Phase for wave patterns
-    uint32_t animationTime;     ///< Animation timer
+    float animationTime;        ///< Animation timer in seconds
     
     // Scanner-specific
     float scanAngle;            ///< Current scan angle (for scanner type)
@@ -85,7 +85,7 @@ public:
           probeType(type), movement(MovementPattern::STATIC), probeSize(size),
           probeColor(15), accentColor(10), pulsing(false), pulseSpeed(2.0f),
           velocity(0, 0), homePosition(0, 0), movementSpeed(1.0f), phase(0.0f),
-          animationTime(0), scanAngle(0.0f), scanRadius(10.0f), scanSpeed(1.0f),
+          animationTime(0.0f), scanAngle(0.0f), scanRadius(10.0f), scanSpeed(1.0f),
           trailIndex(0), hasTrail(false), movementBounds(0, 0, 0, 0),
           constrainToBounds(false) {
         
@@ -99,20 +99,19 @@ public:
     
     /**
      * @brief Update probe movement and animation
-     * @param deltaTime Time elapsed since last update in milliseconds
+     * @param dt Time elapsed since last update in seconds
      */
-    void update(uint16_t deltaTime) override {
-        Component::update(deltaTime);
-        
-        animationTime += deltaTime;
-        float deltaSeconds = deltaTime / 1000.0f;
-        
+    void update(float dt) override {
+        Component::update(dt);
+
+        animationTime += dt;
+
         // Update position based on movement pattern
-        updateMovement(deltaSeconds);
+        updateMovement(dt);
         
         // Update scanner angle
         if (probeType == ProbeType::SCANNER) {
-            scanAngle += scanSpeed * deltaSeconds * 2.0f * 3.14159f;
+            scanAngle += scanSpeed * dt * 2.0f * 3.14159f;
             if (scanAngle >= 2.0f * 3.14159f) {
                 scanAngle -= 2.0f * 3.14159f;
             }
@@ -148,7 +147,7 @@ public:
         Pixel4 currentColor = probeColor;
         
         if (pulsing) {
-            float pulse = std::sin((animationTime / 1000.0f) * pulseSpeed * 2.0f * 3.14159f);
+            float pulse = std::sin(animationTime * pulseSpeed * 2.0f * 3.14159f);
             currentSize *= (1.0f + pulse * 0.4f);
             if (pulse > 0) {
                 currentColor = accentColor;
@@ -266,25 +265,25 @@ private:
     /**
      * @brief Update movement based on pattern
      */
-    void updateMovement(float deltaTime) {
+    void updateMovement(float dt) {
         auto position = owner->getPosition();
         if (!position) return;
-        
+
         Point currentPos = position->getPosition();
         Point newPos = currentPos;
-        
+
         switch (movement) {
             case MovementPattern::STATIC:
                 // No movement
                 break;
-                
+
             case MovementPattern::LINEAR:
-                newPos.x += static_cast<int16_t>(velocity.x * deltaTime * movementSpeed);
-                newPos.y += static_cast<int16_t>(velocity.y * deltaTime * movementSpeed);
+                newPos.x += static_cast<int16_t>(velocity.x * dt * movementSpeed);
+                newPos.y += static_cast<int16_t>(velocity.y * dt * movementSpeed);
                 break;
-                
+
             case MovementPattern::ORBITAL: {
-                phase += deltaTime * movementSpeed;
+                phase += dt * movementSpeed;
                 float radius = 20.0f;
                 newPos.x = static_cast<int16_t>(homePosition.x + radius * std::cos(phase));
                 newPos.y = static_cast<int16_t>(homePosition.y + radius * std::sin(phase));
@@ -292,7 +291,7 @@ private:
             }
             
             case MovementPattern::SPIRAL: {
-                phase += deltaTime * movementSpeed;
+                phase += dt * movementSpeed;
                 float radius = 5.0f + phase * 2.0f;
                 newPos.x = static_cast<int16_t>(homePosition.x + radius * std::cos(phase));
                 newPos.y = static_cast<int16_t>(homePosition.y + radius * std::sin(phase));
@@ -307,20 +306,20 @@ private:
                 randomSeed = (randomSeed * 1103515245 + 12345) & 0x7fffffff;
                 float randomY = (randomSeed % 1000 - 500) / 500.0f;
                 
-                newPos.x += static_cast<int16_t>(randomX * deltaTime * movementSpeed * 10.0f);
-                newPos.y += static_cast<int16_t>(randomY * deltaTime * movementSpeed * 10.0f);
+                newPos.x += static_cast<int16_t>(randomX * dt * movementSpeed * 10.0f);
+                newPos.y += static_cast<int16_t>(randomY * dt * movementSpeed * 10.0f);
                 break;
             }
             
             case MovementPattern::SINE_WAVE: {
-                phase += deltaTime * movementSpeed;
+                phase += dt * movementSpeed;
                 newPos.x = static_cast<int16_t>(homePosition.x + phase * 20.0f);
                 newPos.y = static_cast<int16_t>(homePosition.y + std::sin(phase) * 15.0f);
                 break;
             }
             
             case MovementPattern::TRIANGLE_WAVE: {
-                phase += deltaTime * movementSpeed;
+                phase += dt * movementSpeed;
                 float triangleWave = 2.0f * std::abs(2.0f * (phase / (2.0f * 3.14159f) - std::floor(phase / (2.0f * 3.14159f) + 0.5f))) - 1.0f;
                 newPos.x = static_cast<int16_t>(homePosition.x + phase * 20.0f);
                 newPos.y = static_cast<int16_t>(homePosition.y + triangleWave * 15.0f);

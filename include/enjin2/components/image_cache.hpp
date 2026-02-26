@@ -99,7 +99,7 @@ public:
     // Component interface
     void awake() override;
     void start() override {}
-    void update(uint16_t deltaTime) override;
+    void update(float dt) override;
     
     // Static cache operations (matches original Enjin exactly)
     

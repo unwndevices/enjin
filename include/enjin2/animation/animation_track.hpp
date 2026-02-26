@@ -26,8 +26,8 @@ private:
     std::array<KeyframeType, MAX_KEYFRAMES> keyframes;
     size_t keyframeCount;
     
-    uint16_t currentTime;       ///< Current playback time in milliseconds
-    uint16_t duration;          ///< Total duration in milliseconds
+    float currentTime;          ///< Current playback time in seconds
+    float duration;             ///< Total duration in seconds
     AnimationState state;       ///< Current animation state
     LoopMode loopMode;          ///< Loop behavior
     bool reversed;              ///< True when playing in reverse (ping-pong)
@@ -41,8 +41,8 @@ public:
     /**
      * @brief Constructor
      */
-    AnimationTrack() 
-        : keyframeCount(0), currentTime(0), duration(0), 
+    AnimationTrack()
+        : keyframeCount(0), currentTime(0.0f), duration(0.0f),
           state(AnimationState::STOPPED), loopMode(LoopMode::NONE), reversed(false) {}
     
     /**
@@ -86,8 +86,8 @@ public:
      */
     void clearKeyframes() {
         keyframeCount = 0;
-        duration = 0;
-        currentTime = 0;
+        duration = 0.0f;
+        currentTime = 0.0f;
         state = AnimationState::STOPPED;
     }
     
@@ -118,7 +118,7 @@ public:
      */
     void stop() {
         state = AnimationState::STOPPED;
-        currentTime = 0;
+        currentTime = 0.0f;
         reversed = false;
     }
     
@@ -132,24 +132,24 @@ public:
     
     /**
      * @brief Update animation by time delta
-     * @param deltaTime Time elapsed since last update in milliseconds
+     * @param dt Time elapsed since last update in seconds
      */
-    void update(uint16_t deltaTime) {
+    void update(float dt) {
         if (state != AnimationState::PLAYING || keyframeCount == 0) {
             return;
         }
-        
+
         // Update time based on direction
         if (reversed) {
-            if (currentTime >= deltaTime) {
-                currentTime -= deltaTime;
+            if (currentTime >= dt) {
+                currentTime -= dt;
             } else {
-                currentTime = 0;
+                currentTime = 0.0f;
                 handleLoopBoundary();
                 return;
             }
         } else {
-            currentTime += deltaTime;
+            currentTime += dt;
             if (currentTime >= duration) {
                 handleLoopBoundary();
                 return;
@@ -179,26 +179,26 @@ public:
     
     /**
      * @brief Get current time
-     * @return Current playback time in milliseconds
+     * @return Current playback time in seconds
      */
-    uint16_t getCurrentTime() const {
+    float getCurrentTime() const {
         return currentTime;
     }
-    
+
     /**
      * @brief Get animation duration
-     * @return Total duration in milliseconds
+     * @return Total duration in seconds
      */
-    uint16_t getDuration() const {
+    float getDuration() const {
         return duration;
     }
-    
+
     /**
      * @brief Get normalized progress (0.0 to 1.0)
      * @return Animation progress
      */
     float getProgress() const {
-        return duration > 0 ? static_cast<float>(currentTime) / static_cast<float>(duration) : 0.0f;
+        return duration > 0.0f ? currentTime / duration : 0.0f;
     }
 
     /**
@@ -239,17 +239,19 @@ private:
                 state = AnimationState::FINISHED;
                 onCompleteSignal.emit();
                 break;
-                
+
             case LoopMode::LOOP:
-                currentTime = currentTime % duration;
+                if (duration > 0.0f) {
+                    currentTime = currentTime - duration * static_cast<float>(static_cast<int>(currentTime / duration));
+                }
                 break;
-                
+
             case LoopMode::PING_PONG:
                 reversed = !reversed;
                 if (reversed) {
                     currentTime = duration - (currentTime - duration);
                 } else {
-                    currentTime = 0;
+                    currentTime = 0.0f;
                 }
                 break;
         }
@@ -260,7 +262,7 @@ private:
      * @param time Time to evaluate at
      * @return Interpolated value at time
      */
-    T evaluateAtTime(uint16_t time) const {
+    T evaluateAtTime(float time) const {
         if (keyframeCount == 0) {
             return T{};  // Default constructed value
         }
@@ -291,12 +293,12 @@ private:
     /**
      * @brief Interpolate between two keyframes
      */
-    T interpolateBetween(const KeyframeType& from, const KeyframeType& to, uint16_t time) const {
+    T interpolateBetween(const KeyframeType& from, const KeyframeType& to, float time) const {
         if (from.time == to.time) {
             return getValue(to);
         }
-        
-        float t = static_cast<float>(time - from.time) / static_cast<float>(to.time - from.time);
+
+        float t = (time - from.time) / (to.time - from.time);
         float easedT = EasingFunctions::ease(t, from.easing);
         
         return EasingFunctions::lerp(getValue(from), getValue(to), easedT);

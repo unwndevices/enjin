@@ -72,24 +72,24 @@ public:
     
     /**
      * @brief Update all objects in the collection
-     * @param deltaTime Time since last frame in milliseconds
+     * @param dt Time since last frame in seconds
      */
-    void update(uint16_t deltaTime) {
+    void update(float dt) {
         for (size_t i = 0; i < objectCount; ++i) {
             if (objects[i] && objects[i]->isActive()) {
-                objects[i]->update(deltaTime);
+                objects[i]->update(dt);
             }
         }
     }
-    
+
     /**
      * @brief Late update all objects in the collection
-     * @param deltaTime Time since last frame in milliseconds
+     * @param dt Time since last frame in seconds
      */
-    void lateUpdate(uint16_t deltaTime) {
+    void lateUpdate(float dt) {
         for (size_t i = 0; i < objectCount; ++i) {
             if (objects[i] && objects[i]->isActive()) {
-                objects[i]->lateUpdate(deltaTime);
+                objects[i]->lateUpdate(dt);
             }
         }
     }

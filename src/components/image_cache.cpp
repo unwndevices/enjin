@@ -25,7 +25,7 @@ void C_ImageCache::awake() {
     // No initialization needed in awake
 }
 
-void C_ImageCache::update(uint16_t deltaTime) {
+void C_ImageCache::update(float dt) {
     // No per-frame updates needed for cache
 }
 

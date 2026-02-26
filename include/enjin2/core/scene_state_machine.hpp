@@ -39,7 +39,7 @@ public:
 
 private:
     static constexpr size_t MAX_SCENES = 32;        ///< Maximum number of scenes
-    static constexpr uint16_t TRANSITION_TIME = 500; ///< Default transition time in ms
+    static constexpr float TRANSITION_TIME = 0.5f;  ///< Default transition time in seconds
     
     std::array<std::unique_ptr<Scene>, MAX_SCENES> scenes;
     size_t sceneCount;
@@ -48,8 +48,8 @@ private:
     
     TransitionState transitionState;
     TransitionType transitionType;
-    uint16_t transitionTimer;
-    uint16_t transitionDuration;
+    float transitionTimer;
+    float transitionDuration;
     
     // Transition progress (0.0 to 1.0)
     float transitionProgress;
@@ -67,7 +67,7 @@ public:
     SceneStateMachine() 
         : sceneCount(0), currentScene(nullptr), nextScene(nullptr),
           transitionState(TransitionState::IDLE), transitionType(TransitionType::IMMEDIATE),
-          transitionTimer(0), transitionDuration(TRANSITION_TIME), transitionProgress(0.0f) {
+          transitionTimer(0.0f), transitionDuration(TRANSITION_TIME), transitionProgress(0.0f) {
         for (auto& scene : scenes) {
             scene = nullptr;
         }
@@ -136,11 +136,11 @@ public:
      * @brief Change to a different scene
      * @param sceneId Target scene identifier
      * @param transition Transition type to use
-     * @param duration Transition duration in milliseconds (0 = use default)
+     * @param duration Transition duration in seconds (0 = use default)
      * @return True if transition started successfully
      */
-    bool changeScene(uint32_t sceneId, TransitionType transition = TransitionType::IMMEDIATE, 
-                     uint16_t duration = 0) {
+    bool changeScene(uint32_t sceneId, TransitionType transition = TransitionType::IMMEDIATE,
+                     float duration = 0.0f) {
         // Find target scene
         Scene* targetScene = nullptr;
         for (size_t i = 0; i < sceneCount; ++i) {
@@ -165,7 +165,7 @@ public:
         
         nextScene = targetScene;
         transitionType = transition;
-        transitionDuration = duration > 0 ? duration : TRANSITION_TIME;
+        transitionDuration = duration > 0.0f ? duration : TRANSITION_TIME;
         transitionTimer = 0;
         transitionProgress = 0.0f;
         
@@ -184,17 +184,17 @@ public:
     
     /**
      * @brief Update the state machine
-     * @param deltaTime Time since last frame in milliseconds
+     * @param dt Time since last frame in seconds
      */
-    void update(uint16_t deltaTime) {
+    void update(float dt) {
         // Update transition if active
         if (transitionState != TransitionState::IDLE) {
-            updateTransition(deltaTime);
+            updateTransition(dt);
         }
-        
+
         // Update current scene
         if (currentScene) {
-            currentScene->update(deltaTime);
+            currentScene->update(dt);
         }
     }
     
@@ -320,11 +320,11 @@ private:
     
     /**
      * @brief Update transition state
-     * @param deltaTime Time since last frame
+     * @param dt Time since last frame in seconds
      */
-    void updateTransition(uint16_t deltaTime) {
-        transitionTimer += deltaTime;
-        transitionProgress = static_cast<float>(transitionTimer) / static_cast<float>(transitionDuration);
+    void updateTransition(float dt) {
+        transitionTimer += dt;
+        transitionProgress = transitionTimer / transitionDuration;
         
         if (transitionProgress >= 1.0f) {
             transitionProgress = 1.0f;

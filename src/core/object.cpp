@@ -50,29 +50,29 @@ void Object::start() {
     started = true;
 }
 
-void Object::update(uint16_t deltaTime) {
+void Object::update(float dt) {
     if (!active) return;
-    
+
     // Ensure start has been called
     if (!started) {
         start();
     }
-    
+
     // Update all enabled components
     for (size_t i = 0; i < componentCount; ++i) {
         if (components[i] && components[i]->isEnabled()) {
-            components[i]->update(deltaTime);
+            components[i]->update(dt);
         }
     }
 }
 
-void Object::lateUpdate(uint16_t deltaTime) {
+void Object::lateUpdate(float dt) {
     if (!active) return;
-    
+
     // Late update all enabled components
     for (size_t i = 0; i < componentCount; ++i) {
         if (components[i] && components[i]->isEnabled()) {
-            components[i]->lateUpdate(deltaTime);
+            components[i]->lateUpdate(dt);
         }
     }
 }

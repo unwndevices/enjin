@@ -32,7 +32,7 @@ public:
         : C_Drawable(owner, width, height)
         , _sheet()
         , _fps(8.0f)
-        , _accumMs(0.0f)
+        , _accumSec(0.0f)
         , _frame(0)
         , _mode(AnimMode::Loop)
         , _forward(true)
@@ -43,7 +43,7 @@ public:
     void setSheet(const SpriteSheet& sheet) {
         _sheet = sheet;
         _frame = 0;
-        _accumMs = 0.0f;
+        _accumSec = 0.0f;
         _forward = true;
         _done = false;
     }
@@ -63,7 +63,7 @@ public:
         const uint8_t total = _sheet.frameCount();
         if (total == 0) return;
         _frame = (index >= total) ? static_cast<uint8_t>(total - 1) : index;
-        _accumMs = 0.0f;
+        _accumSec = 0.0f;
     }
 
     /** Get the current frame index. */
@@ -85,17 +85,17 @@ public:
     }
 
     /**
-     * @brief Advance animation by deltaTimeMs milliseconds.
+     * @brief Advance animation by dt seconds.
      *
      * Uses delta-time accumulator: accumulator += dt, advance when >= frame_duration.
      * Subtracts frame duration rather than zeroing to preserve carry-over.
      */
-    void lateUpdate(uint16_t deltaTimeMs) override {
+    void lateUpdate(float dt) override {
         if (!_sheet.data || _fps <= 0.0f || _done) return;
-        _accumMs += static_cast<float>(deltaTimeMs);
-        const float frameMs = 1000.0f / _fps;
-        while (_accumMs >= frameMs) {
-            _accumMs -= frameMs;  // preserve sub-frame carry-over
+        _accumSec += dt;
+        const float frameSec = 1.0f / _fps;
+        while (_accumSec >= frameSec) {
+            _accumSec -= frameSec;  // preserve sub-frame carry-over
             advanceFrame();
             if (_done) break;    // Once mode: stop advancing after last frame
         }
@@ -106,10 +106,10 @@ public:
     }
 
 private:
-    SpriteSheet _sheet;   ///< Sprite sheet data (value copy, caller owns pixel data lifetime)
-    float       _fps;     ///< Frames per second
-    float       _accumMs; ///< Accumulated milliseconds since last frame advance
-    uint8_t     _frame;   ///< Current frame index
+    SpriteSheet _sheet;    ///< Sprite sheet data (value copy, caller owns pixel data lifetime)
+    float       _fps;      ///< Frames per second
+    float       _accumSec; ///< Accumulated seconds since last frame advance
+    uint8_t     _frame;    ///< Current frame index
     AnimMode    _mode;    ///< Animation loop mode
     bool        _forward; ///< Ping-pong direction flag (true = forward)
     bool        _done;    ///< True when Once mode has completed

@@ -32,22 +32,22 @@ enum class EaseType {
      * @brief Keyframe for position animation
      */
     struct PositionKeyframe {
-        uint16_t time;      ///< Time in milliseconds
+        float time;         ///< Time in seconds
         Point position;     ///< Position at this keyframe
         EaseType easing;    ///< Easing to next keyframe
 
         /**
          * @brief Default constructor
          */
-        PositionKeyframe() : time(0), position(0, 0), easing(EaseType::LINEAR) {}
+        PositionKeyframe() : time(0.0f), position(0, 0), easing(EaseType::LINEAR) {}
 
         /**
          * @brief Constructor with time, position, and easing
-         * @param t Time in milliseconds
+         * @param t Time in seconds
          * @param pos Position at this keyframe
          * @param ease Easing to next keyframe
          */
-        PositionKeyframe(uint16_t t, Point pos, EaseType ease = EaseType::LINEAR)
+        PositionKeyframe(float t, Point pos, EaseType ease = EaseType::LINEAR)
             : time(t), position(pos), easing(ease) {}
     };
 
@@ -55,22 +55,22 @@ enum class EaseType {
      * @brief Keyframe for float value animation
      */
     struct FloatKeyframe {
-        uint16_t time;      ///< Time in milliseconds
+        float time;         ///< Time in seconds
         float value;        ///< Float value at this keyframe
         EaseType easing;    ///< Easing to next keyframe
 
         /**
          * @brief Default constructor
          */
-        FloatKeyframe() : time(0), value(0.0f), easing(EaseType::LINEAR) {}
+        FloatKeyframe() : time(0.0f), value(0.0f), easing(EaseType::LINEAR) {}
 
         /**
          * @brief Constructor with time, value, and easing
-         * @param t Time in milliseconds
+         * @param t Time in seconds
          * @param val Float value at this keyframe
          * @param ease Easing to next keyframe
          */
-        FloatKeyframe(uint16_t t, float val, EaseType ease = EaseType::LINEAR)
+        FloatKeyframe(float t, float val, EaseType ease = EaseType::LINEAR)
             : time(t), value(val), easing(ease) {}
     };
 
@@ -78,22 +78,22 @@ enum class EaseType {
      * @brief Keyframe for color animation
      */
     struct ColorKeyframe {
-        uint16_t time;      ///< Time in milliseconds
+        float time;         ///< Time in seconds
         Pixel4 color;       ///< Color at this keyframe
         EaseType easing;    ///< Easing to next keyframe
 
         /**
          * @brief Default constructor
          */
-        ColorKeyframe() : time(0), color(0), easing(EaseType::LINEAR) {}
+        ColorKeyframe() : time(0.0f), color(0), easing(EaseType::LINEAR) {}
 
         /**
          * @brief Constructor with time, color, and easing
-         * @param t Time in milliseconds
+         * @param t Time in seconds
          * @param col Color at this keyframe
          * @param ease Easing to next keyframe
          */
-        ColorKeyframe(uint16_t t, Pixel4 col, EaseType ease = EaseType::LINEAR)
+        ColorKeyframe(float t, Pixel4 col, EaseType ease = EaseType::LINEAR)
             : time(t), color(col), easing(ease) {}
     };
 
