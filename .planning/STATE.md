@@ -7,8 +7,8 @@ last_updated: "2026-02-26"
 progress:
   total_phases: 35
   completed_phases: 26
-  total_plans: 58
-  completed_plans: 58
+  total_plans: 59
+  completed_plans: 59
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 27 ready to plan
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 28 Plan 01 complete
 
 ## Current Position
 
-Phase: 27 of 35 (Fix onRender Pixel4 Bug)
-Plan: — (not started)
-Status: Ready to plan
-Last activity: 2026-02-26 — v1.5 roadmap created (Phases 27-35)
+Phase: 28 of 35 (Float DT Migration)
+Plan: 01 complete (1 of 1 plans for this phase)
+Status: Phase 28 complete — float dt migration done
+Last activity: 2026-02-26 — Phase 28-01 complete: migrate uint16_t deltaTime to float dt
 
 Progress: [████████████░░░░░░░░] 74% (26/35 phases complete)
 
@@ -38,6 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
+- v1.5: 1 plan (Phase 28-01 — float dt migration)
 
 *Updated after each plan completion*
 
@@ -51,6 +52,9 @@ Recent decisions relevant to v1.5:
 - [Phase 26]: assertRequires<T>() naming chosen over requires<T>() to avoid C++20 keyword collision
 - [Phase 26]: ScriptProxy uses full userdata (not lightuserdata) — lightuserdata has no metatable in Lua 5.1
 - [Phase 26]: float dt uses float not double — ESP32-S3 has hardware single-precision FPU; double is soft-float
+- [Phase 28]: float seconds dt replaces uint16_t milliseconds throughout entire update chain
+- [Phase 28]: Lua updateSprite API now expects dt in seconds (accumSec replaces accumMs)
+- [Phase 28]: PostFx uses noisePeriodAccum sub-accumulator instead of integer modulo on float time
 
 ### Pending Todos
 
@@ -79,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: v1.5 roadmap created — Phase 27 ready to plan
+Stopped at: Completed Phase 28-01 — float dt migration complete across entire engine
 Resume file: None
