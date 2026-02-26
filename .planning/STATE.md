@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Engine Capabilities
+status: unknown
+last_updated: "2026-02-26T11:48:11.526Z"
+progress:
+  total_phases: 9
+  completed_phases: 8
+  total_plans: 28
+  completed_plans: 27
+---
+
 # Project State
 
 ## Project Reference
@@ -10,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 25 of 26 (Multi-Layer Canvas Composition)
-Plan: 2 of 3 in current phase — COMPLETE (Plan 03 next)
-Status: Phase 25 in progress (2/3 plans done); Plan 03 (Lua bindings) remains
-Last activity: 2026-02-26 - Completed 25-02: SDL3 LayerCompositor integration
+Plan: 3 of 3 in current phase — COMPLETE (Phase 25 done)
+Status: Phase 25 complete (3/3 plans done); Phase 26 (LuaCallback fix) is next
+Last activity: 2026-02-26 - Completed 25-03: Lua layer API bindings
 
-Progress: [████████░░] 80% (Phase 25 plan 1/3 done; 4 phases remaining in v1.4)
+Progress: [█████████░] 90% (Phase 25 complete; 1 phase remaining in v1.4)
 
 ## Performance Metrics
 
@@ -24,7 +37,7 @@ Progress: [████████░░] 80% (Phase 25 plan 1/3 done; 4 phases
 - v1.1: 17 plans
 - v1.2: 5 plans
 - v1.3: 7 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01, 22-02)
-- v1.4: 5 plans completed (24-01, 24-02, 24-03, 25-01, 25-02)
+- v1.4: 6 plans completed (24-01, 24-02, 24-03, 25-01, 25-02, 25-03)
 
 *Updated after each plan completion*
 
@@ -48,6 +61,8 @@ Recent decisions affecting v1.4 work:
 - [Phase 25-01]: DrawLayer enum deleted entirely; uint8_t buffer_index is a direct layer slot number, not a sort key; sort_order also removed
 - [Phase 25-01]: C_Drawable callers use SetBufferIndex(0/1/2/3); shouldDrawBefore() is a single buffer_index comparison
 - [Phase 25-02]: LuaCanvas wrappers are static locals inside main() (no default constructor); default active canvas = layers[0]; clearAll/composite sandwich in frame loop
+- [Phase 25]: setLayers() replaces setCanvas() in sdl_main.cpp — sets currentCanvas=layerCanvases[0] internally, making explicit setCanvas call redundant
+- [Phase 25]: lua layer indices are 1-indexed in Lua; cpp_idx = lua_idx - 1; out-of-range silently clamped to [0, layerCount-1] matching setFrame pattern
 
 ### Pending Todos
 
@@ -76,5 +91,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 25-02-PLAN.md — SDL3 LayerCompositor integration (sdl_main.cpp)
+Stopped at: Completed 25-03-PLAN.md — Lua layer API bindings (bindings.hpp/cpp, sdl_main.cpp, layer_demo.lua)
 Resume file: None

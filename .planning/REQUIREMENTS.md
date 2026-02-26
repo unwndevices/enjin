@@ -13,8 +13,8 @@ Requirements for v1.4 milestone. Each maps to roadmap phases.
 - [x] **LAYER-02**: Each drawable is assigned to exactly one layer and renders only to that layer's buffer
 - [x] **LAYER-03**: Layers are composited at blit time using index 15 as passthrough transparency
 - [x] **LAYER-04**: Layer count is compile-time configurable (default 4)
-- [ ] **LAYER-05**: SDL3 runner composites all layers before blitting to GPU texture
-- [ ] **LAYER-06**: Lua API exposes layer selection for draw calls (`setLayer(n)`) and layer clear (`clearLayer(n, color)`)
+- [x] **LAYER-05**: SDL3 runner composites all layers before blitting to GPU texture
+- [x] **LAYER-06**: Lua API exposes layer selection for draw calls (`setLayer(n)`) and layer clear (`clearLayer(n, color)`)
 
 ### DOC — Docusaurus Navigation
 
@@ -81,8 +81,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LAYER-02 | Phase 25 | Complete |
 | LAYER-03 | Phase 25 | Complete |
 | LAYER-04 | Phase 25 | Complete |
-| LAYER-05 | Phase 25 | Pending |
-| LAYER-06 | Phase 25 | Pending |
+| LAYER-05 | Phase 25 | Complete |
+| LAYER-06 | Phase 25 | Complete |
 | HOT-01 | Phase 26 | Pending |
 | HOT-02 | Phase 26 | Pending |
 | HOT-03 | Phase 26 | Pending |
