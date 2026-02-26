@@ -9,10 +9,10 @@ Requirements for v1.4 milestone. Each maps to roadmap phases.
 
 ### LAYER — Multi-layer Canvas Composition
 
-- [ ] **LAYER-01**: Engine renders up to 4 independent Canvas4 layers composited in draw order
-- [ ] **LAYER-02**: Each drawable is assigned to exactly one layer and renders only to that layer's buffer
-- [ ] **LAYER-03**: Layers are composited at blit time using index 15 as passthrough transparency
-- [ ] **LAYER-04**: Layer count is compile-time configurable (default 4)
+- [x] **LAYER-01**: Engine renders up to 4 independent Canvas4 layers composited in draw order
+- [x] **LAYER-02**: Each drawable is assigned to exactly one layer and renders only to that layer's buffer
+- [x] **LAYER-03**: Layers are composited at blit time using index 15 as passthrough transparency
+- [x] **LAYER-04**: Layer count is compile-time configurable (default 4)
 - [ ] **LAYER-05**: SDL3 runner composites all layers before blitting to GPU texture
 - [ ] **LAYER-06**: Lua API exposes layer selection for draw calls (`setLayer(n)`) and layer clear (`clearLayer(n, color)`)
 
@@ -77,10 +77,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SPR-04 | Phase 24 | Complete |
 | SPR-05 | Phase 24 | Complete |
 | SPR-06 | Phase 24 | Complete |
-| LAYER-01 | Phase 25 | Pending |
-| LAYER-02 | Phase 25 | Pending |
-| LAYER-03 | Phase 25 | Pending |
-| LAYER-04 | Phase 25 | Pending |
+| LAYER-01 | Phase 25 | Complete |
+| LAYER-02 | Phase 25 | Complete |
+| LAYER-03 | Phase 25 | Complete |
+| LAYER-04 | Phase 25 | Complete |
 | LAYER-05 | Phase 25 | Pending |
 | LAYER-06 | Phase 25 | Pending |
 | HOT-01 | Phase 26 | Pending |

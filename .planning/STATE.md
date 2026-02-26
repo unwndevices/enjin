@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 24 — Sprite System Rework
+**Current focus:** Phase 25 — Multi-Layer Canvas Composition
 
 ## Current Position
 
-Phase: 24 of 26 (Sprite System Rework)
-Plan: 3 of 3 in current phase — COMPLETE
-Status: Phase 24 complete (all 3 plans done); ready for Phase 25 (Compositor)
-Last activity: 2026-02-26 - Completed quick task 4: Update .gitignore with build artifact patterns
+Phase: 25 of 26 (Multi-Layer Canvas Composition)
+Plan: 1 of 3 in current phase — COMPLETE (Plan 02 next)
+Status: Phase 25 in progress (1/3 plans done); Plans 02 (SDL3 integration) and 03 (Lua bindings) remain
+Last activity: 2026-02-26 - Completed 25-01: LayerCompositor core infrastructure
 
-Progress: [████████░░] 80% (22/26 phases through v1.3; 4 phases remaining in v1.4)
+Progress: [████████░░] 80% (Phase 25 plan 1/3 done; 4 phases remaining in v1.4)
 
 ## Performance Metrics
 
@@ -24,7 +24,7 @@ Progress: [████████░░] 80% (22/26 phases through v1.3; 4 pha
 - v1.1: 17 plans
 - v1.2: 5 plans
 - v1.3: 7 plans (19-01, 19-02, 20-01, 21-01, 21-02, 22-01, 22-02)
-- v1.4: 3 plans completed (24-01, 24-02, 24-03)
+- v1.4: 4 plans completed (24-01, 24-02, 24-03, 25-01)
 
 *Updated after each plan completion*
 
@@ -44,6 +44,9 @@ Recent decisions affecting v1.4 work:
 - [Phase 24-03]: lua_drawSprite blits via LuaCanvas::setPixel (type-erased path) rather than SpriteSheet::draw() directly
 - [Phase 24-sprite-system-rework]: C_Drawable::draw() pure virtual changed from ICanvas<uint8_t>& to ICanvas<Pixel4>& — C_Canvas draw() is a stub (ENG-01 deferred to Phase 25 compositor)
 - [Phase 24-sprite-system-rework]: C_Sprite holds SpriteSheet by value; delta-time accumulator pattern with carry-over; advanceFrame() handles Once/Loop/PingPong
+- [Phase 25-01]: Canvas4::BUFFER_SIZE is private — LayerCompositor uses getBufferSize() in composite() hot loop
+- [Phase 25-01]: DrawLayer enum deleted entirely; uint8_t buffer_index is a direct layer slot number, not a sort key; sort_order also removed
+- [Phase 25-01]: C_Drawable callers use SetBufferIndex(0/1/2/3); shouldDrawBefore() is a single buffer_index comparison
 
 ### Pending Todos
 
@@ -61,8 +64,8 @@ None.
 ### Blockers/Concerns
 
 - [Phase 26 prereq] LuaCallback dangling-pointer bug confirmed in lua_engine.cpp — fix as first step of Phase 26; all new bindings use lua_CFunction only
-- [Phase 25 spec] ICanvas<TPixel> buffer access decision (per-pixel virtual vs getRawBuffer() extension) must be resolved before writing compositor
-- [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2; add static_assert or startup check
+- [Phase 25 spec RESOLVED] Buffer access: getBufferSize() + getBuffer() on Canvas4 are sufficient for compositor (no getRawBuffer() extension needed)
+- [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2; ENJIN_LAYER_COUNT constexpr + static_assert already in place
 
 ### Technical Debt (carried)
 
@@ -72,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed quick/4-PLAN.md — Update .gitignore with build artifact patterns (.gitignore)
+Stopped at: Completed 25-01-PLAN.md — LayerCompositor core infrastructure (layer_compositor.hpp, drawable.hpp, compositor_test)
 Resume file: None
