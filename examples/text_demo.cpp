@@ -39,8 +39,8 @@ public:
         label->setMargins(4, 4);
     }
 
-    void onUpdate(uint16_t deltaTime) override {
-        Scene::onUpdate(deltaTime);
+    void onUpdate(float dt) override {
+        Scene::onUpdate(dt);
         
         // Clear canvas
         canvas.clear(0);
@@ -76,7 +76,7 @@ int main() {
 
         // Update a few times and export frames
         for (int frame = 0; frame < 3; frame++) {
-            scene.onUpdate(16); // 16ms = ~60 FPS
+            scene.onUpdate(0.016f); // 0.016s = ~60 FPS
             scene.exportFrame(frame);
         }
 

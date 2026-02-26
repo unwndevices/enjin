@@ -96,8 +96,8 @@ public:
     /**
      * @brief Update position and handle bouncing
      */
-    void update(uint16_t deltaTime) override {
-        Object::update(deltaTime);
+    void update(float dt) override {
+        Object::update(dt);
         
         auto pos = getComponent<C_Position>();
         auto drawable = getComponent<RectangleDrawable>();
@@ -174,14 +174,14 @@ protected:
     /**
      * @brief Frame update
      */
-    void onUpdate(uint16_t deltaTime) override {
+    void onUpdate(float dt) override {
         frameCount++;
-        
+
         // Print status every 60 frames (roughly 1 second at 60fps)
         if (frameCount % 60 == 0) {
-            std::cout << "DemoScene: Frame " << frameCount 
+            std::cout << "DemoScene: Frame " << frameCount
                       << ", Active objects: " << getObjects().size()
-                      << ", Delta: " << deltaTime << "ms\n";
+                      << ", Delta: " << (dt * 1000.0f) << "ms\n";
         }
     }
     
@@ -235,11 +235,11 @@ int main() {
             currentTime - lastTime).count();
         lastTime = currentTime;
         
-        // Cap delta time to prevent large jumps
-        uint16_t deltaMs = static_cast<uint16_t>(std::min(static_cast<long long>(deltaTime), 33LL)); // Max 33ms (30fps)
-        
+        // Cap delta time to prevent large jumps (max 33ms = 0.033s, ~30fps floor)
+        float dt = static_cast<float>(std::min(static_cast<long long>(deltaTime), 33LL)) / 1000.0f;
+
         // Update scene manager
-        sceneManager.update(deltaMs);
+        sceneManager.update(dt);
         
         // Render
         sceneManager.render(canvas);
