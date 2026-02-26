@@ -117,46 +117,46 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RENDER-01 | — | Pending |
-| DT-01 | — | Pending |
-| DT-02 | — | Pending |
-| DT-03 | — | Pending |
-| OBJ-01 | — | Pending |
-| OBJ-02 | — | Pending |
-| OBJ-03 | — | Pending |
-| OBJ-04 | — | Pending |
-| SCENE-01 | — | Pending |
-| SCENE-02 | — | Pending |
-| SCENE-03 | — | Pending |
-| ENG-01 | — | Pending |
-| ENG-02 | — | Pending |
-| ENG-03 | — | Pending |
-| ENG-04 | — | Pending |
-| ENG-05 | — | Pending |
-| ENG-06 | — | Pending |
-| PROXY-01 | — | Pending |
-| PROXY-02 | — | Pending |
-| PROXY-03 | — | Pending |
-| PROXY-04 | — | Pending |
-| ERR-01 | — | Pending |
-| ERR-02 | — | Pending |
-| ERR-03 | — | Pending |
-| ERR-04 | — | Pending |
-| ERR-05 | — | Pending |
-| INPUT-01 | — | Pending |
-| INPUT-02 | — | Pending |
-| INPUT-03 | — | Pending |
-| GC-01 | — | Pending |
-| GC-02 | — | Pending |
-| DEP-01 | — | Pending |
-| DEP-02 | — | Pending |
-| DEP-03 | — | Pending |
+| RENDER-01 | Phase 27 | Pending |
+| DT-01 | Phase 28 | Pending |
+| DT-02 | Phase 28 | Pending |
+| DT-03 | Phase 28 | Pending |
+| OBJ-01 | Phase 29 | Pending |
+| OBJ-02 | Phase 29 | Pending |
+| OBJ-03 | Phase 29 | Pending |
+| OBJ-04 | Phase 29 | Pending |
+| SCENE-01 | Phase 30 | Pending |
+| SCENE-02 | Phase 30 | Pending |
+| SCENE-03 | Phase 30 | Pending |
+| ENG-01 | Phase 31 | Pending |
+| ENG-02 | Phase 31 | Pending |
+| ENG-03 | Phase 31 | Pending |
+| ENG-04 | Phase 31 | Pending |
+| ENG-05 | Phase 31 | Pending |
+| ENG-06 | Phase 31 | Pending |
+| PROXY-01 | Phase 32 | Pending |
+| PROXY-02 | Phase 32 | Pending |
+| PROXY-03 | Phase 32 | Pending |
+| PROXY-04 | Phase 32 | Pending |
+| ERR-01 | Phase 33 | Pending |
+| ERR-02 | Phase 33 | Pending |
+| ERR-03 | Phase 33 | Pending |
+| ERR-04 | Phase 33 | Pending |
+| ERR-05 | Phase 33 | Pending |
+| INPUT-01 | Phase 34 | Pending |
+| INPUT-02 | Phase 34 | Pending |
+| INPUT-03 | Phase 34 | Pending |
+| GC-01 | Phase 35 | Pending |
+| GC-02 | Phase 35 | Pending |
+| DEP-01 | Phase 35 | Pending |
+| DEP-02 | Phase 35 | Pending |
+| DEP-03 | Phase 35 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 34 total
-- Mapped to phases: 0
-- Unmapped: 34 ⚠️
+- Mapped to phases: 34
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after initial definition*
+*Last updated: 2026-02-26 after roadmap creation (Phases 27-35)*

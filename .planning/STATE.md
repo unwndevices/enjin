@@ -5,7 +5,7 @@ milestone_name: Lua Scripting Foundation
 status: active
 last_updated: "2026-02-26"
 progress:
-  total_phases: 26
+  total_phases: 35
   completed_phases: 26
   total_plans: 58
   completed_plans: 58
@@ -18,14 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — defining requirements
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 27 ready to plan
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-26 — Milestone v1.5 started
+Phase: 27 of 35 (Fix onRender Pixel4 Bug)
+Plan: — (not started)
+Status: Ready to plan
+Last activity: 2026-02-26 — v1.5 roadmap created (Phases 27-35)
+
+Progress: [████████████░░░░░░░░] 74% (26/35 phases complete)
 
 ## Performance Metrics
 
@@ -45,6 +47,11 @@ Last activity: 2026-02-26 — Milestone v1.5 started
 
 All decisions logged in PROJECT.md Key Decisions table.
 
+Recent decisions relevant to v1.5:
+- [Phase 26]: assertRequires<T>() naming chosen over requires<T>() to avoid C++20 keyword collision
+- [Phase 26]: ScriptProxy uses full userdata (not lightuserdata) — lightuserdata has no metatable in Lua 5.1
+- [Phase 26]: float dt uses float not double — ESP32-S3 has hardware single-precision FPU; double is soft-float
+
 ### Pending Todos
 
 None.
@@ -60,15 +67,17 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2; ENJIN_LAYER_COUNT constexpr + static_assert already in place
+- [Phase 32 - ScriptProxy] Decide validity mechanism (generation token vs valid flag) before writing any proxy code — cannot retrofit safely
+- [Phase 31 - engine.*] Must verify with module-level access test script before Phase 32 begins (guards against registration ordering pitfall)
+- [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
 
 ### Technical Debt (carried)
 
 - Full Emscripten toolchain build not verified (code inspection conclusive)
-- `getPaletteRGB()` snapshot semantics — callers must re-invoke after palette mutation
+- getPaletteRGB() snapshot semantics — callers must re-invoke after palette mutation
 
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: v1.4 milestone archived
+Stopped at: v1.5 roadmap created — Phase 27 ready to plan
 Resume file: None
