@@ -85,6 +85,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME layer_binding_test COMMAND layer_binding_test)
+
+    # Hot-reload state management test (resetSpritePool, registerAll reset, reload cycle)
+    add_executable(hot_reload_test
+        hot_reload_test.cpp
+    )
+    target_include_directories(hot_reload_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(hot_reload_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME hot_reload_test COMMAND hot_reload_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
