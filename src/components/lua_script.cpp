@@ -88,10 +88,44 @@ bool C_LuaScript::loadScriptFile(const std::string& filename) {
     hasScript = true;
     scriptError = false;
     errorMessage[0] = '\0';
-    
-    // Call init function if it exists
-    callScriptFunctionSafe(INIT_FUNCTION);
-    
+
+    // Create ScriptProxy userdata and store in Lua registry (mirrors executeScript() block)
+    {
+        lua_State* L = scriptSystem->getEngine().getState();
+        if (L) {
+            // Invalidate old proxy if present (handles reload via loadScriptFile)
+            lua_pushlightuserdata(L, this);
+            lua_gettable(L, LUA_REGISTRYINDEX);
+            if (lua_isuserdata(L, -1)) {
+                ScriptProxy* oldProxy = static_cast<ScriptProxy*>(lua_touserdata(L, -1));
+                if (oldProxy) oldProxy->valid = false;
+            }
+            lua_pop(L, 1);
+
+            // Create new userdata and assign metatable
+            ScriptProxy* proxy = static_cast<ScriptProxy*>(
+                lua_newuserdata(L, sizeof(ScriptProxy)));
+            proxy->component = this;
+            proxy->valid = true;
+
+            luaL_getmetatable(L, "ScriptProxy");
+            if (lua_isnil(L, -1)) {
+                // Metatable not registered yet — pop nil and the userdata; skip proxy creation
+                lua_pop(L, 2);
+            } else {
+                lua_setmetatable(L, -2);  // pops metatable; userdata is now top
+
+                // Store: registry[lightuserdata(this)] = proxy_userdata
+                lua_pushlightuserdata(L, this);   // key
+                lua_insert(L, -2);                // swap: key below value
+                lua_settable(L, LUA_REGISTRYINDEX);
+            }
+        }
+    }
+
+    // Call init function if it exists (passes proxy as first arg)
+    callWithProxy(INIT_FUNCTION, 0.0f, false);
+
     return true;
 }
 
