@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T21:01:02.850Z"
+last_updated: "2026-02-27T21:01:51.066Z"
 progress:
   total_phases: 18
   completed_phases: 17
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 38 of 38 (Close v1.5 Scripting Runtime Gaps) — IN PROGRESS (1 of 1 plans done)
-Plan: 01 complete (1 of 1 plans for this phase)
-Status: Phase 38-01 complete — pointer-to-pointer registry fix (ENG-01/ENG-02), loadScriptFile proxy (PROXY-01); 3 live-wiring tests; all 19 ctests pass
-Last activity: 2026-02-27 — Phase 38-01 complete: ENG-01/ENG-02/PROXY-01 runtime bugs closed; all 19 ctests pass
+Phase: 38 of 38 (Close v1.5 Scripting Runtime Gaps) — COMPLETE (2 of 2 plans done)
+Plan: 02 complete (2 of 2 plans for this phase)
+Status: Phase 38-02 complete — SDL input edge callbacks (on_button_pressed/on_button_released); Phase 35 VERIFICATION.md; all 19 ctests pass
+Last activity: 2026-02-27 — Phase 38-02 complete: SDL runner wired with 16-button input dispatch; Phase 35 docs closed; v1.5 milestone fully complete
 
 Progress: [████████████████████] 100% (38/38 phases complete)
 
@@ -108,6 +108,7 @@ Recent decisions relevant to v1.5:
 - [Phase 38]: pointer-to-pointer registry: &m_ssm and &m_activeScene instead of value snapshots — same pattern as m_timeState
 - [Phase 38]: loadScriptFile() proxy block is exact copy of executeScript() block — ensures identical init(self) behavior on file-load and string-load paths
 - [Phase 38]: ENG-01 live test: addScene<MinimalScene>(2u) required before switchTo(2) — switchTo only queues for registered scene IDs; verified via mockSSM.update()
+- [Phase 38-02]: SDL runner dispatch loop uses for-loop condition 'btn < 16 && lua_ok' plus inner break — satisfies INPUT-03 ordering in SDL production runner
 
 ### Pending Todos
 
@@ -131,6 +132,7 @@ None.
 | Phase 36-object-drawable-cache-decoupling P02 | 2 | 2 tasks | 4 files |
 | Phase 27 P01 | 80 | 2 tasks | 3 files |
 | Phase 38 P01 | 12 | 3 tasks | 4 files |
+| Phase 38 P02 | 2 | 2 tasks | 2 files |
 
 ### Blockers/Concerns
 
