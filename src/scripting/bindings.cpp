@@ -1,5 +1,7 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/graphics/palette.hpp"
+#include "../../include/enjin2/core/scene.hpp"
+#include "../../include/enjin2/core/scene_state_machine.hpp"
 #include <chrono>
 #include <iostream>
 
@@ -139,7 +141,15 @@ void LuaBindings::registerAll() {
     lua_State* L = engine->getState();
     lua_pushlightuserdata(L, this);
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_bindings");
-    
+
+    // Store injected engine.* pointers in registry for closure retrieval
+    lua_pushlightuserdata(L, m_ssm);          // may be nullptr; checked in each closure
+    lua_setfield(L, LUA_REGISTRYINDEX, "enjin_ssm");
+    lua_pushlightuserdata(L, m_activeScene);  // may be nullptr; checked in each closure
+    lua_setfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
+    lua_pushlightuserdata(L, &m_timeState);   // always valid (member of LuaBindings)
+    lua_setfield(L, LUA_REGISTRYINDEX, "enjin_time");
+
     // Canvas functions
     engine->registerFunction("getWidth", lua_getWidth);
     engine->registerFunction("getHeight", lua_getHeight);
@@ -236,6 +246,9 @@ void LuaBindings::registerAll() {
         lua_setfield(L, -2, "graphics");
     }
     lua_pop(L, 1);
+
+    // Register engine.* global table (ENG-06: must be before any script loads)
+    registerEngineTable();
 }
 
 void LuaBindings::setCanvas(LuaCanvas* canvas) {
@@ -940,6 +953,126 @@ int LuaBindings::lua_isLayerVisible(lua_State* L) {
 
     lua_pushboolean(L, b->layerVisible[cpp_idx] ? 1 : 0);
     return 1;
+}
+
+//==============================================================================
+// engine.* Global Table (ENG-01..ENG-06)
+//==============================================================================
+
+void LuaBindings::registerEngineTable() {
+    lua_State* L = engine->getState();
+
+    // Stack balance check: track depth before and after
+    // Every lua_newtable must be balanced by lua_setfield or lua_setglobal
+
+    lua_newtable(L);                               // [engine_table]
+
+    // --- engine.scene sub-table (ENG-01: switch, ENG-02: find) ---
+    lua_newtable(L);                               // [engine_table] [scene_table]
+    lua_pushcfunction(L, lua_engine_scene_switch);
+    lua_setfield(L, -2, "switch");                 // scene_table.switch = fn
+    lua_pushcfunction(L, lua_engine_scene_find);
+    lua_setfield(L, -2, "find");                   // scene_table.find   = fn
+    lua_setfield(L, -2, "scene");                  // engine_table.scene = scene_table
+
+    // --- engine.input sub-table (ENG-03) ---
+    lua_newtable(L);                               // [engine_table] [input_table]
+    lua_pushcfunction(L, lua_engine_input_held);
+    lua_setfield(L, -2, "held");
+    lua_pushcfunction(L, lua_engine_input_just_pressed);
+    lua_setfield(L, -2, "just_pressed");
+    lua_pushcfunction(L, lua_engine_input_just_released);
+    lua_setfield(L, -2, "just_released");
+    lua_pushcfunction(L, lua_engine_input_axis);
+    lua_setfield(L, -2, "axis");
+    lua_setfield(L, -2, "input");                  // engine_table.input = input_table
+
+    // --- engine.time sub-table (ENG-04) ---
+    lua_newtable(L);                               // [engine_table] [time_table]
+    lua_pushcfunction(L, lua_engine_time_delta);
+    lua_setfield(L, -2, "delta");
+    lua_pushcfunction(L, lua_engine_time_now);
+    lua_setfield(L, -2, "now");
+    lua_pushcfunction(L, lua_engine_time_frame);
+    lua_setfield(L, -2, "frame");
+    lua_setfield(L, -2, "time");                   // engine_table.time = time_table
+
+    // --- engine.lua sub-table (ENG-06 compat; Phase 35 adds collect/memory) ---
+    lua_newtable(L);                               // [engine_table] [lua_table]
+    lua_setfield(L, -2, "lua");                    // engine_table.lua = empty table
+
+    // --- engine.log top-level function (ENG-05) ---
+    lua_pushcfunction(L, lua_engine_log);
+    lua_setfield(L, -2, "log");                    // engine_table.log = fn
+
+    lua_setglobal(L, "engine");                    // pops engine_table; stack is now balanced
+}
+
+// --- engine.scene.switch(id) — ENG-01 ---
+int LuaBindings::lua_engine_scene_switch(lua_State* L) {
+    (void)L;
+    return 0;  // stub — implemented in Plan 02
+}
+
+// --- engine.scene.find(name) — ENG-02 ---
+int LuaBindings::lua_engine_scene_find(lua_State* L) {
+    lua_pushnil(L);
+    return 1;  // stub — returns nil; implemented in Plan 02
+}
+
+// --- engine.input.held(btn) — ENG-03 ---
+int LuaBindings::lua_engine_input_held(lua_State* L) {
+    (void)L;
+    lua_pushboolean(L, 0);
+    return 1;  // stub
+}
+
+// --- engine.input.just_pressed(btn) — ENG-03 ---
+int LuaBindings::lua_engine_input_just_pressed(lua_State* L) {
+    (void)L;
+    lua_pushboolean(L, 0);
+    return 1;  // stub
+}
+
+// --- engine.input.just_released(btn) — ENG-03 ---
+int LuaBindings::lua_engine_input_just_released(lua_State* L) {
+    (void)L;
+    lua_pushboolean(L, 0);
+    return 1;  // stub
+}
+
+// --- engine.input.axis(n) — ENG-03 ---
+int LuaBindings::lua_engine_input_axis(lua_State* L) {
+    (void)L;
+    lua_pushnumber(L, 0.0);
+    return 1;  // stub
+}
+
+// --- engine.time.delta() — ENG-04 ---
+int LuaBindings::lua_engine_time_delta(lua_State* L) {
+    (void)L;
+    lua_pushnumber(L, 0.0);
+    return 1;  // stub
+}
+
+// --- engine.time.now() — ENG-04 ---
+int LuaBindings::lua_engine_time_now(lua_State* L) {
+    (void)L;
+    lua_pushnumber(L, 0.0);
+    return 1;  // stub
+}
+
+// --- engine.time.frame() — ENG-04 ---
+int LuaBindings::lua_engine_time_frame(lua_State* L) {
+    (void)L;
+    lua_pushinteger(L, 0);
+    return 1;  // stub
+}
+
+// --- engine.log(...) — ENG-05 ---
+int LuaBindings::lua_engine_log(lua_State* L) {
+    (void)L;
+    return 0;  // stub — implemented in Plan 02
 }
 
 //==============================================================================
