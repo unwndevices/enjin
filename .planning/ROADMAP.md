@@ -258,8 +258,18 @@ Plans:
 **Goal:** Remove the C_Drawable cache from Object to eliminate the enjin2_core -> enjin2_ui layering violation; replace with a generic getComponents<T>() template and update all consumers
 **Requirements**: none defined
 **Depends on:** Phase 35
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 36-01-PLAN.md — Remove drawable cache from Object; add getComponents<T>() generic template
 - [ ] 36-02-PLAN.md — Update scene.hpp and animation.hpp consumers; add drawable_decoupling_test; verify full ctest suite
+
+### Phase 37: address prominent codebase concerns
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 36
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 37 to break down)

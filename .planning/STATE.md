@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T16:15:21.291Z"
+last_updated: "2026-02-27T16:47:59.905Z"
 progress:
-  total_phases: 15
+  total_phases: 17
   completed_phases: 13
-  total_plans: 36
+  total_plans: 38
   completed_plans: 35
 ---
 
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 35 in progress
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 36 in progress
 
 ## Current Position
 
-Phase: 35 of 35 (GC Control + Component Assertions) — Plan 01 complete
-Plan: 01 complete (1 of 1 plans for this phase)
-Status: Phase 35-01 complete — engine.lua.collect() + engine.lua.memory() GC bindings; assertRequires<T>() on Component; gc_assert_test 8/8; 15/15 ctest pass
-Last activity: 2026-02-27 — Phase 35-01 complete: GC control Lua bindings + component dependency assertion
+Phase: 36 of 37 (Object Drawable Cache Decoupling) — Plan 01 complete
+Plan: 01 complete (1 of 2 plans for this phase)
+Status: Phase 36-01 complete — C_Drawable cache removed from Object; getComponents<T>() generic template added; enjin2_core->enjin2_ui layering violation eliminated at object.hpp level
+Last activity: 2026-02-27 — Phase 36-01 complete: Object C_Drawable cache removed, getComponents<T>() added
 
-Progress: [███████████████░░░░░] 83% (29/35 phases complete — Phase 35 in progress)
+Progress: [████████████████░░░░] 86% (30/37 phases complete — Phase 36 in progress)
 
 ## Performance Metrics
 
@@ -89,6 +89,8 @@ Recent decisions relevant to v1.5:
 - [Phase 35-01]: LUA_GCSTEP used for collect() not LUA_GCCOLLECT — incremental avoids stop-the-world frame spike
 - [Phase 35-01]: component.hpp includes object.hpp (not circular: object.hpp only forward-declares Component)
 - [Phase 35-01]: DEP-03 test case gated #ifdef NDEBUG — debug path would abort test process via assert(false)
+- [Phase 36-01]: getComponents<T>() uses caller-provides-buffer pattern (T** out, size_t maxOut) — zero heap allocation; O(n) dynamic_cast scan; static_assert(is_base_of<Component,T>) for compile-time safety
+- [Phase 36-01]: Only C_Position fast cache retained in Object; C_Drawable cache eliminated removing enjin2_core->enjin2_ui layering violation; scene.hpp/animation.hpp callers deferred to Plan 02
 
 ### Pending Todos
 
@@ -108,6 +110,7 @@ None.
 | Phase 33-scripterrorpolicy P02 | 3 | 2 tasks | 4 files |
 | Phase 34 P01 | 3 | 5 tasks | 5 files |
 | Phase 35 P01 | 4 | 3 tasks | 5 files |
+| Phase 36-object-drawable-cache-decoupling P01 | 3 | 2 tasks | 2 files |
 
 ### Blockers/Concerns
 
@@ -119,6 +122,7 @@ None.
 ### Roadmap Evolution
 
 - Phase 36 added: object-drawable-cache-decoupling
+- Phase 37 added: address prominent codebase concerns
 
 ### Technical Debt (carried)
 
@@ -128,5 +132,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed quick task 6 — .clang-tidy setup for clang-tidy 21.1.8 with C++17 embedded engine checks
+Stopped at: Completed 36-01-PLAN.md — Object C_Drawable cache removed; getComponents<T>() added; Plan 02 unblocked
 Resume file: None
