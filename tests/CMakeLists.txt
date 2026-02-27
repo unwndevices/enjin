@@ -150,6 +150,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME math_binding_test COMMAND math_binding_test)
+
+    # Collision binding test (engine.collision.* C++ + Lua)
+    add_executable(collision_test
+        collision_test.cpp
+    )
+    target_include_directories(collision_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(collision_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME collision_test COMMAND collision_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

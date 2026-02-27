@@ -65,11 +65,13 @@ static void test_engine_global_not_nil() {
         "local t = engine.time\n"
         "local l = engine.lua\n"
         "local g = engine.log\n"
+        "local c = engine.collision\n"
         "ok_scene  = (s ~= nil) and 1 or 0\n"
         "ok_input  = (i ~= nil) and 1 or 0\n"
         "ok_time   = (t ~= nil) and 1 or 0\n"
         "ok_lua    = (l ~= nil) and 1 or 0\n"
         "ok_log    = (g ~= nil) and 1 or 0\n"
+        "ok_collision = (c ~= nil) and 1 or 0\n"
     );
     ASSERT(r.success, "module-level engine.* access should not error");
     ASSERT(f.getNum("ok_scene") == 1.0, "engine.scene should be non-nil");
@@ -77,6 +79,7 @@ static void test_engine_global_not_nil() {
     ASSERT(f.getNum("ok_time")  == 1.0, "engine.time should be non-nil");
     ASSERT(f.getNum("ok_lua")   == 1.0, "engine.lua should be non-nil");
     ASSERT(f.getNum("ok_log")   == 1.0, "engine.log should be non-nil");
+    ASSERT(f.getNum("ok_collision") == 1.0, "engine.collision should be non-nil");
 }
 
 // ============================================================
@@ -93,6 +96,7 @@ static void test_engine_type_checks() {
         "t_input  = (type(engine.input) == 'table')   and 1 or 0\n"
         "t_time   = (type(engine.time)  == 'table')   and 1 or 0\n"
         "t_lua    = (type(engine.lua)   == 'table')   and 1 or 0\n"
+        "t_collision = (type(engine.collision) == 'table') and 1 or 0\n"
         "t_log    = (type(engine.log)   == 'function') and 1 or 0\n"
     );
     ASSERT(r.success, "type checks should not error");
@@ -101,6 +105,7 @@ static void test_engine_type_checks() {
     ASSERT(f.getNum("t_input")  == 1.0, "type(engine.input) should be 'table'");
     ASSERT(f.getNum("t_time")   == 1.0, "type(engine.time) should be 'table'");
     ASSERT(f.getNum("t_lua")    == 1.0, "type(engine.lua) should be 'table'");
+    ASSERT(f.getNum("t_collision") == 1.0, "type(engine.collision) should be 'table'");
     ASSERT(f.getNum("t_log")    == 1.0, "type(engine.log) should be 'function'");
 }
 
@@ -194,6 +199,62 @@ static void test_engine_log_no_crash() {
 }
 
 // ============================================================
+// test_engine_collision_basic
+// engine.collision.* functions return correct results
+// ============================================================
+static void test_engine_collision_basic() {
+    printf("--- engine.collision basic ---\n");
+
+    EngineTableFixture f;
+
+    // aabb: overlapping rects
+    LuaResult r1 = f.exec(
+        "aabb_hit = engine.collision.aabb(0,0,10,10, 5,5,10,10) and 1 or 0\n"
+    );
+    ASSERT(r1.success, "engine.collision.aabb should not error");
+    ASSERT(f.getNum("aabb_hit") == 1.0, "aabb overlapping rects should return true");
+
+    // aabb: non-overlapping
+    LuaResult r2 = f.exec(
+        "aabb_miss = engine.collision.aabb(0,0,10,10, 20,20,10,10) and 1 or 0\n"
+    );
+    ASSERT(r2.success, "engine.collision.aabb non-overlap should not error");
+    ASSERT(f.getNum("aabb_miss") == 0.0, "aabb non-overlapping rects should return false");
+
+    // pointInRect
+    LuaResult r3 = f.exec(
+        "pr_hit = engine.collision.pointInRect(5,5, 0,0,10,10) and 1 or 0\n"
+        "pr_miss = engine.collision.pointInRect(15,15, 0,0,10,10) and 1 or 0\n"
+    );
+    ASSERT(r3.success, "engine.collision.pointInRect should not error");
+    ASSERT(f.getNum("pr_hit") == 1.0, "pointInRect inside should return true");
+    ASSERT(f.getNum("pr_miss") == 0.0, "pointInRect outside should return false");
+
+    // circleCircle
+    LuaResult r4 = f.exec(
+        "cc_hit = engine.collision.circleCircle(0,0,5, 8,0,5) and 1 or 0\n"
+        "cc_miss = engine.collision.circleCircle(0,0,5, 20,0,5) and 1 or 0\n"
+    );
+    ASSERT(r4.success, "engine.collision.circleCircle should not error");
+    ASSERT(f.getNum("cc_hit") == 1.0, "circleCircle overlapping should return true");
+    ASSERT(f.getNum("cc_miss") == 0.0, "circleCircle non-overlapping should return false");
+
+    // lineLine with intersection
+    LuaResult r5 = f.exec(
+        "local hit, ix, iy = engine.collision.lineLine(0,0,10,10, 0,10,10,0)\n"
+        "ll_hit = hit and 1 or 0\n"
+        "ll_ix = ix or 0\n"
+        "ll_iy = iy or 0\n"
+    );
+    ASSERT(r5.success, "engine.collision.lineLine should not error");
+    ASSERT(f.getNum("ll_hit") == 1.0, "lineLine crossing should return true");
+    double ix = f.getNum("ll_ix");
+    double iy = f.getNum("ll_iy");
+    ASSERT(ix > 4.9 && ix < 5.1, "lineLine intersection x should be ~5");
+    ASSERT(iy > 4.9 && iy < 5.1, "lineLine intersection y should be ~5");
+}
+
+// ============================================================
 // test_engine_scene_null_guards
 // ENG-01, ENG-02: scene functions are no-ops / return nil with no SSM
 // ============================================================
@@ -223,6 +284,7 @@ int main() {
     test_engine_time_defaults();
     test_engine_time_after_setTimeState();
     test_engine_log_no_crash();
+    test_engine_collision_basic();
     test_engine_scene_null_guards();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);

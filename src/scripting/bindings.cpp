@@ -1321,6 +1321,22 @@ void LuaBindings::registerEngineTable() {
     lua_setfield(L, -2, "frame");
     lua_setfield(L, -2, "time");                   // engine_table.time = time_table
 
+    // --- engine.collision sub-table ---
+    lua_newtable(L);                               // [engine_table] [collision_table]
+    lua_pushcfunction(L, lua_engine_collision_aabb);
+    lua_setfield(L, -2, "aabb");
+    lua_pushcfunction(L, lua_engine_collision_circleCircle);
+    lua_setfield(L, -2, "circleCircle");
+    lua_pushcfunction(L, lua_engine_collision_pointInRect);
+    lua_setfield(L, -2, "pointInRect");
+    lua_pushcfunction(L, lua_engine_collision_pointInCircle);
+    lua_setfield(L, -2, "pointInCircle");
+    lua_pushcfunction(L, lua_engine_collision_lineLine);
+    lua_setfield(L, -2, "lineLine");
+    lua_pushcfunction(L, lua_engine_collision_lineCircle);
+    lua_setfield(L, -2, "lineCircle");
+    lua_setfield(L, -2, "collision");              // engine_table.collision = collision_table
+
     // --- engine.lua sub-table (ENG-06 compat; Phase 35 adds collect/memory) ---
     lua_newtable(L);                               // [engine_table] [lua_table]
     lua_setfield(L, -2, "lua");                    // engine_table.lua = empty table
@@ -1446,6 +1462,119 @@ int LuaBindings::lua_engine_log(lua_State* L) {
     }
     printf("\n");
     return 0;
+}
+
+//==============================================================================
+// engine.collision.* bindings
+//==============================================================================
+
+int LuaBindings::lua_engine_collision_aabb(lua_State* L) {
+    float x1, y1, w1, h1, x2, y2, w2, h2;
+    auto* r1 = static_cast<Rect*>(luaL_testudata(L, 1, "Rect"));
+    auto* r2 = static_cast<Rect*>(luaL_testudata(L, 2, "Rect"));
+    if (r1 && r2) {
+        x1 = static_cast<float>(r1->x); y1 = static_cast<float>(r1->y);
+        w1 = static_cast<float>(r1->width); h1 = static_cast<float>(r1->height);
+        x2 = static_cast<float>(r2->x); y2 = static_cast<float>(r2->y);
+        w2 = static_cast<float>(r2->width); h2 = static_cast<float>(r2->height);
+    } else {
+        x1 = static_cast<float>(luaL_checknumber(L, 1));
+        y1 = static_cast<float>(luaL_checknumber(L, 2));
+        w1 = static_cast<float>(luaL_checknumber(L, 3));
+        h1 = static_cast<float>(luaL_checknumber(L, 4));
+        x2 = static_cast<float>(luaL_checknumber(L, 5));
+        y2 = static_cast<float>(luaL_checknumber(L, 6));
+        w2 = static_cast<float>(luaL_checknumber(L, 7));
+        h2 = static_cast<float>(luaL_checknumber(L, 8));
+    }
+    lua_pushboolean(L, enjin2::collision::aabb(x1, y1, w1, h1, x2, y2, w2, h2) ? 1 : 0);
+    return 1;
+}
+
+int LuaBindings::lua_engine_collision_circleCircle(lua_State* L) {
+    float x1 = static_cast<float>(luaL_checknumber(L, 1));
+    float y1 = static_cast<float>(luaL_checknumber(L, 2));
+    float r1 = static_cast<float>(luaL_checknumber(L, 3));
+    float x2 = static_cast<float>(luaL_checknumber(L, 4));
+    float y2 = static_cast<float>(luaL_checknumber(L, 5));
+    float r2 = static_cast<float>(luaL_checknumber(L, 6));
+    lua_pushboolean(L, enjin2::collision::circleCircle(x1, y1, r1, x2, y2, r2) ? 1 : 0);
+    return 1;
+}
+
+int LuaBindings::lua_engine_collision_pointInRect(lua_State* L) {
+    float px, py, rx, ry, rw, rh;
+    auto* p = static_cast<Point*>(luaL_testudata(L, 1, "Point"));
+    auto* v = static_cast<Vec2*>(luaL_testudata(L, 1, "Vec2"));
+    auto* r = static_cast<Rect*>(luaL_testudata(L, 2, "Rect"));
+    if ((p || v) && r) {
+        px = p ? static_cast<float>(p->x) : v->x;
+        py = p ? static_cast<float>(p->y) : v->y;
+        rx = static_cast<float>(r->x); ry = static_cast<float>(r->y);
+        rw = static_cast<float>(r->width); rh = static_cast<float>(r->height);
+    } else {
+        px = static_cast<float>(luaL_checknumber(L, 1));
+        py = static_cast<float>(luaL_checknumber(L, 2));
+        rx = static_cast<float>(luaL_checknumber(L, 3));
+        ry = static_cast<float>(luaL_checknumber(L, 4));
+        rw = static_cast<float>(luaL_checknumber(L, 5));
+        rh = static_cast<float>(luaL_checknumber(L, 6));
+    }
+    lua_pushboolean(L, enjin2::collision::pointInRect(px, py, rx, ry, rw, rh) ? 1 : 0);
+    return 1;
+}
+
+int LuaBindings::lua_engine_collision_pointInCircle(lua_State* L) {
+    float px, py, cx, cy, r;
+    auto* p = static_cast<Point*>(luaL_testudata(L, 1, "Point"));
+    auto* v = static_cast<Vec2*>(luaL_testudata(L, 1, "Vec2"));
+    if (p || v) {
+        px = p ? static_cast<float>(p->x) : v->x;
+        py = p ? static_cast<float>(p->y) : v->y;
+        cx = static_cast<float>(luaL_checknumber(L, 2));
+        cy = static_cast<float>(luaL_checknumber(L, 3));
+        r  = static_cast<float>(luaL_checknumber(L, 4));
+    } else {
+        px = static_cast<float>(luaL_checknumber(L, 1));
+        py = static_cast<float>(luaL_checknumber(L, 2));
+        cx = static_cast<float>(luaL_checknumber(L, 3));
+        cy = static_cast<float>(luaL_checknumber(L, 4));
+        r  = static_cast<float>(luaL_checknumber(L, 5));
+    }
+    lua_pushboolean(L, enjin2::collision::pointInCircle(px, py, cx, cy, r) ? 1 : 0);
+    return 1;
+}
+
+int LuaBindings::lua_engine_collision_lineLine(lua_State* L) {
+    float x1 = static_cast<float>(luaL_checknumber(L, 1));
+    float y1 = static_cast<float>(luaL_checknumber(L, 2));
+    float x2 = static_cast<float>(luaL_checknumber(L, 3));
+    float y2 = static_cast<float>(luaL_checknumber(L, 4));
+    float x3 = static_cast<float>(luaL_checknumber(L, 5));
+    float y3 = static_cast<float>(luaL_checknumber(L, 6));
+    float x4 = static_cast<float>(luaL_checknumber(L, 7));
+    float y4 = static_cast<float>(luaL_checknumber(L, 8));
+    float ix, iy;
+    bool hit = enjin2::collision::lineLine(x1, y1, x2, y2, x3, y3, x4, y4, &ix, &iy);
+    lua_pushboolean(L, hit ? 1 : 0);
+    if (hit) {
+        lua_pushnumber(L, static_cast<lua_Number>(ix));
+        lua_pushnumber(L, static_cast<lua_Number>(iy));
+        return 3;
+    }
+    return 1;
+}
+
+int LuaBindings::lua_engine_collision_lineCircle(lua_State* L) {
+    float x1 = static_cast<float>(luaL_checknumber(L, 1));
+    float y1 = static_cast<float>(luaL_checknumber(L, 2));
+    float x2 = static_cast<float>(luaL_checknumber(L, 3));
+    float y2 = static_cast<float>(luaL_checknumber(L, 4));
+    float cx = static_cast<float>(luaL_checknumber(L, 5));
+    float cy = static_cast<float>(luaL_checknumber(L, 6));
+    float r  = static_cast<float>(luaL_checknumber(L, 7));
+    lua_pushboolean(L, enjin2::collision::lineCircle(x1, y1, x2, y2, cx, cy, r) ? 1 : 0);
+    return 1;
 }
 
 //==============================================================================
