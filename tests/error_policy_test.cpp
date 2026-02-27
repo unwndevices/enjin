@@ -170,6 +170,56 @@ static void test_err05_reload_clears_error_state()
 }
 
 // ============================================================
+// ERR-SIBLING: Disable policy on one component does NOT block sibling components
+// Addresses CONCERNS.md: "ScriptErrorPolicy State Machine — Two-Level Error Handling"
+// Verifies: error in component A (Disable) does not block component B's update()
+// ============================================================
+static void test_err_sibling_not_blocked()
+{
+    printf("--- ERR-SIBLING: Disable policy does not block sibling components ---\n");
+
+    // Object A: has a buggy script with Disable policy
+    Object objA;
+    C_LuaScript* scriptA = objA.addComponent<C_LuaScript>(16u, 16u);
+    ASSERT(scriptA != nullptr, "ERR-SIBLING: scriptA addComponent should succeed");
+    scriptA->setErrorPolicy(ScriptErrorPolicy::Disable);
+    bool loadedA = scriptA->loadScript(k_buggyScript);  // errors on every update
+    ASSERT(loadedA, "ERR-SIBLING: scriptA loaded");
+
+    // Object B: has a well-behaved script
+    Object objB;
+    C_LuaScript* scriptB = objB.addComponent<C_LuaScript>(16u, 16u);
+    ASSERT(scriptB != nullptr, "ERR-SIBLING: scriptB addComponent should succeed");
+    bool loadedB = scriptB->loadScript(
+        "update_count = 0\n"
+        "function update(self, dt)\n"
+        "    update_count = update_count + 1\n"
+        "end\n"
+    );
+    ASSERT(loadedB, "ERR-SIBLING: scriptB loaded");
+
+    // Frame 1: A errors and is disabled; B runs normally
+    scriptA->update(0.016f);
+    scriptB->update(0.016f);
+
+    ASSERT(scriptA->hasErrors(), "ERR-SIBLING: scriptA should have error after frame 1");
+    ASSERT(!scriptB->hasErrors(), "ERR-SIBLING: scriptB should NOT have error after frame 1");
+
+    double countAfter1 = scriptB->getScriptNumber("update_count");
+    ASSERT(countAfter1 == 1.0, "ERR-SIBLING: scriptB update_count should be 1 after frame 1");
+
+    // Frame 2: A is disabled (skip), B still runs
+    scriptA->update(0.016f);
+    scriptB->update(0.016f);
+
+    ASSERT(scriptA->hasErrors(), "ERR-SIBLING: scriptA still disabled on frame 2");
+    ASSERT(!scriptB->hasErrors(), "ERR-SIBLING: scriptB still no errors on frame 2");
+
+    double countAfter2 = scriptB->getScriptNumber("update_count");
+    ASSERT(countAfter2 == 2.0, "ERR-SIBLING: scriptB update_count should be 2 after frame 2");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main()
@@ -182,6 +232,7 @@ int main()
     test_err03_log_policy_continues_after_error();
     test_err04_panic_policy_field_set();
     test_err05_reload_clears_error_state();
+    test_err_sibling_not_blocked();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);
 

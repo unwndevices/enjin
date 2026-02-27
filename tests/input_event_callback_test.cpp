@@ -202,6 +202,46 @@ static void test_input_optional_callbacks_no_crash()
 }
 
 // ============================================================
+// INPUT-03-ORDER: Explicit call-sequence test (complements INPUT-03)
+// Uses a concatenated string 'PU' to verify pressed fires before update().
+// Named differently from test_input03_callbacks_fire_before_update() (which
+// already exists above) to avoid duplicate definition compile error.
+// ============================================================
+static void test_input03_order_call_sequence()
+{
+    printf("--- INPUT-03-ORDER: call-sequence 'PU' confirms pressed fires before update ---\n");
+
+    Object obj;
+    C_LuaScript* script = obj.addComponent<C_LuaScript>(16u, 16u);
+    ASSERT(script != nullptr, "INPUT-03-ORDER: addComponent should succeed");
+
+    bool loaded = script->loadScript(
+        "call_order = ''\n"
+        "function on_button_pressed(self, btn)\n"
+        "    if btn == 0 then\n"
+        "        call_order = call_order .. 'P'\n"
+        "    end\n"
+        "end\n"
+        "function update(self, dt)\n"
+        "    call_order = call_order .. 'U'\n"
+        "end\n"
+    );
+    ASSERT(loaded, "INPUT-03-ORDER: loadScript should succeed");
+
+    // Frame: button 0 pressed (edge frame)
+    InputState input{};
+    input.prev_buttons = 0;
+    input.buttons = static_cast<uint16_t>(1u << 0);
+    script->setInput(&input);
+    script->update(0.016f);
+
+    // Expected call order: on_button_pressed fires first (P), then update (U) -> "PU"
+    std::string order = script->getScriptString("call_order");
+    ASSERT(order == "PU",
+           "INPUT-03-ORDER: call_order should be 'PU' — pressed fires before update");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main()
@@ -214,6 +254,7 @@ int main()
     test_input03_callbacks_fire_before_update();
     test_input_multi_button_press();
     test_input_optional_callbacks_no_crash();
+    test_input03_order_call_sequence();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);
 
