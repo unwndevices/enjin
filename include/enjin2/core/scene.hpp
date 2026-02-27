@@ -10,6 +10,8 @@
 
 namespace enjin2 {
 
+class SceneStateMachine;  // forward declaration — prevents circular include
+
 /**
  * @brief Base class for game scenes
  * 
@@ -28,7 +30,9 @@ protected:
     Signal<Scene*> onActivateSignal;    ///< Emitted when scene becomes active
     Signal<Scene*> onDeactivateSignal;  ///< Emitted when scene becomes inactive
     Signal<Scene*> onDestroySignal;     ///< Emitted when scene is destroyed
-    
+
+    SceneStateMachine* m_ssm = nullptr;  ///< Non-owning back-pointer to owning SSM. Injected at activation.
+
 public:
     /**
      * @brief Constructor
@@ -209,7 +213,18 @@ public:
     bool isInitialized() const {
         return initialized;
     }
-    
+
+    /**
+     * @brief Inject non-owning SSM back-pointer
+     * @param ssm Owning SceneStateMachine (called before activate())
+     */
+    void setStateMachine(SceneStateMachine* ssm) { m_ssm = ssm; }
+
+    /**
+     * @brief Reset initialized guard to allow re-initialization (used for self-transitions)
+     */
+    void resetInitialized() { initialized = false; }
+
     /**
      * @brief Get object collection
      * @return Reference to object collection

@@ -53,7 +53,10 @@ private:
     
     // Transition progress (0.0 to 1.0)
     float transitionProgress;
-    
+
+    uint32_t pendingSceneId = 0;       ///< ID of the pending deferred transition target
+    bool hasPendingTransition = false;  ///< True when a deferred transition is queued
+
     // Signals for scene transition events
     Signal<Scene*, Scene*> onSceneChangeStartSignal;    ///< (from, to)
     Signal<Scene*, Scene*> onSceneChangeCompleteSignal; ///< (from, to)
@@ -183,6 +186,29 @@ public:
     }
     
     /**
+     * @brief Request a deferred scene transition (safe to call from onUpdate())
+     *
+     * Unlike changeScene(), switchTo() queues the transition for execution AFTER the
+     * current scene's update() returns, preventing re-entrant corruption. Calling
+     * switchTo(currentId) triggers a full reset: onDeactivate, onCreate, onActivate.
+     *
+     * Last-wins: multiple switchTo() calls in the same frame overwrite each other.
+     * Re-entrancy from onDeactivate(): safely queued for the next frame.
+     *
+     * @param sceneId Target scene identifier (must already be registered via addScene)
+     */
+    void switchTo(uint32_t sceneId) {
+        for (size_t i = 0; i < sceneCount; ++i) {
+            if (scenes[i] && scenes[i]->getId() == sceneId) {
+                pendingSceneId = sceneId;
+                hasPendingTransition = true;
+                return;
+            }
+        }
+        // Unknown scene ID: silently ignored (embedded release constraint)
+    }
+
+    /**
      * @brief Update the state machine
      * @param dt Time since last frame in seconds
      */
@@ -195,6 +221,16 @@ public:
         // Update current scene
         if (currentScene) {
             currentScene->update(dt);
+        }
+
+        // Deferred transition: executes AFTER currentScene->update() returns (no re-entrancy)
+        // hasPendingTransition MUST be cleared before applyDeferredTransition() so that
+        // any switchTo() called from onDeactivate() queues for the NEXT frame, not this one.
+        if (hasPendingTransition) {
+            hasPendingTransition = false;
+            uint32_t targetId = pendingSceneId;
+            pendingSceneId = 0;
+            applyDeferredTransition(targetId);
         }
     }
     
@@ -304,6 +340,9 @@ private:
             case TransitionType::SLIDE_UP:
             case TransitionType::SLIDE_DOWN:
                 transitionState = TransitionState::SLIDING;
+                if (nextScene) {
+                    nextScene->setStateMachine(this);  // inject BEFORE initialize() and activate()
+                }
                 if (nextScene && !nextScene->isInitialized()) {
                     nextScene->initialize();
                 }
@@ -318,6 +357,45 @@ private:
         }
     }
     
+    /**
+     * @brief Apply a deferred transition queued by switchTo()
+     *
+     * Called from update() after currentScene->update() returns.
+     * Self-transitions trigger a full reset cycle: deactivate -> resetInitialized -> activate.
+     * Cross-scene transitions are equivalent to an immediate changeScene().
+     *
+     * @param targetId Scene ID to transition to
+     */
+    void applyDeferredTransition(uint32_t targetId) {
+        Scene* targetScene = nullptr;
+        for (size_t i = 0; i < sceneCount; ++i) {
+            if (scenes[i] && scenes[i]->getId() == targetId) {
+                targetScene = scenes[i].get();
+                break;
+            }
+        }
+        if (!targetScene) return;
+
+        bool isSelf = (targetScene == currentScene);
+        if (isSelf) {
+            // Full reset: deactivate -> clear init guard -> re-activate
+            Scene* scene = currentScene;
+            scene->deactivate();              // fires onDeactivate(); sets active = false
+            scene->resetInitialized();        // sets initialized = false (bypasses guard)
+            scene->setStateMachine(this);     // re-inject (already set; explicit for clarity)
+            scene->activate();               // initialize() fires -> onCreate(); then onActivate()
+        } else {
+            // Normal cross-scene immediate transition
+            Scene* oldScene = currentScene;
+            if (currentScene) { currentScene->deactivate(); }
+            currentScene = targetScene;
+            currentScene->setStateMachine(this);
+            if (!currentScene->isInitialized()) { currentScene->initialize(); }
+            if (!currentScene->isActive()) { currentScene->activate(); }
+            onSceneChangeCompleteSignal.emit(oldScene, currentScene);
+        }
+    }
+
     /**
      * @brief Update transition state
      * @param dt Time since last frame in seconds
@@ -366,6 +444,9 @@ private:
         
         // Activate next scene
         currentScene = nextScene;
+        if (currentScene) {
+            currentScene->setStateMachine(this);   // inject BEFORE initialize() and activate()
+        }
         if (currentScene && !currentScene->isInitialized()) {
             currentScene->initialize();
         }
