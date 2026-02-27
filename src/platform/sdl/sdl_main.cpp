@@ -270,17 +270,34 @@ int main(int argc, char* argv[]) {
             s_totalTime += dt;
             g_lua.getBindings().setTimeState(dt, s_totalTime, s_frameCount++);
             {
-                enjin2::LuaResult r = g_lua.callFunction("update", dt);
-                if (!r.success) {
-                    std::cerr << "[lua error] " << r.error << "\n";
-                    lua_ok = false;
+                lua_State* lua_L = g_lua.getEngine().getState();
+                lua_getglobal(lua_L, "update");
+                if (lua_isfunction(lua_L, -1)) {
+                    lua_pushnil(lua_L);                                         // self = nil (SDL runner has no proxy)
+                    lua_pushnumber(lua_L, static_cast<lua_Number>(dt));         // dt (seconds)
+                    if (lua_pcall(lua_L, 2, 0, 0) != LUA_OK) {
+                        const char* err = lua_tostring(lua_L, -1);
+                        std::cerr << "[lua error] " << (err ? err : "unknown") << "\n";
+                        lua_pop(lua_L, 1);
+                        lua_ok = false;
+                    }
+                } else {
+                    lua_pop(lua_L, 1);
                 }
             }
             if (lua_ok) {
-                enjin2::LuaResult r = g_lua.callFunction("draw");
-                if (!r.success) {
-                    std::cerr << "[lua error] " << r.error << "\n";
-                    lua_ok = false;
+                lua_State* lua_L = g_lua.getEngine().getState();
+                lua_getglobal(lua_L, "draw");
+                if (lua_isfunction(lua_L, -1)) {
+                    lua_pushnil(lua_L);  // self = nil (SDL runner has no proxy)
+                    if (lua_pcall(lua_L, 1, 0, 0) != LUA_OK) {
+                        const char* err = lua_tostring(lua_L, -1);
+                        std::cerr << "[lua error] " << (err ? err : "unknown") << "\n";
+                        lua_pop(lua_L, 1);
+                        lua_ok = false;
+                    }
+                } else {
+                    lua_pop(lua_L, 1);
                 }
             }
         }
