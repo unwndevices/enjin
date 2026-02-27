@@ -72,6 +72,12 @@ target_link_libraries(compositor_test PRIVATE
 )
 add_test(NAME compositor_test COMMAND compositor_test)
 
+# Named objects unit test (OBJ-01 through OBJ-04: name/tag identity on Object)
+add_executable(named_objects_test named_objects_test.cpp)
+target_include_directories(named_objects_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(named_objects_test PRIVATE enjin2)
+add_test(NAME named_objects_test COMMAND named_objects_test)
+
 # Layer binding unit test (Lua layer API: setLayer, getLayer, clearLayer, etc.)
 if(ENJIN2_BUILD_LUA)
     add_executable(layer_binding_test
