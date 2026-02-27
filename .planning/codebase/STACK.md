@@ -1,118 +1,135 @@
 # Technology Stack
 
-**Analysis Date:** 2026-02-23
+**Analysis Date:** 2026-02-27
 
 ## Languages
 
 **Primary:**
-- C++17 - Core engine library, graphics, UI, scripting bindings, all source under `src/` and `include/`
-- C - LuaJIT amalgamated build for WebAssembly target (`luajit/src/ljamalg.c`)
+- C++17 - Core engine implementation, graphics, input, and component systems (`src/core/`, `src/graphics/`, `src/input/`)
+- Lua 5.1 - Embedded scripting language for game logic and Lua bindings (`luajit/src/`, `src/scripting/`)
+- C - LuaJIT implementation for WASM/Emscripten and system library bindings
 
 **Secondary:**
-- Lua 5.1+ - Embedded game scripting via `LuaEngine` in `src/scripting/`
-- JavaScript - Documentation tooling scripts (`scripts/generate-api-docs.js`)
+- JavaScript - Emscripten bindings for WebAssembly (`src/bindings/pre.js`)
+- Shell/CMake - Build system configuration and cross-platform setup
 
 ## Runtime
 
 **Environment:**
-- Native C++ runtime - desktop (Linux/macOS) and embedded (ESP32-S3)
-- WebAssembly (WASM) via Emscripten for browser targets
-- ESP-IDF FreeRTOS for ESP32-S3 embedded targets
+- CMake 3.16+ - Cross-platform build system
+- C++17-compliant compiler (tested with Clang, GCC)
+- Emscripten SDK for WebAssembly targets
+- ESP-IDF for ESP32 embedded targets
 
 **Package Manager:**
-- npm - used only for documentation tooling (`package.json` at root, `docs/package.json`)
-- Lockfile: `package-lock.json` present
-- No C++ package manager - all C++ dependencies are vendored or system-installed
+- CMake FetchContent - Downloads dependencies (SDL3 via Git)
+- Manual Lua integration - LuaJIT embedded as source (`luajit/`) or system Lua 5.1
 
 ## Frameworks
 
-**Core:**
-- No external C++ framework - the library IS the framework
-- Adafruit GFX Library (vendored at `Libs/Adafruit-GFX-Library/`) - font rendering, GFX compatibility API, `GFXfont`/`GFXglyph` types used in `include/enjin2/graphics/canvas.hpp`
+**Core Graphics:**
+- Custom Canvas system (4-bit and 8-bit pixel formats) - `include/enjin2/graphics/canvas.hpp`
+- Custom Primitives library (lines, circles, rectangles) - `src/graphics/primitives.cpp`
+- Palette management - `src/graphics/palette.cpp`
 
-**Documentation:**
-- Docusaurus 3.9.2 (`docs/package.json`) - static site generation for API docs
-- Doxygen - XML extraction from C++ headers, consumed by `scripts/generate-api-docs.js`
-- Graphviz - dependency diagrams in Doxygen output
+**Scripting:**
+- LuaJIT (v2.x) - JIT-compiled Lua for desktop (VCV Rack) - embedded in `luajit/src/`
+- Lua 5.1 - Fallback for ESP32 and embedded systems - user-provided via `-DLUA_INCLUDE_DIRS` and `-DLUA_LIBRARIES`
+- Custom Lua bindings layer - `src/scripting/bindings*.cpp`, `include/enjin2/scripting/bindings.hpp`
+
+**ECS/Scene Management:**
+- Custom Entity Component System - `include/enjin2/core/object.hpp`, `include/enjin2/components/`
+- Scene system with state machines - `src/core/scene.cpp`
+- Script components - `include/enjin2/components/lua_script.hpp`
+
+**Animation:**
+- Keyframe animation system - `src/animation/keyframe.cpp`, `include/enjin2/animation/`
+
+**Input Abstraction:**
+- Platform-agnostic input state (`include/enjin2/input/input_state.hpp`)
+- SDL3 input polling for desktop (`src/platform/sdl/sdl_main.cpp`)
+- Platform-specific input binding in `input_platform_poll()`
 
 **Build/Dev:**
-- CMake 3.16+ (`CMakeLists.txt`) - primary build system
-- Emscripten (`emcc`) - WebAssembly compilation via `build_wasm.sh`
-- PlatformIO (ESP32) - configured in `examples/platformio_esp32_lua.ini`
-
-**Testing:**
-- Custom CMake test executables (no external test framework)
-  - `tests/image_comparison_test` - image comparison for shadow mode verification
-  - `tests/shadow_mode_test` - parallel execution backend testing
-  - Vendor headers (`vendor/stb_image.h`, `vendor/stb_image_write.h`) used in tests
+- CMake - Main build system
+- Doxygen - API documentation generation (optional, if found)
+- Node.js - Documentation generation script (`scripts/generate-api-docs.js`)
 
 ## Key Dependencies
 
-**Critical (C++ library):**
-- Lua 5.1+ (system) - Scripting support; optional, can be disabled with `ENJIN2_BUILD_LUA=OFF`
-  - Desktop: system Lua via `find_package(Lua)`
-  - WebAssembly: LuaJIT 2.x built from source (`luajit/src/ljamalg.c`)
-  - ESP32: Provided externally via `LUA_INCLUDE_DIRS` / `LUA_LIBRARIES` CMake vars
-- Adafruit GFX Library (vendored at `Libs/Adafruit-GFX-Library/`) - font/glyph types only
-- STB Image (vendored at `vendor/stb_image.h`, `vendor/stb_image_write.h`) - image I/O in tests
+**Critical:**
+- LuaJIT or Lua 5.1 - Scripting engine (required for ENJIN2_BUILD_LUA=ON)
+  - Desktop: System Lua via `find_package(Lua)` or embedded LuaJIT
+  - WebAssembly: LuaJIT built from `luajit/src/ljamalg.c` with FFI/JIT disabled
+  - ESP32: User-provided via CMake variables
+  - Location: `include/enjin2/scripting/lua_engine.hpp`, `src/scripting/`
 
-**Embedded Platform:**
-- ESP-IDF (ESP32-S3) - FreeRTOS, `esp_attr.h`, IRAM/DRAM placement macros
-  - Used in `include/enjin2/graphics/canvas_esp32s3.hpp`
-- Arduino SDK - optional, conditioned on `#ifndef VCV_RACK` in `include/enjin2/graphics/canvas.hpp`
+**Infrastructure:**
+- SDL3 (v3.4.2) - Desktop window/input/rendering (optional, ENJIN2_BUILD_SDL=OFF by default)
+  - Fetched from GitHub: `https://github.com/libsdl-org/SDL.git` tag `release-3.4.2`
+  - Used in `src/platform/sdl/sdl_main.cpp` for window creation and keyboard input
+  - Links as `SDL3::SDL3` target
 
-**Documentation Tooling (npm):**
-- `xml2js` ^0.6.2 (root `package.json`) - parses Doxygen XML in `scripts/generate-api-docs.js`
-- `@docusaurus/core` 3.9.2 - static site framework
-- `@docusaurus/preset-classic` 3.9.2 - classic docs theme
-- `react` ^18.2.0, `react-dom` ^18.2.0 - Docusaurus runtime
-- `prism-react-renderer` ^2.3.0 - syntax highlighting
+- Adafruit-GFX-Library (optional reference) - Located at `../Libs/Adafruit-GFX-Library` (external to repo)
+  - Included in UI library build (`include/enjin2/ui/`)
+
+- Emscripten - WebAssembly toolchain (required for ENJIN2_BUILD_WASM=ON)
+  - Provides clang compiler and JavaScript binding support
+  - Custom memory settings: 64MB max, 1MB stack
 
 ## Configuration
 
 **Environment:**
-- No `.env` files detected
-- No runtime environment variables - this is a compiled library
-- ESP32 build: `LUA_INCLUDE_DIRS` and `LUA_LIBRARIES` must be set as CMake variables
+- Platform definitions via compile flags:
+  - `VCV_RACK` - Desktop/VCV Rack platform (default, sets memory to 1MB, enables all Lua libs)
+  - `ESP32` - Embedded ESP32 platform (64KB Lua memory, minimal libs, no file I/O)
+  - `EMSCRIPTEN` - WebAssembly platform (LuaJIT from source with FFI/JIT disabled)
 
-**Build Flags:**
-- `VCV_RACK` - defined for all modules via `target_compile_definitions(...PUBLIC VCV_RACK)`; disables Arduino SDK includes
-- `ENJIN2_BUILD_TESTS` (default ON) - enables test targets
-- `ENJIN2_BUILD_EXAMPLES` (default ON) - enables example targets
-- `ENJIN2_BUILD_LUA` (default ON) - enables Lua scripting library
-- `ENJIN2_BUILD_WASM` (default OFF) - enables WebAssembly target
-- `ENJIN2_USE_SIMD` (default ON) - SIMD optimizations
-- `ESP32` - set for ESP32 platform builds; enables FreeRTOS and IRAM attributes
+- Conditional feature flags:
+  - `ENJIN2_BUILD_LUA` (ON) - Build Lua scripting bindings and engine
+  - `ENJIN2_BUILD_TESTS` (ON) - Build test suite
+  - `ENJIN2_BUILD_EXAMPLES` (ON) - Build example programs
+  - `ENJIN2_BUILD_SDL` (OFF) - Build SDL3 desktop runner
+  - `ENJIN2_BUILD_WASM` (OFF) - Build WebAssembly target
+  - `ENJIN2_USE_SIMD` (ON) - Enable SIMD optimizations (Xtensa for ESP32)
 
-**Build Config Files:**
-- `CMakeLists.txt` - root CMake config
-- `tests/CMakeLists.txt` - test target definitions
-- `examples/platformio_esp32_lua.ini` - PlatformIO config for ESP32-S3 builds
-- `build_wasm.sh` - Emscripten WASM build script
-- `docs/Doxyfile` - Doxygen configuration (referenced in CMakeLists.txt)
+**Build:**
+- `CMakeLists.txt` - Root build configuration
+- `include/enjin2/scripting/lua_platform.hpp` - Platform-specific Lua settings
+- `src/scripting/lua_platform.cpp` - Platform-specific implementations
 
 ## Platform Requirements
 
 **Development:**
+- C++17 compiler (Clang 10+, GCC 8+, MSVC 2019+)
 - CMake 3.16+
-- C++17 compatible compiler (GCC, Clang)
-- Optional: Lua 5.1+ headers and libraries
-- Optional: Doxygen + Graphviz (for docs target)
-- Optional: Node.js 18+ + npm (for documentation site)
-- WebAssembly builds: Emscripten SDK (emsdk) at `../emsdk` relative to project root
+- Lua 5.1 development headers (for desktop build)
+  - Debian/Ubuntu: `liblua5.1-dev`
+  - macOS: `brew install lua`
+  - Windows: vcpkg or manual installation
 
-**Production Targets:**
-- Desktop: Any C++17-capable OS (Linux, macOS confirmed by CI using ubuntu-latest)
-- Embedded: ESP32-S3 via ESP-IDF + PlatformIO
-- Browser: WebAssembly via Emscripten, outputs `enjin2.js` + `enjin2.wasm` as ES6 module named `Enjin2Module`
+**Production:**
+- Desktop: Linux, macOS, Windows with SDL3 runtime
+- WebAssembly: Modern browser with WebAssembly support (Firefox, Chrome, Safari)
+- ESP32: ESP-IDF toolchain with Lua component configured
 
-**Library Outputs:**
-- `libenjin2_core.a` - core types, math, memory, scene, animation
-- `libenjin2_graphics.a` - canvas, primitives, effects
-- `libenjin2_ui.a` - drawable components, polar utilities
-- `libenjin2_lua.a` - Lua scripting engine and bindings
-- `enjin2` (INTERFACE target) - aggregates all modules
+## Compilation Settings
+
+**C++ Standard:** C++17 with `-std=c++17 -MMD -MP` (dependency tracking)
+
+**Compiler Flags:**
+- `-Woverride` (Clang/AppleClang) - Catch detached virtual overrides on all engine targets
+- SIMD: Controlled by `ENJIN2_USE_SIMD` option (default ON)
+
+**WebAssembly (Emscripten) Specific:**
+- `-sIMPORTED_MEMORY=1` - Share memory between JS and WASM
+- `-sALLOW_MEMORY_GROWTH=1` - Allow dynamic memory expansion
+- `-sMAXIMUM_MEMORY=67108864` - 64MB max memory
+- `-sSTACK_SIZE=1048576` - 1MB stack
+- `-sEXPORT_ES6=1` - ES6 module output
+- `-sMODULARIZE=1` - Modular export pattern
+- `--bind` - Emscripten bindings
 
 ---
 
-*Stack analysis: 2026-02-23*
+*Stack analysis: 2026-02-27*

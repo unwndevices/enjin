@@ -1,231 +1,346 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-02-23
+**Analysis Date:** 2026-02-27
 
 ## Test Framework
 
 **Runner:**
-- No unit test framework (no Google Test, Catch2, doctest, or CTest test cases detected)
-- Tests are standalone executable programs built with CMake
-- Config: `tests/CMakeLists.txt`
+- CMake test framework (CTest) with hand-written assertions
+- No Google Test, Catch2, or Doctest dependency
+- Tests are standalone executables linked against `enjin2` libraries
+
+**Build Configuration:**
+- Tests enabled by default: `ENJIN2_BUILD_TESTS ON`
+- Located in: `tests/` directory
+- CMake config: `tests/CMakeLists.txt` defines all test targets and linking
+
+**Test Execution:**
+```bash
+cd build
+ctest                              # Run all tests
+ctest -R sprite_test              # Run specific test
+ctest --output-on-failure         # Show output only if failed
+```
 
 **Assertion Library:**
-- None. Tests use stdio (`fprintf`, `printf`) and process exit codes (0 = pass, 1 = fail)
+- Hand-written macro-based assertions (no external library)
+- Standard pattern across all tests:
+  ```cpp
+  static int passes = 0;
+  static int failures = 0;
 
-**Run Commands:**
-```bash
-# Build (from build directory)
-cmake .. && cmake --build .
-
-# Run shadow mode visual test
-./tests/shadow_mode_test [backend]          # Renders a scene and exports BMP
-
-# Run image comparison
-./tests/image_comparison_test <file1.bmp> <file2.bmp>   # Compares two BMP files
-
-# Example pipeline: render and compare
-./shadow_mode_test enjin2
-./image_comparison_test output-enjin2.bmp reference.bmp
-```
+  #define ASSERT(cond, msg) \
+      do { \
+          if (!(cond)) { \
+              fprintf(stderr, "FAIL: %s\n", msg); \
+              failures++; \
+          } else { \
+              passes++; \
+          } \
+      } while(0)
+  ```
 
 ## Test File Organization
 
-**Location:** All tests live in `tests/` at the project root. No co-located test files alongside source.
+**Location:**
+- All tests in `tests/` directory at project root
+- No subdirectories; flat file structure
 
-**Naming:**
-- Test executables use descriptive `_test` suffix: `shadow_mode_test`, `image_comparison_test`
-- Source files match executable name: `tests/shadow_mode_test.cpp`, `tests/image_comparison.cpp`
+**Naming Convention:**
+- Format: `{feature}_test.cpp` or `{feature}_{aspect}_test.cpp`
+- Examples:
+  - `sprite_test.cpp` - SpriteSheet and C_Sprite component
+  - `error_policy_test.cpp` - Lua script error handling
+  - `math_binding_test.cpp` - Math Lua bindings
+  - `gc_assert_test.cpp` - GC control and component assertions
 
-**Structure:**
+**Test Discovery:**
+- CMakeLists.txt explicitly declares each test as `add_executable(...)` → `add_test(...)`
+- Not automatically discovered; new tests require CMakeLists.txt entry
+
+**File Structure Example:**
 ```
 tests/
-├── CMakeLists.txt          # Builds both test executables
-├── shadow_mode_test.cpp    # Integration/visual test: renders scene to BMP
-└── image_comparison.cpp    # Utility: pixel-diff comparison of two BMP files
+├── CMakeLists.txt                 # Test build configuration
+├── sprite_test.cpp                # Graphics/sprite system tests
+├── error_policy_test.cpp          # Lua script error policies (ERR-01..ERR-05)
+├── gc_assert_test.cpp             # GC bindings + component dependency assert (GC-01..DEP-03)
+├── math_binding_test.cpp          # Math Lua bindings (Vec2, Point, Rect, utilities)
+├── collision_test.cpp             # Collision Lua bindings
+├── input_event_callback_test.cpp  # Input event callbacks (INPUT-01..INPUT-03)
+├── named_objects_test.cpp         # Object name/tag identity (OBJ-01..OBJ-04)
+├── scene_transition_test.cpp      # Scene transitions (SCENE-01..SCENE-03)
+├── layer_binding_test.cpp         # Lua layer API
+├── pikachu.h                       # Shared sprite test data (Aseprite export)
+└── ... (other tests)
 ```
 
 ## Test Structure
 
-**Test Executable Pattern:**
-Tests are `main()`-based programs that return 0 on pass, 1 on fail:
+**Suite Organization:**
+- No test suite grouping (traditional unittest/gtest-style suites)
+- Instead: individual test functions prefixed with test name + requirement ID
+- Main function calls test functions in order, collects pass/fail counts
 
+**Example Test Pattern from `error_policy_test.cpp`:**
 ```cpp
-int main(int argc, char* argv[]) {
-    // Optional: parse backend/mode from argv
-    const char* backend = (argc > 1) ? argv[1] : "default";
+static void test_err01_default_policy_is_disable() {
+    printf("--- ERR-01: default policy is Disable ---\n");
 
-    // Setup: create canvas and scene
-    Canvas8_128x128 canvas;
-    Scene testScene(1);
-    testScene.initialize();
-    testScene.activate();
+    Object obj;
+    C_LuaScript* script = obj.addComponent<C_LuaScript>(16u, 16u);
+    ASSERT(script != nullptr, "ERR-01: addComponent<C_LuaScript> should succeed");
 
-    // Exercise: create objects and run simulation
-    Object* obj1 = testScene.addObject<Object>();
-    obj1->addComponent<C_Position>(10, 10);
-    obj1->addComponent<C_Rectangle>(30, 30, 80);
-
-    for (uint16_t frame = 0; frame < 60; ++frame) {
-        testScene.update(16);   // ~60fps delta
-        testScene.render(canvas);
-    }
-
-    // Assert: export to file and compare externally
-    canvas.exportToBMP("output-enjin2.bmp");
-    return 0;
-}
-```
-
-**Image Comparison Pattern:**
-Visual correctness is verified by pixel-diff comparison using `stb_image`:
-
-```cpp
-float compareBMP(const char* file1, const char* file2) {
-    // Load both images with stb_image
-    // Verify dimensions match
-    // Count differing pixels
-    // Return percentage difference
+    ASSERT(script->getErrorPolicy() == ScriptErrorPolicy::Disable,
+           "ERR-01: default errorPolicy should be Disable");
 }
 
-int main(int argc, char* argv[]) {
-    float diffPercent = compareBMP(argv[1], argv[2]);
-    const float TOLERANCE = 3.0f;
-    if (diffPercent <= TOLERANCE) {
-        printf("Result: PASS (within %.1f%% tolerance)\n", TOLERANCE);
-        return 0;
-    } else {
-        printf("Result: FAIL (exceeds %.1f%% tolerance)\n", TOLERANCE);
-        return 1;
-    }
+// In main():
+int main() {
+    printf("error_policy_test\n");
+    printf("=================\n");
+
+    test_err01_default_policy_is_disable();
+    test_err02_disable_policy_stops_after_error();
+    test_err03_log_policy_continues_after_error();
+    // ... more tests ...
+
+    printf("\nResults: %d passed, %d failed\n", passes, failures);
+    return failures == 0 ? 0 : 1;
 }
 ```
 
 **Patterns:**
-- Setup: construct canvas + scene, call `initialize()` + `activate()`
-- Simulation: run N frames via `update(deltaTime)` + `render(canvas)`
-- Assertion: export canvas to BMP, compare externally with `image_comparison_test`
-- No teardown needed - objects use RAII
-
-## Mocking
-
-**Framework:** None. No mocking library is used.
-
-**Patterns:**
-Test-specific drawable components are implemented as inner classes directly in test files:
-
-```cpp
-namespace enjin2 {
-/**
- * @brief Simple test drawable that renders a filled rectangle
- */
-class C_Rectangle : public C_Drawable {
-    uint8_t color;
-public:
-    C_Rectangle(Object* owner, uint8_t width, uint8_t height, uint8_t rect_color)
-        : C_Drawable(owner, width, height), color(rect_color) {}
-
-    void draw(ICanvas<uint8_t>& canvas) override {
-        if (!is_visible) return;
-        Rect rect(GetOffsetPosition().x, GetOffsetPosition().y, width, height);
-        canvas.fill(rect, color);
-    }
-};
-} // namespace enjin2
-```
-
-**What to Mock:**
-- Drawable behavior: create minimal `C_X` subclasses inside the test file implementing only `draw()`
-- Canvas output: use `Canvas8_128x128` directly (it's a lightweight in-memory buffer)
-
-**What NOT to Mock:**
-- The scene, object, and component system - test against real implementations
-- The canvas - its behavior IS what's being tested
+- **Setup:** Create objects/components in the test function (no shared fixtures except when needed)
+- **Teardown:** Automatic via scope (destructors called when test function exits)
+- **Assertion:** `ASSERT(condition, "message")` macro - increments pass or failure counter
+- **Output:** printf for test names and progress; fprintf(stderr, ...) for failures
 
 ## Fixtures and Factories
 
-**Test Data:**
-No shared fixture infrastructure. Each test file sets up its own objects inline:
+**Test Data Structures:**
+- Lightweight fixtures defined inline in test functions
+- Struct fixtures with setup in constructor:
 
+**Example from `math_binding_test.cpp`:**
 ```cpp
-// Object setup pattern
-Object* obj = testScene.addObject<Object>();
-C_Position* pos = obj->addComponent<C_Position>(x, y);
-C_Rectangle* rect = obj->addComponent<C_Rectangle>(w, h, color);
-rect->SetDrawLayer(DrawLayer::Background);
+struct MathBindingFixture {
+    LuaEngine engine;
+    LuaBindings bindings;
+
+    MathBindingFixture() : bindings(&engine) {
+        engine.initialize();
+        bindings.registerAll();
+    }
+
+    LuaResult exec(const char* code) {
+        return engine.executeString(code);
+    }
+
+    double getNum(const char* name) {
+        return engine.getGlobalNumber(name, -999.0);
+    }
+
+    std::string getStr(const char* name) {
+        return engine.getGlobalString(name, "<<not set>>");
+    }
+};
 ```
 
-**Test Constants:**
-Defined as local `const` variables or macros within `main()`:
+**Example from `gc_assert_test.cpp`:**
 ```cpp
-const uint16_t FRAME_COUNT = 60;
-const uint16_t DELTA_TIME = 16; // ~60 FPS (16ms per frame)
-const float TOLERANCE = 3.0f;   // Max allowed pixel difference %
+struct GCFixture {
+    LuaEngine engine;
+    LuaBindings bindings;
+
+    GCFixture() : bindings(&engine) {
+        engine.initialize();
+        bindings.registerAll();
+    }
+
+    LuaResult exec(const char* code) {
+        return engine.executeString(code);
+    }
+
+    double getNum(const char* name) {
+        return engine.getGlobalNumber(name);
+    }
+};
 ```
 
-**Location:** Fixtures are inline in `tests/*.cpp`. No shared fixture headers.
+**Shared Test Data:**
+- Sprite data (Aseprite exports): `tests/pikachu.h` - included by sprite tests
+- Hardcoded arrays: uint8_t arrays for sprite/canvas tests (no external asset files)
+- String literals: Lua code embedded as `static const char*` in test files
 
 ## Coverage
 
-**Requirements:** None enforced. No code coverage tooling configured in CMake.
+**Requirements:** No coverage targets or enforced thresholds
 
-**View Coverage:** Not configured.
+**View Coverage:**
+- Not configured in CMake
+- Manual inspection via test execution output only
+
+**Test Count by System:**
+
+| System | Test | Files Covered |
+|--------|------|----------------|
+| **Core Components** | `sprite_test.cpp` | C_Sprite, SpriteSheet, animation |
+| **Error Handling** | `error_policy_test.cpp` | C_LuaScript error policies |
+| **GC & Assertions** | `gc_assert_test.cpp` | engine.lua.collect/memory, component dependencies |
+| **Math Bindings** | `math_binding_test.cpp` | Vec2, Point, Rect, utility functions |
+| **Collision** | `collision_test.cpp` | engine.collision.* Lua API |
+| **Input** | `input_event_callback_test.cpp` | on_button_pressed/released callbacks |
+| **Layer API** | `layer_binding_test.cpp` | setLayer, getLayer, clearLayer |
+| **Text API** | `text_binding_test.cpp` | text(), textWrapped(), font switching |
+| **Objects** | `named_objects_test.cpp` | Object names and tags (OBJ-01..OBJ-04) |
+| **Scenes** | `scene_transition_test.cpp` | Scene switching and transitions |
+| **Graphics** | `compositor_test.cpp`, `shadow_mode_test.cpp` | Compositor and rendering |
+| **Input** | `input_test.cpp` | Input abstraction |
+| **Palette** | `palette_test.cpp` | Palette color conversion |
 
 ## Test Types
 
-**Visual / Snapshot Tests (`tests/shadow_mode_test.cpp`):**
-- Renders the engine scene for N frames into a `Canvas8_128x128`
-- Exports output as a BMP file (`output-enjin2.bmp`)
-- Pass/fail determined by comparing with a reference BMP via `image_comparison_test`
-- Tolerance: 3% pixel difference accepted
-
-**Image Comparison Utility (`tests/image_comparison.cpp`):**
-- Standalone tool that loads two BMP files using `stb_image` (from `vendor/`)
-- Compares RGB values pixel-by-pixel
-- Returns exit code 0 if within tolerance (3%), 1 otherwise
-- Used as the assertion step of visual tests in CI pipelines
+**Unit Tests (Dominant):**
+- Scope: Individual components or small subsystems
+- Approach: Create objects/components, exercise API, assert state changes
+- Example: `sprite_test.cpp` - tests SpriteSheet::draw() pixel-by-pixel
+- Location: `tests/{feature}_test.cpp`
 
 **Integration Tests:**
-- `shadow_mode_test` constitutes an integration test: it exercises the full stack from `Scene` → `Object` → `Component` → `Canvas` → BMP export
-- No unit tests for individual methods or classes are present
+- Scope: C++ code + Lua scripting system interaction
+- Approach: Create LuaEngine → register bindings → execute Lua code → check results
+- Examples:
+  - `error_policy_test.cpp` - Lua script loading + error policy enforcement
+  - `math_binding_test.cpp` - Lua math userdata operations
+  - `gc_assert_test.cpp` - Lua GC control bindings
+- Location: Tests requiring `enjin2_lua` library (gated with `if(ENJIN2_BUILD_LUA)`)
+
+**Visual/Regression Tests:**
+- Scope: Rendering output verification (optional)
+- Approach: Draw to canvas, compare pixels to expected values
+- Examples:
+  - `sprite_test.cpp` - SpriteSheet draw verification (pixel-level)
+  - `shadow_mode_test.cpp` - Parallel backend comparison (verify both produce same output)
+  - `image_comparison.cpp` - Generic image diff utility
+- Location: Standalone executables with pixel-level assertions
 
 **E2E Tests:**
-- The shadow mode pipeline (render → export → compare) serves as an E2E verification of rendering fidelity between backends
-
-## CI Integration
-
-Visual tests are integrated into the CI pipeline as a Doxygen warning threshold gate (see `.github/workflows/`). The shadow mode test binary is built and used to verify rendering output doesn't regress. The image comparison tool provides the assertion step.
-
-## Vendor Dependencies for Tests
-
-- `stb_image.h` from `vendor/` directory - used in `image_comparison.cpp` for BMP loading
-- Included via `target_include_directories(image_comparison_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)`
+- Scope: Not used in this codebase
+- Framework: None configured
 
 ## Common Patterns
 
-**Running a simulation:**
-```cpp
-const uint16_t DELTA_TIME = 16; // ~60 FPS
-for (uint16_t frame = 0; frame < FRAME_COUNT; ++frame) {
-    testScene.update(DELTA_TIME);
-    testScene.render(canvas);
-}
+**Async Testing:**
+- Not applicable (no async/coroutines)
+- Lua scripts execute synchronously via `executeString()` or `loadScript()` + manual `update()` calls
+
+**Error Testing:**
+- Script errors: Load buggy Lua code, call update(), check `hasErrors()` and error message
+- Example from `error_policy_test.cpp`:
+  ```cpp
+  static const char* k_buggyScript =
+      "function update(self, dt)\n"
+      "    error('boom')\n"  // This Lua error will be caught
+      "end\n";
+
+  script->loadScript(k_buggyScript);
+  script->update(0.016f);  // Triggers the error
+  ASSERT(script->hasErrors(), "Script should report error after update");
+  ```
+
+**State Verification:**
+- After operations, check object/component state via getters
+- Example from `gc_assert_test.cpp`:
+  ```cpp
+  // DEP-01: assertRequires() happy path
+  Object obj;
+  obj.addComponent<C_TestDep>();
+  C_RequiresTestDep* c = obj.addComponent<C_RequiresTestDep>();
+  obj.awake();  // Triggers assertRequires<C_TestDep>()
+  ASSERT(c->isEnabled(), "Component should remain enabled when dep present");
+  ```
+
+**Lua Execution Pattern:**
+- All Lua tests follow this structure:
+  1. Create LuaEngine + LuaBindings fixture
+  2. Execute Lua code via `engine.executeString(code)`
+  3. Query global variables via `engine.getGlobalNumber()` / `getGlobalString()`
+  4. Assert expected values
+- Example from `math_binding_test.cpp`:
+  ```cpp
+  MathBindingFixture f;
+  LuaResult r = f.exec(
+      "local v = Vec2(3, 4)\n"
+      "ok = (v ~= nil) and 1 or 0\n"
+  );
+  ASSERT(r.success, "Script should execute successfully");
+  ASSERT(f.getNum("ok") == 1.0, "Vec2() should return non-nil");
+  ```
+
+**Conditional Compilation in Tests:**
+- Tests gated by `if(ENJIN2_BUILD_LUA)` in CMakeLists.txt
+- Runtime NDEBUG checks for release-specific behavior:
+  ```cpp
+  #ifdef NDEBUG
+  static void test_dep03_release_missing_disables() {
+      // Release-only test: missing dep disables component
+      // (Debug path calls assert(false) → abort, deliberately excluded)
+  }
+  #endif
+  ```
+
+## Linking & Dependencies
+
+**Test Linking (from `tests/CMakeLists.txt`):**
+
+**Core-only tests:**
+```cmake
+target_link_libraries(sprite_test PRIVATE enjin2)
 ```
 
-**Timing a test:**
-```cpp
-auto start_time = std::chrono::high_resolution_clock::now();
-// ... simulation ...
-auto end_time = std::chrono::high_resolution_clock::now();
-auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-std::cout << "Execution time: " << duration.count() << " ms" << std::endl;
+**Lua-dependent tests (gated by ENJIN2_BUILD_LUA):**
+```cmake
+if(ENJIN2_BUILD_LUA)
+    add_executable(error_policy_test error_policy_test.cpp)
+    target_include_directories(error_policy_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+    target_link_libraries(error_policy_test PRIVATE
+        enjin2
+        enjin2_lua  # Adds Lua bindings
+    )
+    add_test(NAME error_policy_test COMMAND error_policy_test)
+endif()
 ```
 
-**Exporting for visual assertion:**
-```cpp
-canvas.exportToBMP("output-enjin2.bmp");
-// Then: ./image_comparison_test output-enjin2.bmp reference.bmp
+**SDL-dependent tests (gated by ENJIN2_BUILD_SDL):**
+```cmake
+if(ENJIN2_BUILD_SDL)
+    add_executable(sprite_sdl_test sprite_sdl_test.cpp)
+    target_link_libraries(sprite_sdl_test PRIVATE
+        enjin2_core
+        enjin2_graphics
+        enjin2_input
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
+        SDL3::SDL3
+    )
+endif()
 ```
+
+## Phase/Requirement Tracking
+
+**Convention:** Test functions named with requirement ID suffix
+- Pattern: `test_{featurename}_{reqid}_{description}()`
+- Example: `test_err01_default_policy_is_disable()`, `test_dep03_release_missing_disables()`
+
+**Mapping to Implementation Plans:**
+- Test names include phase IDs: `ERR-01`, `GC-02`, `INPUT-01`, `OBJ-04`, `SCENE-01`, `LAYER-01`
+- Allows cross-reference from `.planning/phases/` documentation to test verification
+- Test output shows requirement ID for traceability:
+  ```
+  --- ERR-01: default policy is Disable ---
+  --- ERR-02: Disable policy stops script after error ---
+  ```
 
 ---
 
-*Testing analysis: 2026-02-23*
+*Testing analysis: 2026-02-27*

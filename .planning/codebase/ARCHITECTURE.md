@@ -1,197 +1,244 @@
 # Architecture
 
-**Analysis Date:** 2026-02-23
+**Analysis Date:** 2026-02-27
 
 ## Pattern Overview
 
-**Overall:** Component-Based Entity System with Scene State Machine
+**Overall:** ECS-like component system with scene management and embedded Lua scripting layer
 
 **Key Characteristics:**
-- All memory allocation is static; no heap fragmentation. Limits are compile-time constants (e.g., 16 components per object, 128 objects per scene, 32 scenes per state machine).
-- Hardware-abstracted rendering: the `ICanvas<TPixel>` interface decouples all drawing code from hardware. Swapping display backends requires only a new `ICanvas` implementation.
-- Signal/observer pattern for decoupled inter-component communication. All signals use static arrays with a maximum of 16 connections per signal.
-- Dual rendering pathways: `Canvas4<W,H>` (4-bit packed pixels, 50% memory savings) and `Canvas8<W,H>` (8-bit, Adafruit GFX compatible).
-- Optional Lua scripting layer and optional WebAssembly (Emscripten) bindings compiled as separate static libraries.
+- Static memory allocation throughout (no dynamic allocation on heap)
+- Fixed-size arrays for Objects (16 components max), Scenes (32 max), and Drawables (256 max per scene)
+- Two-layer lifecycle: Object/Component awake→start→update→lateUpdate, Scene initialize→activate→update
+- Deferred transitions prevent re-entrancy during scene updates
+- Type-erased LuaCanvas bridge for 4-bit/8-bit canvas variants
+- ScriptProxy userdata provides safe Lua access to C_LuaScript components with validity checking
 
 ## Layers
 
-**Abstract Interfaces:**
-- Purpose: Hardware-independent contracts
-- Location: `include/enjin2/abstract/`
-- Contains: `ICanvas<TPixel>` drawing interface; `module_group.hpp` aggregate header
-- Depends on: `core/types.hpp`
-- Used by: All graphics, scene, and component code
+**Core Entity Layer (Object/Component):**
+- Purpose: Fundamental entity-component system for game objects
+- Location: `include/enjin2/core/object.hpp`, `include/enjin2/core/component.hpp`
+- Contains: Object base class managing up to 16 components, Component base class with lifecycle hooks
+- Depends on: types.hpp for Point, Rect types
+- Used by: Scene, C_LuaScript, all drawable/non-drawable components
 
-**Core:**
-- Purpose: Foundational types, lifecycle primitives, object/component model, scene management
-- Location: `include/enjin2/core/`, `src/core/`
-- Contains: `Object`, `Component`, `Scene`, `SceneStateMachine`, `ObjectCollection`, `Signal`, `types.hpp` (Point, Size, Rect, Pixel4), `memory.hpp`, `math.cpp`
-- Depends on: Nothing (no external dependencies)
-- Used by: All other layers
+**Scene Management Layer (Scene/SSM):**
+- Purpose: Manages object collections, lifecycle, rendering, and state machine-driven transitions
+- Location: `include/enjin2/core/scene.hpp`, `include/enjin2/core/scene_state_machine.hpp`
+- Contains: Scene class holding ObjectCollection; SceneStateMachine managing up to 32 scenes
+- Depends on: Object, ObjectCollection, Signal for event binding
+- Used by: Application layer, Lua bindings (engine.scene.*)
 
-**Graphics:**
-- Purpose: Canvas implementations and drawing primitives
-- Location: `include/enjin2/graphics/`, `src/graphics/`
-- Contains: `Canvas4<W,H>`, `Canvas8<W,H>`, `primitives.hpp`, `effects.hpp`, `text_renderer.hpp`, `sprite.hpp`, `image_export.hpp`, ESP32 canvas variant (`canvas_esp32s3.hpp`)
-- Depends on: `core`
-- Used by: UI, components, effects, scripting
+**Component Library Layer:**
+- Purpose: Concrete component implementations providing functionality
+- Location: `include/enjin2/components/` (drawable.hpp, position.hpp, lua_script.hpp, sprite.hpp, animation.hpp, etc.)
+- Contains: C_Drawable (base for visual components), C_Position (positioning), C_LuaScript (script execution), domain-specific (C_Sprite, C_Animation, C_Canvas, etc.)
+- Depends on: Component, Canvas, Graphics, Scripting layers
+- Used by: User code creating Objects with specific functionality
 
-**Components:**
-- Purpose: Concrete drawable and game-logic components attached to Objects
-- Location: `include/enjin2/components/`, `src/components/`
-- Contains: `C_Drawable` (base), `C_Position`, `C_Sprite`, `C_Label`, `C_Canvas`, `C_Animation`, `C_LuaScript`, `C_ImageCache`, `C_Probe`, `C_Planet`, `C_Satellite`, `C_Draw`, widget components (`C_Slider`, `C_ButtonDial`, `C_FillUpGauge`, `C_Tickmarks`)
-- Depends on: `core`, `graphics`
-- Used by: User game code; UI layer
+**Scripting Layer (Lua Integration):**
+- Purpose: Embedded Lua execution with love2d.graphics-style API and engine.* global table
+- Location: `include/enjin2/scripting/lua_engine.hpp`, `include/enjin2/scripting/bindings.hpp`, `src/scripting/bindings_*.cpp`
+- Contains: LuaEngine (Lua state management), LuaBindings (C++ function registration), LuaCanvas (type-erased canvas wrapper), ScriptProxy (userdata for C_LuaScript), EngineTimeState (time injection)
+- Depends on: LuaJIT, Canvas, Object, Scene, SceneStateMachine, Input, collision functions
+- Used by: C_LuaScript component, standalone Lua applications
 
-**UI:**
-- Purpose: ECS-style entity/system framework and UI widget infrastructure
-- Location: `include/enjin2/ui/`, `src/ui/`
-- Contains: `ComponentBase`/`Component<T>` (ECS data components), `SystemBase`/`System<T>`, `EntityManager`, `SystemManager`, `ComponentStorage<T,N>`, `ComponentQuery`, UI `theme.hpp`, widget layout and rendering
-- Depends on: `core`, `graphics`
-- Used by: User UI code; scripting layer
+**Graphics Layer:**
+- Purpose: Pixel drawing, layering, effects, and composition
+- Location: `include/enjin2/graphics/canvas.hpp`, `include/enjin2/graphics/primitives.hpp`, `include/enjin2/graphics/layer_compositor.hpp`
+- Contains: ICanvas interface (templated), Pixel4/uint8_t specialized implementations, Primitives4/Primitives8 for shapes, LayerCompositor for multi-layer rendering
+- Depends on: types.hpp, effects.hpp
+- Used by: Lua bindings, drawable components, rendering pipeline
 
-**Scripting:**
-- Purpose: Lua embedding for game-logic scripting
-- Location: `include/enjin2/scripting/`, `src/scripting/`
-- Contains: `LuaEngine`, `LuaInterpreter`, `lua_platform.hpp`, `bindings.hpp`, `ScriptInterface`
-- Depends on: `core`, `graphics`, `ui`, LuaJIT/system Lua
-- Used by: `C_LuaScript` component; WASM bindings
+**Input Layer:**
+- Purpose: Platform-agnostic input state capture and querying
+- Location: `include/enjin2/input/input_state.hpp`, `src/input/input.cpp`
+- Contains: InputState (button state, axis values), input_platform_poll() (platform hook)
+- Depends on: core types
+- Used by: Application update loop, Lua input bindings
 
-**Effects:**
-- Purpose: Post-processing visual effects applied to canvases after scene render
-- Location: `include/enjin2/effects/`, `src/effects/`
-- Contains: `PostFx` class with CRT scanlines, barrel distortion, noise, blur, glow, dithering, contrast/brightness
-- Depends on: `core`, `graphics`
-- Used by: Game main loop after scene render
-
-**Animation:**
-- Purpose: Keyframe-based value interpolation
-- Location: `include/enjin2/animation/`, `src/animation/`
-- Contains: `AnimationTrack<T,KeyframeType>`, `Keyframe` types (PositionKeyframe, FloatKeyframe, ColorKeyframe), easing functions
-- Depends on: `core`
-- Used by: `C_Animation` component
-
-**Utils:**
-- Purpose: Standalone mathematical helpers
-- Location: `include/enjin2/utils/`, `src/utils/`
-- Contains: `drawing_helpers.hpp`, `noise.hpp`, `polar.hpp`
-- Depends on: `core`
-- Used by: Components, effects, user code
-
-**Compat:**
-- Purpose: Migration shim for enjin1 PascalCase API
-- Location: `include/enjin2/compat/`
-- Contains: `scene.hpp` (OnCreate/OnDestroy/OnActivate wrappers), `component.hpp`, `types.hpp`
-- Depends on: `core`
-- Used by: Legacy code only; not for new development
+**Platform Layer:**
+- Purpose: Platform-specific initialization and integration points
+- Location: `src/platform/sdl/sdl_main.cpp`
+- Contains: SDL initialization, platform hooks for rendering and input
+- Depends on: SDL3, Canvas, SceneStateMachine
+- Used by: Standalone SDL applications
 
 ## Data Flow
 
-**Frame Update:**
+**Initialization → Update → Render Cycle:**
 
-1. Host calls `SceneStateMachine::update(deltaTime)`
-2. `SceneStateMachine` updates transition state, then delegates to `currentScene->update(deltaTime)`
-3. `Scene::update()` calls `onUpdate(deltaTime)` (user override), then `ObjectCollection::update(deltaTime)` and `ObjectCollection::lateUpdate(deltaTime)`
-4. `ObjectCollection` iterates all active `Object*`, calling `object->update(deltaTime)` then `lateUpdate(deltaTime)`
-5. Each `Object` iterates its component array, calling each `Component::update(deltaTime)` then `Component::lateUpdate(deltaTime)`
+1. **Initialization Phase:**
+   - Application creates SceneStateMachine
+   - Application calls ssm.addScene<MyScene>(sceneId)
+   - Application calls ssm.changeScene(sceneId) to activate first scene
+   - SceneStateMachine calls Scene::initialize() → Scene::onCreate() → Scene::activate() → Scene::onActivate()
+   - Scene::activate() calls ObjectCollection::start()
+   - ObjectCollection::start() calls Object::awake() then Object::start() on all objects
+   - Each Object::awake() calls all Component::awake() methods
+   - Each Object::start() calls all Component::start() methods (order: add order)
 
-**Frame Render:**
+2. **Main Update Loop (per frame):**
+   - Application calls ssm.update(dt)
+   - SceneStateMachine updates active scene: currentScene→update(dt)
+   - Scene::update(dt) calls onUpdate(dt), then ObjectCollection::update(dt), then ObjectCollection::lateUpdate(dt)
+   - ObjectCollection::update(dt) calls Object::update(dt) on active objects
+   - Object::update(dt) calls Component::update(dt) on enabled components
+   - ObjectCollection::lateUpdate(dt) calls Object::lateUpdate(dt) for position correction/sorting
+   - **Deferred Transitions:** If switchTo() was called during scene update, it queues pendingSceneId and fires applyDeferredTransition() after update completes (prevents re-entrancy)
 
-1. Host calls `SceneStateMachine::render(canvas)`
-2. State machine applies transition rendering (fade/slide overlays) or passes through to `currentScene->render(canvas)`
-3. `Scene::renderObjects(canvas)` collects all `C_Drawable*` from active objects, sorts by `DrawLayer` then `sort_order`
-4. Each `C_Drawable::draw(ICanvas<uint8_t>&)` is called in sorted order
-5. Optionally host applies `PostFx` effects to canvas after scene render
+3. **Rendering Phase:**
+   - Application calls ssm.render(canvas)
+   - SceneStateMachine delegates to Scene::render(canvas) if no transition active
+   - Scene::render(canvas) calls:
+     - onRender(canvas) (scene-specific background/overlay)
+     - Collects all drawable components from all objects
+     - Sorts by (buffer_index, sort_order) using C_Drawable::shouldDrawBefore()
+     - Calls draw(canvas) on each drawable in sorted order
+   - C_Drawable subclasses implement draw() to render using canvas primitives
 
-**Signal/Event Flow:**
+**Component Lifecycle Calls:**
+```
+Object Creation:
+  Object::constructor → auto-adds C_Position → addComponent<T>()
+      ↓ (if already awoken)
+    T::awake()
+      ↓ (if already started)
+    T::start()
 
-- Components emit `Signal<Args...>` when state changes (e.g., value changed, animation complete)
-- Observers connect via `signal.connect(callback)` returning a connection ID
-- `SignalConnection<Args...>` RAII wrapper auto-disconnects on destruction
-- Up to 16 listeners per signal; static array storage
+Component Access Pattern:
+  object→getComponent<T>() → dynamic_cast in loop (O(n) but n≤16)
+  object→getPosition() → cached pointer (O(1))
+  object→getDrawables() → cached array (O(1) access)
+```
 
 **State Management:**
-- Scene transitions managed by `SceneStateMachine` with `TransitionType` (IMMEDIATE, FADE_OUT_IN, SLIDE_LEFT/RIGHT/UP/DOWN)
-- Component state is plain member data; no shared mutable global state
-- Lua scripts modify component state via registered C bindings
+- Objects track: awoken, started, active flags
+- Components track: enabled flag
+- Scenes track: initialized, active flags
+- SceneStateMachine tracks: currentScene, nextScene, transitionState, transitionProgress
 
 ## Key Abstractions
 
-**ICanvas<TPixel>:**
-- Purpose: Hardware-independent drawing target
-- Examples: `include/enjin2/abstract/icanvas.hpp`, `include/enjin2/graphics/canvas.hpp`
-- Pattern: Abstract base with pure virtual `setPixel`, `getPixel`, `clear`, `fill`, `drawLine`, `drawRect`, `fillRect`, `drawCircle`, `fillCircle`, `drawBitmap`, `drawText`. Concrete `Canvas4<W,H>` and `Canvas8<W,H>` are template specializations with static pixel buffers.
+**Object (Composite Container):**
+- Purpose: Represents a game entity holding multiple components
+- Examples: `include/enjin2/core/object.hpp` (base), user subclasses
+- Pattern: Composite pattern with fixed array (std::array<std::unique_ptr<Component>, MAX_COMPONENTS>)
+- Component caching: position cached as C_Position* (O(1)); drawables cached as array (O(1) iteration)
 
-**Object + Component:**
-- Purpose: Entity with attached behaviour modules
-- Examples: `include/enjin2/core/object.hpp`, `include/enjin2/core/component.hpp`
-- Pattern: `Object` holds `std::array<std::unique_ptr<Component>, 16>`. `addComponent<T>()`, `getComponent<T>()`, `removeComponent<T>()` are template methods using `dynamic_cast`. Position and drawable components are cached for O(1) access.
+**Component (Mixin/Role):**
+- Purpose: Provides a single capability to an Object
+- Examples: `include/enjin2/components/position.hpp`, `drawable.hpp`, `lua_script.hpp`, `sprite.hpp`, `animation.hpp`
+- Pattern: Base class with virtual lifecycle hooks (awake, start, update, lateUpdate); enabled flag for runtime control
+- assertRequires<T>() method: declares component dependencies; asserts in debug, disables component in release
 
-**Scene:**
-- Purpose: Container for a gameplay state
-- Examples: `include/enjin2/core/scene.hpp`
-- Pattern: Subclass and override `onCreate()`, `onActivate()`, `onDeactivate()`, `onDestroy()`, `onUpdate(deltaTime)`, `onRender(canvas)`. Scene owns an `ObjectCollection`.
+**Scene (Level/State Container):**
+- Purpose: Manages a collection of Objects and provides scene-specific logic
+- Examples: `include/enjin2/core/scene.hpp` (base), user subclasses override onCreate/onActivate/onUpdate/onRender
+- Pattern: Container with ObjectCollection; signal emitters for lifecycle events
+- Name/Tag System: Objects have optional const char* name and up to 8 tags (zero-allocation); findByName() and findAllWithTag() for queries
 
-**SceneStateMachine:**
-- Purpose: Scene lifecycle and transition orchestrator
-- Examples: `include/enjin2/core/scene_state_machine.hpp`
-- Pattern: Holds up to 32 scenes. `addScene<T>(id)` factory. `changeScene(id, TransitionType)` triggers deactivate/activate with optional animated transition.
+**SceneStateMachine (State Controller):**
+- Purpose: Manages multiple scenes with transitions and deferred switching
+- Location: `include/enjin2/core/scene_state_machine.hpp`
+- Pattern: State machine with implicit current/next scene; changeScene() for immediate or transitioned switches; switchTo() for deferred (re-entrant-safe)
+- Transition Types: IMMEDIATE, FADE_OUT_IN, SLIDE_LEFT/RIGHT/UP/DOWN with progress callbacks
 
-**Signal<Args...>:**
-- Purpose: Type-safe observer/event mechanism
-- Examples: `include/enjin2/core/signal.hpp`
-- Pattern: Template variadic class. `connect(callback)` returns int connection ID. `emit(args...)` calls all connected callbacks. `SignalConnection<Args...>` RAII auto-disconnect.
+**LuaCanvas (Type Erasure Bridge):**
+- Purpose: Wraps 4-bit (Pixel4) and 8-bit (uint8_t) canvas variants for Lua bindings
+- Location: `include/enjin2/scripting/bindings.hpp`
+- Pattern: Stores void* + bool is4Bit flag; methods dispatch via if(is4Bit) type checking
+- Used by: Lua drawing functions, C_LuaScript component
 
-**C_Drawable:**
-- Purpose: Base for all renderable components
-- Examples: `include/enjin2/components/drawable.hpp`
-- Pattern: Extends `Component`. Pure virtual `draw(ICanvas<uint8_t>&)`. Has `DrawLayer`, `BlendMode`, `sort_order`, `Anchor`, `is_visible`. `shouldDrawBefore()` drives sort order in `Scene::renderObjects`.
+**ScriptProxy (Userdata Safety):**
+- Purpose: Provides Lua access to C_LuaScript component with dangling-pointer protection
+- Location: `include/enjin2/scripting/bindings.hpp` (struct ScriptProxy)
+- Pattern: {C_LuaScript* component, bool valid} — valid set to false by C_LuaScript destructor before lua_close()
+- Access Pattern: Lua metamethods check `if (!proxy.valid) { error("invalid") }` before dereferencing
 
-**AnimationTrack<T, KeyframeType>:**
-- Purpose: Keyframe interpolation for any value type
-- Examples: `include/enjin2/animation/animation_track.hpp`
-- Pattern: Template with max 16 keyframes. Supports NONE/LOOP/PING_PONG. Emits `onStartSignal`, `onCompleteSignal`, `onUpdateSignal`. Type aliases: `PositionTrack`, `FloatTrack`, `ColorTrack`.
+**EngineTimeState (Injection Container):**
+- Purpose: Passes frame timing to Lua bindings without global variables
+- Location: `include/enjin2/scripting/bindings.hpp` (struct EngineTimeState)
+- Pattern: {dt, totalTime, frameCount} set by host via LuaBindings::setTimeState() before update
 
 ## Entry Points
 
-**Desktop/Linux Main Loop:**
-- Location: `examples/` (e.g., `examples/basic_drawing/`, `examples/ecs_demo/`)
-- Triggers: User application binary
-- Responsibilities: Create a `Canvas8<W,H>`, instantiate `SceneStateMachine`, add scenes, call `update()` and `render()` each frame
+**Scene Lifecycle (User-Overridden Virtuals):**
+- Location: `include/enjin2/core/scene.hpp` (protected virtual methods)
+- `onCreate()`: Called during Scene::initialize(); create initial objects here
+- `onActivate()`: Called when scene becomes active (resume animations, restart processes)
+- `onDeactivate()`: Called when scene loses focus (pause, cleanup)
+- `onUpdate(float dt)`: Per-frame scene logic before object updates
+- `onRender(canvas)`: Scene-specific rendering (backgrounds, UI overlays)
 
-**WebAssembly:**
-- Location: `src/bindings/emscripten_bindings.cpp`, TypeScript types at `src/bindings/enjin2.d.ts`
-- Triggers: Browser JS calls `Enjin2Module` exports
-- Responsibilities: Expose engine lifecycle and canvas buffer to JavaScript
+**Object/Component Lifecycle:**
+- Location: `include/enjin2/core/object.hpp`, `include/enjin2/core/component.hpp`
+- Object::awake(): Ensures required components exist (call assertRequires in components)
+- Object::start(): Initialize inter-object dependencies
+- Object::update(float dt): Per-frame logic
+- Object::lateUpdate(float dt): Position correction after all updates
 
-**ESP32 IDF:**
-- Location: `examples/esp32_idf_example/`
-- Triggers: FreeRTOS task or `app_main()`
-- Responsibilities: Map ICanvas to DMA display driver, run update/render loop
+**Lua Script Entry Points:**
+- Location: `include/enjin2/components/lua_script.hpp` (C_LuaScript)
+- Lua functions called by C_LuaScript:
+  - `init()`: Called once on script load (setup)
+  - `update(self, dt)`: Called every frame (self = ScriptProxy userdata)
+  - `draw(self)`: Called during rendering (self = ScriptProxy userdata)
+- Lua globals provided by LuaBindings:
+  - `engine.scene.switch(sceneId)`: Deferred scene transition
+  - `engine.scene.find(name)`: Find object by name in active scene
+  - `engine.input.held/justPressed/justReleased/axis()`: Input polling
+  - `engine.time.delta/now/frame()`: Frame timing
+  - `engine.log(msg)`: Console logging
+  - Drawing: `love.graphics.* style (setColor, rectangle, circle, text, etc.)`
 
-**CMake Build:**
-- Location: `CMakeLists.txt`
-- Static libraries produced: `enjin2_core`, `enjin2_graphics`, `enjin2_ui`, `enjin2_lua` (optional)
-- Interface target `enjin2` links all of the above
+**Input Event Callbacks:**
+- Location: `include/enjin2/components/` (components can override Component lifecycle to respond to input)
+- Pattern: Application calls input_platform_poll() to populate InputState; components query via LuaBindings or direct InputState access
 
 ## Error Handling
 
-**Strategy:** Silent failure with null/false returns. No exceptions. No panics (except Lua panic handler).
+**Strategy:** Fail-safe with component disabling and logging
 
 **Patterns:**
-- `addComponent<T>()` returns `nullptr` if the 16-component limit is reached
-- `addObject<T>()` returns `nullptr` if the 128-object limit is reached
-- `addScene<T>()` returns `nullptr` if the 32-scene limit is reached or ID is duplicate
-- `Signal::connect()` returns `-1` if max 16 connections are already used
-- `LuaResult` struct carries `bool success` and `std::string error`
+
+- **Component Dependency Failure (assertRequires):** Debug build asserts and stack trace; release build logs once and disables component via setEnabled(false)
+  - Location: `include/enjin2/core/component.hpp` (assertRequires<T>() template method)
+
+- **Lua Script Errors:** Controlled by ScriptErrorPolicy enum
+  - `Disable`: Log once, disable component, continue (default, safe for embedded)
+  - `Log`: Log every frame, script keeps running (debug mode)
+  - `Panic`: Call platform panic handler (esp_restart on ESP32)
+  - Location: `include/enjin2/components/lua_script.hpp` (enum ScriptErrorPolicy)
+
+- **Canvas/Memory Overflow:** Static allocation guarantees no malloc failures; exceeded limits return nullptr (addComponent, addObject, addScene)
+  - Example: Object::addComponent() returns nullptr if componentCount >= 16
+  - Location: `include/enjin2/core/object.hpp` (template method addComponent)
+
+- **Scene Not Found:** changeScene() returns false; switchTo() silently ignores unknown sceneId (embedded release constraint)
+  - Location: `include/enjin2/core/scene_state_machine.hpp`
 
 ## Cross-Cutting Concerns
 
-**Logging:** `std::cout`/`std::cerr` used in a few source files; no unified logging framework.
-**Validation:** Compile-time via `static_assert` (e.g., `T must derive from Component`); bounds checks via index comparisons.
-**Authentication:** Not applicable (embedded game engine).
-**Platform Isolation:** `VCV_RACK` preprocessor define used to exclude `<Arduino.h>` on non-Arduino builds. `EMSCRIPTEN` and `ESP32` defines gate platform-specific code paths.
+**Logging:** console via printf (C_LuaScript error messages); no file logging by default
+- Accessible via Lua: `engine.log(msg)`
+- Location: `src/scripting/bindings_engine.cpp` (lua_engine_log)
+
+**Validation:**
+- Component presence checked via getComponent<T>() (O(n) linear search) or hasComponent<T>()
+- Component dependencies enforced via assertRequires<T>() in awake()
+- Input validation in bindings: bounds checking on layer indices, button codes, etc.
+
+**Authentication/Authorization:** Not applicable (embedded game engine)
+
+**Named Identity System:**
+- Objects can have optional name (const char*) and up to 8 tags (const char* array)
+- Scene::findByName(name) returns first object with matching name (case-sensitive)
+- Scene::findAllWithTag(tag, results[], maxResults) returns matching objects into caller array
+- Zero-allocation design: caller owns lifetime of name/tag strings (stored as const char* only)
+- Location: `include/enjin2/core/object.hpp` (setName, getName, addTag, hasTag, clearTags)
 
 ---
 
-*Architecture analysis: 2026-02-23*
+*Architecture analysis: 2026-02-27*

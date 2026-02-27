@@ -1,231 +1,376 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-02-23
+**Analysis Date:** 2026-02-27
 
 ## Tech Debt
 
-**Compat Layer is Untested and Undocumented:**
-- Issue: `include/enjin2/compat/` provides an enjin1 compatibility shim but has never been cleaned up. The compat module group XML exists but is excluded from the Docusaurus documentation generator config.
-- Files: `include/enjin2/compat/component.hpp`, `include/enjin2/compat/scene.hpp`, `include/enjin2/compat/types.hpp`, `include/enjin2/compat/module_group.hpp`
-- Impact: Compat module is invisible in the published API docs. Users migrating from enjin1 cannot find it. Risk of silent bit-rot as no tests cover it.
-- Fix approach: Either document and wire it into `generate-api-docs.js`, or formally deprecate and remove it. Milestone audit explicitly deferred this.
+### ScriptProxy Validity Check — Dangling Pointer on Scene Destruction
 
-**Examples Directory Contains Dead enjin1-Referencing Files:**
-- Issue: Several example files reference old enjin1 APIs and were explicitly deferred during v1.0 cleanup. `examples/enjin_comparison_benchmark.cpp` contains enjin1 references.
-- Files: `examples/enjin_comparison_benchmark.cpp`, `examples/adafruit_benchmark.cpp`, `examples/real_adafruit_benchmark.cpp`, `examples/eisei_game_benchmark.cpp`
-- Impact: Build confusion for new contributors who run examples. Inconsistent API usage visible in the repo.
-- Fix approach: Audit and delete or rewrite stale example files. Confirmed as explicit deferred item in `STATE.md`.
+**Issue:** `ScriptProxy` stores a raw `C_LuaScript* component` pointer alongside a simple `bool valid` flag. The `valid` flag is set to false on `C_LuaScript` destructor. However, this design only prevents immediate crashes — it does not address the underlying lifetime issue.
 
-**Canvas8 `fill()` Does Not Use Optimized Path:**
-- Issue: `Canvas8::fill()` calls `setPixel()` in a nested loop rather than using `std::fill` or `memset` as `Canvas8::clear()` does. `Canvas4::fill()` also calls individual pixels instead of the optimised `drawHLine()` already present on the class.
-- Files: `include/enjin2/graphics/canvas.hpp` lines 314-328 (`Canvas4::fill`), lines 434-448 (`Canvas8::fill`)
-- Impact: Fill operations on large regions are significantly slower than clear operations of equivalent size. This affects any scene that fills rectangles frequently (backgrounds, UI panels).
-- Fix approach: `Canvas8::fill` should use `memset` per row. `Canvas4::fill` should delegate to `drawHLine`.
+**Files:**
+- `include/enjin2/scripting/bindings.hpp` (lines 36-39) — ScriptProxy struct definition with `valid` flag
+- `src/scripting/bindings.cpp` (lines 27, 79) — Validity checks in `__index` and `__newindex` metamethods
+- `include/enjin2/components/lua_script.hpp` (lines 67-69) — Destructor comment promises proxy invalidation
 
-**`getTextWidth()` Uses Fixed-Width Calculation Ignoring GFX Font Metrics:**
-- Issue: `Canvas8::getTextWidth()` returns `strlen(text) * 6 * textsize_x`, which is the classic 5x7 built-in font width, even when a proportional GFX font is active. All text that uses a non-default font will return wrong width measurements.
-- Files: `include/enjin2/graphics/canvas.hpp` lines 719-724
-- Impact: Any text centering, layout, or clipping that calls `getTextWidth()` will be wrong for non-default fonts. `getTextBounds()` (lines 1324-1354) correctly walks glyphs and is the right model to follow.
-- Fix approach: Replace `getTextWidth` body with a call to `getTextBounds` and return the width component.
+**Impact:** If a Lua script stores `self` in a table, coroutine upvalue, or callback across a scene transition, that proxy becomes invalid. Accessing it returns `nil` (safe) but represents lost functionality — code written in idiomatic Lua (e.g., `local obj = self` at module scope) will silently break.
 
-**`println()` Uses Hardcoded Line Advance of 8:**
-- Issue: `Canvas8::println()` advances `cursor_y` by a hardcoded `8` instead of using `gfx_font->yAdvance * textsize_y` as `write()` does for newlines.
-- Files: `include/enjin2/graphics/canvas.hpp` lines 608-613
-- Impact: `println()` produces incorrect line spacing when a GFX font with a different y-advance is active. Lines overlap or have inconsistent gaps.
-- Fix approach: Use `(gfx_font ? gfx_font->yAdvance : 8) * textsize_y` for the advance amount.
+**Current Mitigation:** The `valid` flag prevents reads/writes to dead pointers, but does not recover stored proxies or provide error context.
 
-**Doxygen Warning Count Greatly Exceeds Threshold:**
-- Issue: CI threshold is set to 20 warnings but the current HEAD state has **304 warnings** in `doxygen-warnings.log`. Phase 9 verification incorrectly claimed 0 warnings. The milestone audit (`.planning/v1.1-MILESTONE-AUDIT.md`) classifies DOC-01 as `unsatisfied`.
-- Files: `doxygen-warnings.log` (gitignored), `.planning/v1.1-MILESTONE-AUDIT.md`
-- Impact: CI fails at the Doxygen warning gate (Phase 11). Blocks v1.3 milestone. Published documentation has missing or incorrect parameter docs, particularly in the scripting module.
-- Fix approach: Phase 12 is currently in progress to fix this. Focus areas: `@param` mismatches in `include/enjin2/scripting/lua_engine.hpp` and graphics canvas headers.
+**What Should Happen:**
+- Scripts storing `self` should receive a clear Lua error on access after invalidation: `error: object has been destroyed (scene transitioned)` instead of silent `nil` returns.
+- Or: Implement a generation counter on `ObjectCollection`/`Scene` so proxies can validate that the component's generation matches the current scene — stale proxies error immediately with context.
 
-**Phase 11 Was Never Executed:**
-- Issue: `.planning/phases/11-documentation-tracking-improvements/` exists but contains no plan files. The milestone audit confirms the phase as "unexecuted — no plans created, no work done." The CI gate it was meant to establish exists (Phase 11 output), but the phase produced no implementation plans.
-- Files: `.planning/phases/11-documentation-tracking-improvements/`
-- Impact: Process gap — the state machine shows Phase 11 complete but it produced no substantive deliverables.
-- Fix approach: Either backfill a SUMMARY.md for the CI work done, or mark the phase as superseded by Phase 12.
+**Recommendation:** Add generation token to `ScriptProxy` alongside `valid` flag. Document in Lua API that `self` is valid only within a callback frame, not across scene boundaries.
+
+---
+
+### Zero-Dynamic-Allocation Constraint vs. std::string Usage
+
+**Issue:** Several sources use `std::string` in performance-sensitive or embedded contexts:
+- `include/enjin2/components/lua_script.hpp` (lines 41, 42, 45) — `scriptCode`, `scriptPath`, `errorMessage` stored as `std::string`
+- `include/enjin2/core/object.hpp` (line 320) — Object name stored as `const char*` (correct) but tag/name APIs use string comparisons
+
+**Files:**
+- `include/enjin2/components/lua_script.hpp` (C_LuaScript fields)
+- `src/components/lua_script.cpp` (string assignments, concatenations)
+
+**Impact:** On ESP32, `std::string` allocations consume heap memory managed by the global allocator, not the Lua pool. For `scriptCode` in particular, loading a large script creates a heap allocation outside the Lua memory budget. This can cause fragmentation on embedded systems with tight memory constraints (64 KB Lua pool on ESP32).
+
+**Current Mitigation:** SSO (small string optimization) avoids allocation for short strings (<~15 chars), but `errorMessage` and `scriptPath` can exceed SSO threshold.
+
+**What Should Happen:**
+- Use fixed-size arrays for error messages: `char errorMessage[256]` instead of `std::string`
+- For script code, keep as `std::string` on desktop; consider a memory-view or arena-allocated approach on ESP32 if this becomes a bottleneck
+
+**Recommendation:** Profile heap usage on target ESP32. If fragmentation is observed, convert error messages and paths to fixed-size buffers. Script code can remain as `std::string` for now (loaded once at startup).
+
+---
+
+### Multiple Build Directories Indicate Cleanup Needed
+
+**Issue:** Repository contains 15 leftover build directories from development/testing:
+- `build_21_off`, `build_21_on`, `build_22_*`, `build_24_*`, `build_25_*`, `build_off`, `build_sdl_test`, `build_test_*`, `build_wasm`
+
+**Files:** Directories at project root (not tracked in git per `.gitignore`)
+
+**Impact:** Clutters repository, wastes disk space (~200 MB aggregate), can confuse developers about which build is "current" (symlinked `compile_commands.json` points to `build/`, not others).
+
+**Recommendation:** Remove all non-`build/` directories. Keep only the main `build/` directory. Document any platform-specific build procedures in `DESIGN.md` or a separate `BUILD.md`.
 
 ---
 
 ## Known Bugs
 
-**Lua Callback Registered with Dangling Pointer:**
-- Symptoms: Calling a Lua function registered with `registerFunction(name, LuaCallback)` may crash or produce garbage results if the callback is invoked after the original registration site's stack frame is gone.
-- Files: `src/scripting/lua_engine.cpp` lines 92-102
-- Trigger: `lua_pushlightuserdata(L, reinterpret_cast<void*>(&callback))` takes the address of the local parameter `callback`. The Lua closure stores this as a light userdata pointer. If Lua calls the function after `registerFunction` returns, `callback` is destroyed and the pointer is dangling.
-- Workaround: Register only with the `lua_CFunction` overload (line 104) which does not have this issue. The `LuaCallback` overload should store callbacks in a persistent registry.
+### Scene Self-Transitions Skip Object Re-initialization
 
-**`Canvas8::setFont(nullptr)` Adjusts Cursor Incorrectly:**
-- Symptoms: When switching from a GFX font back to the built-in font via `setFont(nullptr)`, `cursor_y` is adjusted by -6. But the initial state has `gfx_font` set to `&defaultFont8pt7b` (not nullptr), so the condition `!font && gfx_font` (line 1225) fires on first call to `setFont(nullptr)` even though the user never explicitly set a GFX font.
-- Files: `include/enjin2/graphics/canvas.hpp` lines 1218-1231
-- Trigger: Constructing a `Canvas8` (which defaults `gfx_font` to `&defaultFont8pt7b`) then calling `setFont(nullptr)`.
-- Workaround: Avoid calling `setFont(nullptr)`. Use an explicit font pointer.
+**Issue:** When a scene calls `engine.scene.switch(engine.scene.current())` (transition to itself), the `Scene::initialized` flag prevents `Scene::initialize()` from running again on re-entry. Objects added in `onCreate()` are thus not properly initialized.
 
-**`Scene::render()` Silently Skips Non-uint8_t Canvas:**
-- Symptoms: Calling `scene.render(canvas4)` on a `Canvas4<>` (4-bit canvas) silently does nothing for `onRender()` and hits a `static_assert` in `renderObjects()` that only fires for drawable components, not for the scene's own render pass.
-- Files: `include/enjin2/core/scene.hpp` lines 115-126, lines 319-329
-- Trigger: Any attempt to use `Canvas4` with the `Scene` rendering pipeline.
-- Workaround: Only use `Canvas8` (uint8_t) with `Scene`. `Canvas4` must be rendered manually outside the scene system.
+**Files:**
+- `include/enjin2/core/scene.hpp` — Scene::initialize() has early-return guard on `initialized == true`
+- `include/enjin2/core/scene_state_machine.hpp` — changeScene() does not detect self-transitions
+
+**Trigger:** Call `engine.scene.switch(current_scene_id)` or execute scene transition during scene's `onUpdate()`
+
+**Workaround:** Manually call `scene->reset()` or reinitialize objects explicitly in `onCreate()` using a flag. No user-facing API currently exists to reset a scene safely.
+
+**Fix Approach:** Detect self-transitions in `SceneStateMachine::changeScene()` and either:
+1. Call a `reset()` method that clears `initialized = false`, then proceed with normal transition
+2. Defer the transition to the next frame (deferred-transition pattern) instead of executing inline
+
+**Priority:** Medium — self-transitions are uncommon but idiomatic in some game patterns (reset level, reload scene).
+
+---
+
+### clang-tidy Configuration Present But Not Enforced in CI
+
+**Issue:** `.clang-tidy` file exists and configures comprehensive checks (bugprone-*, cppcoreguidelines-*, modernize-*, performance-*), but it is not run as part of the build or CI pipeline.
+
+**Files:**
+- `.clang-tidy` — Configuration file at project root
+- `CMakeLists.txt` — No clang-tidy integration via `set(CMAKE_CXX_CLANG_TIDY ...)` or custom target
+
+**Impact:** Code quality issues caught by clang-tidy are never reported until developers manually run `clang-tidy -p build src/...`. New code may silently introduce warnings that accumulate.
+
+**Recommendation:** Add a CMake check-target that runs clang-tidy:
+```cmake
+if(CLANG_TIDY)
+    add_custom_target(lint
+        COMMAND clang-tidy -p ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src/**/*.cpp
+        COMMENT "Running clang-tidy checks..."
+    )
+endif()
+```
+Or integrate into CI/CD pipeline to fail builds on new warnings.
 
 ---
 
 ## Security Considerations
 
-**Lua File I/O Enabled on Desktop with No Sandboxing:**
-- Risk: On VCV_RACK (desktop), `LuaPlatformConfig::ENABLE_FILE_IO = true` and `ENABLE_ALL_LIBS = true`. Lua scripts loaded at runtime have full access to the filesystem and OS libraries.
-- Files: `include/enjin2/scripting/lua_platform.hpp` lines 46-49, `src/scripting/lua_platform.cpp`
-- Current mitigation: `configureSecurityRestrictions()` exists as a method on `LuaPlatform` but its implementation for desktop is unknown without reading the `.cpp`. ESP32 disables file I/O.
-- Recommendations: Verify `configureSecurityRestrictions()` actually removes `os.execute`, `io.popen`, and `require` for untrusted scripts on desktop. Document which Lua libraries are restricted.
+### Lua Bindings Expose Raw Object Pointers Without Validation
 
-**`LuaEngine::getState()` Exposes Raw `lua_State*`:**
-- Risk: Public method `getState()` (line 216 in `lua_engine.hpp`) hands out the raw Lua state pointer. Any caller can push/pop values, corrupt the stack, or call unsafe functions.
-- Files: `include/enjin2/scripting/lua_engine.hpp` line 216
-- Current mitigation: None — documented as "for advanced operations".
-- Recommendations: Restrict access pattern or add a comment warning about stack integrity requirements.
+**Issue:** Several bindings return `Object*` as lightuserdata without lifetime checks:
+- `engine.scene.find(name)` returns `lightuserdata` (Object pointer) per `bindings_engine.cpp:100`
+- These pointers are dereferenceable immediately but can become dangling after a scene transition
+
+**Files:**
+- `src/scripting/bindings_engine.cpp` (lines 91-103) — `lua_engine_scene_find()` pushes Object* as lightuserdata
+
+**Risk:** Lua scripts can call `engine.scene.find("enemy")`, receive a pointer, store it, then on scene transition dereference it leading to use-after-free in Lua-called C++ code.
+
+**Current Mitigation:** Phase 32 design intended to wrap lightuserdata in ScriptProxy with metatable validation, but the comment at line 92 indicates this is "planned" — verify Phase 32 completion status.
+
+**Verification Needed:** Confirm Phase 32 (scriptproxy-userdata) is fully implemented and lightuserdata->ScriptProxy migration is complete. If not, this is HIGH-risk UB waiting to happen.
 
 ---
 
 ## Performance Bottlenecks
 
-**`ObjectCollection::findObject<T>()` Uses `dynamic_cast` Every Frame:**
-- Problem: `findObject<T>()`, `findObjectWithComponent<T>()`, and `hasComponent<T>()` on `Object` all use `dynamic_cast` on every element in the collection. In a game loop calling these per-frame, this is O(n) RTTI lookup per call.
-- Files: `include/enjin2/core/object_collection.hpp` lines 149-158, `include/enjin2/core/object.hpp` lines 146-155
-- Cause: No component type ID indexing — components are searched by dynamic cast rather than by pre-computed type ID. The `ComponentBase` does define `getComponentTypeID<T>()` but it is not used for lookup.
-- Improvement path: Replace `dynamic_cast` in component lookup with type-ID map or sorted array indexed by `getStaticComponentID()`.
+### Linear Name Lookup in ObjectCollection
 
-**`Canvas8::fillRect()` Does Not Clip Negative Coordinates Before Loop:**
-- Problem: `fillRect()` in `Canvas8` (lines 734-746) checks `px >= 0 && py >= 0` inside the inner loop for every pixel. This wastes cycles on the common hot path where rectangles are fully in-bounds.
-- Files: `include/enjin2/graphics/canvas.hpp` lines 734-746
-- Cause: Defensive in-loop check instead of pre-clamp and loop from 0.
-- Improvement path: Pre-clamp `x` and `y` start values to `std::max(0, ...)` before entering the loop.
+**Issue:** `ObjectCollection::findByName(const char* name)` performs O(n) linear scan across all objects every call. If Lua scripts repeatedly call `engine.scene.find("player")` in `update()`, this is O(128) strcmp operations per frame.
 
-**Dual-Core Render Queue Allocates Heap Inside `submitRenderCommands()`:**
-- Problem: `Canvas4_ESP32S3::submitRenderCommands()` calls `new std::vector<RenderCommand>(commands)` on every frame submission (line 372 in `canvas_esp32s3.hpp`). On an ESP32, dynamic allocation in a render path causes fragmentation and potential OOM.
-- Files: `include/enjin2/graphics/canvas_esp32s3.hpp` lines 369-374
-- Cause: FreeRTOS queue transfers a pointer to a heap-allocated vector. No pool for command batches.
-- Improvement path: Use a fixed-size ring buffer of pre-allocated command arrays instead of heap-allocating per submission.
+**Files:**
+- `src/core/object_collection.cpp` or `include/enjin2/core/object_collection.hpp` — No indexed name storage
 
-**`C_ImageCache` Allocates Temporary Heap Buffer for Image Unpacking:**
-- Problem: `AddImage()` allocates `new uint8_t[packedSize]` (line 55 in `image_cache.cpp`) to hold a temporary read buffer, then deletes it. On ESP32, every image load causes a heap allocation and deallocation.
-- Files: `src/components/image_cache.cpp` lines 54-77
-- Cause: Temporary unpacking buffer is not pooled.
-- Improvement path: Use a `StackAllocator` (already defined in `include/enjin2/core/memory.hpp`) for the temporary buffer.
+**Impact:** Measurable on ESP32 at 128 objects * 60 Hz: ~7680 strcmp calls/sec. Desktop is unaffected, but embedded frame budgets are tight.
+
+**Prevention:** Add a parallel `const char* nameIndex[MAX_OBJECTS]` lookup table or fixed-size hash map (open-addressed, no std::unordered_map) to enable O(1) name lookup.
+
+**Recommendation:** Document in Lua: cache the result `local player = engine.scene.find("player")` at `init()` time, reuse in `update()`. Add a simple name-indexed lookup on the C++ side if profiling shows frame-time impact.
+
+---
+
+### GC Full Collection Mid-Frame Risk
+
+**Issue:** `engine.lua.collect()` binding calls `lua_gc(L, LUA_GCSTEP, n)` which is safe (incremental). However, if script calls it with a large step count or if a script mistakenly calls an internal `engine.lua.fullCollect()` (if exposed in future), this could spike frame time by 1–5 ms on ESP32 at 64 KB pool size.
+
+**Files:**
+- `src/scripting/bindings_engine.cpp` — `lua_engine_lua_collect` implementation
+
+**Impact:** At 30 Hz (33 ms budget), a 5 ms GC spike is 15% of frame budget, visible as frame drops.
+
+**Current Mitigation:** Only `LUA_GCSTEP` is exposed (safe), documentation recommends calling only on scene transitions.
+
+**Recommendation:** Document clearly that `engine.lua.collect()` should not be called from `update()` or `draw()`. Consider adding a release-mode check that warns if called mid-frame (compare frame counter before/after).
 
 ---
 
 ## Fragile Areas
 
-**`LuaCanvas` Uses Untyped `void*` for Canvas Pointer:**
-- Files: `include/enjin2/scripting/bindings.hpp` lines 27-29, `src/scripting/bindings.cpp` lines 14-42
-- Why fragile: `LuaCanvas` holds `void* canvasPtr` and an `is4Bit` flag. Every method does a manual `static_cast` to either `ICanvas<Pixel4>*` or `ICanvas<uint8_t>*`. There is no type safety — passing the wrong canvas type silently reinterprets the pointer. Template constructors set the flag correctly at construction but nothing prevents misuse after the fact.
-- Safe modification: Do not add new canvas methods without updating all branches. Consider replacing with `std::variant<ICanvas<Pixel4>*, ICanvas<uint8_t>*>`.
-- Test coverage: No unit tests for `LuaCanvas` dispatch correctness.
+### Lua 5.1 GC Interaction with Bump Allocator
 
-**`g_currentBindings` Global Pointer in `bindings.cpp`:**
-- Files: `src/scripting/bindings.cpp` line 8
-- Why fragile: `static LuaBindings* g_currentBindings = nullptr` is a module-level singleton. Multiple `LuaBindings` instances (or re-initialization) will silently overwrite the global. Any Lua callback that uses it will access the last-registered instance.
-- Safe modification: Ensure only one `LuaBindings` is active at a time. Add an assertion if a second instance is created.
-- Test coverage: None.
+**Issue:** LuaJIT's GC threshold logic is calibrated for malloc/free patterns. The enjin2 bump allocator does not call the system allocator — Lua's GC tracking via `lua_gc(LUA_GCCOUNT)` may not trigger at expected times.
 
-**`C_Drawable::abs_center` Is a Mutable Static:**
-- Files: `include/enjin2/components/drawable.hpp` line 59
-- Why fragile: `static Point abs_center` is a class-level mutable (non-const) static shared across all `C_Drawable` instances. Any code that mutates it affects all drawables globally. The value is documented as "(63, 63 for 128x128)" implying it depends on canvas size — but canvas size is not statically known at this point.
-- Safe modification: Do not mutate `abs_center` without understanding all code that reads it. It should ideally be passed as a parameter rather than a global.
-- Test coverage: None.
+**Files:**
+- `include/enjin2/scripting/lua_engine.hpp` — Custom memory pool and allocator
+- `include/enjin2/scripting/lua_platform.hpp` (line 42) — `tuneGarbageCollector()` called during `initialize()`
 
-**`HandlePool<T>::create()` Has a Double-Scan Inefficiency:**
-- Files: `include/enjin2/core/memory.hpp` lines 186-202
-- Why fragile: `create()` calls `pool.allocate()` (O(n) scan for free slot) and then does a second O(n) scan through `objects[]` to find a null slot. These two scans could be conflated but are not. Additionally, the comment "This shouldn't happen if pool allocation succeeded" (line 198) indicates the code relies on an invariant that is not enforced — if it fires, the allocated object is silently leaked.
-- Safe modification: The dual-scan is safe to call but inefficient. The leak path on the unreachable branch should be documented with a panic/assert.
-- Test coverage: None.
+**Why Fragile:** If the bump allocator is changed (e.g., to a pool-based scheme), GC triggering behavior may shift silently. Scripts may accumulate dead objects longer than expected before collection, eventually hitting the pool limit and failing allocations.
+
+**Safe Modification:**
+1. Add explicit GC step calls at deterministic points: after script reload, on scene transition
+2. Test GC behavior by logging `lua_gc(LUA_GCCOUNT)` before/after heavy allocation phases
+3. On ESP32, use a debug flag to dump GC stats periodically
+
+**Test Coverage:** `gc_assert_test.cpp` verifies `collect()` and `memory()` APIs but not the automatic GC threshold interaction.
+
+---
+
+### ScriptErrorPolicy State Machine — Two-Level Error Handling Without Explicit Protocol
+
+**Issue:** There are now two error systems: the global `lua_ok` gate in (presumably) the host runner, and the per-component `scriptError` flag in `C_LuaScript` with `ScriptErrorPolicy` (Disable/Log/Panic). The interaction between these two is not formally documented.
+
+**Files:**
+- `include/enjin2/components/lua_script.hpp` (lines 23-27, 44) — ScriptErrorPolicy enum and scriptError flag
+- Implicit assumption: host runner sets `lua_ok = false` on error, blocking all subsequent updates
+
+**Risk:** If a component uses `ScriptErrorPolicy::Disable` (swallow error locally, disable only that component) but the runner's `lua_ok` is also set to false, all OTHER components are also blocked — over-broad failure.
+
+**Safe Modification:**
+1. Document the protocol: `ScriptErrorPolicy::Disable` affects ONLY the component's `enabled` flag, not the global runner gate
+2. Global `lua_ok` is set false only by catastrophic failures (Lua state init, Panic policy on a component)
+3. F5 hot-reload clears both `lua_ok` and all component `scriptError` flags atomically
+
+**Current State:** Phase 33 (scripterrorpolicy) completed; verify implementation matches design intent.
+
+---
+
+### Float dt Precision Loss in Long-Running Sessions
+
+**Issue:** `dt` (delta time) is stored and computed as `float` throughout the engine. Lua's `lua_Number` is `double` by default. When dt is passed from C++ to Lua, it is converted `static_cast<float>(lua_tonumber(...))` or similar.
+
+**Files:**
+- `include/enjin2/core/object.hpp` (line 83) — `update(float dt)` signature
+- `src/scripting/lua_engine.cpp` or bindings — Float→Lua conversion points
+
+**Impact:** At 60 Hz for 1 hour = 216,000 frames. Accumulating float-precision dt over this many frames leads to visible drift in animation or timing. Most games don't run that long, but a 24/7 kiosk or game jam game might.
+
+**Mitigation:** Document that `dt` in Lua is float-precision, not double. Avoid accumulating dt in Lua scripts over thousands of frames. Use integer frame counts instead.
+
+**Prevention:** No code change needed — this is a documentation issue.
 
 ---
 
 ## Scaling Limits
 
-**`ObjectCollection` Hard Cap of 128 Objects:**
-- Current capacity: `MAX_OBJECTS = 128` per `ObjectCollection`
-- Limit: Creating the 129th object via `addObject<T>()` returns `nullptr` silently. No error is signaled.
-- Files: `include/enjin2/core/object_collection.hpp` line 18
-- Scaling path: Increase `MAX_OBJECTS` as a template parameter, or add a user-visible error log when the cap is hit.
+### Object Component Limit — MAX_COMPONENTS = 16
 
-**`Object` Hard Cap of 16 Components:**
-- Current capacity: `MAX_COMPONENTS = 16` per `Object`
-- Limit: Adding a 17th component returns `nullptr` silently.
-- Files: `include/enjin2/core/object.hpp` line 39
-- Scaling path: Same as above — parametrize capacity.
+**Issue:** `Object` hardcodes `MAX_COMPONENTS = 16` as a static const. Adding >16 components silently fails (returns nullptr).
 
-**`Signal<>` Hard Cap of 16 Connections:**
-- Current capacity: `MAX_CONNECTIONS = 16` per signal
-- Limit: Connecting a 17th callback returns `-1` with no warning emitted.
-- Files: `include/enjin2/core/signal.hpp` line 17
-- Scaling path: Return value should be checked by callers; add a debug-mode assertion.
+**Files:**
+- `include/enjin2/core/object.hpp` (line 39) — `static constexpr size_t MAX_COMPONENTS = 16`
+- `include/enjin2/core/object.hpp` (line 108) — Early-exit if `componentCount >= MAX_COMPONENTS`
 
-**`LuaEngine` Static Memory Pool is Global and Shared:**
-- Current capacity: `MEMORY_LIMIT = 1MB` (desktop) / `64KB` (ESP32)
-- Limit: `LuaEngine::memoryPool` and `LuaEngine::memoryUsed` are `static` class members. Instantiating multiple `LuaEngine` objects (or re-initializing) resets the pool (`memoryUsed = 0`) and zeroes shared memory, which would corrupt any other active Lua state.
-- Files: `include/enjin2/scripting/lua_engine.hpp` lines 56-57, `src/scripting/lua_engine.cpp` lines 10-11, 25-27
-- Scaling path: The static pool design assumes a single `LuaEngine` instance. Enforce this with a singleton guard or document the restriction explicitly.
+**Scaling Limit:** 16 components per object. A complex character with Position, Sprite, Animation, Collider, AI, Audio, ParticleEmitter, etc. can approach this limit. A 17th component addition silently fails.
+
+**Current Capacity:** 16 is reasonable for most game objects but not future-proof for complex entities.
+
+**Scaling Path:** Increase `MAX_COMPONENTS` to 32 or implement dynamic allocation (violates zero-alloc constraint). Trade-off: memory per object vs. flexibility.
+
+**Recommendation:** Document the limit. If exceeded, add a hard assertion (`assert(componentCount < MAX_COMPONENTS)` in debug) instead of silent failure. Monitor real projects to see if this becomes a bottleneck.
+
+---
+
+### ObjectCollection Capacity — Implicit from MAX_OBJECTS
+
+**Issue:** `ObjectCollection` has an implicit maximum object count (likely 128 per enjin1 design, but not explicit in enjin2 code inspected). Adding >128 objects silently fails.
+
+**Files:** Unknown — examine `ObjectCollection::addObject()` implementation
+
+**Scaling Limit:** If max is 128, a dense game world (many small entities) or multiplayer level hits this ceiling.
+
+**Recommendation:** Define `MAX_OBJECTS` as an explicit constant in `ObjectCollection`, document it, and provide an assertion on overflow.
 
 ---
 
 ## Dependencies at Risk
 
-**`Arduino.h` Included Unconditionally Inside a `#ifndef VCV_RACK` Guard:**
-- Risk: `include/enjin2/graphics/canvas.hpp` includes `<Arduino.h>` when building outside VCV_RACK (line 11). This means any non-VCV_RACK, non-Arduino build (e.g., bare Linux desktop test) will fail to find `Arduino.h` unless the include path is configured. A third target platform (e.g., Emscripten/WASM) would need to either fake `Arduino.h` or add itself to the ifdef ladder.
-- Files: `include/enjin2/graphics/canvas.hpp` lines 10-12
-- Impact: Limits portability to exactly two platforms (VCV_RACK and Arduino/ESP32).
-- Migration plan: Create an `enjin2/platform/arduino_shim.hpp` that can be included from non-Arduino desktop builds, or make the include fully conditional on `defined(ARDUINO)`.
+### LuaJIT vs. Lua 5.1 API — Long-Term Compatibility
 
-**`lua_platform.hpp` Errors on Unknown Platform:**
-- Risk: `#error "Platform not supported for Lua integration"` fires if neither `VCV_RACK` nor `ESP32` is defined (lines 36-37). The Emscripten bindings file (`src/bindings/emscripten_bindings.cpp`) and TypeScript type definitions (`src/bindings/enjin2.d.ts`) indicate a WASM target exists, but the Lua platform layer has no path for it.
-- Files: `include/enjin2/scripting/lua_platform.hpp` lines 35-37
-- Impact: Emscripten / WASM builds that include the scripting module fail at compile time.
-- Migration plan: Add `#elif defined(EMSCRIPTEN)` branch or wrap Lua scripting behind a CMake feature flag for WASM builds.
+**Issue:** The codebase uses Lua 5.1 API (`lua.h`, `lauxlib.h` from embedded `luajit/src/`), which is stable but no longer actively maintained (Lua 5.4 is current).
+
+**Files:**
+- `luajit/` — LuaJIT fork embedded in repository
+- Various `.cpp` files include `lua.h`, `lauxlib.h`
+
+**Risk:**
+- LuaJIT development is sporadic; any critical security bug fix must be cherry-picked manually
+- Future C++ compilers may drop support for Lua 5.1 C++ binding patterns (unlikely but possible)
+- LuaJIT bytecode is not stable across versions — serialization/deserialization is fragile
+
+**Mitigation:** LuaJIT is embedded, so no external dependency risk. However, if abandoning LuaJIT, migrating to Lua 5.4 would require rewriting all bindings.
+
+**Recommendation:** Monitor LuaJIT releases. For ESP32 embedded use, LuaJIT is the best choice (JIT not available, but bytecode is compact). Document this decision.
 
 ---
 
 ## Missing Critical Features
 
-**No Runtime Error Reporting When Hard Caps Are Exceeded:**
-- Problem: `ObjectCollection::addObject`, `Object::addComponent`, `Signal::connect`, and `HandlePool::create` all return `nullptr` or `-1` on exhaustion with no log, assert, or callback. In release firmware builds, these silent failures are impossible to diagnose.
-- Blocks: Reliable scene composition at the limits of capacity.
-- Files: `include/enjin2/core/object_collection.hpp` line 108, `include/enjin2/core/object.hpp` line 108, `include/enjin2/core/signal.hpp` line 48, `include/enjin2/core/memory.hpp` line 188
+### Scene Transition Deferred vs. Immediate — No Documented Semantics
 
-**`C_Drawable` Only Draws to `ICanvas<uint8_t>` — No 4-bit Canvas Support:**
-- Problem: `C_Drawable::draw()` is declared as `virtual void draw(ICanvas<uint8_t>& canvas) = 0`. The entire drawable/scene pipeline is wired exclusively to 8-bit canvas. `Canvas4` (4-bit, memory-efficient format used on ESP32) cannot be used with the scene/object system.
-- Blocks: Using the ECS/scene system on the ESP32 target where `Canvas4` is the primary format.
-- Files: `include/enjin2/components/drawable.hpp` line 87, `include/enjin2/core/scene.hpp` lines 319-329
+**Issue:** The `SceneStateMachine::changeScene()` method executes immediately during a callback. If a scene calls `changeScene()` during `onUpdate()`, the transition happens inline, potentially during a complex callback chain. This is not documented.
+
+**Files:**
+- `include/enjin2/core/scene_state_machine.hpp` — `changeScene()` signature and semantics
+
+**Missing Feature:** No "deferred transition" mechanism. If deferred transitions are needed (avoid re-entrancy), there is no API for it.
+
+**Recommendation:** Document current behavior: "Transition executes immediately; use deferred calling patterns if re-entrancy is a concern." If deferred transitions are a priority, implement as a separate phase.
+
+---
+
+### named-objects / tags API — No Lua Bindings Yet
+
+**Issue:** Phase 29 (named-objects-tags) completed on C++ side: `Object::setName()`, `Object::getName()`, `Object::addTag()`, `Object::hasTag()`. But Lua API for adding/querying tags is not implemented.
+
+**Files:**
+- `include/enjin2/core/object.hpp` (lines 257-300) — Name and tag methods
+- `src/scripting/bindings.cpp` (line 59-67) — `self.name` read-only in Lua
+
+**Impact:** Lua scripts cannot set names or tags at runtime. Game logic that relies on dynamic tagging (e.g., "mark enemy as dead") cannot use the tag system from Lua.
+
+**Recommendation:** Expose in Lua via `self:addTag(tag)`, `self:hasTag(tag)`, `self:clearTags()` as metamethods on ScriptProxy.
 
 ---
 
 ## Test Coverage Gaps
 
-**No Unit Tests for Core ECS System:**
-- What's not tested: `Object`, `ObjectCollection`, `Scene`, `SceneStateMachine`, `Signal`, component lifecycle (`awake`/`start`/`update`/`lateUpdate`)
-- Files: `include/enjin2/core/object.hpp`, `include/enjin2/core/object_collection.hpp`, `include/enjin2/core/scene.hpp`, `include/enjin2/core/signal.hpp`
-- Risk: Silent failures in add/remove/find operations, lifecycle ordering bugs, capacity overflows — none are caught automatically.
-- Priority: High
+### ScriptProxy Validity After Scene Destruction — Not Tested
 
-**No Unit Tests for Canvas Drawing Primitives:**
-- What's not tested: `Canvas4`, `Canvas8`, `CanvasExtended`, pixel packing correctness, fill/clear optimisations, text rendering
-- Files: `include/enjin2/graphics/canvas.hpp`, `include/enjin2/graphics/canvas_extended.hpp`
-- Risk: The known bugs in `getTextWidth`, `println`, `fill` (vs `clear`) are undetectable without tests. Rendering regressions are invisible.
-- Priority: High
+**Issue:** Phase 32 (scriptproxy-userdata) completed and `valid` flag was added. But there is no test that stores `self` in a Lua table, transitions scenes, then accesses the stored proxy to verify it returns `nil` instead of crashing.
 
-**Only Two Test Files Exist — Both Are Integration-Level:**
-- What's not tested: All unit-level behavior. `tests/image_comparison.cpp` compares output BMP files. `tests/shadow_mode_test.cpp` is a shadow-mode integration test.
-- Files: `tests/image_comparison.cpp`, `tests/shadow_mode_test.cpp`
-- Risk: No regression safety for any individual function. All issues must be large enough to affect rendered output to be caught.
-- Priority: High
+**Files:**
+- `tests/` — No test file for proxy lifetime management
+- `src/scripting/bindings.cpp` — Validity check exists but not exercised by any test
 
-**No Tests for Lua Scripting Layer:**
-- What's not tested: `LuaEngine::registerFunction` (including the dangling pointer bug), `LuaCanvas` dispatch, `LuaBindings`, error propagation
-- Files: `src/scripting/lua_engine.cpp`, `src/scripting/bindings.cpp`, `include/enjin2/scripting/lua_engine.hpp`
-- Risk: Scripting regressions and the known dangling-pointer bug in `registerFunction(LuaCallback)` are undetectable.
-- Priority: Medium
+**Risk:** Silent regression if validity check is accidentally removed or if `C_LuaScript::~destructor()` forgets to set proxy->valid = false.
+
+**Recommendation:** Add a test in `input_event_callback_test.cpp` or a new `script_proxy_lifetime_test.cpp`:
+```lua
+-- Store self in global table
+stored_self = self
+-- (Later, on scene transition, access it)
+-- Expect nil or error, not crash
+```
 
 ---
 
-*Concerns audit: 2026-02-23*
+### GC Control — Memory() Precision on Embedded Targets
+
+**Issue:** `engine.lua.memory()` uses formula `lua_gc(LUA_GCCOUNT) * 1024 + lua_gc(LUA_GCCOUNTB)` to compute Lua heap size. This formula is only accurate if the Lua allocator is a standard allocator with block-based accounting.
+
+**Files:**
+- `src/scripting/bindings_engine.cpp` — `lua_engine_lua_memory()` implementation
+- `tests/gc_assert_test.cpp` (lines 1-154) — Tests GC-02 but only verifies "return is non-negative number"
+
+**Risk:** On embedded targets with custom bump allocator, the returned byte count may not reflect actual memory usage patterns. Scripts tuning GC based on `engine.lua.memory()` may be misled.
+
+**Recommendation:** Add a comment documenting the formula. On ESP32, verify the value matches actual pool usage by comparing with `LuaPlatform::getMemoryUsage()` or similar.
+
+---
+
+### Input Event Callback Ordering — Frame Boundary Not Verified
+
+**Issue:** Phase 34 implemented `on_button_pressed` / `on_button_released` callbacks and documents they fire "before update()". But there is no test that verifies they fire in the same frame (before a frame count increment) vs. the next frame.
+
+**Files:**
+- `tests/input_event_callback_test.cpp` (lines 1-200+) — Tests button callbacks but may not verify frame-boundary semantics
+- `src/components/lua_script.cpp` — `dispatchInputCallbacks()` called from `update()`
+
+**Risk:** If a future refactoring moves the callback dispatch, this regression could pass unnoticed until a game behaves incorrectly.
+
+**Recommendation:** Add a test that calls `engine.time.frameCount()` inside `on_button_pressed` and compares with a baseline frame count to verify they are in the same frame.
+
+---
+
+### assertRequires<T>() Release Path — Only DEP-03 Tested
+
+**Issue:** `assertRequires<T>()` has debug and release behavior. Debug: `assert(false)` with a message. Release: `printf()` and `setEnabled(false)`. The release path (DEP-03) is only tested in a `#ifdef NDEBUG` gated test, which only runs on release builds.
+
+**Files:**
+- `include/enjin2/core/component.hpp` (lines 41-54) — `assertRequires<T>()` with debug/release ifdef
+- `tests/gc_assert_test.cpp` (lines 1-200+) — DEP-03 gated behind `#ifdef NDEBUG`
+
+**Risk:** If release-mode fallback is broken (wrong printf format, wrong component, setEnabled() not called), the test never catches it on debug builds.
+
+**Recommendation:** Create a separate release-mode only test (or add a conditional compilation step to CI) that verifies missing dependencies disable components without aborting.
+
+---
+
+## "Looks Done But Isn't" Checklist
+
+- [ ] **ScriptProxy validity:** All stored proxies (in Lua tables, coroutines) raise Lua error on access after scene transition — NOT just returning nil silently
+- [ ] **Phase 32 completion:** Verify lightuserdata from `engine.scene.find()` has been fully upgraded to ScriptProxy with metatable — comment at line 92 of bindings_engine.cpp says "Phase 32 upgrades" but implementation status unclear
+- [ ] **Scene self-transition:** Calling `engine.scene.switch(current_id)` fully re-initializes scene (not skipping onCreate) — test by counting objects after self-transition
+- [ ] **GC safety on ESP32:** No calls to `lua_gc(L, LUA_GCCOLLECT)` (full collection) exist in hot-path code — verify all engine code uses LUA_GCSTEP
+- [ ] **clang-tidy enforcement:** CI build fails if clang-tidy reports new errors in changed files — currently no CI integration
+- [ ] **Component limit assertion:** Adding >16 components logs a clear error (not silent nullptr) — currently fails silently
+- [ ] **Error policy coordination:** Single component error (Disable policy) does not block sibling component updates — verify in error_policy_test.cpp
+- [ ] **Input callback frame timing:** on_button_pressed fires in same frame as button press, not next frame — verify frame count in test
+- [ ] **Zero-alloc integrity:** All Object/Component operations allocate zero heap memory (except std::string fields in C_LuaScript) — audit on ESP32 with malloc instrumentation
+- [ ] **Build cleanup:** Only one active `build/` directory exists; build_* dirs removed — currently 15 leftover directories
+
+---
+
+*Codebase concerns audit: 2026-02-27*
