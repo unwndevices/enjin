@@ -258,7 +258,7 @@ Plans:
 **Goal:** Remove the C_Drawable cache from Object to eliminate the enjin2_core -> enjin2_ui layering violation; replace with a generic getComponents<T>() template and update all consumers
 **Requirements**: none defined
 **Depends on:** Phase 35
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 36-01-PLAN.md — Remove drawable cache from Object; add getComponents<T>() generic template

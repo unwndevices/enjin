@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T16:47:59.905Z"
+last_updated: "2026-02-27T16:52:45.604Z"
 progress:
   total_phases: 17
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 38
-  completed_plans: 35
+  completed_plans: 36
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 36 in progress
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 36 complete; Phase 37 next
 
 ## Current Position
 
-Phase: 36 of 37 (Object Drawable Cache Decoupling) — Plan 01 complete
-Plan: 01 complete (1 of 2 plans for this phase)
-Status: Phase 36-01 complete — C_Drawable cache removed from Object; getComponents<T>() generic template added; enjin2_core->enjin2_ui layering violation eliminated at object.hpp level
-Last activity: 2026-02-27 — Phase 36-01 complete: Object C_Drawable cache removed, getComponents<T>() added
+Phase: 36 of 37 (Object Drawable Cache Decoupling) — COMPLETE (both plans done)
+Plan: 02 complete (2 of 2 plans for this phase)
+Status: Phase 36 complete — scene.hpp/animation.hpp migrated to getComponents<T>(); enjin2_core->enjin2_ui layering violation fully eliminated; 16 ctests pass
+Last activity: 2026-02-27 — Phase 36-02 complete: scene.hpp renderObjects() + animation.hpp start() updated; drawable_decoupling_test added
 
-Progress: [████████████████░░░░] 86% (30/37 phases complete — Phase 36 in progress)
+Progress: [█████████████████░░░] 89% (31/37 phases complete — Phase 37 next)
 
 ## Performance Metrics
 
@@ -91,6 +91,8 @@ Recent decisions relevant to v1.5:
 - [Phase 35-01]: DEP-03 test case gated #ifdef NDEBUG — debug path would abort test process via assert(false)
 - [Phase 36-01]: getComponents<T>() uses caller-provides-buffer pattern (T** out, size_t maxOut) — zero heap allocation; O(n) dynamic_cast scan; static_assert(is_base_of<Component,T>) for compile-time safety
 - [Phase 36-01]: Only C_Position fast cache retained in Object; C_Drawable cache eliminated removing enjin2_core->enjin2_ui layering violation; scene.hpp/animation.hpp callers deferred to Plan 02
+- [Phase 36-02]: named_objects_test --start-group no longer required after C_Drawable cache removal from object.cpp in Plan 01 — simplified to plain link
+- [Phase 36-02]: scene.hpp renderObjects() and animation.hpp start() color track now use getComponents<C_Drawable>() and getComponent<C_Drawable>() respectively — enjin2_core->enjin2_ui layering violation fully eliminated
 
 ### Pending Todos
 
@@ -111,6 +113,7 @@ None.
 | Phase 34 P01 | 3 | 5 tasks | 5 files |
 | Phase 35 P01 | 4 | 3 tasks | 5 files |
 | Phase 36-object-drawable-cache-decoupling P01 | 3 | 2 tasks | 2 files |
+| Phase 36-object-drawable-cache-decoupling P02 | 2 | 2 tasks | 4 files |
 
 ### Blockers/Concerns
 
@@ -132,5 +135,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 36-01-PLAN.md — Object C_Drawable cache removed; getComponents<T>() added; Plan 02 unblocked
+Stopped at: Completed 36-02-PLAN.md — scene.hpp/animation.hpp migrated to getComponents<T>(); drawable_decoupling_test added; 16 ctests pass; Phase 36 complete
 Resume file: None
