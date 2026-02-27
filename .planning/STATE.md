@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 37 of 37 (Address Prominent Codebase Concerns) — IN PROGRESS (1 of 2+ plans done)
-Plan: 01 complete (1 of 2 plans for this phase)
-Status: Phase 37-01 complete — ScriptProxy stale luaL_error, tag bindings, char[256] errorMessage, addComponent overflow assertion; 17 ctests pass
-Last activity: 2026-02-27 — Phase 37-01 complete: bindings.cpp + lua_script.hpp/cpp + object.hpp hardened; script_proxy_lifetime_test added
+Phase: 37 of 37 (Address Prominent Codebase Concerns) — COMPLETE (2 of 2 plans done)
+Plan: 02 complete (2 of 2 plans for this phase)
+Status: Phase 37-02 complete — ObjectProxy userdata from engine.scene.find(); Object destructor invalidation hook; object_proxy_test (18 ctests pass)
+Last activity: 2026-02-27 — Phase 37-02 complete: ObjectProxy struct + metatable + Object::~Object() hook; lightuserdata fully replaced; 18 ctests pass
 
-Progress: [█████████████████░░░] 89% (31/37 phases complete — Phase 37 in progress)
+Progress: [████████████████████] 100% (37/37 phases complete — Phase 37 complete)
 
 ## Performance Metrics
 
@@ -97,6 +97,10 @@ Recent decisions relevant to v1.5:
 - [Phase 37-01]: Tag method dispatch in __index: strcmp key returns lua_pushcfunction — addTag/hasTag/clearTags now callable as self:method() from Lua
 - [Phase 37-01]: char[256]{} errorMessage replaces std::string — zero heap allocation on error paths; getErrorMessage() returns const char*
 - [Phase 37-01]: addComponent overflow: assert(false&&"...") in debug (fast failure); fprintf(stderr)+return nullptr in release (no abort on embedded targets)
+- [Phase 37-02]: ObjectProxy impl functions are file-scope statics in bindings.cpp — NOT static class member declarations; class member decls caused linker error (class vs file-scope symbol mismatch)
+- [Phase 37-02]: proxy.enable returns nil (not error) when object has no C_LuaScript — allows proxy usage on non-scripted objects without Lua errors
+- [Phase 37-02]: proxy.position read returns value-semantics snapshot table {x,y} (not live reference) — no GC overhead, appropriate for embedded targets
+- [Phase 37-02]: ObjectProxy in standalone object_proxy.hpp with only Object forward-declaration avoids circular include between object.hpp and bindings.hpp
 
 ### Pending Todos
 
@@ -139,5 +143,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 37-01-PLAN.md — ScriptProxy stale luaL_error + tag bindings; char[256] errorMessage; addComponent overflow assert; script_proxy_lifetime_test; 17 ctests pass
+Stopped at: Completed 37-02-PLAN.md — ObjectProxy userdata + metatable + Object destructor hook; engine.scene.find() fully upgraded; object_proxy_test; 18 ctests pass
 Resume file: None
