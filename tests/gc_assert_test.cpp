@@ -49,7 +49,7 @@ class C_RequiresTestDep : public Component {
 public:
     explicit C_RequiresTestDep(Object* owner) : Component(owner) {}
     void awake() override {
-        assertRequires<C_TestDep>();
+        this->template assertRequires<C_TestDep>();
     }
 };
 

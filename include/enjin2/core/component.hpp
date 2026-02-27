@@ -1,8 +1,10 @@
 #pragma once
 
+#ifndef NDEBUG
 #include <cassert>
+#else
 #include <cstdio>
-#include <cstdint>
+#endif
 #include <type_traits>
 #include "object.hpp"
 
