@@ -183,7 +183,10 @@ Plans:
   3. With Log policy: a Lua runtime error logs the error every frame but the script continues executing on subsequent frames
   4. With Panic policy: a Lua runtime error invokes the platform panic handler (halts on ESP32, asserts on desktop)
   5. After F5 hot-reload, a previously disabled script's error state is cleared and the script executes again from a fresh Lua state
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 33-01-PLAN.md — Structural fix: add lua_script.cpp to enjin2_lua, reconcile header
+- [ ] 33-02-PLAN.md — ScriptErrorPolicy enum + callWithProxy() dispatch + error_policy_test
 
 ### Phase 34: Input Event Callbacks
 **Goal**: Lua scripts can respond to button press and release edges via named callbacks that fire in the correct frame order
@@ -242,7 +245,7 @@ Plans:
 | 30. Scene Self-Transitions | 1/1 | Complete    | 2026-02-27 | - |
 | 31. engine.* Global Table | 3/3 | Complete    | 2026-02-27 | - |
 | 32. ScriptProxy Userdata | 2/2 | Complete   | 2026-02-27 | - |
-| 33. ScriptErrorPolicy | v1.5 | 0/? | Not started | - |
+| 33. ScriptErrorPolicy | v1.5 | 0/2 | In progress | - |
 | 34. Input Event Callbacks | v1.5 | 0/? | Not started | - |
 | 35. GC Control + Component Assertions | v1.5 | 0/? | Not started | - |
 
