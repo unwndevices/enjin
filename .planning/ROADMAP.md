@@ -266,10 +266,12 @@ Plans:
 
 ### Phase 37: address prominent codebase concerns
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Harden existing codebase against the 10 "Looks Done But Isn't" concerns identified in CONCERNS.md — Lua proxy safety, C++ overflow assertions, zero-alloc errorMessage buffer, ObjectProxy for engine.scene.find(), clang-tidy CI enforcement, and build directory cleanup
+**Requirements**: none defined
 **Depends on:** Phase 36
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 37 to break down)
+- [ ] 37-01-PLAN.md — ScriptProxy stale error + tag bindings + component limit assertion + errorMessage fixed buffer
+- [ ] 37-02-PLAN.md — ObjectProxy for engine.scene.find() with validity invalidation via Object destructor
+- [ ] 37-03-PLAN.md — clang-tidy CMake lint target + build cleanup + error policy sibling test + input frame-order test
