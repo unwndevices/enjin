@@ -207,6 +207,12 @@ bool C_LuaScript::getScriptBool(const std::string& name, bool defaultValue) {
     return defaultValue;
 }
 
+void C_LuaScript::setInput(InputState* input) {
+    if (scriptSystem) {
+        scriptSystem->getBindings().setInput(input);
+    }
+}
+
 bool C_LuaScript::callScriptFunction(const std::string& functionName) {
     return callScriptFunctionSafe(functionName);
 }
@@ -218,12 +224,18 @@ void C_LuaScript::update(float dt) {
         return;
     }
 
+    // INPUT-03: fire input edge callbacks before update()
+    InputState* input = scriptSystem->getBindings().getInput();
+    if (input) {
+        dispatchInputCallbacks(*input);
+    }
+
     lastUpdateTime += dt;
 
     // Expose delta time to script (dt is already seconds)
     setScriptVar("dt", static_cast<double>(dt));
     setScriptVar("time", static_cast<double>(lastUpdateTime));
-    
+
     // Call update function if it exists (passes proxy as first arg, dt as second)
     callWithProxy(UPDATE_FUNCTION, dt, true);
 }
@@ -330,6 +342,71 @@ bool C_LuaScript::callWithProxy(const char* funcName, float dt, bool passDt) {
         return false;
     }
     return true;
+}
+
+bool C_LuaScript::callWithProxyAndBtn(const char* funcName, int btn) {
+    if (!scriptSystem) return false;
+
+    lua_State* L = scriptSystem->getEngine().getState();
+    if (!L) return false;
+
+    lua_getglobal(L, funcName);
+    if (!lua_isfunction(L, -1)) {
+        lua_pop(L, 1);
+        return false;  // optional callback — not defined is not an error
+    }
+
+    // Retrieve stored proxy userdata from Lua registry (keyed by this pointer)
+    lua_pushlightuserdata(L, this);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+
+    // Push btn as integer second arg
+    lua_pushinteger(L, static_cast<lua_Integer>(btn));
+
+    // call: funcName(self, btn)  — 2 args, 0 results
+    int result = lua_pcall(L, 2, 0, 0);
+    if (result != LUA_OK) {
+        const char* err = lua_tostring(L, -1);
+        errorMessage = err ? err : "unknown Lua error";
+        lua_pop(L, 1);
+
+        switch (errorPolicy) {
+            case ScriptErrorPolicy::Disable:
+                if (!scriptError) {
+                    printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                }
+                scriptError = true;
+                break;
+
+            case ScriptErrorPolicy::Log:
+                printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                // scriptError intentionally NOT set — script runs again next frame
+                break;
+
+            case ScriptErrorPolicy::Panic:
+                printf("[lua] PANIC (%s): %s\n", funcName, errorMessage.c_str());
+#ifdef ESP32
+                esp_restart();
+#else
+                std::abort();
+#endif
+                break;
+        }
+        return false;
+    }
+    return true;
+}
+
+void C_LuaScript::dispatchInputCallbacks(const InputState& input) {
+    if (!hasScript || scriptError || !scriptSystem) return;
+    for (int btn = 0; btn < 16; ++btn) {
+        if (input.justPressed(btn)) {
+            callWithProxyAndBtn("on_button_pressed", btn);
+        }
+        if (input.justReleased(btn)) {
+            callWithProxyAndBtn("on_button_released", btn);
+        }
+    }
 }
 
 void C_LuaScript::handleScriptError(const LuaResult& result) {
