@@ -24,7 +24,7 @@ namespace enjin2 {
  */
 class Tickmarks : public Component {
 private:
-    Vector2 center;
+    Vec2 center;
     int16_t start_angle;
     int16_t stop_angle;
     uint8_t spacing;
@@ -45,7 +45,7 @@ public:
      * @param tickLength Length of the tickmarks in pixels
      * @param arcRadius Radius of the arc on which tickmarks are drawn
      */
-    Tickmarks(Object* owner, Vector2 centerPoint, int16_t startAngle, int16_t stopAngle, 
+    Tickmarks(Object* owner, Vec2 centerPoint, int16_t startAngle, int16_t stopAngle, 
              uint8_t tickSpacing, uint8_t tickLength, uint8_t arcRadius)
         : Component(owner)
         , center(centerPoint)
@@ -105,7 +105,7 @@ public:
         }
 
         // Copy to main canvas
-        Vector2 pos = position->getGlobalPosition();
+        Vec2 pos = position->getGlobalPosition();
         canvas.blit(internal_canvas, pos.x, pos.y, 128, 128);
     }
 
@@ -129,7 +129,7 @@ public:
      * @brief Set the center point of the tickmarks
      * @param newCenter New center point
      */
-    void setCenter(Vector2 newCenter) {
+    void setCenter(Vec2 newCenter) {
         center = newCenter;
     }
 

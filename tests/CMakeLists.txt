@@ -137,6 +137,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME text_binding_test COMMAND text_binding_test)
+
+    # Math binding test (Vec2, Point, Rect userdata + clamp, lerp, remap, sign, smoothstep, distance)
+    add_executable(math_binding_test
+        math_binding_test.cpp
+    )
+    target_include_directories(math_binding_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(math_binding_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME math_binding_test COMMAND math_binding_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

@@ -86,7 +86,7 @@ public:
         internal_canvas.drawRect(leftX, midY - slider_height / 4, sliderLength, slider_height / 2, color);
 
         // Copy to main canvas
-        Vector2 pos = position->getGlobalPosition();
+        Vec2 pos = position->getGlobalPosition();
         canvas.blit(internal_canvas, pos.x, pos.y, slider_width, slider_height);
     }
 

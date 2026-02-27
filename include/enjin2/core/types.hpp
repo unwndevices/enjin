@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <cmath>
 
 namespace enjin2 {
 
@@ -61,6 +62,60 @@ struct Point {
         y -= other.y;
         return *this;
     }
+};
+
+/**
+ * @brief 2D vector with floating-point components
+ *
+ * Provides vector operations for 2D graphics and physics.
+ */
+struct Vec2 {
+    float x; ///< X component
+    float y; ///< Y component
+
+    Vec2() : x(0), y(0) {}
+    Vec2(float x_, float y_) : x(x_), y(y_) {}
+
+    // Arithmetic operators
+    Vec2 operator+(const Vec2& other) const { return Vec2(x + other.x, y + other.y); }
+    Vec2 operator-(const Vec2& other) const { return Vec2(x - other.x, y - other.y); }
+    Vec2 operator*(float s) const { return Vec2(x * s, y * s); }
+    Vec2 operator/(float s) const { return Vec2(x / s, y / s); }
+    Vec2 operator-() const { return Vec2(-x, -y); }
+
+    // Compound assignment
+    Vec2& operator+=(const Vec2& other) { x += other.x; y += other.y; return *this; }
+    Vec2& operator-=(const Vec2& other) { x -= other.x; y -= other.y; return *this; }
+    Vec2& operator*=(float s) { x *= s; y *= s; return *this; }
+    Vec2& operator/=(float s) { x /= s; y /= s; return *this; }
+
+    // Comparison
+    bool operator==(const Vec2& other) const { return x == other.x && y == other.y; }
+    bool operator!=(const Vec2& other) const { return !(*this == other); }
+
+    float length() const { return std::sqrt(x * x + y * y); }
+    float lengthSquared() const { return x * x + y * y; }
+    float dot(const Vec2& other) const { return x * other.x + y * other.y; }
+
+    /** @brief 2D cross product (z-component of the 3D cross) */
+    float cross(const Vec2& other) const { return x * other.y - y * other.x; }
+
+    /** @brief Angle of this vector in radians via atan2(y, x) */
+    float angle() const { return std::atan2(y, x); }
+
+    Vec2 normalized() const {
+        float len = length();
+        return len > 0 ? Vec2(x / len, y / len) : Vec2(0, 0);
+    }
+
+    /** @brief Return a copy rotated by radians */
+    Vec2 rotated(float radians) const {
+        float c = std::cos(radians);
+        float s = std::sin(radians);
+        return Vec2(x * c - y * s, x * s + y * c);
+    }
+
+    static float distance(const Vec2& a, const Vec2& b) { return (a - b).length(); }
 };
 
 /**

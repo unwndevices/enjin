@@ -95,7 +95,7 @@ public:
         internal_canvas.drawCircle(width / 2, height / 2, width / 2, color);
 
         // Copy to main canvas
-        Vector2 pos = position->getGlobalPosition();
+        Vec2 pos = position->getGlobalPosition();
         canvas.blit(internal_canvas, pos.x, pos.y, width, height);
     }
 

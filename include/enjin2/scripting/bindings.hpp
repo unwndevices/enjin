@@ -15,8 +15,8 @@
 #include "../graphics/primitives.hpp"
 #include "../graphics/sprite.hpp"
 #include "../input/input_state.hpp"
-// #include "../ui/component.hpp"  // Conflicts with core/component.hpp in VCV build
-// #include "../ui/components.hpp" // Not needed for basic canvas operations
+#include "../core/math.hpp"
+#include "../core/collision.hpp"
 
 namespace enjin2 {
 
@@ -461,6 +461,14 @@ private:
     static int lua_engine_time_frame(lua_State* L);
     static int lua_engine_log(lua_State* L);
 
+    // engine.collision.* binding functions
+    static int lua_engine_collision_aabb(lua_State* L);
+    static int lua_engine_collision_circleCircle(lua_State* L);
+    static int lua_engine_collision_pointInRect(lua_State* L);
+    static int lua_engine_collision_pointInCircle(lua_State* L);
+    static int lua_engine_collision_lineLine(lua_State* L);
+    static int lua_engine_collision_lineCircle(lua_State* L);
+
     /**
      * @brief Register engine.* global table (called from registerAll())
      * Builds engine.scene, engine.input, engine.time, engine.lua sub-tables and engine.log.
@@ -468,26 +476,67 @@ private:
      * during this call so closures can retrieve them at call time.
      */
     void registerEngineTable();
-
-    /**
-     * @brief Register the ScriptProxy metatable (called from registerAll())
-     * Creates "ScriptProxy" metatable in the Lua registry with __index and __newindex
-     * metamethods for C_LuaScript component property dispatch.
-     */
     void registerProxyMetatable();
 
     /**
-     * @brief Get LuaBindings instance from Lua state
-     * @param L Lua state
-     * @return LuaBindings instance
+     * @brief Register Vec2/Point/Rect metatables and math utility globals (called from registerAll())
      */
+    void registerMathBindings();
+
+    // ── Math type constructors ──────────────────────────────────────────────
+    static int lua_Vec2_new(lua_State* L);
+    static int lua_Point_new(lua_State* L);
+    static int lua_Rect_new(lua_State* L);
+
+    // ── Vec2 metamethods ────────────────────────────────────────────────────
+    static int lua_Vec2_add(lua_State* L);
+    static int lua_Vec2_sub(lua_State* L);
+    static int lua_Vec2_mul(lua_State* L);
+    static int lua_Vec2_div(lua_State* L);
+    static int lua_Vec2_unm(lua_State* L);
+    static int lua_Vec2_eq(lua_State* L);
+    static int lua_Vec2_tostring(lua_State* L);
+    static int lua_Vec2_index(lua_State* L);
+    static int lua_Vec2_newindex(lua_State* L);
+
+    // Vec2 methods (dispatched via __index)
+    static int lua_Vec2_length(lua_State* L);
+    static int lua_Vec2_lengthSquared(lua_State* L);
+    static int lua_Vec2_normalized(lua_State* L);
+    static int lua_Vec2_dot(lua_State* L);
+    static int lua_Vec2_cross(lua_State* L);
+    static int lua_Vec2_distance(lua_State* L);
+    static int lua_Vec2_angle(lua_State* L);
+    static int lua_Vec2_rotate(lua_State* L);
+
+    // ── Point metamethods ───────────────────────────────────────────────────
+    static int lua_Point_add(lua_State* L);
+    static int lua_Point_sub(lua_State* L);
+    static int lua_Point_eq(lua_State* L);
+    static int lua_Point_tostring(lua_State* L);
+    static int lua_Point_index(lua_State* L);
+    static int lua_Point_newindex(lua_State* L);
+
+    // ── Rect metamethods ────────────────────────────────────────────────────
+    static int lua_Rect_eq(lua_State* L);
+    static int lua_Rect_tostring(lua_State* L);
+    static int lua_Rect_index(lua_State* L);
+    static int lua_Rect_newindex(lua_State* L);
+
+    // Rect methods (dispatched via __index)
+    static int lua_Rect_contains(lua_State* L);
+    static int lua_Rect_intersects(lua_State* L);
+
+    // ── Math utility globals ────────────────────────────────────────────────
+    static int lua_math_clamp(lua_State* L);
+    static int lua_math_lerp(lua_State* L);
+    static int lua_math_remap(lua_State* L);
+    static int lua_math_sign(lua_State* L);
+    static int lua_math_smoothstep(lua_State* L);
+    static int lua_math_distance(lua_State* L);
+
     static LuaBindings* getBindings(lua_State* L);
 
-    /**
-     * @brief Register bindings in a table
-     * @param tableName Name of table to create
-     * @param functions Array of function bindings
-     */
     void registerTable(const std::string& tableName,
                        const std::vector<std::pair<std::string, lua_CFunction>>& functions);
 };

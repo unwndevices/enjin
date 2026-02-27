@@ -70,7 +70,7 @@ public:
         int size = outer_radius * 2 + 1;
         internal_canvas.clear(16);
 
-        Vector2 center = {outer_radius, outer_radius};
+        Vec2 center = {outer_radius, outer_radius};
 
         // Draw outer circle
         internal_canvas.drawCircle(center.x, center.y, outer_radius, color);
@@ -80,7 +80,7 @@ public:
             float phase = (float)i / button_count;
             float angle = phase * 2.0f * PI;
             
-            Vector2 point = {
+            Vec2 point = {
                 (int16_t)(center.x + cos(angle) * outer_radius),
                 (int16_t)(center.y + sin(angle) * outer_radius)
             };
@@ -88,13 +88,13 @@ public:
             internal_canvas.setPixel(point.x, point.y, color);
 
             // Draw dividing lines (dashed effect)
-            Vector2 direction = {
+            Vec2 direction = {
                 (int16_t)(cos(angle) * (outer_radius - inner_radius)),
                 (int16_t)(sin(angle) * (outer_radius - inner_radius))
             };
             
             for (int r = inner_radius; r < outer_radius; r += 2) {
-                Vector2 line_point = {
+                Vec2 line_point = {
                     (int16_t)(center.x + cos(angle) * r),
                     (int16_t)(center.y + sin(angle) * r)
                 };
@@ -112,7 +112,7 @@ public:
             float angle = activePhase * 2.0f * PI;
             int activeRadius = (outer_radius + inner_radius) / 2 - 1;
             
-            Vector2 activePoint = {
+            Vec2 activePoint = {
                 (int16_t)(center.x + cos(angle) * activeRadius),
                 (int16_t)(center.y + sin(angle) * activeRadius)
             };
@@ -121,7 +121,7 @@ public:
         }
 
         // Copy to main canvas
-        Vector2 pos = position->getGlobalPosition();
+        Vec2 pos = position->getGlobalPosition();
         canvas.blit(internal_canvas, pos.x, pos.y, size, size);
     }
 
