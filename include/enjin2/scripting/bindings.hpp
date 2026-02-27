@@ -18,6 +18,21 @@
 
 namespace enjin2 {
 
+// Forward declarations for engine.* pointer injection
+// Full includes are in bindings.cpp only (avoids circular include issues)
+class Scene;
+class SceneStateMachine;
+
+/**
+ * @brief Time state for engine.time.* Lua bindings
+ * Updated by host each frame via LuaBindings::setTimeState() before update() is called.
+ */
+struct EngineTimeState {
+    float dt{0.0f};            ///< Current frame delta in seconds
+    float totalTime{0.0f};     ///< Accumulated total time in seconds
+    uint32_t frameCount{0};    ///< Frame counter, incremented each frame
+};
+
 /**
  * @brief Canvas wrapper for Lua bindings
  * 
@@ -207,6 +222,11 @@ private:
     uint8_t    activeLayer{0};                   ///< Current C++ buffer index (0-based)
     uint8_t    layerCount{0};                    ///< Set by host via setLayers()
 
+    // ── engine.* injection pointers ──────────────────────────────────────────────
+    SceneStateMachine* m_ssm{nullptr};        ///< Non-owning; null in SDL standalone mode
+    Scene*             m_activeScene{nullptr}; ///< Non-owning; current active scene
+    EngineTimeState    m_timeState;            ///< Updated by host each frame
+
 public:
     /**
      * @brief Constructor
@@ -252,6 +272,30 @@ public:
      * on every Lua state reload. Also resets drawing state (currentColor, lineWidth).
      */
     void resetSpritePool();
+
+    /**
+     * @brief Inject SceneStateMachine pointer for engine.scene.switch()
+     * @param ssm Non-owning pointer; may be nullptr in SDL standalone mode
+     */
+    void setSceneStateMachine(SceneStateMachine* ssm) { m_ssm = ssm; }
+
+    /**
+     * @brief Inject active Scene pointer for engine.scene.find()
+     * @param scene Non-owning pointer to the currently active scene; may be nullptr
+     */
+    void setActiveScene(Scene* scene) { m_activeScene = scene; }
+
+    /**
+     * @brief Update time state for engine.time.* bindings (call before each frame's update)
+     * @param dt Current frame delta in seconds
+     * @param totalTime Accumulated total time in seconds
+     * @param frameCount Current frame counter
+     */
+    void setTimeState(float dt, float totalTime, uint32_t frameCount) {
+        m_timeState.dt         = dt;
+        m_timeState.totalTime  = totalTime;
+        m_timeState.frameCount = frameCount;
+    }
 
 private:
     // Canvas management functions
@@ -317,19 +361,39 @@ private:
     static int lua_setLayerVisible(lua_State* L);
     static int lua_isLayerVisible(lua_State* L);
 
+    // engine.* table binding functions (ENG-01..ENG-06)
+    static int lua_engine_scene_switch(lua_State* L);
+    static int lua_engine_scene_find(lua_State* L);
+    static int lua_engine_input_held(lua_State* L);
+    static int lua_engine_input_just_pressed(lua_State* L);
+    static int lua_engine_input_just_released(lua_State* L);
+    static int lua_engine_input_axis(lua_State* L);
+    static int lua_engine_time_delta(lua_State* L);
+    static int lua_engine_time_now(lua_State* L);
+    static int lua_engine_time_frame(lua_State* L);
+    static int lua_engine_log(lua_State* L);
+
+    /**
+     * @brief Register engine.* global table (called from registerAll())
+     * Builds engine.scene, engine.input, engine.time, engine.lua sub-tables and engine.log.
+     * All C++ pointers (SSM, activeScene, timeState) must be stored in the Lua registry
+     * during this call so closures can retrieve them at call time.
+     */
+    void registerEngineTable();
+
     /**
      * @brief Get LuaBindings instance from Lua state
      * @param L Lua state
      * @return LuaBindings instance
      */
     static LuaBindings* getBindings(lua_State* L);
-    
+
     /**
      * @brief Register bindings in a table
      * @param tableName Name of table to create
      * @param functions Array of function bindings
      */
-    void registerTable(const std::string& tableName, 
+    void registerTable(const std::string& tableName,
                        const std::vector<std::pair<std::string, lua_CFunction>>& functions);
 };
 
