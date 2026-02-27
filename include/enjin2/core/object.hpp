@@ -2,6 +2,8 @@
 
 #include "types.hpp"
 #include <array>
+#include <cassert>
+#include <cstdio>
 #include <memory>
 #include <functional>
 #include <type_traits>
@@ -103,6 +105,12 @@ public:
         static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
         
         if (componentCount >= MAX_COMPONENTS) {
+#ifndef NDEBUG
+            assert(false && "addComponent: MAX_COMPONENTS (16) exceeded — reduce component count or increase limit");
+#else
+            fprintf(stderr, "[enjin2] addComponent: MAX_COMPONENTS (%zu) exceeded\n",
+                    static_cast<size_t>(MAX_COMPONENTS));
+#endif
             return nullptr;
         }
         

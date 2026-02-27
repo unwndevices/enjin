@@ -1,4 +1,5 @@
 #include "../../include/enjin2/components/lua_script.hpp"
+#include <cstdio>
 #include <cstring>
 #include <cstdlib>
 
@@ -39,7 +40,7 @@ bool C_LuaScript::initializeScriptSystem() {
     try {
         scriptSystem = std::unique_ptr<LuaScriptSystem>(new LuaScriptSystem());
         if (!scriptSystem->initialize()) {
-            errorMessage = "Failed to initialize Lua script system";
+            snprintf(errorMessage, sizeof(errorMessage), "%s", "Failed to initialize Lua script system");
             scriptError = true;
             return false;
         }
@@ -50,7 +51,7 @@ bool C_LuaScript::initializeScriptSystem() {
         
         return true;
     } catch (const std::exception& e) {
-        errorMessage = std::string("Script system initialization error: ") + e.what();
+        snprintf(errorMessage, sizeof(errorMessage), "Script system initialization error: %s", e.what());
         scriptError = true;
         return false;
     }
@@ -58,7 +59,7 @@ bool C_LuaScript::initializeScriptSystem() {
 
 bool C_LuaScript::loadScript(const std::string& code) {
     if (!scriptSystem) {
-        errorMessage = "Script system not initialized";
+        snprintf(errorMessage, sizeof(errorMessage), "%s", "Script system not initialized");
         scriptError = true;
         return false;
     }
@@ -71,7 +72,7 @@ bool C_LuaScript::loadScript(const std::string& code) {
 
 bool C_LuaScript::loadScriptFile(const std::string& filename) {
     if (!scriptSystem) {
-        errorMessage = "Script system not initialized";
+        snprintf(errorMessage, sizeof(errorMessage), "%s", "Script system not initialized");
         scriptError = true;
         return false;
     }
@@ -86,7 +87,7 @@ bool C_LuaScript::loadScriptFile(const std::string& filename) {
     
     hasScript = true;
     scriptError = false;
-    errorMessage.clear();
+    errorMessage[0] = '\0';
     
     // Call init function if it exists
     callScriptFunctionSafe(INIT_FUNCTION);
@@ -96,7 +97,7 @@ bool C_LuaScript::loadScriptFile(const std::string& filename) {
 
 bool C_LuaScript::reloadScript() {
     if (scriptPath.empty() && scriptCode.empty()) {
-        errorMessage = "No script to reload";
+        snprintf(errorMessage, sizeof(errorMessage), "%s", "No script to reload");
         scriptError = true;
         return false;
     }
@@ -113,7 +114,7 @@ void C_LuaScript::clearScript() {
     scriptPath.clear();
     hasScript = false;
     scriptError = false;
-    errorMessage.clear();
+    errorMessage[0] = '\0';
 }
 
 bool C_LuaScript::executeScript(const std::string& code) {
@@ -125,7 +126,7 @@ bool C_LuaScript::executeScript(const std::string& code) {
 
     hasScript = true;
     scriptError = false;
-    errorMessage.clear();
+    errorMessage[0] = '\0';
 
     // Create ScriptProxy userdata and store in Lua registry for reuse each frame.
     // Registry key: lightuserdata(this) — unique per C_LuaScript instance.
@@ -278,7 +279,7 @@ bool C_LuaScript::callScriptFunctionSafe(const std::string& functionName) {
         }
         return true;
     } catch (const std::exception& e) {
-        errorMessage = std::string("Script function call error: ") + e.what();
+        snprintf(errorMessage, sizeof(errorMessage), "Script function call error: %s", e.what());
         scriptError = true;
         return false;
     }
@@ -314,24 +315,24 @@ bool C_LuaScript::callWithProxy(const char* funcName, float dt, bool passDt) {
     int result = lua_pcall(L, nargs, 0, 0);
     if (result != LUA_OK) {
         const char* err = lua_tostring(L, -1);
-        errorMessage = err ? err : "unknown Lua error";
+        snprintf(errorMessage, sizeof(errorMessage), "%s", err ? err : "unknown Lua error");
         lua_pop(L, 1);
 
         switch (errorPolicy) {
             case ScriptErrorPolicy::Disable:
                 if (!scriptError) {
-                    printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                    printf("[lua] script error (%s): %s\n", funcName, errorMessage);
                 }
                 scriptError = true;
                 break;
 
             case ScriptErrorPolicy::Log:
-                printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                printf("[lua] script error (%s): %s\n", funcName, errorMessage);
                 // scriptError intentionally NOT set — script runs again next frame
                 break;
 
             case ScriptErrorPolicy::Panic:
-                printf("[lua] PANIC (%s): %s\n", funcName, errorMessage.c_str());
+                printf("[lua] PANIC (%s): %s\n", funcName, errorMessage);
 #ifdef ESP32
                 esp_restart();
 #else
@@ -367,24 +368,24 @@ bool C_LuaScript::callWithProxyAndBtn(const char* funcName, int btn) {
     int result = lua_pcall(L, 2, 0, 0);
     if (result != LUA_OK) {
         const char* err = lua_tostring(L, -1);
-        errorMessage = err ? err : "unknown Lua error";
+        snprintf(errorMessage, sizeof(errorMessage), "%s", err ? err : "unknown Lua error");
         lua_pop(L, 1);
 
         switch (errorPolicy) {
             case ScriptErrorPolicy::Disable:
                 if (!scriptError) {
-                    printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                    printf("[lua] script error (%s): %s\n", funcName, errorMessage);
                 }
                 scriptError = true;
                 break;
 
             case ScriptErrorPolicy::Log:
-                printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                printf("[lua] script error (%s): %s\n", funcName, errorMessage);
                 // scriptError intentionally NOT set — script runs again next frame
                 break;
 
             case ScriptErrorPolicy::Panic:
-                printf("[lua] PANIC (%s): %s\n", funcName, errorMessage.c_str());
+                printf("[lua] PANIC (%s): %s\n", funcName, errorMessage);
 #ifdef ESP32
                 esp_restart();
 #else
@@ -411,7 +412,7 @@ void C_LuaScript::dispatchInputCallbacks(const InputState& input) {
 
 void C_LuaScript::handleScriptError(const LuaResult& result) {
     scriptError = true;
-    errorMessage = result.error;
+    snprintf(errorMessage, sizeof(errorMessage), "%s", result.error.c_str());
     // Could add logging here in the future
 }
 

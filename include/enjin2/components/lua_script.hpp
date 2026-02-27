@@ -42,7 +42,7 @@ private:
     std::string scriptPath;                          ///< Script file path (if loaded from file)
     bool hasScript;                                  ///< Whether script is loaded
     bool scriptError;                                ///< Whether script has errors
-    std::string errorMessage;                        ///< Last error message
+    char errorMessage[256]{};                        ///< Last error message (fixed buffer — zero heap allocation)
     ScriptErrorPolicy errorPolicy{ScriptErrorPolicy::Disable};  ///< Error handling policy
 
     // Script lifecycle function names
@@ -109,7 +109,7 @@ public:
      * @brief Get last error message
      * @return Error message string
      */
-    const std::string& getErrorMessage() const { return errorMessage; }
+    const char* getErrorMessage() const { return errorMessage; }
 
     /**
      * @brief Set the error handling policy for this script.
