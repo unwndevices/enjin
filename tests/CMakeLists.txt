@@ -76,8 +76,15 @@ add_test(NAME compositor_test COMMAND compositor_test)
 add_executable(named_objects_test named_objects_test.cpp)
 target_include_directories(named_objects_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 target_link_libraries(named_objects_test PRIVATE
-    -Wl,--start-group enjin2_core enjin2_graphics enjin2_ui enjin2_input -Wl,--end-group)
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME named_objects_test COMMAND named_objects_test)
+
+# Drawable decoupling test (Phase 36: getComponents<C_Drawable>() regression)
+add_executable(drawable_decoupling_test drawable_decoupling_test.cpp)
+target_include_directories(drawable_decoupling_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(drawable_decoupling_test PRIVATE
+    -Wl,--start-group enjin2_core enjin2_graphics enjin2_ui enjin2_input -Wl,--end-group)
+add_test(NAME drawable_decoupling_test COMMAND drawable_decoupling_test)
 
 # Scene transition unit test (SCENE-01, SCENE-02, SCENE-03: SSM back-pointer + deferred self-transition)
 add_executable(scene_transition_test scene_transition_test.cpp)
