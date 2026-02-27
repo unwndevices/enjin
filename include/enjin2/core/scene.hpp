@@ -349,12 +349,14 @@ private:
         
         objects.forEach([&](Object* obj) {
             if (!obj || !obj->isActive()) return;
-            
+
             // Get all drawable components from this object
-            for (size_t i = 0; i < obj->getDrawableCount(); ++i) {
-                auto drawable = obj->getDrawable(i);
-                if (drawable && drawable->isVisible() && drawableCount < MAX_DRAWABLES) {
-                    drawables[drawableCount++] = drawable;
+            static constexpr size_t OBJ_MAX_DRAW = 16;
+            C_Drawable* objDrawables[OBJ_MAX_DRAW];
+            size_t n = obj->getComponents<C_Drawable>(objDrawables, OBJ_MAX_DRAW);
+            for (size_t i = 0; i < n && drawableCount < MAX_DRAWABLES; ++i) {
+                if (objDrawables[i]->isVisible()) {
+                    drawables[drawableCount++] = objDrawables[i];
                 }
             }
         });

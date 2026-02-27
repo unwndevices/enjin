@@ -88,13 +88,10 @@ public:
             colorConnection = std::make_unique<SignalConnection<Pixel4>>(
                 colorTrack.connectOnUpdate([this](Pixel4 color) {
                     // Find first drawable component and update its color if possible
-                    for (size_t i = 0; i < owner->getDrawableCount(); ++i) {
-                        auto drawable = owner->getDrawable(i);
-                        if (drawable) {
-                            // Try to cast to RectangleDrawable or other color-supporting drawable
-                            // This would need to be extended for specific drawable types
-                            break;
-                        }
+                    auto drawable = owner->getComponent<C_Drawable>();
+                    if (drawable) {
+                        // Try to cast to RectangleDrawable or other color-supporting drawable
+                        // This would need to be extended for specific drawable types
                     }
                 })
             );
