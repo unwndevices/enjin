@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T02:21:16.182Z"
+last_updated: "2026-02-27T02:25:30Z"
 progress:
   total_phases: 12
   completed_phases: 8
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 30 in progress
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 31 in progress
 
 ## Current Position
 
-Phase: 30 of 35 (Scene Self-Transitions)
-Plan: 01 complete (1 of 1 plans for this phase) — Phase 30 Plan 01 COMPLETE
-Status: Phase 30-01 complete — SSM back-pointer injection and deferred self-transition shipped
-Last activity: 2026-02-27 — Phase 30-01 complete: Scene::m_ssm + SceneStateMachine::switchTo() + applyDeferredTransition(); all SCENE-01/02/03 requirements met
+Phase: 31 of 35 (engine.* Global Table)
+Plan: 01 complete (1 of 3 plans for this phase) — Phase 31 Plan 01 COMPLETE
+Status: Phase 31-01 complete — engine.* global Lua table wired with sub-tables and 10 stub C functions
+Last activity: 2026-02-27 — Phase 31-01 complete: EngineTimeState struct + registerEngineTable() + engine.scene/input/time/lua/log registered; ENG-06 met
 
-Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 30-01 complete, Phase 30+ plans pending)
+Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31-01 complete, Phase 31 plans 02-03 pending)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 5 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition)
+- v1.5: 6 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring)
 
 *Updated after each plan completion*
 
@@ -63,6 +63,10 @@ Recent decisions relevant to v1.5:
 - [Phase 30-01]: Forward declaration only in scene.hpp for SceneStateMachine — no reverse #include to avoid circular include
 - [Phase 30-01]: m_ssm is protected (not private) — matches m_ prefix convention; enables subclasses to expose via getSSM()
 - [Phase 30-01]: switchTo() last-wins semantics — multiple calls per frame overwrite pendingSceneId (no allocation, simplest correct policy)
+- [Phase 31-01]: setters (setSceneStateMachine/setActiveScene/setTimeState) are public so host code can inject without friend declarations
+- [Phase 31-01]: Lua registry stores C++ pointers at registerAll() time — not at call time — so Plan 02 replacements need no re-registration
+- [Phase 31-01]: engine.lua registered as empty table at Plan 01 stage; Phase 35 adds gc/memory functions
+- [Phase 31-01]: Forward declarations only in bindings.hpp; scene.hpp/scene_state_machine.hpp included in bindings.cpp to avoid circular includes
 
 ### Pending Todos
 
@@ -80,7 +84,7 @@ None.
 ### Blockers/Concerns
 
 - [Phase 32 - ScriptProxy] Decide validity mechanism (generation token vs valid flag) before writing any proxy code — cannot retrofit safely
-- [Phase 31 - engine.*] Must verify with module-level access test script before Phase 32 begins (guards against registration ordering pitfall)
+- [Phase 31-01 RESOLVED] engine.* global table now registered; module-level access no longer a concern for Phase 31-02 onward
 - [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
 
 ### Technical Debt (carried)
@@ -91,5 +95,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 30-01 — SSM back-pointer injection and deferred self-transition (SCENE-01/02/03)
+Stopped at: Completed Phase 31-01 — engine.* global Lua table wiring with stubs (ENG-06)
 Resume file: None

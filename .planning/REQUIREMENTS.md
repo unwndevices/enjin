@@ -37,7 +37,7 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 - [ ] **ENG-03**: Lua scripts access `engine.input.held(btn)`, `engine.input.just_pressed(btn)`, `engine.input.just_released(btn)`, `engine.input.axis(n)` for polling
 - [ ] **ENG-04**: Lua scripts access `engine.time.delta()`, `engine.time.now()`, `engine.time.frame()` for timing
 - [ ] **ENG-05**: Lua scripts access `engine.log(...)` for platform-safe logging
-- [ ] **ENG-06**: `engine.*` table is registered before any script loads (module-level access works)
+- [x] **ENG-06**: `engine.*` table is registered before any script loads (module-level access works)
 
 ### Self Proxy
 
@@ -133,7 +133,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENG-03 | Phase 31 | Pending |
 | ENG-04 | Phase 31 | Pending |
 | ENG-05 | Phase 31 | Pending |
-| ENG-06 | Phase 31 | Pending |
+| ENG-06 | Phase 31 | Complete |
 | PROXY-01 | Phase 32 | Pending |
 | PROXY-02 | Phase 32 | Pending |
 | PROXY-03 | Phase 32 | Pending |
