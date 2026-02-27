@@ -120,11 +120,10 @@ public:
     void render(ICanvas<PixelType>& canvas) {
         if (!active) return;
         
-        if constexpr (std::is_same_v<PixelType, uint8_t>) {
+        if constexpr (std::is_same_v<PixelType, Pixel4>) {
             onRender(canvas);
-        } else {
-            // For non-uint8_t canvases, skip scene-specific rendering for now
-            // In a full implementation, you'd convert or provide templated onRender
+        } else if constexpr (std::is_same_v<PixelType, uint8_t>) {
+            onRender(canvas);
         }
         renderObjects(canvas);
     }
