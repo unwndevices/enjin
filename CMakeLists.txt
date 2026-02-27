@@ -35,6 +35,30 @@ option(ENJIN2_BUILD_LUA "Build Lua bindings" ON)
 option(ENJIN2_BUILD_WASM "Build for WebAssembly" OFF)
 option(ENJIN2_USE_SIMD "Use SIMD optimizations" ON)
 
+# -- Static analysis (clang-tidy) -----------------------------------------
+# Usage: cmake -B build -DCLANG_TIDY=ON && cmake --build build --target lint
+option(CLANG_TIDY "Enable clang-tidy lint target (runs clang-tidy on all src/*.cpp)" OFF)
+if(CLANG_TIDY)
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+    if(CLANG_TIDY_EXE)
+        file(GLOB_RECURSE ENJIN2_ALL_SOURCES CONFIGURE_DEPENDS
+            ${CMAKE_SOURCE_DIR}/src/*.cpp)
+        add_custom_target(lint
+            COMMAND ${CLANG_TIDY_EXE}
+                -p ${CMAKE_BINARY_DIR}
+                --warnings-as-errors=*
+                ${ENJIN2_ALL_SOURCES}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            COMMENT "Running clang-tidy on enjin2 sources (warnings-as-errors=* mode)..."
+        )
+        message(STATUS "clang-tidy lint target enabled: cmake --build build --target lint")
+        message(STATUS "clang-tidy: ${CLANG_TIDY_EXE}")
+    else()
+        message(WARNING "CLANG_TIDY=ON but clang-tidy executable not found in PATH")
+    endif()
+endif()
+# -------------------------------------------------------------------------
+
 # Core library
 add_library(enjin2_core STATIC)
 target_sources(enjin2_core PRIVATE
