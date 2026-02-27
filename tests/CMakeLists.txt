@@ -86,6 +86,18 @@ target_link_libraries(drawable_decoupling_test PRIVATE
     -Wl,--start-group enjin2_core enjin2_graphics enjin2_ui enjin2_input -Wl,--end-group)
 add_test(NAME drawable_decoupling_test COMMAND drawable_decoupling_test)
 
+# Scene onRender Pixel4 dispatch test (RENDER-01)
+add_executable(scene_render_test
+    scene_render_test.cpp
+)
+target_include_directories(scene_render_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(scene_render_test PRIVATE
+    enjin2
+)
+add_test(NAME scene_render_test COMMAND scene_render_test)
+
 # Scene transition unit test (SCENE-01, SCENE-02, SCENE-03: SSM back-pointer + deferred self-transition)
 add_executable(scene_transition_test scene_transition_test.cpp)
 target_include_directories(scene_transition_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
