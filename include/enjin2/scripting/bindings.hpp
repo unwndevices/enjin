@@ -340,6 +340,12 @@ public:
     void setInput(InputState* input);
 
     /**
+     * @brief Get current frame's input state
+     * @return Pointer to InputState set by host this frame, or nullptr if not set
+     */
+    InputState* getInput() const { return currentInput; }
+
+    /**
      * @brief Wire layer canvas pointers from host (called once at init)
      * @param canvases Array of LuaCanvas pointers, one per layer
      * @param count Number of layers
