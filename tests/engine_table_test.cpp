@@ -7,10 +7,18 @@
  * - Behavioral correctness with no host data injected (null-guard paths)
  * - engine.time.* reads live EngineTimeState after setTimeState()
  * - engine.log does not crash on any argument type
+ * - ENG-01 live wiring: engine.scene.switch() reaches SceneStateMachine::switchTo()
+ * - ENG-02 live wiring: engine.scene.find() returns non-nil ObjectProxy for named Object
+ * - PROXY-01 live wiring: loadScriptFile() init(self) receives valid ScriptProxy
  */
 #include <enjin2/scripting/bindings.hpp>
 #include <enjin2/scripting/lua_engine.hpp>
+#include <enjin2/core/scene_state_machine.hpp>
+#include <enjin2/core/scene.hpp>
+#include <enjin2/core/object.hpp>
+#include <enjin2/components/lua_script.hpp>
 #include <cstdio>
+#include <cstring>
 
 using namespace enjin2;
 
@@ -273,6 +281,105 @@ static void test_engine_scene_null_guards() {
 }
 
 // ============================================================
+// Minimal concrete scene for live-wiring tests
+// ============================================================
+struct MinimalScene : Scene {
+    explicit MinimalScene(uint32_t id) : Scene(id) {}
+};
+
+// ============================================================
+// test_engine_scene_live_switch
+// ENG-01: engine.scene.switch() reaches SceneStateMachine::switchTo()
+// when SSM is injected after registerAll() (pointer-to-pointer fix)
+// ============================================================
+static void test_engine_scene_live_switch() {
+    printf("--- engine.scene.switch live wiring (ENG-01) ---\n");
+
+    EngineTableFixture f;
+
+    // Use a real SceneStateMachine with a registered scene.
+    // switchTo() only queues if the scene ID exists in the SSM.
+    SceneStateMachine mockSSM;
+    mockSSM.addScene<MinimalScene>(2u);
+
+    // Inject AFTER registerAll() — the pointer-to-pointer fix makes this live.
+    f.bindings.setSceneStateMachine(&mockSSM);
+
+    // The SSM has no current scene; switchTo(2) is valid (scene 2 registered).
+    // switchTo() sets m_hasPendingTransition = true internally.
+    // We verify by calling update() — if hasPendingTransition was set, applyDeferredTransition
+    // runs and sets currentScene to scene 2.
+    LuaResult r = f.exec("engine.scene.switch(2)");
+    ASSERT(r.success, "engine.scene.switch(2) should not error");
+
+    // Apply the deferred transition to verify switchTo() was actually called.
+    mockSSM.update(0.0f);
+    ASSERT(mockSSM.getCurrentScene() != nullptr, "ENG-01: switchTo() set pending transition, SSM applied it");
+    ASSERT(mockSSM.getCurrentScene()->getId() == 2u, "ENG-01: current scene is now scene 2");
+}
+
+// ============================================================
+// test_engine_scene_live_find
+// ENG-02: engine.scene.find() returns non-nil ObjectProxy for named Object
+// when active scene is injected after registerAll() (pointer-to-pointer fix)
+// ============================================================
+static void test_engine_scene_live_find() {
+    printf("--- engine.scene.find live wiring (ENG-02) ---\n");
+
+    EngineTableFixture f;
+
+    // Create a Scene and add a named Object to it.
+    // Scene requires a uint32_t id; Scene::addObject<T>() adds to ObjectCollection.
+    MinimalScene scene(1u);
+    Object* obj = scene.addObject<Object>();
+    obj->setName("hero");
+
+    // Inject AFTER registerAll() — the pointer-to-pointer fix makes this live.
+    f.bindings.setActiveScene(&scene);
+
+    LuaResult r = f.exec("found = (engine.scene.find('hero') ~= nil) and 1 or 0");
+    ASSERT(r.success, "engine.scene.find('hero') should not error");
+    ASSERT(f.getNum("found") == 1.0, "engine.scene.find('hero') should return non-nil proxy");
+
+    LuaResult r2 = f.exec("missing = (engine.scene.find('nobody') == nil) and 1 or 0");
+    ASSERT(r2.success, "engine.scene.find('nobody') should not error");
+    ASSERT(f.getNum("missing") == 1.0, "engine.scene.find('nobody') should return nil");
+}
+
+// ============================================================
+// test_proxy01_load_script_file_init_self
+// PROXY-01: loadScriptFile() init(self) receives a valid ScriptProxy
+// ============================================================
+static void test_proxy01_load_script_file_init_self() {
+    printf("--- PROXY-01: loadScriptFile init(self) receives proxy ---\n");
+
+    // Write a minimal Lua script to /tmp that checks self is non-nil in init().
+    const char* tmpPath = "/tmp/proxy01_test.lua";
+    FILE* f = fopen(tmpPath, "w");
+    ASSERT(f != nullptr, "PROXY-01: should be able to write /tmp/proxy01_test.lua");
+    if (!f) return;
+
+    fprintf(f, "function init(self)\n");
+    fprintf(f, "    init_self_valid = (self ~= nil) and 1 or 0\n");
+    fprintf(f, "end\n");
+    fclose(f);
+
+    // Create a C_LuaScript via Object (same pattern as error_policy_test.cpp)
+    Object obj;
+    C_LuaScript* script = obj.addComponent<C_LuaScript>(16u, 16u);
+    ASSERT(script != nullptr, "PROXY-01: addComponent<C_LuaScript> should succeed");
+    if (!script) return;
+
+    bool loaded = script->loadScriptFile(tmpPath);
+    ASSERT(loaded, "PROXY-01: loadScriptFile should succeed");
+    if (!loaded) return;
+
+    // init() was called inside loadScriptFile(); verify the global it set
+    double val = script->getScriptNumber("init_self_valid", -1.0);
+    ASSERT(val == 1.0, "PROXY-01: init(self) received a valid ScriptProxy (not nil)");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -286,6 +393,9 @@ int main() {
     test_engine_log_no_crash();
     test_engine_collision_basic();
     test_engine_scene_null_guards();
+    test_engine_scene_live_switch();
+    test_engine_scene_live_find();
+    test_proxy01_load_script_file_init_self();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
     return (failures == 0) ? 0 : 1;
