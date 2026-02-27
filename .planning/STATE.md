@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T15:15:25.562Z"
+last_updated: "2026-02-27T15:20:12.885Z"
 progress:
-  total_phases: 13
-  completed_phases: 10
+  total_phases: 15
+  completed_phases: 11
   total_plans: 34
-  completed_plans: 31
+  completed_plans: 32
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 33 of 35 (ScriptErrorPolicy) — In Progress
-Plan: 01 complete (1 of 2 plans for this phase)
-Status: Phase 33-01 complete — lua_script.cpp compiled into enjin2_lua; lua_script.hpp reconciled to LuaScriptSystem/LuaCanvas; all 8 existing tests pass
-Last activity: 2026-02-27 — Phase 33-01 complete: structural fix enabling lua_script.cpp compilation
+Phase: 33 of 35 (ScriptErrorPolicy) — Complete
+Plan: 02 complete (2 of 2 plans for this phase — phase done)
+Status: Phase 33 complete — ScriptErrorPolicy enum + callWithProxy() dispatch + error_policy_test; 13/13 ctest pass
+Last activity: 2026-02-27 — Phase 33-02 complete: ScriptErrorPolicy dispatch + 20-assertion test
 
 Progress: [█████████████░░░░░░░] 77% (27/35 phases complete — Phase 33 in progress)
 
@@ -79,6 +79,8 @@ Recent decisions relevant to v1.5:
 - [Phase 33-01]: lua_script.hpp reconciled to LuaScriptSystem/LuaCanvas; IScriptInterpreter/IScriptGraphics fully removed
 - [Phase 33-01]: LuaCanvas gains ICanvas<Pixel4>* constructor — C_LuaScript::draw() abstract interface now wrappable without template width/height
 - [Phase 33-01]: GetWidth()/GetHeight() PascalCase correction in lua_script.cpp — C_Drawable accessor convention enforced
+- [Phase 33-02]: Policy dispatch moved INTO callWithProxy() — single error capture point dispatches on errorPolicy field (Disable/Log/Panic)
+- [Phase 33-02]: ERR-04 (Panic) tested by field value only — std::abort() kills test process; live Panic invocation excluded from automated tests
 
 ### Pending Todos
 
@@ -94,6 +96,7 @@ None.
 | 4 | Update .gitignore with build artifact patterns | 2026-02-26 | 4c1ec72 | | [4-update-gitignore](./quick/4-update-gitignore/) |
 | 5 | Check conformity to plan direction and standards | 2026-02-27 | 9e859fd | Verified | [5-check-conformity-to-plan-direction-and-s](./quick/5-check-conformity-to-plan-direction-and-s/) |
 | Phase 33-scripterrorpolicy P01 | 2 | 2 tasks | 4 files |
+| Phase 33-scripterrorpolicy P02 | 3 | 2 tasks | 4 files |
 
 ### Blockers/Concerns
 
@@ -110,5 +113,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 33-01-PLAN.md — lua_script.cpp structural fix, LuaCanvas ICanvas<Pixel4>* constructor, 2 tasks, 8/8 tests pass
+Stopped at: Completed 33-02-PLAN.md — ScriptErrorPolicy dispatch in callWithProxy(); error_policy_test 20/20 assertions; 13/13 ctest pass
 Resume file: None
