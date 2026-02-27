@@ -99,7 +99,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 - [x] **Phase 33: ScriptErrorPolicy** - Disable/Log/Panic enum on C_LuaScript with hot-reload reset (completed 2026-02-27)
 - [x] **Phase 34: Input Event Callbacks** - on_button_pressed/on_button_released Lua callbacks (completed 2026-02-27)
 - [x] **Phase 35: GC Control + Component Assertions** - engine.lua.collect/memory and assertRequires<T>() (completed 2026-02-27)
-- [ ] **Phase 38: Close v1.5 Scripting Runtime Gaps** - Fix live registry wiring, loadScriptFile proxy, SDL input, docs cleanup (gap closure)
+- [x] **Phase 38: Close v1.5 Scripting Runtime Gaps** - Fix live registry wiring, loadScriptFile proxy, SDL input, docs cleanup (gap closure) (completed 2026-02-27)
 
 ## Phase Details
 
@@ -251,7 +251,7 @@ Plans:
 | 33. ScriptErrorPolicy | 2/2 | Complete    | 2026-02-27 | - |
 | 34. Input Event Callbacks | 1/1 | Complete    | 2026-02-27 | - |
 | 35. GC Control + Component Assertions | 1/1 | Complete   | 2026-02-27 | - |
-| 38. Close v1.5 Scripting Runtime Gaps | v1.5 | 0/2 | Not started | - |
+| 38. Close v1.5 Scripting Runtime Gaps | 2/2 | Complete   | 2026-02-27 | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**
 
@@ -284,7 +284,7 @@ Plans:
 **Requirements**: ENG-01, ENG-02, PROXY-01
 **Gap Closure:** Closes gaps from v1.5-MILESTONE-AUDIT.md (ENG-01-LIVE, ENG-02-LIVE, PROXY-01 partial, FLOW-SCENE-SWITCH, FLOW-INIT-FILE, setInput tech debt)
 **Depends on:** Phase 37
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 38-01-PLAN.md — Fix ENG-01/ENG-02 registry wiring, PROXY-01 loadScriptFile proxy, live-wiring tests

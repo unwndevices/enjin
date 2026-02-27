@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T20:51:51.436Z"
+last_updated: "2026-02-27T21:01:02.850Z"
 progress:
   total_phases: 18
-  completed_phases: 16
-  total_plans: 42
-  completed_plans: 40
+  completed_phases: 17
+  total_plans: 43
+  completed_plans: 42
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 37 of 37 (Address Prominent Codebase Concerns) — COMPLETE (3 of 3 plans done)
-Plan: 03 complete (3 of 3 plans for this phase)
-Status: Phase 37-03 complete — clang-tidy lint target; 14 stale build dirs removed; ERR-SIBLING + INPUT-03-ORDER tests; GC + zero-alloc audits; 18 ctests pass
-Last activity: 2026-02-27 — Phase 37-03 complete: CMake lint target, ERR-SIBLING sibling isolation test, INPUT-03-ORDER call-sequence test, GC/zero-alloc audits all confirmed
+Phase: 38 of 38 (Close v1.5 Scripting Runtime Gaps) — IN PROGRESS (1 of 1 plans done)
+Plan: 01 complete (1 of 1 plans for this phase)
+Status: Phase 38-01 complete — pointer-to-pointer registry fix (ENG-01/ENG-02), loadScriptFile proxy (PROXY-01); 3 live-wiring tests; all 19 ctests pass
+Last activity: 2026-02-27 — Phase 38-01 complete: ENG-01/ENG-02/PROXY-01 runtime bugs closed; all 19 ctests pass
 
-Progress: [████████████████████] 100% (37/37 phases complete — v1.5 milestone complete)
+Progress: [████████████████████] 100% (38/38 phases complete)
 
 ## Performance Metrics
 
@@ -105,6 +105,9 @@ Recent decisions relevant to v1.5:
 - [Phase 37-03]: --warnings-as-errors=* on clang-tidy CLI not in .clang-tidy WarningsAsErrors field — local dev advisory, CI hard-fails
 - [Phase 37-03]: test_input03_order_call_sequence() named differently from test_input03_callbacks_fire_before_update() — avoids duplicate symbol; uses call_order/'PU' complementing callback_order/'callback_then_update' pattern
 - [Phase 27]: Two-branch if constexpr retained for Pixel4/uint8_t dispatch — collapsing would fail overload resolution at compile time
+- [Phase 38]: pointer-to-pointer registry: &m_ssm and &m_activeScene instead of value snapshots — same pattern as m_timeState
+- [Phase 38]: loadScriptFile() proxy block is exact copy of executeScript() block — ensures identical init(self) behavior on file-load and string-load paths
+- [Phase 38]: ENG-01 live test: addScene<MinimalScene>(2u) required before switchTo(2) — switchTo only queues for registered scene IDs; verified via mockSSM.update()
 
 ### Pending Todos
 
@@ -127,6 +130,7 @@ None.
 | Phase 36-object-drawable-cache-decoupling P01 | 3 | 2 tasks | 2 files |
 | Phase 36-object-drawable-cache-decoupling P02 | 2 | 2 tasks | 4 files |
 | Phase 27 P01 | 80 | 2 tasks | 3 files |
+| Phase 38 P01 | 12 | 3 tasks | 4 files |
 
 ### Blockers/Concerns
 
@@ -148,5 +152,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 37-03-PLAN.md — clang-tidy CMake lint target; 14 stale build dirs removed; ERR-SIBLING + INPUT-03-ORDER tests; GC/zero-alloc audits confirmed; 18 ctests pass; Phase 37 and v1.5 milestone complete
+Stopped at: Completed 38-01-PLAN.md — pointer-to-pointer registry fix (ENG-01/ENG-02), loadScriptFile proxy (PROXY-01), 3 live-wiring tests; all 19 ctests pass
 Resume file: None
