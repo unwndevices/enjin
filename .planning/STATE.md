@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T15:23:22.217Z"
+last_updated: "2026-02-27T16:12:40.087Z"
 progress:
   total_phases: 15
-  completed_phases: 11
-  total_plans: 34
-  completed_plans: 32
+  completed_phases: 12
+  total_plans: 36
+  completed_plans: 33
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 33 in progress
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 34 complete
 
 ## Current Position
 
-Phase: 33 of 35 (ScriptErrorPolicy) — Complete
-Plan: 02 complete (2 of 2 plans for this phase — phase done)
-Status: Phase 33 complete — ScriptErrorPolicy enum + callWithProxy() dispatch + error_policy_test; 13/13 ctest pass
-Last activity: 2026-02-27 — Phase 33-02 complete: ScriptErrorPolicy dispatch + 20-assertion test
+Phase: 34 of 35 (Input Event Callbacks) — Complete
+Plan: 01 complete (1 of 1 plans for this phase — phase done)
+Status: Phase 34 complete — on_button_pressed/on_button_released Lua callbacks + dispatchInputCallbacks() + input_event_callback_test; 14/14 ctest pass
+Last activity: 2026-02-27 — Phase 34-01 complete: input event callbacks + 9-assertion test
 
-Progress: [█████████████░░░░░░░] 77% (27/35 phases complete — Phase 33 in progress)
+Progress: [██████████████░░░░░░] 80% (28/35 phases complete — Phase 34 complete)
 
 ## Performance Metrics
 
@@ -81,6 +81,10 @@ Recent decisions relevant to v1.5:
 - [Phase 33-01]: GetWidth()/GetHeight() PascalCase correction in lua_script.cpp — C_Drawable accessor convention enforced
 - [Phase 33-02]: Policy dispatch moved INTO callWithProxy() — single error capture point dispatches on errorPolicy field (Disable/Log/Panic)
 - [Phase 33-02]: ERR-04 (Panic) tested by field value only — std::abort() kills test process; live Panic invocation excluded from automated tests
+- [Phase 34-01]: callWithProxyAndBtn() mirrors callWithProxy() error handling exactly — ScriptErrorPolicy dispatch applies uniformly to input callbacks
+- [Phase 34-01]: dispatchInputCallbacks() called BEFORE lastUpdateTime and callWithProxy(UPDATE_FUNCTION) in update() — satisfies INPUT-03 ordering requirement
+- [Phase 34-01]: After dispatchInputCallbacks(), update() does NOT re-check scriptError mid-frame — Disable policy error on input callback means update still runs same frame; caught on next frame by top-of-update guard
+- [Phase 34-01]: LuaBindings::getInput() inline const accessor — zero overhead path to currentInput from lua_script.cpp
 
 ### Pending Todos
 
@@ -97,6 +101,7 @@ None.
 | 5 | Check conformity to plan direction and standards | 2026-02-27 | 9e859fd | Verified | [5-check-conformity-to-plan-direction-and-s](./quick/5-check-conformity-to-plan-direction-and-s/) |
 | Phase 33-scripterrorpolicy P01 | 2 | 2 tasks | 4 files |
 | Phase 33-scripterrorpolicy P02 | 3 | 2 tasks | 4 files |
+| Phase 34 P01 | 3 | 5 tasks | 5 files |
 
 ### Blockers/Concerns
 
@@ -113,5 +118,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 33-02-PLAN.md — ScriptErrorPolicy dispatch in callWithProxy(); error_policy_test 20/20 assertions; 13/13 ctest pass
+Stopped at: Completed 34-01-PLAN.md — input event callbacks (on_button_pressed/on_button_released) + dispatchInputCallbacks(); input_event_callback_test 9/9 assertions; 14/14 ctest pass
 Resume file: None

@@ -97,7 +97,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 - [x] **Phase 31: engine.* Global Table** - Complete engine.scene/input/time/lua/log Lua namespace (completed 2026-02-27)
 - [x] **Phase 32: ScriptProxy Userdata** - self as first callback arg; x/y/visible/layer/name mapped to C++ (completed 2026-02-27)
 - [x] **Phase 33: ScriptErrorPolicy** - Disable/Log/Panic enum on C_LuaScript with hot-reload reset (completed 2026-02-27)
-- [ ] **Phase 34: Input Event Callbacks** - on_button_pressed/on_button_released Lua callbacks
+- [x] **Phase 34: Input Event Callbacks** - on_button_pressed/on_button_released Lua callbacks (completed 2026-02-27)
 - [ ] **Phase 35: GC Control + Component Assertions** - engine.lua.collect/memory and assertRequires<T>()
 
 ## Phase Details
@@ -207,7 +207,7 @@ Plans:
   2. engine.lua.memory() returns the current Lua heap size in bytes as a number
   3. A component calling assertRequires<C_Sprite>() in its awake() causes an assertion failure at startup in debug builds when C_Sprite is not present on the same object
   4. In release builds, a missing required component logs once and disables the dependent component without aborting the process
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 35-01-PLAN.md — GC bindings + assertRequires<T>() + gc_assert_test
 
@@ -248,7 +248,7 @@ Plans:
 | 31. engine.* Global Table | 3/3 | Complete    | 2026-02-27 | - |
 | 32. ScriptProxy Userdata | 2/2 | Complete   | 2026-02-27 | - |
 | 33. ScriptErrorPolicy | 2/2 | Complete    | 2026-02-27 | - |
-| 34. Input Event Callbacks | v1.5 | 0/? | Not started | - |
+| 34. Input Event Callbacks | 1/1 | Complete   | 2026-02-27 | - |
 | 35. GC Control + Component Assertions | v1.5 | 0/1 | Not started | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**

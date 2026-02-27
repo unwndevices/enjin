@@ -189,6 +189,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME input_event_callback_test COMMAND input_event_callback_test)
+
+    # GC control + component assertion test (GC-01, GC-02, DEP-01, DEP-02, DEP-03)
+    add_executable(gc_assert_test
+        gc_assert_test.cpp
+    )
+    target_include_directories(gc_assert_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(gc_assert_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME gc_assert_test COMMAND gc_assert_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

@@ -56,9 +56,9 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Input Events
 
-- [ ] **INPUT-01**: Lua scripts can define `on_button_pressed(btn)` callback, fired on button press edge
-- [ ] **INPUT-02**: Lua scripts can define `on_button_released(btn)` callback, fired on button release edge
-- [ ] **INPUT-03**: Input event callbacks fire after input polling, before `update()` each frame
+- [x] **INPUT-01**: Lua scripts can define `on_button_pressed(btn)` callback, fired on button press edge
+- [x] **INPUT-02**: Lua scripts can define `on_button_released(btn)` callback, fired on button release edge
+- [x] **INPUT-03**: Input event callbacks fire after input polling, before `update()` each frame
 
 ### GC Control
 
@@ -143,9 +143,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERR-03 | Phase 33 | Complete |
 | ERR-04 | Phase 33 | Complete |
 | ERR-05 | Phase 33 | Complete |
-| INPUT-01 | Phase 34 | Pending |
-| INPUT-02 | Phase 34 | Pending |
-| INPUT-03 | Phase 34 | Pending |
+| INPUT-01 | Phase 34 | Complete |
+| INPUT-02 | Phase 34 | Complete |
+| INPUT-03 | Phase 34 | Complete |
 | GC-01 | Phase 35 | Pending |
 | GC-02 | Phase 35 | Pending |
 | DEP-01 | Phase 35 | Pending |
