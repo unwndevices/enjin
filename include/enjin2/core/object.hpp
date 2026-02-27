@@ -11,7 +11,6 @@ namespace enjin2 {
 // Forward declarations
 class Component;
 class C_Position;
-class C_Drawable;
 
 /**
  * @brief Anchor point enumeration for positioning
@@ -46,8 +45,6 @@ private:
     
     // Cache frequently accessed components
     C_Position* position;
-    std::array<C_Drawable*, MAX_COMPONENTS> drawables;
-    size_t drawableCount;
     
 public:
     /**
@@ -116,14 +113,7 @@ public:
         
         // Cache position component using template specialization helper
         cachePositionIfType<T>(componentPtr);
-        
-        // Cache drawable components
-        if (auto drawable = dynamic_cast<C_Drawable*>(componentPtr)) {
-            if (drawableCount < MAX_COMPONENTS) {
-                drawables[drawableCount++] = drawable;
-            }
-        }
-        
+
         // Call awake if object has already been awoken
         if (awoken) {
             componentPtr->awake();
@@ -155,6 +145,25 @@ public:
     }
     
     /**
+     * @brief Get all components of specified type
+     * @tparam T Component type (must derive from Component)
+     * @param out Caller-provided array to write matching component pointers into
+     * @param maxOut Maximum number of results to write
+     * @return Number of components written into out
+     */
+    template<typename T>
+    size_t getComponents(T** out, size_t maxOut) const {
+        static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
+        size_t found = 0;
+        for (size_t i = 0; i < componentCount && found < maxOut; ++i) {
+            if (auto c = dynamic_cast<T*>(components[i].get())) {
+                out[found++] = c;
+            }
+        }
+        return found;
+    }
+
+    /**
      * @brief Check if object has a component of specified type
      * @tparam T Component type
      * @return True if component exists
@@ -175,20 +184,6 @@ public:
         
         for (size_t i = 0; i < componentCount; ++i) {
             if (auto component = dynamic_cast<T*>(components[i].get())) {
-                // Remove from drawable cache if needed
-                if (auto drawable = dynamic_cast<C_Drawable*>(component)) {
-                    for (size_t j = 0; j < drawableCount; ++j) {
-                        if (drawables[j] == drawable) {
-                            // Shift remaining drawables
-                            for (size_t k = j; k < drawableCount - 1; ++k) {
-                                drawables[k] = drawables[k + 1];
-                            }
-                            drawableCount--;
-                            break;
-                        }
-                    }
-                }
-                
                 // Clear position cache if needed
                 if (component == position) {
                     position = nullptr;
@@ -210,31 +205,7 @@ public:
      * @return Position component pointer or nullptr
      */
     C_Position* getPosition() const { return position; }
-    
-    /**
-     * @brief Get all drawable components
-     * @return Array of drawable component pointers
-     */
-    const C_Drawable* const* getDrawables() const { 
-        return reinterpret_cast<const C_Drawable* const*>(drawables.data()); 
-    }
-    
-    /**
-     * @brief Get number of drawable components
-     * @return Number of drawable components
-     */
-    size_t getDrawableCount() const { return drawableCount; }
-    
-    /**
-     * @brief Get drawable component by index
-     * @param index Index of drawable component
-     * @return Pointer to drawable component or nullptr if invalid index
-     */
-    C_Drawable* getDrawable(size_t index) const {
-        if (index >= drawableCount) return nullptr;
-        return drawables[index];
-    }
-    
+
     /**
      * @brief Check if object is active
      * @return True if active
