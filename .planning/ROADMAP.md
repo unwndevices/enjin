@@ -86,7 +86,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 **Total:** 4 phases, 8 plans, all complete
 </details>
 
-### v1.5 Lua Scripting Foundation (Phases 27-35)
+### v1.5 Lua Scripting Foundation (Phases 27-38)
 
 **Milestone Goal:** Transform enjin2 from a rendering toolkit into a fully scriptable game runtime — C++ foundations (float dt, named objects, scene self-transitions) plus the complete Lua scripting surface (engine.* table, self proxy, input events, error policy, GC control, dependency assertions).
 
@@ -99,6 +99,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 - [x] **Phase 33: ScriptErrorPolicy** - Disable/Log/Panic enum on C_LuaScript with hot-reload reset (completed 2026-02-27)
 - [x] **Phase 34: Input Event Callbacks** - on_button_pressed/on_button_released Lua callbacks (completed 2026-02-27)
 - [x] **Phase 35: GC Control + Component Assertions** - engine.lua.collect/memory and assertRequires<T>() (completed 2026-02-27)
+- [ ] **Phase 38: Close v1.5 Scripting Runtime Gaps** - Fix live registry wiring, loadScriptFile proxy, SDL input, docs cleanup (gap closure)
 
 ## Phase Details
 
@@ -250,6 +251,7 @@ Plans:
 | 33. ScriptErrorPolicy | 2/2 | Complete    | 2026-02-27 | - |
 | 34. Input Event Callbacks | 1/1 | Complete    | 2026-02-27 | - |
 | 35. GC Control + Component Assertions | 1/1 | Complete   | 2026-02-27 | - |
+| 38. Close v1.5 Scripting Runtime Gaps | v1.5 | 0/? | Not started | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**
 
@@ -275,3 +277,19 @@ Plans:
 - [x] 37-01-PLAN.md — ScriptProxy stale error + tag bindings + component limit assertion + errorMessage fixed buffer
 - [x] 37-02-PLAN.md — ObjectProxy for engine.scene.find() with validity invalidation via Object destructor
 - [x] 37-03-PLAN.md — clang-tidy CMake lint target + build cleanup + error policy sibling test + input frame-order test
+
+### Phase 38: Close v1.5 Scripting Runtime Gaps
+
+**Goal:** Close all gaps identified by the v1.5 audit: fix live engine.scene registry wiring (ENG-01/02), fix loadScriptFile() init(self) proxy (PROXY-01), wire setInput() in SDL runner for production input callbacks, and correct documentation tracking debt (DT-01/02 checkboxes, Phase 35 VERIFICATION.md)
+**Requirements**: ENG-01, ENG-02, PROXY-01
+**Gap Closure:** Closes gaps from v1.5-MILESTONE-AUDIT.md (ENG-01-LIVE, ENG-02-LIVE, PROXY-01 partial, FLOW-SCENE-SWITCH, FLOW-INIT-FILE, setInput tech debt)
+**Depends on:** Phase 37
+**Plans:** TBD
+
+**Success Criteria** (what must be TRUE):
+  1. `engine.scene.switch(id)` called from a Lua script reaches `SceneStateMachine::switchTo()` in a live engine run — not a silent no-op
+  2. `engine.scene.find("name")` returns a valid ObjectProxy (not nil) for a named Object in the active scene
+  3. A script loaded via `loadScriptFile()` receives a valid `self` proxy in its `init(self)` callback — not nil
+  4. `on_button_pressed` / `on_button_released` Lua callbacks fire in the SDL runner when buttons are pressed (not only in unit tests)
+  5. DT-01 and DT-02 are checked `[x]` in REQUIREMENTS.md; Phase 35 has a VERIFICATION.md
+  6. All existing ctests still pass

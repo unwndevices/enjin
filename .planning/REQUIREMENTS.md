@@ -13,8 +13,8 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Delta Time
 
-- [ ] **DT-01**: `Object::update()`, `Component::update()`, `Scene::update()`, and `SceneStateMachine` pass `float dt` in seconds (not `uint16_t` milliseconds)
-- [ ] **DT-02**: All concrete Component subclasses compile and run with the new `float dt` signature
+- [x] **DT-01**: `Object::update()`, `Component::update()`, `Scene::update()`, and `SceneStateMachine` pass `float dt` in seconds (not `uint16_t` milliseconds)
+- [x] **DT-02**: All concrete Component subclasses compile and run with the new `float dt` signature
 - [x] **DT-03**: `-Woverride` enabled on all platform builds to catch silent override detachment
 
 ### Named Objects
@@ -32,8 +32,8 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Engine Table
 
-- [x] **ENG-01**: Lua scripts access `engine.scene.switch(id)` to request scene transitions
-- [x] **ENG-02**: Lua scripts access `engine.scene.find(name)` to locate named objects (returns proxy or nil)
+- [ ] **ENG-01**: Lua scripts access `engine.scene.switch(id)` to request scene transitions
+- [ ] **ENG-02**: Lua scripts access `engine.scene.find(name)` to locate named objects (returns proxy or nil)
 - [x] **ENG-03**: Lua scripts access `engine.input.held(btn)`, `engine.input.just_pressed(btn)`, `engine.input.just_released(btn)`, `engine.input.axis(n)` for polling
 - [x] **ENG-04**: Lua scripts access `engine.time.delta()`, `engine.time.now()`, `engine.time.frame()` for timing
 - [x] **ENG-05**: Lua scripts access `engine.log(...)` for platform-safe logging
@@ -41,7 +41,7 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Self Proxy
 
-- [x] **PROXY-01**: Every Lua callback receives `self` as the first argument: `init(self)`, `update(self, dt)`, `draw(self)`
+- [ ] **PROXY-01**: Every Lua callback receives `self` as the first argument: `init(self)`, `update(self, dt)`, `draw(self)`
 - [x] **PROXY-02**: Scripts can read/write `self.x`, `self.y`, `self.visible`, `self.layer` mapped to C++ component properties
 - [x] **PROXY-03**: ScriptProxy uses a validity mechanism (generation token or flag) to prevent dangling pointer access after Object destruction
 - [x] **PROXY-04**: All existing Lua scripts migrated to new `(self, ...)` callback signature atomically
@@ -118,8 +118,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | RENDER-01 | Phase 27 | Pending |
-| DT-01 | Phase 28 | Pending |
-| DT-02 | Phase 28 | Pending |
+| DT-01 | Phase 28 | Complete |
+| DT-02 | Phase 28 | Complete |
 | DT-03 | Phase 28 | Complete |
 | OBJ-01 | Phase 29 | Complete |
 | OBJ-02 | Phase 29 | Complete |
@@ -128,13 +128,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCENE-01 | Phase 30 | Complete |
 | SCENE-02 | Phase 30 | Complete |
 | SCENE-03 | Phase 30 | Complete |
-| ENG-01 | Phase 31 | Complete |
-| ENG-02 | Phase 31 | Complete |
+| ENG-01 | Phase 38 | Pending |
+| ENG-02 | Phase 38 | Pending |
 | ENG-03 | Phase 31 | Complete |
 | ENG-04 | Phase 31 | Complete |
 | ENG-05 | Phase 31 | Complete |
 | ENG-06 | Phase 31 | Complete |
-| PROXY-01 | Phase 32 | Complete |
+| PROXY-01 | Phase 38 | Pending |
 | PROXY-02 | Phase 32 | Complete |
 | PROXY-03 | Phase 32 | Complete |
 | PROXY-04 | Phase 32 | Complete |
@@ -159,4 +159,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after roadmap creation (Phases 27-35)*
+*Last updated: 2026-02-27 — gap closure phases added (Phase 38); ENG-01/02/PROXY-01 reset to Pending; DT-01/02 corrected to Complete*
