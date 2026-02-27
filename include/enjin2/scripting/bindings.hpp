@@ -7,9 +7,11 @@
  */
 #pragma once
 
+#include <string>
 #include "lua_engine.hpp"
 #include "lua_platform.hpp"
 #include "../graphics/canvas.hpp"
+#include "../graphics/gfxfont.h"
 #include "../graphics/primitives.hpp"
 #include "../graphics/sprite.hpp"
 #include "../input/input_state.hpp"
@@ -193,6 +195,49 @@ public:
      */
     void fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2, 
                      int16_t x3, int16_t y3, uint8_t color);
+
+    /**
+     * @brief Draw text at position using given color, size, and font
+     * @param str Null-terminated string to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Text color (0-15 for 4-bit, 0-255 for 8-bit)
+     * @param size Size multiplier (1=normal, 2=double, etc.)
+     * @param font GFXfont pointer (nullptr = built-in 5x7)
+     */
+    void drawText(const char* str, int16_t x, int16_t y,
+                  uint8_t color, uint8_t size, const GFXfont* font);
+
+    /**
+     * @brief Draw text with word wrapping within maxWidth
+     * @param str Null-terminated string to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param maxWidth Maximum width in pixels before wrapping
+     * @param color Text color
+     * @param size Size multiplier
+     * @param font GFXfont pointer (nullptr = built-in 5x7)
+     */
+    void drawTextWrapped(const char* str, int16_t x, int16_t y,
+                        uint16_t maxWidth, uint8_t color, uint8_t size,
+                        const GFXfont* font);
+
+    /**
+     * @brief Measure width of string in pixels with given size and font
+     * @param str Null-terminated string to measure
+     * @param size Size multiplier
+     * @param font GFXfont pointer (nullptr = built-in 5x7)
+     * @return Width in pixels
+     */
+    uint16_t measureTextWidth(const char* str, uint8_t size, const GFXfont* font);
+
+    /**
+     * @brief Measure character height in pixels with given size and font
+     * @param size Size multiplier
+     * @param font GFXfont pointer (nullptr = built-in 5x7)
+     * @return Height in pixels
+     */
+    uint8_t measureTextHeight(uint8_t size, const GFXfont* font);
 };
 
 /**
@@ -210,6 +255,19 @@ private:
     // Drawing state
     uint8_t currentColor;       ///< Current drawing color
     uint16_t lineWidth;         ///< Current line width
+
+    // ── Text state ───────────────────────────────────────────────────────────
+    uint8_t currentTextSize{1};       ///< Text size multiplier (1=normal, 2=double, etc.)
+    const GFXfont* currentFont{nullptr}; ///< nullptr = built-in 5x7
+    std::string currentFontName{"default"};
+
+    static constexpr int MAX_FONTS = 8; ///< Fixed font registry size
+    struct FontEntry {
+        std::string name;
+        const GFXfont* font;
+    };
+    FontEntry fontRegistry[MAX_FONTS]{};
+    uint8_t fontCount{0};
 
     // ── Sprite pool ──────────────────────────────────────────────────────────
     static constexpr int LUA_SPRITE_POOL_SIZE = 16;  ///< Fixed pool — zero alloc
@@ -282,9 +340,16 @@ public:
      * @brief Reset all sprite pool slots to inactive state
      *
      * Called automatically from registerAll() to ensure a clean sprite pool
-     * on every Lua state reload. Also resets drawing state (currentColor, lineWidth).
+     * on every Lua state reload. Also resets drawing state (currentColor, lineWidth, text state).
      */
     void resetSpritePool();
+
+    /**
+     * @brief Register a named font for use from Lua via setFont(name).
+     * @param name Name to use in Lua (e.g. "myfont"); "default" = built-in 5x7, "default8" is pre-registered.
+     * @param font Pointer to GFXfont (non-owning); may be nullptr for "default" to mean built-in 5x7.
+     */
+    void registerFont(const std::string& name, const GFXfont* font);
 
     /**
      * @brief Inject SceneStateMachine pointer for engine.scene.switch()
@@ -373,6 +438,16 @@ private:
     static int lua_getLayerCount(lua_State* L);
     static int lua_setLayerVisible(lua_State* L);
     static int lua_isLayerVisible(lua_State* L);
+
+    // Text bindings
+    static int lua_text(lua_State* L);
+    static int lua_textWrapped(lua_State* L);
+    static int lua_setTextSize(lua_State* L);
+    static int lua_getTextSize(lua_State* L);
+    static int lua_setFont(lua_State* L);
+    static int lua_getFont(lua_State* L);
+    static int lua_getTextWidth(lua_State* L);
+    static int lua_getTextHeight(lua_State* L);
 
     // engine.* table binding functions (ENG-01..ENG-06)
     static int lua_engine_scene_switch(lua_State* L);

@@ -1,5 +1,7 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
+#include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/palette.hpp"
+#include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/core/scene.hpp"
 #include "../../include/enjin2/core/scene_state_machine.hpp"
 #include "../../include/enjin2/components/lua_script.hpp"
@@ -223,6 +225,80 @@ void LuaCanvas::fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
     }
 }
 
+void LuaCanvas::drawText(const char* str, int16_t x, int16_t y,
+                         uint8_t color, uint8_t size, const ::GFXfont* font) {
+    if (!str) return;
+    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    if (is4Bit) {
+        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
+        TextRenderer<Pixel4> tr;
+        tr.setFont(gfxFont);
+        tr.setTextColor(Pixel4(color));
+        tr.setTextSize(size);
+        tr.drawString(*canvas, x, y, str);
+    } else {
+        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
+        TextRenderer<uint8_t> tr;
+        tr.setFont(gfxFont);
+        tr.setTextColor(color);
+        tr.setTextSize(size);
+        tr.drawString(*canvas, x, y, str);
+    }
+}
+
+void LuaCanvas::drawTextWrapped(const char* str, int16_t x, int16_t y,
+                               uint16_t maxWidth, uint8_t color, uint8_t size,
+                               const ::GFXfont* font) {
+    if (!str) return;
+    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    if (is4Bit) {
+        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
+        TextRenderer<Pixel4> tr;
+        tr.setFont(gfxFont);
+        tr.setTextColor(Pixel4(color));
+        tr.setTextSize(size);
+        tr.drawStringWrapped(*canvas, x, y, maxWidth, str);
+    } else {
+        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
+        TextRenderer<uint8_t> tr;
+        tr.setFont(gfxFont);
+        tr.setTextColor(color);
+        tr.setTextSize(size);
+        tr.drawStringWrapped(*canvas, x, y, maxWidth, str);
+    }
+}
+
+uint16_t LuaCanvas::measureTextWidth(const char* str, uint8_t size, const ::GFXfont* font) {
+    if (!str) return 0;
+    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    if (is4Bit) {
+        TextRenderer<Pixel4> tr;
+        tr.setFont(gfxFont);
+        tr.setTextSize(size);
+        return tr.getTextWidth(str);
+    } else {
+        TextRenderer<uint8_t> tr;
+        tr.setFont(gfxFont);
+        tr.setTextSize(size);
+        return tr.getTextWidth(str);
+    }
+}
+
+uint8_t LuaCanvas::measureTextHeight(uint8_t size, const ::GFXfont* font) {
+    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    if (is4Bit) {
+        TextRenderer<Pixel4> tr;
+        tr.setFont(gfxFont);
+        tr.setTextSize(size);
+        return tr.getCharHeight() * size;
+    } else {
+        TextRenderer<uint8_t> tr;
+        tr.setFont(gfxFont);
+        tr.setTextSize(size);
+        return tr.getCharHeight() * size;
+    }
+}
+
 //==============================================================================
 // LuaBindings Implementation
 //==============================================================================
@@ -311,6 +387,19 @@ void LuaBindings::registerAll() {
     engine->registerFunction("setLayerVisible", lua_setLayerVisible);
     engine->registerFunction("isLayerVisible",  lua_isLayerVisible);
 
+    // Text
+    engine->registerFunction("text",            lua_text);
+    engine->registerFunction("textWrapped",     lua_textWrapped);
+    engine->registerFunction("setTextSize",    lua_setTextSize);
+    engine->registerFunction("getTextSize",     lua_getTextSize);
+    engine->registerFunction("setFont",        lua_setFont);
+    engine->registerFunction("getFont",        lua_getFont);
+    engine->registerFunction("getTextWidth",    lua_getTextWidth);
+    engine->registerFunction("getTextHeight",  lua_getTextHeight);
+
+    // Pre-register built-in 8pt font so setFont("default8") works
+    registerFont("default8", &defaultFont8pt7b);
+
     // Layer global constants (Lua 1-indexed)
     lua_pushinteger(L, 1); lua_setglobal(L, "LAYER_BG");
     lua_pushinteger(L, 2); lua_setglobal(L, "LAYER_MID");
@@ -381,6 +470,9 @@ void LuaBindings::resetSpritePool() {
     for (int i = 0; i < LUA_SPRITE_POOL_SIZE; ++i) {
         spritePool[i] = SpriteState{};
     }
+    currentTextSize = 1;
+    currentFont = nullptr;
+    currentFontName = "default";
 }
 
 LuaBindings* LuaBindings::getBindings(lua_State* L) {
@@ -1074,6 +1166,114 @@ int LuaBindings::lua_isLayerVisible(lua_State* L) {
 
     lua_pushboolean(L, b->layerVisible[cpp_idx] ? 1 : 0);
     return 1;
+}
+
+//==============================================================================
+// Text bindings
+//==============================================================================
+
+int LuaBindings::lua_text(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentCanvas) return 0;
+    const char* str = luaL_checkstring(L, 1);
+    lua_Integer x = luaL_checkinteger(L, 2);
+    lua_Integer y = luaL_checkinteger(L, 3);
+    b->currentCanvas->drawText(str, static_cast<int16_t>(x), static_cast<int16_t>(y),
+                              b->currentColor, b->currentTextSize, b->currentFont);
+    return 0;
+}
+
+int LuaBindings::lua_textWrapped(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentCanvas) return 0;
+    const char* str = luaL_checkstring(L, 1);
+    lua_Integer x = luaL_checkinteger(L, 2);
+    lua_Integer y = luaL_checkinteger(L, 3);
+    lua_Integer maxWidth = luaL_checkinteger(L, 4);
+    b->currentCanvas->drawTextWrapped(str, static_cast<int16_t>(x), static_cast<int16_t>(y),
+                                      static_cast<uint16_t>(maxWidth), b->currentColor,
+                                      b->currentTextSize, b->currentFont);
+    return 0;
+}
+
+int LuaBindings::lua_setTextSize(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
+        int s = static_cast<int>(lua_tointeger(L, 1));
+        b->currentTextSize = (s > 0 && s <= 255) ? static_cast<uint8_t>(s) : 1;
+    }
+    return 0;
+}
+
+int LuaBindings::lua_getTextSize(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushinteger(L, 1); return 1; }
+    lua_pushinteger(L, b->currentTextSize);
+    return 1;
+}
+
+int LuaBindings::lua_setFont(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    const char* name = luaL_checkstring(L, 1);
+    if (strcmp(name, "default") == 0) {
+        b->currentFont = nullptr;
+        b->currentFontName = "default";
+        return 0;
+    }
+    for (uint8_t i = 0; i < b->fontCount; ++i) {
+        if (b->fontRegistry[i].name == name) {
+            b->currentFont = b->fontRegistry[i].font;
+            b->currentFontName = name;
+            return 0;
+        }
+    }
+    // Unknown font name: keep current
+    return 0;
+}
+
+int LuaBindings::lua_getFont(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushstring(L, "default"); return 1; }
+    lua_pushlstring(L, b->currentFontName.data(), b->currentFontName.size());
+    return 1;
+}
+
+int LuaBindings::lua_getTextWidth(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentCanvas) {
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+    const char* str = luaL_optstring(L, 1, "");
+    uint16_t w = b->currentCanvas->measureTextWidth(str, b->currentTextSize, b->currentFont);
+    lua_pushinteger(L, w);
+    return 1;
+}
+
+int LuaBindings::lua_getTextHeight(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentCanvas) {
+        lua_pushinteger(L, 8);  // default 5x7 height
+        return 1;
+    }
+    uint8_t h = b->currentCanvas->measureTextHeight(b->currentTextSize, b->currentFont);
+    lua_pushinteger(L, h);
+    return 1;
+}
+
+void LuaBindings::registerFont(const std::string& name, const ::GFXfont* font) {
+    if (fontCount >= MAX_FONTS) return;
+    for (uint8_t i = 0; i < fontCount; ++i) {
+        if (fontRegistry[i].name == name) {
+            fontRegistry[i].font = font;
+            return;
+        }
+    }
+    fontRegistry[fontCount].name = name;
+    fontRegistry[fontCount].font = font;
+    ++fontCount;
 }
 
 //==============================================================================
