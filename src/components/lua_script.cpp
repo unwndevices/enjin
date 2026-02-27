@@ -44,8 +44,8 @@ bool C_LuaScript::initializeScriptSystem() {
         }
         
         // Expose component dimensions to script
-        scriptSystem->getEngine().setGlobal("COMPONENT_WIDTH", static_cast<double>(getWidth()));
-        scriptSystem->getEngine().setGlobal("COMPONENT_HEIGHT", static_cast<double>(getHeight()));
+        scriptSystem->getEngine().setGlobal("COMPONENT_WIDTH", static_cast<double>(GetWidth()));
+        scriptSystem->getEngine().setGlobal("COMPONENT_HEIGHT", static_cast<double>(GetHeight()));
         
         return true;
     } catch (const std::exception& e) {
@@ -229,8 +229,8 @@ void C_LuaScript::update(float dt) {
 
 template<typename CanvasType>
 void C_LuaScript::setupLuaCanvas(CanvasType& canvas) {
-    // Create LuaCanvas wrapper for the provided canvas
-    luaCanvas = std::unique_ptr<LuaCanvas>(new LuaCanvas(&canvas));
+    // Create LuaCanvas wrapper for the provided canvas via abstract interface constructor
+    luaCanvas = std::unique_ptr<LuaCanvas>(new LuaCanvas(static_cast<ICanvas<Pixel4>*>(&canvas)));
     scriptSystem->setCanvas(luaCanvas.get());
 }
 

@@ -141,6 +141,13 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/lua_engine.cpp
         src/scripting/lua_platform.cpp
         src/scripting/bindings.cpp
+        src/scripting/bindings_draw.cpp
+        src/scripting/bindings_input_sprites.cpp
+        src/scripting/bindings_layers_text.cpp
+        src/scripting/bindings_engine.cpp
+        src/scripting/bindings_math.cpp
+        src/scripting/bindings_system.cpp
+        src/components/lua_script.cpp
     )
     # Private include directories for strict isolation
     target_include_directories(enjin2_lua

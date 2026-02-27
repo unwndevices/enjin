@@ -79,9 +79,20 @@ public:
      * @param canvas 8-bit canvas pointer
      */
     template<uint16_t W, uint16_t H>
-    LuaCanvas(Canvas8<W, H>* canvas) 
+    LuaCanvas(Canvas8<W, H>* canvas)
         : canvasPtr(canvas), is4Bit(false), width(W), height(H) {}
-    
+
+    /**
+     * @brief Constructor for abstract 4-bit canvas interface
+     * Used when only an ICanvas<Pixel4>& is available (e.g., C_Drawable::draw()).
+     * Width and height are read from the interface at construction time.
+     * @param canvas Abstract 4-bit canvas pointer (non-owning)
+     */
+    explicit LuaCanvas(ICanvas<Pixel4>* canvas)
+        : canvasPtr(canvas), is4Bit(true)
+        , width(canvas ? canvas->getWidth() : 0)
+        , height(canvas ? canvas->getHeight() : 0) {}
+
     /**
      * @brief Get canvas width
      * @return Canvas width in pixels
