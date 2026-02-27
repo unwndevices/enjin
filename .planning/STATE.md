@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 31 of 35 (engine.* Global Table)
-Plan: 01 complete (1 of 3 plans for this phase) — Phase 31 Plan 01 COMPLETE
-Status: Phase 31-01 complete — engine.* global Lua table wired with sub-tables and 10 stub C functions
-Last activity: 2026-02-27 — Phase 31-01 complete: EngineTimeState struct + registerEngineTable() + engine.scene/input/time/lua/log registered; ENG-06 met
+Plan: 02 complete (2 of 3 plans for this phase) — Phase 31 Plan 02 COMPLETE
+Status: Phase 31-02 complete — all 10 lua_engine_* C functions fully implemented (scene switch/find, input polling, time state, printf log)
+Last activity: 2026-02-27 — Phase 31-02 complete: engine.scene.switch/find + engine.input.* + engine.time.* + engine.log implemented; ENG-01..ENG-05 met
 
-Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31-01 complete, Phase 31 plans 02-03 pending)
+Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31-02 complete, Phase 31 plan 03 pending)
 
 ## Performance Metrics
 
@@ -67,6 +67,9 @@ Recent decisions relevant to v1.5:
 - [Phase 31-01]: Lua registry stores C++ pointers at registerAll() time — not at call time — so Plan 02 replacements need no re-registration
 - [Phase 31-01]: engine.lua registered as empty table at Plan 01 stage; Phase 35 adds gc/memory functions
 - [Phase 31-01]: Forward declarations only in bindings.hpp; scene.hpp/scene_state_machine.hpp included in bindings.cpp to avoid circular includes
+- [Phase 31-02]: lua_engine_scene_find returns lightuserdata (raw Object*) — Phase 32 upgrades to full ScriptProxy with metatable
+- [Phase 31-02]: engine.log uses printf exclusively (not std::cout) — embedded target compatibility with ESP32/Emscripten
+- [Phase 31-02]: lua_typename fallback in engine.log prevents nullptr deref when lua_tostring returns nullptr for boolean/table/nil types
 
 ### Pending Todos
 
@@ -95,5 +98,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 31-01 — engine.* global Lua table wiring with stubs (ENG-06)
+Stopped at: Completed Phase 31-02 — engine.* full implementations (ENG-01..ENG-05)
 Resume file: None

@@ -240,7 +240,7 @@ Plans:
 | 28. float dt Migration | 2/2 | Complete    | 2026-02-26 | - |
 | 29. Named Objects + Tags | 2/2 | Complete    | 2026-02-27 | - |
 | 30. Scene Self-Transitions | 1/1 | Complete    | 2026-02-27 | - |
-| 31. engine.* Global Table | 1/3 | In Progress|  | - |
+| 31. engine.* Global Table | 2/3 | In Progress|  | - |
 | 32. ScriptProxy Userdata | v1.5 | 0/? | Not started | - |
 | 33. ScriptErrorPolicy | v1.5 | 0/? | Not started | - |
 | 34. Input Event Callbacks | v1.5 | 0/? | Not started | - |
