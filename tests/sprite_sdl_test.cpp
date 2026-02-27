@@ -97,8 +97,13 @@ static void draw_cpp_path() {
 
 int main(int argc, char* argv[]) {
     bool use_lua = false;
+    const char* script_path = "scripts/pikachu_demo.lua";
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--lua") == 0) use_lua = true;
+        if (strcmp(argv[i], "--script") == 0 && i + 1 < argc) {
+            script_path = argv[++i];
+            use_lua = true;  // --script implies --lua
+        }
     }
 
     const char* title = use_lua
@@ -160,7 +165,7 @@ int main(int argc, char* argv[]) {
         g_lua.getEngine().setGlobal("PIKACHU_W", 38.0);
         g_lua.getEngine().setGlobal("PIKACHU_H", 38.0);
 
-        enjin2::LuaResult r = g_lua.loadScript("scripts/pikachu_demo.lua");
+        enjin2::LuaResult r = g_lua.loadScript(script_path);
         if (!r.success) {
             std::cerr << "Lua load error: " << r.error << "\n";
             g_canvas.clear(enjin2::Pixel4(14));

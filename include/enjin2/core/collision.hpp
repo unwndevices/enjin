@@ -111,5 +111,73 @@ inline bool lineCircle(float x1, float y1, float x2, float y2,
     return distSq <= r * r;
 }
 
+/**
+ * @brief AABB overlap response — returns intersection rectangle
+ * @param overlapX/Y/W/H Output: overlap rectangle (only written on hit)
+ * @return true if the two rectangles overlap
+ */
+inline bool aabbOverlap(float x1, float y1, float w1, float h1,
+                        float x2, float y2, float w2, float h2,
+                        float* overlapX, float* overlapY,
+                        float* overlapW, float* overlapH) {
+    float left   = (x1 > x2) ? x1 : x2;
+    float top    = (y1 > y2) ? y1 : y2;
+    float right  = ((x1 + w1) < (x2 + w2)) ? (x1 + w1) : (x2 + w2);
+    float bottom = ((y1 + h1) < (y2 + h2)) ? (y1 + h1) : (y2 + h2);
+
+    if (left >= right || top >= bottom) return false;
+
+    if (overlapX) *overlapX = left;
+    if (overlapY) *overlapY = top;
+    if (overlapW) *overlapW = right - left;
+    if (overlapH) *overlapH = bottom - top;
+    return true;
+}
+
+/**
+ * @brief Circle vs circle response — returns separation normal and penetration depth
+ * @param normalX/Y Output: unit normal from circle1 to circle2 (only written on hit)
+ * @param depth Output: penetration depth (positive when overlapping)
+ * @return true if the circles overlap
+ */
+inline bool circleCircleResponse(float x1, float y1, float r1,
+                                 float x2, float y2, float r2,
+                                 float* normalX, float* normalY,
+                                 float* depth) {
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+    float distSq = dx * dx + dy * dy;
+    float sumR = r1 + r2;
+    if (distSq > sumR * sumR) return false;
+
+    float dist = std::sqrt(distSq);
+    if (dist < 1e-10f) {
+        // Circles exactly overlap — pick arbitrary normal
+        if (normalX) *normalX = 1.0f;
+        if (normalY) *normalY = 0.0f;
+        if (depth) *depth = sumR;
+    } else {
+        float invDist = 1.0f / dist;
+        if (normalX) *normalX = dx * invDist;
+        if (normalY) *normalY = dy * invDist;
+        if (depth) *depth = sumR - dist;
+    }
+    return true;
+}
+
+/**
+ * @brief Reflect a velocity vector against a surface normal
+ * v' = v - 2(v·n)n
+ * @param vx/vy Input velocity
+ * @param nx/ny Surface normal (should be unit length)
+ * @param outVx/outVy Output: reflected velocity
+ */
+inline void reflect(float vx, float vy, float nx, float ny,
+                    float* outVx, float* outVy) {
+    float dot = vx * nx + vy * ny;
+    if (outVx) *outVx = vx - 2.0f * dot * nx;
+    if (outVy) *outVy = vy - 2.0f * dot * ny;
+}
+
 }  // namespace collision
 }  // namespace enjin2

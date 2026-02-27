@@ -540,6 +540,7 @@ void LuaBindings::resetSpritePool() {
     currentFont = nullptr;
     strncpy(currentFontName, "default", 31);
     currentFontName[31] = '\0';
+    m_rngState = 0x12345678;  // reset RNG on reload
 }
 
 LuaBindings* LuaBindings::getBindings(lua_State* L) {

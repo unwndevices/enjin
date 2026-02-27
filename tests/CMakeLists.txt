@@ -247,6 +247,46 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME object_proxy_test COMMAND object_proxy_test)
+
+    # Sprite flipping test (drawSprite flipH/flipV/rotate90)
+    add_executable(sprite_flip_test
+        sprite_flip_test.cpp
+    )
+    target_include_directories(sprite_flip_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    target_link_libraries(sprite_flip_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME sprite_flip_test COMMAND sprite_flip_test)
+
+    # Collision response test (aabbOverlap, circleResponse, reflect — C++ and Lua)
+    add_executable(collision_response_test
+        collision_response_test.cpp
+    )
+    target_include_directories(collision_response_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(collision_response_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME collision_response_test COMMAND collision_response_test)
+
+    # Seeded RNG test (engine.random.seed / integer / float determinism)
+    add_executable(rng_test
+        rng_test.cpp
+    )
+    target_include_directories(rng_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(rng_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME rng_test COMMAND rng_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
@@ -275,6 +315,11 @@ if(ENJIN2_BUILD_SDL)
         configure_file(
             ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/pikachu_demo.lua
             ${CMAKE_CURRENT_BINARY_DIR}/scripts/pikachu_demo.lua
+            COPYONLY
+        )
+        configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/features_demo.lua
+            ${CMAKE_CURRENT_BINARY_DIR}/scripts/features_demo.lua
             COPYONLY
         )
     endif()

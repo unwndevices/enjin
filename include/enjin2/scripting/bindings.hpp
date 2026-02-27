@@ -310,6 +310,9 @@ private:
     Scene*             m_activeScene{nullptr}; ///< Non-owning; current active scene
     EngineTimeState    m_timeState;            ///< Updated by host each frame
 
+    // ── Seeded RNG state ─────────────────────────────────────────────────────────
+    uint32_t m_rngState{0x12345678};           ///< xorshift32 state (non-zero default)
+
 public:
     /**
      * @brief Constructor
@@ -489,6 +492,9 @@ private:
     static int lua_engine_collision_pointInCircle(lua_State* L);
     static int lua_engine_collision_lineLine(lua_State* L);
     static int lua_engine_collision_lineCircle(lua_State* L);
+    static int lua_engine_collision_aabbOverlap(lua_State* L);
+    static int lua_engine_collision_circleResponse(lua_State* L);
+    static int lua_engine_collision_reflect(lua_State* L);
 
     /**
      * @brief Register engine.* global table (called from registerAll())
@@ -498,6 +504,11 @@ private:
      */
     void registerEngineTable();
     void registerProxyMetatable();
+
+    // engine.random.* binding functions
+    static int lua_engine_random_seed(lua_State* L);
+    static int lua_engine_random_integer(lua_State* L);
+    static int lua_engine_random_float(lua_State* L);
 
     /**
      * @brief Register the ObjectProxy metatable (called from registerAll()).

@@ -53,6 +53,9 @@ void LuaBindings::registerEngineTable() {
         {"pointInCircle",  lua_engine_collision_pointInCircle},
         {"lineLine",       lua_engine_collision_lineLine},
         {"lineCircle",     lua_engine_collision_lineCircle},
+        {"aabbOverlap",    lua_engine_collision_aabbOverlap},
+        {"circleResponse", lua_engine_collision_circleResponse},
+        {"reflect",        lua_engine_collision_reflect},
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kCollisionFuncs, ENJIN_ARRAY_LEN(kCollisionFuncs));
@@ -66,6 +69,16 @@ void LuaBindings::registerEngineTable() {
     lua_newtable(L);
     luaBindFunctions(L, -1, kLuaFuncs, ENJIN_ARRAY_LEN(kLuaFuncs));
     lua_setfield(L, -2, "lua");
+
+    // --- engine.random sub-table (seeded xorshift32 PRNG) ---
+    static const LuaFuncDef kRandomFuncs[] = {
+        {"seed",    lua_engine_random_seed},
+        {"integer", lua_engine_random_integer},
+        {"float",   lua_engine_random_float},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kRandomFuncs, ENJIN_ARRAY_LEN(kRandomFuncs));
+    lua_setfield(L, -2, "random");
 
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
@@ -81,7 +94,7 @@ int LuaBindings::lua_engine_scene_switch(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "enjin_ssm");
     auto** ssmPP = static_cast<SceneStateMachine**>(lua_touserdata(L, -1));
     lua_pop(L, 1);
-    if (!ssmPP || !*ssmPP) return 0;  // no SSM installed — silent no-op
+    if (ssmPP == nullptr || *ssmPP == nullptr) { return 0; }  // no SSM installed — silent no-op
     uint32_t id = static_cast<uint32_t>(luaL_checkinteger(L, 1));
     (*ssmPP)->switchTo(id);
     return 0;
@@ -96,7 +109,7 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
     auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
     lua_pop(L, 1);
-    if (!scenePP || !*scenePP) { lua_pushnil(L); return 1; }
+    if (scenePP == nullptr || *scenePP == nullptr) { lua_pushnil(L); return 1; }
     Scene* scene = *scenePP;
     const char* name = luaL_checkstring(L, 1);
     Object* obj = scene->findByName(name);
@@ -333,6 +346,125 @@ int LuaBindings::lua_engine_lua_memory(lua_State* L) {
     int kb  = lua_gc(L, LUA_GCCOUNT,  0);
     int rem = lua_gc(L, LUA_GCCOUNTB, 0);
     lua_pushnumber(L, static_cast<lua_Number>(kb * 1024 + rem));
+    return 1;
+}
+
+//==============================================================================
+// engine.collision.* response bindings
+//==============================================================================
+
+// --- engine.collision.aabbOverlap(x1,y1,w1,h1, x2,y2,w2,h2) ---
+// Returns: hit, overlapX, overlapY, overlapW, overlapH
+int LuaBindings::lua_engine_collision_aabbOverlap(lua_State* L) {
+    float x1 = static_cast<float>(luaL_checknumber(L, 1));
+    float y1 = static_cast<float>(luaL_checknumber(L, 2));
+    float w1 = static_cast<float>(luaL_checknumber(L, 3));
+    float h1 = static_cast<float>(luaL_checknumber(L, 4));
+    float x2 = static_cast<float>(luaL_checknumber(L, 5));
+    float y2 = static_cast<float>(luaL_checknumber(L, 6));
+    float w2 = static_cast<float>(luaL_checknumber(L, 7));
+    float h2 = static_cast<float>(luaL_checknumber(L, 8));
+    float ox, oy, ow, oh;
+    bool hit = enjin2::collision::aabbOverlap(x1, y1, w1, h1, x2, y2, w2, h2,
+                                              &ox, &oy, &ow, &oh);
+    lua_pushboolean(L, hit ? 1 : 0);
+    if (hit) {
+        lua_pushnumber(L, static_cast<lua_Number>(ox));
+        lua_pushnumber(L, static_cast<lua_Number>(oy));
+        lua_pushnumber(L, static_cast<lua_Number>(ow));
+        lua_pushnumber(L, static_cast<lua_Number>(oh));
+        return 5;
+    }
+    return 1;
+}
+
+// --- engine.collision.circleResponse(x1,y1,r1, x2,y2,r2) ---
+// Returns: hit, normalX, normalY, depth
+int LuaBindings::lua_engine_collision_circleResponse(lua_State* L) {
+    float x1 = static_cast<float>(luaL_checknumber(L, 1));
+    float y1 = static_cast<float>(luaL_checknumber(L, 2));
+    float r1 = static_cast<float>(luaL_checknumber(L, 3));
+    float x2 = static_cast<float>(luaL_checknumber(L, 4));
+    float y2 = static_cast<float>(luaL_checknumber(L, 5));
+    float r2 = static_cast<float>(luaL_checknumber(L, 6));
+    float nx, ny, depth;
+    bool hit = enjin2::collision::circleCircleResponse(x1, y1, r1, x2, y2, r2,
+                                                       &nx, &ny, &depth);
+    lua_pushboolean(L, hit ? 1 : 0);
+    if (hit) {
+        lua_pushnumber(L, static_cast<lua_Number>(nx));
+        lua_pushnumber(L, static_cast<lua_Number>(ny));
+        lua_pushnumber(L, static_cast<lua_Number>(depth));
+        return 4;
+    }
+    return 1;
+}
+
+// --- engine.collision.reflect(vx, vy, nx, ny) ---
+// Returns: reflectedVx, reflectedVy
+int LuaBindings::lua_engine_collision_reflect(lua_State* L) {
+    float vx = static_cast<float>(luaL_checknumber(L, 1));
+    float vy = static_cast<float>(luaL_checknumber(L, 2));
+    float nx = static_cast<float>(luaL_checknumber(L, 3));
+    float ny = static_cast<float>(luaL_checknumber(L, 4));
+    float outVx, outVy;
+    enjin2::collision::reflect(vx, vy, nx, ny, &outVx, &outVy);
+    lua_pushnumber(L, static_cast<lua_Number>(outVx));
+    lua_pushnumber(L, static_cast<lua_Number>(outVy));
+    return 2;
+}
+
+//==============================================================================
+// engine.random.* bindings (seeded xorshift32 PRNG)
+//==============================================================================
+
+// xorshift32 step — inline helper
+static uint32_t xorshift32(uint32_t& state) {
+    state ^= state << 13;
+    state ^= state >> 17;
+    state ^= state << 5;
+    return state;
+}
+
+// --- engine.random.seed(n) ---
+// Sets the PRNG seed. If n==0, uses a non-zero default to avoid xorshift zero-lock.
+int LuaBindings::lua_engine_random_seed(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    uint32_t seed = static_cast<uint32_t>(luaL_checkinteger(L, 1));
+    b->m_rngState = (seed != 0) ? seed : 0x12345678;
+    return 0;
+}
+
+// --- engine.random.integer(a, b) ---
+// Returns a random integer in [a, b] inclusive.
+int LuaBindings::lua_engine_random_integer(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushinteger(L, 0); return 1; }
+    int a = static_cast<int>(luaL_checkinteger(L, 1));
+    int lo = static_cast<int>(luaL_checkinteger(L, 2));
+    if (a > lo) { int tmp = a; a = lo; lo = tmp; }  // ensure a <= lo
+    uint32_t r = xorshift32(b->m_rngState);
+    int range = lo - a + 1;
+    lua_pushinteger(L, a + static_cast<int>(r % static_cast<uint32_t>(range)));
+    return 1;
+}
+
+// --- engine.random.float([a, b]) ---
+// No args: returns [0, 1). Two args: returns [a, b).
+int LuaBindings::lua_engine_random_float(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushnumber(L, 0.0); return 1; }
+    uint32_t r = xorshift32(b->m_rngState);
+    double normalized = static_cast<double>(r) / static_cast<double>(0xFFFFFFFFu);
+    int nargs = lua_gettop(L);
+    if (nargs >= 2) {
+        double a = luaL_checknumber(L, 1);
+        double lo = luaL_checknumber(L, 2);
+        lua_pushnumber(L, a + normalized * (lo - a));
+    } else {
+        lua_pushnumber(L, normalized);
+    }
     return 1;
 }
 

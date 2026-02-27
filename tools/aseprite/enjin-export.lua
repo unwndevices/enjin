@@ -76,7 +76,7 @@ local function extract_frame_pixels(sprite, frame_index)
 
     -- Apply lower nibble mask to every pixel
     for i = 1, w * h do
-        buffer[i] = bit32.band(buffer[i], 0x0F)
+        buffer[i] = buffer[i] & 0x0F
     end
 
     return buffer
