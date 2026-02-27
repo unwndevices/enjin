@@ -44,7 +44,7 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 - [x] **PROXY-01**: Every Lua callback receives `self` as the first argument: `init(self)`, `update(self, dt)`, `draw(self)`
 - [x] **PROXY-02**: Scripts can read/write `self.x`, `self.y`, `self.visible`, `self.layer` mapped to C++ component properties
 - [x] **PROXY-03**: ScriptProxy uses a validity mechanism (generation token or flag) to prevent dangling pointer access after Object destruction
-- [ ] **PROXY-04**: All existing Lua scripts migrated to new `(self, ...)` callback signature atomically
+- [x] **PROXY-04**: All existing Lua scripts migrated to new `(self, ...)` callback signature atomically
 
 ### Error Policy
 
@@ -137,7 +137,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROXY-01 | Phase 32 | Complete |
 | PROXY-02 | Phase 32 | Complete |
 | PROXY-03 | Phase 32 | Complete |
-| PROXY-04 | Phase 32 | Pending |
+| PROXY-04 | Phase 32 | Complete |
 | ERR-01 | Phase 33 | Pending |
 | ERR-02 | Phase 33 | Pending |
 | ERR-03 | Phase 33 | Pending |

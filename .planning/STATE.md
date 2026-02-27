@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T02:44:32.697Z"
+last_updated: "2026-02-27T02:48:23Z"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 32
-  completed_plans: 29
+  completed_plans: 30
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 32 of 35 (ScriptProxy Userdata) — In Progress
-Plan: 01 complete (1 of 2 plans for this phase)
-Status: Phase 32-01 complete — ScriptProxy full userdata with metatable registered in LuaBindings::registerAll(); callWithProxy() wires proxy as first arg to init/update/draw; PROXY-01/02/03 all met
-Last activity: 2026-02-27 — Phase 32-01 complete: ScriptProxy struct + metatable dispatch for x/y/visible/layer/active/name; proxy creation/registry storage in executeScript(); destructor invalidation before shutdown
+Phase: 32 of 35 (ScriptProxy Userdata) — Complete
+Plan: 02 complete (2 of 2 plans for this phase)
+Status: Phase 32-02 complete — all four Lua scripts migrated to update(self, dt)/draw(self); SDL runner updated to push nil as self before dt; PROXY-04 met; Phase 32 fully complete
+Last activity: 2026-02-27 — Phase 32-02 complete: script signature migration + SDL runner nil-self proxy + pikachu_demo dt*1000 removal
 
-Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31 complete, Phase 32 in progress)
+Progress: [█████████████░░░░░░░] 77% (27/35 phases complete — Phase 32 complete)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 10 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring; Phase 31-02 — engine.scene/input/time/log implementations; Phase 31-03 — engine_table_test + SDL time wiring; Phase 32-01 — ScriptProxy userdata + metatable registration)
+- v1.5: 11 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring; Phase 31-02 — engine.scene/input/time/log implementations; Phase 31-03 — engine_table_test + SDL time wiring; Phase 32-01 — ScriptProxy userdata + metatable registration; Phase 32-02 — script signature migration + SDL runner nil-self proxy)
 
 *Updated after each plan completion*
 
@@ -73,6 +73,8 @@ Recent decisions relevant to v1.5:
 - [Phase 31-03]: s_totalTime and s_frameCount declared inside ENJIN2_BUILD_LUA guard — avoids unused-variable warnings in non-Lua builds
 - [Phase 31-03]: Hot-reload resets s_totalTime and s_frameCount alongside prev_ticks — prevents time-jump artifacts after F5 script reload
 - [Phase 32-01]: ScriptProxy property dispatch uses strcmp chain (6 properties); self.layer is 1-indexed; name is read-only; callWithProxy() retrieves proxy from registry before lua_pcall
+- [Phase 32-02]: Option A chosen for SDL runner — push nil as self before dt; ensures pikachu_demo.lua receives correct dt value; lua_L avoids shadowing outer scope L
+- [Phase 32-02]: pikachu_demo dt * 1000 removed — Phase 28 confirmed complete (accumSec present); all scripts use (self, dt) and (self) signatures atomically
 
 ### Pending Todos
 
@@ -102,5 +104,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 32-01 — ScriptProxy userdata + metatable registration; PROXY-01/02/03 met; Phase 32-02 pending (script signature migration)
+Stopped at: Completed Phase 32-02 — script signature migration + SDL runner nil-self proxy; PROXY-04 met; Phase 32 fully complete; Phase 33 is next
 Resume file: None
