@@ -222,6 +222,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME script_proxy_lifetime_test COMMAND script_proxy_lifetime_test)
+
+    # Object proxy test (Phase 37: ObjectProxy safety + stale invalidation + enable/disable)
+    add_executable(object_proxy_test
+        object_proxy_test.cpp
+    )
+    target_include_directories(object_proxy_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(object_proxy_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME object_proxy_test COMMAND object_proxy_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

@@ -88,8 +88,9 @@ int LuaBindings::lua_engine_scene_switch(lua_State* L) {
 }
 
 // --- engine.scene.find(name) — ENG-02 ---
-// Returns lightuserdata (Object*) when found, nil when not found.
-// Phase 32 upgrades lightuserdata to full ScriptProxy with metatable.
+// Returns an ObjectProxy userdata with "ObjectProxy" metatable when found; nil when not found.
+// Phase 37 upgrade complete: lightuserdata replaced with full ObjectProxy userdata.
+// The proxy's valid flag is set false by Object::~Object() when the Object is destroyed.
 // Silent nil-return when activeScene is nullptr.
 int LuaBindings::lua_engine_scene_find(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
@@ -100,9 +101,20 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
     Object* obj = scene->findByName(name);
     if (!obj) {
         lua_pushnil(L);
-    } else {
-        lua_pushlightuserdata(L, obj);  // Phase 32 upgrades to full proxy
+        return 1;
     }
+
+    // Allocate ObjectProxy userdata and attach the "ObjectProxy" metatable
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(
+        lua_newuserdata(L, sizeof(enjin2::ObjectProxy)));
+    proxy->object = obj;
+    proxy->valid  = true;
+    luaL_getmetatable(L, "ObjectProxy");
+    lua_setmetatable(L, -2);
+
+    // Register proxy with Object so its destructor can set valid = false
+    obj->setLuaProxy(proxy);
+
     return 1;
 }
 
