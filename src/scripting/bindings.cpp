@@ -7,8 +7,6 @@
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/core/object.hpp"
-#include <chrono>
-#include <iostream>
 
 namespace enjin2 {
 
@@ -355,7 +353,6 @@ void LuaBindings::registerAll() {
     
     // Utility functions
     engine->registerFunction("print", lua_print);
-    engine->registerFunction("time", lua_time);
     
     // High-performance optimized drawing functions
     engine->registerFunction("fastFillRect", lua_fastFillRect);
@@ -407,9 +404,10 @@ void LuaBindings::registerAll() {
     lua_pushinteger(L, 4); lua_setglobal(L, "LAYER_UI");
 
     // Create love2d.graphics-style table for familiarity
-    registerTable("love", {
-        {"draw", lua_rectangle},  // Basic draw function
-    });
+    lua_newtable(L);
+    lua_pushcfunction(L, lua_rectangle);
+    lua_setfield(L, -2, "draw");
+    lua_setglobal(L, "love");
     
     // Create graphics subtable properly
     lua_getglobal(L, "love");
@@ -475,7 +473,8 @@ void LuaBindings::resetSpritePool() {
     }
     currentTextSize = 1;
     currentFont = nullptr;
-    currentFontName = "default";
+    strncpy(currentFontName, "default", 31);
+    currentFontName[31] = '\0';
 }
 
 LuaBindings* LuaBindings::getBindings(lua_State* L) {
@@ -483,18 +482,6 @@ LuaBindings* LuaBindings::getBindings(lua_State* L) {
     LuaBindings* bindings = static_cast<LuaBindings*>(lua_touserdata(L, -1));
     lua_pop(L, 1);
     return bindings;
-}
-
-void LuaBindings::registerTable(const std::string& tableName,
-                               const std::vector<std::pair<std::string, lua_CFunction>>& functions) {
-    lua_State* L = engine->getState();
-
-    lua_newtable(L);
-    for (const auto& func : functions) {
-        lua_pushcfunction(L, func.second);
-        lua_setfield(L, -2, func.first.c_str());
-    }
-    lua_setglobal(L, tableName.c_str());
 }
 
 void LuaBindings::registerProxyMetatable() {
@@ -756,30 +743,20 @@ int LuaBindings::lua_getPixel(lua_State* L) {
 }
 
 int LuaBindings::lua_print(lua_State* L) {
-    if (lua_gettop(L) >= 1) {
-        if (lua_isstring(L, 1)) {
-            const char* str = lua_tostring(L, 1);
-            std::cout << str << std::endl;
-        } else if (lua_isnumber(L, 1)) {
-            double num = lua_tonumber(L, 1);
-            std::cout << num << std::endl;
-        } else if (lua_isboolean(L, 1)) {
-            bool val = lua_toboolean(L, 1);
-            std::cout << (val ? "true" : "false") << std::endl;
+    int n = lua_gettop(L);
+    for (int i = 1; i <= n; ++i) {
+        const char* s = lua_tostring(L, i);
+        if (s) {
+            printf("%s", s);
+        } else {
+            printf("(%s)", lua_typename(L, lua_type(L, i)));
         }
+        if (i < n) printf("\t");
     }
-    
+    printf("\n");
     return 0;
 }
 
-int LuaBindings::lua_time(lua_State* L) {
-    auto now = std::chrono::steady_clock::now();
-    auto duration = now.time_since_epoch();
-    auto seconds = std::chrono::duration_cast<std::chrono::duration<double>>(duration);
-    
-    lua_pushnumber(L, seconds.count());
-    return 1;
-}
 
 //==============================================================================
 // High-Performance Drawing Functions
@@ -1222,13 +1199,15 @@ int LuaBindings::lua_setFont(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     if (strcmp(name, "default") == 0) {
         b->currentFont = nullptr;
-        b->currentFontName = "default";
+        strncpy(b->currentFontName, "default", 31);
+        b->currentFontName[31] = '\0';
         return 0;
     }
     for (uint8_t i = 0; i < b->fontCount; ++i) {
-        if (b->fontRegistry[i].name == name) {
+        if (strcmp(b->fontRegistry[i].name, name) == 0) {
             b->currentFont = b->fontRegistry[i].font;
-            b->currentFontName = name;
+            strncpy(b->currentFontName, name, 31);
+            b->currentFontName[31] = '\0';
             return 0;
         }
     }
@@ -1239,7 +1218,7 @@ int LuaBindings::lua_setFont(lua_State* L) {
 int LuaBindings::lua_getFont(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushstring(L, "default"); return 1; }
-    lua_pushlstring(L, b->currentFontName.data(), b->currentFontName.size());
+    lua_pushstring(L, b->currentFontName);
     return 1;
 }
 
@@ -1266,15 +1245,16 @@ int LuaBindings::lua_getTextHeight(lua_State* L) {
     return 1;
 }
 
-void LuaBindings::registerFont(const std::string& name, const ::GFXfont* font) {
+void LuaBindings::registerFont(const char* name, const ::GFXfont* font) {
     if (fontCount >= MAX_FONTS) return;
     for (uint8_t i = 0; i < fontCount; ++i) {
-        if (fontRegistry[i].name == name) {
+        if (strcmp(fontRegistry[i].name, name) == 0) {
             fontRegistry[i].font = font;
             return;
         }
     }
-    fontRegistry[fontCount].name = name;
+    strncpy(fontRegistry[fontCount].name, name, 31);
+    fontRegistry[fontCount].name[31] = '\0';
     fontRegistry[fontCount].font = font;
     ++fontCount;
 }
@@ -1942,11 +1922,13 @@ int LuaBindings::lua_math_smoothstep(lua_State* L) {
 }
 
 int LuaBindings::lua_math_distance(lua_State* L) {
-    int16_t x1 = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t y1 = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t x2 = static_cast<int16_t>(luaL_checkinteger(L, 3));
-    int16_t y2 = static_cast<int16_t>(luaL_checkinteger(L, 4));
-    lua_pushinteger(L, enjin2::math::distance(x1, y1, x2, y2));
+    float x1 = static_cast<float>(luaL_checknumber(L, 1));
+    float y1 = static_cast<float>(luaL_checknumber(L, 2));
+    float x2 = static_cast<float>(luaL_checknumber(L, 3));
+    float y2 = static_cast<float>(luaL_checknumber(L, 4));
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+    lua_pushnumber(L, std::sqrt(dx * dx + dy * dy));
     return 1;
 }
 
