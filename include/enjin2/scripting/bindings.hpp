@@ -477,6 +477,10 @@ private:
     static int lua_engine_time_frame(lua_State* L);
     static int lua_engine_log(lua_State* L);
 
+    // engine.lua.* GC bindings (GC-01, GC-02)
+    static int lua_engine_lua_collect(lua_State* L);
+    static int lua_engine_lua_memory(lua_State* L);
+
     // engine.collision.* binding functions
     static int lua_engine_collision_aabb(lua_State* L);
     static int lua_engine_collision_circleCircle(lua_State* L);
