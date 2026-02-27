@@ -384,9 +384,9 @@ void LuaBindings::registerAll() {
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_bindings");
 
     // Store injected engine.* pointers in registry for closure retrieval
-    lua_pushlightuserdata(L, m_ssm);          // may be nullptr; checked in each closure
+    lua_pushlightuserdata(L, &m_ssm);          // store address-of-member (pointer-to-pointer)
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_ssm");
-    lua_pushlightuserdata(L, m_activeScene);  // may be nullptr; checked in each closure
+    lua_pushlightuserdata(L, &m_activeScene);  // store address-of-member (pointer-to-pointer)
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
     lua_pushlightuserdata(L, &m_timeState);   // always valid (member of LuaBindings)
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_time");
