@@ -1009,15 +1009,35 @@ void LuaBindings::registerEngineTable() {
 }
 
 // --- engine.scene.switch(id) — ENG-01 ---
+// Calls SceneStateMachine::switchTo(uint32_t). Silent no-op when SSM is nullptr
+// (SDL standalone mode has no SceneStateMachine).
 int LuaBindings::lua_engine_scene_switch(lua_State* L) {
-    (void)L;
-    return 0;  // stub — implemented in Plan 02
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_ssm");
+    auto* ssm = static_cast<SceneStateMachine*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (!ssm) return 0;  // no SSM installed — silent no-op
+    uint32_t id = static_cast<uint32_t>(luaL_checkinteger(L, 1));
+    ssm->switchTo(id);
+    return 0;
 }
 
 // --- engine.scene.find(name) — ENG-02 ---
+// Returns lightuserdata (Object*) when found, nil when not found.
+// Phase 32 upgrades lightuserdata to full ScriptProxy with metatable.
+// Silent nil-return when activeScene is nullptr.
 int LuaBindings::lua_engine_scene_find(lua_State* L) {
-    lua_pushnil(L);
-    return 1;  // stub — returns nil; implemented in Plan 02
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
+    auto* scene = static_cast<Scene*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (!scene) { lua_pushnil(L); return 1; }
+    const char* name = luaL_checkstring(L, 1);
+    Object* obj = scene->findByName(name);
+    if (!obj) {
+        lua_pushnil(L);
+    } else {
+        lua_pushlightuserdata(L, obj);  // Phase 32 upgrades to full proxy
+    }
+    return 1;
 }
 
 // --- engine.input.held(btn) — ENG-03 ---
