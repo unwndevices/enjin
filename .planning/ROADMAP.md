@@ -94,7 +94,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 - [x] **Phase 28: float dt Migration** - Pervasive signature change: uint16_t ms -> float seconds everywhere (completed 2026-02-26)
 - [x] **Phase 29: Named Objects + Tags** - Object name field and tag array with collection lookup methods (completed 2026-02-27)
 - [x] **Phase 30: Scene Self-Transitions** - SceneStateMachine* injection into Scene; deferred self-transition support (completed 2026-02-27)
-- [ ] **Phase 31: engine.* Global Table** - Complete engine.scene/input/time/lua/log Lua namespace
+- [x] **Phase 31: engine.* Global Table** - Complete engine.scene/input/time/lua/log Lua namespace (completed 2026-02-27)
 - [ ] **Phase 32: ScriptProxy Userdata** - self as first callback arg; x/y/visible/layer/name mapped to C++
 - [ ] **Phase 33: ScriptErrorPolicy** - Disable/Log/Panic enum on C_LuaScript with hot-reload reset
 - [ ] **Phase 34: Input Event Callbacks** - on_button_pressed/on_button_released Lua callbacks
@@ -240,7 +240,7 @@ Plans:
 | 28. float dt Migration | 2/2 | Complete    | 2026-02-26 | - |
 | 29. Named Objects + Tags | 2/2 | Complete    | 2026-02-27 | - |
 | 30. Scene Self-Transitions | 1/1 | Complete    | 2026-02-27 | - |
-| 31. engine.* Global Table | 2/3 | In Progress|  | - |
+| 31. engine.* Global Table | 3/3 | Complete   | 2026-02-27 | - |
 | 32. ScriptProxy Userdata | v1.5 | 0/? | Not started | - |
 | 33. ScriptErrorPolicy | v1.5 | 0/? | Not started | - |
 | 34. Input Event Callbacks | v1.5 | 0/? | Not started | - |

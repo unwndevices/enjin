@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T02:25:30Z"
+last_updated: "2026-02-27T02:33:14Z"
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 32
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 31 of 35 (engine.* Global Table)
-Plan: 02 complete (2 of 3 plans for this phase) — Phase 31 Plan 02 COMPLETE
-Status: Phase 31-02 complete — all 10 lua_engine_* C functions fully implemented (scene switch/find, input polling, time state, printf log)
-Last activity: 2026-02-27 — Phase 31-02 complete: engine.scene.switch/find + engine.input.* + engine.time.* + engine.log implemented; ENG-01..ENG-05 met
+Phase: 31 of 35 (engine.* Global Table) — PHASE COMPLETE
+Plan: 03 complete (3 of 3 plans for this phase) — Phase 31 COMPLETE
+Status: Phase 31-03 complete — engine_table_test (34 assertions, 9 ctest tests pass); setTimeState() wired into SDL main loop; ENG-01..ENG-06 all met
+Last activity: 2026-02-27 — Phase 31-03 complete: engine_table_test covering module-level access + behavioral correctness; SDL main loop wires live time data
 
-Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31-02 complete, Phase 31 plan 03 pending)
+Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31 complete, Phase 32 pending)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 6 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring)
+- v1.5: 9 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring; Phase 31-02 — engine.scene/input/time/log implementations; Phase 31-03 — engine_table_test + SDL time wiring)
 
 *Updated after each plan completion*
 
@@ -70,6 +70,8 @@ Recent decisions relevant to v1.5:
 - [Phase 31-02]: lua_engine_scene_find returns lightuserdata (raw Object*) — Phase 32 upgrades to full ScriptProxy with metatable
 - [Phase 31-02]: engine.log uses printf exclusively (not std::cout) — embedded target compatibility with ESP32/Emscripten
 - [Phase 31-02]: lua_typename fallback in engine.log prevents nullptr deref when lua_tostring returns nullptr for boolean/table/nil types
+- [Phase 31-03]: s_totalTime and s_frameCount declared inside ENJIN2_BUILD_LUA guard — avoids unused-variable warnings in non-Lua builds
+- [Phase 31-03]: Hot-reload resets s_totalTime and s_frameCount alongside prev_ticks — prevents time-jump artifacts after F5 script reload
 
 ### Pending Todos
 
@@ -88,6 +90,7 @@ None.
 
 - [Phase 32 - ScriptProxy] Decide validity mechanism (generation token vs valid flag) before writing any proxy code — cannot retrofit safely
 - [Phase 31-01 RESOLVED] engine.* global table now registered; module-level access no longer a concern for Phase 31-02 onward
+- [Phase 31-03 RESOLVED] engine_table_test passes; module-level access verified — Phase 32 unblocked
 - [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
 
 ### Technical Debt (carried)
@@ -98,5 +101,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 31-02 — engine.* full implementations (ENG-01..ENG-05)
+Stopped at: Completed Phase 31-03 — engine_table_test + SDL time wiring (Phase 31 COMPLETE)
 Resume file: None
