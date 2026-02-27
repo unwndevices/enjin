@@ -23,6 +23,19 @@ namespace enjin2 {
 class Scene;
 class SceneStateMachine;
 
+// Forward declaration — prevents circular include with lua_script.hpp
+class C_LuaScript;
+
+/**
+ * @brief Lua proxy userdata wrapping a C_LuaScript component.
+ * Exposes component properties (x, y, visible, layer, name, active) via metamethods.
+ * Validity flag prevents dangling-pointer access after Object destruction.
+ */
+struct ScriptProxy {
+    C_LuaScript* component;   ///< Non-owning pointer to the component. Do NOT dereference if valid == false.
+    bool valid;               ///< Set to false by C_LuaScript destructor before lua_close.
+};
+
 /**
  * @brief Time state for engine.time.* Lua bindings
  * Updated by host each frame via LuaBindings::setTimeState() before update() is called.
@@ -380,6 +393,13 @@ private:
      * during this call so closures can retrieve them at call time.
      */
     void registerEngineTable();
+
+    /**
+     * @brief Register the ScriptProxy metatable (called from registerAll())
+     * Creates "ScriptProxy" metatable in the Lua registry with __index and __newindex
+     * metamethods for C_LuaScript component property dispatch.
+     */
+    void registerProxyMetatable();
 
     /**
      * @brief Get LuaBindings instance from Lua state

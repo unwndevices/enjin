@@ -2,6 +2,9 @@
 #include "../../include/enjin2/graphics/palette.hpp"
 #include "../../include/enjin2/core/scene.hpp"
 #include "../../include/enjin2/core/scene_state_machine.hpp"
+#include "../../include/enjin2/components/lua_script.hpp"
+#include "../../include/enjin2/components/position.hpp"
+#include "../../include/enjin2/core/object.hpp"
 #include <chrono>
 #include <iostream>
 
@@ -9,6 +12,108 @@ namespace enjin2 {
 
 // Global pointer to current bindings instance for static callbacks
 static LuaBindings* g_currentBindings = nullptr;
+
+//==============================================================================
+// ScriptProxy Metatable Implementation
+//==============================================================================
+
+static constexpr const char* PROXY_METATABLE = "ScriptProxy";
+
+// __index metamethod: called when Lua reads self.property
+// Stack layout on entry: [1]=userdata(self), [2]=key_string
+static int lua_proxy_index_impl(lua_State* L) {
+    if (!lua_isuserdata(L, 1)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    enjin2::ScriptProxy* proxy = static_cast<enjin2::ScriptProxy*>(lua_touserdata(L, 1));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    const char* key = lua_tostring(L, 2);
+    if (!key) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    enjin2::C_LuaScript* comp = proxy->component;
+    enjin2::Object* owner = comp->getOwner();
+
+    if (strcmp(key, "x") == 0) {
+        enjin2::C_Position* pos = owner ? owner->getPosition() : nullptr;
+        lua_pushinteger(L, pos ? static_cast<lua_Integer>(pos->getPosition().x) : 0);
+        return 1;
+    } else if (strcmp(key, "y") == 0) {
+        enjin2::C_Position* pos = owner ? owner->getPosition() : nullptr;
+        lua_pushinteger(L, pos ? static_cast<lua_Integer>(pos->getPosition().y) : 0);
+        return 1;
+    } else if (strcmp(key, "visible") == 0) {
+        lua_pushboolean(L, comp->isVisible() ? 1 : 0);
+        return 1;
+    } else if (strcmp(key, "layer") == 0) {
+        // 1-indexed in Lua: buffer_index 0 == layer 1
+        lua_pushinteger(L, static_cast<lua_Integer>(comp->GetBufferIndex() + 1));
+        return 1;
+    } else if (strcmp(key, "active") == 0) {
+        lua_pushboolean(L, (owner && owner->isActive()) ? 1 : 0);
+        return 1;
+    } else if (strcmp(key, "name") == 0) {
+        // Phase 29 complete: Object::getName() available
+        const char* n = owner ? owner->getName() : nullptr;
+        if (n) {
+            lua_pushstring(L, n);
+        } else {
+            lua_pushnil(L);
+        }
+        return 1;
+    }
+
+    lua_pushnil(L);
+    return 1;
+}
+
+// __newindex metamethod: called when Lua writes self.property = value
+// Stack layout on entry: [1]=userdata(self), [2]=key_string, [3]=value
+static int lua_proxy_newindex_impl(lua_State* L) {
+    if (!lua_isuserdata(L, 1)) return 0;
+    enjin2::ScriptProxy* proxy = static_cast<enjin2::ScriptProxy*>(lua_touserdata(L, 1));
+    if (!proxy || !proxy->valid || !proxy->component) return 0;
+
+    const char* key = lua_tostring(L, 2);
+    if (!key) return 0;
+
+    enjin2::C_LuaScript* comp = proxy->component;
+    enjin2::Object* owner = comp->getOwner();
+
+    if (strcmp(key, "x") == 0) {
+        enjin2::C_Position* pos = owner ? owner->getPosition() : nullptr;
+        if (pos) {
+            int16_t newX = static_cast<int16_t>(luaL_checkinteger(L, 3));
+            pos->setPosition(newX, pos->getPosition().y);
+        }
+    } else if (strcmp(key, "y") == 0) {
+        enjin2::C_Position* pos = owner ? owner->getPosition() : nullptr;
+        if (pos) {
+            int16_t newY = static_cast<int16_t>(luaL_checkinteger(L, 3));
+            pos->setPosition(pos->getPosition().x, newY);
+        }
+    } else if (strcmp(key, "visible") == 0) {
+        comp->SetVisibility(lua_toboolean(L, 3) != 0);
+    } else if (strcmp(key, "layer") == 0) {
+        // 1-indexed in Lua; convert to 0-indexed C++
+        int luaLayer = static_cast<int>(luaL_checkinteger(L, 3));
+        if (luaLayer >= 1) {
+            comp->SetBufferIndex(static_cast<uint8_t>(luaLayer - 1));
+        }
+    } else if (strcmp(key, "active") == 0) {
+        if (owner) owner->setActive(lua_toboolean(L, 3) != 0);
+    }
+    // "name" is intentionally read-only — silently ignore writes
+
+    return 0;
+}
 
 //==============================================================================
 // LuaCanvas Implementation
@@ -249,6 +354,9 @@ void LuaBindings::registerAll() {
 
     // Register engine.* global table (ENG-06: must be before any script loads)
     registerEngineTable();
+
+    // Register ScriptProxy metatable for C_LuaScript component path
+    registerProxyMetatable();
 }
 
 void LuaBindings::setCanvas(LuaCanvas* canvas) {
@@ -282,16 +390,29 @@ LuaBindings* LuaBindings::getBindings(lua_State* L) {
     return bindings;
 }
 
-void LuaBindings::registerTable(const std::string& tableName, 
+void LuaBindings::registerTable(const std::string& tableName,
                                const std::vector<std::pair<std::string, lua_CFunction>>& functions) {
     lua_State* L = engine->getState();
-    
+
     lua_newtable(L);
     for (const auto& func : functions) {
         lua_pushcfunction(L, func.second);
         lua_setfield(L, -2, func.first.c_str());
     }
     lua_setglobal(L, tableName.c_str());
+}
+
+void LuaBindings::registerProxyMetatable() {
+    lua_State* L = engine->getState();
+    if (!L) return;
+    // luaL_newmetatable returns 1 if new (creates it), 0 if it already exists
+    if (luaL_newmetatable(L, PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_proxy_index_impl);
+        lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, lua_proxy_newindex_impl);
+        lua_setfield(L, -2, "__newindex");
+    }
+    lua_pop(L, 1);  // always pop — both new and existing cases leave table on stack
 }
 
 //==============================================================================
