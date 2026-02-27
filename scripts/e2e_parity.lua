@@ -42,12 +42,12 @@ local function draw_input_indicators()
     rectangle(ax, y, CELL_W, CELL_H)
 end
 
-function update(dt)
+function update(self, dt)
     -- No per-frame state to update.
     -- Input is polled by the host and written to InputState before this call.
 end
 
-function draw()
+function draw(self)
     clear(0)
     draw_color_grid()
     draw_input_indicators()

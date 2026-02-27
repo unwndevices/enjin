@@ -7,13 +7,13 @@
 
 local sprite = -1  -- sprite handle (0-15)
 
-function update(dt)
+function update(self, dt)
     if sprite >= 0 then
-        updateSprite(sprite, dt * 1000)  -- dt is seconds, updateSprite wants ms
+        updateSprite(sprite, dt)  -- dt is seconds; updateSprite expects seconds (Phase 28)
     end
 end
 
-function draw()
+function draw(self)
     clear(0)
 
     -- Draw pikachu centered on screen

@@ -1,11 +1,11 @@
 -- layer_demo.lua -- Multi-layer composition demo for enjin2
 -- Draws different content on each layer to verify compositor.
 
-function update(dt)
+function update(self, dt)
     -- no-op for this demo
 end
 
-function draw()
+function draw(self)
     -- Layer 1 (BG): fill with dark blue (palette index 1)
     setLayer(LAYER_BG)
     clear(1)
