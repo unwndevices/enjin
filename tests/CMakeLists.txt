@@ -163,6 +163,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME collision_test COMMAND collision_test)
+
+    # Error policy test (ERR-01 through ERR-05: ScriptErrorPolicy on C_LuaScript)
+    add_executable(error_policy_test
+        error_policy_test.cpp
+    )
+    target_include_directories(error_policy_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(error_policy_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME error_policy_test COMMAND error_policy_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

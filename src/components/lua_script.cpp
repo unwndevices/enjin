@@ -1,5 +1,6 @@
 #include "../../include/enjin2/components/lua_script.hpp"
 #include <cstring>
+#include <cstdlib>
 
 namespace enjin2 {
 
@@ -303,8 +304,29 @@ bool C_LuaScript::callWithProxy(const char* funcName, float dt, bool passDt) {
         const char* err = lua_tostring(L, -1);
         errorMessage = err ? err : "unknown Lua error";
         lua_pop(L, 1);
-        // Do NOT set scriptError here — callWithProxy is the low-level call path.
-        // The callers (update, draw) decide whether to set scriptError.
+
+        switch (errorPolicy) {
+            case ScriptErrorPolicy::Disable:
+                if (!scriptError) {
+                    printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                }
+                scriptError = true;
+                break;
+
+            case ScriptErrorPolicy::Log:
+                printf("[lua] script error (%s): %s\n", funcName, errorMessage.c_str());
+                // scriptError intentionally NOT set — script runs again next frame
+                break;
+
+            case ScriptErrorPolicy::Panic:
+                printf("[lua] PANIC (%s): %s\n", funcName, errorMessage.c_str());
+#ifdef ESP32
+                esp_restart();
+#else
+                std::abort();
+#endif
+                break;
+        }
         return false;
     }
     return true;
