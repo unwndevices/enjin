@@ -193,6 +193,13 @@ public:
      */
     uint32_t getDrawCalls() const { return drawCalls; }
 
+    /**
+     * @brief Inject InputState for this frame (delegates to scriptSystem->getBindings().setInput())
+     * Used by tests and host code to provide input state before calling update().
+     * @param input Pointer to current frame's InputState; may be nullptr to clear
+     */
+    void setInput(InputState* input);
+
 private:
     /**
      * @brief Initialize LuaScriptSystem and expose component dimensions
@@ -222,6 +229,25 @@ private:
      * @return true if function was found and called without error, false otherwise
      */
     bool callWithProxy(const char* funcName, float dt, bool passDt);
+
+    /**
+     * @brief Push stored ScriptProxy userdata as first arg, push btn integer as second arg, call Lua function.
+     * Used for on_button_pressed(self, btn) / on_button_released(self, btn) callbacks.
+     * Optional callback: if the function is not defined in the script, returns false silently.
+     * Error handling follows ScriptErrorPolicy (identical to callWithProxy).
+     * @param funcName Lua global function name
+     * @param btn Button index (0-15)
+     * @return true if function was found and called without Lua error, false otherwise
+     */
+    bool callWithProxyAndBtn(const char* funcName, int btn);
+
+    /**
+     * @brief Fire on_button_pressed / on_button_released callbacks for all button edges this frame.
+     * Called at the top of update() before callWithProxy(UPDATE_FUNCTION, ...) — satisfies INPUT-03.
+     * Skips dispatch if hasScript is false, scriptError is true, or scriptSystem is null.
+     * @param input Current frame's InputState (buttons / prev_buttons already set)
+     */
+    void dispatchInputCallbacks(const InputState& input);
 
     /**
      * @brief Setup LuaCanvas wrapper for the current draw canvas
