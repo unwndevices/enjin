@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 29 of 35 (Named Objects + Tags)
-Plan: 01 complete (1 of 2 plans for this phase)
-Status: Phase 29 in progress — Object name/tag identity with ObjectCollection lookup complete
-Last activity: 2026-02-27 — Phase 29-01 complete: Object::setName/getName/addTag/hasTag/clearTags and ObjectCollection::findByName/findAllWithTag
+Plan: 02 complete (2 of 2 plans for this phase) — Phase 29 COMPLETE
+Status: Phase 29 complete — Scene proxy methods added; full Phase 29 named-objects API shipped
+Last activity: 2026-02-27 — Phase 29-02 complete: Scene::findByName and Scene::findAllWithTag proxy methods added to scene.hpp
 
-Progress: [████████████░░░░░░░░] 74% (26/35 phases complete)
+Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 29 complete, Phase 30+ pending)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 3 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity)
+- v1.5: 4 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods)
 
 *Updated after each plan completion*
 
@@ -58,6 +58,7 @@ Recent decisions relevant to v1.5:
 - [Phase 28-02]: -Woverride is Clang-specific; applied via $<CXX_COMPILER_ID:Clang,AppleClang> generator expression — GCC enforces override correctness as a hard compiler error natively
 - [Phase 29-01]: Tests using Object directly without C_Drawable symbols need --start-group/--end-group to resolve typeinfo for C_Drawable between enjin2_core.a and enjin2_ui.a
 - [Phase 29-01]: Zero-heap-allocation name/tag identity stores raw const char* pointers; caller owns string lifetime
+- [Phase 29-02]: Scene::findByName and findAllWithTag are one-liner proxies to ObjectCollection — placed after findObjectWithComponent<T>() for consistent find* API grouping
 
 ### Pending Todos
 
@@ -86,5 +87,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 29-01 — Object name/tag identity with ObjectCollection lookup; all 29 test assertions pass
+Stopped at: Completed Phase 29-02 — Scene::findByName and findAllWithTag proxy methods; Phase 29 fully complete
 Resume file: None
