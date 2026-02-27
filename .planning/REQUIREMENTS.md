@@ -26,9 +26,9 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Scene Transitions
 
-- [ ] **SCENE-01**: Scene holds a non-owning `SceneStateMachine*` pointer injected at activation time
-- [ ] **SCENE-02**: A derived scene can request a transition to another scene from its own `onUpdate()`
-- [ ] **SCENE-03**: Self-transitions (scene switching to itself) reset and reinitialize correctly via deferred execution
+- [x] **SCENE-01**: Scene holds a non-owning `SceneStateMachine*` pointer injected at activation time
+- [x] **SCENE-02**: A derived scene can request a transition to another scene from its own `onUpdate()`
+- [x] **SCENE-03**: Self-transitions (scene switching to itself) reset and reinitialize correctly via deferred execution
 
 ### Engine Table
 
@@ -125,9 +125,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OBJ-02 | Phase 29 | Complete |
 | OBJ-03 | Phase 29 | Complete |
 | OBJ-04 | Phase 29 | Complete |
-| SCENE-01 | Phase 30 | Pending |
-| SCENE-02 | Phase 30 | Pending |
-| SCENE-03 | Phase 30 | Pending |
+| SCENE-01 | Phase 30 | Complete |
+| SCENE-02 | Phase 30 | Complete |
+| SCENE-03 | Phase 30 | Complete |
 | ENG-01 | Phase 31 | Pending |
 | ENG-02 | Phase 31 | Pending |
 | ENG-03 | Phase 31 | Pending |

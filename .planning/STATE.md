@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T02:13:04.665Z"
+last_updated: "2026-02-27T02:16:04Z"
 progress:
   total_phases: 12
   completed_phases: 7
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 29 in progress
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 30 in progress
 
 ## Current Position
 
-Phase: 29 of 35 (Named Objects + Tags)
-Plan: 02 complete (2 of 2 plans for this phase) — Phase 29 COMPLETE
-Status: Phase 29 complete — Scene proxy methods added; full Phase 29 named-objects API shipped
-Last activity: 2026-02-27 — Phase 29-02 complete: Scene::findByName and Scene::findAllWithTag proxy methods added to scene.hpp
+Phase: 30 of 35 (Scene Self-Transitions)
+Plan: 01 complete (1 of 1 plans for this phase) — Phase 30 Plan 01 COMPLETE
+Status: Phase 30-01 complete — SSM back-pointer injection and deferred self-transition shipped
+Last activity: 2026-02-27 — Phase 30-01 complete: Scene::m_ssm + SceneStateMachine::switchTo() + applyDeferredTransition(); all SCENE-01/02/03 requirements met
 
-Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 29 complete, Phase 30+ pending)
+Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 30-01 complete, Phase 30+ plans pending)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 4 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods)
+- v1.5: 5 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition)
 
 *Updated after each plan completion*
 
@@ -59,6 +59,10 @@ Recent decisions relevant to v1.5:
 - [Phase 29-01]: Tests using Object directly without C_Drawable symbols need --start-group/--end-group to resolve typeinfo for C_Drawable between enjin2_core.a and enjin2_ui.a
 - [Phase 29-01]: Zero-heap-allocation name/tag identity stores raw const char* pointers; caller owns string lifetime
 - [Phase 29-02]: Scene::findByName and findAllWithTag are one-liner proxies to ObjectCollection — placed after findObjectWithComponent<T>() for consistent find* API grouping
+- [Phase 30-01]: hasPendingTransition cleared BEFORE applyDeferredTransition() — switchTo() from onDeactivate() queues for next frame, not re-enters current dispatch
+- [Phase 30-01]: Forward declaration only in scene.hpp for SceneStateMachine — no reverse #include to avoid circular include
+- [Phase 30-01]: m_ssm is protected (not private) — matches m_ prefix convention; enables subclasses to expose via getSSM()
+- [Phase 30-01]: switchTo() last-wins semantics — multiple calls per frame overwrite pendingSceneId (no allocation, simplest correct policy)
 
 ### Pending Todos
 
@@ -87,5 +91,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 29-02 — Scene::findByName and findAllWithTag proxy methods; Phase 29 fully complete
+Stopped at: Completed Phase 30-01 — SSM back-pointer injection and deferred self-transition (SCENE-01/02/03)
 Resume file: None

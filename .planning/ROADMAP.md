@@ -93,7 +93,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 - [ ] **Phase 27: Fix onRender Pixel4 Bug** - Correctness fix: scene-derived onRender fires for Pixel4 canvas
 - [x] **Phase 28: float dt Migration** - Pervasive signature change: uint16_t ms -> float seconds everywhere (completed 2026-02-26)
 - [x] **Phase 29: Named Objects + Tags** - Object name field and tag array with collection lookup methods (completed 2026-02-27)
-- [ ] **Phase 30: Scene Self-Transitions** - SceneStateMachine* injection into Scene; deferred self-transition support
+- [x] **Phase 30: Scene Self-Transitions** - SceneStateMachine* injection into Scene; deferred self-transition support (completed 2026-02-27)
 - [ ] **Phase 31: engine.* Global Table** - Complete engine.scene/input/time/lua/log Lua namespace
 - [ ] **Phase 32: ScriptProxy Userdata** - self as first callback arg; x/y/visible/layer/name mapped to C++
 - [ ] **Phase 33: ScriptErrorPolicy** - Disable/Log/Panic enum on C_LuaScript with hot-reload reset
@@ -145,7 +145,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   2. Calling scene->switchTo(id) from within onUpdate() defers the transition until after the current frame completes
   3. Switching a scene to itself triggers a full reset and re-initialization (onCreate() is called again, not skipped by the initialized guard)
   4. Scene transitions initiated from within onDeactivate() do not cause re-entrant state machine corruption
-**Plans:** 2/2 plans complete
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 30-01-PLAN.md — SSM back-pointer injection and deferred self-transition (TDD)
 
@@ -239,7 +239,7 @@ Plans:
 | 27. Fix onRender Pixel4 Bug | v1.5 | 0/? | Not started | - |
 | 28. float dt Migration | 2/2 | Complete    | 2026-02-26 | - |
 | 29. Named Objects + Tags | 2/2 | Complete    | 2026-02-27 | - |
-| 30. Scene Self-Transitions | v1.5 | 0/1 | In progress | - |
+| 30. Scene Self-Transitions | 1/1 | Complete   | 2026-02-27 | - |
 | 31. engine.* Global Table | v1.5 | 0/? | Not started | - |
 | 32. ScriptProxy Userdata | v1.5 | 0/? | Not started | - |
 | 33. ScriptErrorPolicy | v1.5 | 0/? | Not started | - |
