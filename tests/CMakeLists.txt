@@ -209,6 +209,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME gc_assert_test COMMAND gc_assert_test)
+
+    # Script proxy lifetime test (PROXY-STALE: stale proxy error; TAG-01..TAG-03: tag bindings)
+    add_executable(script_proxy_lifetime_test
+        script_proxy_lifetime_test.cpp
+    )
+    target_include_directories(script_proxy_lifetime_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(script_proxy_lifetime_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME script_proxy_lifetime_test COMMAND script_proxy_lifetime_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
