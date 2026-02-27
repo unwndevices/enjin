@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T18:21:34Z"
+last_updated: "2026-02-27T18:35:00Z"
 progress:
   total_phases: 17
-  completed_phases: 14
-  total_plans: 38
-  completed_plans: 37
+  completed_phases: 17
+  total_plans: 39
+  completed_plans: 39
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 36 complete; Phase 37 next
+**Current focus:** v1.5 Lua Scripting Foundation — COMPLETE (Phase 37-03 closes all 10 CONCERNS.md items)
 
 ## Current Position
 
-Phase: 37 of 37 (Address Prominent Codebase Concerns) — COMPLETE (2 of 2 plans done)
-Plan: 02 complete (2 of 2 plans for this phase)
-Status: Phase 37-02 complete — ObjectProxy userdata from engine.scene.find(); Object destructor invalidation hook; object_proxy_test (18 ctests pass)
-Last activity: 2026-02-27 — Phase 37-02 complete: ObjectProxy struct + metatable + Object::~Object() hook; lightuserdata fully replaced; 18 ctests pass
+Phase: 37 of 37 (Address Prominent Codebase Concerns) — COMPLETE (3 of 3 plans done)
+Plan: 03 complete (3 of 3 plans for this phase)
+Status: Phase 37-03 complete — clang-tidy lint target; 14 stale build dirs removed; ERR-SIBLING + INPUT-03-ORDER tests; GC + zero-alloc audits; 18 ctests pass
+Last activity: 2026-02-27 — Phase 37-03 complete: CMake lint target, ERR-SIBLING sibling isolation test, INPUT-03-ORDER call-sequence test, GC/zero-alloc audits all confirmed
 
-Progress: [████████████████████] 100% (37/37 phases complete — Phase 37 complete)
+Progress: [████████████████████] 100% (37/37 phases complete — v1.5 milestone complete)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Progress: [████████████████████] 100% (3
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 11 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring; Phase 31-02 — engine.scene/input/time/log implementations; Phase 31-03 — engine_table_test + SDL time wiring; Phase 32-01 — ScriptProxy userdata + metatable registration; Phase 32-02 — script signature migration + SDL runner nil-self proxy)
+- v1.5: 14 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring; Phase 31-02 — engine.scene/input/time/log implementations; Phase 31-03 — engine_table_test + SDL time wiring; Phase 32-01 — ScriptProxy userdata + metatable registration; Phase 32-02 — script signature migration + SDL runner nil-self proxy; Phase 37-01 — ObjectProxy + char[256] errorMessage + tag dispatch; Phase 37-02 — ObjectProxy userdata + Object destructor hook; Phase 37-03 — clang-tidy lint target + ERR-SIBLING + INPUT-03-ORDER + GC/zero-alloc audits)
 
 *Updated after each plan completion*
 
@@ -101,6 +101,9 @@ Recent decisions relevant to v1.5:
 - [Phase 37-02]: proxy.enable returns nil (not error) when object has no C_LuaScript — allows proxy usage on non-scripted objects without Lua errors
 - [Phase 37-02]: proxy.position read returns value-semantics snapshot table {x,y} (not live reference) — no GC overhead, appropriate for embedded targets
 - [Phase 37-02]: ObjectProxy in standalone object_proxy.hpp with only Object forward-declaration avoids circular include between object.hpp and bindings.hpp
+- [Phase 37-03]: CLANG_TIDY option OFF by default — CI explicitly opts in with -DCLANG_TIDY=ON; no dev friction on configure
+- [Phase 37-03]: --warnings-as-errors=* on clang-tidy CLI not in .clang-tidy WarningsAsErrors field — local dev advisory, CI hard-fails
+- [Phase 37-03]: test_input03_order_call_sequence() named differently from test_input03_callbacks_fire_before_update() — avoids duplicate symbol; uses call_order/'PU' complementing callback_order/'callback_then_update' pattern
 
 ### Pending Todos
 
@@ -143,5 +146,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 37-02-PLAN.md — ObjectProxy userdata + metatable + Object destructor hook; engine.scene.find() fully upgraded; object_proxy_test; 18 ctests pass
+Stopped at: Completed 37-03-PLAN.md — clang-tidy CMake lint target; 14 stale build dirs removed; ERR-SIBLING + INPUT-03-ORDER tests; GC/zero-alloc audits confirmed; 18 ctests pass; Phase 37 and v1.5 milestone complete
 Resume file: None
