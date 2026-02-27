@@ -208,6 +208,40 @@ public:
     }
     
     /**
+     * @brief Find object by name
+     * @param name Name to search for (nullptr returns nullptr immediately)
+     * @return Pointer to first matching Object or nullptr if not found
+     */
+    Object* findByName(const char* name) {
+        if (!name) return nullptr;
+        for (size_t i = 0; i < objectCount; ++i) {
+            if (objects[i] && objects[i]->getName() &&
+                strcmp(objects[i]->getName(), name) == 0) {
+                return objects[i].get();
+            }
+        }
+        return nullptr;
+    }
+
+    /**
+     * @brief Find all objects with a given tag
+     * @param tag Tag to search for
+     * @param results Caller-provided buffer to receive Object pointers
+     * @param maxResults Maximum number of results to write into buffer
+     * @return Number of matching objects written into buffer
+     */
+    size_t findAllWithTag(const char* tag, Object** results, size_t maxResults) {
+        if (!tag || !results || maxResults == 0) return 0;
+        size_t found = 0;
+        for (size_t i = 0; i < objectCount && found < maxResults; ++i) {
+            if (objects[i] && objects[i]->hasTag(tag)) {
+                results[found++] = objects[i].get();
+            }
+        }
+        return found;
+    }
+
+    /**
      * @brief Apply function to all active objects
      * @param func Function to apply (takes Object* parameter)
      */

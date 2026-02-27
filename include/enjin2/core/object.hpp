@@ -253,6 +253,52 @@ public:
      */
     size_t getComponentCount() const { return componentCount; }
 
+    /**
+     * @brief Set object name (stores pointer — caller owns lifetime)
+     * @param n Null-terminated name string or nullptr to clear
+     */
+    void setName(const char* n) { name = n; }
+
+    /**
+     * @brief Get object name
+     * @return Pointer to name string or nullptr if not set
+     */
+    const char* getName() const { return name; }
+
+    /**
+     * @brief Add a tag to this object (up to MAX_TAGS = 8)
+     * @param tag Null-terminated tag string (caller owns lifetime)
+     * @return true if tag was added, false if tag array is full
+     */
+    bool addTag(const char* tag) {
+        if (tagCount >= MAX_TAGS) return false;
+        tags[tagCount++] = tag;
+        return true;
+    }
+
+    /**
+     * @brief Check if this object has a given tag
+     * @param tag Tag string to look for
+     * @return true if tag is present
+     */
+    bool hasTag(const char* tag) const {
+        for (size_t i = 0; i < tagCount; ++i) {
+            if (tags[i] && strcmp(tags[i], tag) == 0) return true;
+        }
+        return false;
+    }
+
+    /**
+     * @brief Clear all tags from this object
+     */
+    void clearTags() { tags.fill(nullptr); tagCount = 0; }
+
+    /**
+     * @brief Get current number of tags
+     * @return Tag count
+     */
+    size_t getTagCount() const { return tagCount; }
+
 private:
     /**
      * @brief Helper to cache position component only if T is C_Position using SFINAE
@@ -269,7 +315,13 @@ private:
         // Do nothing for non-position components
     }
     bool queued_for_removal = false;  ///< Flag for object removal
-    
+
+    // Name and tag identity (zero heap allocation — raw const char* pointers only)
+    const char* name = nullptr;
+    static constexpr size_t MAX_TAGS = 8;
+    std::array<const char*, MAX_TAGS> tags;
+    size_t tagCount;
+
     /**
      * @brief Initialize cached component pointers
      */

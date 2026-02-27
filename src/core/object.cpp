@@ -5,15 +5,16 @@
 
 namespace enjin2 {
 
-Object::Object() 
+Object::Object()
     : componentCount(0), awoken(false), started(false), active(true),
-      position(nullptr), drawableCount(0) {
-    
+      position(nullptr), drawableCount(0), name(nullptr), tagCount(0) {
+
     // Initialize component array
     for (auto& component : components) {
         component = nullptr;
     }
     drawables.fill(nullptr);
+    tags.fill(nullptr);
     
     // Automatically add position component - most objects need this
     addComponent<C_Position>();

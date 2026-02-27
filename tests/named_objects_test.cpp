@@ -1,3 +1,4 @@
+#include <enjin2/components/drawable.hpp>
 #include <enjin2/core/object_collection.hpp>
 #include <cstdio>
 #include <cstring>
