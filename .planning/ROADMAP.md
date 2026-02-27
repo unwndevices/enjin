@@ -145,7 +145,9 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
   2. Calling scene->switchTo(id) from within onUpdate() defers the transition until after the current frame completes
   3. Switching a scene to itself triggers a full reset and re-initialization (onCreate() is called again, not skipped by the initialized guard)
   4. Scene transitions initiated from within onDeactivate() do not cause re-entrant state machine corruption
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 30-01-PLAN.md — SSM back-pointer injection and deferred self-transition (TDD)
 
 ### Phase 31: engine.* Global Table
 **Goal**: Lua scripts access a fully-populated engine.* namespace with scene control, input polling, time, logging, and GC sub-tables available before any script loads
@@ -189,7 +191,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 **Requirements**: INPUT-01, INPUT-02, INPUT-03
 **Success Criteria** (what must be TRUE):
   1. A Lua script defining on_button_pressed(btn) has that function called with the button index on the frame the button transitions from not-pressed to pressed
-  2. A Lua script defining on_button_released(btn) has that function called with the button index on the frame the button transitions from pressed to not-pressed
+  2. A Lua script defining on_button_released(btn) has that function called with the button index on the frame the button transitions from pressed to not-released
   3. Input event callbacks fire after input polling completes and before update() is called in the same frame — never stale, never from the OS event pump
 **Plans**: TBD
 
@@ -237,7 +239,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 | 27. Fix onRender Pixel4 Bug | v1.5 | 0/? | Not started | - |
 | 28. float dt Migration | 2/2 | Complete    | 2026-02-26 | - |
 | 29. Named Objects + Tags | v1.5 | 0/? | Not started | - |
-| 30. Scene Self-Transitions | v1.5 | 0/? | Not started | - |
+| 30. Scene Self-Transitions | v1.5 | 0/1 | In progress | - |
 | 31. engine.* Global Table | v1.5 | 0/? | Not started | - |
 | 32. ScriptProxy Userdata | v1.5 | 0/? | Not started | - |
 | 33. ScriptErrorPolicy | v1.5 | 0/? | Not started | - |
