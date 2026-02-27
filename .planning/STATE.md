@@ -8,7 +8,7 @@ progress:
   total_phases: 15
   completed_phases: 13
   total_plans: 36
-  completed_plans: 34
+  completed_plans: 35
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 34 complete
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 35 in progress
 
 ## Current Position
 
-Phase: 34 of 35 (Input Event Callbacks) — Complete
-Plan: 01 complete (1 of 1 plans for this phase — phase done)
-Status: Phase 34 complete — on_button_pressed/on_button_released Lua callbacks + dispatchInputCallbacks() + input_event_callback_test; 14/14 ctest pass
-Last activity: 2026-02-27 — Phase 34-01 complete: input event callbacks + 9-assertion test
+Phase: 35 of 35 (GC Control + Component Assertions) — Plan 01 complete
+Plan: 01 complete (1 of 1 plans for this phase)
+Status: Phase 35-01 complete — engine.lua.collect() + engine.lua.memory() GC bindings; assertRequires<T>() on Component; gc_assert_test 8/8; 15/15 ctest pass
+Last activity: 2026-02-27 — Phase 35-01 complete: GC control Lua bindings + component dependency assertion
 
-Progress: [██████████████░░░░░░] 80% (28/35 phases complete — Phase 34 complete)
+Progress: [███████████████░░░░░] 83% (29/35 phases complete — Phase 35 in progress)
 
 ## Performance Metrics
 
@@ -85,6 +85,10 @@ Recent decisions relevant to v1.5:
 - [Phase 34-01]: dispatchInputCallbacks() called BEFORE lastUpdateTime and callWithProxy(UPDATE_FUNCTION) in update() — satisfies INPUT-03 ordering requirement
 - [Phase 34-01]: After dispatchInputCallbacks(), update() does NOT re-check scriptError mid-frame — Disable policy error on input callback means update still runs same frame; caught on next frame by top-of-update guard
 - [Phase 34-01]: LuaBindings::getInput() inline const accessor — zero overhead path to currentInput from lua_script.cpp
+- [Phase 35-01]: assertRequires<T>() uses assert(false&&"message") in debug, printf+setEnabled(false) in release — no process abort on ESP32
+- [Phase 35-01]: LUA_GCSTEP used for collect() not LUA_GCCOLLECT — incremental avoids stop-the-world frame spike
+- [Phase 35-01]: component.hpp includes object.hpp (not circular: object.hpp only forward-declares Component)
+- [Phase 35-01]: DEP-03 test case gated #ifdef NDEBUG — debug path would abort test process via assert(false)
 
 ### Pending Todos
 
@@ -102,6 +106,7 @@ None.
 | Phase 33-scripterrorpolicy P01 | 2 | 2 tasks | 4 files |
 | Phase 33-scripterrorpolicy P02 | 3 | 2 tasks | 4 files |
 | Phase 34 P01 | 3 | 5 tasks | 5 files |
+| Phase 35 P01 | 4 | 3 tasks | 5 files |
 
 ### Blockers/Concerns
 
@@ -118,5 +123,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 34-01-PLAN.md — input event callbacks (on_button_pressed/on_button_released) + dispatchInputCallbacks(); input_event_callback_test 9/9 assertions; 14/14 ctest pass
+Stopped at: Completed 35-01-PLAN.md — engine.lua.collect()/memory() GC bindings + assertRequires<T>() Component template; gc_assert_test 8/8 assertions; 15/15 ctest pass
 Resume file: None

@@ -62,14 +62,14 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### GC Control
 
-- [ ] **GC-01**: Lua scripts access `engine.lua.collect()` for explicit GC step
-- [ ] **GC-02**: Lua scripts access `engine.lua.memory()` to query current memory usage in bytes
+- [x] **GC-01**: Lua scripts access `engine.lua.collect()` for explicit GC step
+- [x] **GC-02**: Lua scripts access `engine.lua.memory()` to query current memory usage in bytes
 
 ### Component Assertions
 
-- [ ] **DEP-01**: Component base class provides `assertRequires<T>()` protected template method
-- [ ] **DEP-02**: In debug builds, missing dependency triggers an assertion with clear error message naming both components
-- [ ] **DEP-03**: In release builds, missing dependency logs once and disables the component (no abort on ESP32)
+- [x] **DEP-01**: Component base class provides `assertRequires<T>()` protected template method
+- [x] **DEP-02**: In debug builds, missing dependency triggers an assertion with clear error message naming both components
+- [x] **DEP-03**: In release builds, missing dependency logs once and disables the component (no abort on ESP32)
 
 ## v2 Requirements
 
@@ -146,11 +146,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INPUT-01 | Phase 34 | Complete |
 | INPUT-02 | Phase 34 | Complete |
 | INPUT-03 | Phase 34 | Complete |
-| GC-01 | Phase 35 | Pending |
-| GC-02 | Phase 35 | Pending |
-| DEP-01 | Phase 35 | Pending |
-| DEP-02 | Phase 35 | Pending |
-| DEP-03 | Phase 35 | Pending |
+| GC-01 | Phase 35 | Complete |
+| GC-02 | Phase 35 | Complete |
+| DEP-01 | Phase 35 | Complete |
+| DEP-02 | Phase 35 | Complete |
+| DEP-03 | Phase 35 | Complete |
 
 **Coverage:**
 - v1.5 requirements: 34 total

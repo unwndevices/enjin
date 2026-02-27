@@ -98,7 +98,7 @@ Complete migration from enjin to enjin2 with full independence, validation, and 
 - [x] **Phase 32: ScriptProxy Userdata** - self as first callback arg; x/y/visible/layer/name mapped to C++ (completed 2026-02-27)
 - [x] **Phase 33: ScriptErrorPolicy** - Disable/Log/Panic enum on C_LuaScript with hot-reload reset (completed 2026-02-27)
 - [x] **Phase 34: Input Event Callbacks** - on_button_pressed/on_button_released Lua callbacks (completed 2026-02-27)
-- [ ] **Phase 35: GC Control + Component Assertions** - engine.lua.collect/memory and assertRequires<T>()
+- [x] **Phase 35: GC Control + Component Assertions** - engine.lua.collect/memory and assertRequires<T>() (completed 2026-02-27)
 
 ## Phase Details
 
@@ -249,6 +249,6 @@ Plans:
 | 32. ScriptProxy Userdata | 2/2 | Complete   | 2026-02-27 | - |
 | 33. ScriptErrorPolicy | 2/2 | Complete    | 2026-02-27 | - |
 | 34. Input Event Callbacks | 1/1 | Complete    | 2026-02-27 | - |
-| 35. GC Control + Component Assertions | v1.5 | 0/1 | Not started | - |
+| 35. GC Control + Component Assertions | 1/1 | Complete   | 2026-02-27 | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**
