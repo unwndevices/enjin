@@ -269,6 +269,44 @@ int main(int argc, char* argv[]) {
             g_lua.getBindings().setInput(&g_input);  // wire current-frame input AFTER poll
             s_totalTime += dt;
             g_lua.getBindings().setTimeState(dt, s_totalTime, s_frameCount++);
+            // Dispatch input edge callbacks (mirrors C_LuaScript::dispatchInputCallbacks)
+            for (int btn = 0; btn < 16 && lua_ok; ++btn) {
+                if (g_input.justPressed(btn)) {
+                    lua_State* lua_L = g_lua.getEngine().getState();
+                    lua_getglobal(lua_L, "on_button_pressed");
+                    if (lua_isfunction(lua_L, -1)) {
+                        lua_pushnil(lua_L);               // self = nil (SDL runner has no proxy)
+                        lua_pushinteger(lua_L, static_cast<lua_Integer>(btn));
+                        if (lua_pcall(lua_L, 2, 0, 0) != LUA_OK) {
+                            const char* err = lua_tostring(lua_L, -1);
+                            std::cerr << "[lua error] on_button_pressed: "
+                                      << (err ? err : "unknown") << "\n";
+                            lua_pop(lua_L, 1);
+                            lua_ok = false;
+                        }
+                    } else {
+                        lua_pop(lua_L, 1);
+                    }
+                }
+                if (!lua_ok) break;
+                if (g_input.justReleased(btn)) {
+                    lua_State* lua_L = g_lua.getEngine().getState();
+                    lua_getglobal(lua_L, "on_button_released");
+                    if (lua_isfunction(lua_L, -1)) {
+                        lua_pushnil(lua_L);
+                        lua_pushinteger(lua_L, static_cast<lua_Integer>(btn));
+                        if (lua_pcall(lua_L, 2, 0, 0) != LUA_OK) {
+                            const char* err = lua_tostring(lua_L, -1);
+                            std::cerr << "[lua error] on_button_released: "
+                                      << (err ? err : "unknown") << "\n";
+                            lua_pop(lua_L, 1);
+                            lua_ok = false;
+                        }
+                    } else {
+                        lua_pop(lua_L, 1);
+                    }
+                }
+            }
             {
                 lua_State* lua_L = g_lua.getEngine().getState();
                 lua_getglobal(lua_L, "update");
