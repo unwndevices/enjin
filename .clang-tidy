@@ -2,6 +2,13 @@
 # clang-tidy configuration for enjin2
 # Targets: desktop (Clang/GCC), ESP32 (Xtensa), Emscripten (Wasm)
 # Constraints: C++17, no exceptions, no dynamic allocation in hot paths
+#
+# Usage:
+#   Single file:  clang-tidy -p build src/core/object.cpp
+#   All core:     clang-tidy -p build src/core/*.cpp
+#   With fixes:   clang-tidy -p build --fix src/core/object.cpp
+#   List checks:  clang-tidy --list-checks
+#
 # Run: clang-tidy -p build <source-file>
 
 Checks: >
