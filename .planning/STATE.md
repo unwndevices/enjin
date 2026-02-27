@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T02:48:23Z"
+last_updated: "2026-02-27T15:15:25.562Z"
 progress:
-  total_phases: 12
-  completed_phases: 9
-  total_plans: 32
-  completed_plans: 30
+  total_phases: 13
+  completed_phases: 10
+  total_plans: 34
+  completed_plans: 31
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 32 in progress
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 33 in progress
 
 ## Current Position
 
-Phase: 32 of 35 (ScriptProxy Userdata) — Complete
-Plan: 02 complete (2 of 2 plans for this phase)
-Status: Phase 32-02 complete — all four Lua scripts migrated to update(self, dt)/draw(self); SDL runner updated to push nil as self before dt; PROXY-04 met; Phase 32 fully complete
-Last activity: 2026-02-27 — Phase 32-02 complete: script signature migration + SDL runner nil-self proxy + pikachu_demo dt*1000 removal
+Phase: 33 of 35 (ScriptErrorPolicy) — In Progress
+Plan: 01 complete (1 of 2 plans for this phase)
+Status: Phase 33-01 complete — lua_script.cpp compiled into enjin2_lua; lua_script.hpp reconciled to LuaScriptSystem/LuaCanvas; all 8 existing tests pass
+Last activity: 2026-02-27 — Phase 33-01 complete: structural fix enabling lua_script.cpp compilation
 
-Progress: [█████████████░░░░░░░] 77% (27/35 phases complete — Phase 32 complete)
+Progress: [█████████████░░░░░░░] 77% (27/35 phases complete — Phase 33 in progress)
 
 ## Performance Metrics
 
@@ -75,6 +75,10 @@ Recent decisions relevant to v1.5:
 - [Phase 32-01]: ScriptProxy property dispatch uses strcmp chain (6 properties); self.layer is 1-indexed; name is read-only; callWithProxy() retrieves proxy from registry before lua_pcall
 - [Phase 32-02]: Option A chosen for SDL runner — push nil as self before dt; ensures pikachu_demo.lua receives correct dt value; lua_L avoids shadowing outer scope L
 - [Phase 32-02]: pikachu_demo dt * 1000 removed — Phase 28 confirmed complete (accumSec present); all scripts use (self, dt) and (self) signatures atomically
+- [bindings-split]: bindings.cpp split into 7 files by functional area — bindings.cpp (core), bindings_draw.cpp, bindings_input_sprites.cpp, bindings_layers_text.cpp, bindings_engine.cpp, bindings_math.cpp, bindings_system.cpp; bind_helpers.hpp adds LuaFuncDef + luaBindFunctions for zero-overhead table registration
+- [Phase 33-01]: lua_script.hpp reconciled to LuaScriptSystem/LuaCanvas; IScriptInterpreter/IScriptGraphics fully removed
+- [Phase 33-01]: LuaCanvas gains ICanvas<Pixel4>* constructor — C_LuaScript::draw() abstract interface now wrappable without template width/height
+- [Phase 33-01]: GetWidth()/GetHeight() PascalCase correction in lua_script.cpp — C_Drawable accessor convention enforced
 
 ### Pending Todos
 
@@ -89,6 +93,7 @@ None.
 | 3 | Aseprite Lua export plugin for enjin C header format | 2026-02-26 | 5a124e9 | | [3-aseprite-lua-plugin-for-enjin-export](./quick/3-aseprite-lua-plugin-for-enjin-export/) |
 | 4 | Update .gitignore with build artifact patterns | 2026-02-26 | 4c1ec72 | | [4-update-gitignore](./quick/4-update-gitignore/) |
 | 5 | Check conformity to plan direction and standards | 2026-02-27 | 9e859fd | Verified | [5-check-conformity-to-plan-direction-and-s](./quick/5-check-conformity-to-plan-direction-and-s/) |
+| Phase 33-scripterrorpolicy P01 | 2 | 2 tasks | 4 files |
 
 ### Blockers/Concerns
 
@@ -105,5 +110,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed quick task 5 — bindings conformity fixes (printf-only, char[32] font names, float distance, removed lua_time)
+Stopped at: Completed 33-01-PLAN.md — lua_script.cpp structural fix, LuaCanvas ICanvas<Pixel4>* constructor, 2 tasks, 8/8 tests pass
 Resume file: None

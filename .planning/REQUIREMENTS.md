@@ -48,11 +48,11 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Error Policy
 
-- [ ] **ERR-01**: `C_LuaScript` has a `ScriptErrorPolicy` field with values Disable, Log, Panic
-- [ ] **ERR-02**: Default Disable policy: on error, script is disabled, logs once, engine continues
-- [ ] **ERR-03**: Log policy: on error, logs every frame, script keeps running (debug mode)
-- [ ] **ERR-04**: Panic policy: on error, calls platform panic handler
-- [ ] **ERR-05**: F5 hot-reload clears error state and re-enables disabled scripts
+- [x] **ERR-01**: `C_LuaScript` has a `ScriptErrorPolicy` field with values Disable, Log, Panic
+- [x] **ERR-02**: Default Disable policy: on error, script is disabled, logs once, engine continues
+- [x] **ERR-03**: Log policy: on error, logs every frame, script keeps running (debug mode)
+- [x] **ERR-04**: Panic policy: on error, calls platform panic handler
+- [x] **ERR-05**: F5 hot-reload clears error state and re-enables disabled scripts
 
 ### Input Events
 
@@ -138,11 +138,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROXY-02 | Phase 32 | Complete |
 | PROXY-03 | Phase 32 | Complete |
 | PROXY-04 | Phase 32 | Complete |
-| ERR-01 | Phase 33 | Pending |
-| ERR-02 | Phase 33 | Pending |
-| ERR-03 | Phase 33 | Pending |
-| ERR-04 | Phase 33 | Pending |
-| ERR-05 | Phase 33 | Pending |
+| ERR-01 | Phase 33 | Complete |
+| ERR-02 | Phase 33 | Complete |
+| ERR-03 | Phase 33 | Complete |
+| ERR-04 | Phase 33 | Complete |
+| ERR-05 | Phase 33 | Complete |
 | INPUT-01 | Phase 34 | Pending |
 | INPUT-02 | Phase 34 | Pending |
 | INPUT-03 | Phase 34 | Pending |
