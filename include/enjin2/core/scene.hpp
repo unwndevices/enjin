@@ -165,7 +165,27 @@ public:
     Object* findObjectWithComponent() {
         return objects.findObjectWithComponent<T>();
     }
-    
+
+    /**
+     * @brief Find first object with the given name
+     * @param name Name to search for (string literal, case-sensitive)
+     * @return Pointer to matching Object or nullptr if not found
+     */
+    Object* findByName(const char* name) {
+        return objects.findByName(name);
+    }
+
+    /**
+     * @brief Find all objects carrying the given tag
+     * @param tag Tag to search for (string literal, case-sensitive)
+     * @param results Caller-provided array to write matching Object pointers into
+     * @param maxResults Maximum number of results to write
+     * @return Number of objects written into results
+     */
+    size_t findAllWithTag(const char* tag, Object** results, size_t maxResults) {
+        return objects.findAllWithTag(tag, results, maxResults);
+    }
+
     /**
      * @brief Get scene ID
      * @return Scene identifier
