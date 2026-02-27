@@ -207,7 +207,9 @@ Plans:
   2. engine.lua.memory() returns the current Lua heap size in bytes as a number
   3. A component calling assertRequires<C_Sprite>() in its awake() causes an assertion failure at startup in debug builds when C_Sprite is not present on the same object
   4. In release builds, a missing required component logs once and disables the dependent component without aborting the process
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 35-01-PLAN.md — GC bindings + assertRequires<T>() + gc_assert_test
 
 ## Progress
 
@@ -247,6 +249,6 @@ Plans:
 | 32. ScriptProxy Userdata | 2/2 | Complete   | 2026-02-27 | - |
 | 33. ScriptErrorPolicy | 2/2 | Complete    | 2026-02-27 | - |
 | 34. Input Event Callbacks | v1.5 | 0/? | Not started | - |
-| 35. GC Control + Component Assertions | v1.5 | 0/? | Not started | - |
+| 35. GC Control + Component Assertions | v1.5 | 0/1 | Not started | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**
