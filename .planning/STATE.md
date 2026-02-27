@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T16:52:45.604Z"
+last_updated: "2026-02-27T16:56:31.855Z"
 progress:
   total_phases: 17
   completed_phases: 14
