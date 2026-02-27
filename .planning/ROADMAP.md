@@ -272,6 +272,6 @@ Plans:
 **Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 37-01-PLAN.md — ScriptProxy stale error + tag bindings + component limit assertion + errorMessage fixed buffer
-- [ ] 37-02-PLAN.md — ObjectProxy for engine.scene.find() with validity invalidation via Object destructor
-- [ ] 37-03-PLAN.md — clang-tidy CMake lint target + build cleanup + error policy sibling test + input frame-order test
+- [x] 37-01-PLAN.md — ScriptProxy stale error + tag bindings + component limit assertion + errorMessage fixed buffer
+- [x] 37-02-PLAN.md — ObjectProxy for engine.scene.find() with validity invalidation via Object destructor
+- [x] 37-03-PLAN.md — clang-tidy CMake lint target + build cleanup + error policy sibling test + input frame-order test
