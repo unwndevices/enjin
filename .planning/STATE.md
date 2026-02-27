@@ -103,6 +103,7 @@ None.
 | 3 | Aseprite Lua export plugin for enjin C header format | 2026-02-26 | 5a124e9 | | [3-aseprite-lua-plugin-for-enjin-export](./quick/3-aseprite-lua-plugin-for-enjin-export/) |
 | 4 | Update .gitignore with build artifact patterns | 2026-02-26 | 4c1ec72 | | [4-update-gitignore](./quick/4-update-gitignore/) |
 | 5 | Check conformity to plan direction and standards | 2026-02-27 | 9e859fd | Verified | [5-check-conformity-to-plan-direction-and-s](./quick/5-check-conformity-to-plan-direction-and-s/) |
+| 6 | clang-tidy static analysis config for C++17 embedded engine | 2026-02-27 | c143f2f | Complete | [6-if-not-present-already-lets-setup-clang-](./quick/6-if-not-present-already-lets-setup-clang-/) |
 | Phase 33-scripterrorpolicy P01 | 2 | 2 tasks | 4 files |
 | Phase 33-scripterrorpolicy P02 | 3 | 2 tasks | 4 files |
 | Phase 34 P01 | 3 | 5 tasks | 5 files |
@@ -115,6 +116,10 @@ None.
 - [Phase 31-03 RESOLVED] engine_table_test passes; module-level access verified — Phase 32 unblocked
 - [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
 
+### Roadmap Evolution
+
+- Phase 36 added: object-drawable-cache-decoupling
+
 ### Technical Debt (carried)
 
 - Full Emscripten toolchain build not verified (code inspection conclusive)
@@ -123,5 +128,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 35-01-PLAN.md — engine.lua.collect()/memory() GC bindings + assertRequires<T>() Component template; gc_assert_test 8/8 assertions; 15/15 ctest pass
+Stopped at: Completed quick task 6 — .clang-tidy setup for clang-tidy 21.1.8 with C++17 embedded engine checks
 Resume file: None
