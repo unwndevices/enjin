@@ -7,7 +7,7 @@
  */
 #pragma once
 
-#include <string>
+#include <cstring>
 #include "lua_engine.hpp"
 #include "lua_platform.hpp"
 #include "../graphics/canvas.hpp"
@@ -259,11 +259,11 @@ private:
     // ── Text state ───────────────────────────────────────────────────────────
     uint8_t currentTextSize{1};       ///< Text size multiplier (1=normal, 2=double, etc.)
     const GFXfont* currentFont{nullptr}; ///< nullptr = built-in 5x7
-    std::string currentFontName{"default"};
+    char currentFontName[32]{"default"};
 
     static constexpr int MAX_FONTS = 8; ///< Fixed font registry size
     struct FontEntry {
-        std::string name;
+        char name[32];
         const GFXfont* font;
     };
     FontEntry fontRegistry[MAX_FONTS]{};
@@ -349,7 +349,7 @@ public:
      * @param name Name to use in Lua (e.g. "myfont"); "default" = built-in 5x7, "default8" is pre-registered.
      * @param font Pointer to GFXfont (non-owning); may be nullptr for "default" to mean built-in 5x7.
      */
-    void registerFont(const std::string& name, const GFXfont* font);
+    void registerFont(const char* name, const GFXfont* font);
 
     /**
      * @brief Inject SceneStateMachine pointer for engine.scene.switch()
@@ -407,7 +407,6 @@ private:
     
     // Utility functions
     static int lua_print(lua_State* L);
-    static int lua_time(lua_State* L);
     
     // High-performance optimized drawing functions
     static int lua_fastFillRect(lua_State* L);
@@ -536,9 +535,6 @@ private:
     static int lua_math_distance(lua_State* L);
 
     static LuaBindings* getBindings(lua_State* L);
-
-    void registerTable(const std::string& tableName,
-                       const std::vector<std::pair<std::string, lua_CFunction>>& functions);
 };
 
 /**
