@@ -211,6 +211,10 @@ int main(int argc, char* argv[]) {
                                 g_compositor.visible, &g_input, script_path);
     // Initial startup failure behaves identically to reload failure:
     // window stays open, canvas is blank, F5 retries.
+
+    // Accumulators for engine.time.now() and engine.time.frame()
+    float    s_totalTime  = 0.0f;
+    uint32_t s_frameCount = 0u;
 #endif
 
     // --- Game loop ---
@@ -235,6 +239,8 @@ int main(int argc, char* argv[]) {
                     lua_ok = performReload(g_lua, g_lua_layers, enjin2::ENJIN_LAYER_COUNT,
                                           g_compositor.visible, &g_input, script_path);
                     prev_ticks = SDL_GetTicks();  // prevent dt spike on first post-reload frame
+                    s_totalTime  = 0.0f;           // reset accumulated time on reload
+                    s_frameCount = 0u;
                 }
 #endif
             }
@@ -261,6 +267,8 @@ int main(int argc, char* argv[]) {
 #ifdef ENJIN2_BUILD_LUA
         if (lua_ok) {
             g_lua.getBindings().setInput(&g_input);  // wire current-frame input AFTER poll
+            s_totalTime += dt;
+            g_lua.getBindings().setTimeState(dt, s_totalTime, s_frameCount++);
             {
                 enjin2::LuaResult r = g_lua.callFunction("update", dt);
                 if (!r.success) {
