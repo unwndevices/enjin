@@ -248,7 +248,7 @@ Plans:
 | 31. engine.* Global Table | 3/3 | Complete    | 2026-02-27 | - |
 | 32. ScriptProxy Userdata | 2/2 | Complete   | 2026-02-27 | - |
 | 33. ScriptErrorPolicy | 2/2 | Complete    | 2026-02-27 | - |
-| 34. Input Event Callbacks | 1/1 | Complete   | 2026-02-27 | - |
+| 34. Input Event Callbacks | 1/1 | Complete    | 2026-02-27 | - |
 | 35. GC Control + Component Assertions | v1.5 | 0/1 | Not started | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**
