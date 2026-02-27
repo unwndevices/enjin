@@ -242,7 +242,7 @@ Plans:
 | 24. Sprite System Rework | v1.4 | 3/3 | Complete | 2026-02-24 |
 | 25. Multi-Layer Canvas Composition | v1.4 | 3/3 | Complete | 2026-02-26 |
 | 26. Lua Hot Reload | v1.4 | 1/1 | Complete | 2026-02-26 |
-| 27. Fix onRender Pixel4 Bug | 1/1 | Complete   | 2026-02-27 | - |
+| 27. Fix onRender Pixel4 Bug | 1/1 | Complete    | 2026-02-27 | - |
 | 28. float dt Migration | 2/2 | Complete    | 2026-02-26 | - |
 | 29. Named Objects + Tags | 2/2 | Complete    | 2026-02-27 | - |
 | 30. Scene Self-Transitions | 1/1 | Complete    | 2026-02-27 | - |
