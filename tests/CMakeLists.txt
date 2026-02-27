@@ -176,6 +176,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME error_policy_test COMMAND error_policy_test)
+
+    # Input event callback test (INPUT-01, INPUT-02, INPUT-03: on_button_pressed/released edge callbacks)
+    add_executable(input_event_callback_test
+        input_event_callback_test.cpp
+    )
+    target_include_directories(input_event_callback_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(input_event_callback_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME input_event_callback_test COMMAND input_event_callback_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
