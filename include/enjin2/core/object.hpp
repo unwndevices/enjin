@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.hpp"
+#include "../scripting/object_proxy.hpp"
 #include <array>
 #include <cassert>
 #include <cstdio>
@@ -55,9 +56,10 @@ public:
     Object();
     
     /**
-     * @brief Virtual destructor
+     * @brief Destructor — invalidates associated ObjectProxy before Object is freed.
+     * Sets m_luaProxy->valid = false so stale Lua proxy access raises a Lua error.
      */
-    virtual ~Object() = default;
+    virtual ~Object();
     
     /**
      * @brief Awake is called when object is created
@@ -225,6 +227,16 @@ public:
      * @param isActive New active state
      */
     void setActive(bool isActive) { active = isActive; }
+
+    /**
+     * @brief Register the Lua ObjectProxy associated with this Object.
+     * Called by engine.scene.find() when it wraps this Object in an ObjectProxy
+     * userdata. The destructor will set proxy->valid = false when the Object is
+     * freed. Only one proxy should be active per Object at a time — the last call
+     * overwrites any previous registration.
+     * @param proxy Non-owning pointer to the ObjectProxy userdata; nullptr to clear.
+     */
+    void setLuaProxy(ObjectProxy* proxy) { m_luaProxy = proxy; }
     
     /**
      * @brief Get total number of components
@@ -294,6 +306,9 @@ private:
         // Do nothing for non-position components
     }
     bool queued_for_removal = false;  ///< Flag for object removal
+
+    // Lua ObjectProxy back-pointer (set by engine.scene.find(), cleared in destructor)
+    ObjectProxy* m_luaProxy = nullptr;  ///< Non-owning; invalidated in ~Object()
 
     // Name and tag identity (zero heap allocation — raw const char* pointers only)
     const char* name = nullptr;

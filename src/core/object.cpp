@@ -4,6 +4,16 @@
 
 namespace enjin2 {
 
+Object::~Object() {
+    // Invalidate the associated Lua ObjectProxy (if any) before memory is freed.
+    // This prevents dangling-pointer dereference when a stale Lua proxy attempts
+    // to access this Object after destruction.
+    if (m_luaProxy) {
+        m_luaProxy->valid = false;
+        m_luaProxy = nullptr;
+    }
+}
+
 Object::Object()
     : componentCount(0), awoken(false), started(false), active(true),
       position(nullptr), name(nullptr), tagCount(0) {

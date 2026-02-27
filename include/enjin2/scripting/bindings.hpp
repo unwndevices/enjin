@@ -10,6 +10,7 @@
 #include <cstring>
 #include "lua_engine.hpp"
 #include "lua_platform.hpp"
+#include "object_proxy.hpp"
 #include "../graphics/canvas.hpp"
 #include "../graphics/gfxfont.h"
 #include "../graphics/primitives.hpp"
@@ -497,6 +498,13 @@ private:
      */
     void registerEngineTable();
     void registerProxyMetatable();
+
+    /**
+     * @brief Register the ObjectProxy metatable (called from registerAll()).
+     * Provides __index (name/hasTag/position/enable read) and __newindex
+     * (position write + enable/disable control via C_LuaScript::setEnabled()).
+     */
+    void registerObjectProxyMetatable();
 
     /**
      * @brief Register Vec2/Point/Rect metatables and math utility globals (called from registerAll())

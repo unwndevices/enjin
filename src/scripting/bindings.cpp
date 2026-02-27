@@ -507,6 +507,9 @@ void LuaBindings::registerAll() {
     // Register ScriptProxy metatable for C_LuaScript component path
     registerProxyMetatable();
 
+    // Register ObjectProxy metatable for engine.scene.find() return value (Phase 37)
+    registerObjectProxyMetatable();
+
     // Register Vec2/Point/Rect userdata metatables and math utility globals
     registerMathBindings();
 }
@@ -554,6 +557,141 @@ void LuaBindings::registerProxyMetatable() {
         lua_pushcfunction(L, lua_proxy_index_impl);
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, lua_proxy_newindex_impl);
+        lua_setfield(L, -2, "__newindex");
+    }
+    lua_pop(L, 1);  // always pop — both new and existing cases leave table on stack
+}
+
+//==============================================================================
+// ObjectProxy Metatable Implementation (Phase 37: engine.scene.find() safety)
+//==============================================================================
+
+static constexpr const char* OBJECT_PROXY_METATABLE = "ObjectProxy";
+
+// __index metamethod for ObjectProxy.
+// Reads proxy.name, proxy:hasTag(tag), proxy.position (table snapshot), proxy.enable.
+// Locked decisions (Phase 37 CONTEXT.md):
+//   - name: read-only string
+//   - hasTag(tag): method returning boolean
+//   - position: read/write table {x, y}
+//   - enable: read/write — controls C_LuaScript enabled state
+//
+// Stack layout on entry: [1]=ObjectProxy userdata, [2]=key_string
+static int lua_objproxy_index_impl(lua_State* L) {
+    enjin2::ObjectProxy* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_checkudata(L, 1, OBJECT_PROXY_METATABLE));
+    if (!proxy) { lua_pushnil(L); return 1; }
+    if (!proxy->valid || !proxy->object) {
+        luaL_error(L, "object has been destroyed");
+        return 0;  // unreachable — luaL_error longjmps
+    }
+
+    const char* key = lua_tostring(L, 2);
+    if (!key) { lua_pushnil(L); return 1; }
+
+    enjin2::Object* obj = proxy->object;
+
+    if (strcmp(key, "name") == 0) {
+        const char* n = obj->getName();
+        if (n) lua_pushstring(L, n); else lua_pushnil(L);
+        return 1;
+    } else if (strcmp(key, "hasTag") == 0) {
+        // Return a function: proxy:hasTag(tag) -> boolean
+        // Non-capturing lambda converts to plain function pointer (C++11, safe for lua_pushcfunction)
+        lua_pushcfunction(L, [](lua_State* L2) -> int {
+            enjin2::ObjectProxy* p = static_cast<enjin2::ObjectProxy*>(
+                luaL_checkudata(L2, 1, OBJECT_PROXY_METATABLE));
+            if (!p || !p->valid || !p->object) {
+                luaL_error(L2, "object has been destroyed");
+                return 0;
+            }
+            const char* tag = luaL_checkstring(L2, 2);
+            lua_pushboolean(L2, p->object->hasTag(tag) ? 1 : 0);
+            return 1;
+        });
+        return 1;
+    } else if (strcmp(key, "position") == 0) {
+        // Return a table {x=..., y=...} snapshot of current C_Position
+        enjin2::C_Position* pos = obj->getPosition();
+        lua_newtable(L);
+        lua_pushinteger(L, pos ? static_cast<lua_Integer>(pos->getPosition().x) : 0);
+        lua_setfield(L, -2, "x");
+        lua_pushinteger(L, pos ? static_cast<lua_Integer>(pos->getPosition().y) : 0);
+        lua_setfield(L, -2, "y");
+        return 1;
+    } else if (strcmp(key, "enable") == 0) {
+        // Read current enabled state of C_LuaScript component (per locked user decision)
+        enjin2::C_LuaScript* script = obj->getComponent<enjin2::C_LuaScript>();
+        if (script) {
+            lua_pushboolean(L, script->isEnabled() ? 1 : 0);
+        } else {
+            lua_pushnil(L);  // No C_LuaScript on this object
+        }
+        return 1;
+    }
+
+    lua_pushnil(L);
+    return 1;
+}
+
+// __newindex metamethod for ObjectProxy.
+// Handles position write (proxy.position = {x=N, y=M}) and enable/disable.
+// Locked decisions (Phase 37 CONTEXT.md):
+//   - position write: proxy.position = {x=..., y=...} -> C_Position::setPosition()
+//   - enable write:   proxy.enable = bool -> C_LuaScript::setEnabled()
+//   - name write:     silently ignored (read-only)
+//
+// Stack layout on entry: [1]=ObjectProxy userdata, [2]=key_string, [3]=value
+static int lua_objproxy_newindex_impl(lua_State* L) {
+    enjin2::ObjectProxy* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_checkudata(L, 1, OBJECT_PROXY_METATABLE));
+    if (!proxy) return 0;
+    if (!proxy->valid || !proxy->object) {
+        luaL_error(L, "object has been destroyed");
+        return 0;  // unreachable — luaL_error longjmps
+    }
+
+    const char* key = lua_tostring(L, 2);
+    if (!key) return 0;
+
+    if (strcmp(key, "position") == 0) {
+        // Value at stack index 3 must be a table with x and y fields
+        if (!lua_istable(L, 3)) {
+            luaL_error(L, "ObjectProxy.position: expected table {x=..., y=...}, got %s",
+                       lua_typename(L, lua_type(L, 3)));
+            return 0;
+        }
+        lua_getfield(L, 3, "x");
+        lua_getfield(L, 3, "y");
+        auto x = static_cast<int16_t>(luaL_optinteger(L, -2, 0));
+        auto y = static_cast<int16_t>(luaL_optinteger(L, -1, 0));
+        lua_pop(L, 2);
+        enjin2::C_Position* pos = proxy->object->getPosition();
+        if (pos) pos->setPosition(x, y);
+        return 0;
+    } else if (strcmp(key, "enable") == 0) {
+        // Enable/disable the C_LuaScript component on this object (per locked user decision)
+        // proxy.enable = true  -> script runs each update tick
+        // proxy.enable = false -> script is skipped (component disabled)
+        enjin2::C_LuaScript* script = proxy->object->getComponent<enjin2::C_LuaScript>();
+        if (script) {
+            script->setEnabled(lua_toboolean(L, 3) != 0);
+        }
+        return 0;
+    }
+
+    // All other property writes: silently ignore (name is read-only per design)
+    return 0;
+}
+
+void LuaBindings::registerObjectProxyMetatable() {
+    lua_State* L = engine->getState();
+    if (!L) return;
+    // luaL_newmetatable returns 1 if new (creates it), 0 if it already exists
+    if (luaL_newmetatable(L, OBJECT_PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_objproxy_index_impl);
+        lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, lua_objproxy_newindex_impl);
         lua_setfield(L, -2, "__newindex");
     }
     lua_pop(L, 1);  // always pop — both new and existing cases leave table on stack
