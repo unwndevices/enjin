@@ -252,3 +252,14 @@ Plans:
 | 35. GC Control + Component Assertions | 1/1 | Complete   | 2026-02-27 | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**
+
+### Phase 36: object-drawable-cache-decoupling
+
+**Goal:** Remove the C_Drawable cache from Object to eliminate the enjin2_core -> enjin2_ui layering violation; replace with a generic getComponents<T>() template and update all consumers
+**Requirements**: none defined
+**Depends on:** Phase 35
+**Plans:** 2 plans
+
+Plans:
+- [ ] 36-01-PLAN.md — Remove drawable cache from Object; add getComponents<T>() generic template
+- [ ] 36-02-PLAN.md — Update scene.hpp and animation.hpp consumers; add drawable_decoupling_test; verify full ctest suite
