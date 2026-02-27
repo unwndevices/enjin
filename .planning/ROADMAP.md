@@ -251,7 +251,7 @@ Plans:
 | 33. ScriptErrorPolicy | 2/2 | Complete    | 2026-02-27 | - |
 | 34. Input Event Callbacks | 1/1 | Complete    | 2026-02-27 | - |
 | 35. GC Control + Component Assertions | 1/1 | Complete   | 2026-02-27 | - |
-| 38. Close v1.5 Scripting Runtime Gaps | v1.5 | 0/? | Not started | - |
+| 38. Close v1.5 Scripting Runtime Gaps | v1.5 | 0/2 | Not started | - |
 
 **Total Progress: 58/58 plans complete across v1.0-v1.4 + v1.5 in progress**
 
@@ -284,7 +284,11 @@ Plans:
 **Requirements**: ENG-01, ENG-02, PROXY-01
 **Gap Closure:** Closes gaps from v1.5-MILESTONE-AUDIT.md (ENG-01-LIVE, ENG-02-LIVE, PROXY-01 partial, FLOW-SCENE-SWITCH, FLOW-INIT-FILE, setInput tech debt)
 **Depends on:** Phase 37
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 38-01-PLAN.md — Fix ENG-01/ENG-02 registry wiring, PROXY-01 loadScriptFile proxy, live-wiring tests
+- [ ] 38-02-PLAN.md — SDL runner input callbacks + Phase 35 VERIFICATION.md
 
 **Success Criteria** (what must be TRUE):
   1. `engine.scene.switch(id)` called from a Lua script reaches `SceneStateMachine::switchTo()` in a live engine run — not a silent no-op
