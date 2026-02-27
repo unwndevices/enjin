@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-26T21:03:46.337Z"
+last_updated: "2026-02-27T02:06:42Z"
 progress:
   total_phases: 8
   completed_phases: 6
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 28 complete
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 29 in progress
 
 ## Current Position
 
-Phase: 28 of 35 (Float DT Migration)
-Plan: 02 complete (2 of 2 plans for this phase)
-Status: Phase 28 complete — float dt migration and -Woverride verification done
-Last activity: 2026-02-26 — Phase 28-02 complete: -Woverride compiler flag added to all CMake targets
+Phase: 29 of 35 (Named Objects + Tags)
+Plan: 01 complete (1 of 2 plans for this phase)
+Status: Phase 29 in progress — Object name/tag identity with ObjectCollection lookup complete
+Last activity: 2026-02-27 — Phase 29-01 complete: Object::setName/getName/addTag/hasTag/clearTags and ObjectCollection::findByName/findAllWithTag
 
 Progress: [████████████░░░░░░░░] 74% (26/35 phases complete)
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 2 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification)
+- v1.5: 3 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity)
 
 *Updated after each plan completion*
 
@@ -56,6 +56,8 @@ Recent decisions relevant to v1.5:
 - [Phase 28]: Lua updateSprite API now expects dt in seconds (accumSec replaces accumMs)
 - [Phase 28]: PostFx uses noisePeriodAccum sub-accumulator instead of integer modulo on float time
 - [Phase 28-02]: -Woverride is Clang-specific; applied via $<CXX_COMPILER_ID:Clang,AppleClang> generator expression — GCC enforces override correctness as a hard compiler error natively
+- [Phase 29-01]: Tests using Object directly without C_Drawable symbols need --start-group/--end-group to resolve typeinfo for C_Drawable between enjin2_core.a and enjin2_ui.a
+- [Phase 29-01]: Zero-heap-allocation name/tag identity stores raw const char* pointers; caller owns string lifetime
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-26
-Stopped at: Completed Phase 28-02 — -Woverride compiler flag added to all CMake targets; clean build verified
+Last session: 2026-02-27
+Stopped at: Completed Phase 29-01 — Object name/tag identity with ObjectCollection lookup; all 29 test assertions pass
 Resume file: None

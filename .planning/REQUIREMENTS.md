@@ -19,10 +19,10 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Named Objects
 
-- [ ] **OBJ-01**: User can assign a name to an Object at construction or via setter
-- [ ] **OBJ-02**: User can find an Object by name via `ObjectCollection::findByName()` with O(n) linear scan
-- [ ] **OBJ-03**: User can add up to 8 tags (string literal pointers) to an Object with zero allocation
-- [ ] **OBJ-04**: User can find all Objects with a given tag via `ObjectCollection::findAllWithTag()`
+- [x] **OBJ-01**: User can assign a name to an Object at construction or via setter
+- [x] **OBJ-02**: User can find an Object by name via `ObjectCollection::findByName()` with O(n) linear scan
+- [x] **OBJ-03**: User can add up to 8 tags (string literal pointers) to an Object with zero allocation
+- [x] **OBJ-04**: User can find all Objects with a given tag via `ObjectCollection::findAllWithTag()`
 
 ### Scene Transitions
 
@@ -121,10 +121,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DT-01 | Phase 28 | Pending |
 | DT-02 | Phase 28 | Pending |
 | DT-03 | Phase 28 | Complete |
-| OBJ-01 | Phase 29 | Pending |
-| OBJ-02 | Phase 29 | Pending |
-| OBJ-03 | Phase 29 | Pending |
-| OBJ-04 | Phase 29 | Pending |
+| OBJ-01 | Phase 29 | Complete |
+| OBJ-02 | Phase 29 | Complete |
+| OBJ-03 | Phase 29 | Complete |
+| OBJ-04 | Phase 29 | Complete |
 | SCENE-01 | Phase 30 | Pending |
 | SCENE-02 | Phase 30 | Pending |
 | SCENE-03 | Phase 30 | Pending |
