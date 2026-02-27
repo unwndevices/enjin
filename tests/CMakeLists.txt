@@ -111,6 +111,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME hot_reload_test COMMAND hot_reload_test)
+
+    # engine.* global table test (Phase 31: ENG-01..ENG-06)
+    add_executable(engine_table_test
+        engine_table_test.cpp
+    )
+    target_include_directories(engine_table_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(engine_table_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME engine_table_test COMMAND engine_table_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
