@@ -18,6 +18,15 @@
 namespace enjin2 {
 
 /**
+ * @brief Controls how C_LuaScript responds to Lua runtime errors.
+ */
+enum class ScriptErrorPolicy : uint8_t {
+    Disable = 0,  ///< On error: disable script, log once, engine continues (default)
+    Log     = 1,  ///< On error: log error every frame, script keeps running (debug mode)
+    Panic   = 2   ///< On error: invoke platform panic handler (abort on desktop, esp_restart on ESP32)
+};
+
+/**
  * @brief Platform-agnostic script-driven UI component
  *
  * A drawable component that executes Lua scripts for custom UI rendering.
@@ -34,6 +43,7 @@ private:
     bool hasScript;                                  ///< Whether script is loaded
     bool scriptError;                                ///< Whether script has errors
     std::string errorMessage;                        ///< Last error message
+    ScriptErrorPolicy errorPolicy{ScriptErrorPolicy::Disable};  ///< Error handling policy
 
     // Script lifecycle function names
     static constexpr const char* INIT_FUNCTION   = "init";
@@ -100,6 +110,18 @@ public:
      * @return Error message string
      */
     const std::string& getErrorMessage() const { return errorMessage; }
+
+    /**
+     * @brief Set the error handling policy for this script.
+     * @param policy Disable (default), Log, or Panic
+     */
+    void setErrorPolicy(ScriptErrorPolicy policy) { errorPolicy = policy; }
+
+    /**
+     * @brief Get the current error handling policy.
+     * @return Current ScriptErrorPolicy
+     */
+    ScriptErrorPolicy getErrorPolicy() const { return errorPolicy; }
 
     /**
      * @brief Set script number variable (expose game state to script)
