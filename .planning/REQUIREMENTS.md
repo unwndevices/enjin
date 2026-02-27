@@ -9,7 +9,7 @@ Requirements for Lua Scripting Foundation milestone. Each maps to roadmap phases
 
 ### Rendering
 
-- [ ] **RENDER-01**: Scene-derived `onRender(ICanvas<Pixel4>&)` override is called during `Scene::render()` when using Pixel4 canvas
+- [x] **RENDER-01**: Scene-derived `onRender(ICanvas<Pixel4>&)` override is called during `Scene::render()` when using Pixel4 canvas
 
 ### Delta Time
 
@@ -117,7 +117,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RENDER-01 | Phase 27 | Pending |
+| RENDER-01 | Phase 27 | Complete |
 | DT-01 | Phase 28 | Complete |
 | DT-02 | Phase 28 | Complete |
 | DT-03 | Phase 28 | Complete |

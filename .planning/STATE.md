@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T18:35:00Z"
+last_updated: "2026-02-27T20:49:28.139Z"
 progress:
-  total_phases: 17
-  completed_phases: 17
-  total_plans: 39
-  completed_plans: 39
+  total_phases: 18
+  completed_phases: 16
+  total_plans: 41
+  completed_plans: 40
 ---
 
 # Project State
@@ -104,6 +104,7 @@ Recent decisions relevant to v1.5:
 - [Phase 37-03]: CLANG_TIDY option OFF by default — CI explicitly opts in with -DCLANG_TIDY=ON; no dev friction on configure
 - [Phase 37-03]: --warnings-as-errors=* on clang-tidy CLI not in .clang-tidy WarningsAsErrors field — local dev advisory, CI hard-fails
 - [Phase 37-03]: test_input03_order_call_sequence() named differently from test_input03_callbacks_fire_before_update() — avoids duplicate symbol; uses call_order/'PU' complementing callback_order/'callback_then_update' pattern
+- [Phase 27]: Two-branch if constexpr retained for Pixel4/uint8_t dispatch — collapsing would fail overload resolution at compile time
 
 ### Pending Todos
 
@@ -125,6 +126,7 @@ None.
 | Phase 35 P01 | 4 | 3 tasks | 5 files |
 | Phase 36-object-drawable-cache-decoupling P01 | 3 | 2 tasks | 2 files |
 | Phase 36-object-drawable-cache-decoupling P02 | 2 | 2 tasks | 4 files |
+| Phase 27 P01 | 80 | 2 tasks | 3 files |
 
 ### Blockers/Concerns
 
