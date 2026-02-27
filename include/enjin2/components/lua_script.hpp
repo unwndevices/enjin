@@ -213,6 +213,15 @@ private:
      * @return True if call successful
      */
     bool callScriptFunctionSafe(const std::string& functionName);
+
+    /**
+     * @brief Push stored ScriptProxy userdata as first arg, then call Lua function via pcall.
+     * @param funcName Lua global function name ("init", "update", "draw")
+     * @param dt Delta time in seconds — only pushed if passDt is true
+     * @param passDt Whether to push dt as second argument (true for update, false for init/draw)
+     * @return true if function was found and called without error, false otherwise
+     */
+    bool callWithProxy(const char* funcName, float dt, bool passDt);
     
     /**
      * @brief Setup Lua canvas for current drawing context
