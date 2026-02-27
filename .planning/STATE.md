@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T02:37:29.846Z"
+last_updated: "2026-02-27T02:44:32.697Z"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 32
-  completed_plans: 28
+  completed_plans: 29
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — Phase 31 in progress
+**Current focus:** v1.5 Lua Scripting Foundation — Phase 32 in progress
 
 ## Current Position
 
-Phase: 31 of 35 (engine.* Global Table) — PHASE COMPLETE
-Plan: 03 complete (3 of 3 plans for this phase) — Phase 31 COMPLETE
-Status: Phase 31-03 complete — engine_table_test (34 assertions, 9 ctest tests pass); setTimeState() wired into SDL main loop; ENG-01..ENG-06 all met
-Last activity: 2026-02-27 — Phase 31-03 complete: engine_table_test covering module-level access + behavioral correctness; SDL main loop wires live time data
+Phase: 32 of 35 (ScriptProxy Userdata) — In Progress
+Plan: 01 complete (1 of 2 plans for this phase)
+Status: Phase 32-01 complete — ScriptProxy full userdata with metatable registered in LuaBindings::registerAll(); callWithProxy() wires proxy as first arg to init/update/draw; PROXY-01/02/03 all met
+Last activity: 2026-02-27 — Phase 32-01 complete: ScriptProxy struct + metatable dispatch for x/y/visible/layer/active/name; proxy creation/registry storage in executeScript(); destructor invalidation before shutdown
 
-Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31 complete, Phase 32 pending)
+Progress: [████████████░░░░░░░░] 74% (26/35 phases complete — Phase 31 complete, Phase 32 in progress)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Progress: [████████████░░░░░░░░] 74% (26
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
-- v1.5: 9 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring; Phase 31-02 — engine.scene/input/time/log implementations; Phase 31-03 — engine_table_test + SDL time wiring)
+- v1.5: 10 plans (Phase 28-01 — float dt migration; Phase 28-02 — -Woverride verification; Phase 29-01 — Object name/tag identity; Phase 29-02 — Scene proxy methods; Phase 30-01 — SSM back-pointer + deferred self-transition; Phase 31-01 — engine.* global table wiring; Phase 31-02 — engine.scene/input/time/log implementations; Phase 31-03 — engine_table_test + SDL time wiring; Phase 32-01 — ScriptProxy userdata + metatable registration)
 
 *Updated after each plan completion*
 
@@ -72,6 +72,7 @@ Recent decisions relevant to v1.5:
 - [Phase 31-02]: lua_typename fallback in engine.log prevents nullptr deref when lua_tostring returns nullptr for boolean/table/nil types
 - [Phase 31-03]: s_totalTime and s_frameCount declared inside ENJIN2_BUILD_LUA guard — avoids unused-variable warnings in non-Lua builds
 - [Phase 31-03]: Hot-reload resets s_totalTime and s_frameCount alongside prev_ticks — prevents time-jump artifacts after F5 script reload
+- [Phase 32-01]: ScriptProxy property dispatch uses strcmp chain (6 properties); self.layer is 1-indexed; name is read-only; callWithProxy() retrieves proxy from registry before lua_pcall
 
 ### Pending Todos
 
@@ -88,7 +89,7 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 32 - ScriptProxy] Decide validity mechanism (generation token vs valid flag) before writing any proxy code — cannot retrofit safely
+- [Phase 32-01 RESOLVED] ScriptProxy uses bool valid flag (not generation token) — simpler, sufficient for single proxy per C_LuaScript lifetime
 - [Phase 31-01 RESOLVED] engine.* global table now registered; module-level access no longer a concern for Phase 31-02 onward
 - [Phase 31-03 RESOLVED] engine_table_test passes; module-level access verified — Phase 32 unblocked
 - [Phase 25 spec] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
@@ -101,5 +102,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Phase 31-03 — engine_table_test + SDL time wiring (Phase 31 COMPLETE)
+Stopped at: Completed Phase 32-01 — ScriptProxy userdata + metatable registration; PROXY-01/02/03 met; Phase 32-02 pending (script signature migration)
 Resume file: None

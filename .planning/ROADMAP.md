@@ -241,7 +241,7 @@ Plans:
 | 29. Named Objects + Tags | 2/2 | Complete    | 2026-02-27 | - |
 | 30. Scene Self-Transitions | 1/1 | Complete    | 2026-02-27 | - |
 | 31. engine.* Global Table | 3/3 | Complete    | 2026-02-27 | - |
-| 32. ScriptProxy Userdata | v1.5 | 0/? | Not started | - |
+| 32. ScriptProxy Userdata | 1/2 | In Progress|  | - |
 | 33. ScriptErrorPolicy | v1.5 | 0/? | Not started | - |
 | 34. Input Event Callbacks | v1.5 | 0/? | Not started | - |
 | 35. GC Control + Component Assertions | v1.5 | 0/? | Not started | - |
