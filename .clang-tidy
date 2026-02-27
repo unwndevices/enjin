@@ -1,0 +1,54 @@
+---
+# clang-tidy configuration for enjin2
+# Targets: desktop (Clang/GCC), ESP32 (Xtensa), Emscripten (Wasm)
+# Constraints: C++17, no exceptions, no dynamic allocation in hot paths
+# Run: clang-tidy -p build <source-file>
+
+Checks: >
+  bugprone-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  clang-analyzer-*,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-special-member-functions,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -modernize-avoid-c-arrays,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: 'include/enjin2/.*'
+
+FormatStyle: file
+
+CheckOptions:
+  - key: readability-identifier-naming.MemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: modernize-use-nullptr.NullMacros
+    value: 'NULL'
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: 'true'
