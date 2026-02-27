@@ -1042,57 +1042,86 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
 
 // --- engine.input.held(btn) — ENG-03 ---
 int LuaBindings::lua_engine_input_held(lua_State* L) {
-    (void)L;
-    lua_pushboolean(L, 0);
-    return 1;  // stub
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
+    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    lua_pushboolean(L, b->currentInput->held(btn) ? 1 : 0);
+    return 1;
 }
 
 // --- engine.input.just_pressed(btn) — ENG-03 ---
 int LuaBindings::lua_engine_input_just_pressed(lua_State* L) {
-    (void)L;
-    lua_pushboolean(L, 0);
-    return 1;  // stub
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
+    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    lua_pushboolean(L, b->currentInput->justPressed(btn) ? 1 : 0);
+    return 1;
 }
 
 // --- engine.input.just_released(btn) — ENG-03 ---
 int LuaBindings::lua_engine_input_just_released(lua_State* L) {
-    (void)L;
-    lua_pushboolean(L, 0);
-    return 1;  // stub
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
+    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    lua_pushboolean(L, b->currentInput->justReleased(btn) ? 1 : 0);
+    return 1;
 }
 
 // --- engine.input.axis(n) — ENG-03 ---
 int LuaBindings::lua_engine_input_axis(lua_State* L) {
-    (void)L;
-    lua_pushnumber(L, 0.0);
-    return 1;  // stub
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentInput) { lua_pushnumber(L, 0.0); return 1; }
+    int axis = static_cast<int>(luaL_checkinteger(L, 1));
+    float val = (axis >= 0 && axis < 8) ? b->currentInput->axes[axis] : 0.0f;
+    lua_pushnumber(L, static_cast<lua_Number>(val));
+    return 1;
 }
 
 // --- engine.time.delta() — ENG-04 ---
 int LuaBindings::lua_engine_time_delta(lua_State* L) {
-    (void)L;
-    lua_pushnumber(L, 0.0);
-    return 1;  // stub
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_time");
+    auto* ts = static_cast<EngineTimeState*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    lua_pushnumber(L, ts ? static_cast<lua_Number>(ts->dt) : 0.0);
+    return 1;
 }
 
 // --- engine.time.now() — ENG-04 ---
 int LuaBindings::lua_engine_time_now(lua_State* L) {
-    (void)L;
-    lua_pushnumber(L, 0.0);
-    return 1;  // stub
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_time");
+    auto* ts = static_cast<EngineTimeState*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    lua_pushnumber(L, ts ? static_cast<lua_Number>(ts->totalTime) : 0.0);
+    return 1;
 }
 
 // --- engine.time.frame() — ENG-04 ---
 int LuaBindings::lua_engine_time_frame(lua_State* L) {
-    (void)L;
-    lua_pushinteger(L, 0);
-    return 1;  // stub
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_time");
+    auto* ts = static_cast<EngineTimeState*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    lua_pushinteger(L, ts ? static_cast<lua_Integer>(ts->frameCount) : 0);
+    return 1;
 }
 
 // --- engine.log(...) — ENG-05 ---
+// Uses printf (not std::cout) — compatible with ESP32, Emscripten, and desktop.
+// Handles all Lua types: strings/numbers coerce via lua_tostring;
+// booleans/tables/nil fall back to lua_typename to avoid nullptr deref in printf.
 int LuaBindings::lua_engine_log(lua_State* L) {
-    (void)L;
-    return 0;  // stub — implemented in Plan 02
+    int n = lua_gettop(L);
+    for (int i = 1; i <= n; ++i) {
+        const char* s = lua_tostring(L, i);
+        if (s) {
+            printf("%s", s);
+        } else {
+            // lua_tostring returns nullptr for boolean, table, function, nil
+            printf("(%s)", lua_typename(L, lua_type(L, i)));
+        }
+        if (i < n) printf("\t");
+    }
+    printf("\n");
+    return 0;
 }
 
 //==============================================================================
