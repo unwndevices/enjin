@@ -1,19 +1,17 @@
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/core/component.hpp"
 #include "../../include/enjin2/components/position.hpp"
-#include "../../include/enjin2/components/drawable.hpp"
 
 namespace enjin2 {
 
 Object::Object()
     : componentCount(0), awoken(false), started(false), active(true),
-      position(nullptr), drawableCount(0), name(nullptr), tagCount(0) {
+      position(nullptr), name(nullptr), tagCount(0) {
 
     // Initialize component array
     for (auto& component : components) {
         component = nullptr;
     }
-    drawables.fill(nullptr);
     tags.fill(nullptr);
     
     // Automatically add position component - most objects need this
@@ -81,23 +79,14 @@ void Object::lateUpdate(float dt) {
 void Object::initializeComponentCache() {
     // Reset caches
     position = nullptr;
-    drawableCount = 0;
-    drawables.fill(nullptr);
-    
-    // Rebuild caches
+
+    // Rebuild position cache
     for (size_t i = 0; i < componentCount; ++i) {
         if (!components[i]) continue;
-        
+
         // Cache position component
         if (!position) {
             position = dynamic_cast<C_Position*>(components[i].get());
-        }
-        
-        // Cache drawable components
-        if (auto drawable = dynamic_cast<C_Drawable*>(components[i].get())) {
-            if (drawableCount < MAX_COMPONENTS) {
-                drawables[drawableCount++] = drawable;
-            }
         }
     }
 }
