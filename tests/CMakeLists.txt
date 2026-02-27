@@ -79,6 +79,12 @@ target_link_libraries(named_objects_test PRIVATE
     -Wl,--start-group enjin2_core enjin2_graphics enjin2_ui enjin2_input -Wl,--end-group)
 add_test(NAME named_objects_test COMMAND named_objects_test)
 
+# Scene transition unit test (SCENE-01, SCENE-02, SCENE-03: SSM back-pointer + deferred self-transition)
+add_executable(scene_transition_test scene_transition_test.cpp)
+target_include_directories(scene_transition_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(scene_transition_test PRIVATE enjin2)
+add_test(NAME scene_transition_test COMMAND scene_transition_test)
+
 # Layer binding unit test (Lua layer API: setLayer, getLayer, clearLayer, etc.)
 if(ENJIN2_BUILD_LUA)
     add_executable(layer_binding_test
