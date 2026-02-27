@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lua Scripting Foundation
 status: unknown
-last_updated: "2026-02-27T16:56:31.855Z"
+last_updated: "2026-02-27T18:21:34Z"
 progress:
   total_phases: 17
   completed_phases: 14
   total_plans: 38
-  completed_plans: 36
+  completed_plans: 37
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 36 of 37 (Object Drawable Cache Decoupling) — COMPLETE (both plans done)
-Plan: 02 complete (2 of 2 plans for this phase)
-Status: Phase 36 complete — scene.hpp/animation.hpp migrated to getComponents<T>(); enjin2_core->enjin2_ui layering violation fully eliminated; 16 ctests pass
-Last activity: 2026-02-27 — Phase 36-02 complete: scene.hpp renderObjects() + animation.hpp start() updated; drawable_decoupling_test added
+Phase: 37 of 37 (Address Prominent Codebase Concerns) — IN PROGRESS (1 of 2+ plans done)
+Plan: 01 complete (1 of 2 plans for this phase)
+Status: Phase 37-01 complete — ScriptProxy stale luaL_error, tag bindings, char[256] errorMessage, addComponent overflow assertion; 17 ctests pass
+Last activity: 2026-02-27 — Phase 37-01 complete: bindings.cpp + lua_script.hpp/cpp + object.hpp hardened; script_proxy_lifetime_test added
 
-Progress: [█████████████████░░░] 89% (31/37 phases complete — Phase 37 next)
+Progress: [█████████████████░░░] 89% (31/37 phases complete — Phase 37 in progress)
 
 ## Performance Metrics
 
@@ -93,6 +93,10 @@ Recent decisions relevant to v1.5:
 - [Phase 36-01]: Only C_Position fast cache retained in Object; C_Drawable cache eliminated removing enjin2_core->enjin2_ui layering violation; scene.hpp/animation.hpp callers deferred to Plan 02
 - [Phase 36-02]: named_objects_test --start-group no longer required after C_Drawable cache removal from object.cpp in Plan 01 — simplified to plain link
 - [Phase 36-02]: scene.hpp renderObjects() and animation.hpp start() color track now use getComponents<C_Drawable>() and getComponent<C_Drawable>() respectively — enjin2_core->enjin2_ui layering violation fully eliminated
+- [Phase 37-01]: Stale proxy guard split: !proxy returns nil (C++ defensive guard); stale valid/component calls luaL_error (Lua-visible error for destroyed object access)
+- [Phase 37-01]: Tag method dispatch in __index: strcmp key returns lua_pushcfunction — addTag/hasTag/clearTags now callable as self:method() from Lua
+- [Phase 37-01]: char[256]{} errorMessage replaces std::string — zero heap allocation on error paths; getErrorMessage() returns const char*
+- [Phase 37-01]: addComponent overflow: assert(false&&"...") in debug (fast failure); fprintf(stderr)+return nullptr in release (no abort on embedded targets)
 
 ### Pending Todos
 
@@ -135,5 +139,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 36-02-PLAN.md — scene.hpp/animation.hpp migrated to getComponents<T>(); drawable_decoupling_test added; 16 ctests pass; Phase 36 complete
+Stopped at: Completed 37-01-PLAN.md — ScriptProxy stale luaL_error + tag bindings; char[256] errorMessage; addComponent overflow assert; script_proxy_lifetime_test; 17 ctests pass
 Resume file: None
