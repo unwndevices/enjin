@@ -7,6 +7,7 @@
 #include "../../include/enjin2/components/timer.hpp"
 #include "../../include/enjin2/components/state_machine.hpp"
 #include "../../include/enjin2/components/tilemap.hpp"
+#include "../../include/enjin2/components/camera.hpp"
 #include "../../include/enjin2/core/object.hpp"
 
 namespace enjin2 {
@@ -221,6 +222,9 @@ static int lua_proxy_get_component_impl(lua_State* L) {
     } else if (strcmp(typeName, "C_Tilemap") == 0) {
         comp = owner->getComponent<enjin2::C_Tilemap>();
         metaName = "C_Tilemap_Proxy";
+    } else if (strcmp(typeName, "C_Camera") == 0) {
+        comp = owner->getComponent<enjin2::C_Camera>();
+        metaName = "C_Camera_Proxy";
     }
 
     if (!comp) { lua_pushnil(L); return 1; }
@@ -645,6 +649,98 @@ static int lua_ctilemap_proxy_index_impl(lua_State* L) {
     } else {
         lua_pushnil(L);
     }
+    return 1;
+}
+
+//==============================================================================
+// C_Camera_Proxy Metatable Implementation (Phase 44: camera Lua API)
+//==============================================================================
+
+static constexpr const char* CCAMERA_PROXY_METATABLE = "C_Camera_Proxy";
+
+// cam:setPosition(x, y)
+static int lua_ccamera_proxy_setPosition(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
+    auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
+    float x = static_cast<float>(luaL_checknumber(L, 2));
+    float y = static_cast<float>(luaL_checknumber(L, 3));
+    cam->setPosition(x, y);
+    return 0;
+}
+
+// cam:getPosition() -> x, y
+static int lua_ccamera_proxy_getPosition(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
+    auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
+    enjin2::Vec2 pos = cam->getPosition();
+    lua_pushnumber(L, static_cast<lua_Number>(pos.x));
+    lua_pushnumber(L, static_cast<lua_Number>(pos.y));
+    return 2;
+}
+
+// cam:lookAt(x, y [, speed]) — speed defaults to 1.0 (instant snap)
+static int lua_ccamera_proxy_lookAt(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
+    auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
+    float x = static_cast<float>(luaL_checknumber(L, 2));
+    float y = static_cast<float>(luaL_checknumber(L, 3));
+    float speed = lua_gettop(L) >= 4 ? static_cast<float>(luaL_checknumber(L, 4)) : 1.0f;
+    cam->lookAt(x, y, speed);
+    return 0;
+}
+
+// cam:shake(intensity, duration)
+static int lua_ccamera_proxy_shake(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
+    auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
+    float intensity = static_cast<float>(luaL_checknumber(L, 2));
+    float duration = static_cast<float>(luaL_checknumber(L, 3));
+    cam->shake(intensity, duration);
+    return 0;
+}
+
+// cam:setBounds(minX, minY, maxX, maxY)
+static int lua_ccamera_proxy_setBounds(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
+    auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
+    float minX = static_cast<float>(luaL_checknumber(L, 2));
+    float minY = static_cast<float>(luaL_checknumber(L, 3));
+    float maxX = static_cast<float>(luaL_checknumber(L, 4));
+    float maxY = static_cast<float>(luaL_checknumber(L, 5));
+    cam->setBounds(minX, minY, maxX, maxY);
+    return 0;
+}
+
+// cam:clearBounds()
+static int lua_ccamera_proxy_clearBounds(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
+    auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
+    cam->clearBounds();
+    return 0;
+}
+
+// __index metamethod for C_Camera_Proxy
+static int lua_ccamera_proxy_index_impl(lua_State* L) {
+    const char* key = luaL_checkstring(L, 2);
+    if (strcmp(key, "setPosition") == 0) { lua_pushcfunction(L, lua_ccamera_proxy_setPosition); return 1; }
+    if (strcmp(key, "getPosition") == 0) { lua_pushcfunction(L, lua_ccamera_proxy_getPosition); return 1; }
+    if (strcmp(key, "lookAt") == 0)      { lua_pushcfunction(L, lua_ccamera_proxy_lookAt);      return 1; }
+    if (strcmp(key, "shake") == 0)       { lua_pushcfunction(L, lua_ccamera_proxy_shake);       return 1; }
+    if (strcmp(key, "setBounds") == 0)   { lua_pushcfunction(L, lua_ccamera_proxy_setBounds);   return 1; }
+    if (strcmp(key, "clearBounds") == 0) { lua_pushcfunction(L, lua_ccamera_proxy_clearBounds); return 1; }
+    lua_pushnil(L);
     return 1;
 }
 
@@ -1217,6 +1313,13 @@ void LuaBindings::registerComponentProxyMetatable() {
     // Register C_Tilemap_Proxy metatable (Phase 43: tilemap component)
     if (luaL_newmetatable(L, CTILEMAP_PROXY_METATABLE)) {
         lua_pushcfunction(L, lua_ctilemap_proxy_index_impl);
+        lua_setfield(L, -2, "__index");
+    }
+    lua_pop(L, 1);
+
+    // Register C_Camera_Proxy metatable (Phase 44: cam:setPosition/getPosition/lookAt/shake/setBounds/clearBounds)
+    if (luaL_newmetatable(L, CCAMERA_PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_ccamera_proxy_index_impl);
         lua_setfield(L, -2, "__index");
     }
     lua_pop(L, 1);

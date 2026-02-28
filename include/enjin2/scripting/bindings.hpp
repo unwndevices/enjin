@@ -27,6 +27,7 @@ namespace enjin2 {
 // Full includes are in bindings.cpp only (avoids circular include issues)
 class Scene;
 class SceneStateMachine;
+class C_Camera;
 
 // Forward declaration — prevents circular include with lua_script.hpp
 class C_LuaScript;
@@ -421,6 +422,9 @@ private:
     // -- Event bus (scene-scoped pub/sub) -----------------------------------------
     LuaEventBus m_eventBus;                    ///< Scene-scoped event bus; cleared on scene change and hot-reload
 
+    // -- Active camera (scene-level singleton) -----------------------------------
+    C_Camera* m_activeCamera{nullptr};  ///< Non-owning; set by host or cleared on scene change
+
 public:
     /**
      * @brief Constructor
@@ -497,6 +501,18 @@ public:
      * @param scene Non-owning pointer to the currently active scene; may be nullptr
      */
     void setActiveScene(Scene* scene);
+
+    /**
+     * @brief Set active camera pointer for engine.camera.* bindings
+     * @param cam Non-owning pointer; may be nullptr
+     */
+    void setActiveCamera(C_Camera* cam) { m_activeCamera = cam; }
+
+    /**
+     * @brief Get active camera pointer
+     * @return Current active camera or nullptr
+     */
+    C_Camera* getActiveCamera() const { return m_activeCamera; }
 
     /**
      * @brief Update time state for engine.time.* bindings (call before each frame's update)
