@@ -82,7 +82,7 @@
 **Environment:**
 - Platform definitions via compile flags:
   - `VCV_RACK` - Desktop/VCV Rack platform (default, sets memory to 1MB, enables all Lua libs)
-  - `ESP32` - Embedded ESP32 platform (64KB Lua memory, minimal libs, no file I/O)
+  - `ESP32` - Embedded ESP32 platform (256KB Lua memory, minimal libs, no file I/O)
   - `EMSCRIPTEN` - WebAssembly platform (LuaJIT from source with FFI/JIT disabled)
 
 - Conditional feature flags:

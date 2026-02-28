@@ -98,7 +98,7 @@ ENABLE_DEBUG = true        // Load debug library
 
 ESP32:
 ```cpp
-MEMORY_LIMIT = 64KB
+MEMORY_LIMIT = 256KB
 ENABLE_ALL_LIBS = false    // Minimal libraries only
 ENABLE_FILE_IO = false     // Disable dofile, loadfile, require, io
 ENABLE_DEBUG = false       // No debug library to save memory

@@ -217,7 +217,7 @@ int main() {
     std::cout << "4-bit pixel efficiency: 50% memory savings vs 8-bit\n";
     
     std::cout << "\n=== Phase 3 Lua Integration Features ===\n";
-    std::cout << "✓ Static Lua memory management (64KB limit)\n";
+    std::cout << "✓ Static Lua memory management (256KB limit)\n";
     std::cout << "✓ Canvas abstraction for 4-bit and 8-bit\n";
     std::cout << "✓ Drawing primitives (lines, rectangles, circles, triangles)\n";
     std::cout << "✓ Love2D.graphics-style API for familiarity\n";

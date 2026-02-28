@@ -74,9 +74,9 @@ Colors: 15 colors palette + transparent
 
 Budgets per app (initial):
 
-code + manifest: 64 KB
+code + manifest: 254 KB
 
-assets (sprites): 64 KB
+assets (sprites): 254 KB
 
 ---
 

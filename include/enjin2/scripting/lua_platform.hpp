@@ -48,7 +48,7 @@ struct LuaPlatformConfig {
     static constexpr bool ENABLE_FILE_IO = true;          ///< Enable file operations on desktop
     static constexpr bool ENABLE_DEBUG = true;            ///< Enable debug facilities on desktop
 #elif defined(ESP32)
-    static constexpr size_t MEMORY_LIMIT = 64 * 1024;     ///< Memory limit for ESP32 (64KB)
+    static constexpr size_t MEMORY_LIMIT = 256 * 1024;     ///< Memory limit for ESP32 (256KB)
     static constexpr bool ENABLE_ALL_LIBS = false;        ///< Minimal libraries only on ESP32
     static constexpr bool ENABLE_FILE_IO = false;         ///< No file I/O on ESP32 for security
     static constexpr bool ENABLE_DEBUG = false;           ///< No debug on ESP32 to save memory

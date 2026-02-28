@@ -35,7 +35,7 @@
 - `include/enjin2/components/lua_script.hpp` (C_LuaScript fields)
 - `src/components/lua_script.cpp` (string assignments, concatenations)
 
-**Impact:** On ESP32, `std::string` allocations consume heap memory managed by the global allocator, not the Lua pool. For `scriptCode` in particular, loading a large script creates a heap allocation outside the Lua memory budget. This can cause fragmentation on embedded systems with tight memory constraints (64 KB Lua pool on ESP32).
+**Impact:** On ESP32, `std::string` allocations consume heap memory managed by the global allocator, not the Lua pool. For `scriptCode` in particular, loading a large script creates a heap allocation outside the Lua memory budget. This can cause fragmentation on embedded systems with tight memory constraints (254 KB Lua pool on ESP32).
 
 **Current Mitigation:** SSO (small string optimization) avoids allocation for short strings (<~15 chars), but `errorMessage` and `scriptPath` can exceed SSO threshold.
 
@@ -143,7 +143,7 @@ Or integrate into CI/CD pipeline to fail builds on new warnings.
 
 ### GC Full Collection Mid-Frame Risk
 
-**Issue:** `engine.lua.collect()` binding calls `lua_gc(L, LUA_GCSTEP, n)` which is safe (incremental). However, if script calls it with a large step count or if a script mistakenly calls an internal `engine.lua.fullCollect()` (if exposed in future), this could spike frame time by 1–5 ms on ESP32 at 64 KB pool size.
+**Issue:** `engine.lua.collect()` binding calls `lua_gc(L, LUA_GCSTEP, n)` which is safe (incremental). However, if script calls it with a large step count or if a script mistakenly calls an internal `engine.lua.fullCollect()` (if exposed in future), this could spike frame time by 1–5 ms on ESP32 at 254 KB pool size.
 
 **Files:**
 - `src/scripting/bindings_engine.cpp` — `lua_engine_lua_collect` implementation
