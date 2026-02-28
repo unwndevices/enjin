@@ -387,6 +387,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME tilemap_test COMMAND tilemap_test)
+
+    # Tilemap Lua binding test (Phase 43: TMAP-05..TMAP-08)
+    add_executable(tilemap_lua_test
+        tilemap_lua_test.cpp
+    )
+    target_include_directories(tilemap_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(tilemap_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME tilemap_lua_test COMMAND tilemap_lua_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
