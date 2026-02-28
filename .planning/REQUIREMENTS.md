@@ -24,11 +24,11 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 
 ### State Machine
 
-- [ ] **FSM-01**: C_StateMachine component supports named states with `fsm:addState(name, {enter, exit, update})`
-- [ ] **FSM-02**: State transitions via `fsm:setState(name)` with enter/exit callback invocation
-- [ ] **FSM-03**: Current state queryable via `fsm:getState()`
-- [ ] **FSM-04**: State transitions are deferred (applied after current frame's update, same as SceneStateMachine)
-- [ ] **FSM-05**: State update callback called each frame with `(self, dt)` while state is active
+- [x] **FSM-01**: C_StateMachine component supports named states with `fsm:addState(name, {enter, exit, update})`
+- [x] **FSM-02**: State transitions via `fsm:setState(name)` with enter/exit callback invocation
+- [x] **FSM-03**: Current state queryable via `fsm:getState()`
+- [x] **FSM-04**: State transitions are deferred (applied after current frame's update, same as SceneStateMachine)
+- [x] **FSM-05**: State update callback called each frame with `(self, dt)` while state is active
 
 ### Event Bus
 
@@ -85,11 +85,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TIMER-03 | Phase 40 | Complete |
 | TIMER-04 | Phase 40 | Complete |
 | TIMER-05 | Phase 40 | Complete |
-| FSM-01 | Phase 41 | Pending |
-| FSM-02 | Phase 41 | Pending |
-| FSM-03 | Phase 41 | Pending |
-| FSM-04 | Phase 41 | Pending |
-| FSM-05 | Phase 41 | Pending |
+| FSM-01 | Phase 41 | Complete |
+| FSM-02 | Phase 41 | Complete |
+| FSM-03 | Phase 41 | Complete |
+| FSM-04 | Phase 41 | Complete |
+| FSM-05 | Phase 41 | Complete |
 | EVENT-01 | Phase 42 | Pending |
 | EVENT-02 | Phase 42 | Pending |
 | EVENT-03 | Phase 42 | Pending |

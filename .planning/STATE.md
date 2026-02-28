@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Game Ready
 status: unknown
-last_updated: "2026-02-28T14:49:16.536Z"
+last_updated: "2026-02-28T14:57:41.055Z"
 progress:
   total_phases: 10
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 25
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State
@@ -18,28 +18,28 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.6 Game Ready — Phase 40: C_Timer
+**Current focus:** v1.6 Game Ready — Phase 41: C_StateMachine (complete) — Phase 42: EventBus
 
 ## Current Position
 
-Phase: 40 of 42 (C_Timer)
+Phase: 41 of 42 (C_StateMachine)
 Plan: 01 COMPLETE
-Status: Phase 40 Plan 01 complete — ready for Phase 41
-Last activity: 2026-02-28 — Phase 40 Plan 01 complete (C_Timer: timer:after/every/cancel, luaL_ref cleanup)
+Status: Phase 41 Plan 01 complete — ready for Phase 42
+Last activity: 2026-02-28 — Phase 41 Plan 01 complete (C_StateMachine: fsm:addState/setState/getState, deferred FSM, luaL_ref cleanup, FSM-01..FSM-05 tests)
 
-Progress: [█████████████░░░░░░░] ~62% (39/42 phases complete — Phase 40 complete)
+Progress: [██████████████░░░░░░] ~67% (40/42 phases complete — Phase 41 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 80
+- Total plans completed: 81
 - v1.0: 21 plans (Phases 1-6)
 - v1.1: 17 plans (Phases 7-15)
 - v1.2: 5 plans (Phases 16-18)
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
-- v1.6: 2 plans so far (Phase 39: ComponentProxy Plan 01, Phase 40: C_Timer Plan 01)
+- v1.6: 3 plans so far (Phase 39: ComponentProxy Plan 01, Phase 40: C_Timer Plan 01, Phase 41: C_StateMachine Plan 01)
 
 *Updated after each plan completion*
 
@@ -57,6 +57,8 @@ Recent decisions relevant to v1.6:
 - [Phase 39]: self:get() 'get' key checked FIRST in ScriptProxy.__index before all other properties for collision prevention
 - [Phase 40-c-timer]: fireCallback(cbRef) takes ref as param — one-shot timers set callbackRef=LUA_NOREF before pcall; clearTimers() sets m_L=nullptr to prevent double-unref
 - [Phase 40-c-timer]: C_LuaScript destructor calls C_Timer::clearTimers() before shutdown() — handles component array destruction order safety (C_LuaScript at index 0 destructs before C_Timer at index 1)
+- [Phase 41-c-statemachine]: C_StateMachine uses deferred transition model: setState() queues m_pendingState, applied at END of update() after state's update callback — matching SceneStateMachine pattern
+- [Phase 41-c-statemachine]: clearStates() sets m_L=nullptr after unref — prevents double-unref in C_StateMachine destructor (mirrors C_Timer clearTimers sentinel pattern)
 
 ### Pending Todos
 
@@ -65,7 +67,7 @@ None.
 ### Blockers/Concerns
 
 - [v1.6 OPEN] Single-proxy-per-component constraint: multiple scripts calling `self:get("C_Timer")` on same object silently overwrites proxy registration. Mitigate with dev-mode warning on `setLuaProxy()` overwrite; cache-in-init pattern documented.
-- [v1.6 OPEN] ObjectCollection::update() loop snapshot: must verify loop uses snapshot count (`size_t count = objectCount`) before C_StateMachine implementation. One-line fix if unsafe.
+- [v1.6 RESOLVED] ObjectCollection::update() loop snapshot: C_StateMachine implemented and tested cleanly — Object::update() iterates components in array order; C_LuaScript (index 0) fires before C_StateMachine (index 1) as required.
 - [Phase 25 CARRIED] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
 
 ### Roadmap Evolution
@@ -81,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 40-01-PLAN.md — C_Timer component (timer:after/every/cancel, luaL_ref cleanup, TIMER-01..TIMER-05 tests)
+Stopped at: Completed 41-01-PLAN.md — C_StateMachine component (fsm:addState/setState/getState, deferred FSM, luaL_ref cleanup, FSM-01..FSM-05 tests)
 Resume file: None

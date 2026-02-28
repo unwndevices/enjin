@@ -60,7 +60,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 
 - [x] **Phase 39: ComponentProxy** - Lua scripts access sibling components via `self:get("TypeName")` (completed 2026-02-28)
 - [x] **Phase 40: C_Timer** - Delayed and repeating Lua callbacks via `timer:after()` / `timer:every()` (completed 2026-02-28)
-- [ ] **Phase 41: C_StateMachine** - Named states with enter/update/exit Lua callbacks and deferred transitions
+- [x] **Phase 41: C_StateMachine** - Named states with enter/update/exit Lua callbacks and deferred transitions (completed 2026-02-28)
 - [ ] **Phase 42: EventBus** - Scene-scoped publish/subscribe event bus exposed as `engine.event.*`
 
 ## Phase Details
@@ -123,5 +123,5 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 27-38. Lua Scripting Foundation | v1.5 | 21/21 | Complete | 2026-02-28 |
 | 39. ComponentProxy | 1/1 | Complete   | 2026-02-28 | - |
 | 40. C_Timer | 1/1 | Complete   | 2026-02-28 | - |
-| 41. C_StateMachine | v1.6 | 0/? | Not started | - |
+| 41. C_StateMachine | 1/1 | Complete   | 2026-02-28 | - |
 | 42. EventBus | v1.6 | 0/1 | Planned | - |
