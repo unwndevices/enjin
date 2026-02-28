@@ -9,10 +9,10 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 
 ### Component Proxy
 
-- [ ] **PROXY-01**: Lua script can access sibling components via `self:get("TypeName")`
-- [ ] **PROXY-02**: Returned proxy is full userdata with typed method table (e.g., `timer:after()`, `fsm:setState()`)
-- [ ] **PROXY-03**: Component destruction invalidates all outstanding proxies (valid flag pattern)
-- [ ] **PROXY-04**: Stale ComponentProxy access raises `luaL_error` (not silent nil)
+- [x] **PROXY-01**: Lua script can access sibling components via `self:get("TypeName")`
+- [x] **PROXY-02**: Returned proxy is full userdata with typed method table (e.g., `timer:after()`, `fsm:setState()`)
+- [x] **PROXY-03**: Component destruction invalidates all outstanding proxies (valid flag pattern)
+- [x] **PROXY-04**: Stale ComponentProxy access raises `luaL_error` (not silent nil)
 
 ### Timer
 
@@ -76,10 +76,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROXY-01 | Phase 39 | Pending |
-| PROXY-02 | Phase 39 | Pending |
-| PROXY-03 | Phase 39 | Pending |
-| PROXY-04 | Phase 39 | Pending |
+| PROXY-01 | Phase 39 | Complete |
+| PROXY-02 | Phase 39 | Complete |
+| PROXY-03 | Phase 39 | Complete |
+| PROXY-04 | Phase 39 | Complete |
 | TIMER-01 | Phase 40 | Pending |
 | TIMER-02 | Phase 40 | Pending |
 | TIMER-03 | Phase 40 | Pending |
