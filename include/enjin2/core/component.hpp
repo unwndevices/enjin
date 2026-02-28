@@ -7,6 +7,7 @@
 #endif
 #include <type_traits>
 #include "object.hpp"
+#include "../scripting/component_proxy.hpp"
 
 namespace enjin2 {
 
@@ -53,6 +54,9 @@ protected:
         }
     }
 
+private:
+    ComponentProxy* m_luaProxy = nullptr;  ///< Non-owning; invalidated in ~Component()
+
 public:
     /**
      * @brief Constructor
@@ -61,9 +65,22 @@ public:
     explicit Component(Object* owner) : owner(owner), enabled(true) {}
 
     /**
-     * @brief Virtual destructor
+     * @brief Virtual destructor — invalidates associated ComponentProxy before component is freed.
+     * Sets m_luaProxy->valid = false so stale Lua proxy access raises a Lua error.
      */
-    virtual ~Component() = default;
+    virtual ~Component() {
+        if (m_luaProxy) {
+            m_luaProxy->valid = false;
+            m_luaProxy = nullptr;
+        }
+    }
+
+    /**
+     * @brief Register a Lua-side ComponentProxy for destructor invalidation.
+     * Called by lua_proxy_get_component_impl when allocating a ComponentProxy userdata.
+     * @param proxy Non-owning pointer to the Lua userdata struct; may be nullptr to clear.
+     */
+    void setLuaProxy(ComponentProxy* proxy) { m_luaProxy = proxy; }
 
     /**
      * @brief Get the owner object
