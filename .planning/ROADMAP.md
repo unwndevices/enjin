@@ -166,7 +166,7 @@ Plans:
   4. Lua scripts access C_Camera via self:get("C_Camera") with setPosition/getPosition/lookAt/shake/setBounds/clearBounds
   5. engine.camera.* global sub-table provides scene-level camera control without needing a ComponentProxy
   6. C_Tilemap drawWithOffset integrates camera offset additively with its internal scroll
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 44-01-PLAN.md — C_Camera C++ component, C_Drawable drawWithOffset() + screen-space flag, Scene render pipeline modification, C++ test suite (CAM-01..CAM-06)

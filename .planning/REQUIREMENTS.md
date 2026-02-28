@@ -51,12 +51,12 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 
 ### 2D Camera
 
-- [ ] **CAM-01**: C_Camera component stores float-precision world position with setPosition/getPosition
-- [ ] **CAM-02**: Camera offset applied to all C_Drawable components in Scene::renderObjects() via drawWithOffset()
-- [ ] **CAM-03**: C_Drawable screen-space flag (setScreenSpace/isScreenSpace) to opt out of camera offset for UI elements
-- [ ] **CAM-04**: Camera smooth follow via lookAt(x, y, lerpSpeed) — lerps toward target each frame in update()
-- [ ] **CAM-05**: Camera screen shake via shake(intensity, duration) — sin oscillation with decay
-- [ ] **CAM-06**: Camera viewport bounds clamping via setBounds/clearBounds
+- [x] **CAM-01**: C_Camera component stores float-precision world position with setPosition/getPosition
+- [x] **CAM-02**: Camera offset applied to all C_Drawable components in Scene::renderObjects() via drawWithOffset()
+- [x] **CAM-03**: C_Drawable screen-space flag (setScreenSpace/isScreenSpace) to opt out of camera offset for UI elements
+- [x] **CAM-04**: Camera smooth follow via lookAt(x, y, lerpSpeed) — lerps toward target each frame in update()
+- [x] **CAM-05**: Camera screen shake via shake(intensity, duration) — sin oscillation with decay
+- [x] **CAM-06**: Camera viewport bounds clamping via setBounds/clearBounds
 - [ ] **CAM-07**: Lua proxy via self:get("C_Camera") with setPosition/getPosition/lookAt/shake/setBounds/clearBounds
 - [ ] **CAM-08**: engine.camera.* global Lua sub-table for scene-level camera access without ComponentProxy
 - [ ] **CAM-09**: C_Tilemap drawWithOffset integrates camera offset additively with tilemap-scoped scroll
