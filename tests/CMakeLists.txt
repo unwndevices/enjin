@@ -300,6 +300,24 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME store_test COMMAND store_test)
+
+    # Sprite asset loading / .njn Binary Test
+    add_executable(sprite_load_test
+        sprite_load_test.cpp
+    )
+    target_include_directories(sprite_load_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(sprite_load_test PRIVATE
+        enjin2_lua
+        enjin2_core
+        enjin2_graphics
+        GTest::gtest_main
+    )
+    add_test(NAME sprite_load_test COMMAND sprite_load_test)
+
+    # Copy test .njn file to build directory for sprite_load_test to find
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_pikachu.njn" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/tests")
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

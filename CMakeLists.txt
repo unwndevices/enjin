@@ -167,6 +167,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings.cpp
         src/scripting/bindings_draw.cpp
         src/scripting/bindings_input_sprites.cpp
+        src/scripting/bindings_sprite_load.cpp
         src/scripting/bindings_layers_text.cpp
         src/scripting/bindings_engine.cpp
         src/scripting/bindings_math.cpp

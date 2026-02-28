@@ -15,6 +15,7 @@
 
 #ifdef ENJIN2_BUILD_LUA
 #include <enjin2/scripting/bindings.hpp>
+#include <enjin2/core/scene.hpp>
 #include <iostream>
 #endif
 
@@ -50,6 +51,12 @@ static uint8_t g_rgb_staging[CANVAS_W * CANVAS_H * 3];
 #ifdef ENJIN2_BUILD_LUA
 static enjin2::LuaScriptSystem g_lua;
 static enjin2::LuaCanvas       g_lua_canvas(&g_canvas);
+
+// Minimal scene so engine.scene.spawn/destroy/find work from Lua scripts
+struct TestScene : enjin2::Scene {
+    explicit TestScene() : Scene(0u) {}
+};
+static TestScene g_scene;
 #endif
 
 // Expand 4-bit canvas to RGB24 staging buffer via palette
@@ -155,6 +162,12 @@ int main(int argc, char* argv[]) {
         }
         g_lua.setCanvas(&g_lua_canvas);
         g_lua.getBindings().setInput(&g_input);
+
+        // Wire scene so engine.scene.spawn/destroy/find work
+        g_scene.initialize();
+        g_scene.activate();
+        g_lua.getBindings().setActiveScene(&g_scene);
+        g_lua.getBindings().setAssetPath("tests");
 
         // Push pikachu_data as a lightuserdata global accessible to Lua
         lua_State* L = g_lua.getEngine().getState();

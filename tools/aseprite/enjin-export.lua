@@ -328,16 +328,42 @@ local function run_export()
     f:write(header)
     f:close()
 
+    -- Write .njn binary file
+    local njn_path = output_path:gsub("%.h$", ".njn")
+    if njn_path == output_path then
+        njn_path = output_path .. ".njn"
+    end
+    
+    local f2, err2 = io.open(njn_path, "wb")
+    if f2 then
+        local njn_header = string.char(78, 74, 1, 
+            math.min(cell_w, 255), math.min(cell_h, 255), 
+            math.min(cols, 255), math.min(rows, 255), 0)
+        f2:write(njn_header)
+        
+        -- Write pixels in chunks or concat to avoid unpack limits
+        local px_chars = {}
+        for i, p in ipairs(pixels) do
+            px_chars[i] = string.char(p)
+        end
+        f2:write(table.concat(px_chars))
+        f2:close()
+    else
+        app.alert("Failed to write .njn file:\n" .. njn_path .. "\n" .. (err2 or "unknown error"))
+    end
+
     -- Success summary
     local total_bytes = #pixels
     local total_frames = cols * rows
     app.alert(string.format(
+    app.alert(string.format(
         "Export complete!\n\n" ..
-        "File:   %s\n" ..
+        "Files:  %s\n" ..
+        "        %s\n" ..
         "Array:  %s_data  (%d bytes)\n" ..
         "Cell:   %dx%d\n" ..
         "Grid:   %dx%d  (%d frames)",
-        output_path,
+        output_path, njn_path,
         name, total_bytes,
         cell_w, cell_h,
         cols, rows, total_frames

@@ -9,7 +9,15 @@ sidebar_label: LuaBindings
 Lua bindings for Enjin graphics and UI. 
 
 
-Provides love2d.graphics-style API for familiar Lua scripting. All functions are registered as global Lua functions. 
+Provides love2d.graphics-style API for familiar Lua scripting. All functions are registered as global Lua functions or under the `engine` global table.
+
+## Sprite Asset Loading
+Sprites can be loaded at runtime from `.njn` binary files (exported via Aseprite plugin or `h2njn.py` CLI). The engine maintains a fixed 64KB asset buffer and a 16-slot sprite pool.
+
+*   `engine.sprite.load(name)` — Loads `[name].njn` from the configured asset path, returns an integer handle (0-15) or -1 on failure/full pool.
+*   `freeSprite(handle)` — Releases a handle back to the pool.
+*   `drawSprite(handle, x, y, [flipH, flipV, rot90])` — Draws the current frame of the loaded sprite.
+*   `updateSprite(handle, dt)` — Ticks the animation forward over time.
 
 ---
 

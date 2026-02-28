@@ -134,6 +134,7 @@ public:
                 for (size_t j = i; j < objectCount - 1; ++j) {
                     objects[j] = std::move(objects[j + 1]);
                 }
+                objects[objectCount - 1] = nullptr;  // clear trailing slot
                 objectCount--;
                 return true;
             }

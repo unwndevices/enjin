@@ -3,6 +3,7 @@
 #include "../../include/enjin2/core/scene.hpp"
 #include "../../include/enjin2/core/scene_state_machine.hpp"
 #include "../../include/enjin2/core/object.hpp"
+#include "../../include/enjin2/components/position.hpp"
 
 namespace enjin2 {
 
@@ -17,8 +18,10 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.scene sub-table (ENG-01: switch, ENG-02: find) ---
     static const LuaFuncDef kSceneFuncs[] = {
-        {"switch", lua_engine_scene_switch},
-        {"find",   lua_engine_scene_find},
+        {"switch",  lua_engine_scene_switch},
+        {"find",    lua_engine_scene_find},
+        {"spawn",   lua_engine_scene_spawn},
+        {"destroy", lua_engine_scene_destroy},
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kSceneFuncs, ENJIN_ARRAY_LEN(kSceneFuncs));
@@ -92,6 +95,14 @@ void LuaBindings::registerEngineTable() {
     luaBindFunctions(L, -1, kStoreFuncs, ENJIN_ARRAY_LEN(kStoreFuncs));
     lua_setfield(L, -2, "store");
 
+    // --- engine.sprite sub-table ---
+    static const LuaFuncDef kSpriteFuncs[] = {
+        {"load", lua_loadSprite},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kSpriteFuncs, ENJIN_ARRAY_LEN(kSpriteFuncs));
+    lua_setfield(L, -2, "sprite");
+
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
     lua_setfield(L, -2, "log");
@@ -142,6 +153,71 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
     obj->setLuaProxy(proxy);
 
     return 1;
+}
+
+// --- engine.scene.spawn([name]) ---
+// Creates a new Object in the active scene. Every Object automatically gets a
+// C_Position component. Returns an ObjectProxy userdata (same type as find()).
+// Optional string argument sets the object's name.
+// Returns nil when no active scene is available.
+int LuaBindings::lua_engine_scene_spawn(lua_State* L) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
+    auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (scenePP == nullptr || *scenePP == nullptr) { lua_pushnil(L); return 1; }
+    Scene* scene = *scenePP;
+
+    // Create a plain Object (which auto-adds C_Position)
+    Object* obj = scene->addObject<Object>();
+    if (!obj) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    // Optional name argument
+    if (lua_gettop(L) >= 1 && lua_isstring(L, 1)) {
+        // Intern the string in the Lua registry so it lives as long as the Lua state
+        lua_pushvalue(L, 1);                                   // push the string
+        int ref = luaL_ref(L, LUA_REGISTRYINDEX);              // anchor it
+        // Retrieve the interned pointer (stable for the Lua state's lifetime)
+        lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
+        const char* interned = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        obj->setName(interned);
+        (void)ref;  // ref keeps string alive; leaked intentionally (lives until lua_close)
+    }
+
+    // Allocate ObjectProxy userdata and attach the "ObjectProxy" metatable
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(
+        lua_newuserdata(L, sizeof(enjin2::ObjectProxy)));
+    proxy->object = obj;
+    proxy->valid  = true;
+    luaL_getmetatable(L, "ObjectProxy");
+    lua_setmetatable(L, -2);
+
+    // Register proxy with Object so its destructor can set valid = false
+    obj->setLuaProxy(proxy);
+
+    return 1;
+}
+
+// --- engine.scene.destroy(proxy) ---
+// Removes the Object referenced by the ObjectProxy from the active scene.
+// The Object destructor automatically sets proxy->valid = false.
+// Silently returns if the proxy is already invalid or no scene is active.
+int LuaBindings::lua_engine_scene_destroy(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_testudata(L, 1, "ObjectProxy"));
+    if (!proxy || !proxy->valid || !proxy->object) { return 0; }
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
+    auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (scenePP == nullptr || *scenePP == nullptr) { return 0; }
+
+    (*scenePP)->removeObject(proxy->object);
+    // Object::~Object() has already set proxy->valid = false at this point
+    return 0;
 }
 
 // --- engine.input.held(btn) — ENG-03 ---

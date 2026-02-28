@@ -15,6 +15,7 @@
 #include "../graphics/gfxfont.h"
 #include "../graphics/primitives.hpp"
 #include "../graphics/sprite.hpp"
+#include "../graphics/sprite_asset.hpp"
 #include "../input/input_state.hpp"
 #include "../core/math.hpp"
 #include "../core/collision.hpp"
@@ -354,6 +355,12 @@ private:
 
     SpriteState spritePool[LUA_SPRITE_POOL_SIZE]; ///< Zero-alloc fixed sprite pool
 
+    // ── Sprite asset loading ─────────────────────────────────────────────────
+    std::string assetPath_;                    ///< Base directory for .njn files
+    uint8_t     assetBuffer_[65536];           ///< Fixed 64KB C++ buffer for loaded pixels
+    uint32_t    assetBufferUsed_{0};           ///< Current offset into assetBuffer_
+    SpriteAsset loadedAssets_[LUA_SPRITE_POOL_SIZE]{}; ///< Metadata for loaded assets
+
     // ── Layer system ─────────────────────────────────────────────────────────
     static constexpr int MAX_LUA_LAYERS = 8;  ///< Ceiling matching ENJIN_LAYER_COUNT max
     LuaCanvas* layerCanvases[MAX_LUA_LAYERS]{};  ///< Null-initialized; pointers to per-layer LuaCanvas wrappers
@@ -418,12 +425,18 @@ public:
     void setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleArr);
 
     /**
-     * @brief Reset all sprite pool slots to inactive state
+     * @brief Reset all sprite pool slots to inactive state and clear asset buffer
      *
      * Called automatically from registerAll() to ensure a clean sprite pool
      * on every Lua state reload. Also resets drawing state (currentColor, lineWidth, text state).
      */
     void resetSpritePool();
+
+    /**
+     * @brief Set the base directory for loading .njn sprite assets
+     * @param path Directory path (e.g. "/data" or "assets")
+     */
+    void setAssetPath(const std::string& path) { assetPath_ = path; }
 
     /**
      * @brief Register a named font for use from Lua via setFont(name).
@@ -525,8 +538,10 @@ private:
     static int lua_isButtonJustReleased(lua_State* L);
     static int lua_getAxis(lua_State* L);
 
-    // Sprite pool bindings (SPR-06)
+    // Sprite Pool
     static int lua_newSprite(lua_State* L);
+    static int lua_loadSprite(lua_State* L);
+    static int lua_freeSprite(lua_State* L);
     static int lua_drawSprite(lua_State* L);
     static int lua_updateSprite(lua_State* L);
     static int lua_setFrame(lua_State* L);
@@ -552,6 +567,8 @@ private:
     // engine.* table binding functions (ENG-01..ENG-06)
     static int lua_engine_scene_switch(lua_State* L);
     static int lua_engine_scene_find(lua_State* L);
+    static int lua_engine_scene_spawn(lua_State* L);
+    static int lua_engine_scene_destroy(lua_State* L);
     static int lua_engine_input_held(lua_State* L);
     static int lua_engine_input_just_pressed(lua_State* L);
     static int lua_engine_input_just_released(lua_State* L);

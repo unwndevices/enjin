@@ -434,6 +434,7 @@ void LuaBindings::registerAll() {
 
     // Sprite pool (SPR-06)
     engine->registerFunction("newSprite",    lua_newSprite);
+    engine->registerFunction("freeSprite",   lua_freeSprite);
     engine->registerFunction("drawSprite",   lua_drawSprite);
     engine->registerFunction("updateSprite", lua_updateSprite);
     engine->registerFunction("setFrame",     lua_setFrame);
@@ -535,7 +536,9 @@ void LuaBindings::setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleAr
 void LuaBindings::resetSpritePool() {
     for (int i = 0; i < LUA_SPRITE_POOL_SIZE; ++i) {
         spritePool[i] = SpriteState{};
+        loadedAssets_[i] = SpriteAsset{};
     }
+    assetBufferUsed_ = 0;
     currentTextSize = 1;
     currentFont = nullptr;
     strncpy(currentFontName, "default", 31);

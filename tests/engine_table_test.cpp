@@ -380,6 +380,105 @@ static void test_proxy01_load_script_file_init_self() {
 }
 
 // ============================================================
+// test_engine_scene_spawn
+// engine.scene.spawn(name) creates an Object accessible via find()
+// ============================================================
+static void test_engine_scene_spawn() {
+    printf("--- engine.scene.spawn live wiring ---\n");
+
+    EngineTableFixture f;
+    MinimalScene scene(1u);
+    scene.initialize();
+    scene.activate();
+    f.bindings.setActiveScene(&scene);
+
+    // Spawn a named object and verify it is findable
+    LuaResult r = f.exec(
+        "local brick = engine.scene.spawn('Brick')\n"
+        "spawn_ok = (brick ~= nil) and 1 or 0\n"
+        "local found = engine.scene.find('Brick')\n"
+        "find_ok = (found ~= nil) and 1 or 0\n"
+    );
+    ASSERT(r.success, "engine.scene.spawn('Brick') should not error");
+    ASSERT(f.getNum("spawn_ok") == 1.0, "spawn() should return a non-nil proxy");
+    ASSERT(f.getNum("find_ok") == 1.0, "find('Brick') should locate the spawned object");
+}
+
+// ============================================================
+// test_engine_scene_spawn_anonymous
+// engine.scene.spawn() with no args creates an unnamed Object
+// ============================================================
+static void test_engine_scene_spawn_anonymous() {
+    printf("--- engine.scene.spawn anonymous ---\n");
+
+    EngineTableFixture f;
+    MinimalScene scene(1u);
+    scene.initialize();
+    scene.activate();
+    f.bindings.setActiveScene(&scene);
+
+    LuaResult r = f.exec(
+        "local obj = engine.scene.spawn()\n"
+        "anon_ok = (obj ~= nil) and 1 or 0\n"
+        "-- position should be accessible (Object auto-adds C_Position)\n"
+        "local pos = obj.position\n"
+        "pos_ok = (pos ~= nil) and 1 or 0\n"
+    );
+    ASSERT(r.success, "engine.scene.spawn() anonymous should not error");
+    ASSERT(f.getNum("anon_ok") == 1.0, "spawn() anonymous should return non-nil proxy");
+    ASSERT(f.getNum("pos_ok") == 1.0, "spawned object should have a position");
+}
+
+// ============================================================
+// test_engine_scene_destroy
+// engine.scene.destroy(proxy) removes the Object; stale access errors
+// ============================================================
+static void test_engine_scene_destroy() {
+    printf("--- engine.scene.destroy ---\n");
+
+    EngineTableFixture f;
+    MinimalScene scene(1u);
+    scene.initialize();
+    scene.activate();
+    f.bindings.setActiveScene(&scene);
+
+    // Spawn, verify, destroy, verify stale proxy
+    LuaResult r1 = f.exec(
+        "brick = engine.scene.spawn('DestroyMe')\n"
+        "pre_ok = (brick ~= nil) and 1 or 0\n"
+    );
+    ASSERT(r1.success, "spawn('DestroyMe') should not error");
+    ASSERT(f.getNum("pre_ok") == 1.0, "spawn returns non-nil proxy");
+
+    LuaResult r2 = f.exec(
+        "engine.scene.destroy(brick)\n"
+        "post_find = engine.scene.find('DestroyMe')\n"
+        "post_ok = (post_find == nil) and 1 or 0\n"
+    );
+    ASSERT(r2.success, "destroy should not error");
+    ASSERT(f.getNum("post_ok") == 1.0, "find('DestroyMe') should return nil after destroy");
+
+    // Accessing destroyed proxy should error
+    LuaResult r3 = f.exec("local _ = brick.name");
+    ASSERT(!r3.success, "accessing destroyed proxy should raise an error");
+}
+
+// ============================================================
+// test_engine_scene_spawn_null_guard
+// engine.scene.spawn() returns nil when no active scene
+// ============================================================
+static void test_engine_scene_spawn_null_guard() {
+    printf("--- engine.scene.spawn null guard ---\n");
+
+    EngineTableFixture f;
+    // No setActiveScene() — should return nil
+
+    LuaResult r = f.exec("spawn_nil = (engine.scene.spawn('x') == nil) and 1 or 0\n");
+    ASSERT(r.success, "spawn with no active scene should not crash");
+    ASSERT(f.getNum("spawn_nil") == 1.0, "spawn should return nil when no active scene");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -396,6 +495,10 @@ int main() {
     test_engine_scene_live_switch();
     test_engine_scene_live_find();
     test_proxy01_load_script_file_init_self();
+    test_engine_scene_spawn();
+    test_engine_scene_spawn_anonymous();
+    test_engine_scene_destroy();
+    test_engine_scene_spawn_null_guard();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
     return (failures == 0) ? 0 : 1;
