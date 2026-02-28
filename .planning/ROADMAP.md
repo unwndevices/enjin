@@ -70,7 +70,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 
 - [x] **Phase 43 Plan 01: C_Tilemap C++ foundation** - 64x64 tile grid, viewport-culled rendering, scroll, coordinate helpers (completed 2026-02-28)
 - [x] **Phase 43 Plan 02: C_Tilemap Lua bindings** - ComponentProxy, self:get("C_Tilemap"), setTiles from Lua table (completed 2026-02-28)
-- [ ] **Phase 44 Plan 01: C_Camera C++ component** - Scene render pipeline, drawWithOffset(), screen-space flag
+- [x] **Phase 44 Plan 01: C_Camera C++ component** - Scene render pipeline, drawWithOffset(), screen-space flag (completed 2026-02-28)
 - [ ] **Phase 44 Plan 02: C_Camera Lua bindings** - engine.camera.*, smooth lerp, shake, bounds
 
 ## Phase Details
@@ -166,7 +166,7 @@ Plans:
   4. Lua scripts access C_Camera via self:get("C_Camera") with setPosition/getPosition/lookAt/shake/setBounds/clearBounds
   5. engine.camera.* global sub-table provides scene-level camera control without needing a ComponentProxy
   6. C_Tilemap drawWithOffset integrates camera offset additively with its internal scroll
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 44-01-PLAN.md — C_Camera C++ component, C_Drawable drawWithOffset() + screen-space flag, Scene render pipeline modification, C++ test suite (CAM-01..CAM-06)

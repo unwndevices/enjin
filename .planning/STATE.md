@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Game Ready
 status: unknown
-last_updated: "2026-02-28T22:34:12Z"
+last_updated: "2026-02-28T22:47:00Z"
 progress:
   total_phases: 12
-  completed_phases: 10
-  total_plans: 31
-  completed_plans: 28
+  completed_phases: 11
+  total_plans: 32
+  completed_plans: 29
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Tilemap + Camera — Phase 44: 2D Camera System in progress — Plan 01 (C++ Foundation) COMPLETE
+**Current focus:** v1.7 Tilemap + Camera — Phase 44: 2D Camera System COMPLETE
 
 ## Current Position
 
-Phase: 44 of 44 (2D Camera System) — in progress
-Plan: 01 COMPLETE — Plan 02 (Lua bindings) next
-Status: Phase 44 Plan 01 complete — C_Camera C++ foundation (CAM-01..CAM-06 tests passing), drawWithOffset pipeline, scene camera integration
-Last activity: 2026-02-28 — Phase 44 Plan 01 complete (C_Camera, drawWithOffset, Scene renderObjects camera-aware, camera_test 33/33 passing)
+Phase: 44 of 44 (2D Camera System) — COMPLETE
+Plan: 02 COMPLETE — Phase 44 fully done
+Status: Phase 44 complete — C_Camera Lua bindings (CAM-07..CAM-09), engine.camera.* global sub-table, C_Camera_Proxy, C_Tilemap drawWithOffset camera integration
+Last activity: 2026-02-28 — Phase 44 Plan 02 complete (camera_lua_test 10/10 passing, CAM-07..CAM-09)
 
-Progress: [████████████████████] ~99% (44 phases — Plan 01 of Phase 44 done, Plan 02 remains)
+Progress: [████████████████████] 100% (44 phases complete)
 
 ## Performance Metrics
 
@@ -40,7 +40,7 @@ Progress: [████████████████████] ~99% (4
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phase 39: ComponentProxy Plan 01, Phase 40: C_Timer Plan 01, Phase 41: C_StateMachine Plan 01, Phase 42: EventBus Plan 01)
-- v1.7: 3 plans (Phase 43: Tilemap System Plan 01+02, Phase 44: 2D Camera Plan 01)
+- v1.7: 4 plans (Phase 43: Tilemap System Plan 01+02, Phase 44: 2D Camera Plan 01+02)
 
 *Updated after each plan completion*
 
@@ -74,6 +74,9 @@ Recent decisions relevant to v1.6:
 - [Phase 44-camera]: shake elapsed incremented before sin computation — avoids sin(0)=0 zero-offset bug on first frame
 - [Phase 44-camera]: drawWithOffset saves/restores anchor_offset; screen-space flag (m_screenSpace) on C_Drawable for HUD/UI opt-out
 - [Phase 44-camera]: camera.cpp in enjin2_lua STATIC target — Plan 02 Lua bindings link against enjin2_lua
+- [Phase 44-camera-lua]: engine.camera.* uses getBindings(L)->getActiveCamera() — follows existing input pointer pattern (not registry pointer-to-pointer); host calls bindings.setActiveCamera(cam)
+- [Phase 44-camera-lua]: C_Tilemap::drawWithOffset saves/restores m_scrollX/m_scrollY, subtracts camera offset (negative) to produce additive scroll
+- [Phase 44-camera-lua]: m_activeCamera cleared in setActiveScene() on scene change — same lifecycle as m_eventBus.clearHandlers()
 
 ### Pending Todos
 
@@ -100,5 +103,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 44-01-PLAN.md — C_Camera C++ foundation (C_Camera, drawWithOffset, Scene camera-aware pipeline, camera_test 33/33)
+Stopped at: Completed 44-02-PLAN.md — C_Camera Lua bindings (C_Camera_Proxy, engine.camera.*, C_Tilemap drawWithOffset, camera_lua_test 10/10)
 Resume file: None
