@@ -4,6 +4,7 @@
 #include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/components/position.hpp"
+#include "../../include/enjin2/components/timer.hpp"
 #include "../../include/enjin2/core/object.hpp"
 
 namespace enjin2 {
@@ -209,8 +210,10 @@ static int lua_proxy_get_component_impl(lua_State* L) {
     if (strcmp(typeName, "C_Position") == 0) {
         comp = owner->getComponent<enjin2::C_Position>();
         metaName = "C_Position_Proxy";
+    } else if (strcmp(typeName, "C_Timer") == 0) {
+        comp = owner->getComponent<enjin2::C_Timer>();
+        metaName = "C_Timer_Proxy";
     }
-    // Phase 40: else if (strcmp(typeName, "C_Timer") == 0) { comp = owner->getComponent<C_Timer>(); metaName = "C_Timer_Proxy"; }
     // Phase 41: else if (strcmp(typeName, "C_StateMachine") == 0) { ... }
 
     if (!comp) { lua_pushnil(L); return 1; }
@@ -278,6 +281,94 @@ static int lua_cposition_proxy_index_impl(lua_State* L) {
         return 1;
     }
 
+    lua_pushnil(L);
+    return 1;
+}
+
+//==============================================================================
+// C_Timer_Proxy Metatable Implementation (Phase 40: timer:after/every/cancel)
+//==============================================================================
+
+static constexpr const char* CTIMER_PROXY_METATABLE = "C_Timer_Proxy";
+
+// timer:after(seconds, fn) — TIMER-01
+static int lua_timer_after(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CTIMER_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    float seconds = static_cast<float>(luaL_checknumber(L, 2));
+    luaL_checktype(L, 3, LUA_TFUNCTION);
+
+    // Anchor the callback in the Lua registry
+    lua_pushvalue(L, 3);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
+    timer->setLuaState(L);
+    int id = timer->scheduleAfter(seconds, ref);
+    lua_pushinteger(L, static_cast<lua_Integer>(id));
+    return 1;
+}
+
+// timer:every(seconds, fn) — TIMER-02
+static int lua_timer_every(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CTIMER_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    float seconds = static_cast<float>(luaL_checknumber(L, 2));
+    luaL_checktype(L, 3, LUA_TFUNCTION);
+
+    lua_pushvalue(L, 3);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
+    timer->setLuaState(L);
+    int id = timer->scheduleEvery(seconds, ref);
+    lua_pushinteger(L, static_cast<lua_Integer>(id));
+    return 1;
+}
+
+// timer:cancel(id) — TIMER-03
+static int lua_timer_cancel(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CTIMER_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    int timerId = static_cast<int>(luaL_checkinteger(L, 2));
+    auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
+    timer->cancel(timerId);
+    return 0;
+}
+
+// __index metamethod for C_Timer_Proxy
+static int lua_ctimer_proxy_index_impl(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CTIMER_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* key = lua_tostring(L, 2);
+    if (!key) { lua_pushnil(L); return 1; }
+
+    if (strcmp(key, "after") == 0) {
+        lua_pushcfunction(L, lua_timer_after);
+        return 1;
+    } else if (strcmp(key, "every") == 0) {
+        lua_pushcfunction(L, lua_timer_every);
+        return 1;
+    } else if (strcmp(key, "cancel") == 0) {
+        lua_pushcfunction(L, lua_timer_cancel);
+        return 1;
+    }
     lua_pushnil(L);
     return 1;
 }
@@ -814,9 +905,15 @@ void LuaBindings::registerComponentProxyMetatable() {
     if (!L) return;
 
     // Register C_Position_Proxy metatable (proof-of-concept for Phase 39)
-    // Phase 40/41 will add C_Timer_Proxy, C_StateMachine_Proxy in the same pattern
     if (luaL_newmetatable(L, CPOSITION_PROXY_METATABLE)) {
         lua_pushcfunction(L, lua_cposition_proxy_index_impl);
+        lua_setfield(L, -2, "__index");
+    }
+    lua_pop(L, 1);
+
+    // Register C_Timer_Proxy metatable (Phase 40: timer:after/every/cancel)
+    if (luaL_newmetatable(L, CTIMER_PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_ctimer_proxy_index_impl);
         lua_setfield(L, -2, "__index");
     }
     lua_pop(L, 1);

@@ -1,4 +1,5 @@
 #include "../../include/enjin2/components/lua_script.hpp"
+#include "../../include/enjin2/components/timer.hpp"
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -31,6 +32,16 @@ C_LuaScript::~C_LuaScript() {
                 if (proxy) proxy->valid = false;
             }
             lua_pop(L, 1);
+        }
+        // TIMER-05: Release any pending timer callbacks before closing the Lua state.
+        // This handles the destruction-order pitfall: if C_LuaScript destructs before
+        // C_Timer (components[0] before components[1]), we must release luaL_ref handles
+        // while the Lua state is still alive.
+        if (owner) {
+            C_Timer* timer = owner->getComponent<C_Timer>();
+            if (timer) {
+                timer->clearTimers();
+            }
         }
         scriptSystem->shutdown();
     }
@@ -101,6 +112,14 @@ bool C_LuaScript::loadScriptFile(const std::string& filename) {
                 if (oldProxy) oldProxy->valid = false;
             }
             lua_pop(L, 1);
+
+            // TIMER-05: Clear any pending timer callbacks from the previous script load.
+            if (owner) {
+                C_Timer* timerComp = owner->getComponent<C_Timer>();
+                if (timerComp) {
+                    timerComp->clearTimers();
+                }
+            }
 
             // Create new userdata and assign metatable
             ScriptProxy* proxy = static_cast<ScriptProxy*>(
@@ -175,6 +194,15 @@ bool C_LuaScript::executeScript(const std::string& code) {
                 if (oldProxy) oldProxy->valid = false;
             }
             lua_pop(L, 1);
+
+            // TIMER-05: Clear any pending timer callbacks from the previous script load.
+            // This prevents stale Lua function refs from firing after hot-reload.
+            if (owner) {
+                C_Timer* timerComp = owner->getComponent<C_Timer>();
+                if (timerComp) {
+                    timerComp->clearTimers();
+                }
+            }
 
             // Create new userdata and assign metatable
             ScriptProxy* proxy = static_cast<ScriptProxy*>(

@@ -314,6 +314,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME store_test COMMAND store_test)
 
+    # Timer component test (Phase 40: TIMER-01..TIMER-05)
+    add_executable(timer_test
+        timer_test.cpp
+    )
+    target_include_directories(timer_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(timer_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME timer_test COMMAND timer_test)
+
     # Sprite asset loading / .njn Binary Test
     add_executable(sprite_load_test
         sprite_load_test.cpp
