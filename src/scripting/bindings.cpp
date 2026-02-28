@@ -1,4 +1,5 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
+#include "../../include/enjin2/scripting/component_proxy.hpp"
 #include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/components/lua_script.hpp"
@@ -21,6 +22,9 @@ static int lua_proxy_addTag_impl(lua_State* L);
 static int lua_proxy_hasTag_impl(lua_State* L);
 static int lua_proxy_clearTags_impl(lua_State* L);
 
+// Forward declaration for self:get("TypeName") — ComponentProxy dispatch (Phase 39)
+static int lua_proxy_get_component_impl(lua_State* L);
+
 // __index metamethod: called when Lua reads self.property
 // Stack layout on entry: [1]=userdata(self), [2]=key_string
 static int lua_proxy_index_impl(lua_State* L) {
@@ -41,6 +45,12 @@ static int lua_proxy_index_impl(lua_State* L) {
     const char* key = lua_tostring(L, 2);
     if (!key) {
         lua_pushnil(L);
+        return 1;
+    }
+
+    // PROXY-01: self:get("TypeName") — checked FIRST before any property (PROXY-04b collision prevention)
+    if (strcmp(key, "get") == 0) {
+        lua_pushcfunction(L, lua_proxy_get_component_impl);
         return 1;
     }
 
@@ -175,6 +185,101 @@ static int lua_proxy_clearTags_impl(lua_State* L) {
     enjin2::Object* owner = proxy->component->getOwner();
     if (owner) owner->clearTags();
     return 0;
+}
+
+// lua_proxy_get_component_impl: stack [1]=ScriptProxy userdata (self), [2]=type_name_string
+// Called as self:get("C_Position") from Lua — returns ComponentProxy userdata or nil
+static int lua_proxy_get_component_impl(lua_State* L) {
+    enjin2::ScriptProxy* proxy = static_cast<enjin2::ScriptProxy*>(
+        luaL_checkudata(L, 1, PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "object has been destroyed");
+        return 0;
+    }
+
+    const char* typeName = luaL_checkstring(L, 2);
+    enjin2::Object* owner = proxy->component->getOwner();
+    if (!owner) { lua_pushnil(L); return 1; }
+
+    // Type dispatch — each proxied component type has an entry here.
+    // Phase 40 adds: C_Timer. Phase 41 adds: C_StateMachine.
+    enjin2::Component* comp = nullptr;
+    const char* metaName = nullptr;
+
+    if (strcmp(typeName, "C_Position") == 0) {
+        comp = owner->getComponent<enjin2::C_Position>();
+        metaName = "C_Position_Proxy";
+    }
+    // Phase 40: else if (strcmp(typeName, "C_Timer") == 0) { comp = owner->getComponent<C_Timer>(); metaName = "C_Timer_Proxy"; }
+    // Phase 41: else if (strcmp(typeName, "C_StateMachine") == 0) { ... }
+
+    if (!comp) { lua_pushnil(L); return 1; }
+
+    // Allocate ComponentProxy userdata with per-type metatable
+    auto* cproxy = static_cast<enjin2::ComponentProxy*>(
+        lua_newuserdata(L, sizeof(enjin2::ComponentProxy)));
+    cproxy->component = comp;
+    cproxy->valid = true;
+    luaL_getmetatable(L, metaName);
+    lua_setmetatable(L, -2);
+
+    // Register proxy with component for destructor invalidation
+    // Note: overwrites any previous proxy (single-proxy-per-component constraint — accepted v1.6 limitation)
+    comp->setLuaProxy(cproxy);
+
+    return 1;
+}
+
+//==============================================================================
+// C_Position_Proxy Metatable Implementation (Phase 39: ComponentProxy proof-of-concept)
+//==============================================================================
+
+static constexpr const char* CPOSITION_PROXY_METATABLE = "C_Position_Proxy";
+
+// __index metamethod for C_Position_Proxy.
+// Methods: getX(), getY()
+// Stale access raises luaL_error (PROXY-04).
+static int lua_cposition_proxy_index_impl(lua_State* L) {
+    enjin2::ComponentProxy* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CPOSITION_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+
+    const char* key = lua_tostring(L, 2);
+    if (!key) { lua_pushnil(L); return 1; }
+
+    if (strcmp(key, "getX") == 0) {
+        lua_pushcfunction(L, [](lua_State* L2) -> int {
+            enjin2::ComponentProxy* p = static_cast<enjin2::ComponentProxy*>(
+                luaL_checkudata(L2, 1, "C_Position_Proxy"));
+            if (!p || !p->valid || !p->component) {
+                luaL_error(L2, "component has been destroyed");
+                return 0;
+            }
+            enjin2::C_Position* pos2 = static_cast<enjin2::C_Position*>(p->component);
+            lua_pushinteger(L2, static_cast<lua_Integer>(pos2->getPosition().x));
+            return 1;
+        });
+        return 1;
+    } else if (strcmp(key, "getY") == 0) {
+        lua_pushcfunction(L, [](lua_State* L2) -> int {
+            enjin2::ComponentProxy* p = static_cast<enjin2::ComponentProxy*>(
+                luaL_checkudata(L2, 1, "C_Position_Proxy"));
+            if (!p || !p->valid || !p->component) {
+                luaL_error(L2, "component has been destroyed");
+                return 0;
+            }
+            enjin2::C_Position* pos2 = static_cast<enjin2::C_Position*>(p->component);
+            lua_pushinteger(L2, static_cast<lua_Integer>(pos2->getPosition().y));
+            return 1;
+        });
+        return 1;
+    }
+
+    lua_pushnil(L);
+    return 1;
 }
 
 //==============================================================================
@@ -511,6 +616,9 @@ void LuaBindings::registerAll() {
     // Register ObjectProxy metatable for engine.scene.find() return value (Phase 37)
     registerObjectProxyMetatable();
 
+    // Register ComponentProxy metatables for self:get() return values (Phase 39)
+    registerComponentProxyMetatable();
+
     // Register Vec2/Point/Rect userdata metatables and math utility globals
     registerMathBindings();
 }
@@ -699,6 +807,19 @@ void LuaBindings::registerObjectProxyMetatable() {
         lua_setfield(L, -2, "__newindex");
     }
     lua_pop(L, 1);  // always pop — both new and existing cases leave table on stack
+}
+
+void LuaBindings::registerComponentProxyMetatable() {
+    lua_State* L = engine->getState();
+    if (!L) return;
+
+    // Register C_Position_Proxy metatable (proof-of-concept for Phase 39)
+    // Phase 40/41 will add C_Timer_Proxy, C_StateMachine_Proxy in the same pattern
+    if (luaL_newmetatable(L, CPOSITION_PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_cposition_proxy_index_impl);
+        lua_setfield(L, -2, "__index");
+    }
+    lua_pop(L, 1);
 }
 
 } // namespace enjin2

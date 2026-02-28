@@ -248,6 +248,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME object_proxy_test COMMAND object_proxy_test)
 
+    # Component proxy test (Phase 39: PROXY-01..PROXY-04)
+    add_executable(component_proxy_test
+        component_proxy_test.cpp
+    )
+    target_include_directories(component_proxy_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(component_proxy_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME component_proxy_test COMMAND component_proxy_test)
+
     # Sprite flipping test (drawSprite flipH/flipV/rotate90)
     add_executable(sprite_flip_test
         sprite_flip_test.cpp

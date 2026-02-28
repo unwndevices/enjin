@@ -622,6 +622,13 @@ private:
     void registerObjectProxyMetatable();
 
     /**
+     * @brief Register ComponentProxy metatables for self:get() return values (Phase 39).
+     * Registers C_Position_Proxy metatable with __index providing getX() and getY() methods.
+     * Phase 40/41 will add C_Timer_Proxy and C_StateMachine_Proxy in the same call.
+     */
+    void registerComponentProxyMetatable();
+
+    /**
      * @brief Register Vec2/Point/Rect metatables and math utility globals (called from registerAll())
      */
     void registerMathBindings();
