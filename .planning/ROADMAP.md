@@ -108,7 +108,8 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
   2. Handlers can be unregistered by subscription ID before the scene ends
   3. All event handlers are automatically cleared when the scene deactivates — no cross-scene stale callbacks
   4. All `luaL_ref` handles are released on hot-reload, leaving no dangling refs after F5
-**Plans**: TBD
+**Plans:** 1 plan
+- [ ] 42-01-PLAN.md — LuaEventBus class, engine.event sub-table (on/off/emit), scene-scoped cleanup, hot-reload cleanup, test suite
 
 ## Progress
 
@@ -123,4 +124,4 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 39. ComponentProxy | v1.6 | 0/1 | Planned | - |
 | 40. C_Timer | v1.6 | 0/? | Not started | - |
 | 41. C_StateMachine | v1.6 | 0/? | Not started | - |
-| 42. EventBus | v1.6 | 0/? | Not started | - |
+| 42. EventBus | v1.6 | 0/1 | Planned | - |
