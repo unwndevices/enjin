@@ -129,20 +129,24 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ### Active
 
-<!-- v1.6 requirements to be defined via /gsd:new-milestone -->
+<!-- v1.6 Game Ready — defined 2026-02-28 -->
 
-## Next Milestone
+- [ ] C_Timer component with delayed/repeating Lua callbacks
+- [ ] C_StateMachine component with enter/exit hooks from Lua
+- [ ] ComponentProxy / self:get() for accessing sibling components from Lua
+- [ ] Component signals / event bus for inter-object communication
+- [ ] Persistent objects across scenes
 
-Start with `/gsd:new-milestone` to define v1.6 requirements.
+## Current Milestone: v1.6 Game Ready
 
-**Deferred from v1.5 (candidates for v1.6):**
-- Persistent objects across scenes — independent subsystem
-- Component signals / event bus — separate communication pattern
-- C_Timer, C_StateMachine — standalone new components
-- ComponentProxy / self:get() — heaviest C++ work, needs careful design
-- Integer layer system — independent change
-- WASM/ESP32 hot reload — developer tool only (SDL3 runner done)
-- C_LuaScript::setInput() called per-frame in WASM/ESP32 host paths (SDL runner done)
+**Goal:** Make enjin2 capable of building complete small games (Arkanoid, physics sandbox, tamagotchi) purely from Lua on SDL3.
+
+**Target features:**
+- C_Timer — delayed and repeating callbacks accessible from Lua
+- C_StateMachine — state transitions with enter/exit hooks, Lua-driven
+- ComponentProxy / self:get() — access sibling components from Lua scripts
+- Component signals / event bus — typed inter-object communication
+- Persistent objects across scenes — objects that survive scene transitions
 
 ### Out of Scope
 
@@ -162,13 +166,9 @@ Start with `/gsd:new-milestone` to define v1.6 requirements.
 - File-watch auto-reload — Platform-specific OS APIs; F5 manual reload is sufficient
 - Partial Lua state hot-patch — Produces dangling references; full reset is correct semantic
 - WASM/ESP32 hot reload — Developer tool for SDL3 runner only
-- Persistent objects across scenes — Deferred to v1.6 (independent subsystem)
-- Component signals — Deferred to v1.6 (separate communication pattern)
-- C_Timer component — Deferred to v1.6 (standalone new component)
-- C_StateMachine component — Deferred to v1.6 (medium effort, standalone)
-- ComponentProxy / self:get() — Deferred to v1.6 (heaviest C++ work, needs careful design)
-- Event bus — Deferred to v1.6 (separate communication pattern)
-- Integer layer system — Deferred to v1.6 (independent change)
+- Integer layer system — Deferred to future (independent change)
+- WASM/ESP32 hot reload — Developer tool for SDL3 runner only
+- C_LuaScript::setInput() in WASM/ESP32 host paths — SDL runner done; platform wiring deferred
 
 ## Context
 
@@ -258,4 +258,4 @@ enjin2 is a fully scriptable 2D game engine with:
 | loadScriptFile() creates ScriptProxy before callWithProxy | init(self) for file-loaded scripts matches loadScript() string path | ✓ Working - Phase 38 |
 
 ---
-*Last updated: 2026-02-28 after v1.5 milestone*
+*Last updated: 2026-02-28 after v1.6 milestone start*

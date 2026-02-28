@@ -1,8 +1,8 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Lua Scripting Foundation
-status: complete
+milestone: v1.6
+milestone_name: Game Ready
+status: defining_requirements
 last_updated: "2026-02-28"
 progress:
   total_phases: 38
@@ -18,19 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Planning next milestone — run `/gsd:new-milestone` to start v1.6
+**Current focus:** v1.6 Game Ready — defining requirements
 
 ## Current Position
 
-**v1.5 ARCHIVED (2026-02-28)**
-
-Milestone complete. All 12 phases (27-38), 21 plans shipped.
-Archives: `.planning/milestones/v1.5-ROADMAP.md`, `.planning/milestones/v1.5-REQUIREMENTS.md`
-Tag: v1.5
-
-Next: `/gsd:new-milestone` to define v1.6 requirements
-
-Progress: [████████████████████] 100% (38/38 phases complete v1.0–v1.5)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-28 — Milestone v1.6 started
 
 ## Performance Metrics
 
