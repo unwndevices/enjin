@@ -176,6 +176,7 @@ if(ENJIN2_BUILD_LUA)
         src/components/lua_script.cpp
         src/components/timer.cpp
         src/components/state_machine.cpp
+        src/components/tilemap.cpp
         src/scripting/lua_event_bus.cpp
     )
     # Private include directories for strict isolation
