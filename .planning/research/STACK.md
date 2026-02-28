@@ -1,501 +1,617 @@
 # Stack Research
 
-**Domain:** Embedded 2D game engine — Lua scripting foundation + C++ engine enhancements (v1.5)
-**Researched:** 2026-02-26
-**Confidence:** HIGH (all conclusions drawn from live codebase + verified Lua C API headers)
+**Domain:** Zero-alloc 2D game engine — timer, state machine, component proxy, event bus, persistent objects (v1.6)
+**Researched:** 2026-02-28
+**Confidence:** HIGH (derived from direct codebase analysis + established C++ embedded patterns)
 
 ---
 
 ## Scope
 
-This document covers **only stack additions and API-level decisions for v1.5**. It does not re-research validated v1.4 capabilities (LuaJIT, SDL3, Canvas4, InputState, LayerCompositor, SpriteSheet, hot reload, etc.).
+This document covers **only stack additions and API-level decisions for v1.6 Game Ready**. It does not re-research validated v1.5 capabilities (Lua scripting, ScriptProxy, float dt, named objects, scene transitions, etc.).
+
+---
+
+## What Already Exists (Critical Context)
+
+Reading the live codebase reveals these constraints and integration points:
+
+| Existing Element | Implication for v1.6 |
+|------------------|----------------------|
+| `std::function<void(Args...)>` already in `Signal<>` and `forEach` | Not a new dep; heap-risk from closures already accepted in codebase |
+| `unique_ptr<T>` for Component/Object ownership | Heap allocation at construction time is already the pattern; "zero-alloc" means no per-frame heap |
+| `luaL_ref` / `lua_rawgeti` used in `engine.scene.spawn()` for string interning | Pattern is established for storing Lua values in registry by integer key |
+| `C_LuaScript` owns an entire `LuaScriptSystem` (full Lua VM, 20–40 KB overhead) | New components must NOT own separate Lua states — borrow the existing `lua_State*` |
+| `ScriptProxy` / `ObjectProxy` use `valid` bool + non-owning raw pointer | Same pattern must apply to all new component proxy userdata |
+| `SceneStateMachine::switchTo()` deferred transition after `update()` returns | `C_StateMachine` must mirror this deferral to prevent re-entrant FSM corruption |
+| `Object::name` and tag system use `const char*` (string literal pointers, not copies) | Event channel names that may come from transient Lua strings must be COPIED into `char[N]` buffers |
+| `LuaBindings::m_ssm` / `m_activeScene` injected via pointer-to-pointer in Lua registry | New EventBus follows the same injection pattern into `LuaBindings` |
+| `LuaStore` uses `char[64]` keys, `char[128]` string values, 16-slot fixed array | Directly reusable as precedent for EventBus channel naming |
+| `SpriteState::accumSec` float accumulator pattern | Direct precedent for `C_Timer` slot accumulator |
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies (unchanged, verified present)
+### Core Technologies (No Changes)
 
-| Technology | Version | Role |
-|------------|---------|------|
-| LuaJIT | 2.1.1753364724 (API: Lua 5.1.4) | Scripting runtime — static pool allocator, custom panic handler |
-| C++17 | `CMAKE_CXX_STANDARD 17` in CMakeLists.txt | `if constexpr`, `std::string_view`, `std::array`, template SFINAE |
-| SDL3 | Present (enjin2_sdl CMake target) | Desktop runner — event loop, input, frame timing |
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| C++17 | existing | All new components | `if constexpr`, `std::array`, SFINAE — already required |
+| Lua 5.1 (LuaJIT 2.1) | existing | Script callbacks for timers, state machines, events | Borrow `lua_State*` from owning `C_LuaScript`; no second VM |
+| CMake multi-target | existing | Build system | New components join `enjin2_core`; no new CMake targets |
 
-**No new external dependencies are introduced by v1.5.** Every feature is implemented via:
-- Lua C API (already linked via LuaJIT)
-- C++17 stdlib (`<array>`, `<string_view>`, `<type_traits>`, `<cstring>`)
-- Existing enjin2 headers
+### New Components (Header-Only Where Possible)
 
----
+| Component | File | Purpose | Key Constraints |
+|-----------|------|---------|----------------|
+| `C_Timer` | `include/enjin2/components/timer.hpp` | Delayed/repeating Lua callbacks | Borrowed `lua_State*`; 8-slot static array; `luaL_ref` for callbacks |
+| `C_StateMachine` | `include/enjin2/components/state_machine.hpp` | Per-object FSM with enter/exit hooks | Deferred transition pattern; `const char*` state names; 8-slot array |
+| `EventBus` | `include/enjin2/core/event_bus.hpp` | Scene-scoped cross-object event dispatch | Scene-owned; `char[32]` channel names (copied); 16 channels × 8 listeners |
 
-### Feature-by-Feature Stack Decisions
+### Supporting Libraries (No New External Dependencies)
 
-#### 1. float dt everywhere
+All new features use only stdlib headers already compiled into the project:
 
-**What changes:** `uint16_t deltaTime` (milliseconds) → `float dt` (seconds) in all virtual methods.
+| Header | Already Compiled | Use in v1.6 |
+|--------|-----------------|-------------|
+| `<array>` | Yes | Timer slots, FSM state slots, event bus channels |
+| `<cstring>` | Yes | `strcmp` for state/channel name lookup; `strncpy` for channel name copy |
+| `<functional>` | Yes (Signal, forEach) | No new `std::function` slots — `luaL_ref` integer handles preferred for Lua callbacks |
+| `<type_traits>` | Yes | `assertRequires<T>` in new components |
+| `<cassert>` / `<cstdio>` | Yes | Debug assertions, release logging |
 
-Files affected:
-- `include/enjin2/core/component.hpp` — `update(uint16_t)`, `lateUpdate(uint16_t)`
-- `include/enjin2/core/object.hpp` — `update(uint16_t)`, `lateUpdate(uint16_t)`
-- `include/enjin2/core/scene.hpp` — `update(uint16_t)`, `onUpdate(uint16_t)`
-- `include/enjin2/core/object_collection.hpp` — `update(uint16_t)`, `lateUpdate(uint16_t)`
-- `include/enjin2/core/scene_state_machine.hpp` — `update(uint16_t)`, `updateTransition(uint16_t)`
-- All component subclasses that override `update()`
-
-**Type choice: `float` (not `double`).**
-- ESP32-S3 has a hardware single-precision FPU. `double` operations are software-emulated — 3-10x slower.
-- `float` provides ~7 significant digits. At 120fps, dt ≈ 0.00833s — fully representable without accumulator rounding.
-- Unity, LOVE2D, Defold all use `float` seconds. The SDL runner already computes `float dt` correctly.
-- The SDL runner already passes `dt` as `float` to `g_lua.callFunction("update", dt)` (line 265 in sdl_main.cpp). C++ side is the only inconsistency.
-
-**Lua side:** `update(self, dt)` — `dt` is a `lua_Number` (double in LuaJIT). C++ passes `static_cast<lua_Number>(dt)` via `lua_pushnumber`. No precision concern for Lua scripts.
-
-**No new library needed.**
+**Zero new library dependencies.** No new CMake `find_package` calls. No vendored headers.
 
 ---
 
-#### 2. Named Objects + Tags
+## Implementation Patterns
 
-**`Object::name` field type: `std::string`** — not `std::string_view`.
-- `std::string_view` cannot own data. Names are set once at construction, must outlive the object.
-- ESP32 concern: `std::string` SSO (Small String Optimization) in libstdc++/libc++ stores strings ≤15 chars inline — typical names ("player", "enemy_01", "hud") fit without heap allocation.
-- The object's name is set once and never changed — no hot-path allocation.
+### C_Timer
 
-**`ObjectCollection` name map type:**
+**Problem:** Timers need to fire Lua callbacks after a delay or on repeat interval. They must not own a Lua VM (too heavy — 20–40 KB). They must store callback references without heap allocation.
 
-Two valid approaches depending on target:
+**Pattern: `luaL_ref` integer handles + float accumulator slots**
 
-| Approach | When | Implementation |
-|----------|------|---------------|
-| `std::unordered_map<std::string, Object*>` | SDL3 / WASM | O(1) lookup, heap-allocated buckets — fine on desktop |
-| Linear scan of existing `objects[]` array | ESP32 / zero-alloc constraint | O(n) over max 128 objects, no additional memory |
-
-**Recommendation: linear scan with a `findByName(std::string_view)` method on `ObjectCollection`.**
-- The existing `forEach` pattern is already the collection traversal idiom.
-- Name lookups happen on scene setup or Lua `engine.scene.find()` — never every frame.
-- Avoids adding a heap-allocated map to a type that currently has zero heap allocation.
-- If profiling reveals real bottleneck on desktop, add the unordered_map as an optional build-time flag.
-
-**Tag storage on `Object`: `std::array<const char*, 8>`**
-- Tags are `const char*` string literals defined at compile time (e.g., `"enemy"`, `"collidable"`).
-- 8-slot fixed capacity — zero allocation, zero heap, embedded-safe.
-- `const char*` comparison uses `strcmp` not pointer equality — different string literals with same content must match.
-- 8 tags per object is sufficient for the engine's complexity level. Increase via `ENJIN2_MAX_TAGS` compile constant if needed.
-
-**No new library.** `<array>`, `<string_view>`, `<cstring>` are C++17 stdlib, already included.
-
----
-
-#### 3. Scene Self-Transitions
-
-**Injection pattern: store `SceneStateMachine*` (non-owning raw pointer) in `Scene`.**
-
-**Include guard for circular dependency:**
-- `scene_state_machine.hpp` currently includes `scene.hpp`.
-- Adding `SceneStateMachine*` to `Scene` would create a circular include.
-- **Fix:** forward-declare `class SceneStateMachine;` in `scene.hpp`, add `#include "scene_state_machine.hpp"` only in `scene.cpp`.
-- This is the standard C++ forward-declaration technique for circular class relationships.
-
-**Activation injection pattern:**
 ```cpp
-// In SceneStateMachine::completeTransition() or activate():
-currentScene->setSM(this);  // inject before calling activate()
-currentScene->activate();
-```
-
-The `Scene` base class gains:
-```cpp
-private:
-    SceneStateMachine* sm_ = nullptr;  // non-owning, valid during active lifetime only
-
+// include/enjin2/components/timer.hpp
+class C_Timer : public Component {
 public:
-    void setSM(SceneStateMachine* sm) { sm_ = sm; }
-```
+    static constexpr size_t MAX_TIMERS = 8;
 
-**Alternative: `std::function<void(uint32_t)>` callback.** Also valid — avoids the forward-declaration requirement. Downside: `std::function` may heap-allocate for captures. For zero-alloc constraint, raw pointer is cleaner.
+    struct Slot {
+        float remaining{0.0f};   // seconds until next fire
+        float interval{0.0f};    // >0 = repeating; 0 = one-shot
+        int   luaRef{LUA_NOREF}; // luaL_ref handle into Lua registry (LUA_NOREF = empty)
+        bool  active{false};
+    };
 
-**`SceneStateMachine::changeScene(uint32_t)` already exists** — the target method. No new SSM API needed for the Lua binding `engine.scene.switch(id)`.
+    C_Timer(Object* owner, lua_State* L);
+    ~C_Timer();  // calls luaL_unref on all active refs
 
----
+    // Push Lua function to stack first, then call:
+    // Returns slot index (0..MAX_TIMERS-1) or -1 if pool full
+    int after(float delaySec, int luaFuncRef);
+    int every(float intervalSec, int luaFuncRef);
+    void cancel(int slotIdx);
+    void cancelAll();
 
-#### 4. engine.* Global Table
+    void update(float dt) override;
 
-**Registration pattern: manual `lua_newtable` + `lua_pushcfunction` + `lua_setfield` chain.**
+private:
+    lua_State* L_;    // borrowed — same state as parent C_LuaScript; NOT owned
+    Slot slots_[MAX_TIMERS]{};
 
-This is the pattern already used in `bindings.cpp` for `love.graphics`. The codebase has a working precedent.
-
-**Critical constraint: `luaL_newlib` (Lua 5.2+ API) is NOT available in LuaJIT 2.1's Lua 5.1 API.** Do not use it. HIGH confidence — verified against `luajit/src/lua.h` (`LUA_VERSION_NUM 501`).
-
-Full pattern:
-```cpp
-// In LuaBindings::registerAll():
-lua_State* L = engine->getState();
-
-// Create engine table
-lua_newtable(L);                              // stack: [engine_tbl]
-
-  // engine.scene subtable
-  lua_newtable(L);                            // stack: [engine_tbl, scene_tbl]
-    lua_pushcfunction(L, lua_engine_scene_switch);
-    lua_setfield(L, -2, "switch");
-    lua_pushcfunction(L, lua_engine_scene_id);
-    lua_setfield(L, -2, "id");
-    lua_pushcfunction(L, lua_engine_scene_find);
-    lua_setfield(L, -2, "find");
-  lua_setfield(L, -2, "scene");              // engine.scene = scene_tbl
-
-  // engine.input subtable (namespace existing polling API)
-  lua_newtable(L);
-    lua_pushcfunction(L, lua_engine_input_held);
-    lua_setfield(L, -2, "held");
-    lua_pushcfunction(L, lua_engine_input_just_pressed);
-    lua_setfield(L, -2, "just_pressed");
-    lua_pushcfunction(L, lua_engine_input_just_released);
-    lua_setfield(L, -2, "just_released");
-    lua_pushcfunction(L, lua_engine_input_axis);
-    lua_setfield(L, -2, "axis");
-  lua_setfield(L, -2, "input");
-
-  // engine.time subtable
-  lua_newtable(L);
-    lua_pushcfunction(L, lua_engine_time_now);
-    lua_setfield(L, -2, "now");
-    lua_pushcfunction(L, lua_engine_time_frame);
-    lua_setfield(L, -2, "frame");
-  lua_setfield(L, -2, "time");
-
-  // engine.lua subtable
-  lua_newtable(L);
-    lua_pushcfunction(L, lua_engine_lua_collect);
-    lua_setfield(L, -2, "collect");
-    lua_pushcfunction(L, lua_engine_lua_memory);
-    lua_setfield(L, -2, "memory");
-  lua_setfield(L, -2, "lua");
-
-  // engine.log (direct function, not subtable)
-  lua_pushcfunction(L, lua_engine_log);
-  lua_setfield(L, -2, "log");
-
-lua_setglobal(L, "engine");                  // _G["engine"] = engine_tbl
-```
-
-**Binding instance access in subtable functions:** same `LUA_REGISTRYINDEX` pattern already used. `getBindings(L)` retrieves `LuaBindings*` from registry. All new `lua_engine_*` static functions are members of `LuaBindings`.
-
-**`engine.scene` needs `Scene*`:** add `Scene* currentScene_` to `LuaBindings`. Set by the SDL runner or SSM after each scene activation. `engine.scene.id()` returns `currentScene_->getId()`. `engine.scene.find(name)` calls through to `currentScene_->getObjects().findByName(name)`.
-
-**`engine.time.now()`:** accumulate `float elapsedSecs` in SDL runner game loop, expose via a `float*` pointer into `LuaBindings`, updated each frame before Lua calls. Or expose a `uint64_t startTick` and compute `(SDL_GetTicks() - startTick) / 1000.0f` directly in the binding function.
-
-**`engine.log(...)`:** variadic Lua function — iterate `lua_gettop(L)` args, call `lua_tostring(L, i)` on each (Lua 5.1 `lua_tostring` coerces numbers to strings), print to `std::cerr`.
-
----
-
-#### 5. ScriptProxy Userdata (self)
-
-**Mechanism: full userdata via `lua_newuserdata`.** NOT lightuserdata.
-
-Lightuserdata in Lua 5.1 / LuaJIT cannot have metatables — it is just a raw C pointer, period. Full userdata supports `__index`, `__newindex`, `__gc` metatables. HIGH confidence — this is a fundamental Lua 5.1 API distinction.
-
-**Struct layout:**
-```cpp
-struct ScriptProxy {
-    Object*      object;   // non-owning pointer — may become dangling
-    bool         valid;    // set false by __gc or explicit invalidation
+    void fireSlot(Slot& slot);
 };
 ```
 
-`C_LuaScript*` is not needed in the proxy — the static binding functions retrieve `LuaBindings*` from the registry, and the proxy is only live during a callback.
+**Why:**
+- `luaL_ref(L, LUA_REGISTRYINDEX)` atomically removes the top Lua value from the stack and anchors it by integer key — zero allocation, GC-safe, stable across GC cycles
+- `float remaining` accumulator mirrors `SpriteState::accumSec` exactly — established pattern
+- `lua_State*` borrowed from the C_LuaScript that owns this component — no second Lua VM
+- 8 slots × ~16 bytes = 128 bytes per C_Timer instance — negligible on ESP32 SRAM
 
-**Metatable registration (once, in `registerAll()`):**
+**Firing a timer:**
 ```cpp
-luaL_newmetatable(L, "enjin.ScriptProxy");  // creates or retrieves from registry
-  lua_pushcfunction(L, proxy_index);
+void C_Timer::fireSlot(Slot& slot) {
+    lua_rawgeti(L_, LUA_REGISTRYINDEX, slot.luaRef);  // push callback
+    if (lua_isfunction(L_, -1)) {
+        lua_pcall(L_, 0, 0, 0);  // call with no args, respect ScriptErrorPolicy upstream
+    } else {
+        lua_pop(L_, 1);
+    }
+}
+```
+
+**Destructor:**
+```cpp
+C_Timer::~C_Timer() {
+    for (auto& slot : slots_) {
+        if (slot.active && slot.luaRef != LUA_NOREF) {
+            luaL_unref(L_, LUA_REGISTRYINDEX, slot.luaRef);
+        }
+    }
+}
+```
+
+**Lua API (via ComponentProxy):**
+```lua
+local timer = self:get("C_Timer")
+local h = timer:after(1.5, function() engine.log("fire once") end)
+local h2 = timer:every(0.25, tick)
+timer:cancel(h)
+```
+
+---
+
+### C_StateMachine
+
+**Problem:** Per-object FSM with named states, enter/exit/update Lua callbacks. Must not re-enter during transition (same problem as `SceneStateMachine::switchTo()`).
+
+**Pattern: Fixed state slots + deferred transition + `luaL_ref` callbacks**
+
+```cpp
+// include/enjin2/components/state_machine.hpp
+class C_StateMachine : public Component {
+public:
+    static constexpr size_t MAX_STATES = 8;
+
+    struct State {
+        const char* name{nullptr};     // string literal pointer — caller owns lifetime
+        int enterRef{LUA_NOREF};       // luaL_ref for enter(self) callback
+        int exitRef{LUA_NOREF};        // luaL_ref for exit(self) callback
+        int updateRef{LUA_NOREF};      // luaL_ref for update(self, dt) callback (optional)
+        bool active{false};            // slot occupied
+    };
+
+    C_StateMachine(Object* owner, lua_State* L);
+    ~C_StateMachine();
+
+    // name must be a string literal (permanent pointer) or interned Lua string.
+    // enterRef, exitRef, updateRef from luaL_ref(); LUA_NOREF = no callback.
+    bool addState(const char* name, int enterRef, int exitRef, int updateRef = LUA_NOREF);
+
+    // Deferred: queued; applied after current update() returns.
+    // Last-wins within a single frame (mirrors SceneStateMachine::switchTo()).
+    void transitionTo(const char* name);
+
+    const char* getState() const { return current_ ? current_->name : nullptr; }
+    bool isInState(const char* name) const;
+
+    void update(float dt) override;
+
+private:
+    lua_State* L_;
+    State states_[MAX_STATES]{};
+    size_t stateCount_{0};
+    State* current_{nullptr};
+    const char* pending_{nullptr};   // deferred target name; nullptr = no pending transition
+
+    void applyTransition();
+    void callRef(int ref, float dt, bool passDt);
+};
+```
+
+**Why state names are `const char*` not `char[N]`:**
+State names are typically string literals (`"idle"`, `"run"`, `"attack"`) with static storage duration, or Lua-interned strings (registered into the Lua registry via `luaL_ref` for lifetime anchoring). The existing `Object::name` and tag system uses `const char*` for the same reason. Copying into a `char[N]` buffer is unnecessary overhead when the caller controls the string lifetime.
+
+**Deferred transition (mirrors SceneStateMachine):**
+```cpp
+void C_StateMachine::update(float dt) {
+    if (!enabled) return;
+
+    // Run current state's per-frame update
+    if (current_ && current_->updateRef != LUA_NOREF) {
+        callRef(current_->updateRef, dt, true);
+    }
+
+    // Apply any pending transition queued this frame
+    if (pending_) {
+        applyTransition();
+        pending_ = nullptr;
+    }
+}
+
+void C_StateMachine::applyTransition() {
+    // Find target state
+    State* target = nullptr;
+    for (size_t i = 0; i < stateCount_; ++i) {
+        if (states_[i].active && strcmp(states_[i].name, pending_) == 0) {
+            target = &states_[i];
+            break;
+        }
+    }
+    if (!target) return;
+
+    // Exit current
+    if (current_ && current_->exitRef != LUA_NOREF) {
+        callRef(current_->exitRef, 0.0f, false);
+    }
+
+    // Enter new
+    current_ = target;
+    if (current_->enterRef != LUA_NOREF) {
+        callRef(current_->enterRef, 0.0f, false);
+    }
+}
+```
+
+**Lua API (via ComponentProxy):**
+```lua
+local fsm = self:get("C_StateMachine")
+fsm:addState("idle",
+    function(self) engine.log("enter idle") end,
+    function(self) engine.log("exit idle") end)
+fsm:addState("run",
+    function(self) engine.log("enter run") end,
+    function(self) engine.log("exit run") end,
+    function(self, dt) -- per-frame update while in "run"
+        -- movement logic
+    end)
+fsm:transitionTo("idle")
+```
+
+---
+
+### ComponentProxy / self:get()
+
+**Problem:** From a Lua script (`self` = ScriptProxy for C_LuaScript), the author needs `self:get("C_Timer")` to obtain a usable proxy to a sibling component. No std::map, no heap.
+
+**Pattern: Extend ScriptProxy.__index + typed component userdata + fixed strcmp dispatch**
+
+**Part 1 — Lua userdata struct for each component type:**
+
+```cpp
+// Reuse the ObjectProxy pattern. One generic struct covers all component types.
+struct ComponentRef {
+    Component* component;   // non-owning raw pointer
+    bool valid;             // set false by component destructor
+    const char* typeName;   // "C_Timer", "C_StateMachine" etc. — for metatable dispatch
+};
+```
+
+`ComponentRef` is allocated as Lua full userdata (GC-managed, no C++ heap). Its metatable is named after the component type (e.g., `"C_Timer"`).
+
+**Part 2 — `get` method on ScriptProxy:**
+
+Extend `ScriptProxy.__index` to recognize `"get"` as a key, returning a closure or method:
+
+```cpp
+// In ScriptProxy __index metamethod:
+if (strcmp(key, "get") == 0) {
+    // Push a C closure that captures the owner Object* via upvalue
+    // Closure receives one string arg: the component type name
+    lua_pushvalue(L, 1);  // push self (ScriptProxy userdata) as upvalue
+    lua_pushcclosure(L, scriptproxy_get, 1);
+    return 1;
+}
+
+// scriptproxy_get closure:
+static int scriptproxy_get(lua_State* L) {
+    auto* proxy = static_cast<ScriptProxy*>(lua_touserdata(L, lua_upvalueindex(1)));
+    if (!proxy || !proxy->valid) { lua_pushnil(L); return 1; }
+
+    const char* typeName = luaL_checkstring(L, 1);
+    Component* comp = findComponentByName(proxy->component->getOwner(), typeName);
+    if (!comp) { lua_pushnil(L); return 1; }
+
+    auto* ref = static_cast<ComponentRef*>(lua_newuserdata(L, sizeof(ComponentRef)));
+    ref->component = comp;
+    ref->valid = true;
+    ref->typeName = typeName;
+    luaL_getmetatable(L, typeName);   // e.g., "C_Timer" metatable
+    lua_setmetatable(L, -2);
+    return 1;
+}
+```
+
+**Part 3 — Fixed string dispatch (no heap, no std::map):**
+
+```cpp
+// In bindings.cpp — static helper, no allocation
+static Component* findComponentByName(Object* obj, const char* name) {
+    if (strcmp(name, "C_Timer") == 0)        return obj->getComponent<C_Timer>();
+    if (strcmp(name, "C_StateMachine") == 0) return obj->getComponent<C_StateMachine>();
+    if (strcmp(name, "C_Position") == 0)     return obj->getComponent<C_Position>();
+    // Add new component types here as they ship
+    return nullptr;
+}
+```
+
+**Why `ComponentRef` userdata not lightuserdata:**
+Lightuserdata in Lua 5.1 / LuaJIT has NO metatable support. A `C_Timer` proxy needs `timer:after()`, `timer:every()`, `timer:cancel()` — these require a method table via `__index`. Full userdata is mandatory.
+
+**Why `ComponentRef.valid` bool:**
+If the owner Object is destroyed during the frame, any stored `ComponentRef` would hold a dangling `Component*`. The `valid` flag is set false in the component destructor (via a destructor hook). Mirrors `ObjectProxy`/`ScriptProxy` precedent exactly.
+
+**Each component type registers its own metatable in `registerAll()`:**
+
+```cpp
+// C_Timer metatable
+luaL_newmetatable(L, "C_Timer");
+  lua_pushcfunction(L, componentref_after);
+  lua_setfield(L, -2, "after");
+  lua_pushcfunction(L, componentref_every);
+  lua_setfield(L, -2, "every");
+  lua_pushcfunction(L, componentref_cancel);
+  lua_setfield(L, -2, "cancel");
+  lua_pushvalue(L, -1);             // __index = self (method table)
   lua_setfield(L, -2, "__index");
-  lua_pushcfunction(L, proxy_newindex);
-  lua_setfield(L, -2, "__newindex");
-  lua_pushcfunction(L, proxy_gc);
-  lua_setfield(L, -2, "__gc");
 lua_pop(L, 1);
 ```
 
-`luaL_newmetatable` is available in Lua 5.1 / LuaJIT 2.1 — verified against `luajit/src/lauxlib.h`.
-
-**`__index` dispatch pattern:**
-```cpp
-static int proxy_index(lua_State* L) {
-    auto* proxy = static_cast<ScriptProxy*>(luaL_checkudata(L, 1, "enjin.ScriptProxy"));
-    if (!proxy->valid || !proxy->object) { lua_pushnil(L); return 1; }
-    const char* key = luaL_checkstring(L, 2);
-    // strcmp dispatch over fixed field set:
-    if (strcmp(key, "x") == 0) {
-        auto* pos = proxy->object->getComponent<C_Position>();
-        lua_pushnumber(L, pos ? pos->x : 0.0f);
-        return 1;
-    }
-    // ... "y", "visible", "active", "layer", "sort_order"
-    lua_pushnil(L); return 1;
-}
-```
-
-Use `strcmp` over `std::unordered_map<std::string, ...>` — the field set is small and fixed (~6-8 fields), `strcmp` on 6 entries is faster than hash-table lookup with `std::string` construction.
-
-**`luaL_checkudata` is available in Lua 5.1.** Verifies the userdata metatable matches the named type, returns the userdata pointer. Use this, not `lua_touserdata`, to get type-safe access.
-
-**Self injection before each callback (per-call, NOT cached):**
-```cpp
-// Before calling init/update/draw:
-lua_getglobal(L, callback_name);
-if (lua_isfunction(L, -1)) {
-    auto* proxy = static_cast<ScriptProxy*>(lua_newuserdata(L, sizeof(ScriptProxy)));
-    proxy->object = owner_;
-    proxy->valid = true;
-    luaL_getmetatable(L, "enjin.ScriptProxy");
-    lua_setmetatable(L, -2);
-    // for update: also push dt
-    lua_pushnumber(L, dt);
-    lua_pcall(L, 2, 0, 0);  // update(self, dt)
-}
-```
-
-**Per-call allocation:** each callback creates a new `ScriptProxy` userdata on the Lua heap (pool-allocated). The `__gc` finalizer runs when Lua GCs it — sets `valid = false`, does nothing else. This prevents stale access if a script stores `self` in a global variable between frames.
-
-**Do NOT create a single long-lived ScriptProxy.** If the Object is destroyed between frames, the stored proxy would contain a dangling `object` pointer. Per-call proxies expire naturally with the GC.
-
 ---
 
-#### 6. ScriptErrorPolicy
+### Event Bus
 
-**Enum definition in `components/lua_script.hpp`:**
+**Problem:** Lua scripts from different objects need to emit named events and subscribe callbacks. Events are string-keyed. No STL containers, no heap. Cross-object coupling must be safe after scene transitions.
+
+**Pattern: Scene-scoped fixed-slot bus + `char[32]` channel names + `luaL_ref` listeners**
+
 ```cpp
-enum class ScriptErrorPolicy : uint8_t {
-    Disable,   // disable component, log once, continue (default)
-    Log,       // log every error frame, keep running (debug mode)
-    Panic      // call lua_atpanic handler (embedded recovery)
+// include/enjin2/core/event_bus.hpp
+class EventBus {
+public:
+    static constexpr size_t MAX_CHANNELS = 16;
+    static constexpr size_t MAX_LISTENERS = 8;   // per channel
+
+    struct Listener {
+        int  luaRef{LUA_NOREF};
+        bool active{false};
+    };
+
+    struct Channel {
+        char     name[32]{};    // COPIED from the event name string (transient-safe)
+        Listener listeners[MAX_LISTENERS]{};
+        size_t   listenerCount{0};
+        bool     active{false};  // slot occupied
+    };
+
+    explicit EventBus(lua_State* L);
+    ~EventBus();   // luaL_unref all active listeners
+
+    // Subscribe. Returns listener handle (0..MAX_LISTENERS-1) or -1 if full.
+    int on(const char* eventName, int luaFuncRef);
+
+    // Unsubscribe by handle returned from on().
+    void off(const char* eventName, int handle);
+
+    // Emit event to all subscribers. Optional number payload.
+    void emit(const char* eventName);
+    void emitNumber(const char* eventName, float value);
+
+    // Called on scene deactivation — releases all refs and clears all channels.
+    void clear();
+
+private:
+    lua_State* L_;
+    Channel channels_[MAX_CHANNELS]{};
+    size_t channelCount_{0};
+
+    Channel* findOrCreate(const char* name);
+    Channel* find(const char* name) const;
 };
 ```
 
-**`uint8_t` underlying type:** minimal storage, embedded-safe. No include beyond `<cstdint>` which is already transitively available.
+**Why `char[32]` copied names:**
+`const char*` pointers sourced from Lua are valid only for the duration of the C function call. After the call returns, the Lua GC may collect the string. Copying into `char[32]` ensures the channel name survives for the scene's lifetime. This matches `LuaStore::StoreSlot::key[64]` precedent exactly.
 
-**Integration in `C_LuaScript`:** replace the current `scriptError` bool with `ScriptErrorPolicy policy_` member (default `Disable`) and `bool disabled_by_error_` flag. On error:
-- `Disable`: set `disabled_by_error_ = true`, log once, skip future calls
-- `Log`: log error string every frame, continue calling
-- `Panic`: call `lua_error` or platform panic — use sparingly, only for fatal-error scenarios
+**Why scene-scoped (not global):**
+A global event bus accumulates stale listener `luaRef` handles across scene transitions. When a scene's Lua state is not shared (each C_LuaScript owns its own `LuaScriptSystem`), cross-scene refs would be invalid. Scene-scoped bus eliminates the entire class of cross-scene dangling ref bugs. `clear()` is called in `Scene::deactivate()` — single clean sweep.
 
-**Default `Disable`** matches the SDL runner's existing `lua_ok` gate pattern. Consistent semantics at both component level and runner level.
-
----
-
-#### 7. Input Event Callbacks
-
-**Mechanism:** after `input_advance_frame` + `input_platform_poll`, iterate buttons 0–15, check `justPressed` / `justReleased` on `InputState`, call Lua global functions if they exist.
-
-**Lua function existence check (Lua 5.1 pattern):**
-```cpp
-lua_getglobal(L, "on_button_pressed");
-if (lua_isfunction(L, -1)) {
-    lua_pushinteger(L, btn_index);
-    lua_pcall(L, 1, 0, 0);
-} else {
-    lua_pop(L, 1);
-}
-```
-
-**Dispatch site: `LuaBindings::dispatchInputEvents(const InputState&)`** — a new method called from the SDL runner after input poll, before `callFunction("update", dt)`.
+**Integration into LuaBindings:**
+`EventBus*` is injected via the pointer-to-pointer registry pattern, matching `m_ssm` and `m_activeScene`:
 
 ```cpp
 // In LuaBindings:
-void dispatchInputEvents(const InputState& input) {
-    lua_State* L = engine_->getState();
-    for (int btn = 0; btn < 16; ++btn) {
-        if (input.justPressed(btn)) {
-            lua_getglobal(L, "on_button_pressed");
-            if (lua_isfunction(L, -1)) {
-                lua_pushinteger(L, btn);
-                if (lua_pcall(L, 1, 0, 0) != 0) {
-                    // handle error per ScriptErrorPolicy
-                    lua_pop(L, 1);
-                }
-            } else { lua_pop(L, 1); }
-        }
-        if (input.justReleased(btn)) {
-            lua_getglobal(L, "on_button_released");
-            // ... same pattern
-        }
+void setEventBus(EventBus* bus) { m_eventBus = bus; }
+EventBus* m_eventBus{nullptr};  // non-owning; owned by Scene
+```
+
+In Lua registry (stored during `registerAll()`):
+```cpp
+auto** ebPP = static_cast<EventBus**>(lua_newuserdata(L, sizeof(EventBus*)));
+*ebPP = nullptr;  // set later via setEventBus
+lua_setfield(L, LUA_REGISTRYINDEX, "enjin_event_bus");
+```
+
+**Lua API (`engine.event.*` sub-table):**
+```lua
+local h = engine.event.on("player_died", function()
+    engine.scene.switch(1)
+end)
+
+engine.event.emit("player_died")
+engine.event.emit_number("score", 42.0)
+engine.event.off("player_died", h)
+```
+
+**Memory budget:**
+16 channels × (32 + 8×(4+1+3 pad) + 8 + 1 + pad) ≈ 16 × ~100 bytes = ~1.6 KB. Acceptable on ESP32 PSRAM.
+
+---
+
+### Persistent Objects
+
+**Problem:** Some objects (player state, audio manager) must survive scene transitions. Currently `ObjectCollection` in each `Scene` destroys all objects when the scene is deactivated/destroyed.
+
+**Pattern: Persistent ObjectCollection on SceneStateMachine**
+
+`SceneStateMachine` already owns `scenes[]` via `unique_ptr`. Add a second `ObjectCollection` that is NOT inside any scene:
+
+```cpp
+// Additions to SceneStateMachine:
+class SceneStateMachine {
+    // ... existing ...
+
+    ObjectCollection persistentObjects;  // ticked every frame regardless of active scene
+
+public:
+    template<typename T, typename... Args>
+    T* addPersistentObject(Args&&... args) {
+        return persistentObjects.addObject<T>(std::forward<Args>(args)...);
     }
-}
-```
 
-**No new library.** Uses existing `InputState::justPressed()` / `justReleased()`.
-
-**Why not per-`C_LuaScript`:** the current SDL runner has one Lua state, one script. Dispatching from `LuaBindings` is simpler and consistent with the existing `update`/`draw` dispatch model. Per-component dispatch is a v1.6 concern when multiple scripts coexist.
-
----
-
-#### 8. GC Control
-
-**Lua C API (Lua 5.1 / LuaJIT 2.1) — all three constants verified in `luajit/src/lua.h`:**
-
-```c
-// From lua.h (LUA_VERSION_NUM 501):
-#define LUA_GCSTOP       0
-#define LUA_GCRESTART    1
-#define LUA_GCCOLLECT    2
-#define LUA_GCCOUNT      3
-#define LUA_GCCOUNTB     4
-#define LUA_GCSTEP       5
-#define LUA_GCSETPAUSE   6
-#define LUA_GCSETSTEPMUL 7
-```
-
-**`engine.lua.collect()` implementation:**
-```cpp
-static int lua_engine_lua_collect(lua_State* L) {
-    lua_gc(L, LUA_GCCOLLECT, 0);  // full collection cycle
-    return 0;
-}
-```
-
-**`engine.lua.memory()` implementation:**
-```cpp
-static int lua_engine_lua_memory(lua_State* L) {
-    int kb  = lua_gc(L, LUA_GCCOUNT,  0);  // kilobytes
-    int rem = lua_gc(L, LUA_GCCOUNTB, 0);  // bytes remainder
-    lua_pushnumber(L, static_cast<lua_Number>(kb * 1024 + rem));
-    return 1;                                // returns bytes as number
-}
-```
-
-This is consistent with the existing `LuaEngine::getMemoryUsage()` implementation (it also calls `lua_gc(L, LUA_GCCOUNT, 0)`). HIGH confidence — verified against codebase.
-
----
-
-#### 9. Component Dependency Assertions
-
-**Protected template method on `Component` base class:**
-
-```cpp
-// In include/enjin2/core/component.hpp:
-protected:
-    template<typename T>
-    void assertRequires() {
-        static_assert(std::is_base_of<Component, T>::value, "T must be a Component");
-        if (owner && owner->getComponent<T>() == nullptr) {
-#ifdef NDEBUG
-            // Release / embedded: self-disable, log once
-            setEnabled(false);
-            // Log via platform mechanism if available
-#else
-            // Debug builds: hard assert
-            // typeid available if RTTI is enabled
-            assert(false);  // "Missing required component"
-#endif
-        }
+    void removePersistentObject(Object* obj) {
+        persistentObjects.removeObject(obj);
     }
+
+    void update(float dt) {
+        // Persistent objects update FIRST, always
+        persistentObjects.update(dt);
+        persistentObjects.lateUpdate(dt);
+
+        // ... existing transition + currentScene->update(dt) logic ...
+    }
+};
 ```
 
-**Method name: `assertRequires<T>()` — NOT `requires<T>()`.** `requires` is a C++20 keyword used in concept syntax. While it is valid as a member function name in C++17 (it becomes a keyword only in C++20 context), using it in a codebase that may be compiled with `-std=c++20` later is a maintenance hazard. `assertRequires<T>()` is unambiguous and descriptive.
+**Lua-side: `engine.scene.spawn_persistent(name)`**
 
-**`typeid(T).name()` for diagnostics:** available in C++17 with RTTI. On ESP32 with `-fno-rtti` (common for ROM size reduction), guard behind:
+Returns an `ObjectProxy` userdata (same type as `engine.scene.spawn()`). The object persists across `engine.scene.switch()` calls. `engine.scene.find()` searches persistent collection FIRST, then active scene — consistent lookup regardless of where the object lives.
+
+**`engine.scene.find()` extension:**
 ```cpp
-#if __has_feature(cxx_rtti) || (defined(__GXX_RTTI) && __GXX_RTTI)
-    // typeid-based name
-#else
-    // static constexpr char name[] approach per component
-#endif
+int LuaBindings::lua_engine_scene_find(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+
+    // Check persistent objects first
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_ssm");
+    auto** ssmPP = static_cast<SceneStateMachine**>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (ssmPP && *ssmPP) {
+        Object* obj = (*ssmPP)->getPersistentObjects().findByName(name);
+        if (obj) { /* wrap in ObjectProxy, return */ }
+    }
+
+    // Then check active scene
+    // ... existing logic ...
+}
 ```
 
-**No new library.** `<type_traits>` already transitively included via `object.hpp`. `<cassert>` for `assert()`.
+**Why persistent collection on SSM and not a static global:**
+A static global would survive hot-reload (F5), meaning objects from a previous Lua session remain live — dangling proxy issue. SSM is the natural parent because it owns all scenes. Resetting SSM (rare) clears persistent objects correctly.
+
+**Persistent object limit:**
+`ObjectCollection::MAX_OBJECTS = 128` is inherited. In practice, persistent objects are few (player, audio manager, game config). Consider a separate `MAX_PERSISTENT = 16` compile-time constant to limit SSM SRAM footprint if needed on ESP32.
 
 ---
 
-## What NOT to Add
+## What NOT to Use
 
-| Avoid | Why | Instead |
-|-------|-----|---------|
-| `sol2`, `selene`, `luabridge` binding libraries | LuaJIT 2.1 has a custom static-pool allocator. Any Lua binding library that calls `lua_newuserdata`, `lua_newstate`, or registers its own metatables may bypass or corrupt the pool. The raw Lua C API is already well-used in this codebase. | Raw Lua C API — `lua_newtable`, `lua_pushcfunction`, `lua_setfield`, `luaL_newmetatable` |
-| `luaL_newlib` | Lua 5.2+ API. Not present in LuaJIT 2.1 / Lua 5.1. Will fail to compile. | `lua_newtable` + `lua_pushcfunction` + `lua_setfield` — exactly what `love.graphics` already uses |
-| `lua_rawlen` | Lua 5.2+ API. Use `lua_objlen` in Lua 5.1. | `lua_objlen(L, idx)` |
-| `std::unordered_map` on `Object` for tags | Dynamic heap allocation on object construction — breaks zero-alloc constraint | `std::array<const char*, 8>` of string literals |
-| LuaJIT FFI for ScriptProxy | FFI cdata allocations go to the system heap, bypassing the static memory pool | Full userdata with metatable — allocated through the custom pool allocator |
-| Global `self` variable | Cross-script contamination when multiple `C_LuaScript` components exist | Per-call userdata pushed as first argument to each callback |
-| Caching ScriptProxy across frames | If the Object is destroyed between frames, cached proxy holds dangling `object` pointer | Create new `ScriptProxy` userdata per callback invocation |
-| `requires<T>()` member name | Becomes reserved in C++20 concept contexts; collision risk during future standard upgrade | `assertRequires<T>()` — unambiguous in all C++ standard versions |
-| `double` for float dt | No hardware double FPU on ESP32; 3-10x slower | `float` seconds — same type used by LOVE2D, Defold, Unity |
-| `std::string_view` for Object::name | Cannot own data; view becomes dangling after the source string is destroyed | `std::string` — SSO keeps short names on stack |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `std::map` / `std::unordered_map` | Heap allocation per insert; no guaranteed embedded allocator | Fixed-size struct arrays with `strcmp` lookup |
+| `std::vector` | Dynamic heap; not zero-alloc | `std::array<T, N>` with a count member |
+| `std::string` for event/state names | Heap allocation, copy overhead | `const char*` string literals; `char[N]` for owned copies |
+| Separate `lua_State` per timer or FSM | 20–40 KB per Lua VM; fatal on ESP32 | Borrow `lua_State*` from owning `C_LuaScript` |
+| `std::function` for new Lua callback slots | Small-buffer optimization not guaranteed; may heap-allocate for captures | `luaL_ref()` integer handles — zero allocation, GC-safe |
+| Global singleton EventBus | Cross-scene listener refs become dangling when scene Lua state is reset | Scene-scoped `EventBus`, cleared in `Scene::deactivate()` |
+| `std::chrono` | Not available on ESP32 bare-metal; unnecessary | `float dt` accumulation — already the established pattern |
+| `dynamic_cast` in `self:get()` hot path | O(N components) scan on every call | Cache the `Component*` in `ComponentRef` userdata after first `get()` call |
+| lightuserdata for ComponentProxy | No metatable support in Lua 5.1 — cannot attach `timer:after()` method table | Full userdata with named metatable per component type |
+| `luaL_newlib` | Lua 5.2+ API; not in LuaJIT 2.1 / Lua 5.1 | `lua_newtable` + `lua_pushcfunction` + `lua_setfield` (existing pattern) |
+| Storing Lua function pointer as `lua_CFunction` | Cannot store Lua closures from scripts | `luaL_ref(L, LUA_REGISTRYINDEX)` returns stable integer key |
 
 ---
 
 ## Alternatives Considered
 
-| Decision | Recommendation | Alternative | Why Not |
-|----------|---------------|-------------|---------|
-| Scene self-transition | `SceneStateMachine*` raw pointer injection | `std::function<void(uint32_t)>` callback | `std::function` may heap-allocate; raw pointer is zero overhead and matches existing ownership model |
-| Object name storage | `std::string` | `std::string_view` | `string_view` cannot own; would require names to outlive lookup callers |
-| Name lookup | Linear scan (`findByName` on `ObjectCollection`) | `std::unordered_map<std::string, Object*>` | HashMap adds heap buckets; linear over 128 objects is fast enough for non-frame lookups |
-| Tag storage | `std::array<const char*, 8>` | `std::bitset<N>` keyed enum | Bitset requires compile-time tag enumeration; `const char*` array enables string-keyed access from Lua |
-| ScriptProxy | Full userdata | Lightuserdata | Lightuserdata has no metatable support in Lua 5.1 — cannot implement `__index`/`__newindex` |
-| ScriptProxy lifetime | Per-call new userdata | Single cached userdata per component | Cached proxy creates dangling pointer risk when Object is destroyed between frames |
-| `__index` dispatch | `strcmp` switch | `std::unordered_map<std::string, handler>` | Small fixed field set (~6-8); `strcmp` over 6 entries costs 0 heap and is faster than hash construction |
-| Component dependency check method name | `assertRequires<T>()` | `requires<T>()` | `requires` is a C++20 keyword — naming hazard for future standard upgrades |
-| Input event dispatch site | `LuaBindings::dispatchInputEvents()` | Per-`C_LuaScript` dispatch | One Lua state, one script in v1.5 SDL runner — component dispatch is premature |
+| Recommended | Alternative | Why Not |
+|-------------|-------------|---------|
+| `luaL_ref` integer handles for callbacks | Upvalue closures | `luaL_ref` centralizes in registry; cheaper per slot; simpler cleanup |
+| `strcmp` dispatch for `self:get()` | Type-erased function pointer table registered at startup | Same O(N) at N < 10; `strcmp` table is simpler to maintain and extend |
+| Scene-scoped `EventBus` | `Signal<>` on Component for inter-object events | `Signal<>` is C++-typed, not string-keyed; Lua scripts need string-named events |
+| Persistent collection on SSM | Fake "persistent scene" that never deactivates | Conceptual overhead; fake scene still participates in scene management |
+| `ComponentRef` full userdata | Return raw `Component*` as lightuserdata | lightuserdata has no metatable — cannot attach method table for `timer:after()` |
+| `C_StateMachine::pending_` deferred | Immediate transition in `transitionTo()` | Re-entrant FSM corruption during `update()` — same problem `SceneStateMachine::switchTo()` solves |
+| Scene-owned EventBus | LuaBindings-owned EventBus | LuaBindings does not have a destructor hook on scene change; Scene does |
+
+---
+
+## Stack Patterns by Variant
+
+**If adding more component types accessible via `self:get()` later:**
+- Add one `strcmp` branch to `findComponentByName()`
+- Register the component's metatable in `registerAll()`
+- No architectural change
+
+**If event payloads beyond a single float are needed:**
+- Add `emitString(name, value)` and `emitInt(name, value)` overloads on EventBus
+- Do NOT push a Lua table as payload from C — table construction from C is allocation-heavy
+
+**If ESP32 SRAM is critically tight:**
+- `C_Timer::MAX_TIMERS`: 8 → 4 (saves ~64 bytes per C_Timer instance)
+- `C_StateMachine::MAX_STATES`: 8 → 4 (saves ~100 bytes per instance)
+- `EventBus::MAX_CHANNELS`: 16 → 8
+- `EventBus::MAX_LISTENERS`: 8 → 4
+- All are `constexpr` — one-line change each
+
+**If a script needs a callback-free timer (polling style):**
+```lua
+-- No C_Timer needed — use engine.time.now() directly:
+local start = engine.time.now()
+-- in update:
+if engine.time.now() - start > 1.5 then ... end
+```
+`C_Timer` is only needed when the Lua function reference pattern is desired.
+
+---
+
+## C++ Feature Requirements
+
+All features are available in C++17 (existing requirement). No language standard bump needed.
+
+| Feature | Used For | Already Required |
+|---------|----------|-----------------|
+| `if constexpr` | Pixel type branching in Scene render | Yes |
+| `std::array<T, N>` | Fixed slot arrays throughout | Yes |
+| `std::is_base_of` | assertRequires<T>, addComponent<T> | Yes |
+| `constexpr` members | MAX_TIMERS, MAX_STATES, etc. | Yes |
+| `dynamic_cast<T*>` | getComponent<T>() in Object | Yes |
+| Template member functions | addComponent, getComponent, assertRequires | Yes |
 
 ---
 
 ## Integration Points
 
-### Where New Code Lives
-
-| Feature | Header Changes | Source Changes | Wired In |
-|---------|---------------|----------------|----------|
-| float dt | `core/component.hpp`, `core/object.hpp`, `core/scene.hpp`, `core/object_collection.hpp`, `core/scene_state_machine.hpp` | `core/object.cpp`, `core/scene.cpp` | Pervasive — all overrides |
-| Named objects | `core/object.hpp` (+`std::string name`, +`setName`, +`getName`) | `core/object.cpp` | `ObjectCollection::findByName` |
-| Tags | `core/object.hpp` (+`std::array<const char*,8>`, +`addTag`, +`hasTag`) | `core/object.cpp` | `ObjectCollection::findAllWithTag` |
-| Scene self-transition | `core/scene.hpp` (+`SceneStateMachine* sm_`, +`setSM`) | `core/scene_state_machine.hpp` (`completeTransition` calls `setSM`) | `SceneStateMachine::completeTransition` |
-| engine.* table | `scripting/bindings.hpp` (+new static function declarations) | `scripting/bindings.cpp` (`registerAll`) | `LuaBindings::registerAll()` |
-| ScriptProxy userdata | `scripting/bindings.hpp` (+`ScriptProxy` struct, +metatable functions) | `scripting/bindings.cpp` (metatable registration + injection helpers) | `LuaBindings::registerAll()` (metatable once), per-callback injection |
-| ScriptErrorPolicy | `components/lua_script.hpp` (+enum, +`policy_` member) | `components/lua_script.cpp` (error handling) | Per `C_LuaScript` instance |
-| Input event callbacks | `scripting/bindings.hpp` (+`dispatchInputEvents`) | `scripting/bindings.cpp` | SDL runner: after `input_platform_poll`, before `callFunction("update", dt)` |
-| GC control | `scripting/bindings.cpp` | `engine.lua.*` subtable in `registerAll()` |
-| `assertRequires<T>()` | `core/component.hpp` (+template method, header-only) | none — header-only | Called in `awake()` of component subclasses |
-
-### SDL Runner Integration (`src/platform/sdl/sdl_main.cpp`)
-
-The SDL runner needs these additions:
-1. Wire `Scene*` into `LuaBindings` after scene activation (for `engine.scene.id()` / `engine.scene.find()`)
-2. Call `g_lua.getBindings().dispatchInputEvents(g_input)` after `input_platform_poll`, before `callFunction("update", dt)` — HIGH priority for `on_button_pressed` callbacks
-3. Accumulate `float g_elapsed_secs += dt` each frame; pass pointer or value into `LuaBindings` for `engine.time.now()`
-4. The existing `g_lua.callFunction("update", dt)` already passes float dt correctly — no change needed
+| New Feature | Integrates With | Integration Method |
+|-------------|----------------|-------------------|
+| `C_Timer` | `C_LuaScript` | `C_LuaScript` passes `lua_State*` at construction; `C_Timer` added via `addComponent<C_Timer>(luaState)` |
+| `C_StateMachine` | `C_LuaScript` | Same `lua_State*` borrow pattern as C_Timer |
+| ComponentProxy | `ScriptProxy.__index` | Extend `__index` handler; new metatable per component type registered in `registerAll()` |
+| `EventBus` | `Scene`, `LuaBindings` | `Scene` owns instance; `Scene::deactivate()` calls `bus.clear()`; `LuaBindings` receives pointer via `setEventBus()` and stores pointer-to-pointer in Lua registry |
+| Persistent objects | `SceneStateMachine` | Add `persistentObjects` member; extend `update()` to tick it; extend `engine.scene.find()` and `engine.scene.spawn_persistent()` bindings |
 
 ---
 
-## Version Compatibility
+## Memory Budget Estimate (ESP32)
 
-| Component | Version | Compatibility Notes |
-|-----------|---------|---------------------|
-| LuaJIT | 2.1.1753364724 (Lua 5.1 API) | Use only Lua 5.1 API: `lua_newtable` (not `luaL_newlib`), `lua_objlen` (not `lua_rawlen`), `luaL_newmetatable` (available), `lua_gc` with `LUA_GCCOLLECT` / `LUA_GCCOUNT` / `LUA_GCCOUNTB` (all available) |
-| C++17 | CMake standard 17 | `if constexpr`, `std::string_view`, `std::array`, `static_assert` with message all available |
-| ESP32 | RTTI may be disabled | Guard `typeid(T).name()` in `assertRequires<T>()` behind RTTI availability check. Use `__PRETTY_FUNCTION__` as fallback (GCC/Clang, not RTTI-dependent) |
-| `luaL_newmetatable` | Lua 5.1 / LuaJIT 2.1 | Available — creates or retrieves named metatable from `LUA_REGISTRYINDEX`. Verified in `luajit/src/lauxlib.h` |
-| `luaL_checkudata` | Lua 5.1 / LuaJIT 2.1 | Available — type-safe userdata retrieval with metatable name check |
-| `lua_gc(LUA_GCCOLLECT)` | Lua 5.1 / LuaJIT 2.1 | Available — GC constants verified in `luajit/src/lua.h` |
+| Addition | Size | Count | Total |
+|----------|------|-------|-------|
+| `C_Timer` (8 slots) | ~128 bytes | 1–4 per scene | 128–512 bytes |
+| `C_StateMachine` (8 states) | ~200 bytes | 1–4 per scene | 200–800 bytes |
+| `EventBus` (16 chan × 8 listeners) | ~1.6 KB | 1 per active scene | 1.6 KB |
+| SSM persistent collection | ~1 KB (16 unique_ptr slots) | 1 global | 1 KB |
+| `ComponentRef` userdata | 8–12 bytes each | GC-managed in Lua heap | counted in Lua budget |
+| `luaL_ref` entries in registry | ~32 bytes each (LuaJIT) | per timer/listener | counted in Lua budget |
+
+Total C++ addition: ~3–4 KB (scene-scoped) + ~1 KB (global persistent collection). Within ESP32 PSRAM budget.
 
 ---
 
 ## Sources
 
-- Live codebase: `/home/unwn/dev/enjin/luajit/src/lua.h` — `LUA_VERSION "Lua 5.1"`, `LUA_VERSION_NUM 501`, all `LUA_GC*` constants confirmed
-- Live codebase: `/home/unwn/dev/enjin/luajit/src/luajit.h` — `LUAJIT_VERSION "LuaJIT 2.1.1753364724"` confirmed
-- Live codebase: `include/enjin2/scripting/lua_platform.hpp` — VCV_RACK flag, LuaJIT 5.1 compat macro pattern confirmed
-- Live codebase: `src/scripting/bindings.cpp` — `lua_newtable`/`lua_setfield` pattern for `love.graphics` (line 211-237), `LUA_REGISTRYINDEX` pattern for binding retrieval (line 265-270), `lua_pcall` error handling confirmed
-- Live codebase: `include/enjin2/core/object.hpp` — `uint16_t deltaTime` confirmed (the type being replaced), `std::array<std::unique_ptr<Component>, 16>`, `dynamic_cast<T*>` confirmed
-- Live codebase: `include/enjin2/core/scene_state_machine.hpp` — `changeScene(uint32_t)` API confirmed, `completeTransition()` injection site identified
-- Live codebase: `include/enjin2/core/object_collection.hpp` — `forEach` traversal pattern confirmed, no existing name map (linear scan required)
-- Live codebase: `src/platform/sdl/sdl_main.cpp` — `float dt` already computed (line 246), `g_lua.callFunction("update", dt)` already correct (line 265), `input_advance_frame` + `input_platform_poll` ordering confirmed (lines 253-254)
-- Live codebase: `src/scripting/lua_engine.cpp` — `lua_gc(L, LUA_GCCOUNT, 0)` used in `getMemoryUsage()` — confirms pattern for `engine.lua.memory()`
-- Project research: `project/lua-embedding-design.md` — HIGH confidence domain analysis: `luaL_newlib` exclusion, `self` proxy design, `engine.*` namespace structure, GC control rationale
-- Project research: `project/cpp-engine-improvements.md` — HIGH confidence: `float dt` rationale, named object / tag design, scene self-transition injection pattern, `requires<T>()` design
+- Direct codebase analysis — `include/enjin2/core/signal.hpp` — `std::function` already present, 16-slot array pattern — HIGH confidence
+- Direct codebase analysis — `include/enjin2/core/object.hpp` — `unique_ptr<Component>` ownership, `getComponent<T>()` via dynamic_cast — HIGH confidence
+- Direct codebase analysis — `include/enjin2/scripting/bindings.hpp` — `LuaStore` char[64]/char[128] key patterns, `m_ssm` pointer injection — HIGH confidence
+- Direct codebase analysis — `src/scripting/bindings_engine.cpp` — `luaL_ref` for string interning in `engine.scene.spawn()`, pointer-to-pointer registry pattern — HIGH confidence
+- Direct codebase analysis — `include/enjin2/core/scene_state_machine.hpp` — `switchTo()` deferred transition, `pendingSceneId` pattern — HIGH confidence
+- Direct codebase analysis — `include/enjin2/core/object_collection.hpp` — 128-slot `unique_ptr<Object>` array, `addObject<T>()`, `findByName()` — HIGH confidence
+- Lua 5.1 reference manual — `luaL_ref`, `lua_rawgeti`, `luaL_unref`, full vs light userdata metatable rules — HIGH confidence (standard API)
 
 ---
 
-*Stack research for: enjin2 v1.5 — Lua scripting foundation (engine.* table, ScriptProxy, float dt, named objects, scene transitions, error policy, input events, GC control, dependency assertions)*
-*Researched: 2026-02-26*
+*Stack research for: enjin2 v1.6 Game Ready — C_Timer, C_StateMachine, ComponentProxy/self:get(), event bus, persistent objects*
+*Researched: 2026-02-28*

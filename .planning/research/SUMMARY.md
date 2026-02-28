@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** enjin2 v1.5 — Lua Scripting Foundation
-**Domain:** Embedded/WASM 2D game engine — Lua scripting power + C++ engine foundations
-**Researched:** 2026-02-26
+**Project:** enjin2 v1.6 Game Ready
+**Domain:** Embedded/WASM zero-alloc 2D game engine — Lua scripting layer completion
+**Researched:** 2026-02-28
 **Confidence:** HIGH
 
 ## Executive Summary
 
-enjin2 v1.5 is a well-scoped, internally consistent milestone that transforms the engine from a rendering toolkit into a scriptable game runtime. The ten features divide cleanly into two categories: C++ foundations (float dt, named objects, scene self-transitions) that must ship first because they are prerequisites, and Lua-surface features (engine.* table, ScriptProxy, input callbacks, GC control, error policy, component assertions) that depend on those foundations. This dependency structure is clear and the implementation path is fully verified against the live codebase. No new external dependencies are introduced — every feature is built from the existing LuaJIT C API, C++17 stdlib, and enjin2 headers.
+enjin2 v1.6 is an incremental feature milestone on an existing, well-structured C++ game engine targeting ESP32 embedded hardware and WASM/SDL3 desktop. The v1.5 baseline is solid: Lua scripting, ScriptProxy/ObjectProxy userdata, scene state machine with deferred transitions, sprite animation, AABB/circle collision, LuaStore persistence, and hot-reload all work. v1.6 adds five Lua-facing capabilities — `C_Timer`, `C_StateMachine`, `ComponentProxy/self:get()`, `engine.events` event bus, and persistent objects — that are strictly necessary to build complete small games (Arkanoid, physics sandbox, tamagotchi) entirely from Lua. Every pattern needed already has a direct precedent in the codebase: `luaL_ref` integer handles for Lua callbacks, `char[N]` buffers for copied strings, fixed-slot arrays for collections, and the `valid` bool + non-owning raw pointer pattern for Lua userdata proxy safety.
 
-The recommended approach follows a "foundations before surface" ordering: fix the onRender Pixel4 correctness bug first (zero risk, unblocks rendering tests), then complete the pervasive float dt signature migration all at once (the widest change, must be atomic), then add the C++ object/scene foundations, then wire the Lua-visible engine.* table, and finally implement ScriptProxy (the highest-complexity and highest-value single item). The pattern choices — `std::string` names (SSO-safe for typical names), `const char*` tag arrays over dynamic collections, full userdata over lightuserdata, `strcmp` dispatch over hash maps — are all driven by the zero-dynamic-allocation constraint that must hold across SDL3, WASM, and ESP32 targets simultaneously.
+The recommended approach is to build these five features in a dependency-ordered sequence. `ComponentProxy/self:get()` is the access mechanism that all component-facing Lua surfaces depend on and should be built first. `C_Timer` and `C_StateMachine` are independent of each other and can follow in either order. The `EventBus` is fully independent of the component system and can be built at any point. Persistent objects are architecturally the most invasive — they require modifying `ObjectCollection`, `SceneStateMachine`, and the Lua scene API — and should come last to isolate regressions. For persistent object state between scenes, the existing `LuaStore` (already in v1.5) is likely sufficient for all three target games; the full cross-scene object registry should be validated against game requirements before investing implementation effort.
 
-The top risks are all known and preventable. The most dangerous is `ScriptProxy` dangling pointer on scene transition — this must be addressed in the initial proxy design with a generation token or valid flag, not retrofitted. The second highest risk is the float dt signature migration producing silent behavioral regressions if any override detaches without `-Woverride` enabled. Both pitfalls have clear, low-cost prevention strategies. The onRender Pixel4 bug must be fixed before any phase that depends on rendering to work correctly.
+The primary risks are all in the Lua/C++ memory safety boundary: stale `luaL_ref` handles after hot-reload or scene transitions, dangling `ComponentProxy` raw pointers when components are removed, and the single-proxy-per-object constraint that silently fails when multiple scripts obtain proxies to the same object. All three risks have established mitigation patterns in the existing codebase and must be addressed at component design time, not retrofitted. A secondary risk is memory budget on ESP32: every new static array contributes to heap and SRAM consumption, and all new component sizes must be verified with `static_assert` before shipping.
 
 ---
 
@@ -19,155 +19,186 @@ The top risks are all known and preventable. The most dangerous is `ScriptProxy`
 
 ### Recommended Stack
 
-v1.5 introduces zero new external dependencies. Every feature is implemented using the stack already present: LuaJIT 2.1.1753364724 (Lua 5.1 API), C++17, SDL3, and the existing enjin2 headers. The critical API constraint is that `luaL_newlib` (Lua 5.2+) is unavailable — all table registration must use the `lua_newtable` + `lua_pushcfunction` + `lua_setfield` chain already established in `bindings.cpp`. LuaJIT full userdata (not lightuserdata) is required for ScriptProxy because lightuserdata has no metatable support in Lua 5.1. The ESP32-S3 primary target has a hardware single-precision FPU — `float` dt is the correct choice; `double` would be soft-float and 3–10x slower.
+All v1.6 features require zero new external dependencies. The stack is unchanged from v1.5: C++17, LuaJIT 2.1 (Lua 5.1 ABI), CMake multi-target. No new `find_package` calls, no vendored headers. All new components use stdlib headers already compiled into the project (`<array>`, `<cstring>`, `<type_traits>`, `<cassert>`).
+
+New components borrow `lua_State*` from the owning `C_LuaScript` component — never create a second Lua VM. Lua callbacks are stored as `luaL_ref` integer handles (zero allocation, GC-safe, stable across GC cycles), not `std::function` or `lua_CFunction`. Channel and state names that may come from transient Lua strings are copied into `char[N]` fixed buffers, following the established `LuaStore::StoreSlot::key[64]` precedent.
 
 **Core technologies:**
-- **LuaJIT 2.1 (Lua 5.1 API):** Scripting runtime — use raw C API exclusively; no binding libraries (sol2/luabridge would bypass the static pool allocator); verified against `luajit/src/lua.h` (`LUA_VERSION_NUM 501`)
-- **C++17:** `std::array`, `std::string_view`, `if constexpr`, `static_assert` — all available; `std::string` for `Object::name` (SSO keeps typical names heap-free); `assertRequires<T>()` not `requires<T>()` (C++20 keyword collision risk)
-- **SDL3:** Desktop runner only — input polling, frame timing, hot-reload (F5); WASM and ESP32 runners unaffected by v1.5 additions; runner already computes `float dt` correctly
+- C++17: all new components — already required, no change
+- LuaJIT 2.1 / Lua 5.1: scripting callbacks via `luaL_ref` integer handles — borrow `lua_State*` from `C_LuaScript`, never a second VM
+- CMake multi-target: new `.cpp` files join `enjin2_core` and `enjin2_lua` — no new targets
+- `std::array<T, N>` + fixed counts: timer slots, FSM state slots, event bus channels — zero heap per-frame
 
-See `.planning/research/STACK.md` for full pattern implementations, API compatibility tables, and per-platform notes.
+**Memory budget (ESP32):**
+
+| Addition | Size | Count | Total |
+|----------|------|-------|-------|
+| `C_Timer` (8 slots) | ~128 bytes | 1-4 per scene | 128-512 bytes |
+| `C_StateMachine` (8 states) | ~200 bytes | 1-4 per scene | 200-800 bytes |
+| `EventBus` (16 channels x 8 listeners) | ~1.6 KB | 1 per active scene | 1.6 KB |
+| SSM persistent collection | ~1 KB | 1 global | 1 KB |
+
+Total C++ addition: ~3-4 KB. Within ESP32 PSRAM budget.
+
+See `.planning/research/STACK.md` for full implementation patterns, avoid-list rationale, and ESP32 tuning constants.
+
+---
 
 ### Expected Features
 
-**Must have (table stakes) — required for Lua scripts to do basic game logic:**
-- **Fix onRender Pixel4 bug** — correctness regression; `if constexpr` guard in `Scene::render()` silently skips `onRender(ICanvas<Pixel4>&)`; 3-line fix, must be first
-- **float dt everywhere** — `update(uint16_t ms)` → `update(float dt)`; expected by LOVE2d, Defold, Unity conventions; ESP32 variable timing makes this especially important
-- **engine.* namespaced global table** — replaces flat globals with `engine.scene`, `engine.input`, `engine.time`, `engine.lua`, `engine.log`; required for script discoverability
-- **Self proxy injection (ScriptProxy)** — `self` as first argument to every callback; required for scripts to access and modify their own object's properties
-- **Named object registry + tags** — `engine.scene.find("name")` and 8-slot `const char*` tag array; required for scripts to locate other objects
-- **Scene self-transitions** — `engine.scene.switch(id)` from Lua; required for scripts to drive scene flow
-- **ScriptErrorPolicy** — `Disable`/`Log`/`Panic` enum on `C_LuaScript`; required for embedded robustness (reboot-on-error is unacceptable on ESP32)
+Features validated against three concrete target games: Arkanoid, physics sandbox, tamagotchi.
 
-**Should have (differentiators) — adds meaningful value without deep complexity:**
-- **Input event callbacks** — `on_button_pressed(btn)` / `on_button_released(btn)`; wraps existing `InputState` edge detection; no new C++ state required
-- **GC control** — `engine.lua.collect()` + `engine.lua.memory()`; prevents mid-frame GC spikes on ESP32; two `lua_gc` wrappers
-- **Component dependency assertions** — `assertRequires<T>()` template on `Component`; catches missing dependencies at startup; debug asserts loudly, release disables gracefully
+**Must have (table stakes — v1.6):**
+- `C_Timer` (one-shot + repeating) — every game needs "do X after N seconds"; tamagotchi needs periodic decay every 30-45s; Arkanoid needs restart delay after ball loss. Lowest complexity new component, proves the `luaL_ref` pattern for subsequent components. P1.
+- `engine.events` subscribe/emit/unsubscribe — Arkanoid: brick-to-score decoupled communication; tamagotchi: feed/play action dispatch. Independent of component system. Can be built at any phase. P1.
+- `C_StateMachine` (flat FSM, enter/update/exit) — tamagotchi is a textbook FSM (idle/hungry/sleeping/happy/dead); Arkanoid needs game-state management (attract/play/paused/game_over/victory). P1.
+- `ComponentProxy / self:get("Type")` — scripts cannot read position, toggle sprite frames, or query sibling state without this. Highest complexity. Keystone of the milestone. P1.
+- Persistent objects — validate via LuaStore serialize/restore first. If that covers all three games (likely), defer full cross-scene object registry to v1.7. P1 (validate) or P2 (registry).
 
-**Defer (v1.6 scope per PROJECT.md):**
-- ComponentProxy / `self:get(typename)` — heaviest C++ work; needs type registry and safe proxy lifetime management
-- Persistent objects across scene transitions — requires root-level collection outside Scene
-- Event bus (engine.emit / engine.on) — separate communication subsystem
-- C_Timer, C_StateMachine — standalone new components
+**Should have (v1.6 or v1.7):**
+- `C_Timer` repeat count (fire N times then stop) — useful for "flash brick 3 times"; workaround is a counter in callback. P2.
+- `C_StateMachine` transition guards — prevents invalid transitions; only needed when invalid transitions appear in practice. P2.
+- `engine.events` auto-cleanup on component destroy — correctness at scale; lower priority while scene count is small. P2.
 
-See `.planning/research/FEATURES.md` for full prioritization matrix, anti-feature rationale, and feature dependency graph.
+**Defer (v2+):**
+- Coroutine-based state machines — C_StateMachine + C_Timer covers the same patterns without coroutine lifetime complexity
+- Hierarchical state machines — no evidence of need from three target games
+- Point-to-point event routing (msg.post style) — global broadcast is sufficient at enjin2 scale
+- Full cross-scene persistent object registry — only if LuaStore + re-create proves insufficient
+
+**Physics sandbox note:** Simplest of the three target games for v1.6. The v1.5 baseline is nearly sufficient. `ComponentProxy` (for sprite frame toggling) is the only strictly new v1.6 feature it needs. No timers, FSM, or events required.
+
+See `.planning/research/FEATURES.md` for full prioritization matrix, anti-feature rationale, and per-game feature requirement tables.
+
+---
 
 ### Architecture Approach
 
-The architecture follows a strict layered model: SDL3 runner → Scripting layer (LuaScriptSystem + LuaBindings) → Graphics layer → Core layer. v1.5 additions stay within this existing structure. The only new files are `ScriptProxy` (new header + source in `enjin2_lua`), requiring a single CMake source addition. All other changes are modifications to existing files. The `engine.*` table uses the pattern already established for `love.graphics` in `bindings.cpp`. Scene self-transition uses forward declaration to break the circular header dependency between `scene.hpp` and `scene_state_machine.hpp`. Input event callbacks dispatch globally from `LuaBindings::dispatchInputEvents()` — consistent with the existing decoupled architecture where Lua bindings do not iterate ECS components directly.
+All five features integrate cleanly into the existing Component/Object/Scene/SceneStateMachine hierarchy without architectural disruption. The build order is dependency-driven: `ComponentProxy` first (access mechanism for all other Lua-facing components), then `C_Timer` and `C_StateMachine` (independently), then `EventBus` (independent of components), then persistent objects (most structurally invasive — touches ObjectCollection and SSM).
 
-**Major components after v1.5:**
-1. **LuaBindings** (`src/scripting/bindings.cpp`) — gains `engine.*` table registration, `SceneStateMachine*` pointer, `setTime()`, `dispatchInputEvents()`; central wiring point for all new Lua-visible features
-2. **ScriptProxy** (`include/enjin2/scripting/script_proxy.hpp` + `src/scripting/script_proxy.cpp`) — new full userdata with `__index`/`__newindex`/`__gc`; maps `self.x`, `self.y`, `self.visible`, `self.layer`, `self.name`, `self.active` to C++ component reads/writes
-3. **C_LuaScript** (`src/components/lua_script.cpp`) — gains `ScriptErrorPolicy` enum, float dt signature, ScriptProxy injection before each callback invocation
-4. **Core ECS types** — `Object` gains `std::string name` and `std::array<const char*, 8>` tags; `Scene` gains `SceneStateMachine*` injection; all gain `float dt` signatures
-5. **sdl_main.cpp** — gains `setSceneStateMachine()` in `performReload()`, `dispatchInputEvents()` before `callFunction("update")`, `setTime(dt)` accumulation each frame
+**Major components and responsibilities:**
 
-See `.planning/research/ARCHITECTURE.md` for full data flow diagrams, build order dependency graph, memory budget, and anti-patterns to avoid.
+1. `C_Timer` (`include/enjin2/components/timer.hpp`) — delayed/repeating Lua callbacks; 8-slot `TimerSlot` fixed array; `luaL_ref` for callbacks; float accumulator mirrors `SpriteState::accumSec`; borrowed `lua_State*`; destructor calls `luaL_unref` on all active refs
+2. `C_StateMachine` (`include/enjin2/components/state_machine.hpp`) — per-object flat FSM; 8-slot `StateSlot` fixed array; deferred transition via `pending_` field (mirrors `SceneStateMachine::switchTo()`); `const char*` state names pointing to Lua-interned strings for stable lifetime
+3. `ComponentProxy` (`include/enjin2/core/component_proxy.hpp`) — full userdata (not lightuserdata — LuaJIT has no metatable support for lightuserdata) with `Component*` + `bool valid`; per-type metatable (`"C_Timer"`, `"C_StateMachine"`); registered with owning `Object` for invalidation on destruction; accessed via `self:get("TypeName")` added to `ScriptProxy.__index`
+4. `EventBus` (`include/enjin2/core/event_bus.hpp`) — scene-scoped, not global; 16 channels x 8 listeners; `char[32]` channel names (copied from transient Lua strings); `luaRef` integer listeners; `clear()` called in `Scene::deactivate()` to prevent cross-scene stale refs; exposed as `engine.events.*` sub-table
+5. `PersistentObjectRegistry` (`include/enjin2/core/persistent_registry.hpp`) — SSM-owned; 16-slot `unique_ptr<Object>` array; scenes hold non-owning `Object*` in `ObjectCollection::m_external[]`; objects withdrawn from departing scene and injected into arriving scene during `applyDeferredTransition()`
+
+**Files modified (not new):** `object.hpp` (ComponentProxy registration array), `object_collection.hpp` (external non-owning array), `scene_state_machine.hpp` (persistent registry member + `applyDeferredTransition()` modification), `bindings.hpp` (EventBus member, new sub-table declarations), `bindings_engine.cpp` (scene API extensions, `resolveComponent()` dispatch, `lua_proxy_get_component`), `CMakeLists.txt` (new `.cpp` sources).
+
+See `.planning/research/ARCHITECTURE.md` for full data flow sequences, component interaction diagrams, anti-patterns, and the explicit new/modified file list.
+
+---
 
 ### Critical Pitfalls
 
-1. **Dangling `Object*` in ScriptProxy after scene destruction** — Lua scripts can store `self` in upvalues across frame boundaries; when the scene is destroyed, the stored `Object*` becomes a dangling pointer causing hard faults on ESP32. Prevention: add a generation token or `valid` flag to `ScriptProxy` in the initial design; invalidate on scene deactivation. Cannot be retrofitted safely.
+1. **Timer callback fires into dead Lua state after hot-reload** — `C_Timer` must store `lua_State*` alongside `int ref`. Before calling `lua_rawgeti`, verify the stored `L` matches the current active state. Destructor must call `luaL_unref` on all active refs. `LuaScriptSystem` must call a `cancelLuaCallback()` protocol on live timers before `lua_close`. Design teardown protocol before writing any tick logic. (PITFALLS.md Pitfall 1)
 
-2. **float dt signature change — missed override sites produce silent behavioral regression** — C++ silently detaches overrides when base signature changes without `override` keyword; the detached method becomes a new non-virtual function and the base class no-op runs instead. Prevention: enable `-Woverride` across all three platform builds before making the first signature change; change base class first, compile, fix every error, treat as an atomic all-or-nothing migration.
+2. **ComponentProxy dangling pointer after component removal** — `Component` base class needs `ComponentProxy* m_luaProxy` field (mirrors `Object::m_luaProxy`). `Component::~Component()` must set `m_luaProxy->valid = false`. Single-proxy-per-component constraint: log a development warning when `setLuaProxy()` would overwrite a non-null registration. Cache `self:get()` result in `init()` — never call per-frame. (PITFALLS.md Pitfall 4)
 
-3. **`engine.*` table registered after script load causes nil error** — any script that accesses `engine.*` at module level (outside a function body) will see `nil` if the table is not yet registered. Prevention: register the `engine` global table as the absolute first action in `registerAll()`, before any other registration; test with a module-level access script as the completion gate.
+3. **Event bus holding stale Lua refs across scene transitions** — EventBus must be scene-scoped, not global. `EventBus::clear()` called in `Scene::deactivate()` unrefs all listener handles. A global event bus accumulates stale refs from destroyed Lua contexts across reloads and will fire into freed memory. (PITFALLS.md Pitfall 5)
 
-4. **`update(self, dt)` signature change breaks all existing scripts** — every existing Lua script uses `function update(dt)`; after self injection, the `dt` parameter receives the ScriptProxy userdata and all arithmetic on it throws a runtime error. Prevention: migrate all scripts (`reload_test.lua`, `layer_demo.lua`, `pikachu_demo.lua`, `e2e_parity.lua`) atomically in the same commit that introduces ScriptProxy injection.
+4. **Mid-loop object spawn from state machine callbacks** — `ObjectCollection::update()` must snapshot `objectCount` at loop entry (`size_t count = objectCount`), not read it fresh each iteration. Objects spawned from enter/exit callbacks during update appear at index `>= count` and receive their first update next frame. `engine.scene.spawn()` from inside a state callback must use the same deferred queue pattern as `engine.scene.switch()`. (PITFALLS.md Pitfall 3)
 
-5. **Scene self-transition skips `onCreate()` due to `initialized` guard** — `Scene::initialize()` has an `if (initialized) return;` early exit that prevents re-initialization on self-transition; also, inline `changeScene()` during `onDeactivate()` causes re-entrant state machine corruption. Prevention: implement a `reset()` method that clears `initialized`; implement deferred (not inline) transition execution.
+5. **Static array memory overflow on ESP32** — All new component static arrays live on the heap (components are heap-allocated). Define array sizes as `constexpr`: `MAX_TIMERS = 8`, `MAX_STATES = 8`, `MAX_EVENT_CHANNELS = 16`, `MAX_LISTENERS_PER_CHANNEL = 8` — reduce to 4/4/8/4 if SRAM is tight. Add `static_assert(sizeof(C_Timer) <= 256)` and equivalent for each new component before shipping. Establish memory budget at milestone start. (PITFALLS.md Pitfall 8)
 
-See `.planning/research/PITFALLS.md` for all 11 critical pitfalls, the "Looks Done But Isn't" checklist, integration gotchas table, and recovery strategies.
+See `.planning/research/PITFALLS.md` for 10 documented pitfalls total, the "Looks Done But Isn't" checklist, integration gotchas table, and recovery cost matrix.
 
 ---
 
 ## Implications for Roadmap
 
-Based on the combined research, the architecture's build-order dependency graph maps directly to a 10-phase roadmap. The ordering is driven by three rules: correctness fixes before new work, C++ foundations before Lua surface, and pervasive changes before targeted additions.
+Based on combined research, five phases are appropriate for v1.6. Each phase is self-contained and testable. Phases 2 and 3 are independent and can proceed in either order or in parallel.
 
-### Phase 1: Fix onRender Pixel4 Bug
-**Rationale:** Correctness regression. The `if constexpr` guard in `Scene::render()` silently skips `onRender(ICanvas<Pixel4>&)` on all derived scenes. Any test or demo relying on scene-level rendering is broken. This is a 3-line fix with zero risk that unblocks all subsequent rendering validation.
-**Delivers:** Correct scene rendering dispatch for Pixel4 canvas type across all derived scenes.
-**Addresses:** Pre-existing correctness failure; unblocks rendering tests before other features land.
-**Avoids:** False-negative test results during subsequent phases.
+### Phase 1: ComponentProxy Foundation
 
-### Phase 2: float dt Migration
-**Rationale:** The widest single change in the milestone. Touches every `update(uint16_t)` override across `Component`, `Object`, `ObjectCollection`, `Scene`, `SceneStateMachine`, `C_LuaScript`, and all concrete component subclasses. Must be done atomically and completely before any new components are written (otherwise new components would be written with the wrong signature). The SDL3 runner already passes `float dt` correctly — only the C++ side is inconsistent.
-**Delivers:** Consistent `float dt` (seconds) throughout the entire C++ update chain; eliminates all `/ 1000` division patterns.
-**Addresses:** float dt table stakes feature; prerequisite for `update(self, dt)` Lua signature.
-**Avoids:** Silent override detachment (Pitfall 2) — enable `-Woverride` before starting, treat as atomic; soft-float overhead — use `float` not `double` throughout; verify no `uint16_t.*delta` grep matches remain.
+**Rationale:** `self:get("TypeName")` is the access mechanism that all subsequent component Lua surfaces depend on. Building it first means each later component phase delivers a complete, testable Lua API immediately upon completion rather than waiting for a separate integration step. It also forces the critical design decisions (proxy validity protocol, `ScriptProxy.__index` dispatch hierarchy, full userdata requirement) before any component-specific code is written.
 
-### Phase 3: Named Objects + Tags
-**Rationale:** Pure C++ core change with no Lua dependencies. Provides the `Object::name` field and `ObjectCollection::findByName()` / `findAllWithTag()` methods that `engine.scene.find()` will call. Doing this before the Lua surface keeps the C++ and Lua work cleanly separated.
-**Delivers:** `std::string name` on `Object` (SSO-safe for typical short names); `std::array<const char*, 8>` tag array; `findByName()` (linear scan over MAX_OBJECTS=128) and `findAllWithTag()` on `ObjectCollection`.
-**Addresses:** Named object registry + tags feature; prerequisite for `engine.scene.find()`.
-**Avoids:** Heap allocation on ESP32 (Pitfall 3) — `std::string` SSO keeps names under ~15 chars heap-free; `const char*` array for tags is zero allocation.
+**Delivers:** `self:get("C_Timer")`, `self:get("C_StateMachine")`, `self:get("C_Position")` working from Lua; `Component` base class extended with `m_luaProxy` field; `Object::~Object()` invalidating all registered ComponentProxy instances; `ScriptProxy.__index` dispatch hierarchy documented and locked (reserve `"get"` as first check, before component property dispatch).
 
-### Phase 4: Scene Self-Transitions
-**Rationale:** Pure C++ core change. Injects `SceneStateMachine*` into `Scene` at activation time via a forward-declared pointer (breaking the circular header dependency). Required before `engine.scene.switch()` can be implemented.
-**Delivers:** `SceneStateMachine*` in `Scene`; `reset()` method to clear `initialized` flag; deferred transition flag in `SceneStateMachine`; correct self-transition support.
-**Addresses:** Scene self-transitions feature; prerequisite for `engine.scene.switch(id)`.
-**Avoids:** Circular destruction / re-entrancy (Pitfall 11) — implement deferred transition, not inline execution during callbacks; `initialized` guard issue — add `reset()` path for the self-transition code.
+**Addresses:** Physics sandbox sprite frame switching; foundation for Phases 2 and 3 Lua surfaces.
 
-### Phase 5: engine.* Global Table
-**Rationale:** The Lua-side payoff for Phases 3 and 4. With C++ foundations in place, this phase wires the complete `engine.scene`, `engine.input`, `engine.time`, `engine.lua`, and `engine.log` sub-tables into `LuaBindings::registerAll()`. `engine.scene` requires the `SceneStateMachine*` from Phase 4; `engine.scene.find()` requires `findByName()` from Phase 3.
-**Delivers:** Complete `engine.*` global table with all five sub-tables; `SceneStateMachine*` wired in SDL runner's `performReload()`; `setTime(dt)` accumulation; `dispatchInputEvents()` declared (implemented in Phase 8).
-**Addresses:** engine.* namespaced global table; input polling re-namespaced under `engine.input`; time API; GC API stubs.
-**Avoids:** Registration ordering bug (Pitfall 4) — register `engine` table as the first action in `registerAll()`; verify with a module-level access test script before proceeding.
+**Avoids:** Pitfall 4 (ComponentProxy dangling pointer — design validity protocol before any `__index` implementation); Pitfall 7 (ScriptProxy `"get"` name collision — check `"get"` as first case in `__index`).
 
-### Phase 6: ScriptProxy Userdata (Self Proxy)
-**Rationale:** The highest-complexity and highest-value feature. Requires `Object::name` from Phase 3 (for `self.name`) and the float dt signature from Phase 2 (for the `update(self, dt)` call site). Creates the `ScriptProxy` full userdata with `__index`/`__newindex`/`__gc` metatables and injects `self` as the first argument to every `C_LuaScript` callback.
-**Delivers:** `ScriptProxy` userdata (new header + source); `self.x`, `self.y`, `self.visible`, `self.layer`, `self.name`, `self.active` read/write; `update(self, dt)`, `draw(self)`, `init(self)` callback signatures; all existing scripts migrated to new signature in the same commit.
-**Addresses:** Self proxy injection (highest-priority Lua feature); script callback signature change.
-**Avoids:** Dangling Object* crash (Pitfall 1) — generation token or valid flag must be in initial ScriptProxy design; existing script breakage (Pitfall 5) — migrate all scripts atomically in the same commit.
+**Research flag:** Standard pattern — direct extension of existing ObjectProxy and ScriptProxy precedent. Skip research-phase.
 
-### Phase 7: ScriptErrorPolicy
-**Rationale:** Independent of all ScriptProxy work once float dt lands (Phase 2). Touches only `C_LuaScript` and the `lua_ok` gate interaction. Can slot in here without risk.
-**Delivers:** `ScriptErrorPolicy` enum (`Disable`/`Log`/`Panic`) on `C_LuaScript`; two-level error protocol (global `lua_ok` vs per-component policy); hot-reload error state reset verified.
-**Addresses:** Script error policy feature; embedded robustness requirement.
-**Avoids:** lua_ok / ScriptErrorPolicy interaction bug (Pitfall 6) — `Disable` policy must not set global `lua_ok = false`; define the two-level protocol before implementing either.
+---
 
-### Phase 8: Input Event Callbacks
-**Rationale:** Wraps the existing `InputState` edge detection that already works correctly. Requires the `engine.*` table from Phase 5 for namespace context. Implementation is a small loop in `LuaBindings::dispatchInputEvents()` plus a call site in `sdl_main.cpp`.
-**Delivers:** `on_button_pressed(btn)` and `on_button_released(btn)` global Lua callbacks; dispatched after `input_platform_poll`, before `callFunction("update")`.
-**Addresses:** Input event callbacks feature.
-**Avoids:** Callback ordering / stale edge detection (Pitfall 7) — must fire after `input_advance_frame` + `input_platform_poll` + `setInput()`, never from the SDL event pump.
+### Phase 2: C_Timer
 
-### Phase 9: GC Control
-**Rationale:** Two `lua_gc` wrappers registered under `engine.lua` (subtable already created in Phase 5). Zero C++ complexity. Must be documented with clear usage constraints for embedded targets.
-**Delivers:** `engine.lua.collect()` and `engine.lua.memory()`; API comments specifying collect() is for scene transitions, not per-frame use.
-**Addresses:** GC control feature; ESP32 mid-frame frame-spike prevention.
-**Avoids:** GC spike during frame (Pitfall 8) — use `LUA_GCSTEP` (incremental) not `LUA_GCCOLLECT` (full) for `collect()`, or document that full collect must only be called at scene boundaries.
+**Rationale:** Lowest complexity new component. Unlocks Arkanoid restart delay and tamagotchi periodic decay. Establishes the `luaL_ref` callback management pattern and teardown protocol that `C_StateMachine` will reuse. Building this before the FSM means the pattern is tested and stable when the more complex state machine uses it.
 
-### Phase 10: Component Dependency Assertions
-**Rationale:** Pure `enjin2_core` change. Header-only template method on `Component` base. Fully independent once float dt lands (Phase 2). Low risk, low complexity.
-**Delivers:** `assertRequires<T>()` protected template on `Component`; debug builds assert loudly; release builds log once and call `setEnabled(false)` (no abort on ESP32).
-**Addresses:** Component dependency assertions feature; developer ergonomics.
-**Avoids:** Release-build crash with assert stripped (Pitfall 10) — `#ifdef NDEBUG` dual-path is mandatory; use `assertRequires<T>()` not `requires<T>()` (C++20 keyword collision).
+**Delivers:** `timer:after(delay, fn)`, `timer:every(interval, fn)`, `timer:cancel(id)`, `timer:cancelAll()`; repeating and one-shot modes; `luaL_unref` in destructor; hot-reload teardown protocol integrated with LuaScriptSystem.
+
+**Uses:** `luaL_ref`/`lua_rawgeti` pattern from `bindings_engine.cpp`; float accumulator from `SpriteState::accumSec`; borrowed `lua_State*` — no second Lua VM.
+
+**Avoids:** Pitfall 1 (timer callback into dead Lua state — design teardown protocol before tick logic; store `lua_State*` alongside `int ref`); Pitfall 2 (accumulator drift — use `>=` not `==` comparison; use subtraction-based reset for repeating timers: `remaining -= interval`, not `remaining = 0`).
+
+**Research flag:** Standard pattern — well-established in existing codebase. Skip research-phase.
+
+---
+
+### Phase 3: C_StateMachine
+
+**Rationale:** Independent of C_Timer but benefits from the established `luaL_ref` callback management pattern. Deferred transition design mirrors the existing `SceneStateMachine::switchTo()` pattern exactly. Unlocks tamagotchi pet FSM and Arkanoid game-state management.
+
+**Delivers:** `fsm:addState(name, enterFn, updateFn, exitFn)`, `fsm:transition(name)`, `fsm:current()`; deferred transition via `pending_` field; enter/exit/update Lua callbacks passing `self` and `dt`; `luaL_unref` in destructor for all state refs.
+
+**Uses:** `luaL_ref` pattern established in Phase 2; `const char*` state names (Lua-interned, stable lifetime); deferred transition from `SceneStateMachine` precedent.
+
+**Avoids:** Pitfall 3 (enter/exit during object construction — document that `setState()` in `init()` is safe because all components have started by then; prohibit `engine.scene.spawn()` from callbacks without deferred queue); FSM re-entrancy (deferred `pending_` field prevents same-frame re-entry via the same mechanism as `SceneStateMachine`).
+
+**Research flag:** Standard ECS/component FSM pattern. Deferred transition is established engine idiom. Skip research-phase.
+
+---
+
+### Phase 4: Event Bus
+
+**Rationale:** Cross-object communication. Fully independent of Phases 1-3. Placed after the three component phases so integration testing benefits from all components being functional. Unlocks Arkanoid brick-to-score signaling and tamagotchi action dispatch.
+
+**Delivers:** `engine.events.subscribe(name, fn)`, `engine.events.emit(name, ...)`, `engine.events.unsubscribe(subId)`; scene-scoped bus (not global); `char[32]` copied channel names (transient-safe); variadic emit forwarding all Lua stack args to subscribers synchronously; `EventBus::clear()` on scene deactivation.
+
+**Uses:** `luaL_ref` for listener storage; pointer-to-pointer Lua registry injection pattern (same as `m_ssm` and `m_activeScene`); `LuaStore::StoreSlot::key[64]` as precedent for copied channel name buffers.
+
+**Avoids:** Pitfall 5 (stale signal callbacks across scene transitions — scene-scoped bus with `clear()` on deactivation eliminates entire class of cross-scene dangling ref bugs); do NOT use existing `Signal<T>` (heap-allocated `std::function`, compile-time typed — wrong for string-keyed Lua event bus with runtime-unknown channel names).
+
+**Research flag:** Standard pattern for embedded-safe event bus. Skip research-phase.
+
+---
+
+### Phase 5: Persistent Objects
+
+**Rationale:** Most architecturally invasive phase. Modifies `ObjectCollection` (add external non-owning array), `SceneStateMachine` (add `PersistentObjectRegistry` member, modify `applyDeferredTransition()`), and the Lua scene API (`engine.scene.persist()`, `engine.scene.unpersist()`). Also extends `engine.scene.find()` to search the persistent collection before the active scene. All previous phases should be green and stable before making these structural changes, to isolate any regressions.
+
+**Delivers (if full registry needed):** `engine.scene.persist(proxy)`, `engine.scene.unpersist(proxy)`, extended `engine.scene.find()`; `PersistentObjectRegistry` (SSM-owned, 16-slot `unique_ptr<Object>` array); persistent objects injected/withdrawn during scene transitions; persistent object `update()` called by SSM after scene update.
+
+**Prerequisite decision:** Run tamagotchi and Arkanoid prototypes with LuaStore serialize/restore on scene transitions. If that covers persistence needs without friction, implement only `engine.scene.persist()` backed by LuaStore convention — skip PersistentObjectRegistry. Defer the full registry to v1.7.
+
+**Avoids:** Pitfall 6 (persistent objects receive `dt` from wrong source — SSM-level collection updated by SSM, not by any individual scene); Pitfall 9 (LuaStore persistence confusion — document three survival scopes: file-persistent, scene-persistent, frame-local; add `engine.store.reset()` API); shared_ptr for persistent ownership (violates zero-alloc constraint — use `unique_ptr` in SSM, raw non-owning ptr in scenes).
+
+**Research flag:** Moderately complex structural change. During planning: verify `ObjectCollection` update loop snapshots `objectCount` before the loop (`size_t count = objectCount` — grep target: `for(size_t i = 0; i < objectCount`). Confirm null-currentScene guard in `engine.scene.find()` handles the transition window correctly. No external research needed — all patterns are intra-codebase.
+
+---
 
 ### Phase Ordering Rationale
 
-- **Correctness before new work:** Phase 1 (Pixel4 bug fix) must precede everything so rendering tests are valid during subsequent phases.
-- **Pervasive changes before targeted additions:** Phase 2 (float dt) touches every component and must be complete before any new component is written with a signature. Deferring it means a larger, riskier migration later.
-- **C++ foundations before Lua surface:** Phases 3–4 establish the C++ types that Phases 5–6 expose to Lua. The dependency is hard: `engine.scene.find()` cannot be implemented without `findByName()`; `engine.scene.switch()` cannot work without the SSM pointer injection.
-- **engine.* table before ScriptProxy:** Phase 5 must precede Phase 6 because the SDL runner wiring it establishes is needed for ScriptProxy's callback injection path. Also, testing the engine.* table in isolation before adding ScriptProxy complexity reduces debugging surface.
-- **Independent features grouped at end:** Phases 7–10 are independent of each other and of ScriptProxy. They can be reordered freely if implementation constraints shift.
+- **ComponentProxy before C_Timer/C_StateMachine:** The Lua surface of both components depends on ComponentProxy. Building the access mechanism first means each component phase delivers a complete, testable Lua API immediately.
+- **C_Timer before C_StateMachine:** Establishes the `luaL_ref` teardown protocol that C_StateMachine reuses. Lower complexity, safer first step. Both are independent and can be swapped if needed.
+- **EventBus after components:** No dependency on the component system. Placed after Phases 1-3 so integration testing benefits from all components being functional. Could move earlier if event-driven testing of C_Timer or C_StateMachine is desired before Phase 4.
+- **Persistent objects last:** Most invasive structural change. Placing it last isolates regressions. The LuaStore validation (does it cover game persistence requirements?) happens naturally during Phases 2-4 game prototyping.
 
 ### Research Flags
 
-Phases requiring careful attention during execution (not additional research, but execution decisions that must be made before coding begins):
+**Needs additional research during planning:** None. All five phases use patterns that exist verbatim in the v1.5 codebase. Critical design decisions are documented in STACK.md and ARCHITECTURE.md with working code examples.
 
-- **Phase 2 (float dt):** High blast radius. Enable `-Woverride` first. Treat as a single atomic commit. Use the PITFALLS.md "Looks Done But Isn't" checklist: zero `uint16_t.*delta` grep matches, zero `/ 1000` vestiges.
-- **Phase 6 (ScriptProxy):** Highest complexity. The generation/validity check for dangling pointers must be designed before any code is written. The script migration must happen atomically with the C++ change.
-- **Phase 5 (engine.* table):** Verify with a module-level access test script before any subsequent phase begins. This is the canary for the registration ordering pitfall.
-- **Phase 4 (Scene self-transitions):** Decide deferred-vs-inline transition semantics before writing any `changeScene()` injection code. Inline causes re-entrancy during `onDeactivate()`.
+**Validation needed before committing to Phase 5 scope:** Prototype tamagotchi and Arkanoid with LuaStore for persistence across scene transitions. If this works without friction, defer full `PersistentObjectRegistry` to v1.7.
 
-Phases with standard, well-documented patterns (low execution risk):
-- **Phase 1 (Pixel4 bug fix):** 3-line change, zero new concepts.
-- **Phase 7 (ScriptErrorPolicy):** Enum + switch statement; isolated to one file.
-- **Phase 8 (Input event callbacks):** Simple loop wrapping existing `InputState` API.
-- **Phase 9 (GC control):** Two `lua_gc` wrappers; identical pattern already in `LuaEngine::getMemoryUsage()`.
-- **Phase 10 (Component assertions):** Header-only template; `#ifdef NDEBUG` dual-path is established C++ idiom.
+**Standard patterns — skip research-phase for all phases:**
+- Phase 1 (ComponentProxy): direct extension of ObjectProxy/ScriptProxy — identical `valid` flag protocol
+- Phase 2 (C_Timer): `luaL_ref` accumulator pattern already proven in `bindings_engine.cpp`
+- Phase 3 (C_StateMachine): deferred transition copied verbatim from `SceneStateMachine`
+- Phase 4 (EventBus): char-keyed fixed-slot bus follows LuaStore precedent for buffer sizes
+- Phase 5 (Persistent objects): `unique_ptr` ownership transfer follows existing `ObjectCollection` model
 
 ---
 
@@ -175,47 +206,52 @@ Phases with standard, well-documented patterns (low execution risk):
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All claims verified against live codebase: `luajit/src/lua.h` (Lua 5.1 API constants), `CMakeLists.txt` (C++17 standard), `sdl_main.cpp` (float dt already computed correctly), `bindings.cpp` (existing table registration pattern confirmed) |
-| Features | HIGH | All ten features verified against current code state (`include/enjin2/core/` headers); reference engine comparisons grounded in Defold, LOVE2d, Solarus documentation; PROJECT.md authoritative for scope boundaries |
-| Architecture | HIGH | All integration points verified against live source; new file count (2: `script_proxy.hpp` + `script_proxy.cpp`) and CMake change confirmed; build order derived from actual header dependency analysis |
-| Pitfalls | HIGH | All 11 pitfalls derived from actual codebase analysis — `initialized` guard in `scene.hpp`, inline `changeScene()` in `scene_state_machine.hpp`, `lua_ok` gate in `sdl_main.cpp`, frame sequence in `sdl_main.cpp`; not speculative |
+| Stack | HIGH | All decisions derived from direct codebase analysis. Zero new dependencies. All patterns verified against live headers and source files at HEAD. |
+| Features | HIGH | Validated against three concrete target games (Arkanoid, physics sandbox, tamagotchi). Feature acceptance bar is objective: can the game be built from Lua? |
+| Architecture | HIGH | All integration points verified by reading live headers. Component/Object/Scene hierarchy is stable. Proposed modifications follow established patterns exactly. File-level changes listed explicitly in ARCHITECTURE.md. |
+| Pitfalls | HIGH | All 10 pitfalls derived from direct codebase analysis of proxy invalidation patterns, Lua ref lifecycle, ObjectCollection update loop, and SceneStateMachine transition logic. No speculation. |
 
-**Overall confidence:** HIGH
+**Overall confidence: HIGH**
 
 ### Gaps to Address
 
-- **ScriptProxy validity mechanism:** Research identifies two valid approaches (generation token on `ObjectCollection` vs explicit `valid` flag invalidated at scene deactivation). The choice affects how `ObjectCollection` tracks issued proxies. Decide during Phase 6 planning before writing the first line of proxy code.
-- **`engine.lua.collect()` semantics:** Research recommends `LUA_GCSTEP` (incremental) for `collect()` and reserving `LUA_GCCOLLECT` (full) for a documented separate use case. The API surface (one function vs two) should be decided in Phase 9 planning and captured in the binding comment.
-- **`engine.scene.find()` return type:** When a named object is found, does it return a ScriptProxy userdata (giving the caller `self`-like access) or a raw integer handle? The ARCHITECTURE.md shows it returning a `ScriptProxy`, but the lifetime implications (the returned proxy is not a callback-injected proxy — it could outlive the call frame) interact directly with the dangling pointer pitfall from Phase 1. Resolve during Phase 6 planning.
-- **ESP32 base (non-S3) float performance:** Research flags that base ESP32 (Xtensa LX6, no FPU) runs float dt via soft-float (~10–20 cycles per operation vs 1–2 for integer). The primary target (ESP32-S3, hardware FPU) is unaffected. If base ESP32 compatibility is tested, establish a frame-time baseline before and after Phase 2.
+- **LuaStore vs full PersistentObjectRegistry scope:** Not resolvable from research alone. Requires building a working tamagotchi prototype with LuaStore serialization on scene transitions. Decision gates Phase 5 scope. Resolve during Phases 2-4 development by running game prototypes with real LuaStore usage.
+
+- **`ObjectCollection::update()` loop snapshot:** Research identified the loop may read `objectCount` fresh each iteration (grep target: `for(size_t i = 0; i < objectCount`). Must be verified before C_StateMachine implementation. If unsafe, one-line fix (`size_t count = objectCount` before loop). Low effort, high correctness impact.
+
+- **Single-proxy-per-component constraint at scale:** Multiple scripts calling `self:get("C_Timer")` on the same object will silently overwrite proxy registrations. Mitigate in v1.6 with a development-mode warning on `setLuaProxy()` overwrite, and the documented cache-in-init pattern. Long-term fix (proxy array `m_luaProxies[4]`) is v1.7+ work.
+
+- **EventBus channel name collision:** No namespace on channel names. Two independently-written scripts could use the same event name for different purposes. Document a naming convention before exposing the API (e.g., `enjin_` prefix is reserved for engine-internal events; game scripts use domain-prefixed names like `game_brick_hit`).
 
 ---
 
 ## Sources
 
-### Primary (HIGH confidence — live codebase, verified 2026-02-26)
-- `include/enjin2/core/object.hpp` — current `update(uint16_t)` signature, `ObjectCollection` structure, no name/tag fields confirmed
-- `include/enjin2/core/scene.hpp` — onRender `if constexpr` bug (lines 116–126), `SceneStateMachine` ownership model
-- `include/enjin2/core/scene_state_machine.hpp` — `changeScene()` inline execution, `completeTransition()` injection site identified
-- `src/scripting/bindings.cpp` — `lua_newtable`/`lua_setfield` pattern for `love.graphics` (lines 211–237), `LUA_REGISTRYINDEX` binding retrieval pattern
-- `src/platform/sdl/sdl_main.cpp` — frame sequence, `float dt` already computed (line 246), `input_advance_frame`/`input_platform_poll` ordering (lines 253–254)
-- `luajit/src/lua.h` — `LUA_VERSION_NUM 501`, all `LUA_GC*` constants confirmed
-- `luajit/src/luajit.h` — `LUAJIT_VERSION "LuaJIT 2.1.1753364724"` confirmed
-- `src/scripting/lua_engine.cpp` — `lua_gc(L, LUA_GCCOUNT, 0)` in `getMemoryUsage()` — confirms GC control pattern
-- `project/lua-embedding-design.md` — reference engine survey, ScriptProxy design rationale, engine.* table structure
-- `project/cpp-engine-improvements.md` — float dt rationale, named object design, scene self-transition injection pattern
+### Primary (HIGH confidence — direct codebase analysis, 2026-02-28)
 
-### Secondary (MEDIUM confidence — reference engine patterns and domain knowledge)
-- Defold component scripting model — `self` as first argument, `on_input` callback fires before `update` in same frame, deferred message passing
-- LOVE2d convention — float seconds for delta time, `keypressed` callback before `update`
-- Solarus — `sol.*` table pattern for namespace structure
-- Unity — `RequireComponent` attribute pattern (inspires `assertRequires<T>()`)
-- Playdate documentation — `collectgarbage()` GC control pattern, frame budget documentation for embedded
+- `include/enjin2/core/object.hpp` — Object ownership, `getComponent<T>()`, `setLuaProxy()`, single proxy constraint
+- `include/enjin2/core/component.hpp` — Component base class, `update(float dt)`, `assertRequires<T>()`, default destructor (no proxy teardown in v1.5)
+- `include/enjin2/core/scene_state_machine.hpp` — `switchTo()` deferred transition, `applyDeferredTransition()`, `pendingSceneId` flag
+- `include/enjin2/core/object_collection.hpp` — 128-slot `unique_ptr<Object>`, `addObject()`, `update()` loop structure
+- `include/enjin2/core/signal.hpp` — `Signal<T>` with `std::function`, `MAX_CONNECTIONS=16`, `SignalConnection` RAII
+- `include/enjin2/scripting/bindings.hpp` — `ScriptProxy`, `LuaStore` `char[64]`/`char[128]` patterns, `m_ssm` pointer injection
+- `include/enjin2/scripting/object_proxy.hpp` — `ObjectProxy { Object* object; bool valid; }` — direct proxy pattern to replicate
+- `src/scripting/bindings_engine.cpp` — `luaL_ref` for spawn string interning, pointer-to-pointer registry pattern, `engine.scene.*` binding structure
+- `.planning/PROJECT.md` — v1.6 active requirements, out-of-scope decisions, single-proxy constraint documentation
 
-### Tertiary (context, no direct verification needed)
-- ESP32-S3 technical reference — Xtensa LX7 single-precision FPU confirmed; float dt cost-equivalent to integer on this target
-- C++ standard — virtual override detachment when base signature changes without `-Woverride`; `requires` as reserved C++20 keyword
+### Secondary (HIGH confidence — authoritative API references)
+
+- Lua 5.1 reference manual — `luaL_ref`, `lua_rawgeti`, `luaL_unref`, registry lifetime, full vs light userdata metatable rules (lightuserdata has no metatable in Lua 5.1)
+- LuaJIT 2.1 documentation — confirmed `luaL_newlib` not available (Lua 5.2+ API); lightuserdata metatable limitation confirmed
+
+### Tertiary (MEDIUM confidence — external game dev patterns)
+
+- Arkanoid physics (GameDev.net, LOVE2D tutorials) — ball/brick collision approach; existing `engine.collision.*` is sufficient without Box2D
+- Tamagotchi FSM analysis — flat FSM is the correct model; hierarchical states not needed
+- Game Programming Patterns: Event Queue — string-keyed fixed-slot bus is right approach at enjin2 scale
+- Unity DontDestroyOnLoad / Persistent Scene — confirmed SSM-owned collection is the correct C++ analogue for embedded targets
 
 ---
-*Research completed: 2026-02-26*
+
+*Research completed: 2026-02-28*
 *Ready for roadmap: yes*
