@@ -76,31 +76,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROXY-01 | — | Pending |
-| PROXY-02 | — | Pending |
-| PROXY-03 | — | Pending |
-| PROXY-04 | — | Pending |
-| TIMER-01 | — | Pending |
-| TIMER-02 | — | Pending |
-| TIMER-03 | — | Pending |
-| TIMER-04 | — | Pending |
-| TIMER-05 | — | Pending |
-| FSM-01 | — | Pending |
-| FSM-02 | — | Pending |
-| FSM-03 | — | Pending |
-| FSM-04 | — | Pending |
-| FSM-05 | — | Pending |
-| EVENT-01 | — | Pending |
-| EVENT-02 | — | Pending |
-| EVENT-03 | — | Pending |
-| EVENT-04 | — | Pending |
-| EVENT-05 | — | Pending |
+| PROXY-01 | Phase 39 | Pending |
+| PROXY-02 | Phase 39 | Pending |
+| PROXY-03 | Phase 39 | Pending |
+| PROXY-04 | Phase 39 | Pending |
+| TIMER-01 | Phase 40 | Pending |
+| TIMER-02 | Phase 40 | Pending |
+| TIMER-03 | Phase 40 | Pending |
+| TIMER-04 | Phase 40 | Pending |
+| TIMER-05 | Phase 40 | Pending |
+| FSM-01 | Phase 41 | Pending |
+| FSM-02 | Phase 41 | Pending |
+| FSM-03 | Phase 41 | Pending |
+| FSM-04 | Phase 41 | Pending |
+| FSM-05 | Phase 41 | Pending |
+| EVENT-01 | Phase 42 | Pending |
+| EVENT-02 | Phase 42 | Pending |
+| EVENT-03 | Phase 42 | Pending |
+| EVENT-04 | Phase 42 | Pending |
+| EVENT-05 | Phase 42 | Pending |
 
 **Coverage:**
 - v1.6 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after initial definition*
+*Last updated: 2026-02-28 after roadmap creation (Phases 39-42)*
