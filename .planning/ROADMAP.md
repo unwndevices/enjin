@@ -59,7 +59,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 **Milestone Goal:** Make enjin2 capable of building complete small games (Arkanoid, physics sandbox, tamagotchi) purely from Lua on SDL3.
 
 - [x] **Phase 39: ComponentProxy** - Lua scripts access sibling components via `self:get("TypeName")` (completed 2026-02-28)
-- [ ] **Phase 40: C_Timer** - Delayed and repeating Lua callbacks via `timer:after()` / `timer:every()`
+- [x] **Phase 40: C_Timer** - Delayed and repeating Lua callbacks via `timer:after()` / `timer:every()` (completed 2026-02-28)
 - [ ] **Phase 41: C_StateMachine** - Named states with enter/update/exit Lua callbacks and deferred transitions
 - [ ] **Phase 42: EventBus** - Scene-scoped publish/subscribe event bus exposed as `engine.event.*`
 
@@ -108,7 +108,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
   2. Handlers can be unregistered by subscription ID before the scene ends
   3. All event handlers are automatically cleared when the scene deactivates — no cross-scene stale callbacks
   4. All `luaL_ref` handles are released on hot-reload, leaving no dangling refs after F5
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 - [ ] 42-01-PLAN.md — LuaEventBus class, engine.event sub-table (on/off/emit), scene-scoped cleanup, hot-reload cleanup, test suite
 
 ## Progress
@@ -122,6 +122,6 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 23-26. Engine Capabilities | v1.4 | 8/8 | Complete | 2026-02-26 |
 | 27-38. Lua Scripting Foundation | v1.5 | 21/21 | Complete | 2026-02-28 |
 | 39. ComponentProxy | 1/1 | Complete   | 2026-02-28 | - |
-| 40. C_Timer | v1.6 | 0/? | Not started | - |
+| 40. C_Timer | 1/1 | Complete   | 2026-02-28 | - |
 | 41. C_StateMachine | v1.6 | 0/? | Not started | - |
 | 42. EventBus | v1.6 | 0/1 | Planned | - |

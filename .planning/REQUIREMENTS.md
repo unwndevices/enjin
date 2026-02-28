@@ -16,11 +16,11 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 
 ### Timer
 
-- [ ] **TIMER-01**: C_Timer component supports one-shot delayed callback via `timer:after(seconds, callback)`
-- [ ] **TIMER-02**: C_Timer component supports repeating callback via `timer:every(seconds, callback)`
-- [ ] **TIMER-03**: Timer can be cancelled via `timer:cancel(id)`
-- [ ] **TIMER-04**: Timer callbacks receive `self` (ScriptProxy) as first argument
-- [ ] **TIMER-05**: Timer `luaL_ref` handles are cleaned up on component destruction and hot-reload
+- [x] **TIMER-01**: C_Timer component supports one-shot delayed callback via `timer:after(seconds, callback)`
+- [x] **TIMER-02**: C_Timer component supports repeating callback via `timer:every(seconds, callback)`
+- [x] **TIMER-03**: Timer can be cancelled via `timer:cancel(id)`
+- [x] **TIMER-04**: Timer callbacks receive `self` (ScriptProxy) as first argument
+- [x] **TIMER-05**: Timer `luaL_ref` handles are cleaned up on component destruction and hot-reload
 
 ### State Machine
 
@@ -80,11 +80,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROXY-02 | Phase 39 | Complete |
 | PROXY-03 | Phase 39 | Complete |
 | PROXY-04 | Phase 39 | Complete |
-| TIMER-01 | Phase 40 | Pending |
-| TIMER-02 | Phase 40 | Pending |
-| TIMER-03 | Phase 40 | Pending |
-| TIMER-04 | Phase 40 | Pending |
-| TIMER-05 | Phase 40 | Pending |
+| TIMER-01 | Phase 40 | Complete |
+| TIMER-02 | Phase 40 | Complete |
+| TIMER-03 | Phase 40 | Complete |
+| TIMER-04 | Phase 40 | Complete |
+| TIMER-05 | Phase 40 | Complete |
 | FSM-01 | Phase 41 | Pending |
 | FSM-02 | Phase 41 | Pending |
 | FSM-03 | Phase 41 | Pending |

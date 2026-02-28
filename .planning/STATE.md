@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Game Ready
 status: unknown
-last_updated: "2026-02-28T14:41:03.496Z"
+last_updated: "2026-02-28T14:49:16.536Z"
 progress:
   total_phases: 10
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 25
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.6 Game Ready — Phase 39: ComponentProxy
+**Current focus:** v1.6 Game Ready — Phase 40: C_Timer
 
 ## Current Position
 
-Phase: 39 of 42 (ComponentProxy)
+Phase: 40 of 42 (C_Timer)
 Plan: 01 COMPLETE
-Status: Phase 39 Plan 01 complete — ready for Phase 40
-Last activity: 2026-02-28 — Phase 39 Plan 01 complete (ComponentProxy infrastructure)
+Status: Phase 40 Plan 01 complete — ready for Phase 41
+Last activity: 2026-02-28 — Phase 40 Plan 01 complete (C_Timer: timer:after/every/cancel, luaL_ref cleanup)
 
-Progress: [████████████░░░░░░░░] ~60% (38/42 phases complete — Phase 39 in progress)
+Progress: [█████████████░░░░░░░] ~62% (39/42 phases complete — Phase 40 complete)
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [████████████░░░░░░░░] ~60% (3
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
-- v1.6: 1 plan so far (Phase 39: ComponentProxy Plan 01)
+- v1.6: 2 plans so far (Phase 39: ComponentProxy Plan 01, Phase 40: C_Timer Plan 01)
 
 *Updated after each plan completion*
 
@@ -55,6 +55,8 @@ Recent decisions relevant to v1.6:
 - [Phase 38]: pointer-to-pointer registry pattern — EventBus injection follows same approach
 - [Phase 39]: ComponentProxy placed in standalone header to avoid circular includes; mirrors ObjectProxy pattern
 - [Phase 39]: self:get() 'get' key checked FIRST in ScriptProxy.__index before all other properties for collision prevention
+- [Phase 40-c-timer]: fireCallback(cbRef) takes ref as param — one-shot timers set callbackRef=LUA_NOREF before pcall; clearTimers() sets m_L=nullptr to prevent double-unref
+- [Phase 40-c-timer]: C_LuaScript destructor calls C_Timer::clearTimers() before shutdown() — handles component array destruction order safety (C_LuaScript at index 0 destructs before C_Timer at index 1)
 
 ### Pending Todos
 
@@ -79,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 39-01-PLAN.md — ComponentProxy infrastructure (self:get(), C_Position_Proxy, destructor invalidation)
+Stopped at: Completed 40-01-PLAN.md — C_Timer component (timer:after/every/cancel, luaL_ref cleanup, TIMER-01..TIMER-05 tests)
 Resume file: None
