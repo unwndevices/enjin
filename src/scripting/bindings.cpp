@@ -945,6 +945,22 @@ void LuaBindings::registerAll() {
     currentColor = 15;
     lineWidth = 1;
 
+    // Reset game state machine
+    strncpy(m_currentGameState, "none", sizeof(m_currentGameState) - 1);
+    m_currentGameState[sizeof(m_currentGameState) - 1] = '\0';
+    // Unref any previously registered callbacks (guard against double-registerAll without lua_close)
+    for (int i = 0; i < m_stateCount; ++i) {
+        // Note: we don't have L yet at this point; L is retrieved below.
+        // We'll defer the unref to after L is available.
+        (void)i;
+    }
+    m_stateCount = 0;
+    for (int i = 0; i < MAX_GAME_STATES; ++i) {
+        m_stateOnEnterRefs[i] = LUA_NOREF;
+        m_stateOnExitRefs[i]  = LUA_NOREF;
+        m_stateNames[i][0]    = '\0';
+    }
+
     // Store bindings instance in Lua registry
     lua_State* L = engine->getState();
     lua_pushlightuserdata(L, this);
@@ -1025,6 +1041,8 @@ void LuaBindings::registerAll() {
     // Text
     engine->registerFunction("text",            lua_text);
     engine->registerFunction("textWrapped",     lua_textWrapped);
+    engine->registerFunction("textCentered",    lua_textCentered);
+    engine->registerFunction("textAligned",     lua_textAligned);
     engine->registerFunction("setTextSize",    lua_setTextSize);
     engine->registerFunction("getTextSize",     lua_getTextSize);
     engine->registerFunction("setFont",        lua_setFont);
@@ -1040,6 +1058,39 @@ void LuaBindings::registerAll() {
     lua_pushinteger(L, 2); lua_setglobal(L, "LAYER_MID");
     lua_pushinteger(L, 3); lua_setglobal(L, "LAYER_FG");
     lua_pushinteger(L, 4); lua_setglobal(L, "LAYER_UI");
+
+    // Built-in button constants — BTN.UP, BTN.DOWN, BTN.LEFT, etc.
+    // Indices match InputState button order: 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT, 4=A(Z), 5=B(X), 6=START
+    lua_newtable(L);
+    lua_pushinteger(L, 0); lua_setfield(L, -2, "UP");
+    lua_pushinteger(L, 1); lua_setfield(L, -2, "DOWN");
+    lua_pushinteger(L, 2); lua_setfield(L, -2, "LEFT");
+    lua_pushinteger(L, 3); lua_setfield(L, -2, "RIGHT");
+    lua_pushinteger(L, 4); lua_setfield(L, -2, "A");
+    lua_pushinteger(L, 5); lua_setfield(L, -2, "B");
+    lua_pushinteger(L, 6); lua_setfield(L, -2, "START");
+    lua_setglobal(L, "BTN");
+
+    // Built-in palette color constants — COLOR.BLACK, COLOR.RED, etc.
+    // Matches the default 16-color PICO-8-inspired palette (indices 0-15)
+    lua_newtable(L);
+    lua_pushinteger(L, 0);  lua_setfield(L, -2, "BLACK");
+    lua_pushinteger(L, 1);  lua_setfield(L, -2, "DARK_BLUE");
+    lua_pushinteger(L, 2);  lua_setfield(L, -2, "DARK_RED");
+    lua_pushinteger(L, 3);  lua_setfield(L, -2, "DARK_GREEN");
+    lua_pushinteger(L, 4);  lua_setfield(L, -2, "BROWN");
+    lua_pushinteger(L, 5);  lua_setfield(L, -2, "DARK_GRAY");
+    lua_pushinteger(L, 6);  lua_setfield(L, -2, "GRAY");
+    lua_pushinteger(L, 7);  lua_setfield(L, -2, "WHITE");
+    lua_pushinteger(L, 8);  lua_setfield(L, -2, "RED");
+    lua_pushinteger(L, 9);  lua_setfield(L, -2, "ORANGE");
+    lua_pushinteger(L, 10); lua_setfield(L, -2, "YELLOW");
+    lua_pushinteger(L, 11); lua_setfield(L, -2, "GREEN");
+    lua_pushinteger(L, 12); lua_setfield(L, -2, "BLUE");
+    lua_pushinteger(L, 13); lua_setfield(L, -2, "INDIGO");
+    lua_pushinteger(L, 14); lua_setfield(L, -2, "PINK");
+    lua_pushinteger(L, 15); lua_setfield(L, -2, "TRANSPARENT");
+    lua_setglobal(L, "COLOR");
 
     // Create love2d.graphics-style table for familiarity
     lua_newtable(L);

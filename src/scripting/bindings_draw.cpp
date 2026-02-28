@@ -1,6 +1,7 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/graphics/palette.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace enjin2 {
 
@@ -97,8 +98,8 @@ int LuaBindings::lua_point(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
     if (lua_gettop(L) >= 2 && lua_isnumber(L, 1) && lua_isnumber(L, 2)) {
-        int16_t x = static_cast<int16_t>(lua_tointeger(L, 1));
-        int16_t y = static_cast<int16_t>(lua_tointeger(L, 2));
+        int16_t x = static_cast<int16_t>(lround(lua_tonumber(L, 1)));
+        int16_t y = static_cast<int16_t>(lround(lua_tonumber(L, 2)));
 
         bindings->currentCanvas->setPixel(x, y, bindings->currentColor);
     }
@@ -110,10 +111,10 @@ int LuaBindings::lua_line(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
     if (lua_gettop(L) >= 4) {
-        int16_t x1 = static_cast<int16_t>(lua_tointeger(L, 1));
-        int16_t y1 = static_cast<int16_t>(lua_tointeger(L, 2));
-        int16_t x2 = static_cast<int16_t>(lua_tointeger(L, 3));
-        int16_t y2 = static_cast<int16_t>(lua_tointeger(L, 4));
+        int16_t x1 = static_cast<int16_t>(lround(lua_tonumber(L, 1)));
+        int16_t y1 = static_cast<int16_t>(lround(lua_tonumber(L, 2)));
+        int16_t x2 = static_cast<int16_t>(lround(lua_tonumber(L, 3)));
+        int16_t y2 = static_cast<int16_t>(lround(lua_tonumber(L, 4)));
 
         bindings->currentCanvas->drawLine(x1, y1, x2, y2, bindings->currentColor);
     }
@@ -131,8 +132,8 @@ int LuaBindings::lua_rectangle(lua_State* L) {
         }
 
         int startIdx = (lua_type(L, 1) == LUA_TSTRING) ? 2 : 1;
-        int16_t x = static_cast<int16_t>(lua_tointeger(L, startIdx));
-        int16_t y = static_cast<int16_t>(lua_tointeger(L, startIdx + 1));
+        int16_t x = static_cast<int16_t>(lround(lua_tonumber(L, startIdx)));
+        int16_t y = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 1)));
         uint16_t width = static_cast<uint16_t>(lua_tointeger(L, startIdx + 2));
         uint16_t height = static_cast<uint16_t>(lua_tointeger(L, startIdx + 3));
 
@@ -151,13 +152,13 @@ int LuaBindings::lua_circle(lua_State* L) {
 
     if (lua_gettop(L) >= 3) {
         const char* mode = "fill";
-        if (lua_gettop(L) >= 4 && lua_isstring(L, 1)) {
+        if (lua_gettop(L) >= 4 && lua_type(L, 1) == LUA_TSTRING) {
             mode = lua_tostring(L, 1);
         }
 
-        int startIdx = (lua_isstring(L, 1)) ? 2 : 1;
-        int16_t x = static_cast<int16_t>(lua_tointeger(L, startIdx));
-        int16_t y = static_cast<int16_t>(lua_tointeger(L, startIdx + 1));
+        int startIdx = (lua_type(L, 1) == LUA_TSTRING) ? 2 : 1;
+        int16_t x = static_cast<int16_t>(lround(lua_tonumber(L, startIdx)));
+        int16_t y = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 1)));
         uint16_t radius = static_cast<uint16_t>(lua_tointeger(L, startIdx + 2));
 
         if (strcmp(mode, "fill") == 0) {
@@ -175,17 +176,17 @@ int LuaBindings::lua_triangle(lua_State* L) {
 
     if (lua_gettop(L) >= 6) {
         const char* mode = "fill";
-        if (lua_gettop(L) >= 7 && lua_isstring(L, 1)) {
+        if (lua_gettop(L) >= 7 && lua_type(L, 1) == LUA_TSTRING) {
             mode = lua_tostring(L, 1);
         }
 
-        int startIdx = (lua_isstring(L, 1)) ? 2 : 1;
-        int16_t x1 = static_cast<int16_t>(lua_tointeger(L, startIdx));
-        int16_t y1 = static_cast<int16_t>(lua_tointeger(L, startIdx + 1));
-        int16_t x2 = static_cast<int16_t>(lua_tointeger(L, startIdx + 2));
-        int16_t y2 = static_cast<int16_t>(lua_tointeger(L, startIdx + 3));
-        int16_t x3 = static_cast<int16_t>(lua_tointeger(L, startIdx + 4));
-        int16_t y3 = static_cast<int16_t>(lua_tointeger(L, startIdx + 5));
+        int startIdx = (lua_type(L, 1) == LUA_TSTRING) ? 2 : 1;
+        int16_t x1 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx)));
+        int16_t y1 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 1)));
+        int16_t x2 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 2)));
+        int16_t y2 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 3)));
+        int16_t x3 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 4)));
+        int16_t y3 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 5)));
 
         if (strcmp(mode, "fill") == 0) {
             bindings->currentCanvas->fillTriangle(x1, y1, x2, y2, x3, y3, bindings->currentColor);

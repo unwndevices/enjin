@@ -101,8 +101,54 @@ int LuaBindings::lua_text(lua_State* L) {
     const char* str = luaL_checkstring(L, 1);
     lua_Integer x = luaL_checkinteger(L, 2);
     lua_Integer y = luaL_checkinteger(L, 3);
+    // Optional 4th arg: per-call scale override — does NOT mutate currentTextSize
+    uint8_t scale = b->currentTextSize;
+    if (lua_gettop(L) >= 4 && lua_isnumber(L, 4)) {
+        int s = static_cast<int>(lua_tointeger(L, 4));
+        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    }
     b->currentCanvas->drawText(str, static_cast<int16_t>(x), static_cast<int16_t>(y),
-                              b->currentColor, b->currentTextSize, b->currentFont);
+                              b->currentColor, scale, b->currentFont);
+    return 0;
+}
+
+int LuaBindings::lua_textCentered(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentCanvas) return 0;
+    const char* str = luaL_checkstring(L, 1);
+    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    uint8_t scale = b->currentTextSize;
+    if (lua_gettop(L) >= 3 && lua_isnumber(L, 3)) {
+        int s = static_cast<int>(lua_tointeger(L, 3));
+        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    }
+    uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
+    int16_t x = static_cast<int16_t>(((int)b->currentCanvas->getWidth() - (int)tw) / 2);
+    b->currentCanvas->drawText(str, x, y, b->currentColor, scale, b->currentFont);
+    return 0;
+}
+
+int LuaBindings::lua_textAligned(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentCanvas) return 0;
+    const char* str = luaL_checkstring(L, 1);
+    int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    const char* align = luaL_optstring(L, 4, "left");
+    uint8_t scale = b->currentTextSize;
+    if (lua_gettop(L) >= 5 && lua_isnumber(L, 5)) {
+        int s = static_cast<int>(lua_tointeger(L, 5));
+        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    }
+    if (strcmp(align, "center") == 0) {
+        uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
+        x = static_cast<int16_t>(x - static_cast<int16_t>(tw / 2));
+    } else if (strcmp(align, "right") == 0) {
+        uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
+        x = static_cast<int16_t>(x - static_cast<int16_t>(tw));
+    }
+    // "left" = no adjustment (default)
+    b->currentCanvas->drawText(str, x, y, b->currentColor, scale, b->currentFont);
     return 0;
 }
 

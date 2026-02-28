@@ -425,6 +425,14 @@ private:
     // -- Active camera (scene-level singleton) -----------------------------------
     C_Camera* m_activeCamera{nullptr};  ///< Non-owning; set by host or cleared on scene change
 
+    // -- Lightweight global state machine (engine.state.*) ----------------------
+    static constexpr int MAX_GAME_STATES = 16;  ///< Maximum named states
+    char m_currentGameState[64]{"none"};         ///< Current game state name
+    char m_stateNames[MAX_GAME_STATES][64]{};    ///< Registered state names
+    int  m_stateOnEnterRefs[MAX_GAME_STATES]{};  ///< Lua registry refs for on_enter (LUA_NOREF = none)
+    int  m_stateOnExitRefs[MAX_GAME_STATES]{};   ///< Lua registry refs for on_exit
+    int  m_stateCount{0};                        ///< Number of registered states
+
 public:
     /**
      * @brief Constructor
@@ -630,6 +638,8 @@ private:
     // Text bindings
     static int lua_text(lua_State* L);
     static int lua_textWrapped(lua_State* L);
+    static int lua_textCentered(lua_State* L);
+    static int lua_textAligned(lua_State* L);
     static int lua_setTextSize(lua_State* L);
     static int lua_getTextSize(lua_State* L);
     static int lua_setFont(lua_State* L);
@@ -665,6 +675,15 @@ private:
     static int lua_engine_collision_aabbOverlap(lua_State* L);
     static int lua_engine_collision_circleResponse(lua_State* L);
     static int lua_engine_collision_reflect(lua_State* L);
+
+    // engine.config.* binding functions
+    static int lua_engine_config_resolution(lua_State* L);
+
+    // engine.state.* binding functions (lightweight global state machine)
+    static int lua_engine_state_switch(lua_State* L);
+    static int lua_engine_state_current(lua_State* L);
+    static int lua_engine_state_on_enter(lua_State* L);
+    static int lua_engine_state_on_exit(lua_State* L);
 
     /**
      * @brief Register engine.* global table (called from registerAll())

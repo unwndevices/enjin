@@ -141,11 +141,178 @@ void LuaBindings::registerEngineTable() {
     luaBindFunctions(L, -1, kCameraFuncs, ENJIN_ARRAY_LEN(kCameraFuncs));
     lua_setfield(L, -2, "camera");
 
+    // --- engine.graphics sub-table (quick-007 API-03: aliases for global drawing functions) ---
+    static const LuaFuncDef kGraphicsFuncs[] = {
+        {"clear",         lua_clear},
+        {"setColor",      lua_setColor},
+        {"getColor",      lua_getColor},
+        {"setLineWidth",  lua_setLineWidth},
+        {"getLineWidth",  lua_getLineWidth},
+        {"point",         lua_point},
+        {"line",          lua_line},
+        {"rectangle",     lua_rectangle},
+        {"circle",        lua_circle},
+        {"triangle",      lua_triangle},
+        {"setPixel",      lua_setPixel},
+        {"getPixel",      lua_getPixel},
+        {"text",          lua_text},
+        {"textWrapped",   lua_textWrapped},
+        {"textCentered",  lua_textCentered},
+        {"textAligned",   lua_textAligned},
+        {"setTextSize",   lua_setTextSize},
+        {"getTextSize",   lua_getTextSize},
+        {"setFont",       lua_setFont},
+        {"getFont",       lua_getFont},
+        {"getTextWidth",  lua_getTextWidth},
+        {"getTextHeight", lua_getTextHeight},
+        {"getWidth",      lua_getWidth},
+        {"getHeight",     lua_getHeight},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kGraphicsFuncs, ENJIN_ARRAY_LEN(kGraphicsFuncs));
+    lua_setfield(L, -2, "graphics");
+
+    // --- engine.config sub-table (quick-007 API-07: canvas configuration) ---
+    static const LuaFuncDef kConfigFuncs[] = {
+        {"resolution", lua_engine_config_resolution},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kConfigFuncs, ENJIN_ARRAY_LEN(kConfigFuncs));
+    lua_setfield(L, -2, "config");
+
+    // --- engine.state sub-table (quick-007 API-07: lightweight global state machine) ---
+    static const LuaFuncDef kStateFuncs[] = {
+        {"switch",   lua_engine_state_switch},
+        {"current",  lua_engine_state_current},
+        {"on_enter", lua_engine_state_on_enter},
+        {"on_exit",  lua_engine_state_on_exit},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kStateFuncs, ENJIN_ARRAY_LEN(kStateFuncs));
+    lua_setfield(L, -2, "state");
+
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
     lua_setfield(L, -2, "log");
 
     lua_setglobal(L, "engine");                    // pops engine_table; stack is now balanced
+}
+
+// --- engine.config.resolution() -> width, height ---
+int LuaBindings::lua_engine_config_resolution(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->currentCanvas) {
+        lua_pushinteger(L, 0);
+        lua_pushinteger(L, 0);
+        return 2;
+    }
+    lua_pushinteger(L, b->currentCanvas->getWidth());
+    lua_pushinteger(L, b->currentCanvas->getHeight());
+    return 2;
+}
+
+// --- engine.state.current() -> string ---
+int LuaBindings::lua_engine_state_current(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushstring(L, "none"); return 1; }
+    lua_pushstring(L, b->m_currentGameState);
+    return 1;
+}
+
+// --- engine.state.switch(name) ---
+// Fires on_exit for current state, changes state, fires on_enter for new state.
+int LuaBindings::lua_engine_state_switch(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    const char* newState = luaL_checkstring(L, 1);
+
+    // Fire on_exit for current state
+    for (int i = 0; i < b->m_stateCount; ++i) {
+        if (strcmp(b->m_stateNames[i], b->m_currentGameState) == 0) {
+            if (b->m_stateOnExitRefs[i] != LUA_NOREF) {
+                lua_rawgeti(L, LUA_REGISTRYINDEX, b->m_stateOnExitRefs[i]);
+                lua_pcall(L, 0, 0, 0);
+            }
+            break;
+        }
+    }
+
+    // Change state
+    strncpy(b->m_currentGameState, newState, sizeof(b->m_currentGameState) - 1);
+    b->m_currentGameState[sizeof(b->m_currentGameState) - 1] = '\0';
+
+    // Fire on_enter for new state
+    for (int i = 0; i < b->m_stateCount; ++i) {
+        if (strcmp(b->m_stateNames[i], newState) == 0) {
+            if (b->m_stateOnEnterRefs[i] != LUA_NOREF) {
+                lua_rawgeti(L, LUA_REGISTRYINDEX, b->m_stateOnEnterRefs[i]);
+                lua_pcall(L, 0, 0, 0);
+            }
+            break;
+        }
+    }
+
+    return 0;
+}
+
+// --- engine.state.on_enter(state_name, callback) ---
+int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    const char* name = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+
+    // Find or create slot (linear scan)
+    int idx = -1;
+    for (int i = 0; i < b->m_stateCount; ++i) {
+        if (strcmp(b->m_stateNames[i], name) == 0) { idx = i; break; }
+    }
+    if (idx < 0) {
+        if (b->m_stateCount >= MAX_GAME_STATES) return 0;  // full
+        idx = b->m_stateCount++;
+        strncpy(b->m_stateNames[idx], name, 63);
+        b->m_stateNames[idx][63] = '\0';
+        b->m_stateOnEnterRefs[idx] = LUA_NOREF;
+        b->m_stateOnExitRefs[idx]  = LUA_NOREF;
+    }
+
+    // Unref existing callback if any
+    if (b->m_stateOnEnterRefs[idx] != LUA_NOREF) {
+        luaL_unref(L, LUA_REGISTRYINDEX, b->m_stateOnEnterRefs[idx]);
+    }
+    lua_pushvalue(L, 2);
+    b->m_stateOnEnterRefs[idx] = luaL_ref(L, LUA_REGISTRYINDEX);
+    return 0;
+}
+
+// --- engine.state.on_exit(state_name, callback) ---
+int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    const char* name = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+
+    // Find or create slot (linear scan)
+    int idx = -1;
+    for (int i = 0; i < b->m_stateCount; ++i) {
+        if (strcmp(b->m_stateNames[i], name) == 0) { idx = i; break; }
+    }
+    if (idx < 0) {
+        if (b->m_stateCount >= MAX_GAME_STATES) return 0;  // full
+        idx = b->m_stateCount++;
+        strncpy(b->m_stateNames[idx], name, 63);
+        b->m_stateNames[idx][63] = '\0';
+        b->m_stateOnEnterRefs[idx] = LUA_NOREF;
+        b->m_stateOnExitRefs[idx]  = LUA_NOREF;
+    }
+
+    // Unref existing callback if any
+    if (b->m_stateOnExitRefs[idx] != LUA_NOREF) {
+        luaL_unref(L, LUA_REGISTRYINDEX, b->m_stateOnExitRefs[idx]);
+    }
+    lua_pushvalue(L, 2);
+    b->m_stateOnExitRefs[idx] = luaL_ref(L, LUA_REGISTRYINDEX);
+    return 0;
 }
 
 // --- engine.scene.switch(id) — ENG-01 ---
