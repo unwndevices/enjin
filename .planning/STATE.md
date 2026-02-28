@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.6 Game Ready — Phase 41: C_StateMachine (complete) — Phase 42: EventBus
+**Current focus:** v1.6 Game Ready — Phase 42: EventBus (Plan 01 COMPLETE)
 
 ## Current Position
 
-Phase: 41 of 42 (C_StateMachine)
+Phase: 42 of 42 (EventBus)
 Plan: 01 COMPLETE
-Status: Phase 41 Plan 01 complete — ready for Phase 42
-Last activity: 2026-02-28 — Phase 41 Plan 01 complete (C_StateMachine: fsm:addState/setState/getState, deferred FSM, luaL_ref cleanup, FSM-01..FSM-05 tests)
+Status: Phase 42 Plan 01 complete — EventBus (scene-scoped pub/sub) — v1.6 Game Ready milestone COMPLETE
+Last activity: 2026-02-28 — Phase 42 Plan 01 complete (EventBus: engine.event.on/off/emit, LuaEventBus zero-alloc, EVENT-01..EVENT-05 tests)
 
-Progress: [██████████████░░░░░░] ~67% (40/42 phases complete — Phase 41 complete)
+Progress: [████████████████████] ~100% (42/42 phases complete — v1.6 Game Ready milestone COMPLETE)
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [██████████████░░░░░░] ~67% (4
 - v1.3: 7 plans (Phases 19-22)
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
-- v1.6: 3 plans so far (Phase 39: ComponentProxy Plan 01, Phase 40: C_Timer Plan 01, Phase 41: C_StateMachine Plan 01)
+- v1.6: 4 plans (Phase 39: ComponentProxy Plan 01, Phase 40: C_Timer Plan 01, Phase 41: C_StateMachine Plan 01, Phase 42: EventBus Plan 01)
 
 *Updated after each plan completion*
 
@@ -59,6 +59,9 @@ Recent decisions relevant to v1.6:
 - [Phase 40-c-timer]: C_LuaScript destructor calls C_Timer::clearTimers() before shutdown() — handles component array destruction order safety (C_LuaScript at index 0 destructs before C_Timer at index 1)
 - [Phase 41-c-statemachine]: C_StateMachine uses deferred transition model: setState() queues m_pendingState, applied at END of update() after state's update callback — matching SceneStateMachine pattern
 - [Phase 41-c-statemachine]: clearStates() sets m_L=nullptr after unref — prevents double-unref in C_StateMachine destructor (mirrors C_Timer clearTimers sentinel pattern)
+- [Phase 42-eventbus]: LuaEventBus uses fixed-capacity arrays (Channel[16], Subscriber[8]) with zero heap allocation — same sentinel pattern (m_L=nullptr after clearHandlers)
+- [Phase 42-eventbus]: emit() snapshots refs to local array before pcall loop for re-entrant safety — off()/on() inside handler modifies channel array but not the snapshot
+- [Phase 42-eventbus]: EVENT-05 hot-reload implemented in C_LuaScript::executeScript() not registerAll() — registerAll() only runs at initialize(); hot-reload goes through executeScript()
 
 ### Pending Todos
 
@@ -83,5 +86,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 41-01-PLAN.md — C_StateMachine component (fsm:addState/setState/getState, deferred FSM, luaL_ref cleanup, FSM-01..FSM-05 tests)
+Stopped at: Completed 42-01-PLAN.md — EventBus (engine.event.on/off/emit, LuaEventBus zero-alloc, EVENT-01..EVENT-05 tests) — v1.6 Game Ready milestone COMPLETE
 Resume file: None

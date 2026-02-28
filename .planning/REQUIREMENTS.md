@@ -32,11 +32,11 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 
 ### Event Bus
 
-- [ ] **EVENT-01**: Lua scripts can register event handlers via `engine.event.on(name, callback)`
-- [ ] **EVENT-02**: Lua scripts can emit events via `engine.event.emit(name)`
-- [ ] **EVENT-03**: Handlers can be manually unregistered
-- [ ] **EVENT-04**: Event bus is scene-scoped — all handlers cleared on scene deactivation
-- [ ] **EVENT-05**: Handler `luaL_ref` handles cleaned up properly (no leaks across hot-reload)
+- [x] **EVENT-01**: Lua scripts can register event handlers via `engine.event.on(name, callback)`
+- [x] **EVENT-02**: Lua scripts can emit events via `engine.event.emit(name)`
+- [x] **EVENT-03**: Handlers can be manually unregistered
+- [x] **EVENT-04**: Event bus is scene-scoped — all handlers cleared on scene deactivation
+- [x] **EVENT-05**: Handler `luaL_ref` handles cleaned up properly (no leaks across hot-reload)
 
 ## Future Requirements
 
@@ -90,11 +90,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FSM-03 | Phase 41 | Complete |
 | FSM-04 | Phase 41 | Complete |
 | FSM-05 | Phase 41 | Complete |
-| EVENT-01 | Phase 42 | Pending |
-| EVENT-02 | Phase 42 | Pending |
-| EVENT-03 | Phase 42 | Pending |
-| EVENT-04 | Phase 42 | Pending |
-| EVENT-05 | Phase 42 | Pending |
+| EVENT-01 | Phase 42 | Complete |
+| EVENT-02 | Phase 42 | Complete |
+| EVENT-03 | Phase 42 | Complete |
+| EVENT-04 | Phase 42 | Complete |
+| EVENT-05 | Phase 42 | Complete |
 
 **Coverage:**
 - v1.6 requirements: 19 total
