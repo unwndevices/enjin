@@ -69,7 +69,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 **Milestone Goal:** Level-based game support with grid-based tilemaps and engine-wide 2D camera.
 
 - [x] **Phase 43 Plan 01: C_Tilemap C++ foundation** - 64x64 tile grid, viewport-culled rendering, scroll, coordinate helpers (completed 2026-02-28)
-- [ ] **Phase 43 Plan 02: C_Tilemap Lua bindings** - ComponentProxy, self:get("C_Tilemap"), setTiles from Lua table
+- [x] **Phase 43 Plan 02: C_Tilemap Lua bindings** - ComponentProxy, self:get("C_Tilemap"), setTiles from Lua table (completed 2026-02-28)
 - [ ] **Phase 44 Plan 01: C_Camera C++ component** - Scene render pipeline, drawWithOffset(), screen-space flag
 - [ ] **Phase 44 Plan 02: C_Camera Lua bindings** - engine.camera.*, smooth lerp, shake, bounds
 
@@ -135,7 +135,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 40. C_Timer | 1/1 | Complete    | 2026-02-28 | - |
 | 41. C_StateMachine | 1/1 | Complete    | 2026-02-28 | - |
 | 42. EventBus | 1/1 | Complete    | 2026-02-28 | - |
-| 43. Tilemap System | 1/2 | In Progress | 2026-02-28 | - |
+| 43. Tilemap System | 2/2 | Complete   | 2026-02-28 | - |
 
 ### Phase 43: Tilemap System
 
@@ -148,7 +148,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
   3. Built-in camera offset (scrollX, scrollY) shifts the visible tilemap viewport
   4. Lua scripts access C_Tilemap via self:get("C_Tilemap") with setTile/getTile/setTiles/setSheet/setScroll/getScroll/pixelToTile/tileToPixel/tileAtPixel/getMapSize
   5. Map data can be initialized from a flat Lua table via tilemap:setTiles(table, w, h)
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 43-01-PLAN.md — C_Tilemap C++ component (C_Drawable-derived), tile data structure, viewport-culled draw(), coordinate helpers, C++ test suite (completed 2026-02-28)

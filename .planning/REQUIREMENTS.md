@@ -44,10 +44,10 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 - [x] **TMAP-02**: Viewport-culled draw() renders only visible tiles to ICanvas<Pixel4>
 - [x] **TMAP-03**: Tile ID 0 is transparent (not drawn); IDs 1-255 are rendered via SpriteSheet::draw()
 - [x] **TMAP-04**: Built-in camera offset (scrollX, scrollY) for tilemap-scoped scrolling
-- [ ] **TMAP-05**: Lua proxy via self:get("C_Tilemap") with setTile/getTile/setTiles/setSheet/setScroll/getScroll/getMapSize
-- [ ] **TMAP-06**: Coordinate conversion helpers: pixelToTile, tileToPixel, tileAtPixel
-- [ ] **TMAP-07**: Map data initialized from flat Lua table via tilemap:setTiles(table, w, h)
-- [ ] **TMAP-08**: setSheet(handle) uses sprite pool handle to bind tileset
+- [x] **TMAP-05**: Lua proxy via self:get("C_Tilemap") with setTile/getTile/setTiles/setSheet/setScroll/getScroll/getMapSize
+- [x] **TMAP-06**: Coordinate conversion helpers: pixelToTile, tileToPixel, tileAtPixel
+- [x] **TMAP-07**: Map data initialized from flat Lua table via tilemap:setTiles(table, w, h)
+- [x] **TMAP-08**: setSheet(handle) uses sprite pool handle to bind tileset
 
 ### 2D Camera
 

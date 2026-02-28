@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Tilemap + Camera
 status: in-progress
-last_updated: "2026-02-28T17:20:16Z"
+last_updated: "2026-02-28T17:28:00Z"
 progress:
   total_phases: 44
   completed_phases: 43
   total_plans: 26
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Tilemap + Camera — Phase 43: Tilemap System (Plan 01 COMPLETE)
+**Current focus:** v1.7 Tilemap + Camera — Phase 43: Tilemap System COMPLETE — Phase 44: 2D Camera System next
 
 ## Current Position
 
-Phase: 43 of 44 (Tilemap System)
-Plan: 01 COMPLETE
-Status: Phase 43 Plan 01 complete — C_Tilemap C++ foundation (64x64 tile grid, viewport culling, coordinate helpers, TMAP-01..04 tests)
-Last activity: 2026-02-28 — Phase 43 Plan 01 complete (C_Tilemap: stack-allocated tile grid, draw() viewport culling, setScroll, pixelToTile/tileToPixel/tileAtPixel)
+Phase: 43 of 44 (Tilemap System) COMPLETE
+Plan: 02 COMPLETE (Phase 43 fully done)
+Status: Phase 43 complete — C_Tilemap Lua bindings via C_Tilemap_Proxy metatable (TMAP-05..TMAP-08 tests passing)
+Last activity: 2026-02-28 — Phase 43 Plan 02 complete (C_Tilemap_Proxy: 10 Lua methods, stale-proxy safety, tilemap_lua_test passing)
 
-Progress: [████████████████████] ~98% (43/44 phases complete — Plan 02 (Lua bindings) remaining)
+Progress: [████████████████████] ~98% (43/44 phases complete — Phase 44 (2D Camera System) remaining)
 
 ## Performance Metrics
 
@@ -67,6 +67,9 @@ Recent decisions relevant to v1.6:
 - [Phase 43-tilemap]: Tile ID 0 transparent sentinel with direct frameIndex pass-through — no subtract-1 in hot path; tileset frame 0 is intentionally wasted
 - [Phase 43-tilemap]: Floor division helper for negative pixel/scroll coords — C++ truncates toward zero, floorDiv() corrects for negative world coordinates
 - [Phase 43-tilemap]: setScroll() stores without clamping; draw() clamps startTX/startTY to 0 for negative scroll values
+- [Phase 43-tilemap-lua]: getBindings() made public — static non-member Lua proxy functions in bindings.cpp cannot access private members; public is safe (reads only Lua registry)
+- [Phase 43-tilemap-lua]: getSpriteSheet() public const accessor — returns pointer to sprite pool slot for C_Tilemap::setSheet() integration without exposing mutable sprite pool
+- [Phase 43-tilemap-lua]: CTILEMAP_PROXY_CHECK macro — reduces stale-check boilerplate across 10 C_Tilemap_Proxy methods; consistent with C_Timer/C_StateMachine proxy pattern
 
 ### Pending Todos
 
@@ -93,5 +96,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 43-01-PLAN.md — C_Tilemap C++ foundation (stack-allocated tile grid, viewport culling, coordinate helpers, TMAP-01..04 tests)
+Stopped at: Completed 43-02-PLAN.md — C_Tilemap Lua bindings (C_Tilemap_Proxy metatable, 10 proxy methods, TMAP-05..08 tests)
 Resume file: None
