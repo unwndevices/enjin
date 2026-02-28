@@ -74,7 +74,8 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
   2. Accessing a proxy after its component is destroyed raises a `luaL_error` (not silent nil or crash)
   3. `Component` base class carries the proxy registration field; `Component::~Component()` marks all outstanding proxies invalid
   4. `ScriptProxy.__index` dispatch checks `"get"` first before any property or method lookup, preventing name collision
-**Plans**: TBD
+**Plans:** 1 plan
+- [ ] 39-01-PLAN.md — ComponentProxy struct, Component base class extension, self:get() dispatch, C_Position_Proxy metatable, test suite
 
 ### Phase 40: C_Timer
 **Goal**: Objects can schedule one-shot and repeating Lua callbacks without busy-polling in update()
@@ -119,7 +120,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 19-22. Tomodachi Readiness | v1.3 | 7/7 | Complete | 2026-02-24 |
 | 23-26. Engine Capabilities | v1.4 | 8/8 | Complete | 2026-02-26 |
 | 27-38. Lua Scripting Foundation | v1.5 | 21/21 | Complete | 2026-02-28 |
-| 39. ComponentProxy | v1.6 | 0/? | Not started | - |
+| 39. ComponentProxy | v1.6 | 0/1 | Planned | - |
 | 40. C_Timer | v1.6 | 0/? | Not started | - |
 | 41. C_StateMachine | v1.6 | 0/? | Not started | - |
 | 42. EventBus | v1.6 | 0/? | Not started | - |
