@@ -135,7 +135,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 40. C_Timer | 1/1 | Complete    | 2026-02-28 | - |
 | 41. C_StateMachine | 1/1 | Complete    | 2026-02-28 | - |
 | 42. EventBus | 1/1 | Complete    | 2026-02-28 | - |
-| 43. Tilemap System | 2/2 | Complete   | 2026-02-28 | - |
+| 43. Tilemap System | 2/2 | Complete    | 2026-02-28 | - |
 
 ### Phase 43: Tilemap System
 

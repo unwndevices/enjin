@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: Tilemap + Camera
-status: in-progress
-last_updated: "2026-02-28T17:28:00Z"
+milestone: v1.6
+milestone_name: Game Ready
+status: unknown
+last_updated: "2026-02-28T17:33:33.800Z"
 progress:
-  total_phases: 44
-  completed_phases: 43
-  total_plans: 26
+  total_phases: 12
+  completed_phases: 10
+  total_plans: 29
   completed_plans: 26
 ---
 
