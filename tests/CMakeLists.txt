@@ -374,6 +374,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME eventbus_test COMMAND eventbus_test)
+
+    # Tilemap component test (Phase 43: TMAP-01..TMAP-04)
+    add_executable(tilemap_test
+        tilemap_test.cpp
+    )
+    target_include_directories(tilemap_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(tilemap_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME tilemap_test COMMAND tilemap_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
