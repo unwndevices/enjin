@@ -19,6 +19,7 @@
 #include "../input/input_state.hpp"
 #include "../core/math.hpp"
 #include "../core/collision.hpp"
+#include "lua_event_bus.hpp"
 
 namespace enjin2 {
 
@@ -380,6 +381,9 @@ private:
     LuaStore m_store;                          ///< Per-script key-value store
     char     m_storePath[256]{};               ///< File path for auto-persist (empty = no auto-save)
 
+    // -- Event bus (scene-scoped pub/sub) -----------------------------------------
+    LuaEventBus m_eventBus;                    ///< Scene-scoped event bus; cleared on scene change and hot-reload
+
 public:
     /**
      * @brief Constructor
@@ -455,7 +459,7 @@ public:
      * @brief Inject active Scene pointer for engine.scene.find()
      * @param scene Non-owning pointer to the currently active scene; may be nullptr
      */
-    void setActiveScene(Scene* scene) { m_activeScene = scene; }
+    void setActiveScene(Scene* scene);
 
     /**
      * @brief Update time state for engine.time.* bindings (call before each frame's update)
@@ -488,6 +492,11 @@ public:
      * @brief Get the persistent store (for testing)
      */
     LuaStore& getStore() { return m_store; }
+
+    /**
+     * @brief Get the event bus (for testing)
+     */
+    LuaEventBus& getEventBus() { return m_eventBus; }
 
 private:
     // Canvas management functions

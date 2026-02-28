@@ -687,6 +687,14 @@ void LuaBindings::registerAll() {
     lua_pushlightuserdata(L, &m_timeState);   // always valid (member of LuaBindings)
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_time");
 
+    // EVENT-05: clear event bus handlers from previous load (hot-reload cleanup)
+    m_eventBus.clearHandlers();
+    m_eventBus.setLuaState(L);
+
+    // Store event bus pointer in registry for engine.event.* closures
+    lua_pushlightuserdata(L, &m_eventBus);
+    lua_setfield(L, LUA_REGISTRYINDEX, "enjin_event_bus");
+
     // Canvas functions
     engine->registerFunction("getWidth", lua_getWidth);
     engine->registerFunction("getHeight", lua_getHeight);
@@ -1024,6 +1032,15 @@ void LuaBindings::registerComponentProxyMetatable() {
         lua_setfield(L, -2, "__index");
     }
     lua_pop(L, 1);
+}
+
+void LuaBindings::setActiveScene(Scene* scene) {
+    if (scene != m_activeScene) {
+        // EVENT-04: Scene is changing -- clear event bus for the outgoing scene.
+        // This ensures no stale handlers carry over to the new scene.
+        m_eventBus.clearHandlers();
+    }
+    m_activeScene = scene;
 }
 
 } // namespace enjin2

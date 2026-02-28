@@ -1,11 +1,17 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include "../../include/enjin2/scripting/lua_event_bus.hpp"
 #include "../../include/enjin2/core/scene.hpp"
 #include "../../include/enjin2/core/scene_state_machine.hpp"
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/components/position.hpp"
 
 namespace enjin2 {
+
+// Forward declarations for engine.event.* static binding functions (defined later in this file)
+static int lua_engine_event_on(lua_State* L);
+static int lua_engine_event_off(lua_State* L);
+static int lua_engine_event_emit(lua_State* L);
 
 //==============================================================================
 // engine.* Global Table (ENG-01..ENG-06)
@@ -102,6 +108,16 @@ void LuaBindings::registerEngineTable() {
     lua_newtable(L);
     luaBindFunctions(L, -1, kSpriteFuncs, ENJIN_ARRAY_LEN(kSpriteFuncs));
     lua_setfield(L, -2, "sprite");
+
+    // --- engine.event sub-table (Phase 42: scene-scoped pub/sub) ---
+    static const LuaFuncDef kEventFuncs[] = {
+        {"on",   lua_engine_event_on},
+        {"off",  lua_engine_event_off},
+        {"emit", lua_engine_event_emit},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kEventFuncs, ENJIN_ARRAY_LEN(kEventFuncs));
+    lua_setfield(L, -2, "event");
 
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
@@ -554,6 +570,58 @@ int LuaBindings::lua_engine_random_float(lua_State* L) {
         lua_pushnumber(L, normalized);
     }
     return 1;
+}
+
+//==============================================================================
+// engine.event.* bindings (Phase 42: scene-scoped pub/sub event bus)
+//==============================================================================
+
+// Helper: retrieve LuaEventBus* from Lua registry
+static LuaEventBus* getEventBus(lua_State* L) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_event_bus");
+    auto* bus = static_cast<LuaEventBus*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    return bus;
+}
+
+// --- engine.event.on(name, callback) -- EVENT-01 ---
+// Returns subscription ID (integer > 0) on success, or 0 on failure.
+static int lua_engine_event_on(lua_State* L) {
+    LuaEventBus* bus = getEventBus(L);
+    if (!bus) { lua_pushinteger(L, 0); return 1; }
+
+    const char* name = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+
+    // Anchor the callback function in the Lua registry
+    lua_pushvalue(L, 2);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    int id = bus->subscribe(name, ref);
+    lua_pushinteger(L, static_cast<lua_Integer>(id));
+    return 1;
+}
+
+// --- engine.event.off(id) -- EVENT-03 ---
+// Unregisters a handler by subscription ID. Silent no-op for invalid IDs.
+static int lua_engine_event_off(lua_State* L) {
+    LuaEventBus* bus = getEventBus(L);
+    if (!bus) return 0;
+
+    int id = static_cast<int>(luaL_checkinteger(L, 1));
+    bus->unsubscribe(id);
+    return 0;
+}
+
+// --- engine.event.emit(name) -- EVENT-02 ---
+// Fires all active callbacks for the named event. No payload arguments.
+static int lua_engine_event_emit(lua_State* L) {
+    LuaEventBus* bus = getEventBus(L);
+    if (!bus) return 0;
+
+    const char* name = luaL_checkstring(L, 1);
+    bus->emit(name);
+    return 0;
 }
 
 } // namespace enjin2
