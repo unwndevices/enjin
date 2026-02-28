@@ -6,6 +6,7 @@
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/components/timer.hpp"
 #include "../../include/enjin2/components/state_machine.hpp"
+#include "../../include/enjin2/components/tilemap.hpp"
 #include "../../include/enjin2/core/object.hpp"
 
 namespace enjin2 {
@@ -217,6 +218,9 @@ static int lua_proxy_get_component_impl(lua_State* L) {
     } else if (strcmp(typeName, "C_StateMachine") == 0) {
         comp = owner->getComponent<enjin2::C_StateMachine>();
         metaName = "C_StateMachine_Proxy";
+    } else if (strcmp(typeName, "C_Tilemap") == 0) {
+        comp = owner->getComponent<enjin2::C_Tilemap>();
+        metaName = "C_Tilemap_Proxy";
     }
 
     if (!comp) { lua_pushnil(L); return 1; }
@@ -470,6 +474,177 @@ static int lua_cfsm_proxy_index_impl(lua_State* L) {
         return 1;
     }
     lua_pushnil(L);
+    return 1;
+}
+
+//==============================================================================
+// C_Tilemap_Proxy Metatable Implementation (Phase 43: tilemap Lua API)
+//==============================================================================
+
+static constexpr const char* CTILEMAP_PROXY_METATABLE = "C_Tilemap_Proxy";
+
+// Helper macro: validate C_Tilemap_Proxy userdata and cast to C_Tilemap*.
+// Must be at the top of every proxy method.
+#define CTILEMAP_PROXY_CHECK(L, varname)                                          \
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(                           \
+        luaL_checkudata(L, 1, CTILEMAP_PROXY_METATABLE));                         \
+    if (!proxy || !proxy->valid || !proxy->component) {                           \
+        luaL_error(L, "component has been destroyed");                            \
+        return 0;                                                                 \
+    }                                                                             \
+    auto* (varname) = static_cast<enjin2::C_Tilemap*>(proxy->component)
+
+// tilemap:setTile(tx, ty, tileId) — TMAP-05
+static int lua_tilemap_setTile(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    uint8_t tx     = static_cast<uint8_t>(luaL_checkinteger(L, 2));
+    uint8_t ty     = static_cast<uint8_t>(luaL_checkinteger(L, 3));
+    uint8_t tileId = static_cast<uint8_t>(luaL_checkinteger(L, 4));
+    tm->setTile(tx, ty, tileId);
+    return 0;
+}
+
+// tilemap:getTile(tx, ty) -> tileId — TMAP-05
+static int lua_tilemap_getTile(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    uint8_t tx = static_cast<uint8_t>(luaL_checkinteger(L, 2));
+    uint8_t ty = static_cast<uint8_t>(luaL_checkinteger(L, 3));
+    lua_pushinteger(L, static_cast<lua_Integer>(tm->getTile(tx, ty)));
+    return 1;
+}
+
+// tilemap:setTiles(flat_table, w, h) — TMAP-07
+static int lua_tilemap_setTiles(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    uint8_t w = static_cast<uint8_t>(luaL_checkinteger(L, 3));
+    uint8_t h = static_cast<uint8_t>(luaL_checkinteger(L, 4));
+    if (w > 64) w = 64;
+    if (h > 64) h = 64;
+    uint8_t buf[64 * 64] = {};
+    int count = w * h;
+    for (int i = 0; i < count; ++i) {
+        lua_rawgeti(L, 2, i + 1);  // Lua 1-indexed
+        buf[i] = static_cast<uint8_t>(lua_tointeger(L, -1) & 0xFF);
+        lua_pop(L, 1);
+    }
+    tm->setTiles(buf, w, h);
+    return 0;
+}
+
+// tilemap:setSheet(handle) — TMAP-08
+// handle is an integer index into the LuaBindings sprite pool.
+static int lua_tilemap_setSheet(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    int handle = static_cast<int>(luaL_checkinteger(L, 2));
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) {
+        luaL_error(L, "C_Tilemap.setSheet: LuaBindings not available");
+        return 0;
+    }
+    const enjin2::SpriteSheet* sheet = b->getSpriteSheet(handle);
+    if (!sheet) {
+        luaL_error(L, "C_Tilemap.setSheet: invalid sprite handle %d", handle);
+        return 0;
+    }
+    tm->setSheet(*sheet);
+    return 0;
+}
+
+// tilemap:setScroll(sx, sy) — TMAP-04/05
+static int lua_tilemap_setScroll(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    int16_t sx = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t sy = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    tm->setScroll(sx, sy);
+    return 0;
+}
+
+// tilemap:getScroll() -> sx, sy — TMAP-04/05
+static int lua_tilemap_getScroll(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    lua_pushinteger(L, static_cast<lua_Integer>(tm->getScrollX()));
+    lua_pushinteger(L, static_cast<lua_Integer>(tm->getScrollY()));
+    return 2;
+}
+
+// tilemap:pixelToTile(px, py) -> tx, ty — TMAP-06
+static int lua_tilemap_pixelToTile(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t tx = 0, ty = 0;
+    tm->pixelToTile(px, py, tx, ty);
+    lua_pushinteger(L, static_cast<lua_Integer>(tx));
+    lua_pushinteger(L, static_cast<lua_Integer>(ty));
+    return 2;
+}
+
+// tilemap:tileToPixel(tx, ty) -> px, py — TMAP-06
+static int lua_tilemap_tileToPixel(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    int16_t tx = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t ty = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t px = 0, py = 0;
+    tm->tileToPixel(tx, ty, px, py);
+    lua_pushinteger(L, static_cast<lua_Integer>(px));
+    lua_pushinteger(L, static_cast<lua_Integer>(py));
+    return 2;
+}
+
+// tilemap:tileAtPixel(px, py) -> tileId — TMAP-06
+static int lua_tilemap_tileAtPixel(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    lua_pushinteger(L, static_cast<lua_Integer>(tm->tileAtPixel(px, py)));
+    return 1;
+}
+
+// tilemap:getMapSize() -> w, h — TMAP-05
+static int lua_tilemap_getMapSize(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    lua_pushinteger(L, static_cast<lua_Integer>(tm->getMapWidth()));
+    lua_pushinteger(L, static_cast<lua_Integer>(tm->getMapHeight()));
+    return 2;
+}
+
+#undef CTILEMAP_PROXY_CHECK
+
+// __index metamethod for C_Tilemap_Proxy — dispatches all method names
+static int lua_ctilemap_proxy_index_impl(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CTILEMAP_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* key = lua_tostring(L, 2);
+    if (!key) { lua_pushnil(L); return 1; }
+
+    if (strcmp(key, "setTile") == 0) {
+        lua_pushcfunction(L, lua_tilemap_setTile);
+    } else if (strcmp(key, "getTile") == 0) {
+        lua_pushcfunction(L, lua_tilemap_getTile);
+    } else if (strcmp(key, "setTiles") == 0) {
+        lua_pushcfunction(L, lua_tilemap_setTiles);
+    } else if (strcmp(key, "setSheet") == 0) {
+        lua_pushcfunction(L, lua_tilemap_setSheet);
+    } else if (strcmp(key, "setScroll") == 0) {
+        lua_pushcfunction(L, lua_tilemap_setScroll);
+    } else if (strcmp(key, "getScroll") == 0) {
+        lua_pushcfunction(L, lua_tilemap_getScroll);
+    } else if (strcmp(key, "pixelToTile") == 0) {
+        lua_pushcfunction(L, lua_tilemap_pixelToTile);
+    } else if (strcmp(key, "tileToPixel") == 0) {
+        lua_pushcfunction(L, lua_tilemap_tileToPixel);
+    } else if (strcmp(key, "tileAtPixel") == 0) {
+        lua_pushcfunction(L, lua_tilemap_tileAtPixel);
+    } else if (strcmp(key, "getMapSize") == 0) {
+        lua_pushcfunction(L, lua_tilemap_getMapSize);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 
@@ -860,6 +1035,12 @@ LuaBindings* LuaBindings::getBindings(lua_State* L) {
     return bindings;
 }
 
+const enjin2::SpriteSheet* LuaBindings::getSpriteSheet(int handle) const {
+    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !spritePool[handle].active)
+        return nullptr;
+    return &spritePool[handle].sheet;
+}
+
 void LuaBindings::registerProxyMetatable() {
     lua_State* L = engine->getState();
     if (!L) return;
@@ -1029,6 +1210,13 @@ void LuaBindings::registerComponentProxyMetatable() {
     // Register C_StateMachine_Proxy metatable (Phase 41: fsm:addState/setState/getState)
     if (luaL_newmetatable(L, CFSM_PROXY_METATABLE)) {
         lua_pushcfunction(L, lua_cfsm_proxy_index_impl);
+        lua_setfield(L, -2, "__index");
+    }
+    lua_pop(L, 1);
+
+    // Register C_Tilemap_Proxy metatable (Phase 43: tilemap component)
+    if (luaL_newmetatable(L, CTILEMAP_PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_ctilemap_proxy_index_impl);
         lua_setfield(L, -2, "__index");
     }
     lua_pop(L, 1);

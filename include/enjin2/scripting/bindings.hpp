@@ -537,6 +537,15 @@ public:
      */
     LuaEventBus& getEventBus() { return m_eventBus; }
 
+    /**
+     * @brief Get a pointer to the SpriteSheet at a given sprite pool slot (Phase 43: C_Tilemap binding).
+     *
+     * Provides read-only access to sprite pool entries from static Lua binding functions.
+     * @param handle Sprite pool index (0..LUA_SPRITE_POOL_SIZE-1).
+     * @return Pointer to the SpriteSheet if the slot is active, nullptr otherwise.
+     */
+    const SpriteSheet* getSpriteSheet(int handle) const;
+
 private:
     // Canvas management functions
     static int lua_getWidth(lua_State* L);
@@ -733,6 +742,15 @@ private:
     static int lua_math_smoothstep(lua_State* L);
     static int lua_math_distance(lua_State* L);
 
+public:
+    /**
+     * @brief Retrieve the LuaBindings instance from the Lua registry.
+     *
+     * Stored via "enjin_bindings" key during registerAll(). Used by static
+     * Lua C-function callbacks that are not member functions of LuaBindings.
+     * @param L Active Lua state.
+     * @return Pointer to the LuaBindings for this Lua state, or nullptr on error.
+     */
     static LuaBindings* getBindings(lua_State* L);
 };
 
