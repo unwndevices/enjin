@@ -71,7 +71,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 - [x] **Phase 43 Plan 01: C_Tilemap C++ foundation** - 64x64 tile grid, viewport-culled rendering, scroll, coordinate helpers (completed 2026-02-28)
 - [x] **Phase 43 Plan 02: C_Tilemap Lua bindings** - ComponentProxy, self:get("C_Tilemap"), setTiles from Lua table (completed 2026-02-28)
 - [x] **Phase 44 Plan 01: C_Camera C++ component** - Scene render pipeline, drawWithOffset(), screen-space flag (completed 2026-02-28)
-- [ ] **Phase 44 Plan 02: C_Camera Lua bindings** - engine.camera.*, smooth lerp, shake, bounds
+- [x] **Phase 44 Plan 02: C_Camera Lua bindings** - engine.camera.*, smooth lerp, shake, bounds (completed 2026-02-28)
 
 ## Phase Details
 

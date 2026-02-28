@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Game Ready
 status: unknown
-last_updated: "2026-02-28T22:47:00Z"
+last_updated: "2026-02-28T22:52:22.324Z"
 progress:
   total_phases: 12
   completed_phases: 11
-  total_plans: 32
-  completed_plans: 29
+  total_plans: 29
+  completed_plans: 28
 ---
 
 # Project State
