@@ -49,6 +49,18 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 - [ ] **TMAP-07**: Map data initialized from flat Lua table via tilemap:setTiles(table, w, h)
 - [ ] **TMAP-08**: setSheet(handle) uses sprite pool handle to bind tileset
 
+### 2D Camera
+
+- [ ] **CAM-01**: C_Camera component stores float-precision world position with setPosition/getPosition
+- [ ] **CAM-02**: Camera offset applied to all C_Drawable components in Scene::renderObjects() via drawWithOffset()
+- [ ] **CAM-03**: C_Drawable screen-space flag (setScreenSpace/isScreenSpace) to opt out of camera offset for UI elements
+- [ ] **CAM-04**: Camera smooth follow via lookAt(x, y, lerpSpeed) — lerps toward target each frame in update()
+- [ ] **CAM-05**: Camera screen shake via shake(intensity, duration) — sin oscillation with decay
+- [ ] **CAM-06**: Camera viewport bounds clamping via setBounds/clearBounds
+- [ ] **CAM-07**: Lua proxy via self:get("C_Camera") with setPosition/getPosition/lookAt/shake/setBounds/clearBounds
+- [ ] **CAM-08**: engine.camera.* global Lua sub-table for scene-level camera access without ComponentProxy
+- [ ] **CAM-09**: C_Tilemap drawWithOffset integrates camera offset additively with tilemap-scoped scroll
+
 ## Future Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -114,13 +126,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TMAP-06 | Phase 43 | Planned |
 | TMAP-07 | Phase 43 | Planned |
 | TMAP-08 | Phase 43 | Planned |
+| CAM-01 | Phase 44 | Planned |
+| CAM-02 | Phase 44 | Planned |
+| CAM-03 | Phase 44 | Planned |
+| CAM-04 | Phase 44 | Planned |
+| CAM-05 | Phase 44 | Planned |
+| CAM-06 | Phase 44 | Planned |
+| CAM-07 | Phase 44 | Planned |
+| CAM-08 | Phase 44 | Planned |
+| CAM-09 | Phase 44 | Planned |
 
 **Coverage:**
 - v1.6 requirements: 19 total (complete)
 - Phase 43 requirements: 8 total (planned)
-- Mapped to phases: 27
+- Phase 44 requirements: 9 total (planned)
+- Mapped to phases: 36
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after roadmap creation (Phases 39-42)*
+*Last updated: 2026-02-28 after roadmap creation (Phases 39-44)*

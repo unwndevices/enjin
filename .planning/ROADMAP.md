@@ -143,12 +143,20 @@ Plans:
 - [ ] 43-01-PLAN.md — C_Tilemap C++ component (C_Drawable-derived), tile data structure, viewport-culled draw(), coordinate helpers, C++ test suite
 - [ ] 43-02-PLAN.md — C_Tilemap_Proxy Lua bindings (ComponentProxy dispatch, all proxy methods), Lua integration test suite
 
-### Phase 44: 2d Camera System
+### Phase 44: 2D Camera System
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Engine-wide 2D camera that applies a world-to-screen transform to ALL C_Drawable entities in the scene — C_Camera component with float-precision position, smooth lerp follow, screen shake, viewport bounds clamping, screen-space opt-out for UI elements, and full Lua bindings via ComponentProxy and engine.camera.* global API
+**Requirements**: CAM-01, CAM-02, CAM-03, CAM-04, CAM-05, CAM-06, CAM-07, CAM-08, CAM-09
 **Depends on:** Phase 43
-**Plans:** 0 plans
+**Success Criteria** (what must be TRUE):
+  1. C_Camera component stores float-precision world position; Scene::renderObjects() applies camera offset to all visible drawables via drawWithOffset()
+  2. C_Drawable with screenSpace=true skips camera offset (UI/HUD elements stay fixed on screen)
+  3. Camera supports smooth lerp follow toward a target, screen shake with decay, and viewport bounds clamping
+  4. Lua scripts access C_Camera via self:get("C_Camera") with setPosition/getPosition/lookAt/shake/setBounds/clearBounds
+  5. engine.camera.* global sub-table provides scene-level camera control without needing a ComponentProxy
+  6. C_Tilemap drawWithOffset integrates camera offset additively with its internal scroll
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 44 to break down)
+- [ ] 44-01-PLAN.md — C_Camera C++ component, C_Drawable drawWithOffset() + screen-space flag, Scene render pipeline modification, C++ test suite (CAM-01..CAM-06)
+- [ ] 44-02-PLAN.md — C_Camera_Proxy Lua bindings, engine.camera.* sub-table, C_Tilemap integration, Lua integration test suite (CAM-07..CAM-09)
