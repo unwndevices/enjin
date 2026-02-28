@@ -10,7 +10,19 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ## Current State
 
-**Shipped: v1.4 Engine Capabilities (2026-02-26)**
+**Shipped: v1.5 Lua Scripting Foundation (2026-02-28)**
+- Full `engine.*` Lua global table: scene switch/find, input polling, time, logging, GC control
+- `ScriptProxy` full userdata — `self` as first callback arg in `init`/`update`/`draw`; `__index`/`__newindex` dispatch to C++ components
+- `ScriptErrorPolicy` (Disable/Log/Panic) on `C_LuaScript` with hot-reload error reset
+- `on_button_pressed`/`on_button_released` Lua callbacks firing on button edge frames
+- `engine.lua.collect()`/`memory()` + `assertRequires<T>()` component dependency assertions
+- Named objects + 8-slot tag system; `findByName()`/`findAllWithTag()` on ObjectCollection
+- Deferred scene self-transitions via `SceneStateMachine*` back-pointer injection
+- Object decoupled from C_Drawable via `getComponents<T>()` template
+- ObjectProxy from `engine.scene.find()` with Object-destructor invalidation
+- 12 phases, 21 plans, 152 files changed, ~35,600 LOC C++
+
+**Previously shipped: v1.4 Engine Capabilities (2026-02-26)**
 - SpriteSheet zero-alloc struct with grid addressing, frame animation (Once/Loop/PingPong), and 16-slot Lua sprite pool
 - LayerCompositor with 4 independent Canvas4 buffers, painter's-order composition with index-15 transparency
 - SDL3 multi-layer rendering + Lua layer API (setLayer/clearLayer/getLayerCount/visibility)
@@ -101,36 +113,36 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - ✓ F5 key in SDL3 runner triggers Lua script reload from disk — v1.4 (Phase 26, HOT-01)
 - ✓ Reload performs full reset (Lua state destroyed and recreated) — v1.4 (Phase 26, HOT-02)
 - ✓ Reload error displays message without crashing the runner — v1.4 (Phase 26, HOT-03)
+- ✓ Scene-derived onRender(ICanvas<Pixel4>&) override called during Scene::render() — v1.5 (Phase 27, RENDER-01)
+- ✓ float dt in seconds flows through Object, Component, Scene, SceneStateMachine — v1.5 (Phase 28, DT-01)
+- ✓ All concrete Component subclasses compile with float dt; -Woverride enforced — v1.5 (Phase 28, DT-02, DT-03)
+- ✓ Object name + 8-slot tag array with findByName/findAllWithTag — v1.5 (Phase 29, OBJ-01..04)
+- ✓ Scene holds SceneStateMachine* back-pointer; deferred self-transition support — v1.5 (Phase 30, SCENE-01..03)
+- ✓ engine.scene/input/time/lua/log Lua global table available before script loads — v1.5 (Phase 31, ENG-03..06)
+- ✓ engine.scene.switch(id) reaches SceneStateMachine::switchTo() in live runtime — v1.5 (Phases 31+38, ENG-01)
+- ✓ engine.scene.find(name) returns valid ObjectProxy for named Object — v1.5 (Phases 31+37+38, ENG-02)
+- ✓ ScriptProxy userdata: self as first callback arg; __index/__newindex dispatch to C++ — v1.5 (Phases 32+33, PROXY-01..04)
+- ✓ ScriptErrorPolicy (Disable/Log/Panic) on C_LuaScript with hot-reload reset — v1.5 (Phase 33, ERR-01..05)
+- ✓ on_button_pressed/on_button_released fire on edge frames before update() — v1.5 (Phase 34, INPUT-01..03)
+- ✓ engine.lua.collect() and engine.lua.memory() exposed to Lua — v1.5 (Phase 35, GC-01, GC-02)
+- ✓ assertRequires<T>() on Component: debug assert / release log+disable for missing deps — v1.5 (Phase 35, DEP-01..03)
 
 ### Active
 
-<!-- v1.5 Lua Scripting Foundation -->
+<!-- v1.6 requirements to be defined via /gsd:new-milestone -->
 
-- [ ] Fix onRender Pixel4 bug — `if constexpr` guard blocks Pixel4 canvas dispatch
-- [ ] float dt everywhere — `uint16_t` ms → `float` seconds across Object, Component, Scene
-- [ ] Named objects + tags — name field + map on ObjectCollection, 8-slot tag array on Object
-- [ ] Scene self-transitions — inject `SceneStateMachine*` into Scene at activation
-- [ ] engine.* global table — `engine.scene`, `engine.input`, `engine.time`, `engine.lua`, `engine.log`
-- [ ] Self proxy — ScriptProxy userdata with `__index`/`__newindex` for component reads/writes
-- [ ] Error policy on C_LuaScript — ScriptErrorPolicy enum (Disable/Log/Panic), default Disable
-- [ ] Input event callbacks — on_button_pressed/on_button_released in Lua scripts
-- [ ] GC control — `engine.lua.collect()`/`engine.lua.memory()` exposed to Lua
-- [ ] Component dependency assertions — `requires<T>()` on Component base class
+## Next Milestone
 
-## Current Milestone: v1.5 Lua Scripting Foundation
+Start with `/gsd:new-milestone` to define v1.6 requirements.
 
-**Goal:** Make enjin2 scriptable — C++ engine foundations (float dt, named objects, scene transitions) plus Lua scripting power (engine.* table, self proxy, input events, error policy).
-
-**Target features:**
-- Fix onRender Pixel4 bug (correctness)
-- float dt everywhere (pervasive signature change)
-- Named objects + tags (prerequisite for engine.scene.find())
-- Scene self-transitions (prerequisite for engine.scene.switch())
-- engine.* global table + self proxy (the Lua payoff)
-- Error policy on C_LuaScript (robustness)
-- Input event callbacks (on_button_pressed/released)
-- GC control (engine.lua.collect/memory)
-- Component dependency assertions (requires<T>())
+**Deferred from v1.5 (candidates for v1.6):**
+- Persistent objects across scenes — independent subsystem
+- Component signals / event bus — separate communication pattern
+- C_Timer, C_StateMachine — standalone new components
+- ComponentProxy / self:get() — heaviest C++ work, needs careful design
+- Integer layer system — independent change
+- WASM/ESP32 hot reload — developer tool only (SDL3 runner done)
+- C_LuaScript::setInput() called per-frame in WASM/ESP32 host paths (SDL runner done)
 
 ### Out of Scope
 
@@ -160,20 +172,24 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ## Context
 
-**After v1.4:**
-enjin2 is a feature-complete game engine foundation with:
-- Multi-layer compositor (4 independent Canvas4 buffers, painter's-order, index-15 transparency)
-- SpriteSheet zero-alloc struct with grid addressing, 3 animation modes, 16-slot Lua pool
-- F5 hot-reload in SDL3 runner (full Lua state reset, error recovery, idempotent)
-- 16-color PICO-8 indexed palette, platform-agnostic input, SDL3/WASM/ESP32 targets
-- Lua scripts portable across all three platforms without modification
-- ~126k LOC C++, CMake multi-target (enjin2_core, enjin2_graphics, enjin2_input, enjin2_lua, enjin2_wasm, enjin2_sdl)
-- Unit test suites: input, palette, sprite, compositor (all passing)
+**After v1.5:**
+enjin2 is a fully scriptable 2D game engine with:
+- Complete Lua scripting surface: `engine.*` global table, `ScriptProxy` self, input edge callbacks, error policy, GC control
+- Named objects + 8-slot tag system; `ObjectProxy` from `engine.scene.find()`
+- Deferred scene self-transitions; float dt throughout update chain
+- Object decoupled from C_Drawable via `getComponents<T>()` template
+- `assertRequires<T>()` for component dependency validation (debug assert / release log+disable)
+- clang-tidy CMake lint target; stale proxy raises `luaL_error`; fixed `char[256]` error buffer
+- ~35,600 LOC C++, CMake multi-target (enjin2_core, enjin2_graphics, enjin2_input, enjin2_lua, enjin2_wasm, enjin2_sdl)
+- 22+ ctest suites all passing (scene render, float dt, named objects, scene transitions, engine table, script proxy, error policy, input callbacks, GC/assert, drawable decoupling, proxy lifetime + tags, live-wiring)
 
 **Known tech debt:**
 - `getPaletteRGB()` snapshot semantics (re-invoke after palette mutation; SDL runner unaffected)
 - Full Emscripten toolchain build not verified in dev environment
 - ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
+- `C_LuaScript::setInput()` must be called per-frame by host in WASM/ESP32 (SDL runner wired)
+- `hasComponent()` const calls non-const `getComponent<T>()` — pre-existing design smell
+- Single-proxy-per-object constraint (ObjectProxy design documented; multiple proxy support deferred)
 
 ## Constraints
 
@@ -225,6 +241,21 @@ enjin2 is a feature-complete game engine foundation with:
 | LuaCallback overload neutered to no-op (not removed) | Preserves ABI; all bindings use lua_CFunction exclusively | ✓ Good - Phase 26 |
 | performReload() encapsulates full Lua lifecycle | shutdown+initialize+setLayers+setInput+loadScript; initial and F5 share path | ✓ Working - Phase 26 |
 | lua_ok gate pattern for error recovery | false=paused (error state), F5 retries; runtime errors also set false | ✓ Working - Phase 26 |
+| if constexpr two-branch for Pixel4/uint8_t onRender | Single onRender(canvas) without guards fails overload resolution at compile time | ✓ Working - Phase 27 |
+| float dt in seconds at source (no /1000) | Eliminates all conversion sites; accumulator arithmetic is natural | ✓ Working - Phase 28 |
+| const char* name/tag with no allocation | Matches zero-alloc constraint; string literals have static lifetime | ✓ Working - Phase 29 |
+| Deferred scene transitions (last-wins queue) | Prevents re-entrant SSM corruption during onUpdate() | ✓ Working - Phase 30 |
+| engine.* pointers via pointer-to-pointer registry | Post-registerAll injection survives registry snap; no re-registerAll needed | ✓ Working - Phases 31+38 |
+| ScriptProxy as full userdata (not lightuserdata) | Metatable metamethods require full userdata; lightuserdata has no per-object metatable | ✓ Working - Phase 32 |
+| callWithProxy() for all Lua callbacks | Single dispatch path for init/update/draw/callbacks; proxy-first convention | ✓ Working - Phase 32 |
+| ScriptErrorPolicy enum (Disable/Log/Panic) | Cleanly separates concerns; Disable is safe default for embedded targets | ✓ Working - Phase 33 |
+| dispatchInputCallbacks() before update() each frame | Callbacks precede update; no stale input; frame-correct semantics | ✓ Working - Phase 34 |
+| engine.lua.collect() incremental (not full GC) | Prevents mid-frame spike on embedded targets with small heaps | ✓ Working - Phase 35 |
+| assertRequires<T>() on Component base class | Single declaration site; debug abort / release log+disable pattern | ✓ Working - Phase 35 |
+| getComponents<T>() via dynamic_cast (no cache) | Zero-allocation; correct for scene.hpp/animation.hpp call sites | ✓ Working - Phase 36 |
+| ObjectProxy invalidated in Object destructor hook | Prevents dangling pointer access; luaL_error on stale proxy | ✓ Working - Phase 37 |
+| stale ScriptProxy raises luaL_error (not nil) | Silent nil produces confusing bugs; explicit error directs author to fix | ✓ Good - Phase 37 |
+| loadScriptFile() creates ScriptProxy before callWithProxy | init(self) for file-loaded scripts matches loadScript() string path | ✓ Working - Phase 38 |
 
 ---
-*Last updated: 2026-02-26 after v1.5 milestone started*
+*Last updated: 2026-02-28 after v1.5 milestone*

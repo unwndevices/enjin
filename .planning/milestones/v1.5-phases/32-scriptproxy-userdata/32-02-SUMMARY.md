@@ -107,6 +107,20 @@ None - no external service configuration required.
 - Phase 32 complete: ScriptProxy userdata (32-01) + script signature migration (32-02) both done
 - Phase 33 can proceed: all scripts already accept self parameter; callWithProxy() can now wire real proxy objects
 
+## Self-Check: PASSED
+
+All files verified present:
+- scripts/reload_test.lua: FOUND
+- scripts/layer_demo.lua: FOUND
+- scripts/pikachu_demo.lua: FOUND
+- scripts/e2e_parity.lua: FOUND
+- src/platform/sdl/sdl_main.cpp: FOUND
+- .planning/phases/32-scriptproxy-userdata/32-02-SUMMARY.md: FOUND
+
+All commits verified:
+- 91168ff (Task 1 - Lua script migration): FOUND
+- d00ddff (Task 2 - SDL runner nil-self proxy): FOUND
+
 ---
 *Phase: 32-scriptproxy-userdata*
 *Completed: 2026-02-27*

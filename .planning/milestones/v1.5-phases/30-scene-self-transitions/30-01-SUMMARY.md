@@ -125,3 +125,12 @@ None - no external service configuration required.
 ---
 *Phase: 30-scene-self-transitions*
 *Completed: 2026-02-27*
+
+## Self-Check: PASSED
+
+- tests/scene_transition_test.cpp: FOUND
+- include/enjin2/core/scene.hpp: FOUND
+- include/enjin2/core/scene_state_machine.hpp: FOUND
+- .planning/phases/30-scene-self-transitions/30-01-SUMMARY.md: FOUND
+- Commit 7f50d7a (RED test): FOUND
+- Commit 1dfb102 (GREEN impl): FOUND

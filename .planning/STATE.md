@@ -1,33 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v1.5
 milestone_name: Lua Scripting Foundation
-status: unknown
-last_updated: "2026-02-27T21:01:51.066Z"
+status: complete
+last_updated: "2026-02-28"
 progress:
-  total_phases: 18
-  completed_phases: 17
-  total_plans: 43
-  completed_plans: 42
+  total_phases: 38
+  completed_phases: 38
+  total_plans: 79
+  completed_plans: 79
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-26)
+See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.5 Lua Scripting Foundation — COMPLETE (Phase 37-03 closes all 10 CONCERNS.md items)
+**Current focus:** Planning next milestone — run `/gsd:new-milestone` to start v1.6
 
 ## Current Position
 
-Phase: 38 of 38 (Close v1.5 Scripting Runtime Gaps) — COMPLETE (2 of 2 plans done)
-Plan: 02 complete (2 of 2 plans for this phase)
-Status: Phase 38-02 complete — SDL input edge callbacks (on_button_pressed/on_button_released); Phase 35 VERIFICATION.md; all 19 ctests pass
-Last activity: 2026-02-27 — Phase 38-02 complete: SDL runner wired with 16-button input dispatch; Phase 35 docs closed; v1.5 milestone fully complete
+**v1.5 ARCHIVED (2026-02-28)**
 
-Progress: [████████████████████] 100% (38/38 phases complete)
+Milestone complete. All 12 phases (27-38), 21 plans shipped.
+Archives: `.planning/milestones/v1.5-ROADMAP.md`, `.planning/milestones/v1.5-REQUIREMENTS.md`
+Tag: v1.5
+
+Next: `/gsd:new-milestone` to define v1.6 requirements
+
+Progress: [████████████████████] 100% (38/38 phases complete v1.0–v1.5)
 
 ## Performance Metrics
 

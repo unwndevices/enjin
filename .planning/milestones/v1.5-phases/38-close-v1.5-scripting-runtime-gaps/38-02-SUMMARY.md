@@ -103,3 +103,11 @@ None - no external service configuration required.
 ---
 *Phase: 38-close-v1.5-scripting-runtime-gaps*
 *Completed: 2026-02-27*
+
+## Self-Check: PASSED
+
+- FOUND: src/platform/sdl/sdl_main.cpp (modified)
+- FOUND: .planning/phases/35-gc-control-component-assertions/35-VERIFICATION.md (created)
+- FOUND: .planning/phases/38-close-v1.5-scripting-runtime-gaps/38-02-SUMMARY.md (created)
+- FOUND: commit 3965f3e (Task 1: SDL input callbacks)
+- FOUND: commit 2729929 (Task 2: Phase 35 VERIFICATION.md)

@@ -44,6 +44,54 @@
 
 ---
 
+## Milestone: v1.5 — Lua Scripting Foundation
+
+**Shipped:** 2026-02-28
+**Phases:** 12 | **Plans:** 21 | **Commits:** 127
+
+### What Was Built
+- `engine.*` Lua global table with live pointer-to-pointer registry injection for scene/input/time/lua/log
+- `ScriptProxy` full userdata with `__index`/`__newindex` metamethods — `self` as first arg in all callbacks
+- `ScriptErrorPolicy` (Disable/Log/Panic) + `on_button_pressed`/`on_button_released` edge callbacks
+- Named objects + 8-slot zero-allocation tag system; `findByName()`/`findAllWithTag()` on ObjectCollection
+- Deferred scene self-transitions via `SceneStateMachine*` back-pointer injection
+- `engine.lua.collect()`/`memory()` + `assertRequires<T>()` component dependency assertions
+- `ObjectProxy` from `engine.scene.find()` with Object-destructor invalidation; stale proxy raises `luaL_error`
+- Object decoupled from C_Drawable via `getComponents<T>()` generic template
+- Phase 38 gap closure: pointer-to-pointer registry wiring (ENG-01/02), `loadScriptFile()` proxy fix (PROXY-01)
+
+### What Worked
+- Audit-driven gap closure (Phase 38) was highly effective — the audit report gave precise file:line diagnosis for all 3 broken paths
+- Phase decomposition at the requirement level kept plans narrow and testable (each plan addressed 1-2 REQ-IDs)
+- `callWithProxy()` dispatch pattern unified all callback sites — init/update/draw/input callbacks share one code path
+- Pointer-to-pointer registry pattern (Phase 38) is the correct solution for post-initialization pointer injection without re-registering all closures
+- TDD-first approach for Phases 29, 30, 34 — tests written before implementation caught edge cases (self-transition, tag overflow, callback ordering)
+
+### What Was Inefficient
+- The milestone audit occurred after phases were "done" — gaps like ENG-01/02 live wiring and PROXY-01 file-load path should have been caught in Phase 31/32 VERIFICATION.md
+- Phase 36 and 37 were added mid-milestone (not in the original v1.5 roadmap) — the Object/Drawable coupling concern was known but not planned; would have benefited from upfront inclusion
+- `gsd-tools milestone complete` CLI still miscounts phases (counts all phases, not just milestone scope) — manual correction needed again
+- Phase 35 shipped without a VERIFICATION.md — documentation debt that the Phase 38 plan had to retroactively close
+
+### Patterns Established
+- **Pointer-to-pointer registry**: store `T**` in Lua registry so post-initialization pointer updates are automatically visible to all closures
+- **Audit-before-complete**: running the milestone audit before declaring complete exposed 3 real integration bugs — the audit is now a mandatory gate
+- **Full userdata for proxies**: metatables require full userdata; lightuserdata has no per-object metatable — use full userdata for any proxy that needs `__index`/`__newindex`
+- **stale proxy raises error (not nil)**: silent nil produces confusing distant failures; `luaL_error` with a clear message directs the author to the fix immediately
+- **`assertRequires<T>()` on Component base**: single declaration site covers all components; debug abort vs release log+disable covers all deployment targets
+
+### Key Lessons
+1. Integration paths (live wiring) need their own test tier — unit tests verify behavior in isolation but can miss initialization-order bugs; live-wiring tests should be a standard plan artifact
+2. Auditing before archiving is worth the context cost — it revealed gaps that would have been silent bugs in production (ENG-01/02 silently returned nil instead of executing transitions)
+3. When a phase inserts work retroactively (Phase 38 fixing Phase 27's initial "complete" status), the audit report date becomes stale — always re-read audit dates before treating status as current
+
+### Cost Observations
+- Model mix: balanced profile (sonnet for research/planning, opus for execution)
+- Sessions: 6-8 (Phase 27-29 sprint, Phase 30-31 sprint, Phase 32-33 sprint, Phase 34-35 sprint, Phase 36-37 sprint, Phase 38 gap closure)
+- Notable: 21 plans across 12 phases in 2 days — most complex milestone yet; gap-closure phase (38) added meaningful quality
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -55,6 +103,7 @@
 | v1.2 | 3 | 5 | Tech debt cleanup — net-negative LOC |
 | v1.3 | 4 | 7 | Feature milestone — lua_CFunction pattern established |
 | v1.4 | 4 | 8 | Engine capabilities — fastest execution, research-driven plans |
+| v1.5 | 12 | 21 | Scripting foundation — audit-driven gap closure, pointer-to-pointer registry, live-wiring tests |
 
 ### Cumulative Quality
 
@@ -65,9 +114,11 @@
 | v1.2 | 0 | Clean regeneration verified |
 | v1.3 | 2 | input_test, palette_test |
 | v1.4 | 4 | sprite_test, compositor_test |
+| v1.5 | 22+ | scene_render, named_objects, scene_transition, engine_table, script_proxy, error_policy, input_callback, gc_assert, drawable_decoupling, proxy_lifetime, live-wiring |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Research phases that identify exact targets make execution predictable (v1.3, v1.4)
-2. lua_CFunction-only bindings eliminate UB risks from std::function capture (v1.3, v1.4)
+1. Research phases that identify exact targets make execution predictable (v1.3, v1.4, v1.5)
+2. lua_CFunction-only bindings eliminate UB risks from std::function capture (v1.3, v1.4, v1.5)
 3. Header-only zero-alloc structs are the optimal pattern for this codebase (v1.3 InputState, v1.4 SpriteSheet/LayerCompositor)
+4. Integration paths need live-wiring tests, not just unit tests — unit tests pass with null pointers; live tests catch initialization-order bugs (v1.5)

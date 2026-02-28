@@ -109,3 +109,31 @@
 ---
 
 
+
+## v1.5 Lua Scripting Foundation (Shipped: 2026-02-28)
+
+**Phases completed:** 12 phases (27-38), 21 plans
+**Timeline:** 2 days (2026-02-26 → 2026-02-28)
+**Git range:** b46463a..HEAD, 127 commits, 152 files changed, +25,583 / -4,893 lines
+
+**Key accomplishments:**
+- Fixed Pixel4 onRender dispatch via `if constexpr` two-branch scene render — RENDER-01 satisfied (Phase 27)
+- Migrated all 8 component `update()` consumers to `float dt` seconds API with `-Woverride` enforcement (Phase 28)
+- Named objects + 8-slot zero-allocation tag system with `findByName()`/`findAllWithTag()` on ObjectCollection (Phase 29)
+- `engine.*` Lua global table with live pointer injection — scene, input, time, lua, log sub-tables (Phases 30–31)
+- `ScriptProxy` full userdata with `__index`/`__newindex` metamethods; `self` as first callback arg in init/update/draw (Phases 32–33)
+- `ScriptErrorPolicy` (Disable/Log/Panic) + on-edge input callbacks `on_button_pressed`/`on_button_released` (Phases 33–34)
+- `engine.lua.collect()`/`memory()` + `assertRequires<T>()` component dependency assertions (Phase 35)
+- Decoupled `Object` from `C_Drawable` — generic `getComponents<T>()` template; `ObjectProxy` from `engine.scene.find()` (Phases 36–37)
+- Closed all audit gaps: live ENG-01/02 registry pointer-to-pointer wiring, `loadScriptFile()` proxy fix, SDL input dispatch (Phase 38)
+
+**Tech debt (non-blocking):**
+- Phase 35 VERIFICATION.md documents implementation; DEP-02 debug assert verified by code inspection only
+- `hasComponent()` const calls non-const `getComponent<T>()` — pre-existing, no regression
+- Single-proxy-per-object limitation (ObjectProxy design documented constraint)
+- `C_LuaScript::setInput()` must be called per-frame by host in production (SDL runner wired; WASM/ESP32 not yet)
+
+**See:** [milestones/v1.5-ROADMAP.md](milestones/v1.5-ROADMAP.md) | [milestones/v1.5-REQUIREMENTS.md](milestones/v1.5-REQUIREMENTS.md)
+
+---
+

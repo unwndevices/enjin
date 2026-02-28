@@ -216,7 +216,7 @@ Input events phase — define the exact frame position for callback dispatch in 
 ### Pitfall 8: GC Step During Frame Causes Frame Time Spike on ESP32
 
 **What goes wrong:**
-Lua's garbage collector can run incrementally or in a full collection cycle. On ESP32 with 64 KB Lua memory pool, a full GC at 60 Hz can consume 1–5 ms depending on live heap size. At 30 Hz (33 ms budget), a 5 ms GC spike is a 15% frame overrun — visible as a dropped frame or jerky animation.
+Lua's garbage collector can run incrementally or in a full collection cycle. On ESP32 with 254 KB Lua memory pool, a full GC at 60 Hz can consume 1–5 ms depending on live heap size. At 30 Hz (33 ms budget), a 5 ms GC spike is a 15% frame overrun — visible as a dropped frame or jerky animation.
 
 The existing `LuaPlatform::tuneGarbageCollector()` configures GC for the platform. But if `engine.lua.collect()` is exposed to scripts and a script calls `engine.lua.collect()` inside `update()`, the GC runs mid-frame. On ESP32 this will cause the frame deadline to be missed.
 
@@ -340,7 +340,7 @@ Shortcuts that seem reasonable but create long-term problems.
 | `engine.*` sub-tables registered after loadScript | Shorter initialization sequence | Scripts that access engine.* at module level fail with nil error | Never — engine table must precede script load |
 | `update(self, dt)` change without migrating existing scripts | Avoid migration work | All existing scripts silently receive wrong argument types | Never — migrate all scripts atomically |
 | `assert()` only for requires<T>() with no release fallback | Simpler implementation | Silent crash on ESP32 production builds | Never — always provide a release-mode graceful disable path |
-| GC full collect inside update() | Deterministic memory reclaim | 5 ms frame spike on ESP32 at 64 KB pool size | Never during update/draw; only on scene transitions |
+| GC full collect inside update() | Deterministic memory reclaim | 5 ms frame spike on ESP32 at 254 KB pool size | Never during update/draw; only on scene transitions |
 | `double dt` in update signature | Matches Lua's lua_Number type | Double soft-float on ESP32 without FPU; twice the cost of float | Never — use float uniformly; cast at Lua boundary |
 | Deferred input event dispatch (fire on next frame) | Avoids race condition | 1-frame input latency — noticeable on fast-response interactions | Never — dispatch before update in the same frame |
 
@@ -372,7 +372,7 @@ Patterns that work at small scale but degrade on ESP32 or under embedded constra
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
 | engine.scene.find() called every frame from Lua | O(n) string scan * frame rate; 30 Hz * 128 objects = 3840 comparisons/sec | Cache the result in a Lua local: `local player = engine.scene.find("player")` in init() | ESP32 at ~240 MHz with 128 objects; visible at 60 Hz |
-| GC full collect mid-frame | 1–5 ms frame spike on ESP32 at 64 KB pool | Call engine.lua.collect() only in scene transition callbacks | ESP32 with > 32 KB live Lua heap |
+| GC full collect mid-frame | 1–5 ms frame spike on ESP32 at 254 KB pool | Call engine.lua.collect() only in scene transition callbacks | ESP32 with > 32 KB live Lua heap |
 | float accumulator in Lua script with double precision | Precision loss accumulates over time (Lua numbers are double; dt comes in as float) | Document that Lua dt is float-precision; avoid accumulating over thousands of frames | Long-running sessions (> 1 hour at 30 Hz = 108K frames) |
 | Iterating ObjectCollection in update() via forEach() | std::function callback overhead * 128 objects * 60 Hz = 7680 indirect calls/sec | Use indexed loops in C++; only expose named find functions to Lua (not bulk iteration) | Measurable on ESP32; invisible on desktop |
 | Dynamic script proxy creation per callback | Allocating userdata per update/draw call | Reuse a single persistent userdata per C_LuaScript instance; update its Object* pointer each call | Any embedded target — allocation pressure on Lua pool |
@@ -446,7 +446,7 @@ When pitfalls occur despite prevention, how to recover.
 - Codebase analysis: `src/platform/sdl/sdl_main.cpp` — frame sequence: event pump → advance → poll → clearAll → setInput → callFunction("update") → callFunction("draw") (2026-02-26)
 - Codebase analysis: `src/scripting/lua_engine.cpp` — bump allocator, memoryPool, pushArg<float> casts to double (2026-02-26)
 - Codebase analysis: `src/scripting/bindings.cpp` — registerAll() registration order, lua_pushlightuserdata for bindings instance (2026-02-26)
-- Codebase analysis: `include/enjin2/scripting/lua_platform.hpp` — MEMORY_LIMIT=64KB on ESP32, ENABLE_DEBUG=false on ESP32 (2026-02-26)
+- Codebase analysis: `include/enjin2/scripting/lua_platform.hpp` — MEMORY_LIMIT=256KB on ESP32, ENABLE_DEBUG=false on ESP32 (2026-02-26)
 - Codebase analysis: `include/enjin2/components/lua_script.hpp` — update(uint16_t deltaTime), scriptError flag, no ScriptErrorPolicy enum (2026-02-26)
 - Project design: `project/lua-embedding-design.md` — update(self, dt) signature rationale, engine.* table design, ScriptProxy userdata design, GC recommendations (2026-02-25)
 - Project design: `project/cpp-engine-improvements.md` — float dt pervasive change rationale, named objects char[] approach, requires<T>() design, SceneStateMachine injection pattern (2026-02-25)
