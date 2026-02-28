@@ -125,3 +125,30 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 40. C_Timer | 1/1 | Complete    | 2026-02-28 | - |
 | 41. C_StateMachine | 1/1 | Complete    | 2026-02-28 | - |
 | 42. EventBus | 1/1 | Complete    | 2026-02-28 | - |
+
+### Phase 43: Tilemap System
+
+**Goal:** Grid-based tilemap rendering and management for level-based games — C_Tilemap component with fixed-size 64x64 tile grid, SpriteSheet-based tileset, viewport-culled rendering, tilemap-scoped camera offset, coordinate conversion helpers, and full Lua bindings via ComponentProxy
+**Requirements**: TMAP-01, TMAP-02, TMAP-03, TMAP-04, TMAP-05, TMAP-06, TMAP-07, TMAP-08
+**Depends on:** Phase 42
+**Success Criteria** (what must be TRUE):
+  1. A C_Tilemap component stores a 64x64 uint8_t tile grid with zero dynamic allocation and renders only visible tiles via viewport culling
+  2. Tile ID 0 is transparent (not drawn); IDs 1-255 are rendered using SpriteSheet::draw()
+  3. Built-in camera offset (scrollX, scrollY) shifts the visible tilemap viewport
+  4. Lua scripts access C_Tilemap via self:get("C_Tilemap") with setTile/getTile/setTiles/setSheet/setScroll/getScroll/pixelToTile/tileToPixel/tileAtPixel/getMapSize
+  5. Map data can be initialized from a flat Lua table via tilemap:setTiles(table, w, h)
+**Plans:** 2 plans
+
+Plans:
+- [ ] 43-01-PLAN.md — C_Tilemap C++ component (C_Drawable-derived), tile data structure, viewport-culled draw(), coordinate helpers, C++ test suite
+- [ ] 43-02-PLAN.md — C_Tilemap_Proxy Lua bindings (ComponentProxy dispatch, all proxy methods), Lua integration test suite
+
+### Phase 44: 2d Camera System
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 43
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 44 to break down)

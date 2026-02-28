@@ -38,6 +38,17 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 - [x] **EVENT-04**: Event bus is scene-scoped — all handlers cleared on scene deactivation
 - [x] **EVENT-05**: Handler `luaL_ref` handles cleaned up properly (no leaks across hot-reload)
 
+### Tilemap
+
+- [ ] **TMAP-01**: C_Tilemap component stores a 64x64 uint8_t tile grid with SpriteSheet tileset (zero dynamic allocation)
+- [ ] **TMAP-02**: Viewport-culled draw() renders only visible tiles to ICanvas<Pixel4>
+- [ ] **TMAP-03**: Tile ID 0 is transparent (not drawn); IDs 1-255 are rendered via SpriteSheet::draw()
+- [ ] **TMAP-04**: Built-in camera offset (scrollX, scrollY) for tilemap-scoped scrolling
+- [ ] **TMAP-05**: Lua proxy via self:get("C_Tilemap") with setTile/getTile/setTiles/setSheet/setScroll/getScroll/getMapSize
+- [ ] **TMAP-06**: Coordinate conversion helpers: pixelToTile, tileToPixel, tileAtPixel
+- [ ] **TMAP-07**: Map data initialized from flat Lua table via tilemap:setTiles(table, w, h)
+- [ ] **TMAP-08**: setSheet(handle) uses sprite pool handle to bind tileset
+
 ## Future Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -95,10 +106,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EVENT-03 | Phase 42 | Complete |
 | EVENT-04 | Phase 42 | Complete |
 | EVENT-05 | Phase 42 | Complete |
+| TMAP-01 | Phase 43 | Planned |
+| TMAP-02 | Phase 43 | Planned |
+| TMAP-03 | Phase 43 | Planned |
+| TMAP-04 | Phase 43 | Planned |
+| TMAP-05 | Phase 43 | Planned |
+| TMAP-06 | Phase 43 | Planned |
+| TMAP-07 | Phase 43 | Planned |
+| TMAP-08 | Phase 43 | Planned |
 
 **Coverage:**
-- v1.6 requirements: 19 total
-- Mapped to phases: 19
+- v1.6 requirements: 19 total (complete)
+- Phase 43 requirements: 8 total (planned)
+- Mapped to phases: 27
 - Unmapped: 0
 
 ---
