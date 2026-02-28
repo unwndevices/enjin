@@ -40,10 +40,10 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 
 ### Tilemap
 
-- [ ] **TMAP-01**: C_Tilemap component stores a 64x64 uint8_t tile grid with SpriteSheet tileset (zero dynamic allocation)
-- [ ] **TMAP-02**: Viewport-culled draw() renders only visible tiles to ICanvas<Pixel4>
-- [ ] **TMAP-03**: Tile ID 0 is transparent (not drawn); IDs 1-255 are rendered via SpriteSheet::draw()
-- [ ] **TMAP-04**: Built-in camera offset (scrollX, scrollY) for tilemap-scoped scrolling
+- [x] **TMAP-01**: C_Tilemap component stores a 64x64 uint8_t tile grid with SpriteSheet tileset (zero dynamic allocation)
+- [x] **TMAP-02**: Viewport-culled draw() renders only visible tiles to ICanvas<Pixel4>
+- [x] **TMAP-03**: Tile ID 0 is transparent (not drawn); IDs 1-255 are rendered via SpriteSheet::draw()
+- [x] **TMAP-04**: Built-in camera offset (scrollX, scrollY) for tilemap-scoped scrolling
 - [ ] **TMAP-05**: Lua proxy via self:get("C_Tilemap") with setTile/getTile/setTiles/setSheet/setScroll/getScroll/getMapSize
 - [ ] **TMAP-06**: Coordinate conversion helpers: pixelToTile, tileToPixel, tileAtPixel
 - [ ] **TMAP-07**: Map data initialized from flat Lua table via tilemap:setTiles(table, w, h)
@@ -118,10 +118,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EVENT-03 | Phase 42 | Complete |
 | EVENT-04 | Phase 42 | Complete |
 | EVENT-05 | Phase 42 | Complete |
-| TMAP-01 | Phase 43 | Planned |
-| TMAP-02 | Phase 43 | Planned |
-| TMAP-03 | Phase 43 | Planned |
-| TMAP-04 | Phase 43 | Planned |
+| TMAP-01 | Phase 43 | Complete |
+| TMAP-02 | Phase 43 | Complete |
+| TMAP-03 | Phase 43 | Complete |
+| TMAP-04 | Phase 43 | Complete |
 | TMAP-05 | Phase 43 | Planned |
 | TMAP-06 | Phase 43 | Planned |
 | TMAP-07 | Phase 43 | Planned |
@@ -138,11 +138,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 **Coverage:**
 - v1.6 requirements: 19 total (complete)
-- Phase 43 requirements: 8 total (planned)
+- Phase 43 requirements: 8 total (4 complete in Plan 01, 4 planned in Plan 02)
 - Phase 44 requirements: 9 total (planned)
 - Mapped to phases: 36
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after roadmap creation (Phases 39-44)*
+*Last updated: 2026-02-28 after Phase 43 Plan 01 completion (TMAP-01..TMAP-04 complete)*

@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Game Ready
-status: unknown
-last_updated: "2026-02-28T15:15:53.988Z"
+milestone: v1.7
+milestone_name: Tilemap + Camera
+status: in-progress
+last_updated: "2026-02-28T17:20:16Z"
 progress:
-  total_phases: 10
-  completed_phases: 9
-  total_plans: 25
-  completed_plans: 24
+  total_phases: 44
+  completed_phases: 43
+  total_plans: 26
+  completed_plans: 25
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.6 Game Ready — Phase 42: EventBus (Plan 01 COMPLETE)
+**Current focus:** v1.7 Tilemap + Camera — Phase 43: Tilemap System (Plan 01 COMPLETE)
 
 ## Current Position
 
-Phase: 42 of 42 (EventBus)
+Phase: 43 of 44 (Tilemap System)
 Plan: 01 COMPLETE
-Status: Phase 42 Plan 01 complete — EventBus (scene-scoped pub/sub) — v1.6 Game Ready milestone COMPLETE
-Last activity: 2026-02-28 — Phase 42 Plan 01 complete (EventBus: engine.event.on/off/emit, LuaEventBus zero-alloc, EVENT-01..EVENT-05 tests)
+Status: Phase 43 Plan 01 complete — C_Tilemap C++ foundation (64x64 tile grid, viewport culling, coordinate helpers, TMAP-01..04 tests)
+Last activity: 2026-02-28 — Phase 43 Plan 01 complete (C_Tilemap: stack-allocated tile grid, draw() viewport culling, setScroll, pixelToTile/tileToPixel/tileAtPixel)
 
-Progress: [████████████████████] ~100% (42/42 phases complete — v1.6 Game Ready milestone COMPLETE)
+Progress: [████████████████████] ~98% (43/44 phases complete — Plan 02 (Lua bindings) remaining)
 
 ## Performance Metrics
 
@@ -40,6 +40,7 @@ Progress: [████████████████████] ~100% (
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phase 39: ComponentProxy Plan 01, Phase 40: C_Timer Plan 01, Phase 41: C_StateMachine Plan 01, Phase 42: EventBus Plan 01)
+- v1.7: 1 plan (Phase 43: Tilemap System Plan 01)
 
 *Updated after each plan completion*
 
@@ -62,6 +63,10 @@ Recent decisions relevant to v1.6:
 - [Phase 42-eventbus]: LuaEventBus uses fixed-capacity arrays (Channel[16], Subscriber[8]) with zero heap allocation — same sentinel pattern (m_L=nullptr after clearHandlers)
 - [Phase 42-eventbus]: emit() snapshots refs to local array before pcall loop for re-entrant safety — off()/on() inside handler modifies channel array but not the snapshot
 - [Phase 42-eventbus]: EVENT-05 hot-reload implemented in C_LuaScript::executeScript() not registerAll() — registerAll() only runs at initialize(); hot-reload goes through executeScript()
+- [Phase 43-tilemap]: Stride = m_mapW (not MAX_MAP_W) — tile array logically m_mapW*m_mapH contiguous bytes; matches setTiles copy and Lua flat-table indexing
+- [Phase 43-tilemap]: Tile ID 0 transparent sentinel with direct frameIndex pass-through — no subtract-1 in hot path; tileset frame 0 is intentionally wasted
+- [Phase 43-tilemap]: Floor division helper for negative pixel/scroll coords — C++ truncates toward zero, floorDiv() corrects for negative world coordinates
+- [Phase 43-tilemap]: setScroll() stores without clamping; draw() clamps startTX/startTY to 0 for negative scroll values
 
 ### Pending Todos
 
@@ -77,6 +82,7 @@ None.
 
 - Phases 39-42 added: v1.6 Game Ready milestone
 - Phase 43 added: Tilemap system
+- Phase 44 added: 2d Camera System
 
 ### Technical Debt (carried)
 
@@ -87,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 42-01-PLAN.md — EventBus (engine.event.on/off/emit, LuaEventBus zero-alloc, EVENT-01..EVENT-05 tests) — v1.6 Game Ready milestone COMPLETE
+Stopped at: Completed 43-01-PLAN.md — C_Tilemap C++ foundation (stack-allocated tile grid, viewport culling, coordinate helpers, TMAP-01..04 tests)
 Resume file: None

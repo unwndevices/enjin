@@ -8,7 +8,8 @@
 - [x] **v1.3 Tomodachi Readiness** - Phases 19-22 (shipped 2026-02-24)
 - [x] **v1.4 Engine Capabilities** - Phases 23-26 (shipped 2026-02-26)
 - [x] **v1.5 Lua Scripting Foundation** - Phases 27-38 (shipped 2026-02-28)
-- [ ] **v1.6 Game Ready** - Phases 39-42 (in progress)
+- [x] **v1.6 Game Ready** - Phases 39-42 (shipped 2026-02-28)
+- [ ] **v1.7 Tilemap + Camera** - Phases 43-44 (in progress)
 
 ## Phases
 
@@ -54,7 +55,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 
 </details>
 
-### v1.6 Game Ready (In Progress)
+### v1.6 Game Ready (Shipped 2026-02-28)
 
 **Milestone Goal:** Make enjin2 capable of building complete small games (Arkanoid, physics sandbox, tamagotchi) purely from Lua on SDL3.
 
@@ -62,6 +63,15 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 - [x] **Phase 40: C_Timer** - Delayed and repeating Lua callbacks via `timer:after()` / `timer:every()` (completed 2026-02-28)
 - [x] **Phase 41: C_StateMachine** - Named states with enter/update/exit Lua callbacks and deferred transitions (completed 2026-02-28)
 - [x] **Phase 42: EventBus** - Scene-scoped publish/subscribe event bus exposed as `engine.event.*` (completed 2026-02-28)
+
+### v1.7 Tilemap + Camera (In Progress)
+
+**Milestone Goal:** Level-based game support with grid-based tilemaps and engine-wide 2D camera.
+
+- [x] **Phase 43 Plan 01: C_Tilemap C++ foundation** - 64x64 tile grid, viewport-culled rendering, scroll, coordinate helpers (completed 2026-02-28)
+- [ ] **Phase 43 Plan 02: C_Tilemap Lua bindings** - ComponentProxy, self:get("C_Tilemap"), setTiles from Lua table
+- [ ] **Phase 44 Plan 01: C_Camera C++ component** - Scene render pipeline, drawWithOffset(), screen-space flag
+- [ ] **Phase 44 Plan 02: C_Camera Lua bindings** - engine.camera.*, smooth lerp, shake, bounds
 
 ## Phase Details
 
@@ -125,6 +135,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 40. C_Timer | 1/1 | Complete    | 2026-02-28 | - |
 | 41. C_StateMachine | 1/1 | Complete    | 2026-02-28 | - |
 | 42. EventBus | 1/1 | Complete    | 2026-02-28 | - |
+| 43. Tilemap System | 1/2 | In Progress | 2026-02-28 | - |
 
 ### Phase 43: Tilemap System
 
@@ -140,7 +151,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 **Plans:** 2 plans
 
 Plans:
-- [ ] 43-01-PLAN.md — C_Tilemap C++ component (C_Drawable-derived), tile data structure, viewport-culled draw(), coordinate helpers, C++ test suite
+- [x] 43-01-PLAN.md — C_Tilemap C++ component (C_Drawable-derived), tile data structure, viewport-culled draw(), coordinate helpers, C++ test suite (completed 2026-02-28)
 - [ ] 43-02-PLAN.md — C_Tilemap_Proxy Lua bindings (ComponentProxy dispatch, all proxy methods), Lua integration test suite
 
 ### Phase 44: 2D Camera System
