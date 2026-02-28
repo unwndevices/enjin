@@ -47,6 +47,7 @@ struct SpriteSheet {
         : data(d), cellW(cw), cellH(ch), cols(c), rows(r) {}
 
     /// @brief Total number of frames in the sheet (rows * cols)
+    /// @return Frame count
     uint8_t frameCount() const { return static_cast<uint8_t>(cols * rows); }
 
     /**

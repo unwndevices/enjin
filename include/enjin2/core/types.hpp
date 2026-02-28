@@ -73,48 +73,101 @@ struct Vec2 {
     float x; ///< X component
     float y; ///< Y component
 
+    /** @brief Default constructor initializes to zero vector */
     Vec2() : x(0), y(0) {}
+    /**
+     * @brief Constructor with components
+     * @param x_ X component
+     * @param y_ Y component
+     */
     Vec2(float x_, float y_) : x(x_), y(y_) {}
 
-    // Arithmetic operators
+    /** @brief Component-wise addition
+     *  @param other Vector to add
+     *  @return Sum vector */
     Vec2 operator+(const Vec2& other) const { return Vec2(x + other.x, y + other.y); }
+    /** @brief Component-wise subtraction
+     *  @param other Vector to subtract
+     *  @return Difference vector */
     Vec2 operator-(const Vec2& other) const { return Vec2(x - other.x, y - other.y); }
+    /** @brief Scalar multiplication
+     *  @param s Scalar factor
+     *  @return Scaled vector */
     Vec2 operator*(float s) const { return Vec2(x * s, y * s); }
+    /** @brief Scalar division
+     *  @param s Scalar divisor
+     *  @return Scaled vector */
     Vec2 operator/(float s) const { return Vec2(x / s, y / s); }
+    /** @brief Unary negation
+     *  @return Negated vector */
     Vec2 operator-() const { return Vec2(-x, -y); }
 
-    // Compound assignment
+    /** @brief In-place addition
+     *  @param other Vector to add
+     *  @return Reference to this */
     Vec2& operator+=(const Vec2& other) { x += other.x; y += other.y; return *this; }
+    /** @brief In-place subtraction
+     *  @param other Vector to subtract
+     *  @return Reference to this */
     Vec2& operator-=(const Vec2& other) { x -= other.x; y -= other.y; return *this; }
+    /** @brief In-place scalar multiplication
+     *  @param s Scalar factor
+     *  @return Reference to this */
     Vec2& operator*=(float s) { x *= s; y *= s; return *this; }
+    /** @brief In-place scalar division
+     *  @param s Scalar divisor
+     *  @return Reference to this */
     Vec2& operator/=(float s) { x /= s; y /= s; return *this; }
 
-    // Comparison
+    /** @brief Equality comparison
+     *  @param other Vector to compare
+     *  @return true if both components match */
     bool operator==(const Vec2& other) const { return x == other.x && y == other.y; }
+    /** @brief Inequality comparison
+     *  @param other Vector to compare
+     *  @return true if any component differs */
     bool operator!=(const Vec2& other) const { return !(*this == other); }
 
+    /** @brief Euclidean length of this vector
+     *  @return sqrt(x² + y²) */
     float length() const { return std::sqrt(x * x + y * y); }
+    /** @brief Squared length (avoids sqrt)
+     *  @return x² + y² */
     float lengthSquared() const { return x * x + y * y; }
+    /** @brief Dot product with another vector
+     *  @param other Vector to dot with
+     *  @return Dot product scalar */
     float dot(const Vec2& other) const { return x * other.x + y * other.y; }
 
-    /** @brief 2D cross product (z-component of the 3D cross) */
+    /** @brief 2D cross product (z-component of the 3D cross)
+     *  @param other Vector to cross with
+     *  @return Cross product scalar */
     float cross(const Vec2& other) const { return x * other.y - y * other.x; }
 
-    /** @brief Angle of this vector in radians via atan2(y, x) */
+    /** @brief Angle of this vector in radians via atan2(y, x)
+     *  @return Angle in radians */
     float angle() const { return std::atan2(y, x); }
 
+    /** @brief Return a unit-length copy (zero vector if length is 0)
+     *  @return Normalized vector */
     Vec2 normalized() const {
         float len = length();
         return len > 0 ? Vec2(x / len, y / len) : Vec2(0, 0);
     }
 
-    /** @brief Return a copy rotated by radians */
+    /** @brief Return a copy rotated by the given angle
+     *  @param radians Rotation angle in radians
+     *  @return Rotated vector */
     Vec2 rotated(float radians) const {
         float c = std::cos(radians);
         float s = std::sin(radians);
         return Vec2(x * c - y * s, x * s + y * c);
     }
 
+    /** @brief Euclidean distance between two points
+     *  @param a First point
+     *  @param b Second point
+     *  @return Distance */
     static float distance(const Vec2& a, const Vec2& b) { return (a - b).length(); }
 };
 

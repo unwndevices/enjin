@@ -21,18 +21,24 @@ struct InputState {
     float axes[8];          ///< Current frame axis values, normalized -1.0 to 1.0
     float prev_axes[8];     ///< Previous frame axis values
 
-    /// @brief True only on the first frame a button transitions released->pressed
+    /** @brief True only on the first frame a button transitions released->pressed
+     *  @param btn Button index (0-15)
+     *  @return true if the button was just pressed */
     inline bool justPressed(int btn) const {
         uint16_t mask = static_cast<uint16_t>(1u << btn);
         return !(prev_buttons & mask) && (buttons & mask);
     }
 
-    /// @brief True every frame the button is held down
+    /** @brief True every frame the button is held down
+     *  @param btn Button index (0-15)
+     *  @return true if the button is currently held */
     inline bool held(int btn) const {
         return (buttons & static_cast<uint16_t>(1u << btn)) != 0;
     }
 
-    /// @brief True only on the first frame a button transitions pressed->released
+    /** @brief True only on the first frame a button transitions pressed->released
+     *  @param btn Button index (0-15)
+     *  @return true if the button was just released */
     inline bool justReleased(int btn) const {
         uint16_t mask = static_cast<uint16_t>(1u << btn);
         return (prev_buttons & mask) && !(buttons & mask);

@@ -15,6 +15,14 @@ namespace collision {
 
 /**
  * @brief AABB overlap test (axis-aligned bounding boxes)
+ * @param x1 First rectangle X
+ * @param y1 First rectangle Y
+ * @param w1 First rectangle width
+ * @param h1 First rectangle height
+ * @param x2 Second rectangle X
+ * @param y2 Second rectangle Y
+ * @param w2 Second rectangle width
+ * @param h2 Second rectangle height
  * @return true if the two rectangles overlap
  */
 inline bool aabb(float x1, float y1, float w1, float h1,
@@ -25,6 +33,12 @@ inline bool aabb(float x1, float y1, float w1, float h1,
 
 /**
  * @brief Circle vs circle overlap test
+ * @param x1 First circle center X
+ * @param y1 First circle center Y
+ * @param r1 First circle radius
+ * @param x2 Second circle center X
+ * @param y2 Second circle center Y
+ * @param r2 Second circle radius
  * @return true if the circles overlap (or touch)
  */
 inline bool circleCircle(float x1, float y1, float r1,
@@ -38,6 +52,12 @@ inline bool circleCircle(float x1, float y1, float r1,
 
 /**
  * @brief Point inside rectangle test
+ * @param px Point X coordinate
+ * @param py Point Y coordinate
+ * @param rx Rectangle X
+ * @param ry Rectangle Y
+ * @param rw Rectangle width
+ * @param rh Rectangle height
  * @return true if point (px,py) is inside rect [rx,ry,rw,rh]
  */
 inline bool pointInRect(float px, float py,
@@ -47,6 +67,11 @@ inline bool pointInRect(float px, float py,
 
 /**
  * @brief Point inside circle test
+ * @param px Point X coordinate
+ * @param py Point Y coordinate
+ * @param cx Circle center X
+ * @param cy Circle center Y
+ * @param r  Circle radius
  * @return true if point (px,py) is inside or on circle (cx,cy,r)
  */
 inline bool pointInCircle(float px, float py,
@@ -58,6 +83,14 @@ inline bool pointInCircle(float px, float py,
 
 /**
  * @brief Line segment vs line segment intersection
+ * @param x1 First segment start X
+ * @param y1 First segment start Y
+ * @param x2 First segment end X
+ * @param y2 First segment end Y
+ * @param x3 Second segment start X
+ * @param y3 Second segment start Y
+ * @param x4 Second segment end X
+ * @param y4 Second segment end Y
  * @param ix Optional output: intersection X (only written if non-null and segments intersect)
  * @param iy Optional output: intersection Y
  * @return true if segments intersect
@@ -87,6 +120,13 @@ inline bool lineLine(float x1, float y1, float x2, float y2,
 
 /**
  * @brief Line segment vs circle intersection
+ * @param x1 Segment start X
+ * @param y1 Segment start Y
+ * @param x2 Segment end X
+ * @param y2 Segment end Y
+ * @param cx Circle center X
+ * @param cy Circle center Y
+ * @param r  Circle radius
  * @return true if the segment intersects (or touches) the circle
  */
 inline bool lineCircle(float x1, float y1, float x2, float y2,
@@ -113,7 +153,18 @@ inline bool lineCircle(float x1, float y1, float x2, float y2,
 
 /**
  * @brief AABB overlap response — returns intersection rectangle
- * @param overlapX/Y/W/H Output: overlap rectangle (only written on hit)
+ * @param x1 First rectangle X
+ * @param y1 First rectangle Y
+ * @param w1 First rectangle width
+ * @param h1 First rectangle height
+ * @param x2 Second rectangle X
+ * @param y2 Second rectangle Y
+ * @param w2 Second rectangle width
+ * @param h2 Second rectangle height
+ * @param overlapX Output: overlap rectangle X (only written on hit)
+ * @param overlapY Output: overlap rectangle Y (only written on hit)
+ * @param overlapW Output: overlap rectangle width (only written on hit)
+ * @param overlapH Output: overlap rectangle height (only written on hit)
  * @return true if the two rectangles overlap
  */
 inline bool aabbOverlap(float x1, float y1, float w1, float h1,
@@ -136,7 +187,14 @@ inline bool aabbOverlap(float x1, float y1, float w1, float h1,
 
 /**
  * @brief Circle vs circle response — returns separation normal and penetration depth
- * @param normalX/Y Output: unit normal from circle1 to circle2 (only written on hit)
+ * @param x1 First circle center X
+ * @param y1 First circle center Y
+ * @param r1 First circle radius
+ * @param x2 Second circle center X
+ * @param y2 Second circle center Y
+ * @param r2 Second circle radius
+ * @param normalX Output: unit normal X from circle1 to circle2 (only written on hit)
+ * @param normalY Output: unit normal Y from circle1 to circle2 (only written on hit)
  * @param depth Output: penetration depth (positive when overlapping)
  * @return true if the circles overlap
  */
@@ -167,10 +225,14 @@ inline bool circleCircleResponse(float x1, float y1, float r1,
 
 /**
  * @brief Reflect a velocity vector against a surface normal
+ *
  * v' = v - 2(v·n)n
- * @param vx/vy Input velocity
- * @param nx/ny Surface normal (should be unit length)
- * @param outVx/outVy Output: reflected velocity
+ * @param vx Input velocity X
+ * @param vy Input velocity Y
+ * @param nx Surface normal X (should be unit length)
+ * @param ny Surface normal Y (should be unit length)
+ * @param outVx Output: reflected velocity X
+ * @param outVy Output: reflected velocity Y
  */
 inline void reflect(float vx, float vy, float nx, float ny,
                     float* outVx, float* outVy) {

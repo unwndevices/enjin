@@ -24,6 +24,7 @@ class C_Timer : public Component {
 public:
     static constexpr int MAX_TIMERS = 8;  ///< Maximum simultaneous timers per component
 
+    /** @brief Single timer slot entry */
     struct TimerEntry {
         int     callbackRef{LUA_NOREF}; ///< luaL_ref handle; LUA_NOREF = inactive
         float   interval{0.0f};         ///< Seconds between firings (or delay for one-shot)
@@ -33,14 +34,31 @@ public:
         bool    active{false};          ///< Slot in use
     };
 
+    /** @brief Construct a timer component
+     *  @param owner The object that owns this component */
     explicit C_Timer(Object* owner);
+    /** @brief Destructor — releases all Lua callback refs */
     ~C_Timer() override;
 
     void update(float dt) override;
 
     // Called by Lua bindings (timer:after, timer:every, timer:cancel)
-    int  scheduleAfter(float seconds, int callbackRef);   ///< Returns timer ID, or 0 if no slot available
-    int  scheduleEvery(float seconds, int callbackRef);   ///< Returns timer ID, or 0 if no slot available
+    /**
+     * @brief Schedule a one-shot callback after a delay
+     * @param seconds  Delay in seconds
+     * @param callbackRef  luaL_ref handle for the callback
+     * @return Timer ID for cancellation, or 0 if no slot available
+     */
+    int  scheduleAfter(float seconds, int callbackRef);
+    /**
+     * @brief Schedule a repeating callback at a fixed interval
+     * @param seconds  Interval in seconds
+     * @param callbackRef  luaL_ref handle for the callback
+     * @return Timer ID for cancellation, or 0 if no slot available
+     */
+    int  scheduleEvery(float seconds, int callbackRef);
+    /** @brief Cancel a timer by ID
+     *  @param timerId Timer ID returned by scheduleAfter/scheduleEvery */
     void cancel(int timerId);
 
     /**
@@ -51,11 +69,19 @@ public:
      */
     void clearTimers();
 
+    /** @brief Set the Lua state for callback dispatch
+     *  @param L Lua state pointer */
     void setLuaState(lua_State* L) { m_L = L; }
+    /** @brief Get the Lua state
+     *  @return Current Lua state pointer */
     lua_State* getLuaState() const { return m_L; }
 
-    // Test helpers
+    /** @brief Get a timer entry by index (for testing)
+     *  @param index Array index
+     *  @return Reference to the TimerEntry */
     const TimerEntry& getTimerEntry(int index) const { return m_timers[index]; }
+    /** @brief Get number of active timers (for testing)
+     *  @return Count of active timer slots */
     int getActiveCount() const;
 
 private:

@@ -38,7 +38,7 @@ static_assert(sizeof(NjnHeader) == 8, "NjnHeader must be exactly 8 bytes");
 
 /// Result of loading a .njn file
 struct SpriteAsset {
-    NjnHeader header;
+    NjnHeader header;               ///< Parsed file header (magic, version, dimensions)
     const uint8_t* pixelData;   ///< Pointer into asset buffer (not owned by this struct)
     uint32_t pixelDataSize;     ///< Size in bytes of the pixel data
 };
@@ -86,6 +86,8 @@ inline bool parseNjnHeader(const uint8_t* data, size_t size, NjnHeader& out) {
 
 /**
  * @brief Compute total pixel data size from header fields
+ * @param h Parsed NjnHeader
+ * @return Total pixel byte count (cellW * cellH * cols * rows)
  */
 inline uint32_t njnPixelDataSize(const NjnHeader& h) {
     return static_cast<uint32_t>(h.cellW) * h.cellH * h.cols * h.rows;

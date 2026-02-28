@@ -31,6 +31,7 @@ public:
     static constexpr int MAX_STATES     = 8;   ///< Maximum named states per FSM
     static constexpr int MAX_STATE_NAME = 32;  ///< Maximum state name length (incl. NUL)
 
+    /** @brief Single named state slot */
     struct StateEntry {
         char name[MAX_STATE_NAME]{};        ///< State name (NUL-terminated fixed buffer)
         int  enterRef{LUA_NOREF};           ///< luaL_ref for enter(self) callback
@@ -39,15 +40,30 @@ public:
         bool active{false};                 ///< Slot in use
     };
 
+    /** @brief Construct a state machine component
+     *  @param owner The object that owns this component */
     explicit C_StateMachine(Object* owner);
+    /** @brief Destructor — releases all Lua callback refs */
     ~C_StateMachine() override;
 
     void update(float dt) override;
 
     // Called by Lua bindings (fsm:addState, fsm:setState, fsm:getState)
+    /**
+     * @brief Register a named state with enter/exit/update callbacks
+     * @param name  State name (NUL-terminated)
+     * @param enterRef  luaL_ref for enter(self) callback
+     * @param exitRef   luaL_ref for exit(self) callback
+     * @param updateRef luaL_ref for update(self, dt) callback
+     * @return true if state was added, false if slots are full
+     */
     bool addState(const char* name, int enterRef, int exitRef, int updateRef);
-    void setState(const char* name);        ///< Deferred — applies at end of next update()
-    const char* getState() const;           ///< Returns m_currentState (empty string = no state)
+    /** @brief Queue a deferred state transition (applies at end of next update())
+     *  @param name  Target state name */
+    void setState(const char* name);
+    /** @brief Query the current state name
+     *  @return Current state name (empty string if no state is active) */
+    const char* getState() const;
 
     /**
      * @brief Release all luaL_ref handles and reset FSM to empty state.
@@ -57,11 +73,19 @@ public:
      */
     void clearStates();
 
+    /** @brief Set the Lua state for callback dispatch
+     *  @param L Lua state pointer */
     void setLuaState(lua_State* L) { m_L = L; }
+    /** @brief Get the Lua state
+     *  @return Current Lua state pointer */
     lua_State* getLuaState() const { return m_L; }
 
-    // Test helpers
+    /** @brief Get a state entry by index (for testing)
+     *  @param index Array index
+     *  @return Reference to the StateEntry */
     const StateEntry& getStateEntry(int index) const { return m_states[index]; }
+    /** @brief Get number of active states (for testing)
+     *  @return Count of occupied state slots */
     int getActiveStateCount() const;
 
 private:

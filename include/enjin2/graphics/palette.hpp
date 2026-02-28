@@ -147,7 +147,7 @@ struct Palette {
 /**
  * @brief Parse a hex color string into RGB components
  *
- * Accepts both '#rrggbb' and 'rrggbb' formats. Hex digits may be upper or
+ * Accepts both `#rrggbb` and plain `rrggbb` formats. Hex digits may be upper or
  * lower case. Returns false if `hex` is null or cannot be parsed.
  *
  * @param hex Null-terminated hex color string (e.g., "#ff0000" or "ff0000")

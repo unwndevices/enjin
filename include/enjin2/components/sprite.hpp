@@ -39,7 +39,8 @@ public:
         , _done(false)
     {}
 
-    /** Replace the sprite sheet. Resets frame to 0 and animation state. */
+    /** Replace the sprite sheet. Resets frame to 0 and animation state.
+     *  @param sheet New sprite sheet to use */
     void setSheet(const SpriteSheet& sheet) {
         _sheet = sheet;
         _frame = 0;
@@ -48,17 +49,20 @@ public:
         _done = false;
     }
 
-    /** Set frames-per-second playback rate. Must be > 0. */
+    /** Set frames-per-second playback rate. Must be > 0.
+     *  @param fps Playback rate */
     void setFPS(float fps) { _fps = fps; }
 
-    /** Set animation loop mode. */
+    /** Set animation loop mode.
+     *  @param mode Loop mode */
     void setMode(AnimMode mode) {
         _mode = mode;
         _done = false;
         _forward = true;
     }
 
-    /** Directly set the current frame. Clamped to valid range [0, frameCount-1]. */
+    /** Directly set the current frame. Clamped to valid range [0, frameCount-1].
+     *  @param index Frame index to set */
     void setFrame(uint8_t index) {
         const uint8_t total = _sheet.frameCount();
         if (total == 0) return;
@@ -66,10 +70,12 @@ public:
         _accumSec = 0.0f;
     }
 
-    /** Get the current frame index. */
+    /** Get the current frame index.
+     *  @return Current frame index */
     uint8_t getFrame() const { return _frame; }
 
-    /** True when Once mode animation has completed (frozen on last frame). */
+    /** True when Once mode animation has completed (frozen on last frame).
+     *  @return true if animation is done */
     bool isDone() const { return _done; }
 
     /**
@@ -77,6 +83,7 @@ public:
      *
      * Uses GetOffsetPosition() from C_Drawable for position plumbing.
      * Skips draw if not visible or sheet has no data.
+     * @param canvas Target 4-bit canvas to draw on
      */
     void draw(ICanvas<Pixel4>& canvas) override {
         if (!is_visible || !_sheet.data) return;
@@ -89,6 +96,7 @@ public:
      *
      * Uses delta-time accumulator: accumulator += dt, advance when >= frame_duration.
      * Subtracts frame duration rather than zeroing to preserve carry-over.
+     * @param dt Delta-time in seconds since last frame
      */
     void lateUpdate(float dt) override {
         if (!_sheet.data || _fps <= 0.0f || _done) return;

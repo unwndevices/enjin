@@ -262,44 +262,81 @@ public:
  */
 class LuaStore {
 public:
+    /** @brief Value type stored in each slot */
     enum class StoreType : uint8_t { None = 0, Number, String, Bool, Table };
 
-    static constexpr int STORE_MAX_KEYS = 16;
-    static constexpr int STORE_MAX_KEY  = 64;
-    static constexpr int STORE_MAX_STRING = 128;
-    static constexpr int STORE_MAX_TABLE_ENTRIES = 16;
+    static constexpr int STORE_MAX_KEYS = 16;            ///< Maximum key-value pairs
+    static constexpr int STORE_MAX_KEY  = 64;            ///< Maximum key string length
+    static constexpr int STORE_MAX_STRING = 128;         ///< Maximum string value length
+    static constexpr int STORE_MAX_TABLE_ENTRIES = 16;   ///< Maximum entries per table value
 
+    /** @brief Single entry within a stored table value */
     struct TableEntry {
-        char      key[STORE_MAX_KEY]{};
-        StoreType type{StoreType::None};
-        double    numVal{0.0};
-        bool      boolVal{false};
-        char      strVal[STORE_MAX_STRING]{};
+        char      key[STORE_MAX_KEY]{};          ///< Entry key
+        StoreType type{StoreType::None};         ///< Entry value type
+        double    numVal{0.0};                   ///< Numeric value (when type == Number)
+        bool      boolVal{false};                ///< Boolean value (when type == Bool)
+        char      strVal[STORE_MAX_STRING]{};    ///< String value (when type == String)
     };
 
+    /** @brief Top-level storage slot for one key-value pair */
     struct StoreSlot {
-        char        key[STORE_MAX_KEY]{};
-        StoreType   type{StoreType::None};
-        double      numVal{0.0};
-        bool        boolVal{false};
-        char        strVal[STORE_MAX_STRING]{};
-        TableEntry  tableEntries[STORE_MAX_TABLE_ENTRIES]{};
-        int         tableCount{0};
+        char        key[STORE_MAX_KEY]{};                    ///< Slot key
+        StoreType   type{StoreType::None};                   ///< Slot value type
+        double      numVal{0.0};                             ///< Numeric value (when type == Number)
+        bool        boolVal{false};                          ///< Boolean value (when type == Bool)
+        char        strVal[STORE_MAX_STRING]{};              ///< String value (when type == String)
+        TableEntry  tableEntries[STORE_MAX_TABLE_ENTRIES]{}; ///< Table entries (when type == Table)
+        int         tableCount{0};                           ///< Number of active table entries
     };
 
+    /** @brief Default constructor — initialises empty store */
     LuaStore();
 
+    /** @brief Store a number value
+     *  @param key  Null-terminated key
+     *  @param value  Numeric value
+     *  @return true on success, false if store is full */
     bool setNumber(const char* key, double value);
+    /** @brief Store a string value
+     *  @param key  Null-terminated key
+     *  @param value  Null-terminated string
+     *  @return true on success */
     bool setString(const char* key, const char* value);
+    /** @brief Store a boolean value
+     *  @param key  Null-terminated key
+     *  @param value  Boolean value
+     *  @return true on success */
     bool setBool(const char* key, bool value);
-    StoreSlot* setTable(const char* key);  ///< Returns slot for caller to fill table entries
+    /** @brief Allocate a table slot for the given key
+     *  @param key  Null-terminated key
+     *  @return Pointer to the slot for caller to fill table entries, or nullptr on failure */
+    StoreSlot* setTable(const char* key);
+    /** @brief Look up a value by key
+     *  @param key  Null-terminated key
+     *  @return Pointer to the slot, or nullptr if not found */
     const StoreSlot* get(const char* key) const;
+    /** @brief Check whether a key exists
+     *  @param key  Null-terminated key
+     *  @return true if key is present */
     bool exists(const char* key) const;
+    /** @brief Remove a key-value pair
+     *  @param key  Null-terminated key
+     *  @return true if the key was found and removed */
     bool remove(const char* key);
+    /** @brief Remove all entries */
     void clear();
+    /** @brief Number of active entries
+     *  @return Entry count */
     int  count() const { return m_count; }
 
+    /** @brief Serialise the store to a JSON file
+     *  @param path  File path to write
+     *  @return true on success */
     bool saveToFile(const char* path) const;
+    /** @brief Deserialise the store from a JSON file
+     *  @param path  File path to read
+     *  @return true on success */
     bool loadFromFile(const char* path);
 
 private:
@@ -490,11 +527,13 @@ public:
 
     /**
      * @brief Get the persistent store (for testing)
+     * @return Reference to the LuaStore
      */
     LuaStore& getStore() { return m_store; }
 
     /**
      * @brief Get the event bus (for testing)
+     * @return Reference to the LuaEventBus
      */
     LuaEventBus& getEventBus() { return m_eventBus; }
 
