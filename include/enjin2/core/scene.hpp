@@ -4,6 +4,7 @@
 #include "signal.hpp"
 #include "../graphics/canvas.hpp"
 #include "../components/drawable.hpp"
+#include "../components/camera.hpp"
 #include <algorithm>
 #include <iostream>
 #include <type_traits>
@@ -367,11 +368,25 @@ private:
                   });
         
         
-        // Render all sorted drawables
+        // Find first active C_Camera in the scene (Phase 44)
+        Point camOffset(0, 0);
+        {
+            C_Camera* cam = nullptr;
+            objects.forEach([&](Object* obj) {
+                if (!cam && obj && obj->isActive()) {
+                    cam = obj->getComponent<C_Camera>();
+                }
+            });
+            if (cam) {
+                camOffset = cam->getScreenOffset();
+            }
+        }
+
+        // Render all sorted drawables with camera offset applied
         for (size_t i = 0; i < drawableCount; ++i) {
             if constexpr (std::is_same_v<PixelType, Pixel4>) {
-                // Direct drawing for Pixel4 canvas (primary path)
-                drawables[i]->draw(canvas);
+                // drawWithOffset applies camera offset; screen-space drawables skip it
+                drawables[i]->drawWithOffset(canvas, camOffset);
             } else {
                 // Drawable::draw() requires ICanvas<Pixel4>. Canvas8 (uint8_t) compositing
                 // will be handled by ENG-01 (Phase 25 compositor). For now, non-Pixel4

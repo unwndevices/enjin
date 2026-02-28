@@ -45,14 +45,15 @@ protected:
     C_Position* position;       ///< Position component reference
     Point anchor_offset;        ///< Anchor offset
     static Point abs_center;    ///< Absolute center point (63, 63 for 128x128)
-    
+
     uint8_t buffer_index;       ///< Layer buffer index (0 = background, N-1 = foreground)
     BlendMode blend_mode;       ///< Blend mode
     Anchor anchor;              ///< Anchor point
     bool is_visible;            ///< Visibility flag
     uint8_t width;              ///< Drawable width in pixels
     uint8_t height;             ///< Drawable height in pixels
-    
+    bool m_screenSpace{false};  ///< If true, drawable is in screen-space (skips camera offset)
+
 public:
     /**
      * @brief Constructor (matches original Enjin)
@@ -139,6 +140,52 @@ public:
      */
     bool shouldDrawBefore(const C_Drawable& other) const {
         return buffer_index < other.buffer_index;
+    }
+
+    // ----------------------------------------------------------------
+    // Camera / screen-space support (Phase 44)
+    // ----------------------------------------------------------------
+
+    /**
+     * @brief Set screen-space mode.
+     *
+     * Screen-space drawables (e.g. HUD, UI overlays) skip the camera offset
+     * applied by Scene::renderObjects() and always render at their world position.
+     *
+     * @param ss True to enable screen-space mode, false for world-space (default)
+     */
+    void setScreenSpace(bool ss) { m_screenSpace = ss; }
+
+    /**
+     * @brief Check if this drawable is in screen-space mode
+     * @return True if screen-space (ignores camera offset)
+     */
+    bool isScreenSpace() const { return m_screenSpace; }
+
+    /**
+     * @brief Draw with camera offset applied.
+     *
+     * Called by Scene::renderObjects() instead of draw() when a camera is active.
+     * Screen-space drawables (m_screenSpace==true) call draw() without any offset.
+     * World-space drawables temporarily shift anchor_offset by the camera offset,
+     * call draw(), then restore anchor_offset.
+     *
+     * Sign convention: offset = camera.getScreenOffset() = -(camera_pos + shake).
+     * Adding offset to anchor_offset moves the drawable left/up by camera_pos,
+     * producing the correct screen position: world_pos - camera_pos.
+     *
+     * @param canvas Target 4-bit canvas
+     * @param offset Camera screen offset (negative of camera world position)
+     */
+    virtual void drawWithOffset(ICanvas<Pixel4>& canvas, Point offset) {
+        if (m_screenSpace) {
+            draw(canvas);
+            return;
+        }
+        Point saved = anchor_offset;
+        anchor_offset += offset;
+        draw(canvas);
+        anchor_offset = saved;
     }
 };
 
