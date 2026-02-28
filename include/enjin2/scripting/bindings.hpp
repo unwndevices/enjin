@@ -253,6 +253,62 @@ public:
 };
 
 /**
+ * @brief Per-script persistent key-value store.
+ *
+ * Fixed-capacity (16 keys), supports number/string/boolean/table values.
+ * On desktop (VCV_RACK) persists to a JSON file; ESP32 NVS deferred.
+ */
+class LuaStore {
+public:
+    enum class StoreType : uint8_t { None = 0, Number, String, Bool, Table };
+
+    static constexpr int STORE_MAX_KEYS = 16;
+    static constexpr int STORE_MAX_KEY  = 64;
+    static constexpr int STORE_MAX_STRING = 128;
+    static constexpr int STORE_MAX_TABLE_ENTRIES = 16;
+
+    struct TableEntry {
+        char      key[STORE_MAX_KEY]{};
+        StoreType type{StoreType::None};
+        double    numVal{0.0};
+        bool      boolVal{false};
+        char      strVal[STORE_MAX_STRING]{};
+    };
+
+    struct StoreSlot {
+        char        key[STORE_MAX_KEY]{};
+        StoreType   type{StoreType::None};
+        double      numVal{0.0};
+        bool        boolVal{false};
+        char        strVal[STORE_MAX_STRING]{};
+        TableEntry  tableEntries[STORE_MAX_TABLE_ENTRIES]{};
+        int         tableCount{0};
+    };
+
+    LuaStore();
+
+    bool setNumber(const char* key, double value);
+    bool setString(const char* key, const char* value);
+    bool setBool(const char* key, bool value);
+    StoreSlot* setTable(const char* key);  ///< Returns slot for caller to fill table entries
+    const StoreSlot* get(const char* key) const;
+    bool exists(const char* key) const;
+    bool remove(const char* key);
+    void clear();
+    int  count() const { return m_count; }
+
+    bool saveToFile(const char* path) const;
+    bool loadFromFile(const char* path);
+
+private:
+    StoreSlot m_entries[STORE_MAX_KEYS];
+    int       m_count{0};
+
+    int findIndex(const char* key) const;
+    StoreSlot* findOrCreate(const char* key);
+};
+
+/**
  * @brief Lua bindings for Enjin graphics and UI
  * 
  * Provides love2d.graphics-style API for familiar Lua scripting.
@@ -312,6 +368,10 @@ private:
 
     // ── Seeded RNG state ─────────────────────────────────────────────────────────
     uint32_t m_rngState{0x12345678};           ///< xorshift32 state (non-zero default)
+
+    // ── Persistent store ─────────────────────────────────────────────────────────
+    LuaStore m_store;                          ///< Per-script key-value store
+    char     m_storePath[256]{};               ///< File path for auto-persist (empty = no auto-save)
 
 public:
     /**
@@ -395,6 +455,26 @@ public:
         m_timeState.totalTime  = totalTime;
         m_timeState.frameCount = frameCount;
     }
+
+    /**
+     * @brief Set storage file path for auto-persist (call before scripts run).
+     * If empty, store operations are in-memory only.
+     * @param path File path for JSON save file
+     */
+    void setStorePath(const char* path) {
+        if (path) {
+            strncpy(m_storePath, path, sizeof(m_storePath) - 1);
+            m_storePath[sizeof(m_storePath) - 1] = '\0';
+            m_store.loadFromFile(m_storePath);  // Load existing data
+        } else {
+            m_storePath[0] = '\0';
+        }
+    }
+
+    /**
+     * @brief Get the persistent store (for testing)
+     */
+    LuaStore& getStore() { return m_store; }
 
 private:
     // Canvas management functions
@@ -509,6 +589,13 @@ private:
     static int lua_engine_random_seed(lua_State* L);
     static int lua_engine_random_integer(lua_State* L);
     static int lua_engine_random_float(lua_State* L);
+
+    // engine.store.* binding functions (persistent KV store)
+    static int lua_engine_store_save(lua_State* L);
+    static int lua_engine_store_load(lua_State* L);
+    static int lua_engine_store_exists(lua_State* L);
+    static int lua_engine_store_delete(lua_State* L);
+    static int lua_engine_store_clear(lua_State* L);
 
     /**
      * @brief Register the ObjectProxy metatable (called from registerAll()).

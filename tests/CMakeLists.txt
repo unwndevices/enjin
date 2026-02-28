@@ -287,6 +287,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME rng_test COMMAND rng_test)
+
+    # Persistent store test (engine.store.save / load / exists / delete / clear)
+    add_executable(store_test
+        store_test.cpp
+    )
+    target_include_directories(store_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(store_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME store_test COMMAND store_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

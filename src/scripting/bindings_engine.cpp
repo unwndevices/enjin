@@ -80,6 +80,18 @@ void LuaBindings::registerEngineTable() {
     luaBindFunctions(L, -1, kRandomFuncs, ENJIN_ARRAY_LEN(kRandomFuncs));
     lua_setfield(L, -2, "random");
 
+    // --- engine.store sub-table (persistent KV store) ---
+    static const LuaFuncDef kStoreFuncs[] = {
+        {"save",   lua_engine_store_save},
+        {"load",   lua_engine_store_load},
+        {"exists", lua_engine_store_exists},
+        {"delete", lua_engine_store_delete},
+        {"clear",  lua_engine_store_clear},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kStoreFuncs, ENJIN_ARRAY_LEN(kStoreFuncs));
+    lua_setfield(L, -2, "store");
+
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
     lua_setfield(L, -2, "log");
