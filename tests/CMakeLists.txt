@@ -426,6 +426,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME camera_lua_test COMMAND camera_lua_test)
+
+    # Scripting API improvements test (quick-007: API-01..API-07)
+    add_executable(scripting_api_test
+        scripting_api_test.cpp
+    )
+    target_include_directories(scripting_api_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(scripting_api_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME scripting_api_test COMMAND scripting_api_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
