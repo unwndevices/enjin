@@ -327,6 +327,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME timer_test COMMAND timer_test)
 
+    # State machine component test (Phase 41: FSM-01..FSM-05)
+    add_executable(state_machine_test
+        state_machine_test.cpp
+    )
+    target_include_directories(state_machine_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(state_machine_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME state_machine_test COMMAND state_machine_test)
+
     # Sprite asset loading / .njn Binary Test
     add_executable(sprite_load_test
         sprite_load_test.cpp

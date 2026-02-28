@@ -1,5 +1,6 @@
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/components/timer.hpp"
+#include "../../include/enjin2/components/state_machine.hpp"
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -41,6 +42,13 @@ C_LuaScript::~C_LuaScript() {
             C_Timer* timer = owner->getComponent<C_Timer>();
             if (timer) {
                 timer->clearTimers();
+            }
+        }
+        // Phase 41: Release FSM state callbacks before closing the Lua state.
+        if (owner) {
+            C_StateMachine* fsm = owner->getComponent<C_StateMachine>();
+            if (fsm) {
+                fsm->clearStates();
             }
         }
         scriptSystem->shutdown();
@@ -118,6 +126,13 @@ bool C_LuaScript::loadScriptFile(const std::string& filename) {
                 C_Timer* timerComp = owner->getComponent<C_Timer>();
                 if (timerComp) {
                     timerComp->clearTimers();
+                }
+            }
+            // Phase 41: Clear FSM state callbacks from the previous script load.
+            if (owner) {
+                C_StateMachine* fsmComp = owner->getComponent<C_StateMachine>();
+                if (fsmComp) {
+                    fsmComp->clearStates();
                 }
             }
 
@@ -201,6 +216,13 @@ bool C_LuaScript::executeScript(const std::string& code) {
                 C_Timer* timerComp = owner->getComponent<C_Timer>();
                 if (timerComp) {
                     timerComp->clearTimers();
+                }
+            }
+            // Phase 41: Clear FSM state callbacks from the previous script load.
+            if (owner) {
+                C_StateMachine* fsmComp = owner->getComponent<C_StateMachine>();
+                if (fsmComp) {
+                    fsmComp->clearStates();
                 }
             }
 

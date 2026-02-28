@@ -5,6 +5,7 @@
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/components/timer.hpp"
+#include "../../include/enjin2/components/state_machine.hpp"
 #include "../../include/enjin2/core/object.hpp"
 
 namespace enjin2 {
@@ -213,8 +214,10 @@ static int lua_proxy_get_component_impl(lua_State* L) {
     } else if (strcmp(typeName, "C_Timer") == 0) {
         comp = owner->getComponent<enjin2::C_Timer>();
         metaName = "C_Timer_Proxy";
+    } else if (strcmp(typeName, "C_StateMachine") == 0) {
+        comp = owner->getComponent<enjin2::C_StateMachine>();
+        metaName = "C_StateMachine_Proxy";
     }
-    // Phase 41: else if (strcmp(typeName, "C_StateMachine") == 0) { ... }
 
     if (!comp) { lua_pushnil(L); return 1; }
 
@@ -367,6 +370,103 @@ static int lua_ctimer_proxy_index_impl(lua_State* L) {
         return 1;
     } else if (strcmp(key, "cancel") == 0) {
         lua_pushcfunction(L, lua_timer_cancel);
+        return 1;
+    }
+    lua_pushnil(L);
+    return 1;
+}
+
+//==============================================================================
+// C_StateMachine_Proxy Metatable Implementation (Phase 41: fsm:addState/setState/getState)
+//==============================================================================
+
+static constexpr const char* CFSM_PROXY_METATABLE = "C_StateMachine_Proxy";
+
+// fsm:addState(name, {enter=fn, exit=fn, update=fn}) — FSM-01
+static int lua_fsm_addState(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CFSM_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* name = luaL_checkstring(L, 2);
+    luaL_checktype(L, 3, LUA_TTABLE);
+
+    auto* fsm = static_cast<enjin2::C_StateMachine*>(proxy->component);
+    fsm->setLuaState(L);
+
+    // Extract optional callbacks from table
+    int enterRef = LUA_NOREF, exitRef = LUA_NOREF, updateRef = LUA_NOREF;
+
+    lua_getfield(L, 3, "enter");
+    if (lua_isfunction(L, -1)) enterRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    else lua_pop(L, 1);
+
+    lua_getfield(L, 3, "exit");
+    if (lua_isfunction(L, -1)) exitRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    else lua_pop(L, 1);
+
+    lua_getfield(L, 3, "update");
+    if (lua_isfunction(L, -1)) updateRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    else lua_pop(L, 1);
+
+    if (!fsm->addState(name, enterRef, exitRef, updateRef)) {
+        // Cleanup refs if addState fails (name too long or array full)
+        if (enterRef  != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, enterRef);
+        if (exitRef   != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, exitRef);
+        if (updateRef != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, updateRef);
+        luaL_error(L, "C_StateMachine: too many states or name too long");
+    }
+    return 0;
+}
+
+// fsm:setState(name) — FSM-02, FSM-04 (deferred)
+static int lua_fsm_setState(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CFSM_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* name = luaL_checkstring(L, 2);
+    auto* fsm = static_cast<enjin2::C_StateMachine*>(proxy->component);
+    fsm->setState(name);
+    return 0;
+}
+
+// fsm:getState() — FSM-03
+static int lua_fsm_getState(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CFSM_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    auto* fsm = static_cast<enjin2::C_StateMachine*>(proxy->component);
+    lua_pushstring(L, fsm->getState());
+    return 1;
+}
+
+// __index metamethod for C_StateMachine_Proxy
+static int lua_cfsm_proxy_index_impl(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CFSM_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* key = lua_tostring(L, 2);
+    if (!key) { lua_pushnil(L); return 1; }
+
+    if (strcmp(key, "addState") == 0) {
+        lua_pushcfunction(L, lua_fsm_addState);
+        return 1;
+    } else if (strcmp(key, "setState") == 0) {
+        lua_pushcfunction(L, lua_fsm_setState);
+        return 1;
+    } else if (strcmp(key, "getState") == 0) {
+        lua_pushcfunction(L, lua_fsm_getState);
         return 1;
     }
     lua_pushnil(L);
@@ -914,6 +1014,13 @@ void LuaBindings::registerComponentProxyMetatable() {
     // Register C_Timer_Proxy metatable (Phase 40: timer:after/every/cancel)
     if (luaL_newmetatable(L, CTIMER_PROXY_METATABLE)) {
         lua_pushcfunction(L, lua_ctimer_proxy_index_impl);
+        lua_setfield(L, -2, "__index");
+    }
+    lua_pop(L, 1);
+
+    // Register C_StateMachine_Proxy metatable (Phase 41: fsm:addState/setState/getState)
+    if (luaL_newmetatable(L, CFSM_PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_cfsm_proxy_index_impl);
         lua_setfield(L, -2, "__index");
     }
     lua_pop(L, 1);
