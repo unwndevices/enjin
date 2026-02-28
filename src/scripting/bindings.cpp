@@ -1330,6 +1330,8 @@ void LuaBindings::setActiveScene(Scene* scene) {
         // EVENT-04: Scene is changing -- clear event bus for the outgoing scene.
         // This ensures no stale handlers carry over to the new scene.
         m_eventBus.clearHandlers();
+        // CAM-08: Clear cached camera pointer on scene change (Phase 44).
+        m_activeCamera = nullptr;
     }
     m_activeScene = scene;
 }

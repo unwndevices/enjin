@@ -161,4 +161,24 @@ bool C_Tilemap::continueToDraw() const {
     return !owner->isQueuedForRemoval();
 }
 
+void C_Tilemap::drawWithOffset(ICanvas<Pixel4>& canvas, Point offset) {
+    // Screen-space tilemap (e.g. HUD minimap): ignore camera offset
+    if (m_screenSpace) {
+        draw(canvas);
+        return;
+    }
+    // Camera offset is additive with tilemap's own scroll offset.
+    // offset = getScreenOffset() = -(camera_pos + shake) [negative].
+    // Subtracting the (negative) offset yields: scroll + camera_pos — correct
+    // because the tilemap should start rendering from world position camera_pos
+    // further into the map.
+    const int16_t savedScrollX = m_scrollX;
+    const int16_t savedScrollY = m_scrollY;
+    m_scrollX = static_cast<int16_t>(m_scrollX - offset.x);
+    m_scrollY = static_cast<int16_t>(m_scrollY - offset.y);
+    draw(canvas);
+    m_scrollX = savedScrollX;
+    m_scrollY = savedScrollY;
+}
+
 } // namespace enjin2

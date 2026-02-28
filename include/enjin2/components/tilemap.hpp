@@ -149,6 +149,19 @@ public:
     void draw(ICanvas<Pixel4>& canvas) override;
 
     /**
+     * @brief Draw with camera offset applied (Phase 44: CAM-09).
+     *
+     * Screen-space tilemaps (m_screenSpace==true) ignore offset and call draw().
+     * World-space tilemaps integrate the camera offset with the tilemap's own
+     * scroll offset: effective_scroll = m_scrollX - offset.x (additive because
+     * getScreenOffset() is the negative of camera position).
+     *
+     * @param canvas Target 4-bit canvas.
+     * @param offset Camera screen offset (= -camera_pos).
+     */
+    void drawWithOffset(ICanvas<Pixel4>& canvas, Point offset) override;
+
+    /**
      * @brief Continue drawing while the owner object is not queued for removal.
      * @return true if should continue, false otherwise.
      */

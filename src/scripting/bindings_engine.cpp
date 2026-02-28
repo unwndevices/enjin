@@ -5,6 +5,7 @@
 #include "../../include/enjin2/core/scene_state_machine.hpp"
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/components/position.hpp"
+#include "../../include/enjin2/components/camera.hpp"
 
 namespace enjin2 {
 
@@ -12,6 +13,14 @@ namespace enjin2 {
 static int lua_engine_event_on(lua_State* L);
 static int lua_engine_event_off(lua_State* L);
 static int lua_engine_event_emit(lua_State* L);
+
+// Forward declarations for engine.camera.* static binding functions (Phase 44)
+static int lua_engine_camera_setPosition(lua_State* L);
+static int lua_engine_camera_getPosition(lua_State* L);
+static int lua_engine_camera_lookAt(lua_State* L);
+static int lua_engine_camera_shake(lua_State* L);
+static int lua_engine_camera_setBounds(lua_State* L);
+static int lua_engine_camera_clearBounds(lua_State* L);
 
 //==============================================================================
 // engine.* Global Table (ENG-01..ENG-06)
@@ -118,6 +127,19 @@ void LuaBindings::registerEngineTable() {
     lua_newtable(L);
     luaBindFunctions(L, -1, kEventFuncs, ENJIN_ARRAY_LEN(kEventFuncs));
     lua_setfield(L, -2, "event");
+
+    // --- engine.camera sub-table (Phase 44: 2D camera system) ---
+    static const LuaFuncDef kCameraFuncs[] = {
+        {"setPosition",  lua_engine_camera_setPosition},
+        {"getPosition",  lua_engine_camera_getPosition},
+        {"lookAt",       lua_engine_camera_lookAt},
+        {"shake",        lua_engine_camera_shake},
+        {"setBounds",    lua_engine_camera_setBounds},
+        {"clearBounds",  lua_engine_camera_clearBounds},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kCameraFuncs, ENJIN_ARRAY_LEN(kCameraFuncs));
+    lua_setfield(L, -2, "camera");
 
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
@@ -621,6 +643,77 @@ static int lua_engine_event_emit(lua_State* L) {
 
     const char* name = luaL_checkstring(L, 1);
     bus->emit(name);
+    return 0;
+}
+
+//==============================================================================
+// engine.camera.* bindings (Phase 44: 2D camera system)
+//==============================================================================
+
+// Helper: retrieve active C_Camera from LuaBindings (follows input pointer pattern)
+static C_Camera* getActiveCamera(lua_State* L) {
+    LuaBindings* b = LuaBindings::getBindings(L);
+    return b ? b->getActiveCamera() : nullptr;
+}
+
+// --- engine.camera.setPosition(x, y) ---
+static int lua_engine_camera_setPosition(lua_State* L) {
+    C_Camera* cam = getActiveCamera(L);
+    if (!cam) return 0;  // silent no-op when no camera is active
+    float x = static_cast<float>(luaL_checknumber(L, 1));
+    float y = static_cast<float>(luaL_checknumber(L, 2));
+    cam->setPosition(x, y);
+    return 0;
+}
+
+// --- engine.camera.getPosition() -> x, y ---
+static int lua_engine_camera_getPosition(lua_State* L) {
+    C_Camera* cam = getActiveCamera(L);
+    if (!cam) { lua_pushnumber(L, 0); lua_pushnumber(L, 0); return 2; }
+    Vec2 pos = cam->getPosition();
+    lua_pushnumber(L, static_cast<lua_Number>(pos.x));
+    lua_pushnumber(L, static_cast<lua_Number>(pos.y));
+    return 2;
+}
+
+// --- engine.camera.lookAt(x, y [, speed]) ---
+static int lua_engine_camera_lookAt(lua_State* L) {
+    C_Camera* cam = getActiveCamera(L);
+    if (!cam) return 0;
+    float x = static_cast<float>(luaL_checknumber(L, 1));
+    float y = static_cast<float>(luaL_checknumber(L, 2));
+    float speed = lua_gettop(L) >= 3 ? static_cast<float>(luaL_checknumber(L, 3)) : 1.0f;
+    cam->lookAt(x, y, speed);
+    return 0;
+}
+
+// --- engine.camera.shake(intensity, duration) ---
+static int lua_engine_camera_shake(lua_State* L) {
+    C_Camera* cam = getActiveCamera(L);
+    if (!cam) return 0;
+    float intensity = static_cast<float>(luaL_checknumber(L, 1));
+    float duration = static_cast<float>(luaL_checknumber(L, 2));
+    cam->shake(intensity, duration);
+    return 0;
+}
+
+// --- engine.camera.setBounds(minX, minY, maxX, maxY) ---
+static int lua_engine_camera_setBounds(lua_State* L) {
+    C_Camera* cam = getActiveCamera(L);
+    if (!cam) return 0;
+    float minX = static_cast<float>(luaL_checknumber(L, 1));
+    float minY = static_cast<float>(luaL_checknumber(L, 2));
+    float maxX = static_cast<float>(luaL_checknumber(L, 3));
+    float maxY = static_cast<float>(luaL_checknumber(L, 4));
+    cam->setBounds(minX, minY, maxX, maxY);
+    return 0;
+}
+
+// --- engine.camera.clearBounds() ---
+static int lua_engine_camera_clearBounds(lua_State* L) {
+    C_Camera* cam = getActiveCamera(L);
+    if (!cam) return 0;
+    cam->clearBounds();
     return 0;
 }
 
