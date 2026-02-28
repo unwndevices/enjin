@@ -200,6 +200,12 @@ public:
      */
     void setInput(InputState* input);
 
+    /**
+     * @brief Get the script system (for testing and host integration)
+     * @return Reference to the LuaScriptSystem
+     */
+    LuaScriptSystem& getScriptSystem() { return *scriptSystem; }
+
 private:
     /**
      * @brief Initialize LuaScriptSystem and expose component dimensions

@@ -341,22 +341,39 @@ if(ENJIN2_BUILD_LUA)
     add_test(NAME state_machine_test COMMAND state_machine_test)
 
     # Sprite asset loading / .njn Binary Test
-    add_executable(sprite_load_test
-        sprite_load_test.cpp
-    )
-    target_include_directories(sprite_load_test PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-    )
-    target_link_libraries(sprite_load_test PRIVATE
-        enjin2_lua
-        enjin2_core
-        enjin2_graphics
-        GTest::gtest_main
-    )
-    add_test(NAME sprite_load_test COMMAND sprite_load_test)
+    # Only build sprite_load_test when GTest is available (guards against missing GTest on CI)
+    find_package(GTest QUIET)
+    if(GTest_FOUND)
+        add_executable(sprite_load_test
+            sprite_load_test.cpp
+        )
+        target_include_directories(sprite_load_test PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        )
+        target_link_libraries(sprite_load_test PRIVATE
+            enjin2_lua
+            enjin2_core
+            enjin2_graphics
+            GTest::gtest_main
+        )
+        add_test(NAME sprite_load_test COMMAND sprite_load_test)
+    endif()
 
     # Copy test .njn file to build directory for sprite_load_test to find
     file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_pikachu.njn" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/tests")
+
+    # EventBus test (Phase 42: EVENT-01..EVENT-05)
+    add_executable(eventbus_test
+        eventbus_test.cpp
+    )
+    target_include_directories(eventbus_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(eventbus_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME eventbus_test COMMAND eventbus_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

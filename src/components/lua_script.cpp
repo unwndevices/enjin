@@ -135,6 +135,10 @@ bool C_LuaScript::loadScriptFile(const std::string& filename) {
                     fsmComp->clearStates();
                 }
             }
+            // Phase 42 (EVENT-05): Clear event bus handlers from the previous script load.
+            // After clearHandlers() sets m_L=nullptr, setLuaState(L) re-arms for the new Lua state.
+            scriptSystem->getBindings().getEventBus().clearHandlers();
+            scriptSystem->getBindings().getEventBus().setLuaState(L);
 
             // Create new userdata and assign metatable
             ScriptProxy* proxy = static_cast<ScriptProxy*>(
@@ -225,6 +229,10 @@ bool C_LuaScript::executeScript(const std::string& code) {
                     fsmComp->clearStates();
                 }
             }
+            // Phase 42 (EVENT-05): Clear event bus handlers from the previous script load.
+            // After clearHandlers() sets m_L=nullptr, setLuaState(L) re-arms for the new Lua state.
+            scriptSystem->getBindings().getEventBus().clearHandlers();
+            scriptSystem->getBindings().getEventBus().setLuaState(L);
 
             // Create new userdata and assign metatable
             ScriptProxy* proxy = static_cast<ScriptProxy*>(
