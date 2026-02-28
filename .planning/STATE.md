@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 Phase: 44 of 44 (2D Camera System) — COMPLETE
 Plan: 02 COMPLETE — Phase 44 fully done
 Status: Phase 44 complete — C_Camera Lua bindings (CAM-07..CAM-09), engine.camera.* global sub-table, C_Camera_Proxy, C_Tilemap drawWithOffset camera integration
-Last activity: 2026-02-28 — Phase 44 Plan 02 complete (camera_lua_test 10/10 passing, CAM-07..CAM-09)
+Last activity: 2026-02-28 - Completed quick task 007: Implement 7 scripting API improvements
 
 Progress: [████████████████████] 100% (44 phases complete)
 
@@ -81,6 +81,12 @@ Recent decisions relevant to v1.6:
 ### Pending Todos
 
 None.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 007 | Implement 7 scripting API improvements: built-in constants, configurable resolution, engine.graphics namespace, text scale parameter, float-to-int coordinate casting, game-state manager, and text centering helpers | 2026-02-28 | 993d89f | Verified | [007-implement-7-scripting-api-improvements-b](./quick/007-implement-7-scripting-api-improvements-b/) |
 
 ### Blockers/Concerns
 
