@@ -175,6 +175,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_system.cpp
         src/components/lua_script.cpp
         src/components/timer.cpp
+        src/components/state_machine.cpp
     )
     # Private include directories for strict isolation
     target_include_directories(enjin2_lua
