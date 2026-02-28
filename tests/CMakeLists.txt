@@ -400,6 +400,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME tilemap_lua_test COMMAND tilemap_lua_test)
+
+    # Camera component test (Phase 44: CAM-01..CAM-06)
+    add_executable(camera_test
+        camera_test.cpp
+    )
+    target_include_directories(camera_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(camera_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME camera_test COMMAND camera_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
