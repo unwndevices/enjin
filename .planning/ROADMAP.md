@@ -121,7 +121,7 @@ Phases 27-38 complete. See milestones/v1.5-ROADMAP.md for full detail.
 | 19-22. Tomodachi Readiness | v1.3 | 7/7 | Complete | 2026-02-24 |
 | 23-26. Engine Capabilities | v1.4 | 8/8 | Complete | 2026-02-26 |
 | 27-38. Lua Scripting Foundation | v1.5 | 21/21 | Complete | 2026-02-28 |
-| 39. ComponentProxy | 1/1 | Complete   | 2026-02-28 | - |
-| 40. C_Timer | 1/1 | Complete   | 2026-02-28 | - |
-| 41. C_StateMachine | 1/1 | Complete   | 2026-02-28 | - |
-| 42. EventBus | 1/1 | Complete   | 2026-02-28 | - |
+| 39. ComponentProxy | 1/1 | Complete    | 2026-02-28 | - |
+| 40. C_Timer | 1/1 | Complete    | 2026-02-28 | - |
+| 41. C_StateMachine | 1/1 | Complete    | 2026-02-28 | - |
+| 42. EventBus | 1/1 | Complete    | 2026-02-28 | - |
