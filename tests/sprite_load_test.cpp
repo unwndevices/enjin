@@ -143,8 +143,8 @@ TEST_F(SpriteAssetLoaderTest, PoolFullReturnsNegOne) {
 
 TEST_F(SpriteAssetLoaderTest, DrawLoadedSprite) {
     // Provide a 4-bit canvas to draw onto
-    ICanvas<Pixel4> canvas(64, 64);
-    LuaCanvas lua_canvas(&canvas, true);
+    Canvas4<64, 64> canvas;
+    LuaCanvas lua_canvas(&canvas);
     lua_.setCanvas(&lua_canvas);
 
     // Load and draw pikachu
