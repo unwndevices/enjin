@@ -108,34 +108,80 @@ namespace math {
      * @brief Fast trigonometry using lookup table
      *
      * Uses 256-step table for 0-2pi range.
-     * Currently delegates to std sin/cos; will be replaced with actual LUT.
+     * Backed by a precomputed constexpr int16_t[256] sine table.
+     * Avoids std::sin/cos at runtime — suitable for embedded targets (ESP32).
      */
     class TrigLUT {
     private:
         static constexpr size_t TABLE_SIZE = 256;
         static constexpr float SCALE = TABLE_SIZE / TWO_PI;
 
-        static int16_t getSineValue(uint8_t index);
+        // Precomputed sine table: sin_table[i] = round(32767 * sin(i * 2*PI / 256))
+        // for i = 0..255. Generated once at compile time (constexpr).
+        static constexpr int16_t sin_table[256] = {
+               0,   804,  1607,  2410,  3211,  4011,  4807,  5601,
+            6392,  7179,  7961,  8739,  9511, 10278, 11038, 11793,
+           12539, 13278, 14009, 14732, 15446, 16150, 16845, 17530,
+           18204, 18867, 19519, 20159, 20787, 21402, 22004, 22594,
+           23169, 23731, 24278, 24811, 25329, 25832, 26319, 26790,
+           27244, 27683, 28105, 28510, 28897, 29268, 29621, 29955,
+           30272, 30571, 30851, 31113, 31356, 31580, 31785, 31970,
+           32137, 32284, 32412, 32520, 32609, 32678, 32727, 32757,
+           32767, 32757, 32727, 32678, 32609, 32520, 32412, 32284,
+           32137, 31970, 31785, 31580, 31356, 31113, 30851, 30571,
+           30272, 29955, 29621, 29268, 28897, 28510, 28105, 27683,
+           27244, 26790, 26319, 25832, 25329, 24811, 24278, 23731,
+           23169, 22594, 22004, 21402, 20787, 20159, 19519, 18867,
+           18204, 17530, 16845, 16150, 15446, 14732, 14009, 13278,
+           12539, 11793, 11038, 10278,  9511,  8739,  7961,  7179,
+            6392,  5601,  4807,  4011,  3211,  2410,  1607,   804,
+               0,  -804, -1607, -2410, -3211, -4011, -4807, -5601,
+           -6392, -7179, -7961, -8739, -9511,-10278,-11038,-11793,
+          -12539,-13278,-14009,-14732,-15446,-16150,-16845,-17530,
+          -18204,-18867,-19519,-20159,-20787,-21402,-22004,-22594,
+          -23169,-23731,-24278,-24811,-25329,-25832,-26319,-26790,
+          -27244,-27683,-28105,-28510,-28897,-29268,-29621,-29955,
+          -30272,-30571,-30851,-31113,-31356,-31580,-31785,-31970,
+          -32137,-32284,-32412,-32520,-32609,-32678,-32727,-32757,
+          -32767,-32757,-32727,-32678,-32609,-32520,-32412,-32284,
+          -32137,-31970,-31785,-31580,-31356,-31113,-30851,-30571,
+          -30272,-29955,-29621,-29268,-28897,-28510,-28105,-27683,
+          -27244,-26790,-26319,-25832,-25329,-24811,-24278,-23731,
+          -23169,-22594,-22004,-21402,-20787,-20159,-19519,-18867,
+          -18204,-17530,-16845,-16150,-15446,-14732,-14009,-13278,
+          -12539,-11793,-11038,-10278, -9511, -8739, -7961, -7179,
+           -6392, -5601, -4807, -4011, -3211, -2410, -1607,  -804
+        };
+
+        /**
+         * @brief Look up sine value for a given 8-bit table index
+         * @param index  Table index (0-255, wraps automatically)
+         * @return Sine value scaled to [-32767, 32767]
+         */
+        static inline int16_t getSineValue(uint8_t index) {
+            return sin_table[index];
+        }
 
     public:
         /**
          * @brief Fixed-point sine of a 256-step angle
-         * @param angle  Angle in 256ths of a full turn (0-255)
+         * @param angle  Angle in 256ths of a full turn (0-255, wraps)
          * @return Sine value scaled to [-32767, 32767]
          */
-        static int16_t sin(uint16_t angle) {
-            float rad = static_cast<float>(angle) * TWO_PI / 256.0f;
-            return static_cast<int16_t>(32767.0f * std::sin(rad));
+        static inline int16_t sin(uint16_t angle) {
+            return getSineValue(static_cast<uint8_t>(angle & 0xFF));
         }
 
         /**
          * @brief Fixed-point cosine of a 256-step angle
-         * @param angle  Angle in 256ths of a full turn (0-255)
+         *
+         * cos(x) = sin(x + 64) (quarter-turn phase offset)
+         *
+         * @param angle  Angle in 256ths of a full turn (0-255, wraps)
          * @return Cosine value scaled to [-32767, 32767]
          */
-        static int16_t cos(uint16_t angle) {
-            float rad = static_cast<float>(angle) * TWO_PI / 256.0f;
-            return static_cast<int16_t>(32767.0f * std::cos(rad));
+        static inline int16_t cos(uint16_t angle) {
+            return getSineValue(static_cast<uint8_t>((angle + 64) & 0xFF));
         }
 
         /**

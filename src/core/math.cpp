@@ -3,10 +3,8 @@
 namespace enjin2 {
 namespace math {
 
-// Implementation placeholder
-int16_t TrigLUT::getSineValue(uint8_t index) {
-    return 0; // Placeholder
-}
+// TrigLUT::getSineValue is now inline in math.hpp backed by constexpr sin_table.
+// This file retained for potential future non-inline math utilities.
 
 } // namespace math
 } // namespace enjin2
