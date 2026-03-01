@@ -340,6 +340,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME state_machine_test COMMAND state_machine_test)
 
+    # Overflow boundary test (Phase 46: TEST-02)
+    add_executable(overflow_test
+        overflow_test.cpp
+    )
+    target_include_directories(overflow_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(overflow_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME overflow_test COMMAND overflow_test)
+
     # Sprite asset loading / .njn Binary Test
     # Only build sprite_load_test when GTest is available (guards against missing GTest on CI)
     find_package(GTest QUIET)
