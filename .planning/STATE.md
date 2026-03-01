@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-01T20:13:27.729Z"
+last_updated: "2026-03-01T21:21:52.592Z"
 progress:
   total_phases: 16
   completed_phases: 11
-  total_plans: 32
-  completed_plans: 31
+  total_plans: 34
+  completed_plans: 32
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Phase 48 — Camera Follow and Save/Load
+**Current focus:** v1.7 Phase 49 — Coroutine Async Scheduler
 
 ## Current Position
 
-Phase: 48 of 52 (Camera Follow and Save/Load)
-Plan: 2 of 2 in current phase (complete)
-Status: Complete
-Last activity: 2026-03-01 — Phase 48 Plan 02 complete: VCV_RACK guard replaced with platform detection; engine.store.flush() and engine.store.path() bindings added
+Phase: 49 of 52 (Coroutine Async Scheduler)
+Plan: 2 of N in current phase (complete)
+Status: In Progress
+Last activity: 2026-03-01 — Phase 49 Plan 02 complete: luaopen_coroutine registered in ESP32 openEmbeddedLibraries() enabling engine.async.* scheduler on embedded targets
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 11 plans (Phases 43-48 complete)
+- v1.7 (in progress): 12 plans (Phases 43-48 complete, 49-02 complete)
 
 *Updated after each plan completion*
 
@@ -65,6 +65,7 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 48-01]: Scripts must store follow proxy in Lua global (not local) for it to survive GC between frames
 - [Phase 48-camera-follow-save-load]: Platform detection uses !defined(ESP32) && !defined(__EMSCRIPTEN__) for bindings_store.cpp file I/O guard — VCV_RACK was an accidental enabler
 - [Phase 48-camera-follow-save-load]: engine.store.flush() supplements auto-persist (does not clear the store); engine.store.path() is a void setter that auto-loads existing data
+- [Phase 49-coroutine-async-scheduler]: Coroutine library placed unconditionally in ESP32 openEmbeddedLibraries() — lightweight, no heap allocation, required for engine.async.* correctness
 
 ### Pending Todos
 
@@ -93,5 +94,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 48-01-PLAN.md (camera follow bindings)
+Stopped at: Completed 49-02-PLAN.md (coroutine library ESP32 registration)
 Resume file: None
