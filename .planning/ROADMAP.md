@@ -259,7 +259,7 @@ Plans:
 | 46. Bindings Refactoring + Null Safety | 2/2 | Complete    | 2026-03-01 | - |
 | 47. Debug Draw Bindings | 1/1 | Complete    | 2026-03-01 | - |
 | 48. Camera Follow + Save/Load | 2/2 | Complete    | 2026-03-01 | - |
-| 49. Coroutine/Async Scheduler | 2/2 | Complete   | 2026-03-01 | - |
+| 49. Coroutine/Async Scheduler | 2/2 | Complete    | 2026-03-01 | - |
 | 50. Tween Helpers | v1.7 | 0/2 | Not started | - |
 | 51. Persistent Objects | v1.7 | 0/2 | Not started | - |
 | 52. UI Component Bindings | v1.7 | 0/2 | Not started | - |
