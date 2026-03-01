@@ -257,7 +257,7 @@ Plans:
 | 44. 2D Camera System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 45. Physics Engine | v1.7 | 2/2 | Complete | 2026-03-01 |
 | 46. Bindings Refactoring + Null Safety | 2/2 | Complete    | 2026-03-01 | - |
-| 47. Debug Draw Bindings | 1/1 | Complete   | 2026-03-01 | - |
+| 47. Debug Draw Bindings | 1/1 | Complete    | 2026-03-01 | - |
 | 48. Camera Follow + Save/Load | v1.7 | 0/2 | Not started | - |
 | 49. Coroutine/Async Scheduler | v1.7 | 0/2 | Not started | - |
 | 50. Tween Helpers | v1.7 | 0/2 | Not started | - |
