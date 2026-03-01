@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
-#ifdef VCV_RACK
+#if !defined(ESP32) && !defined(__EMSCRIPTEN__)
     #include <fstream>
     #include <sstream>
 #endif
@@ -104,10 +104,10 @@ LuaStore::StoreSlot* LuaStore::findOrCreate(const char* key) {
 }
 
 //==============================================================================
-// JSON File I/O (VCV_RACK / Desktop only)
+// JSON File I/O (Desktop only — excluded on ESP32 and WASM)
 //==============================================================================
 
-#ifdef VCV_RACK
+#if !defined(ESP32) && !defined(__EMSCRIPTEN__)
 
 // Minimal JSON writer — only needs to handle our restricted types
 static void writeJsonEscaped(std::ofstream& out, const char* s) {
@@ -314,7 +314,7 @@ bool LuaStore::loadFromFile(const char* path) {
 }
 
 #else
-// ESP32 stub — NVS support deferred
+// ESP32 stub (STORE-03) / WASM stub (STORE-04) — deferred
 bool LuaStore::saveToFile(const char*) const { return false; }
 bool LuaStore::loadFromFile(const char*) { return false; }
 #endif
