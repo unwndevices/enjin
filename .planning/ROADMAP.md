@@ -219,7 +219,7 @@ Plans:
   1. A Lua script can call engine.scene.persist(proxy) and the referenced object survives a scene transition — its components continue updating and its scripts are not reloaded
   2. engine.scene.unpersist(proxy) removes the persistence flag and the object is destroyed on the next scene transition
   3. engine.scene.find(name) returns a valid proxy for a persistent object even when called from a scene that did not originally own that object
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 51-01-PLAN.md — PersistentObjectRegistry C++ (SSM-owned 4-slot fixed array), ObjectCollection extensions (extractObject, m_external[], inject/clear), applyDeferredTransition() modified, C++ unit tests
@@ -261,5 +261,5 @@ Plans:
 | 48. Camera Follow + Save/Load | 2/2 | Complete    | 2026-03-01 | - |
 | 49. Coroutine/Async Scheduler | 2/2 | Complete    | 2026-03-01 | - |
 | 50. Tween Helpers | 2/2 | Complete    | 2026-03-01 | - |
-| 51. Persistent Objects | v1.7 | 0/2 | Not started | - |
+| 51. Persistent Objects | 1/2 | In Progress|  | - |
 | 52. UI Component Bindings | v1.7 | 0/2 | Not started | - |

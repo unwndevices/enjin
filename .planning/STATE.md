@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-01T22:34:47.052Z"
+last_updated: "2026-03-02T00:15:07Z"
 progress:
   total_phases: 16
   completed_phases: 13
-  total_plans: 36
-  completed_plans: 35
+  total_plans: 38
+  completed_plans: 37
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Phase 50 — Tween Helpers
+**Current focus:** v1.7 Phase 51 — Persistent Objects
 
 ## Current Position
 
-Phase: 50 of 52 (Tween Helpers)
-Plan: 2 of 2 in current phase (complete)
+Phase: 51 of 52 (Persistent Objects)
+Plan: 1 of 2 in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-01 — Phase 50 Plan 02 complete: 12-case tween integration test suite; all 4 easing modes verified distinct; pool overflow, cancel, cancelAll, done_cb, hot-reload, multi-property, zero duration all covered
+Last activity: 2026-03-02 — Phase 51 Plan 01 complete: PersistentObjectRegistry (4-slot SSM-owned), extractObject/injectExternal/clearExternal, extended ObjectCollection iteration, applyDeferredTransition persistence; 41/41 tests pass
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 15 plans (Phases 43-49 complete, 50-01 and 50-02 complete)
+- v1.7 (in progress): 16 plans (Phases 43-49 complete, 50-01, 50-02, 51-01 complete)
 
 *Updated after each plan completion*
 
@@ -73,6 +73,9 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 50-01]: cancel leaves tween at current interpolated position; does NOT snap to end, does NOT fire done_cb
 - [Phase 50-01]: tickTweens called after tickCoroutines in SDL runner; clearTweens called alongside clearCoroutines in both registerAll() and setActiveScene()
 - [Phase 50]: hot-reload safety verified by pool exhaustion after registerAll() — all 8 tween slots must be allocatable again to confirm clearTweens fired correctly
+- [Phase 51-persistent-objects]: persistObject() immediately re-injects extracted object as external into current scene so object remains live during the scene it was persisted in
+- [Phase 51-persistent-objects]: PersistentObjectRegistry is nested public struct so tests can instantiate it directly without SSM overhead
+- [Phase 51-persistent-objects]: flushPendingRemovals fires at START of applyDeferredTransition before clearExternal so destroyed objects are never re-injected
 
 ### Pending Todos
 
@@ -82,7 +85,7 @@ None.
 
 - [Phase 25 CARRIED] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
 - [Phase 49 RESEARCH FLAG] LuaJIT CoCo availability on WASM/ESP32 must be verified before writing coroutine resume path
-- [Phase 51 RESEARCH FLAG] ObjectCollection::m_external[] update ordering requires design review before implementation
+- [Phase 51 RESEARCH FLAG RESOLVED] ObjectCollection::m_external[] update ordering: externals iterate AFTER owned objects in all methods — design resolved and implemented in 51-01
 
 ### Roadmap Evolution
 
@@ -100,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-01
-Stopped at: Completed 50-02-PLAN.md (tween test suite — 12-case integration tests for TWEEN-01..TWEEN-03)
+Last session: 2026-03-02
+Stopped at: Completed 51-01-PLAN.md (persistent objects C++ infrastructure — PersistentObjectRegistry, extractObject, m_external[] injection, 41/41 tests pass)
 Resume file: None

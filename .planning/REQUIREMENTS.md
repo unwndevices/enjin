@@ -48,8 +48,8 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### Persistent Objects
 
-- [ ] **PERSIST-01**: engine.scene.persist(proxy) flags object to survive scene transitions
-- [ ] **PERSIST-02**: engine.scene.unpersist(proxy) removes persistence flag
+- [x] **PERSIST-01**: engine.scene.persist(proxy) flags object to survive scene transitions
+- [x] **PERSIST-02**: engine.scene.unpersist(proxy) removes persistence flag
 - [ ] **PERSIST-03**: engine.scene.find() searches persistent registry in addition to active scene
 
 ### UI Components
@@ -118,8 +118,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TWEEN-01 | Phase 50 | Complete |
 | TWEEN-02 | Phase 50 | Complete |
 | TWEEN-03 | Phase 50 | Complete |
-| PERSIST-01 | Phase 51 | Pending |
-| PERSIST-02 | Phase 51 | Pending |
+| PERSIST-01 | Phase 51 | Complete |
+| PERSIST-02 | Phase 51 | Complete |
 | PERSIST-03 | Phase 51 | Pending |
 | UI-01 | Phase 52 | Pending |
 | UI-02 | Phase 52 | Pending |
