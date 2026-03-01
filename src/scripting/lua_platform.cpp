@@ -181,7 +181,11 @@ void LuaPlatform::openEmbeddedLibraries(lua_State* L) {
     // Table library (useful for data structures)
     luaL_requiref(L, LUA_TABLIBNAME, luaopen_table, 1);
     lua_pop(L, 1);
-    
+
+    // Coroutine library (required for engine.async.* scheduler — Phase 49: ASYNC-04)
+    luaL_requiref(L, LUA_COLIBNAME, luaopen_coroutine, 1);
+    lua_pop(L, 1);
+
     // Conditionally open other libraries based on available memory
     size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
     if (free_heap > 200 * 1024) {  // More than 200KB free
