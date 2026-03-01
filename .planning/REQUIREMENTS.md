@@ -30,8 +30,8 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### Save/Load
 
-- [ ] **STORE-01**: LuaStore JSON file I/O enabled for SDL3 builds (VCV_RACK guard replaced)
-- [ ] **STORE-02**: engine.store.flush() explicit save and engine.store.path() setter
+- [x] **STORE-01**: LuaStore JSON file I/O enabled for SDL3 builds (VCV_RACK guard replaced)
+- [x] **STORE-02**: engine.store.flush() explicit save and engine.store.path() setter
 
 ### Coroutine/Async
 
@@ -109,8 +109,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEBUG-03 | Phase 47 | Complete |
 | CAM-01 | Phase 48 | Pending |
 | CAM-02 | Phase 48 | Pending |
-| STORE-01 | Phase 48 | Pending |
-| STORE-02 | Phase 48 | Pending |
+| STORE-01 | Phase 48 | Complete |
+| STORE-02 | Phase 48 | Complete |
 | ASYNC-01 | Phase 49 | Pending |
 | ASYNC-02 | Phase 49 | Pending |
 | ASYNC-03 | Phase 49 | Pending |

@@ -173,7 +173,7 @@ Plans:
   2. engine.camera.stopFollow() clears the follow target so the camera stops tracking
   3. LuaStore reads and writes JSON files on SDL3 desktop builds without a VCV_RACK compile flag
   4. engine.store.flush() explicitly writes pending store data to disk; engine.store.path(filepath) redirects the save file location at runtime
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 48-01-PLAN.md — Camera follow: m_followTargetProxy in LuaBindings, engine.camera.follow/stopFollow bindings, tickCameraFollow(dt), camera_follow_test.cpp
@@ -258,7 +258,7 @@ Plans:
 | 45. Physics Engine | v1.7 | 2/2 | Complete | 2026-03-01 |
 | 46. Bindings Refactoring + Null Safety | 2/2 | Complete    | 2026-03-01 | - |
 | 47. Debug Draw Bindings | 1/1 | Complete    | 2026-03-01 | - |
-| 48. Camera Follow + Save/Load | v1.7 | 0/2 | Not started | - |
+| 48. Camera Follow + Save/Load | 1/2 | In Progress|  | - |
 | 49. Coroutine/Async Scheduler | v1.7 | 0/2 | Not started | - |
 | 50. Tween Helpers | v1.7 | 0/2 | Not started | - |
 | 51. Persistent Objects | v1.7 | 0/2 | Not started | - |

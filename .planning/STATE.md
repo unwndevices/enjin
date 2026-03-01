@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-01T19:01:41.964Z"
+last_updated: "2026-03-01T20:01:34.156Z"
 progress:
   total_phases: 16
   completed_phases: 10
-  total_plans: 30
-  completed_plans: 29
+  total_plans: 32
+  completed_plans: 30
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Phase 47 — Debug Draw Bindings
+**Current focus:** v1.7 Phase 48 — Camera Follow and Save/Load
 
 ## Current Position
 
-Phase: 47 of 52 (Debug Draw Bindings)
-Plan: 1 of 1 in current phase (complete)
+Phase: 48 of 52 (Camera Follow and Save/Load)
+Plan: 2 of 2 in current phase (complete)
 Status: Complete
-Last activity: 2026-03-01 — Phase 47 Plan 01 complete: engine.debug.* Lua sub-table with 5th compositor layer
+Last activity: 2026-03-01 — Phase 48 Plan 02 complete: VCV_RACK guard replaced with platform detection; engine.store.flush() and engine.store.path() bindings added
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 9 plans (Phases 43-47 complete)
+- v1.7 (in progress): 11 plans (Phases 43-48 complete)
 
 *Updated after each plan completion*
 
@@ -60,6 +60,8 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 46]: overflow_test uses C_LuaScript fixture (not raw LuaEngine) because LuaEventBus::subscribe() requires m_L != nullptr
 - [Phase 47]: Debug layer (index 4) excluded from g_lua_layers — accessible only via engine.debug.* not setLayer()
 - [Phase 47]: REQUIRE_DEBUG_CANVAS macro provides zero-cost early-return guard when debug is disabled or canvas is null
+- [Phase 48-camera-follow-save-load]: Platform detection uses !defined(ESP32) && !defined(__EMSCRIPTEN__) for bindings_store.cpp file I/O guard — VCV_RACK was an accidental enabler
+- [Phase 48-camera-follow-save-load]: engine.store.flush() supplements auto-persist (does not clear the store); engine.store.path() is a void setter that auto-loads existing data
 
 ### Pending Todos
 
@@ -88,5 +90,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 47-01-PLAN.md (debug draw bindings)
+Stopped at: Completed 48-02-PLAN.md (store flush/path bindings)
 Resume file: None
