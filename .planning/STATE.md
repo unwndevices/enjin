@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-01T18:47:16.634Z"
+last_updated: "2026-03-01T18:58:34.367Z"
 progress:
   total_phases: 16
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 30
-  completed_plans: 28
+  completed_plans: 29
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Phase 46 — Bindings Refactoring + Null Safety
+**Current focus:** v1.7 Phase 47 — Debug Draw Bindings
 
 ## Current Position
 
-Phase: 46 of 52 (Bindings Refactoring + Null Safety)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-03-01 — Phase 46 Plan 01 complete: bindings.cpp split into bindings_proxy.cpp
+Phase: 47 of 52 (Debug Draw Bindings)
+Plan: 1 of 1 in current phase (complete)
+Status: Complete
+Last activity: 2026-03-01 — Phase 47 Plan 01 complete: engine.debug.* Lua sub-table with 5th compositor layer
 
-Progress: [######░░░░░░░░░░░░░░] 32% (phases 43-45 complete; phase 46 in progress)
+Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
 ## Performance Metrics
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 32% (phases 43-45 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 7 plans (Phases 43-45 complete, Phase 46 Plan 01 complete)
+- v1.7 (in progress): 9 plans (Phases 43-47 complete)
 
 *Updated after each plan completion*
 
@@ -58,6 +58,8 @@ Key decisions affecting v1.7 phases 46-52:
 - PersistentObjectRegistry owned by SceneStateMachine (not LuaBindings) — object ownership is C++ level
 - [Phase 46]: LuaWrapper is header-only: delegates to LuaEngine + LuaBindings; engine declared before bindings (C++ member init order)
 - [Phase 46]: overflow_test uses C_LuaScript fixture (not raw LuaEngine) because LuaEventBus::subscribe() requires m_L != nullptr
+- [Phase 47]: Debug layer (index 4) excluded from g_lua_layers — accessible only via engine.debug.* not setLayer()
+- [Phase 47]: REQUIRE_DEBUG_CANVAS macro provides zero-cost early-return guard when debug is disabled or canvas is null
 
 ### Pending Todos
 
@@ -86,5 +88,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 46-01-PLAN.md (bindings monolith split)
+Stopped at: Completed 47-01-PLAN.md (debug draw bindings)
 Resume file: None

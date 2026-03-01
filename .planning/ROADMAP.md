@@ -70,7 +70,7 @@ Phases 39-42 complete. See milestones/v1.6-ROADMAP.md for full detail.
 - [x] **Phase 44: 2D Camera System** - Scene render pipeline, drawWithOffset(), engine.camera.* Lua API (completed 2026-02-28)
 - [x] **Phase 45: Optimized 2D Physics Engine** - engine.physics.* stateless helpers, TrigLUT, DDA raycast (completed 2026-03-01)
 - [x] **Phase 46: Bindings Refactoring + Null Safety** - Split bindings.cpp monolith, harden null guards, fix sprite test, add overflow tests (completed 2026-03-01)
-- [ ] **Phase 47: Debug Draw Bindings** - engine.debug.* sub-table routing to dedicated debug canvas with zero-cost toggle
+- [x] **Phase 47: Debug Draw Bindings** - engine.debug.* sub-table routing to dedicated debug canvas with zero-cost toggle (completed 2026-03-01)
 - [ ] **Phase 48: Camera Follow + Save/Load** - engine.camera.follow/stopFollow, LuaStore SDL3 I/O, engine.store.flush/path
 - [ ] **Phase 49: Coroutine/Async Scheduler** - engine.async.* 8-slot coroutine pool with wait/cancel, ESP32 library open
 - [ ] **Phase 50: Tween Helpers** - engine.tween.* 8-slot pool with 4 inline easing functions, proxy-field animation
@@ -158,7 +158,7 @@ Plans:
   2. engine.debug.text renders a string overlay at the specified position on the debug canvas
   3. Setting engine.debug.enabled = false suppresses all debug draw calls with zero per-frame cost (no draw calls issued)
   4. Debug shapes appear above all game content (top layer) and are cleared automatically each frame without script intervention
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 47-01-PLAN.md — ENJIN_LAYER_COUNT to 5, bindings_debug.cpp with engine.debug.* sub-table (rect/circle/line/cross/text/setEnabled/getEnabled), SDL runner 5th layer wiring, debug_draw_test.cpp Lua integration test
@@ -257,7 +257,7 @@ Plans:
 | 44. 2D Camera System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 45. Physics Engine | v1.7 | 2/2 | Complete | 2026-03-01 |
 | 46. Bindings Refactoring + Null Safety | 2/2 | Complete    | 2026-03-01 | - |
-| 47. Debug Draw Bindings | v1.7 | 0/1 | Not started | - |
+| 47. Debug Draw Bindings | 1/1 | Complete   | 2026-03-01 | - |
 | 48. Camera Follow + Save/Load | v1.7 | 0/2 | Not started | - |
 | 49. Coroutine/Async Scheduler | v1.7 | 0/2 | Not started | - |
 | 50. Tween Helpers | v1.7 | 0/2 | Not started | - |

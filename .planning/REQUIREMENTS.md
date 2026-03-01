@@ -19,9 +19,9 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### Debug Draw
 
-- [ ] **DEBUG-01**: engine.debug.rect/circle/line/cross draw bindings route to dedicated debug canvas
-- [ ] **DEBUG-02**: engine.debug.text overlay binding for debug text display
-- [ ] **DEBUG-03**: engine.debug.enabled boolean toggle (zero cost when disabled)
+- [x] **DEBUG-01**: engine.debug.rect/circle/line/cross draw bindings route to dedicated debug canvas
+- [x] **DEBUG-02**: engine.debug.text overlay binding for debug text display
+- [x] **DEBUG-03**: engine.debug.enabled boolean toggle (zero cost when disabled)
 
 ### Camera Follow
 
@@ -104,9 +104,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BIND-02 | Phase 46 | Complete |
 | TEST-01 | Phase 46 | Complete |
 | TEST-02 | Phase 46 | Complete |
-| DEBUG-01 | Phase 47 | Pending |
-| DEBUG-02 | Phase 47 | Pending |
-| DEBUG-03 | Phase 47 | Pending |
+| DEBUG-01 | Phase 47 | Complete |
+| DEBUG-02 | Phase 47 | Complete |
+| DEBUG-03 | Phase 47 | Complete |
 | CAM-01 | Phase 48 | Pending |
 | CAM-02 | Phase 48 | Pending |
 | STORE-01 | Phase 48 | Pending |
