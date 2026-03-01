@@ -1,5 +1,25 @@
 # Milestones
 
+## v1.6 Game Ready (Shipped: 2026-02-28)
+
+**Phases completed:** 4 phases (39-42), 4 plans, 8 tasks
+**Timeline:** 30 days (2026-01-29 → 2026-02-28)
+**Git range:** e8d8fcc..59a75ca, 22 commits, 38 files changed, +9,457 / -75 lines
+
+**Key accomplishments:**
+- ComponentProxy self:get() infrastructure — Lua scripts access sibling components with typed proxy userdata and Component::~Component() stale-safe invalidation
+- C_Timer with delayed/repeating Lua callbacks — 8-slot zero-alloc timer array with luaL_ref lifecycle management (after/every/cancel)
+- C_StateMachine with deferred transitions — named states with enter/update/exit hooks, deferred transition model matching SceneStateMachine semantics
+- EventBus scene-scoped pub/sub — on/off/emit API with fixed-capacity arrays, re-entrant-safe emit via ref snapshotting, hot-reload cleanup
+
+**Tech debt (non-blocking):**
+- Single-proxy-per-component constraint: multiple self:get() calls overwrite proxy registration (last wins)
+- EventBus m_L=nullptr window between scene change and script load (safe for all Lua-reachable paths)
+
+**See:** [milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md) | [milestones/v1.6-REQUIREMENTS.md](milestones/v1.6-REQUIREMENTS.md)
+
+---
+
 ## v1.4 Engine Capabilities (Shipped: 2026-02-26)
 
 **Phases completed:** 4 phases (23-26), 8 plans, 15 tasks

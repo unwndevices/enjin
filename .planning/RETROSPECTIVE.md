@@ -92,6 +92,46 @@
 
 ---
 
+## Milestone: v1.6 — Game Ready
+
+**Shipped:** 2026-02-28
+**Phases:** 4 | **Plans:** 4 | **Tasks:** 8
+
+### What Was Built
+- ComponentProxy self:get() — typed proxy userdata for accessing sibling components with Component::~Component() stale-safe invalidation
+- C_Timer with delayed/repeating Lua callbacks (after/every/cancel) — 8-slot zero-alloc timer array with luaL_ref lifecycle management
+- C_StateMachine with deferred transitions — named states with enter/update/exit hooks matching SceneStateMachine semantics
+- EventBus scene-scoped pub/sub — on/off/emit API with fixed-capacity arrays, re-entrant-safe emit via ref snapshotting
+
+### What Worked
+- v1.5 patterns (ComponentProxy, luaL_ref cleanup, callWithProxy dispatch) directly applied — Phases 40-42 each executed in under 10 minutes
+- Each phase established a clear pattern that the next phase replicated (39 -> 40 -> 41 -> 42): proxy metatable registration, hot-reload cleanup in executeScript/loadScriptFile, destruction-order safety in C_LuaScript destructor
+- Zero deviations from plan on Phases 39-41; Phase 42 had minor deviations (forward declarations, executeScript hook) all auto-fixed
+- Pre-milestone audit (v1.6-MILESTONE-AUDIT.md) confirmed 19/19 requirements, 25/25 observable truths — no gap closure phase needed
+
+### What Was Inefficient
+- `gsd-tools milestone complete` CLI still miscounts phases (counted 7 instead of 4) — this is the third milestone where manual correction was needed
+- The REQUIREMENTS.md grew to include phases 43-45 content that belongs to v1.7 — mixed-scope requirements doc reduced archival clarity
+- Phases 40-42 plans marked as "TBD" in ROADMAP.md phase details despite being executed — stale plan references in roadmap
+
+### Patterns Established
+- **clearX() sets m_L=nullptr sentinel**: prevents double-unref across clearTimers(), clearStates(), clearHandlers() — universal pattern for luaL_ref-owning components
+- **C_LuaScript destructor cleanup chain**: call sibling component clearX() before scriptSystem->shutdown() — handles component array destruction order
+- **emit() ref snapshotting**: copy callback refs to local array before pcall loop for re-entrant safety
+- **Fixed-capacity arrays for zero-alloc components**: Channel[16], Subscriber[8], TimerEntry[8], StateEntry[8] — consistent capacity limits across all game components
+
+### Key Lessons
+1. When a milestone establishes a clear pattern (Phase 39 ComponentProxy), subsequent phases execute extremely fast by replication — 4-5 minutes per phase for 40-42
+2. Pre-milestone audit as a mandatory gate (established in v1.5) continues to prove its value — v1.6 passed cleanly because patterns were well-established
+3. REQUIREMENTS.md scope should be strictly milestone-scoped — mixing v1.6 and v1.7 requirements in one file creates archival confusion
+
+### Cost Observations
+- Model mix: balanced profile (sonnet for research/planning, opus for execution)
+- Sessions: 1-2 (all 4 phases executed in rapid succession)
+- Notable: 4 plans in ~50 min total — fastest milestone execution, driven by pattern replication from Phase 39
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -104,6 +144,7 @@
 | v1.3 | 4 | 7 | Feature milestone — lua_CFunction pattern established |
 | v1.4 | 4 | 8 | Engine capabilities — fastest execution, research-driven plans |
 | v1.5 | 12 | 21 | Scripting foundation — audit-driven gap closure, pointer-to-pointer registry, live-wiring tests |
+| v1.6 | 4 | 4 | Game ready — pattern replication from Phase 39, fastest milestone, audit passed clean |
 
 ### Cumulative Quality
 
@@ -115,6 +156,7 @@
 | v1.3 | 2 | input_test, palette_test |
 | v1.4 | 4 | sprite_test, compositor_test |
 | v1.5 | 22+ | scene_render, named_objects, scene_transition, engine_table, script_proxy, error_policy, input_callback, gc_assert, drawable_decoupling, proxy_lifetime, live-wiring |
+| v1.6 | 27+ | component_proxy_test, timer_test, state_machine_test, eventbus_test |
 
 ### Top Lessons (Verified Across Milestones)
 
