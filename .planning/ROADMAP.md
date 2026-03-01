@@ -72,7 +72,7 @@ Phases 39-42 complete. See milestones/v1.6-ROADMAP.md for full detail.
 - [x] **Phase 46: Bindings Refactoring + Null Safety** - Split bindings.cpp monolith, harden null guards, fix sprite test, add overflow tests (completed 2026-03-01)
 - [x] **Phase 47: Debug Draw Bindings** - engine.debug.* sub-table routing to dedicated debug canvas with zero-cost toggle (completed 2026-03-01)
 - [x] **Phase 48: Camera Follow + Save/Load** - engine.camera.follow/stopFollow, LuaStore SDL3 I/O, engine.store.flush/path (completed 2026-03-01)
-- [ ] **Phase 49: Coroutine/Async Scheduler** - engine.async.* 8-slot coroutine pool with wait/cancel, ESP32 library open
+- [x] **Phase 49: Coroutine/Async Scheduler** - engine.async.* 8-slot coroutine pool with wait/cancel, ESP32 library open (completed 2026-03-01)
 - [ ] **Phase 50: Tween Helpers** - engine.tween.* 8-slot pool with 4 inline easing functions, proxy-field animation
 - [ ] **Phase 51: Persistent Objects** - engine.scene.persist/unpersist, PersistentObjectRegistry, find() searches persistent registry
 - [ ] **Phase 52: UI Component Bindings** - engine.ui.* stateless draw calls: progressBar, statBar, panel, label
@@ -189,7 +189,7 @@ Plans:
   2. engine.async.wait(seconds) called inside a coroutine pauses that coroutine for the specified duration and resumes it automatically without script polling
   3. engine.async.cancel(id) stops a running coroutine and engine.async.cancelAll() stops all coroutines; both clean up Lua refs correctly
   4. Coroutine scripts work on ESP32 (coroutine library opened in openEmbeddedLibraries()) and survive F5 hot reload without dangling thread refs
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 49-01-PLAN.md — CoroutineSlot[8] pool in LuaBindings, bindings_async.cpp (start/wait/cancel/cancelAll), tickCoroutines() in SDL runner, clearCoroutines() in registerAll/setActiveScene, coroutine_async_test.cpp
@@ -259,7 +259,7 @@ Plans:
 | 46. Bindings Refactoring + Null Safety | 2/2 | Complete    | 2026-03-01 | - |
 | 47. Debug Draw Bindings | 1/1 | Complete    | 2026-03-01 | - |
 | 48. Camera Follow + Save/Load | 2/2 | Complete    | 2026-03-01 | - |
-| 49. Coroutine/Async Scheduler | 1/2 | In Progress|  | - |
+| 49. Coroutine/Async Scheduler | 2/2 | Complete   | 2026-03-01 | - |
 | 50. Tween Helpers | v1.7 | 0/2 | Not started | - |
 | 51. Persistent Objects | v1.7 | 0/2 | Not started | - |
 | 52. UI Component Bindings | v1.7 | 0/2 | Not started | - |

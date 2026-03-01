@@ -35,9 +35,9 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### Coroutine/Async
 
-- [ ] **ASYNC-01**: engine.async.start(fn) registers coroutine in 8-slot scheduler
-- [ ] **ASYNC-02**: engine.async.wait(seconds) yields coroutine and resumes after delay
-- [ ] **ASYNC-03**: engine.async.cancel(id) and engine.async.cancelAll() cleanup
+- [x] **ASYNC-01**: engine.async.start(fn) registers coroutine in 8-slot scheduler
+- [x] **ASYNC-02**: engine.async.wait(seconds) yields coroutine and resumes after delay
+- [x] **ASYNC-03**: engine.async.cancel(id) and engine.async.cancelAll() cleanup
 - [x] **ASYNC-04**: Coroutine library opened on ESP32 in openEmbeddedLibraries()
 
 ### Tween Helpers
@@ -111,9 +111,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAM-02 | Phase 48 | Complete |
 | STORE-01 | Phase 48 | Complete |
 | STORE-02 | Phase 48 | Complete |
-| ASYNC-01 | Phase 49 | Pending |
-| ASYNC-02 | Phase 49 | Pending |
-| ASYNC-03 | Phase 49 | Pending |
+| ASYNC-01 | Phase 49 | Complete |
+| ASYNC-02 | Phase 49 | Complete |
+| ASYNC-03 | Phase 49 | Complete |
 | ASYNC-04 | Phase 49 | Complete |
 | TWEEN-01 | Phase 50 | Pending |
 | TWEEN-02 | Phase 50 | Pending |

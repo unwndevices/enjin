@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-01T21:21:52.592Z"
+last_updated: "2026-03-01T21:27:48Z"
 progress:
   total_phases: 16
   completed_phases: 11
   total_plans: 34
-  completed_plans: 32
+  completed_plans: 33
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 ## Current Position
 
 Phase: 49 of 52 (Coroutine Async Scheduler)
-Plan: 2 of N in current phase (complete)
+Plan: 1 of N in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-01 — Phase 49 Plan 02 complete: luaopen_coroutine registered in ESP32 openEmbeddedLibraries() enabling engine.async.* scheduler on embedded targets
+Last activity: 2026-03-01 — Phase 49 Plan 01 complete: 8-slot coroutine pool with engine.async.start/wait/cancel/cancelAll; lua_resume compat guard; tickCoroutines in SDL runner; clearCoroutines on hot-reload/scene-change
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 12 plans (Phases 43-48 complete, 49-02 complete)
+- v1.7 (in progress): 13 plans (Phases 43-48 complete, 49-01 and 49-02 complete)
 
 *Updated after each plan completion*
 
@@ -66,6 +66,9 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 48-camera-follow-save-load]: Platform detection uses !defined(ESP32) && !defined(__EMSCRIPTEN__) for bindings_store.cpp file I/O guard — VCV_RACK was an accidental enabler
 - [Phase 48-camera-follow-save-load]: engine.store.flush() supplements auto-persist (does not clear the store); engine.store.path() is a void setter that auto-loads existing data
 - [Phase 49-coroutine-async-scheduler]: Coroutine library placed unconditionally in ESP32 openEmbeddedLibraries() — lightweight, no heap allocation, required for engine.async.* correctness
+- [Phase 49-01]: Float epsilon 0.001f used in tickCoroutines wait timer — 5*0.1f != 0.5f exactly in IEEE 754 float
+- [Phase 49-01]: Post-yield dt subtraction: after lua_resume returns LUA_YIELD, subtract current frame dt so start tick counts toward wait duration
+- [Phase 49-01]: clearSlot uses template<typename Slot> to access private CoroutineSlot from file-scope static in bindings_async.cpp
 
 ### Pending Todos
 
@@ -94,5 +97,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 49-02-PLAN.md (coroutine library ESP32 registration)
+Stopped at: Completed 49-01-PLAN.md (coroutine async scheduler bindings)
 Resume file: None
