@@ -219,11 +219,11 @@ Plans:
   1. A Lua script can call engine.scene.persist(proxy) and the referenced object survives a scene transition — its components continue updating and its scripts are not reloaded
   2. engine.scene.unpersist(proxy) removes the persistence flag and the object is destroyed on the next scene transition
   3. engine.scene.find(name) returns a valid proxy for a persistent object even when called from a scene that did not originally own that object
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 51-01: PersistentObjectRegistry C++ — SSM-owned fixed array, ObjectCollection::m_external[] non-owning injection, applyDeferredTransition() modified, overflow test
-- [ ] 51-02: engine.scene.persist/unpersist/find bindings — Lua integration tests (persist across transition, unpersist, find from new scene)
+- [ ] 51-01-PLAN.md — PersistentObjectRegistry C++ (SSM-owned 4-slot fixed array), ObjectCollection extensions (extractObject, m_external[], inject/clear), applyDeferredTransition() modified, C++ unit tests
+- [ ] 51-02-PLAN.md — engine.scene.persist/unpersist/find Lua bindings, extended find() with persistent fallback, Lua integration tests (8 cases)
 
 ### Phase 52: UI Component Bindings
 
