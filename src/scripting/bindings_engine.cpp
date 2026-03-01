@@ -208,6 +208,9 @@ void LuaBindings::registerEngineTable() {
     luaBindFunctions(L, -1, kPhysicsFuncs, ENJIN_ARRAY_LEN(kPhysicsFuncs));
     lua_setfield(L, -2, "physics");
 
+    // --- engine.debug sub-table (Phase 47: DEBUG-01..DEBUG-03) ---
+    registerDebugSubtable(L);
+
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
     lua_setfield(L, -2, "log");
