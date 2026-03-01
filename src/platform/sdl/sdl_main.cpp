@@ -327,6 +327,8 @@ int main(int argc, char* argv[]) {
                 } else {
                     lua_pop(lua_L, 1);
                 }
+                // Tick camera follow after Lua update (Phase 48: CAM-01 set-once follow pattern)
+                g_lua.getBindings().tickCameraFollow(dt);
             }
             if (lua_ok) {
                 lua_State* lua_L = g_lua.getEngine().getState();

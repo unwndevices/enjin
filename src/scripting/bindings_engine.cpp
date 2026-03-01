@@ -21,6 +21,8 @@ static int lua_engine_camera_lookAt(lua_State* L);
 static int lua_engine_camera_shake(lua_State* L);
 static int lua_engine_camera_setBounds(lua_State* L);
 static int lua_engine_camera_clearBounds(lua_State* L);
+// Note: lua_engine_camera_follow and lua_engine_camera_stopFollow are LuaBindings
+// member functions (defined later) — no file-scope forward declarations needed.
 
 //==============================================================================
 // engine.* Global Table (ENG-01..ENG-06)
@@ -138,6 +140,8 @@ void LuaBindings::registerEngineTable() {
         {"shake",        lua_engine_camera_shake},
         {"setBounds",    lua_engine_camera_setBounds},
         {"clearBounds",  lua_engine_camera_clearBounds},
+        {"follow",       lua_engine_camera_follow},      // Phase 48: CAM-01
+        {"stopFollow",   lua_engine_camera_stopFollow},  // Phase 48: CAM-02
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kCameraFuncs, ENJIN_ARRAY_LEN(kCameraFuncs));
@@ -904,6 +908,66 @@ static int lua_engine_camera_clearBounds(lua_State* L) {
     if (!cam) return 0;
     cam->clearBounds();
     return 0;
+}
+
+//==============================================================================
+// engine.camera.follow / stopFollow bindings (Phase 48: CAM-01, CAM-02)
+//==============================================================================
+
+// --- engine.camera.follow(proxy [, speed]) --- CAM-01 ---
+// Stores the follow target proxy in LuaBindings so tickCameraFollow() can track it each frame.
+// If proxy is nil, invalid, or has a null object, silently clears the follow target (no error).
+// Optional arg 2: lerp speed (default 0.1f).
+// Implemented as LuaBindings member function to access private m_followTargetProxy/m_followSpeed.
+int LuaBindings::lua_engine_camera_follow(lua_State* L) {
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) return 0;
+
+    auto* proxy = static_cast<ObjectProxy*>(luaL_testudata(L, 1, "ObjectProxy"));
+    if (!proxy || !proxy->valid || !proxy->object) {
+        // nil, non-proxy, invalid proxy, or destroyed object — silent stop
+        b->m_followTargetProxy = nullptr;
+        return 0;
+    }
+
+    float speed = (lua_gettop(L) >= 2) ? static_cast<float>(luaL_optnumber(L, 2, 0.1)) : 0.1f;
+    b->m_followTargetProxy = proxy;
+    b->m_followSpeed       = speed;
+    return 0;
+}
+
+// --- engine.camera.stopFollow() --- CAM-02 ---
+// Clears the follow target so the camera stops tracking. Silent no-op if not following.
+// Implemented as LuaBindings member function to access private m_followTargetProxy.
+int LuaBindings::lua_engine_camera_stopFollow(lua_State* L) {
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) return 0;
+    b->m_followTargetProxy = nullptr;
+    return 0;
+}
+
+//==============================================================================
+// LuaBindings::tickCameraFollow — per-frame follow tick (called from sdl_main.cpp)
+//==============================================================================
+
+void LuaBindings::tickCameraFollow(float /*dt*/) {
+    if (!m_followTargetProxy) return;
+
+    // Check if the proxy's target has been destroyed
+    if (!m_followTargetProxy->valid || !m_followTargetProxy->object) {
+        m_followTargetProxy = nullptr;  // target destroyed — silent stop
+        return;
+    }
+
+    C_Camera* cam = getActiveCamera();
+    if (!cam) return;
+
+    auto* pos = m_followTargetProxy->object->getComponent<C_Position>();
+    if (!pos) return;
+
+    cam->lookAt(static_cast<float>(pos->getPosition().x),
+                static_cast<float>(pos->getPosition().y),
+                m_followSpeed);
 }
 
 } // namespace enjin2

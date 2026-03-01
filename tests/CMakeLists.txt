@@ -491,6 +491,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME debug_draw_test COMMAND debug_draw_test)
+
+    # Camera follow binding test (Phase 48: CAM-01, CAM-02)
+    add_executable(camera_follow_test
+        camera_follow_test.cpp
+    )
+    target_include_directories(camera_follow_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(camera_follow_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME camera_follow_test COMMAND camera_follow_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)

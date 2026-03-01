@@ -433,6 +433,10 @@ private:
     LuaCanvas* m_debugCanvas{nullptr};   ///< Non-owning; top debug layer, set by host
     bool       m_debugEnabled{true};     ///< engine.debug.enabled toggle -- true by default
 
+    // -- Camera follow (Phase 48: CAM-01, CAM-02) -----------------------------------
+    ObjectProxy* m_followTargetProxy{nullptr};  ///< Non-owning; null = not following
+    float        m_followSpeed{0.1f};           ///< lerp speed passed to lookAt()
+
     // -- Lightweight global state machine (engine.state.*) ----------------------
     static constexpr int MAX_GAME_STATES = 16;  ///< Maximum named states
     char m_currentGameState[64]{"none"};         ///< Current game state name
@@ -529,6 +533,16 @@ public:
      * @return Current active camera or nullptr
      */
     C_Camera* getActiveCamera() const { return m_activeCamera; }
+
+    /**
+     * @brief Tick camera follow — called automatically each frame from the update path.
+     *
+     * Reads target position from m_followTargetProxy and calls cam->lookAt().
+     * If the proxy is invalid or destroyed, silently clears the follow target.
+     * No-op if no follow target is set or no active camera is available.
+     * @param dt Delta time in seconds (unused; forwarded for future use)
+     */
+    void tickCameraFollow(float dt);
 
     /**
      * @brief Inject debug canvas pointer (called from host alongside setLayers)
@@ -740,6 +754,10 @@ private:
     static int lua_engine_random_seed(lua_State* L);
     static int lua_engine_random_integer(lua_State* L);
     static int lua_engine_random_float(lua_State* L);
+
+    // engine.camera.follow/stopFollow binding functions (Phase 48: CAM-01, CAM-02)
+    static int lua_engine_camera_follow(lua_State* L);
+    static int lua_engine_camera_stopFollow(lua_State* L);
 
     // engine.store.* binding functions (persistent KV store)
     static int lua_engine_store_save(lua_State* L);
