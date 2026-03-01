@@ -158,10 +158,10 @@ Plans:
   2. engine.debug.text renders a string overlay at the specified position on the debug canvas
   3. Setting engine.debug.enabled = false suppresses all debug draw calls with zero per-frame cost (no draw calls issued)
   4. Debug shapes appear above all game content (top layer) and are cleared automatically each frame without script intervention
-**Plans:** TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 47-01: bindings_debug.cpp — m_debugCanvas wired to top layer, engine.debug.* sub-table (rect/circle/line/cross/text/enabled), SDL runner auto-clear before draw pass
+- [ ] 47-01-PLAN.md — ENJIN_LAYER_COUNT to 5, bindings_debug.cpp with engine.debug.* sub-table (rect/circle/line/cross/text/setEnabled/getEnabled), SDL runner 5th layer wiring, debug_draw_test.cpp Lua integration test
 
 ### Phase 48: Camera Follow + Save/Load
 
