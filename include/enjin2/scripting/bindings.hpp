@@ -445,6 +445,17 @@ private:
     int  m_stateOnExitRefs[MAX_GAME_STATES]{};   ///< Lua registry refs for on_exit
     int  m_stateCount{0};                        ///< Number of registered states
 
+    // -- Coroutine scheduler (Phase 49: ASYNC-01..ASYNC-03) -----------------------
+    static constexpr int COROUTINE_POOL_SIZE = 8;  ///< Fixed coroutine pool — zero alloc
+    struct CoroutineSlot {
+        int   threadRef{LUA_NOREF};   ///< luaL_ref handle anchoring the coroutine thread; LUA_NOREF = inactive
+        float waitRemaining{0.0f};    ///< seconds until next resume (0 = ready now)
+        int   id{0};                  ///< monotonically increasing cancel ID returned to Lua
+        bool  active{false};          ///< slot in use
+    };
+    CoroutineSlot m_coroutinePool[COROUTINE_POOL_SIZE]; ///< Fixed coroutine pool
+    int m_nextCoroutineId{0};                           ///< Next ID to assign (wraps are fine)
+
 public:
     /**
      * @brief Constructor
@@ -543,6 +554,19 @@ public:
      * @param dt Delta time in seconds (unused; forwarded for future use)
      */
     void tickCameraFollow(float dt);
+
+    /**
+     * @brief Tick all active coroutines — resume ready ones via lua_resume.
+     * Called once per frame from SDL runner OUTSIDE any pcall scope (avoids yield-across-pcall).
+     * @param dt Delta time in seconds for wait timer decrement
+     */
+    void tickCoroutines(float dt);
+
+    /**
+     * @brief Cancel all active coroutines and unref their threads.
+     * Called on scene transition (setActiveScene) and hot-reload (registerAll).
+     */
+    void clearCoroutines();
 
     /**
      * @brief Inject debug canvas pointer (called from host alongside setLayers)
@@ -748,6 +772,7 @@ private:
      */
     void registerEngineTable();
     void registerDebugSubtable(lua_State* L);  ///< engine.debug.* sub-table (called from registerEngineTable)
+    void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
     void registerProxyMetatable();
 
     // engine.random.* binding functions
@@ -758,6 +783,12 @@ private:
     // engine.camera.follow/stopFollow binding functions (Phase 48: CAM-01, CAM-02)
     static int lua_engine_camera_follow(lua_State* L);
     static int lua_engine_camera_stopFollow(lua_State* L);
+
+    // engine.async.* binding functions (Phase 49: ASYNC-01..ASYNC-03)
+    static int lua_engine_async_start(lua_State* L);
+    static int lua_engine_async_wait(lua_State* L);
+    static int lua_engine_async_cancel(lua_State* L);
+    static int lua_engine_async_cancelAll(lua_State* L);
 
     // engine.store.* binding functions (persistent KV store)
     static int lua_engine_store_save(lua_State* L);
