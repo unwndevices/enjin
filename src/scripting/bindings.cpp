@@ -479,6 +479,7 @@ void LuaBindings::registerAll() {
     m_eventBus.setLuaState(L);
     // ASYNC-03: clear coroutine pool on every hot-reload (clean slate)
     clearCoroutines();
+    clearTweens();     // TWEEN-02: clean slate on every hot-reload
 
     // Store event bus pointer in registry for engine.event.* closures
     lua_pushlightuserdata(L, &m_eventBus);
@@ -713,6 +714,7 @@ void LuaBindings::setActiveScene(Scene* scene) {
         m_activeCamera = nullptr;
         // ASYNC-03: clear coroutines on scene transition (prevent stale refs)
         clearCoroutines();
+        clearTweens();     // TWEEN-02: clean slate on scene transition
     }
     m_activeScene = scene;
 }

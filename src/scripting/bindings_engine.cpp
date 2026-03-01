@@ -220,6 +220,9 @@ void LuaBindings::registerEngineTable() {
     // --- engine.async sub-table (Phase 49: ASYNC-01..ASYNC-03) ---
     registerAsyncSubtable(L);
 
+    // --- engine.tween sub-table (Phase 50: TWEEN-01..TWEEN-03) ---
+    registerTweenSubtable(L);
+
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
     lua_setfield(L, -2, "log");

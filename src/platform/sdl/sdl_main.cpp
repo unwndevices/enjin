@@ -331,6 +331,8 @@ int main(int argc, char* argv[]) {
                 g_lua.getBindings().tickCameraFollow(dt);
                 // Tick coroutine scheduler (Phase 49: ASYNC-01..ASYNC-03)
                 g_lua.getBindings().tickCoroutines(dt);
+                // Tick tween scheduler (Phase 50: TWEEN-01..TWEEN-03)
+                g_lua.getBindings().tickTweens(dt);
             }
             if (lua_ok) {
                 lua_State* lua_L = g_lua.getEngine().getState();
