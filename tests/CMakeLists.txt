@@ -452,6 +452,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME physics_test COMMAND physics_test)
+
+    # Physics Lua binding test (Phase 45: PHYS-09..PHYS-13)
+    add_executable(physics_lua_test
+        physics_lua_test.cpp
+    )
+    target_include_directories(physics_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(physics_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME physics_lua_test COMMAND physics_lua_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
