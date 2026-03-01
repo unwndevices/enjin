@@ -439,6 +439,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME scripting_api_test COMMAND scripting_api_test)
+
+    # Physics helper test (Phase 45: PHYS-01..PHYS-08)
+    add_executable(physics_test
+        physics_test.cpp
+    )
+    target_include_directories(physics_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(physics_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME physics_test COMMAND physics_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
