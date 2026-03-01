@@ -145,8 +145,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 46-01-PLAN.md — bindings.cpp split: bindings_internal.hpp shared constants, bindings_proxy.cpp extraction (component + object proxy metatables), CMakeLists.txt update, ctest verification
-- [ ] 46-02-PLAN.md — Null safety pass + test fixes: lua_wrapper.hpp for sprite_load_test, null guards on all binding chains, overflow_test.cpp (event bus, sprite pool, component destruction)
+- [x] 46-01-PLAN.md — bindings.cpp split: bindings_internal.hpp shared constants, bindings_proxy.cpp extraction (component + object proxy metatables), CMakeLists.txt update, ctest verification (completed 2026-03-01)
+- [x] 46-02-PLAN.md — Null safety pass + test fixes: lua_wrapper.hpp for sprite_load_test, null guards on all binding chains, overflow_test.cpp (event bus, sprite pool, component destruction) (completed 2026-03-01)
 
 ### Phase 47: Debug Draw Bindings
 
@@ -256,7 +256,7 @@ Plans:
 | 43. Tilemap System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 44. 2D Camera System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 45. Physics Engine | v1.7 | 2/2 | Complete | 2026-03-01 |
-| 46. Bindings Refactoring + Null Safety | 2/2 | Complete   | 2026-03-01 | - |
+| 46. Bindings Refactoring + Null Safety | 2/2 | Complete    | 2026-03-01 | - |
 | 47. Debug Draw Bindings | v1.7 | 0/1 | Not started | - |
 | 48. Camera Follow + Save/Load | v1.7 | 0/2 | Not started | - |
 | 49. Coroutine/Async Scheduler | v1.7 | 0/2 | Not started | - |
