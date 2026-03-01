@@ -471,6 +471,9 @@ void LuaBindings::registerAll() {
     lua_pushlightuserdata(L, &m_timeState);   // always valid (member of LuaBindings)
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_time");
 
+    // Re-enable debug draw on every hot-reload
+    m_debugEnabled = true;
+
     // EVENT-05: clear event bus handlers from previous load (hot-reload cleanup)
     m_eventBus.clearHandlers();
     m_eventBus.setLuaState(L);
@@ -555,6 +558,7 @@ void LuaBindings::registerAll() {
     lua_pushinteger(L, 2); lua_setglobal(L, "LAYER_MID");
     lua_pushinteger(L, 3); lua_setglobal(L, "LAYER_FG");
     lua_pushinteger(L, 4); lua_setglobal(L, "LAYER_UI");
+    lua_pushinteger(L, 5); lua_setglobal(L, "LAYER_DEBUG");
 
     // Built-in button constants — BTN.UP, BTN.DOWN, BTN.LEFT, etc.
     // Indices match InputState button order: 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT, 4=A(Z), 5=B(X), 6=START

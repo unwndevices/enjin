@@ -24,11 +24,11 @@ static void test_layer_count_constexpr()
 {
     printf("--- layer count constexpr ---\n");
 
-    static_assert(enjin2::ENJIN_LAYER_COUNT == 4,
-                  "ENJIN_LAYER_COUNT must be 4 in default configuration");
+    static_assert(enjin2::ENJIN_LAYER_COUNT == 5,
+                  "ENJIN_LAYER_COUNT must be 5 in default configuration (Phase 47: debug layer added)");
 
-    ASSERT(enjin2::ENJIN_LAYER_COUNT == 4,
-           "ENJIN_LAYER_COUNT runtime value should be 4");
+    ASSERT(enjin2::ENJIN_LAYER_COUNT == 5,
+           "ENJIN_LAYER_COUNT runtime value should be 5 (Phase 47: debug layer added)");
 }
 
 // ============================================================

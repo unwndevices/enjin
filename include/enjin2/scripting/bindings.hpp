@@ -429,6 +429,10 @@ private:
     float m_gravityX{0.0f};    ///< Global gravity X (default: no gravity)
     float m_gravityY{0.0f};    ///< Global gravity Y (default: no gravity)
 
+    // -- Debug draw (engine.debug.*) ------------------------------------------------
+    LuaCanvas* m_debugCanvas{nullptr};   ///< Non-owning; top debug layer, set by host
+    bool       m_debugEnabled{true};     ///< engine.debug.enabled toggle -- true by default
+
     // -- Lightweight global state machine (engine.state.*) ----------------------
     static constexpr int MAX_GAME_STATES = 16;  ///< Maximum named states
     char m_currentGameState[64]{"none"};         ///< Current game state name
@@ -525,6 +529,18 @@ public:
      * @return Current active camera or nullptr
      */
     C_Camera* getActiveCamera() const { return m_activeCamera; }
+
+    /**
+     * @brief Inject debug canvas pointer (called from host alongside setLayers)
+     * @param canvas Non-owning pointer to the debug layer LuaCanvas
+     */
+    void setDebugCanvas(LuaCanvas* canvas) { m_debugCanvas = canvas; }
+
+    /**
+     * @brief Get debug canvas pointer
+     * @return Current debug canvas or nullptr
+     */
+    LuaCanvas* getDebugCanvas() const { return m_debugCanvas; }
 
     /**
      * @brief Update time state for engine.time.* bindings (call before each frame's update)
@@ -651,6 +667,15 @@ private:
     static int lua_getTextWidth(lua_State* L);
     static int lua_getTextHeight(lua_State* L);
 
+    // -- Debug draw bindings (Phase 47: DEBUG-01..DEBUG-03) -----------------------
+    static int lua_engine_debug_rect(lua_State* L);
+    static int lua_engine_debug_circle(lua_State* L);
+    static int lua_engine_debug_line(lua_State* L);
+    static int lua_engine_debug_cross(lua_State* L);
+    static int lua_engine_debug_text(lua_State* L);
+    static int lua_engine_debug_setEnabled(lua_State* L);
+    static int lua_engine_debug_getEnabled(lua_State* L);
+
     // engine.physics.* binding functions (Phase 45: PHYS-09..PHYS-13)
     static int lua_engine_physics_setGravity(lua_State* L);
     static int lua_engine_physics_getGravity(lua_State* L);
@@ -708,6 +733,7 @@ private:
      * during this call so closures can retrieve them at call time.
      */
     void registerEngineTable();
+    void registerDebugSubtable(lua_State* L);  ///< engine.debug.* sub-table (called from registerEngineTable)
     void registerProxyMetatable();
 
     // engine.random.* binding functions

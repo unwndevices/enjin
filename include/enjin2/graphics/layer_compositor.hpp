@@ -11,7 +11,7 @@ namespace enjin2 {
  * Valid range: 1-8. Change and rebuild to adjust the layer stack.
  * Layer 0 = backmost (background), layer N-1 = frontmost (top).
  */
-constexpr uint8_t ENJIN_LAYER_COUNT = 4;
+constexpr uint8_t ENJIN_LAYER_COUNT = 5;
 static_assert(ENJIN_LAYER_COUNT >= 1 && ENJIN_LAYER_COUNT <= 8,
               "ENJIN_LAYER_COUNT must be between 1 and 8 (inclusive)");
 
