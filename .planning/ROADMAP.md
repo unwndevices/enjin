@@ -189,11 +189,11 @@ Plans:
   2. engine.async.wait(seconds) called inside a coroutine pauses that coroutine for the specified duration and resumes it automatically without script polling
   3. engine.async.cancel(id) stops a running coroutine and engine.async.cancelAll() stops all coroutines; both clean up Lua refs correctly
   4. Coroutine scripts work on ESP32 (coroutine library opened in openEmbeddedLibraries()) and survive F5 hot reload without dangling thread refs
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 49-01: LuaCoroutineScheduler — CoroutineSlot[8] pool, tickCoroutines() in SDL runner, clearCoroutines() in hot-reload path, int threadRef lifecycle
-- [ ] 49-02: engine.async.* bindings — start/cancel/cancelAll/wait, ESP32 luaopen_coroutine, Lua integration tests
+- [ ] 49-01-PLAN.md — CoroutineSlot[8] pool in LuaBindings, bindings_async.cpp (start/wait/cancel/cancelAll), tickCoroutines() in SDL runner, clearCoroutines() in registerAll/setActiveScene, coroutine_async_test.cpp
+- [ ] 49-02-PLAN.md — ESP32 luaopen_coroutine in openEmbeddedLibraries()
 
 ### Phase 50: Tween Helpers
 
