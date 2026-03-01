@@ -35,10 +35,12 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.scene sub-table (ENG-01: switch, ENG-02: find) ---
     static const LuaFuncDef kSceneFuncs[] = {
-        {"switch",  lua_engine_scene_switch},
-        {"find",    lua_engine_scene_find},
-        {"spawn",   lua_engine_scene_spawn},
-        {"destroy", lua_engine_scene_destroy},
+        {"switch",    lua_engine_scene_switch},
+        {"find",      lua_engine_scene_find},
+        {"spawn",     lua_engine_scene_spawn},
+        {"destroy",   lua_engine_scene_destroy},
+        {"persist",   lua_engine_scene_persist},    // Phase 51: PERSIST-01
+        {"unpersist", lua_engine_scene_unpersist},  // Phase 51: PERSIST-02
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kSceneFuncs, ENJIN_ARRAY_LEN(kSceneFuncs));
@@ -373,6 +375,13 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
     Scene* scene = *scenePP;
     const char* name = luaL_checkstring(L, 1);
     Object* obj = scene->findByName(name);
+    // PERSIST-03: fallback — search persistent registry if not found in active scene
+    if (!obj) {
+        LuaBindings* b = LuaBindings::getBindings(L);
+        if (b && b->m_ssm) {
+            obj = b->m_ssm->findPersistentByName(name);
+        }
+    }
     if (!obj) {
         lua_pushnil(L);
         return 1;
@@ -389,6 +398,56 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
     // Register proxy with Object so its destructor can set valid = false
     obj->setLuaProxy(proxy);
 
+    return 1;
+}
+
+// --- engine.scene.persist(proxy) — PERSIST-01 ---
+// Extracts the object from the active scene and registers it as persistent.
+// Returns true on success, nil when pool is full or proxy is invalid.
+// Does NOT invalidate the proxy — object remains live as an external in the current scene.
+int LuaBindings::lua_engine_scene_persist(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_testudata(L, 1, "ObjectProxy"));
+    if (!proxy || !proxy->valid || !proxy->object) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->m_ssm) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    bool ok = b->m_ssm->persistObject(proxy->object);
+    if (!ok) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+// --- engine.scene.unpersist(proxy) — PERSIST-02 ---
+// Marks a persistent object for removal on the next scene transition.
+// The object is destroyed (and proxy invalidated) when the transition fires.
+// Returns true; silent no-op for invalid proxies.
+int LuaBindings::lua_engine_scene_unpersist(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_testudata(L, 1, "ObjectProxy"));
+    if (!proxy || !proxy->valid || !proxy->object) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    LuaBindings* b = getBindings(L);
+    if (!b || !b->m_ssm) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    b->m_ssm->unpersistObject(proxy->object);
+    lua_pushboolean(L, 1);
     return 1;
 }
 

@@ -767,6 +767,9 @@ private:
     static int lua_engine_scene_find(lua_State* L);
     static int lua_engine_scene_spawn(lua_State* L);
     static int lua_engine_scene_destroy(lua_State* L);
+    // Phase 51: PERSIST-01, PERSIST-02, PERSIST-03
+    static int lua_engine_scene_persist(lua_State* L);
+    static int lua_engine_scene_unpersist(lua_State* L);
     static int lua_engine_input_held(lua_State* L);
     static int lua_engine_input_just_pressed(lua_State* L);
     static int lua_engine_input_just_released(lua_State* L);
