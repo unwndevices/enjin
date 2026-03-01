@@ -477,6 +477,8 @@ void LuaBindings::registerAll() {
     // EVENT-05: clear event bus handlers from previous load (hot-reload cleanup)
     m_eventBus.clearHandlers();
     m_eventBus.setLuaState(L);
+    // ASYNC-03: clear coroutine pool on every hot-reload (clean slate)
+    clearCoroutines();
 
     // Store event bus pointer in registry for engine.event.* closures
     lua_pushlightuserdata(L, &m_eventBus);
@@ -709,6 +711,8 @@ void LuaBindings::setActiveScene(Scene* scene) {
         m_eventBus.clearHandlers();
         // CAM-08: Clear cached camera pointer on scene change (Phase 44).
         m_activeCamera = nullptr;
+        // ASYNC-03: clear coroutines on scene transition (prevent stale refs)
+        clearCoroutines();
     }
     m_activeScene = scene;
 }

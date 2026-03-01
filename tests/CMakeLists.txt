@@ -504,6 +504,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME camera_follow_test COMMAND camera_follow_test)
+
+    # Coroutine async scheduler test (Phase 49: ASYNC-01..ASYNC-03)
+    add_executable(coroutine_async_test
+        coroutine_async_test.cpp
+    )
+    target_include_directories(coroutine_async_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(coroutine_async_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME coroutine_async_test COMMAND coroutine_async_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
