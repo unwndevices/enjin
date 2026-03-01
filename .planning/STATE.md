@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-01T21:32:14.449Z"
+last_updated: "2026-03-01T22:31:39.087Z"
 progress:
   total_phases: 16
-  completed_phases: 12
-  total_plans: 34
-  completed_plans: 33
+  completed_phases: 13
+  total_plans: 36
+  completed_plans: 35
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 ## Current Position
 
 Phase: 50 of 52 (Tween Helpers)
-Plan: 1 of 1 in current phase (complete)
+Plan: 2 of 2 in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-01 — Phase 50 Plan 01 complete: 8-slot TweenSlot pool with engine.tween.to/cancel/cancelAll; four inline easing functions (multiply/add only); tickTweens in SDL runner; clearTweens on hot-reload/scene-change
+Last activity: 2026-03-01 — Phase 50 Plan 02 complete: 12-case tween integration test suite; all 4 easing modes verified distinct; pool overflow, cancel, cancelAll, done_cb, hot-reload, multi-property, zero duration all covered
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 14 plans (Phases 43-49 complete, 50-01 complete)
+- v1.7 (in progress): 15 plans (Phases 43-49 complete, 50-01 and 50-02 complete)
 
 *Updated after each plan completion*
 
@@ -72,6 +72,7 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 50-01]: TweenEasing private enum — cast to uint8_t at call site so file-scope tweenEase() in separate TU doesn't hit private-access error
 - [Phase 50-01]: cancel leaves tween at current interpolated position; does NOT snap to end, does NOT fire done_cb
 - [Phase 50-01]: tickTweens called after tickCoroutines in SDL runner; clearTweens called alongside clearCoroutines in both registerAll() and setActiveScene()
+- [Phase 50]: hot-reload safety verified by pool exhaustion after registerAll() — all 8 tween slots must be allocatable again to confirm clearTweens fired correctly
 
 ### Pending Todos
 
@@ -100,5 +101,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 50-01-PLAN.md (tween helpers — engine.tween.* pool and SDL integration)
+Stopped at: Completed 50-02-PLAN.md (tween test suite — 12-case integration tests for TWEEN-01..TWEEN-03)
 Resume file: None

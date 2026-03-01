@@ -73,7 +73,7 @@ Phases 39-42 complete. See milestones/v1.6-ROADMAP.md for full detail.
 - [x] **Phase 47: Debug Draw Bindings** - engine.debug.* sub-table routing to dedicated debug canvas with zero-cost toggle (completed 2026-03-01)
 - [x] **Phase 48: Camera Follow + Save/Load** - engine.camera.follow/stopFollow, LuaStore SDL3 I/O, engine.store.flush/path (completed 2026-03-01)
 - [x] **Phase 49: Coroutine/Async Scheduler** - engine.async.* 8-slot coroutine pool with wait/cancel, ESP32 library open (completed 2026-03-01)
-- [ ] **Phase 50: Tween Helpers** - engine.tween.* 8-slot pool with 4 inline easing functions, proxy-field animation
+- [x] **Phase 50: Tween Helpers** - engine.tween.* 8-slot pool with 4 inline easing functions, proxy-field animation (completed 2026-03-01)
 - [ ] **Phase 51: Persistent Objects** - engine.scene.persist/unpersist, PersistentObjectRegistry, find() searches persistent registry
 - [ ] **Phase 52: UI Component Bindings** - engine.ui.* stateless draw calls: progressBar, statBar, panel, label
 
@@ -204,7 +204,7 @@ Plans:
   1. A Lua script can call engine.tween.to(target, {props}, duration, easing, done_cb) and the specified table fields animate to their target values over the given duration
   2. engine.tween.cancel(id) stops a specific tween and engine.tween.cancelAll() stops all tweens, both freeing Lua refs correctly
   3. The four easing functions (linear, easeIn, easeOut, easeInOut) produce visually distinct motion curves; no FPU-heavy math (no std::pow with float exponents)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 50-01-PLAN.md — TweenSlot[8] pool, bindings_tween.cpp (to/cancel/cancelAll + tickTweens + clearTweens + 4 inline easing functions), SDL runner wiring, cleanup hooks in registerAll/setActiveScene, engine.tween.* sub-table registration
@@ -260,6 +260,6 @@ Plans:
 | 47. Debug Draw Bindings | 1/1 | Complete    | 2026-03-01 | - |
 | 48. Camera Follow + Save/Load | 2/2 | Complete    | 2026-03-01 | - |
 | 49. Coroutine/Async Scheduler | 2/2 | Complete    | 2026-03-01 | - |
-| 50. Tween Helpers | 1/2 | In Progress|  | - |
+| 50. Tween Helpers | 2/2 | Complete   | 2026-03-01 | - |
 | 51. Persistent Objects | v1.7 | 0/2 | Not started | - |
 | 52. UI Component Bindings | v1.7 | 0/2 | Not started | - |
