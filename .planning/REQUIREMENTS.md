@@ -10,12 +10,12 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 ### Bindings Refactoring
 
 - [x] **BIND-01**: bindings.cpp split into focused files via bindings_internal.hpp
-- [ ] **BIND-02**: Null safety guards added to all binding chains (numeric returns default to 0, not nil)
+- [x] **BIND-02**: Null safety guards added to all binding chains (numeric returns default to 0, not nil)
 
 ### Testing & Quality
 
-- [ ] **TEST-01**: sprite_load_test.cpp compiles without errors (missing lua_wrapper.hpp resolved)
-- [ ] **TEST-02**: Overflow tests added for event bus, sprite pool, and component destruction
+- [x] **TEST-01**: sprite_load_test.cpp compiles without errors (missing lua_wrapper.hpp resolved)
+- [x] **TEST-02**: Overflow tests added for event bus, sprite pool, and component destruction
 
 ### Debug Draw
 
@@ -101,9 +101,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BIND-01 | Phase 46 | Complete |
-| BIND-02 | Phase 46 | Pending |
-| TEST-01 | Phase 46 | Pending |
-| TEST-02 | Phase 46 | Pending |
+| BIND-02 | Phase 46 | Complete |
+| TEST-01 | Phase 46 | Complete |
+| TEST-02 | Phase 46 | Complete |
 | DEBUG-01 | Phase 47 | Pending |
 | DEBUG-02 | Phase 47 | Pending |
 | DEBUG-03 | Phase 47 | Pending |

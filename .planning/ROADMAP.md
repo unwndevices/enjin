@@ -69,7 +69,7 @@ Phases 39-42 complete. See milestones/v1.6-ROADMAP.md for full detail.
 - [x] **Phase 43: Tilemap System** - 64x64 tile grid, viewport-culled rendering, scroll, coordinate helpers (completed 2026-02-28)
 - [x] **Phase 44: 2D Camera System** - Scene render pipeline, drawWithOffset(), engine.camera.* Lua API (completed 2026-02-28)
 - [x] **Phase 45: Optimized 2D Physics Engine** - engine.physics.* stateless helpers, TrigLUT, DDA raycast (completed 2026-03-01)
-- [ ] **Phase 46: Bindings Refactoring + Null Safety** - Split bindings.cpp monolith, harden null guards, fix sprite test, add overflow tests
+- [x] **Phase 46: Bindings Refactoring + Null Safety** - Split bindings.cpp monolith, harden null guards, fix sprite test, add overflow tests (completed 2026-03-01)
 - [ ] **Phase 47: Debug Draw Bindings** - engine.debug.* sub-table routing to dedicated debug canvas with zero-cost toggle
 - [ ] **Phase 48: Camera Follow + Save/Load** - engine.camera.follow/stopFollow, LuaStore SDL3 I/O, engine.store.flush/path
 - [ ] **Phase 49: Coroutine/Async Scheduler** - engine.async.* 8-slot coroutine pool with wait/cancel, ESP32 library open
@@ -142,7 +142,7 @@ Plans:
   2. Numeric-returning binding functions return 0 (not nil) when called on a null or invalid target, preventing Lua arithmetic errors in scripts
   3. sprite_load_test.cpp compiles and links without errors
   4. Overflow tests for event bus (beyond 16 channels / 8 subscribers), sprite pool (beyond pool capacity), and component destruction execute successfully via ctest
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 46-01-PLAN.md — bindings.cpp split: bindings_internal.hpp shared constants, bindings_proxy.cpp extraction (component + object proxy metatables), CMakeLists.txt update, ctest verification
@@ -256,7 +256,7 @@ Plans:
 | 43. Tilemap System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 44. 2D Camera System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 45. Physics Engine | v1.7 | 2/2 | Complete | 2026-03-01 |
-| 46. Bindings Refactoring + Null Safety | 1/2 | In Progress|  | - |
+| 46. Bindings Refactoring + Null Safety | 2/2 | Complete   | 2026-03-01 | - |
 | 47. Debug Draw Bindings | v1.7 | 0/1 | Not started | - |
 | 48. Camera Follow + Save/Load | v1.7 | 0/2 | Not started | - |
 | 49. Coroutine/Async Scheduler | v1.7 | 0/2 | Not started | - |

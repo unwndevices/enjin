@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
-status: active
-last_updated: "2026-03-01T18:00:00.000Z"
+status: unknown
+last_updated: "2026-03-01T18:42:20.477Z"
 progress:
-  total_phases: 10
-  completed_phases: 3
-  total_plans: 19
-  completed_plans: 7
+  total_phases: 16
+  completed_phases: 9
+  total_plans: 30
+  completed_plans: 28
 ---
 
 # Project State
@@ -56,6 +56,8 @@ Key decisions affecting v1.7 phases 46-52:
 - Coroutine scheduler resumes via lua_resume from C outside pcall scope (pitfall: yield-across-pcall boundary)
 - engine.ui.* bypasses C++ Label/FillUpGauge entirely — stateless LuaCanvas draw calls only
 - PersistentObjectRegistry owned by SceneStateMachine (not LuaBindings) — object ownership is C++ level
+- [Phase 46]: LuaWrapper is header-only: delegates to LuaEngine + LuaBindings; engine declared before bindings (C++ member init order)
+- [Phase 46]: overflow_test uses C_LuaScript fixture (not raw LuaEngine) because LuaEventBus::subscribe() requires m_L != nullptr
 
 ### Pending Todos
 
