@@ -326,6 +326,108 @@ static void test_store_file_persistence() {
 }
 
 // ============================================================
+// test_store_flush_and_path_functions_exist (Phase 48: STORE-02)
+// ============================================================
+static void test_store_flush_and_path_functions_exist() {
+    printf("--- engine.store.flush and path exist ---\n");
+
+    StoreFixture f;
+    LuaResult r = f.exec(
+        "ok_flush = (type(engine.store.flush) == 'function') and 1 or 0\n"
+        "ok_path  = (type(engine.store.path) == 'function') and 1 or 0\n"
+    );
+    ASSERT(r.success, "flush/path function checks should not error");
+    ASSERT(f.getNum("ok_flush") == 1.0, "engine.store.flush should be a function");
+    ASSERT(f.getNum("ok_path") == 1.0,  "engine.store.path should be a function");
+}
+
+// ============================================================
+// test_store_flush_no_path (Phase 48: STORE-02)
+// ============================================================
+static void test_store_flush_no_path() {
+    printf("--- engine.store.flush() with no path returns false ---\n");
+
+    StoreFixture f;
+    LuaResult r = f.exec(
+        "result = engine.store.flush()\n"
+        "ok = (result == false) and 1 or 0\n"
+    );
+    ASSERT(r.success, "flush() with no path should not error");
+    ASSERT(f.getNum("ok") == 1.0, "flush() with no path should return false");
+}
+
+// ============================================================
+// test_store_flush_with_path (Phase 48: STORE-02)
+// ============================================================
+static void test_store_flush_with_path() {
+    printf("--- engine.store.flush() with path saves and returns true ---\n");
+
+    const char* tmpPath = "/tmp/enjin_test_flush.json";
+
+    // First fixture: set path, save data, flush
+    {
+        StoreFixture f;
+        LuaResult r = f.exec(
+            "engine.store.path('/tmp/enjin_test_flush.json')\n"
+            "engine.store.save('level', 42)\n"
+            "flush_result = engine.store.flush()\n"
+            "ok_flush = (flush_result == true) and 1 or 0\n"
+        );
+        ASSERT(r.success, "flush() with path should not error");
+        ASSERT(f.getNum("ok_flush") == 1.0, "flush() should return true after path is set");
+    }
+
+    // Second fixture: verify the file was written by loading from the same path
+    {
+        StoreFixture f2;
+        LuaResult r2 = f2.exec(
+            "engine.store.path('/tmp/enjin_test_flush.json')\n"
+            "v = engine.store.load('level')\n"
+            "ok = (v == 42) and 1 or 0\n"
+        );
+        ASSERT(r2.success, "loading from flushed path should not error");
+        ASSERT(f2.getNum("ok") == 1.0, "loaded level should be 42 from flushed file");
+    }
+
+    remove(tmpPath);
+}
+
+// ============================================================
+// test_store_path_loads_existing (Phase 48: STORE-02)
+// ============================================================
+static void test_store_path_loads_existing() {
+    printf("--- engine.store.path() loads existing data automatically ---\n");
+
+    const char* tmpPath = "/tmp/enjin_test_path_load.json";
+
+    // First fixture: save a file via C++ API directly
+    {
+        LuaStore store;
+        store.setNumber("checkpoint", 7);
+        store.setString("hero", "Enjin");
+        bool saved = store.saveToFile(tmpPath);
+        ASSERT(saved, "C++ saveToFile should succeed for path test setup");
+    }
+
+    // Second fixture: call engine.store.path() and verify data is loaded
+    {
+        StoreFixture f;
+        LuaResult r = f.exec(
+            "engine.store.path('/tmp/enjin_test_path_load.json')\n"
+            "v_cp = engine.store.load('checkpoint')\n"
+            "v_h  = engine.store.load('hero')\n"
+            "ok_cp = (v_cp == 7) and 1 or 0\n"
+            "ok_h  = (v_h == 'Enjin') and 1 or 0\n"
+        );
+        ASSERT(r.success, "path() with existing file should not error");
+        ASSERT(f.getNum("ok_cp") == 1.0, "checkpoint should be 7 after path()");
+        ASSERT(f.getNum("ok_h") == 1.0,  "hero should be 'Enjin' after path()");
+    }
+
+    remove(tmpPath);
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -343,6 +445,12 @@ int main() {
     test_store_load_nil();
     test_store_overwrite();
     test_store_file_persistence();
+
+    // Phase 48: STORE-02 — flush() and path() bindings
+    test_store_flush_and_path_functions_exist();
+    test_store_flush_no_path();
+    test_store_flush_with_path();
+    test_store_path_loads_existing();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
     return (failures == 0) ? 0 : 1;
