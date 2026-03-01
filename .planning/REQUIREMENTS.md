@@ -9,7 +9,7 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### Bindings Refactoring
 
-- [ ] **BIND-01**: bindings.cpp split into focused files via bindings_internal.hpp
+- [x] **BIND-01**: bindings.cpp split into focused files via bindings_internal.hpp
 - [ ] **BIND-02**: Null safety guards added to all binding chains (numeric returns default to 0, not nil)
 
 ### Testing & Quality
@@ -100,7 +100,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BIND-01 | Phase 46 | Pending |
+| BIND-01 | Phase 46 | Complete |
 | BIND-02 | Phase 46 | Pending |
 | TEST-01 | Phase 46 | Pending |
 | TEST-02 | Phase 46 | Pending |

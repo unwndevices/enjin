@@ -142,7 +142,7 @@ Plans:
   2. Numeric-returning binding functions return 0 (not nil) when called on a null or invalid target, preventing Lua arithmetic errors in scripts
   3. sprite_load_test.cpp compiles and links without errors
   4. Overflow tests for event bus (beyond 16 channels / 8 subscribers), sprite pool (beyond pool capacity), and component destruction execute successfully via ctest
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 46-01-PLAN.md — bindings.cpp split: bindings_internal.hpp shared constants, bindings_proxy.cpp extraction (component + object proxy metatables), CMakeLists.txt update, ctest verification
@@ -256,7 +256,7 @@ Plans:
 | 43. Tilemap System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 44. 2D Camera System | v1.7 | 2/2 | Complete | 2026-02-28 |
 | 45. Physics Engine | v1.7 | 2/2 | Complete | 2026-03-01 |
-| 46. Bindings Refactoring + Null Safety | v1.7 | 0/2 | Not started | - |
+| 46. Bindings Refactoring + Null Safety | 1/2 | In Progress|  | - |
 | 47. Debug Draw Bindings | v1.7 | 0/1 | Not started | - |
 | 48. Camera Follow + Save/Load | v1.7 | 0/2 | Not started | - |
 | 49. Coroutine/Async Scheduler | v1.7 | 0/2 | Not started | - |

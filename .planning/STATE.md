@@ -8,7 +8,7 @@ progress:
   total_phases: 10
   completed_phases: 3
   total_plans: 19
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 ## Current Position
 
 Phase: 46 of 52 (Bindings Refactoring + Null Safety)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-01 — v1.7 roadmap extended with phases 46-52
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-03-01 — Phase 46 Plan 01 complete: bindings.cpp split into bindings_proxy.cpp
 
-Progress: [######░░░░░░░░░░░░░░] 30% (phases 43-45 complete; 46-52 pending)
+Progress: [######░░░░░░░░░░░░░░] 32% (phases 43-45 complete; phase 46 in progress)
 
 ## Performance Metrics
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 30% (phases 43-45 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 6 plans (Phases 43-45 complete)
+- v1.7 (in progress): 7 plans (Phases 43-45 complete, Phase 46 Plan 01 complete)
 
 *Updated after each plan completion*
 
@@ -51,6 +51,7 @@ Progress: [######░░░░░░░░░░░░░░] 30% (phases 43-45 c
 All decisions logged in PROJECT.md Key Decisions table.
 
 Key decisions affecting v1.7 phases 46-52:
+- bindings_internal.hpp created (Phase 46-01): uses static constexpr for metatable constants — TU-local, ODR-safe, no companion .cpp needed
 - bindings_internal.hpp must be created before any bindings file is extracted (pitfall: static linkage breakage)
 - Coroutine scheduler resumes via lua_resume from C outside pcall scope (pitfall: yield-across-pcall boundary)
 - engine.ui.* bypasses C++ Label/FillUpGauge entirely — stateless LuaCanvas draw calls only
@@ -83,5 +84,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Roadmap created for phases 46-52; ready to plan Phase 46
+Stopped at: Completed 46-01-PLAN.md (bindings monolith split)
 Resume file: None
