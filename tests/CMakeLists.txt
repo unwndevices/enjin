@@ -104,6 +104,12 @@ target_include_directories(scene_transition_test PRIVATE ${CMAKE_CURRENT_SOURCE_
 target_link_libraries(scene_transition_test PRIVATE enjin2)
 add_test(NAME scene_transition_test COMMAND scene_transition_test)
 
+# Persistent object unit test (PERSIST-01..PERSIST-10: registry, extraction, injection, transition lifecycle)
+add_executable(persistent_object_test persistent_object_test.cpp)
+target_include_directories(persistent_object_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(persistent_object_test PRIVATE enjin2)
+add_test(NAME persistent_object_test COMMAND persistent_object_test)
+
 # Layer binding unit test (Lua layer API: setLayer, getLayer, clearLayer, etc.)
 if(ENJIN2_BUILD_LUA)
     add_executable(layer_binding_test

@@ -401,9 +401,10 @@ public:
     /**
      * @brief Extract an object from the current scene and register it as persistent.
      *
-     * The object survives all subsequent scene transitions. It is injected as a
-     * non-owning external into each scene's ObjectCollection so it participates in
-     * update/lateUpdate/findByName/forEach. If the object is already persistent,
+     * The object survives all subsequent scene transitions. It is immediately
+     * re-injected as a non-owning external into the current scene's ObjectCollection,
+     * so it continues to participate in update/lateUpdate/findByName/forEach during
+     * the current scene and all subsequent scenes. If the object is already persistent,
      * returns true (silent no-op — no duplicate slot consumed).
      *
      * @param obj Raw pointer to an owned object in the current scene
@@ -414,7 +415,11 @@ public:
         if (m_persistentRegistry.contains(obj)) return true;  // already persistent
         std::unique_ptr<Object> extracted = currentScene->getObjects().extractObject(obj);
         if (!extracted) return false;
-        return m_persistentRegistry.add(std::move(extracted));
+        Object* rawPtr = extracted.get();
+        if (!m_persistentRegistry.add(std::move(extracted))) return false;
+        // Immediately inject back into current scene as non-owning external
+        currentScene->getObjects().injectExternal(rawPtr);
+        return true;
     }
 
     /**
