@@ -204,11 +204,11 @@ Plans:
   1. A Lua script can call engine.tween.to(target, {props}, duration, easing, done_cb) and the specified table fields animate to their target values over the given duration
   2. engine.tween.cancel(id) stops a specific tween and engine.tween.cancelAll() stops all tweens, both freeing Lua refs correctly
   3. The four easing functions (linear, easeIn, easeOut, easeInOut) produce visually distinct motion curves; no FPU-heavy math (no std::pow with float exponents)
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 50-01: TweenSlot[8] pool — tickTweens(dt) in SDL runner, clearTweens() in hot-reload path, 4 inline easing functions, proxy validity check per tick
-- [ ] 50-02: engine.tween.* bindings — to/cancel/cancelAll, Lua integration tests (all easing modes, cancel mid-tween, hot-reload safety)
+- [ ] 50-01-PLAN.md — TweenSlot[8] pool, bindings_tween.cpp (to/cancel/cancelAll + tickTweens + clearTweens + 4 inline easing functions), SDL runner wiring, cleanup hooks in registerAll/setActiveScene, engine.tween.* sub-table registration
+- [ ] 50-02-PLAN.md — tween_test.cpp integration tests (12 test cases: animation, easing modes, pool overflow, cancel, cancelAll, done_cb, hot-reload, multi-property, zero duration)
 
 ### Phase 51: Persistent Objects
 
