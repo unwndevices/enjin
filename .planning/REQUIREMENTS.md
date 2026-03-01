@@ -71,11 +71,11 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 - [x] **PHYS-06**: `physics::orbitVelocity(x, y, cx, cy, speed)` returns tangential velocity perpendicular to radius
 - [x] **PHYS-07**: `physics::applyVelocity(x, y, vx, vy, dt)` integrates position by velocity
 - [x] **PHYS-08**: TrigLUT completed with real 256-entry precomputed sine table (not std::sin delegation)
-- [ ] **PHYS-09**: `engine.physics.*` Lua sub-table with all helper functions callable from scripts
-- [ ] **PHYS-10**: `engine.physics.setGravity(gx, gy)` / `getGravity()` for global gravity state
-- [ ] **PHYS-11**: `engine.physics.applyGravity` accepts both 3-arg (global) and 5-arg (override) forms
-- [ ] **PHYS-12**: All physics Lua bindings accept both Vec2 userdata and plain (x, y) number pairs
-- [ ] **PHYS-13**: `engine.physics.raycast(x1, y1, x2, y2)` returns hit info via DDA tilemap + linear object scan
+- [x] **PHYS-09**: `engine.physics.*` Lua sub-table with all helper functions callable from scripts
+- [x] **PHYS-10**: `engine.physics.setGravity(gx, gy)` / `getGravity()` for global gravity state
+- [x] **PHYS-11**: `engine.physics.applyGravity` accepts both 3-arg (global) and 5-arg (override) forms
+- [x] **PHYS-12**: All physics Lua bindings accept both Vec2 userdata and plain (x, y) number pairs
+- [x] **PHYS-13**: `engine.physics.raycast(x1, y1, x2, y2)` returns hit info via DDA tilemap + linear object scan
 
 ## Future Requirements
 

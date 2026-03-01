@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Game Ready
 status: unknown
-last_updated: "2026-02-28T22:52:22.324Z"
+last_updated: "2026-03-01T12:50:27.835Z"
 progress:
-  total_phases: 12
-  completed_phases: 11
-  total_plans: 29
-  completed_plans: 28
+  total_phases: 13
+  completed_phases: 12
+  total_plans: 31
+  completed_plans: 30
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 45 of 45 (Optimized 2D Physics Engine) — IN PROGRESS
-Plan: 01 COMPLETE — physics.hpp stateless helpers + TrigLUT LUT + physics_test (28/28 pass)
-Status: Phase 45 Plan 01 complete — 7 inline physics helpers (applyGravity, bounce, applyDrag, springForce, attract, orbitVelocity, applyVelocity), TrigLUT constexpr sin_table[256], physics_test 28/28 pass
-Last activity: 2026-03-01 - Completed Phase 45 Plan 01: physics.hpp + TrigLUT + tests
+Phase: 45 of 45 (Optimized 2D Physics Engine) — COMPLETE
+Plan: 02 COMPLETE — engine.physics.* Lua bindings (10 functions), global gravity state, DDA raycast, 22/22 tests pass
+Status: Phase 45 COMPLETE — Plan 01: C++ helpers (physics.hpp, 28/28 tests), Plan 02: Lua bindings (engine.physics.*, 22/22 tests)
+Last activity: 2026-03-01 - Completed Phase 45 Plan 02: engine.physics.* Lua bindings + DDA raycast + 22/22 integration tests
 
 Progress: [████████████████████] 100% (44 phases complete)
 
@@ -77,6 +77,9 @@ Recent decisions relevant to v1.6:
 - [Phase 44-camera-lua]: engine.camera.* uses getBindings(L)->getActiveCamera() — follows existing input pointer pattern (not registry pointer-to-pointer); host calls bindings.setActiveCamera(cam)
 - [Phase 44-camera-lua]: C_Tilemap::drawWithOffset saves/restores m_scrollX/m_scrollY, subtracts camera offset (negative) to produce additive scroll
 - [Phase 44-camera-lua]: m_activeCamera cleared in setActiveScene() on scene change — same lifecycle as m_eventBus.clearHandlers()
+- [Phase 45]: bindings_physics.cpp uses forEach lambda for C_Tilemap scan to avoid hasComponent() const/non-const chain issue
+- [Phase 45-02]: applyGravity uses lua_gettop to disambiguate 3-arg (global) vs 5-arg (override) gravity — explicit overload selection without Lua function name collision
+- [Phase 45-02]: raycast: DDA tilemap scan (Stage 1) always runs before linear object scan (Stage 2) — tilemap hits take priority; 8px fixed hit radius for objects
 
 ### Pending Todos
 
@@ -87,6 +90,7 @@ None.
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
 | 007 | Implement 7 scripting API improvements: built-in constants, configurable resolution, engine.graphics namespace, text scale parameter, float-to-int coordinate casting, game-state manager, and text centering helpers | 2026-02-28 | 993d89f | Verified | [007-implement-7-scripting-api-improvements-b](./quick/007-implement-7-scripting-api-improvements-b/) |
+| Phase 45 P02 | 10 | 2 tasks | 6 files |
 
 ### Blockers/Concerns
 
@@ -108,6 +112,9 @@ None.
 - [Phase 45-01]: cos(x) = sin(x+64) via quarter-turn phase offset — single 256-entry table covers both sin and cos
 - [Phase 45-01]: applyDrag factor clamped to [0,1] — prevents velocity sign flip on overdrag (large_drag * large_dt)
 - [Phase 45-01]: attract() uses distSq += 1e-4f epsilon guard — prevents NaN on coincident points without branching
+- [Phase 45-02]: forEach lambda scan for C_Tilemap (not findObjectWithComponent) — avoids hasComponent() const/non-const chain compile error
+- [Phase 45-02]: applyGravity uses lua_gettop to disambiguate 3-arg (global) vs 5-arg (override) — no Lua function name collision
+- [Phase 45-02]: raycast DDA (Stage 1) before linear object scan (Stage 2) — tilemap hits take priority; 8px fixed radius for objects
 
 ### Technical Debt (carried)
 
@@ -118,5 +125,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 45-01-PLAN.md — physics.hpp stateless helpers (7 functions), TrigLUT constexpr LUT, physics_test 28/28
+Stopped at: Completed 45-02-PLAN.md — engine.physics.* Lua bindings (10 functions), global gravity state, DDA raycast, 22/22 Lua integration tests pass
 Resume file: None
