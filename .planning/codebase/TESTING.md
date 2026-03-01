@@ -1,224 +1,220 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-02-28
+**Analysis Date:** 2026-03-01
 
 ## Test Framework
 
 **Runner:**
-- CMake test framework (CTest)
-- Executables defined in `tests/CMakeLists.txt` with `add_executable()` + `add_test()`
-- Optional: Google Test (GTest) for some fixture-based tests (e.g., `sprite_load_test`)
+- CMake `add_test()` with CTest (no external test framework like Catch2, Google Test, etc.)
+- Each test is a standalone executable (C++ main program) that returns 0 on success, non-zero on failure
+- Tests built and run via: `cmake --build build && ctest --output-on-failure`
+
+**Test Location:**
+- All tests: `tests/` directory at repository root
+- CMakeLists.txt in `tests/` defines test executables and links to `enjin2` library
 
 **Assertion Library:**
-- Manual assertion macro: `#define ASSERT(cond, msg)` (see pattern below)
-- Google Test assertions: `ASSERT_*` and `EXPECT_*` (used in GTest-integrated tests)
+- Custom macro `ASSERT(condition, message)` — no external library
+- Defined in each test file for flexibility
+- Pattern:
+  ```cpp
+  static int passes = 0;
+  static int failures = 0;
+
+  #define ASSERT(cond, msg) \
+      do { \
+          if (!(cond)) { \
+              fprintf(stderr, "FAIL [line %d]: %s\n", __LINE__, (msg)); \
+              failures++; \
+          } else { \
+              passes++; \
+          } \
+      } while(0)
+  ```
 
 **Run Commands:**
 ```bash
-cmake -B build                  # Configure with tests enabled (default: ENJIN2_BUILD_TESTS=ON)
-cmake --build build             # Build all targets including tests
-ctest --output-on-failure       # Run all tests with failure output
-ctest -V                        # Verbose test output
-ctest -R collision_test         # Run specific test by name pattern
-```
+# Build all tests
+cmake --build /home/unwn/dev/enjin/build
 
-**Test Coverage:**
-- No automated coverage tool enforced
-- Coverage measurable via `gcov` if desired (not configured by default)
-- Tests focus on C++ + Lua bindings, not unit code coverage metrics
+# Run all tests
+ctest --test-dir /home/unwn/dev/enjin/build --output-on-failure
+
+# Run specific test
+ctest --test-dir /home/unwn/dev/enjin/build -R physics_lua_test --output-on-failure
+
+# Build and run from scratch
+cd /home/unwn/dev/enjin && cmake -B build && cmake --build build && ctest --test-dir build
+```
 
 ## Test File Organization
 
 **Location:**
-- Co-located with source: `tests/` directory parallel to `src/`
-- Test file naming: `{feature}_test.cpp` (e.g., `collision_test.cpp`, `math_binding_test.cpp`)
-- Fixtures and helpers: Sometimes in separate header (e.g., `pikachu.h` in `tests/`)
+- All test files in `tests/` directory (co-located with library, not alongside source)
+- Files: `tests/*_test.cpp`
 
 **Naming:**
-- Test functions: `test_<area>_<scenario>()` (e.g., `test_cpp_aabb()`, `test_Vec2_constructor_and_type()`)
-- Requirements numbered: `test_err01_default_policy_is_disable()` (maps to ERR-01 requirement)
-- Test data files: `test_pikachu.njn` (binary sprite asset for testing)
+- Test files: `<feature>_test.cpp` (e.g., `physics_lua_test.cpp`, `engine_table_test.cpp`)
+- Standalone files for fixtures/helpers: `tests/pikachu.h` (sprite test data)
 
 **Structure:**
 ```
 tests/
-├── CMakeLists.txt              # Build configuration for all tests
-├── *_test.cpp                  # Individual test modules
-├── pikachu.h                    # Shared test data (Pikachu image header)
-└── test_pikachu.njn             # Binary sprite asset (.njn format)
+├── physics_lua_test.cpp        # Lua physics binding tests (Phase 45 PHYS-09..PHYS-13)
+├── engine_table_test.cpp       # engine.* global table tests (Phase 31 ENG-01..ENG-06)
+├── math_binding_test.cpp       # Vec2, Point, Rect Lua binding tests
+├── error_policy_test.cpp       # Error handling policies for C_LuaScript
+├── camera_lua_test.cpp         # Camera component Lua binding tests
+├── collision_test.cpp          # Collision system tests
+├── input_test.cpp              # Input abstraction tests
+├── CMakeLists.txt              # Test build configuration
+└── pikachu.h                   # Sprite test data (header-only)
 ```
 
 ## Test Structure
 
-**Fixture Pattern:**
+**Suite Organization:**
+
+Tests follow a functional/scenario structure, NOT xUnit-style suites. Each test is a standalone function:
 
 ```cpp
-struct MathBindingFixture {
-    LuaEngine engine;
-    LuaBindings bindings;
+// tests/physics_lua_test.cpp
+static void test_gravity_round_trip() {
+    printf("--- setGravity/getGravity round-trip ---\n");
 
-    MathBindingFixture() : bindings(&engine) {
-        engine.initialize();
-        bindings.registerAll();
-    }
+    LuaEngine eng;
+    eng.initialize();
+    LuaBindings bindings(&eng);
+    bindings.registerAll();
 
-    LuaResult exec(const char* code) {
-        return engine.executeString(code);
-    }
+    runLua(eng, R"(
+        engine.physics.setGravity(0, 500)
+        local gx, gy = engine.physics.getGravity()
+        assert(math.abs(gy - 500) < 0.01)
+    )", "setGravity/getGravity");
 
-    double getNum(const char* name) {
-        return engine.getGlobalNumber(name, -999.0);
-    }
-
-    std::string getStr(const char* name) {
-        return engine.getGlobalString(name, "<<not set>>");
-    }
-};
-```
-
-**Assertion Macro Pattern:**
-
-```cpp
-static int passes = 0;
-static int failures = 0;
-
-#define ASSERT(cond, msg) \
-    do { \
-        if (!(cond)) { \
-            fprintf(stderr, "FAIL [line %d]: %s\n", __LINE__, (msg)); \
-            failures++; \
-        } else { \
-            passes++; \
-        } \
-    } while(0)
-```
-
-**Test Function Pattern:**
-
-```cpp
-static void test_Vec2_constructor_and_type() {
-    printf("--- Vec2 constructor and type ---\n");
-    MathBindingFixture f;
-    LuaResult r = f.exec(
-        "local v = Vec2(3, 4)\n"
-        "ok = (v ~= nil) and 1 or 0\n"
-        "tx = (type(v) == 'userdata') and 1 or 0\n"
-    );
-    ASSERT(r.success, "Vec2(3,4) script should succeed");
-    ASSERT(f.getNum("ok") == 1.0, "Vec2() should return non-nil");
-    ASSERT(f.getNum("tx") == 1.0, "type(Vec2()) should be userdata");
+    printf("  PASS: gravity round-trip\n");
 }
 ```
 
-**Setup/Teardown Pattern:**
-- Constructor `MathBindingFixture()` calls `engine.initialize()` and `bindings.registerAll()`
-- Destructor (implicit): LuaEngine and LuaBindings destroyed when fixture goes out of scope
-- Each test function creates its own fixture instance for isolation
-- No shared state between tests
-
-**Test Entry Pattern (main function):**
+**Main Function Pattern:**
 
 ```cpp
 int main() {
-    printf("=== Math Binding Tests ===\n\n");
+    printf("=== test_suite_name ===\n");
 
-    test_Vec2_constructor_and_type();
-    test_Vec2_fields();
-    test_Vec2_operators();
+    test_gravity_round_trip();
+    test_applyGravity_form();
+    test_bounce_elastic();
     // ... more tests
 
-    printf("\n=== Results ===\n");
-    printf("Passed: %d\n", passes);
-    printf("Failed: %d\n", failures);
-    return failures > 0 ? 1 : 0;
+    printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
+    return (failures == 0) ? 0 : 1;
 }
 ```
 
-## Test Types
-
-**Unit Tests (C++):**
-- Test core C++ classes and functions in isolation
-- Example: `collision_test.cpp` tests `collision::aabb()`, `collision::circleCircle()`
-- Example: `sprite_test.cpp` tests `SpriteSheet` animation and frame logic
-- Use minimal fixtures; often just instantiate class and call methods
-- Run without Lua when testing C++ only
-
-**Integration Tests (C++ + Lua Bindings):**
-- Test Lua bindings by executing Lua scripts against C++ engine
-- Example: `math_binding_test.cpp` creates `Vec2` in Lua, tests arithmetic operations
-- Example: `collision_test.cpp` tests both C++ collision functions AND Lua `engine.collision.*` API
-- Fixture: `LuaEngine` + `LuaBindings` + optional canvas/scene setup
-- Scripts embedded as C++ string literals; executed via `engine.executeString(code)`
-
-**Lua Tests (Lua scripts):**
-- Interactive demos and feature verification scripts in `scripts/` directory
-- Example: `features_demo.lua` showcases sprite flipping, collision response, RNG
-- Example: `pikachu_demo.lua` demos sprite animation and control
-- Run via host application: `./sprite_sdl_test --lua scripts/features_demo.lua`
-- Require host to push objects (sprites, canvas) via Lua API
-
-**E2E Tests (Visual/Manual):**
-- Not automated; see `examples/` directory for demo applications
-- Example: `examples/lua_scripting/main.cpp` shows full integration
-- Verify output visually or via image comparison (`image_comparison.cpp`)
-
-## Mocking
-
-**Framework:** Manual mocking via fixture setup
+**Test Grouping:**
+- Group related tests into logical sections (e.g., gravity tests, collision tests)
+- Print section headers with `printf()` before each group
+- Count global `passes` and `failures` counters across all tests
 
 **Patterns:**
 
-1. **Mock Object Creation:**
-```cpp
-Object obj;
-C_LuaScript* script = obj.addComponent<C_LuaScript>(16u, 16u);
-// Returns nullptr if component already exists or limit reached
-```
+1. **Setup Fixture Pattern:**
+   ```cpp
+   struct LuaEngineFixture {
+       LuaEngine engine;
+       LuaBindings bindings;
 
-2. **Mock Scene:**
-```cpp
-Scene scene;
-Object* obj = scene.spawn<Object>();
-// Spawn returns non-owning pointer; owned by scene
-```
+       LuaEngineFixture() : bindings(&engine) {
+           engine.initialize();
+           bindings.registerAll();
+       }
 
-3. **Mock Input State:**
-```cpp
-InputState input;
-input.setButtonDown(Button::A, true);
-bool pressed = input.isButtonJustPressed(Button::A);
-```
+       LuaResult exec(const char* code) {
+           return engine.executeString(code);
+       }
+   };
+   ```
 
-4. **Mock Canvas:**
-```cpp
-LuaBindings bindings(&engine);
-bindings.setCanvas<Pixel4>(canvas4Ptr);
-// Type-erases canvas for Lua operations
-```
+2. **Helper Function Pattern (for Lua testing):**
+   ```cpp
+   static void runLua(LuaEngine& eng, const char* code, const char* label) {
+       LuaResult r = eng.executeString(code);
+       if (!r.success) {
+           printf("FAIL: %s — Lua error: %s\n", label, r.error.c_str());
+           exit(1);
+       }
+   }
+   ```
 
-**No External Mocking Library:**
-- No gmock, mockito, or similar used
-- Mocking done via constructor injection or test-specific wrappers
-- Example: `LuaBindings` accepts `LuaEngine*` pointer for dependency injection
+3. **Assertions with Context:**
+   ```cpp
+   ASSERT(script != nullptr, "ERR-01: addComponent<C_LuaScript> should succeed");
+   ASSERT(script->getErrorPolicy() == ScriptErrorPolicy::Disable,
+          "ERR-01: default errorPolicy should be Disable");
+   ```
+
+## Mocking
+
+**Framework:** No mocking library (Google Mock not used)
+
+**Patterns:**
+
+1. **Minimal Fake Objects:**
+   - Create lightweight concrete implementations for testing
+   - Example: `MinimalScene` in `engine_table_test.cpp`:
+     ```cpp
+     struct MinimalScene : Scene {
+         explicit MinimalScene(uint32_t id) : Scene(id) {}
+     };
+     ```
+
+2. **Null-Guard Testing:**
+   - Test behavior when dependencies are not injected (e.g., no `setActiveScene()`)
+   - Verify safe defaults: returns false, nullptr, 0
+   - Example: `test_engine_scene_null_guards()` calls `engine.scene.find()` with no scene injected
+
+3. **Pointer Injection (Not Mocks):**
+   ```cpp
+   // Instead of mocking, use real objects with setter injection
+   MinimalScene scene(1u);
+   Object* obj = scene.addObject<Object>();
+   obj->setName("hero");
+
+   bindings.setActiveScene(&scene);  // Inject real scene
+
+   LuaResult r = f.exec("found = (engine.scene.find('hero') ~= nil) and 1 or 0");
+   ```
 
 **What to Mock:**
-- External resources (files, network) — not done in these tests (no I/O tests shown)
-- Scene/Object hierarchies — mock via `Scene::spawn()` and fixture setup
-- Canvas rendering — pass test fixture canvas
-- Lua scripts — embed as string literals in test code
+- Complex external systems (not present in tests currently)
+- Simulated time/input state via `setTimeState()`, `setInput()`
 
 **What NOT to Mock:**
-- Core math types (`Vec2`, `Point`, `Rect`) — test with real instances
-- Collision functions — test with real collision detection
-- Component lifecycle — use real `Object::awake()`, `start()`, `update()`
-- LuaEngine and LuaBindings — test with real instances (no mock)
+- Core engine objects (Scene, Object, Component) — use real instances
+- Lua bindings — test live wiring by calling actual Lua and reading results
+- Physics calculations — test actual math functions with known inputs/outputs
 
 ## Fixtures and Factories
 
-**Test Data Pattern:**
+**Test Data:**
 
+Example from `physics_lua_test.cpp`:
 ```cpp
-// Static Lua code embedded in test file
+// Run a Lua snippet and check it succeeds
+static void runLua(LuaEngine& eng, const char* code, const char* label) {
+    LuaResult r = eng.executeString(code);
+    if (!r.success) {
+        printf("FAIL: %s — Lua error: %s\n", label, r.error.c_str());
+        exit(1);
+    }
+}
+```
+
+Example from `error_policy_test.cpp`:
+```cpp
+// Lua code for a script that errors on every update() call
 static const char* k_buggyScript =
     "function update(self, dt)\n"
     "    error('boom')\n"
@@ -230,162 +226,152 @@ static const char* k_goodScript =
     "end\n";
 ```
 
-**Fixture Factory:**
-```cpp
-struct StoreFixture {
-    LuaEngine engine;
-    LuaBindings bindings;
-
-    StoreFixture() : bindings(&engine) {
-        engine.initialize();
-        bindings.registerAll();
-    }
-
-    LuaResult exec(const char* code) {
-        return engine.executeString(code);
-    }
-
-    double getNum(const char* name) {
-        return engine.getGlobalNumber(name);
-    }
-};
-```
-
 **Location:**
-- Fixtures defined in test `.cpp` file; no shared fixture header
-- Helper functions for common operations (e.g., `pushVec2`, `checkVec2`) in implementation file
-- Test data constants (`k_*`) defined at file scope before test functions
-- Epsilon constant: `static const double EPS = 1e-5;` for floating-point comparisons
+- Inline in test file as static const strings or local variables
+- No separate fixtures directory; fixtures co-located with tests
+- Sprite test data: `pikachu.h` (header-only PNG image data)
+
+**Factory Patterns:**
+- `Object obj; obj.addComponent<C_LuaScript>(16u, 16u);` — inline creation
+- Scene with objects: Create scene, call `scene.addObject<Object>()`, name it, inject via binding
+- No factory class; direct use of constructors
 
 ## Coverage
 
-**Requirements:** Not enforced by automated tools
+**Requirements:** None enforced
 
-**Test Naming Strategy:**
-- Tests map to requirements using prefixes: `test_err01_*` → ERR-01 requirement
-- Example tests:
-  - `error_policy_test.cpp`: ERR-01 through ERR-05 (ScriptErrorPolicy)
-  - `gc_assert_test.cpp`: GC-01, GC-02 (Lua GC control)
-  - `script_proxy_lifetime_test.cpp`: PROXY-STALE, TAG-01 through TAG-03
+**View Coverage:**
+- Coverage not automatically tracked in CI
+- Manual coverage analysis via `gcov` if needed:
+  ```bash
+  # Compile with coverage flags
+  cmake -B build -DCMAKE_CXX_FLAGS=--coverage
+  cmake --build build && ctest --test-dir build
 
-**View Coverage (Manual):**
-```bash
-# Generate gcov data (requires build with --coverage flag)
-cmake -B build -DCMAKE_CXX_FLAGS="--coverage"
-cmake --build build
-ctest
-gcov src/core/*.cpp
-```
+  # Generate report
+  gcov tests/physics_lua_test.cpp
+  lcov --directory . --capture --output-file coverage.info
+  genhtml coverage.info --output-directory coverage_html
+  ```
 
-## Test Categories by Module
+## Test Types
 
-### Core Tests
-- `named_objects_test.cpp`: Object naming and tagging (OBJ-01 through OBJ-04)
-- `scene_transition_test.cpp`: Scene state machine transitions (SCENE-01 through SCENE-03)
-- `scene_render_test.cpp`: Scene rendering with Pixel4 dispatch (RENDER-01)
+**Unit Tests:**
+- Scope: Single function or component behavior
+- Approach: Create object, call method, verify output via Lua global variables
+- Examples: `test_Vec2_constructor_and_type()`, `test_err02_disable_policy_stops_after_error()`
 
-### Graphics Tests
-- `sprite_test.cpp`: SpriteSheet animation and frame calculation
-- `sprite_flip_test.cpp`: Sprite flipping and rotation (flipH, flipV, rotate90)
-- `sprite_sdl_test.cpp`: Visual sprite test with SDL3 rendering
-- `sprite_load_test.cpp`: Binary sprite asset (.njn) loading with GTest
-- `palette_test.cpp`: Palette color operations
-- `shadow_mode_test.cpp`: Parallel backend testing (real vs. comparison output)
-- `image_comparison.cpp`: Visual output validation helpers
+**Integration Tests:**
+- Scope: Multiple components working together (e.g., Lua bindings + C++ engine)
+- Approach: Initialize LuaEngine, register bindings, execute Lua, verify results
+- Examples: `test_engine_scene_live_switch()`, `test_engine_scene_live_find()`
 
-### Scripting Tests
-- `math_binding_test.cpp`: Vec2, Point, Rect userdata and operations
-- `collision_test.cpp`: C++ collision functions + Lua engine.collision.* API
-- `collision_response_test.cpp`: Collision response helpers (aabbOverlap, circleResponse, reflect)
-- `rng_test.cpp`: Seeded RNG (engine.random.seed, integer, float)
-- `store_test.cpp`: Persistent KV store (engine.store.*)
-- `engine_table_test.cpp`: engine.* global table structure (ENG-01 through ENG-06)
-- `error_policy_test.cpp`: ScriptErrorPolicy (ERR-01 through ERR-05)
-- `input_event_callback_test.cpp`: Input callbacks (INPUT-01 through INPUT-03)
-- `text_binding_test.cpp`: Text rendering (text, textWrapped, measurement)
-- `layer_binding_test.cpp`: Layer management (setLayer, getLayer, clearLayer)
-- `hot_reload_test.cpp`: Script hot-reload lifecycle
-- `gc_assert_test.cpp`: Lua GC control + component assertions (GC-01, GC-02, DEP-01 through DEP-03)
-- `script_proxy_lifetime_test.cpp`: Object proxy safety (PROXY-STALE, TAG-01 through TAG-03)
-- `object_proxy_test.cpp`: ObjectProxy validation and stale invalidation
+**Lua Binding Tests:**
+- Scope: Verify C++ functions are accessible and work correctly from Lua
+- Approach: Execute Lua code via `engine.executeString()`, read globals, assert values
+- Examples: `physics_lua_test.cpp`, `engine_table_test.cpp`, `math_binding_test.cpp`
 
-### Input Tests
-- `input_test.cpp`: Button and axis input state machine
-- `input_event_callback_test.cpp`: Edge-triggered callbacks (just_pressed, just_released)
-
-### Component Tests
-- `drawable_decoupling_test.cpp`: C_Drawable component isolation (Phase 36 regression)
-
-### Build/Linking Tests
-- `compositor_test.cpp`: Multi-layer composition (LAYER-01 through LAYER-04)
-
-## Special Test Features
-
-**Requirement Numbering:**
-- Tests prefixed with phase/requirement code (e.g., PROXY-STALE, TAG-01)
-- Each test function documents which requirement it validates
-- File header comments list all requirements tested
-
-**Lua Script Embedding:**
-- Lua code embedded as C++ raw string literals
-- Multi-line scripts indented for readability
-- No external Lua files needed for core tests (files in `scripts/` are for demos)
-
-**Asset File Testing:**
-- Binary sprite file `test_pikachu.njn` copied to build directory via CMakeLists
-- GTest uses `sprite_load_test.cpp` with GoogleTest framework for structured assertions
-- Image comparison helpers in `image_comparison.cpp` for visual test validation
-
-**Lua Execution Model:**
-- Each fixture creates fresh `LuaEngine` instance
-- `bindings.registerAll()` initializes all Lua tables and functions
-- Tests execute Lua code via `engine.executeString()` which returns `LuaResult{success, error}`
-- Global variables set in Lua are read back via `engine.getGlobalNumber()`, `engine.getGlobalString()`
+**E2E Tests:**
+- Scope: Not used in this codebase
+- Alternative: Examples in `examples/` directory demonstrate full workflows (but not automated tests)
 
 ## Common Patterns
 
-**Async Testing (Simulation):**
-```cpp
-Object obj;
-C_LuaScript* script = obj.addComponent<C_LuaScript>(16u, 16u);
-script->loadScript(k_code);
-
-// Simulate frame updates
-script->update(0.016f);  // Frame 1
-script->update(0.016f);  // Frame 2
-
-// Check state after updates
-ASSERT(script->hasErrors() || !script->hasErrors(), "expected state");
-```
+**Async Testing:**
+Not applicable to this single-threaded game engine.
 
 **Error Testing:**
+
+Pattern 1: Verify error is raised (Lua)
 ```cpp
-LuaResult r = f.exec("error('test error')");
-ASSERT(!r.success, "error() should set success=false");
-ASSERT(r.error.length() > 0, "error message should be populated");
+// tests/error_policy_test.cpp
+script->update(0.016f);  // Triggers error
+ASSERT(script->hasErrors(), "hasErrors() should be true after error");
 ```
 
-**Type Testing (Userdata):**
+Pattern 2: Verify error message (Lua)
 ```cpp
+// tests/engine_table_test.cpp
+LuaResult r3 = f.exec("local _ = brick.name");
+ASSERT(!r3.success, "accessing destroyed proxy should raise an error");
+```
+
+Pattern 3: Verify null-guard behavior
+```cpp
+// tests/engine_table_test.cpp — no input set, functions return safe defaults
 LuaResult r = f.exec(
-    "local v = Vec2(1, 2)\n"
-    "tx = (type(v) == 'userdata') and 1 or 0\n"
+    "h  = engine.input.held(0)          and 1 or 0\n"
 );
-ASSERT(f.getNum("tx") == 1.0, "Vec2 should be userdata type");
+ASSERT(f.getNum("h") == 0.0, "held() should return false when no input");
 ```
 
-**Boundary Testing:**
+**Floating-Point Assertions:**
+
 ```cpp
-// AABB collision at edges
-ASSERT(!collision::aabb(0, 0, 10, 10, 10, 0, 5, 5), "touching edge — no overlap");
-ASSERT(collision::aabb(0, 0, 10, 10, 9, 9, 9, 9), "overlap at corner");
+#define ASSERT_NEAR(a, b, eps, msg) \
+    do { if (std::fabs((a)-(b)) > (eps)) { \
+        printf("FAIL: %s — got %f, expected %f\n", msg, (double)(a), (double)(b)); \
+        exit(1); } } while(0)
+
+// Usage
+ASSERT_NEAR(f.getNum("vy"), 500, 0.01, "gravity vy should be ~500");
 ```
 
-**Performance Regression Testing:**
-- No formal performance tests
-- Benchmark examples in `examples/` (not part of test suite)
-- Tests focus on correctness, not timing
+**Lua Assertion Helper:**
+```cpp
+// Run Lua with assertions inside
+runLua(eng, R"(
+    assert(type(engine.physics) == "table", "engine.physics must be a table")
+    assert(math.abs(gx) < 0.001, "gravity should be 0")
+)", "gravity table checks");
+```
+
+**Requirement-Driven Testing:**
+
+Tests directly reference phase and requirement IDs in comments and output:
+
+```cpp
+// tests/engine_table_test.cpp
+static void test_engine_scene_live_switch() {
+    printf("--- engine.scene.switch live wiring (ENG-01) ---\n");
+    // ...
+    ASSERT(mockSSM.getCurrentScene()->getId() == 2u, "ENG-01: current scene is now scene 2");
+}
+```
+
+## Test Lifecycle
+
+**Setup (Before Each Test):**
+- Create test object/fixture (usually inline in test function)
+- Initialize engine/bindings
+- Prepare test data (Lua code strings, scene objects, etc.)
+
+**Teardown (After Each Test):**
+- No explicit cleanup needed; RAII via destructors (scoped fixture objects)
+- Lua engine, scene, objects all freed when they go out of scope
+- Memory validated by compiler/sanitizer in CI
+
+**Global State:**
+- Test functions are independent; no shared state between tests
+- Each test creates fresh LuaEngine, Scene, Object instances
+- Global counters (`passes`, `failures`) accumulated across all tests
+
+## Test Execution in CI/CD
+
+**Build:**
+- CMake configures test executables and links to library
+- All tests compiled into `build/tests/` directory
+
+**Run:**
+- CTest runs all executable tests in sequence
+- Output captured with `--output-on-failure`
+- Exit code: 0 if all tests pass, non-zero if any fail
+
+**Reporting:**
+- PASS/FAIL printed to stdout
+- Summary line: `=== Results: X passed, Y failed ===`
+- Lua errors printed with context (line numbers, labels)
 
 ---
 
-*Testing analysis: 2026-02-28*
+*Testing analysis: 2026-03-01*

@@ -1,320 +1,289 @@
 # External Integrations
 
-**Analysis Date:** 2026-02-28
+**Analysis Date:** 2026-03-01
 
-## Lua Scripting API
+## APIs & External Services
 
-**Overview:**
-The engine exposes a love2d.graphics-style Lua API for game scripting. All functions are registered as global Lua functions and tables. The Lua runtime is sandboxed: `dofile`, `loadfile`, `require`, `io`, `debug`, `package`, and `os` modules are disabled.
+**Graphics Rendering:**
+- SDL3 - Window management, input handling, frame rendering
+  - SDK/Client: SDL3::SDL3 (CMake target)
+  - Status: Optional, fetched via FetchContent
+  - Usage: Desktop display, input polling, frame synchronization
+  - Entry point: `src/platform/sdl/sdl_main.cpp`
 
-**Core Global Functions (Drawing API):**
-
-Canvas Management:
-- `clear(color)` - Clear canvas to color (0-15 for 4-bit, 0-255 for 8-bit)
-- `getWidth()` - Get canvas width in pixels
-- `getHeight()` - Get canvas height in pixels
-
-Color & Style:
-- `setColor(color)` - Set current drawing color
-- `getColor()` - Get current drawing color
-- `setLineWidth(width)` - Set line thickness for primitives
-- `getLineWidth()` - Get current line width
-
-Primitives:
-- `point(x, y)` - Draw single pixel
-- `line(x1, y1, x2, y2)` - Draw line
-- `rectangle(mode, x, y, width, height)` - Draw or fill rectangle. Mode: "line" or "fill"
-- `circle(mode, x, y, radius)` - Draw or fill circle. Mode: "line" or "fill"
-- `triangle(mode, x1, y1, x2, y2, x3, y3)` - Draw or fill triangle. Mode: "line" or "fill"
-
-Pixel Access:
-- `setPixel(x, y, color)` - Set single pixel
-- `getPixel(x, y)` - Read single pixel value
-
-Text Rendering (LAYER-06 support):
-- `text(string, x, y [, color] [, size] [, font])` - Draw text at position
-- `textWrapped(string, x, y, maxWidth [, color] [, size] [, font])` - Draw text with word wrap
-- `setTextSize(size)` - Set text multiplier (1=normal, 2=double, etc.)
-- `getTextSize()` - Get current text size
-- `setFont(name)` - Switch to named font (e.g., "default", "default8")
-- `getFont()` - Get current font name
-- `getTextWidth(string [, size] [, font])` - Measure string width in pixels
-- `getTextHeight([size] [, font])` - Measure character height in pixels
-
-**Layer System (LAYER-06):**
-
-Layer Constants (1-indexed in Lua):
-- `LAYER_BG` = 1 - Background layer
-- `LAYER_MID` = 2 - Middle layer
-- `LAYER_FG` = 3 - Foreground layer
-- `LAYER_UI` = 4 - UI layer
-
-Layer Functions:
-- `setLayer(layer)` - Switch active layer for drawing (1-4)
-- `getLayer()` - Get current active layer
-- `clearLayer(color)` - Clear current layer
-- `getLayerCount()` - Get total number of layers
-- `setLayerVisible(layer, visible)` - Show/hide layer for rendering
-- `isLayerVisible(layer)` - Check if layer is visible
-
-**Sprite System (SPR-06):**
-
-Sprite Pool Management:
-- `engine.sprite.load(name)` - Load .njn sprite file from asset directory. Returns handle 0-15 or -1 if pool full.
-- `engine.sprite.free(handle)` - Free sprite slot. Reclaims buffer space if asset is at buffer tip.
-- `newSprite(data_lightuserdata, cell_w, cell_h, cols, rows)` - Create sprite from raw pixel buffer (lightuserdata). Returns handle or -1.
-
-Sprite Animation & Drawing:
-- `drawSprite(handle, x, y [, flipH] [, flipV] [, rotate90])` - Draw current frame. Supports flip and 90° rotation.
-- `updateSprite(handle, dt_ms)` - Advance animation by dt_ms milliseconds.
-- `setFrame(handle, frame)` - Jump to specific frame index.
-
-Sprite Properties (managed per slot):
-- FPS: 8.0 default (frames per second)
-- Animation modes: Loop, Once, PingPong
-- Transparent pixel index: 15 (compile-time constant, skipped during blit)
-- Pool size: 16 slots (fixed, zero-allocation)
-- Asset buffer: 64KB for loaded .njn files
-
-**Sprite Asset Format (.njn):**
-- Binary format with header followed by pixel data
-- Structure: `NjnHeader` (uint8 cellW, cellH, cols, rows) + uint8_t pixel array
-- Pixel encoding: 1 byte per pixel, lower 4 bits = palette index 0-15, index 15 = transparent
-- File path: `assetPath_ + "/" + name + ".njn"` (resolved in `bindings_sprite_load.cpp` line 33-38)
-- Load via: `engine.sprite.load("spritename")` → loads `/assets/spritename.njn`
-
-**Input Polling (INP-05):**
-
-Button/Key Input:
-- `engine.input.held(button)` - Check if button is held this frame
-- `engine.input.just_pressed(button)` - Check if button pressed this frame
-- `engine.input.just_released(button)` - Check if button released this frame
-- `engine.input.axis(axis)` - Read analog axis value (0-7). Returns float -1.0 to 1.0.
-
-Also available as global functions (legacy):
-- `isButtonHeld(button)` - Same as engine.input.held()
-- `isButtonJustPressed(button)` - Same as engine.input.just_pressed()
-- `isButtonJustReleased(button)` - Same as engine.input.just_released()
-- `getAxis(axis)` - Same as engine.input.axis()
-
-Button/Axis mapping is platform-specific (SDL, ESP32, or VCV Rack context).
-
-**Time Functions (ENG-04):**
-- `engine.time.delta()` - Get delta time in seconds (float)
-- `engine.time.now()` - Get total elapsed time in seconds (float)
-- `engine.time.frame()` - Get frame counter (uint32)
-- `time()` - Alias for engine.time.now()
-
-**Scene & Entity Management (ENG-01, ENG-02, ENG-03):**
-
-Scene Switching:
-- `engine.scene.switch(sceneName)` - Switch to named scene (via SceneStateMachine)
-- `engine.scene.find(objectName)` - Find object by name in active scene. Returns ObjectProxy userdata.
-
-Entity Spawning/Destruction:
-- `engine.scene.spawn(objectName)` - Create new object in active scene
-- `engine.scene.destroy(objectName)` - Destroy object by name
-
-Object Proxy (returned from `engine.scene.find()`):
-- Properties (read/write): `x`, `y`, `visible`, `layer` (1-indexed), `active`
-- Properties (read-only): `name`
-- Methods: `addTag(tag)`, `hasTag(tag)`, `clearTags()`
-
-**Collision Functions (ENG-05):**
-- `engine.collision.aabb(x1, y1, w1, h1, x2, y2, w2, h2)` - AABB-AABB collision test
-- `engine.collision.circleCircle(x1, y1, r1, x2, y2, r2)` - Circle-circle collision
-- `engine.collision.pointInRect(px, py, x, y, w, h)` - Point in rectangle
-- `engine.collision.pointInCircle(px, py, cx, cy, r)` - Point in circle
-- `engine.collision.lineLine(x1, y1, x2, y2, x3, y3, x4, y4)` - Line-line intersection
-- `engine.collision.lineCircle(x1, y1, x2, y2, cx, cy, r)` - Line-circle collision
-- `engine.collision.aabbOverlap(x1, y1, w1, h1, x2, y2, w2, h2)` - AABB overlap with delta info
-- `engine.collision.circleResponse(x1, y1, r1, x2, y2, r2)` - Circle collision response
-- `engine.collision.reflect(vx, vy, nx, ny)` - Reflect velocity vector across normal
-
-**Random Number Generation (RNG):**
-- `engine.random.seed(value)` - Seed xorshift32 PRNG
-- `engine.random.integer(min, max)` - Generate random integer in range
-- `engine.random.float()` - Generate random float [0.0, 1.0)
-
-**Persistent Key-Value Store (STORE):**
-- `engine.store.save(key, value)` - Save value (number, string, bool, or table)
-- `engine.store.load(key)` - Load value by key. Returns value or nil.
-- `engine.store.exists(key)` - Check if key exists
-- `engine.store.delete(key)` - Delete key
-- `engine.store.clear()` - Clear all data
-
-Store Characteristics:
-- Per-script instance (persists across script reloads if configured)
-- Fixed capacity: 16 keys max
-- String values: 128 bytes max
-- Table support: Each table holds up to 16 entries
-- Persistence: JSON file on desktop (VCV Rack), NVS deferred on ESP32
-- Access: `setStorePath(path)` sets JSON file location; empty path = in-memory only
-
-**Garbage Collection (GC-01, GC-02):**
-- `engine.lua.collect()` - Force garbage collection
-- `engine.lua.memory()` - Get current Lua memory usage in bytes
-
-**Math Types:**
-- `Vec2(x, y)` - 2D vector constructor
-- `Point(x, y)` - Point constructor (alias for Vec2)
-- `Rect(x, y, w, h)` - Rectangle constructor
-
-**Logging:**
-- `engine.log(...)` - Print to console/log
-- `print(...)` - Alias for engine.log()
-
-## Component System
-
-**C_LuaScript Component:**
-- **Purpose:** Attach Lua scripts to game objects. Each script is a separate Lua coroutine/execution context.
-- **Location:** `include/enjin2/components/lua_script.hpp`, `src/components/lua_script.cpp`
-- **Script callbacks:** `init()`, `update(dt)`, `lateUpdate()`, `onRender()` (called from host)
-- **Bindings:** `LuaBindings::loadScriptFile(path)` loads and executes .lua file, creates ScriptProxy
-
-**Other Components:**
-- `C_Position` - Object position (x, y). Accessible via proxy: `obj.x`, `obj.y`
-- `C_Drawable` - Render interface with `draw()` method
-- `C_Sprite` - Built-in sprite animation (alternative to Lua sprite pool)
-- `C_Canvas` - Draws to canvas
-- `C_ImageCache` - Caches image assets
+**Documentation Generation:**
+- Doxygen - API documentation extraction
+  - Config: `docs/Doxyfile`
+  - Integration: CMake build target `docs`
+  - Post-processor: `scripts/generate-api-docs.js` (Node.js, xml2js)
 
 ## Data Storage
 
 **Databases:**
-- **None** - Engine is headless/embedded. VCV Rack integration provides context; no built-in DB.
+- Custom persistent store (Lua): `engine.store.*`
+  - Client: `src/scripting/bindings_store.cpp`
+  - Implementation: Platform-dependent (key-value on ESP32, filesystem on desktop)
+  - Functions: `save()`, `load()`, `exists()`, `delete()`, `clear()`
 
 **File Storage:**
-- Local filesystem only. Paths:
-  - Sprites: `assetPath_ + "/" + name + ".njn"` (binary sprite format)
-  - Scripts: `LuaFileSystem::readScriptFile()` uses VCV Rack or ESP32 native calls (see `lua_platform.cpp`)
-  - Persistent store: JSON file (location set via `setStorePath()`)
+- Filesystem (desktop VCV_RACK platform)
+  - Scripts: Lua script files loaded via `LuaFileSystem::readScriptFile()`
+  - Sprites: .njn binary format from disk
+  - No file I/O on ESP32 (security restriction)
+
+**Asset Formats:**
+- .njn (enjin native) - 4-bit indexed color sprite sheets
+  - Header: 8 bytes (magic "NJ", version, cell dims, grid size)
+  - Pixel data: 1 byte per pixel (4-bit palette index)
+  - Parser: `include/enjin2/graphics/sprite_asset.hpp`
+  - Loader: `src/scripting/bindings_sprite_load.cpp`
+- BMP/PNG/TGA/JPEG/HDR - Via stb_image_write.h for canvas export
 
 **Caching:**
-- **Sprite Asset Buffer:** 64KB fixed arena in `LuaBindings::assetBuffer_[]`. FIFO allocation with best-effort deallocation (only reclaims if asset is at buffer tip).
-- **Font Registry:** Fixed 8-font registry in `LuaBindings::fontRegistry[]`. Pre-loaded fonts can be registered via `registerFont(name, gfxfont_ptr)`.
-- **ImageCache Component:** Caches images in memory. Location: `include/enjin2/components/image_cache.hpp`
-
-**Caching (None detected):**
-- No Redis, Memcached, or explicit HTTP caching layer.
+- Image cache component: `include/enjin2/components/image_cache.hpp`
+  - Pre-rendered graphics caching
+  - Fixed-size cache to avoid dynamic allocation
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- **None** - Engine is not networked. Single-user/local game execution.
-
-**Credentials/Secrets:**
-- Not applicable (no network APIs requiring authentication).
+- None - This is a game engine, not a services platform
+- No user management, OAuth, or remote authentication
+- Single-device operation (desktop or ESP32 microcontroller)
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- `luaL_error()` and standard Lua error handling. No external error tracking service.
-- C++ exception handling via catch blocks in bindings (e.g., `loadScriptFile()` traps Lua errors)
+- None - No remote error reporting
+- Local error handling: `include/enjin2/components/lua_script.hpp` ScriptErrorPolicy
+  - Policies: Disable (log once), Log (every frame), Panic (abort/restart)
 
 **Logs:**
-- Standard output via `printf()` and `print()` in Lua
-- No log aggregation; logs printed to console/stdio
-- Platform-specific: VCV Rack may redirect to plugin UI; ESP32 via serial; web via browser console
+- Console output (stdout/stderr)
+  - Used by: Lua binding functions via `luaL_error()`, `printf()`
+  - Platform-specific: Desktop uses fprintf, ESP32 uses ESP_LOG macros (optional)
 
-**Profiling:**
-- Lua memory profiling: `engine.lua.memory()` returns heap usage
-- No frame-time profiling or performance metrics exposed
+**Performance Monitoring:**
+- Memory: `engine.lua.memory()` - Returns current Lua heap usage
+- GC: `engine.lua.collect()` - Manual garbage collection trigger
+- Frame timing: `engine.time.*` subsystem (delta, now, frame count)
 
-## CI/CD & Deployment
+## Lua Scripting Bindings
 
-**Hosting:**
-- **Desktop:** SDL3-based standalone executable or VCV Rack plugin module
-- **Embedded:** ESP32 firmware via IDF build system
-- **Web:** WebAssembly module (Emscripten) for browser execution
+**Scripting System:**
+- LuaEngine - Core interpreter instance (`include/enjin2/scripting/lua_engine.hpp`)
+  - Location: `src/scripting/lua_engine.cpp`
+  - Manages: Lua state creation, memory, script execution, function registration
+  - Platform abstraction: `LuaPlatform` class handles library loading per-platform
 
-**CI Pipeline:**
-- **Testing:** CMake/CTest (runs via `cmake --build . --target test`)
-- **Linting:** clang-tidy (opt-in via `cmake -DCLANG_TIDY=ON`)
-- **Documentation:** Doxygen + Docusaurus (opt-in via `cmake --build . --target docs`)
-- **No GitHub Actions/CI services detected** - Manual local builds
+**Lua Platform Support:**
+- Desktop (VCV_RACK): Full Lua with JIT, file I/O, debug libraries
+  - File I/O: `LuaFileSystem::readDesktopFile()` → standard filesystem
+  - Libraries: All standard Lua libraries loaded
+- Embedded (ESP32): Minimal Lua, no file I/O, restricted memory
+  - File I/O: `LuaFileSystem::readESP32File()` → LITTLEFS/SPIFFS read-only
+  - Libraries: math, table, string only (core libs restricted)
+- WebAssembly (Emscripten): LuaJIT without FFI/JIT
+  - Compilation flags: `LUAJIT_DISABLE_FFI`, `LUAJIT_DISABLE_JIT`
+  - API: Emscripten.js bindings in `src/bindings/emscripten_bindings.cpp`
 
-## Environment Configuration
+**Global Lua API (engine.* table):**
 
-**Lua Sandbox Configuration:**
-- Disabled modules: `dofile`, `loadfile`, `require`, `io`, `debug`, `package`, `os`
-- Heap size: 256KB (configured in `lua_engine.cpp`)
-- No stdin/stdout redirection; prints to parent process stdout
+`engine.scene.*` - Scene management
+- `engine.scene.switch(sceneName)` - Transition to named scene
+- `engine.scene.find(name)` - Get scene by name
+- `engine.scene.spawn(name, data)` - Create new scene instance
+- `engine.scene.destroy(name)` - Destroy named scene
 
-**Sprite Asset Path:**
-- Set via `LuaBindings::setAssetPath(path)`. Default: empty (current directory)
-- Example: `setAssetPath("/assets")` resolves `engine.sprite.load("player")` to `/assets/player.njn`
+`engine.input.*` - Input polling
+- `engine.input.held(buttonIdx)` - Check if button held this frame
+- `engine.input.just_pressed(buttonIdx)` - Edge: button pressed this frame
+- `engine.input.just_released(buttonIdx)` - Edge: button released this frame
+- `engine.input.axis(axisNum)` - Get analog axis value
 
-**Store Persistence:**
-- Set via `LuaBindings::setStorePath(path)`. Default: empty (in-memory only)
-- If path provided, JSON auto-loads on `setStorePath()` and can be manually saved
+`engine.time.*` - Frame timing
+- `engine.time.delta()` - Elapsed time since last frame (seconds)
+- `engine.time.now()` - Current absolute time (seconds)
+- `engine.time.frame()` - Current frame number (counter)
 
-**Font Registration:**
-- Register fonts via `LuaBindings::registerFont(name, gfxfont_ptr)`
-- Built-in fonts: "default" (5x7), "default8" (8x8)
-- Max 8 fonts registered
+`engine.collision.*` - Geometric tests
+- `engine.collision.aabb(r1, r2)` - AABB overlap test
+- `engine.collision.circleCircle(c1, r1, c2, r2)` - Circle collision
+- `engine.collision.pointInRect(p, r)` - Point-in-rectangle
+- `engine.collision.pointInCircle(p, c, r)` - Point-in-circle
+- `engine.collision.lineLine(...)` - Line-line intersection
+- `engine.collision.lineCircle(...)` - Line-circle collision
+- `engine.collision.aabbOverlap(...)` - AABB overlap with depth
+- `engine.collision.circleResponse(...)` - Collision response vectors
+- `engine.collision.reflect(v, n)` - Vector reflection
 
-**Required Environment Variables:**
-- **ESP32 builds:** `IDF_PATH` (ESP-IDF root), `LUA_INCLUDE_DIRS`, `LUA_LIBRARIES`
-- **WebAssembly:** EMSCRIPTEN environment (emsdk)
-- **Desktop:** Standard C++ toolchain
+`engine.lua.*` - Memory & GC control
+- `engine.lua.collect()` - Trigger garbage collection
+- `engine.lua.memory()` - Returns bytes used by Lua heap
 
-**Secrets Location:**
-- Not applicable. No credentials or API keys in use.
+`engine.random.*` - Seeded PRNG
+- `engine.random.seed(seed)` - Set RNG seed for determinism
+- `engine.random.integer(min, max)` - Pseudorandom int
+- `engine.random.float(min, max)` - Pseudorandom float
 
-## Webhooks & Callbacks
+`engine.physics.*` - Physics helpers (Phase 45)
+- `engine.physics.setGravity(gx, gy)` - Set global gravity
+- `engine.physics.getGravity()` → gx, gy
+- `engine.physics.applyGravity(vx, vy, dt)` - Apply gravity to velocity
+- `engine.physics.checkCollision(...)` - Collision checks
+- `engine.physics.resolveCollision(...)` - Response vectors
 
-**Incoming:**
-- Not applicable (engine is not a server).
+`engine.event.*` - Event bus (Phase 42)
+- `engine.event.on(eventName, callback)` - Listen to event
+- `engine.event.off(eventName, callback)` - Remove listener
+- `engine.event.emit(eventName, ...)` - Emit event with args
 
-**Outgoing:**
-- C_LuaScript lifecycle callbacks: `init()`, `update(dt)`, `lateUpdate()`, `onRender()`
-- Entity lifecycle: `Object::onDestroy()` hook for cleanup
-- Scene lifecycle: `Scene::onStart()`, `Scene::onStop()` (application-specific)
+`engine.camera.*` - 2D camera system (Phase 44)
+- `engine.camera.setPosition(x, y)` - Camera position
+- `engine.camera.getPosition()` → x, y
+- `engine.camera.lookAt(targetX, targetY)` - Look at target
+- `engine.camera.shake(intensity, duration)` - Screen shake effect
+- `engine.camera.setBounds(x, y, w, h)` - Clamp camera bounds
+- `engine.camera.clearBounds()` - Remove bounds
 
-## Missing Integrations & Known Gaps
+`engine.store.*` - Persistent key-value store
+- `engine.store.save(key, value)` - Save JSON/number/string
+- `engine.store.load(key)` - Retrieve value
+- `engine.store.exists(key)` - Check key existence
+- `engine.store.delete(key)` - Remove key
+- `engine.store.clear()` - Clear all entries
 
-**Audio System:**
-- **Status:** Not implemented
-- **Scope:** No audio playback, synthesis, or MIDI support
-- **Components:** No C_AudioSource or equivalent
-- **Lua Bindings:** No audio.* API
-- **Impact:** Games cannot produce sound/music
+**Graphics Bindings:**
 
-**Tilemap System:**
-- **Status:** Not implemented (top priority per user)
-- **Scope:** No tilemap rendering, collision, or editing tools
-- **Components:** No C_Tilemap or equivalent
-- **Lua Bindings:** No tilemap.* API
-- **Impact:** Grid-based games (roguelikes, puzzles, platformers) must implement custom solutions
-- **Workaround:** Manually draw tile grid via sprite sheets and position sprites, or use layers + sprite pool
+Drawing API (love2d.graphics-style)
+- `setColor(colorIdx)` - Set draw color (palette index)
+- `getColor()` → colorIdx
+- `clear(colorIdx)` - Clear canvas to color
+- `point(x, y)` - Draw single pixel
+- `line(x1, y1, x2, y2)` - Draw line
+- `rect(x, y, w, h)` - Draw rectangle outline
+- `fillRect(x, y, w, h)` - Filled rectangle
+- `circle(x, y, r)` - Circle outline
+- `fillCircle(x, y, r)` - Filled circle
+- `polygon(points)` - Polygon outline
+- `fillPolygon(points)` - Filled polygon
+- `triangle(...)` - Triangle drawing
 
-**Physics Engine:**
-- **Status:** Only collision detection (no dynamics)
-- **Scope:** Collision shapes and tests available, but no velocity integration, gravity, or impulse response
-- **Components:** No C_RigidBody or equivalent
-- **Impact:** Games requiring complex physics must implement custom integration
+Sprite API
+- `loadSprite(filename)` → spriteSheet - Load .njn file
+- `drawSprite(sheet, cellIdx, x, y, opts)` - Draw sprite cell
+  - Options: flipH, flipV, rotate90, scale
+- `getSpriteWidth(sheet)` / `getSpriteHeight(sheet)`
+- `getGridCols(sheet)` / `getGridRows(sheet)` - Sheet dimensions
 
-**Networking:**
-- **Status:** Not implemented
-- **Scope:** No multiplayer, HTTP client, or WebSocket support
-- **Impact:** Single-player/local games only
+Text API
+- `setFont(fontName)` - Select font (defaultfont or builtin)
+- `text(string, x, y)` - Draw text
+- `textWrapped(string, x, y, maxWidth)` - Word-wrapped text
+- `textWidth(string)` → pixels - Measure text width
+- `textHeight()` → pixels - Line height
 
-**Input Device Support:**
-- **Status:** Partial. SDL gamepad, keyboard; no mouse, touch, or advanced input
-- **Components:** InputState polls SDL events in `sdl_main.cpp`
-- **Impact:** Touch-based games require custom handling
+Layer API
+- `setLayer(layerNum)` - Set active render layer (0-15)
+- `getLayer()` → layerNum
+- `clearLayer(layerNum)` - Clear specific layer
+- `composeLayers()` - Composite all layers to output
 
-**Post-Processing Effects:**
-- **Status:** Partial. PostFX system exists (`src/effects/postfx.cpp`), but limited built-in effects
-- **Lua Bindings:** No postfx.* API exposed to scripts
-- **Impact:** Advanced visual effects (bloom, blur, distortion) require C++ components
+Effects API
+- `posterize(levels)` - Reduce colors
+- `desaturate()` - Grayscale effect
+- `invert()` - Color inversion
 
-**Pathfinding:**
-- **Status:** Not implemented
-- **Scope:** No A*, Dijkstra, or steering behaviors
-- **Impact:** AI games must implement custom pathfinding
+**Input Binding:**
+
+Button indices (SDL3 mapping in desktop runner)
+- 0: UP (arrows or W)
+- 1: DOWN (arrows or S)
+- 2: LEFT (arrows or A)
+- 3: RIGHT (arrows or D)
+- 4: A (Z key)
+- 5: B (X key)
+- 6: START (Enter key)
+
+Implementation: `src/platform/sdl/sdl_main.cpp` `input_platform_poll()`
+
+**Math Bindings:**
+
+Userdata types
+- `Vec2(x, y)` - 2D vector with arithmetic operators
+- `Point(x, y)` - Integer point
+- `Rect(x, y, w, h)` - Axis-aligned rectangle
+
+Functions
+- `clamp(value, min, max)` - Clamp to range
+- `lerp(a, b, t)` - Linear interpolation
+- `remap(value, inMin, inMax, outMin, outMax)` - Map range
+- `distance(x1, y1, x2, y2)` - Euclidean distance
+- `sign(value)` - Return -1, 0, or 1
+- `smoothstep(edge0, edge1, x)` - Smooth interpolation
+
+**Component Bindings:**
+
+ScriptProxy (self in update/draw)
+- `self:get(componentType)` → Component proxy - Get component on owner
+- `self:addTag(tagName)` - Add tag to owner
+- `self:hasTag(tagName)` → bool
+- `self:clearTags()` - Remove all tags
+
+ObjectProxy (via engine.scene.find)
+- `obj:getComponent(typeName)` → Component proxy
+- `obj:getComponents(typeName)` → list of proxies
+- `obj:enable()` / `obj:disable()`
+- `obj:destroy()`
+
+ComponentProxy (generic component access)
+- `comp.field = value` - Field assignment via __newindex
+- `value = comp.field` - Field access via __index
+- Component types: C_Position, C_Sprite, C_Timer, C_StateMachine, C_Tilemap, C_Camera, etc.
+
+## WebAssembly Bindings
+
+**Emscripten Integration:**
+- Binding file: `src/bindings/emscripten_bindings.cpp`
+- Module name: `Enjin2Module` (ES6 module)
+- Exposed classes:
+  - `Pixel4` - 4-bit pixel value
+  - `LuaEngine` - Script interpreter
+  - `LuaResult` - Execution result
+  - `LuaCanvas` - Rendering context
+  - Canvas types: `Canvas4_128x128`, `Canvas8_128x64`, etc.
+
+**Memory Configuration (WASM):**
+- Maximum memory: 64MB
+- Stack size: 1MB
+- Memory growth: Enabled (`-sALLOW_MEMORY_GROWTH=1`)
+- Assertions: Enabled in debug builds
+
+## Tilemap System (Phase 43)
+
+**Tilemap Component:** `src/components/tilemap.cpp`
+- Grid-based tile rendering
+- Collision detection with tiles
+- Lua binding: `engine.tilemap.*` functions
+- Supports large maps with efficient memory layout
+
+## 2D Camera System (Phase 44)
+
+**Camera Component:** `src/components/camera.cpp`
+- Viewport management
+- Screen-space transformations
+- Lua bindings: `engine.camera.*` functions
+- World-space to screen-space conversion
+
+## Optimized 2D Physics (Phase 45)
+
+**Physics Helpers:** `include/enjin2/core/physics.hpp`
+- Gravity simulation
+- Collision response
+- Vector reflection
+- Implemented in C++, exposed via `engine.physics.*` Lua bindings
+- Supports Vec2 userdata and raw numbers
 
 ---
 
-*Integration audit: 2026-02-28*
+*Integration audit: 2026-03-01*

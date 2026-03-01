@@ -1,138 +1,134 @@
 # Technology Stack
 
-**Analysis Date:** 2026-02-28
+**Analysis Date:** 2026-03-01
 
 ## Languages
 
 **Primary:**
-- C++ 17 - Core engine, graphics, scripting bindings. Uses `-std=c++17` with `-MMD -MP` compiler dependency tracking.
-- C - LuaJIT 2.1 embedded runtime, used for the Lua scripting sandbox. Configured with LUAJIT_DISABLE_FFI and LUAJIT_DISABLE_JIT for WebAssembly compatibility.
+- C++ 17 - Core engine implementation, graphics, physics, scene management
+- C - Lua VM integration and platform-specific code
+- Lua 5.1+ - Game logic scripting and Lua script support
 
 **Secondary:**
-- Lua 5.1 - Game scripting language via LuaJIT. Scripts run in a sandboxed environment with disabled I/O and package systems.
+- JavaScript/Emscripten - WebAssembly/browser bindings
+- Bash - Build scripts (e.g., `build_wasm.sh`)
 
 ## Runtime
 
 **Environment:**
-- LuaJIT 2.1 (embedded in `luajit/src/ljamalg.c`)
-- System Lua 5.1 fallback for desktop builds
-- Emscripten for WebAssembly builds (disables JIT compilation)
+- Desktop: Native C++17 execution (Linux, macOS, Windows via CMake)
+- Embedded: ESP32-S3 microcontroller with FreeRTOS
+- Web: WebAssembly via Emscripten
 
 **Package Manager:**
-- CMake 3.16+ - Build system and configuration
-- FetchContent for SDL3 dependency management (Git-based, downloads on first configure if `ENJIN2_BUILD_SDL=ON`)
+- npm - For JavaScript dependencies (xml2js for documentation generation)
+  - Lockfile: `package-lock.json` present
 
 ## Frameworks
 
 **Core:**
-- **Entity-Component-System (ECS)** - Scene-based architecture with Objects as entities, Components attached to Objects. Primary in `src/core/scene.cpp`, `src/core/object.cpp`.
-- **Canvas Abstraction** - Type-erased canvas interface supporting both 4-bit (16-color) and 8-bit (256-color) pixel depths. Defined in `include/enjin2/graphics/canvas.hpp`.
-
-**Graphics:**
-- **Adafruit-GFX-Library** - Optional font rendering support via `include/enjin2/graphics/gfxfont.h`. Referenced in CMakeLists.txt at line 105.
-- **SDL3** - Desktop platform backend (optional, `ENJIN2_BUILD_SDL=ON`). Downloaded via FetchContent from `https://github.com/libsdl-org/SDL.git` tag `release-3.4.2`.
-- **Layer Compositor** - Multi-layer rendering system with per-layer visibility control. Defined in `include/enjin2/graphics/layer_compositor.hpp`.
-
-**Scripting:**
-- **Lua Bindings** - love2d.graphics-inspired API for familiar Lua development. Implemented across `src/scripting/bindings*.cpp` files.
-- **Lua Engine** - Script execution context with support for per-object C_LuaScript components. Located in `src/scripting/lua_engine.cpp`.
+- Custom C++ game engine (enjin2 v2.0.0) - Lightweight, static allocation, embedded-focused
+- LuaJIT (v5.1-compatible) - JIT compilation on desktop, static compilation for embedded
 
 **Testing:**
-- CMake `enable_testing()` + CTest - Test discovery and execution. Tests in `tests/` subdirectory.
+- CppUnit-style manual assertions - Simple unit tests in C++ (no external framework required)
+- GTest (optional) - For sprite asset loading tests only (`sprite_load_test.cpp`)
 
 **Build/Dev:**
-- **Doxygen** - Documentation generation (optional, if found). Generates XML for Docusaurus pipeline via `scripts/generate-api-docs.js`.
-- **clang-tidy** - Static analysis lint target (`cmake -DCLANG_TIDY=ON`, then `cmake --build . --target lint`).
+- CMake 3.16+ - Build configuration and cross-compilation
+- Doxygen - API documentation generation (integrated into build)
+- clang-tidy - Static analysis linting (optional, `-DCLANG_TIDY=ON`)
 
 ## Key Dependencies
 
 **Critical:**
-- **LuaJIT** (`luajit/src/ljamalg.c`) - Embedded Lua runtime. No external dependency needed; included as source.
-- **SDL3** (via FetchContent) - Desktop platform support. Downloads on first CMake configure if enabled. Required for `enjin2_sdl` executable.
+- Lua 5.1+ (`liblua5.1-dev` on Debian/Ubuntu, `lua` via Homebrew on macOS) - Scripting engine
+  - Optional: Can build without Lua with `-DENJIN2_BUILD_LUA=OFF`
+  - Sources: System package or embedded LuaJIT from `luajit/src/`
 
-**Infrastructure:**
-- **Adafruit-GFX** - Referenced but path relative to parent directory (`../Libs/Adafruit-GFX-Library`). Optional, only if building UI components.
+**Graphics:**
+- SDL3 (v3.4.2) - Desktop window management, input handling, rendering
+  - Fetched via CMake FetchContent (`-DENJIN2_BUILD_SDL=ON`)
+  - Source: `https://github.com/libsdl-org/SDL.git`
+  - Used in: `src/platform/sdl/sdl_main.cpp`
+
+**Vendor Libraries (embedded in repo):**
+- Adafruit GFX Library (`../Libs/Adafruit-GFX-Library`) - Font rendering, text display
+- stb_image.h (v2.27) - Image loading utilities (`vendor/stb_image.h`)
+- stb_image_write.h (v1.16) - BMP/PNG image export (`vendor/stb_image_write.h`)
+
+**Documentation:**
+- xml2js (npm) - API documentation generation from Doxygen XML
+  - Called by: `docs/Doxyfile` post-processing script
 
 ## Configuration
 
-**CMake Build Options:**
-- `ENJIN2_BUILD_TESTS` (ON by default) - Enables CTest test suite
-- `ENJIN2_BUILD_EXAMPLES` (ON by default) - Builds example executables
-- `ENJIN2_BUILD_LUA` (ON by default) - Builds Lua scripting support
-- `ENJIN2_BUILD_WASM` (OFF by default) - WebAssembly target using Emscripten
-- `ENJIN2_USE_SIMD` (ON by default) - SIMD optimizations (platform-dependent)
-- `ENJIN2_BUILD_SDL` (OFF by default) - SDL3 desktop executable. Requires internet on first configure for FetchContent.
-- `CLANG_TIDY` (OFF by default) - Static analysis. Requires clang-tidy in PATH.
+**Environment:**
+- VCV_RACK - Desktop platform define (enables full Lua, debug, file I/O)
+- ESP32 - Embedded platform define (minimal Lua, no debug, restricted I/O)
+- EMSCRIPTEN - WebAssembly platform define (LuaJIT without FFI, single-threaded)
 
-**Build Artifacts:**
-- **Core Library:** `enjin2_core` (STATIC) - Memory, math, types, scene, object, animation
-- **Graphics Library:** `enjin2_graphics` (STATIC) - Canvas, primitives, palette, effects
-- **UI Library:** `enjin2_ui` (STATIC) - Components, drawable helpers
-- **Lua Library:** `enjin2_lua` (STATIC, conditional) - Scripting bindings
-- **Input Library:** `enjin2_input` (STATIC) - Input abstraction
-- **Main Interface:** `enjin2` (INTERFACE) - Links all libraries together
-- **Executables:** `enjin2_sdl` (desktop, conditional), `enjin2_wasm.js` (WebAssembly, conditional)
+**Build Options (CMake):**
+```cmake
+ENJIN2_BUILD_TESTS=ON      # Build unit tests
+ENJIN2_BUILD_EXAMPLES=ON   # Build example programs
+ENJIN2_BUILD_LUA=ON        # Build Lua bindings (default: ON)
+ENJIN2_BUILD_WASM=OFF      # Build WebAssembly target
+ENJIN2_USE_SIMD=ON         # SIMD optimizations
+CLANG_TIDY=OFF             # Enable static analysis linting
+ENJIN2_BUILD_SDL=OFF       # Build SDL3 desktop runner
+```
 
-**Lua Memory Configuration:**
-- Default: 256KB Lua heap (`src/scripting/lua_engine.cpp` line 40 shows `LUA_ALLOCF` limit)
-- Configured via CMake and linker flags for WebAssembly (stack 1MB, max memory 64MB with growth enabled)
+**Build System:**
+- CMakeLists.txt - Root configuration
+  - Modular library targets: `enjin2_core`, `enjin2_graphics`, `enjin2_ui`, `enjin2_input`, `enjin2_lua`
+  - Linked interface: `enjin2` (INTERFACE library combining all targets)
 
-**Platform-Specific Defines:**
-- `VCV_RACK` - Compiled into all targets. Used for VCV Rack integration and headless features.
-- `ESP32` - Used for ESP32 builds; requires `LUA_INCLUDE_DIRS` and `LUA_LIBRARIES` to be set.
-- `EMSCRIPTEN` - Automatically detected when building for WebAssembly. Disables LuaJIT JIT and FFI.
-
-## Compiler Configuration
-
-**C++ Standards:**
-- Standard: C++17 required (`CMAKE_CXX_STANDARD_REQUIRED ON`)
-- Compiler flags: `-MMD -MP` for dependency tracking
-- Clang/AppleClang specific: `-Woverride` to catch detached virtual overrides (all targets)
-
-**Optimization:**
-- No explicit optimization level set in CMakeLists.txt (relies on `CMAKE_BUILD_TYPE`)
-- Typical usage: `cmake -B build -DCMAKE_BUILD_TYPE=Release`
+**Compiler Requirements:**
+- C++17 standard required
+- Clang/AppleClang: `-Woverride` enabled on all targets (DT-03 contract)
+- GCC: Native enforcement of override keyword mismatches
 
 ## Platform Requirements
 
 **Development:**
-- CMake 3.16 or newer
-- C++17 capable compiler (GCC 7+, Clang 5+, MSVC 2019+)
-- Lua 5.1 development files (for desktop Lua builds; LuaJIT embedded as fallback)
-- (Optional) Doxygen for documentation
-- (Optional) clang-tidy for static analysis
-- (Optional) Emscripten SDK for WebAssembly builds
+- CMake 3.16 or higher
+- C++17-capable compiler (Clang 3.5+, GCC 5.0+, MSVC 2017+)
+- Optional: Doxygen for documentation generation
+- Optional: Lua 5.1+ development headers
+- Optional: GTest for sprite asset tests
+- Optional: SDL3 (auto-fetched on first configure with `-DENJIN2_BUILD_SDL=ON`)
 
-**Production:**
-- **Desktop (SDL):** SDL3 library (dynamically linked)
-- **Embedded (ESP32):** ESP-IDF with NodeMCU Lua component or equivalent
-- **WebAssembly:** Browser with ES6 module support
-- **VCV Rack:** VCV Rack 2.0+ plugin host
+**Production (Desktop):**
+- SDL3 for windowed/fullscreen rendering
+- System Lua library (optional, can embed LuaJIT)
+- Memory: ~1MB Lua heap limit (configurable in `LuaPlatformConfig`)
 
-## Architecture Overview
+**Production (Embedded/ESP32-S3):**
+- ESP-IDF toolchain (Xtensa compiler)
+- FreeRTOS kernel
+- Memory: 256KB Lua heap limit (static allocation, no malloc)
+- No file I/O: Scripts loaded directly into memory or from SPIFFS/LITTLEFS
 
-The engine is structured in layered, modular libraries:
+**Production (WebAssembly):**
+- Emscripten SDK (1.39.0+)
+- LuaJIT compiled without FFI/JIT
+- Memory: 64MB virtual memory, 1MB stack (configurable in CMakeLists.txt)
 
-```
-enjin2 (INTERFACE) ─────────────────────────────────────┐
-├── enjin2_core (STATIC)                                │
-│   └─ Memory, math, ECS core, scene management        │
-├── enjin2_graphics (STATIC) → links enjin2_core       │
-│   └─ Canvas abstraction, primitives, palette, FX    │
-├── enjin2_ui (STATIC) → links enjin2_graphics         │
-│   └─ UI components, drawable helpers                │
-├── enjin2_input (STATIC)                              │
-│   └─ Input abstraction layer                        │
-└── enjin2_lua (STATIC, optional) → links graphics/ui │
-    └─ Lua scripting bindings, engine.* API           │
+## Memory Management
 
-Executables:
-├── enjin2_sdl → links enjin2 + SDL3
-│   └─ Desktop runner with SDL input/rendering
-└── enjin2_wasm (JS) → links enjin2 + LuaJIT embedded
-    └─ WebAssembly module with Emscripten bindings
-```
+**Static Allocation:**
+- No dynamic memory in hot paths (engine requirement)
+- Lua memory pool: Fixed buffer (`LuaEngine::memoryPool`)
+  - Desktop: 1MB (`LuaPlatformConfig::MEMORY_LIMIT`)
+  - ESP32: 256KB
+- Custom allocator: `LuaEngine::luaAllocator()` with static memory pool
+
+**Garbage Collection:**
+- Lua GC tuned per-platform: `LuaPlatform::tuneGarbageCollector()`
+- Manual collection available: `engine.lua.collect()`
+- Memory monitoring: `engine.lua.memory()` returns current usage
 
 ---
 
-*Stack analysis: 2026-02-28*
+*Stack analysis: 2026-03-01*

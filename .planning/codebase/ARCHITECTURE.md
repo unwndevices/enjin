@@ -1,203 +1,303 @@
 # Architecture
 
-**Analysis Date:** 2026-02-28
+**Analysis Date:** 2026-03-01
 
 ## Pattern Overview
 
-**Overall:** Entity Component System (ECS) with Scene State Machine and Lua scripting integration
+**Overall:** Entity Component System (ECS) with Lua scripting bridge
 
 **Key Characteristics:**
-- Static allocation throughout (no dynamic memory) for embedded systems
-- Component-based architecture where Objects own components at compile-time
-- Scene-based organization with explicit lifecycle (onCreate → onActivate → onUpdate → onDeactivate)
-- Lua integration as a first-class scripting layer with bidirectional access to engine
-- Rendering pipeline based on drawable components with layer-based sorting
+- **Object-Component Model**: Each `Object` holds up to 16 statically-allocated `Component` instances
+- **Scene-based Lifecycle**: Objects exist within `Scene` instances, managed by `SceneStateMachine`
+- **Lua Integration**: Full Lua scripting layer via `LuaScriptSystem` with C++ bindings to engine systems
+- **Static Memory**: Embedded-first design—fixed pools, no dynamic allocation in hot paths
+- **Phase-driven Development**: Incremental features tracked via `.planning/` phases
 
 ## Layers
 
-**Core ECS Layer:**
-- Purpose: Entity and component lifecycle management
+**Core (Entity Foundation):**
+- Purpose: Game object lifecycle and component management
 - Location: `include/enjin2/core/`, `src/core/`
-- Contains: Object, Component base classes; object/component lifecycle
-- Depends on: types.hpp for basic types
-- Used by: All subsystems requiring entities
+- Contains: `Object` (entity container), `Component` (behavior base class), `Scene` (object collection)
+- Depends on: Type definitions (`types.hpp`), memory utilities
+- Used by: All components, rendering, scripting systems
 
-**Scene Management Layer:**
-- Purpose: Organize objects into scenes with lifecycle and state transitions
-- Location: `include/enjin2/core/scene.hpp`, `src/core/scene.cpp`
-- Contains: Scene base class, SceneStateMachine for transitions
-- Depends on: ObjectCollection (fixed-size array manager)
-- Used by: Application logic for scene organization
-
-**Graphics Rendering Layer:**
-- Purpose: Hardware-agnostic drawing abstraction and rendering pipeline
-- Location: `include/enjin2/graphics/`, `src/graphics/`
-- Contains: ICanvas<T> interface, Canvas8/Canvas4 implementations, primitives, effects
-- Depends on: Core types (Point, Rect, colors)
-- Used by: Drawable components, Lua bindings for drawing
-
-**Component System:**
-- Purpose: Provide reusable functionality attached to objects
+**Components (Behavior Library):**
+- Purpose: Reusable behaviors attached to Objects (rendering, animation, physics state, scripting)
 - Location: `include/enjin2/components/`, `src/components/`
-- Contains: C_Drawable (base for rendering), C_Sprite (animation), C_Position (transforms), C_LuaScript (scripting)
-- Depends on: Core ECS, Graphics
-- Used by: Objects to add specific behaviors
+- Contains: `C_Position`, `C_Sprite`, `C_Drawable`, `C_Camera`, `C_LuaScript`, `C_Tilemap`, `C_Timer`, `C_StateMachine`, physics components
+- Depends on: Core, graphics, scripting (for C_LuaScript)
+- Used by: Scenes, host application code
 
-**Scripting Layer:**
-- Purpose: Provide Lua scripting access to engine features
+**Graphics (Rendering Backend):**
+- Purpose: Low-level pixel manipulation, sprite blitting, text rendering, palette management
+- Location: `include/enjin2/graphics/`, `src/graphics/`
+- Contains: `Canvas4<W,H>`, `Canvas8<W,H>` (template-based fixed-size buffers), `Sprite`/`SpriteSheet`, text rendering
+- Depends on: Type definitions
+- Used by: Components (C_Sprite, C_Drawable), rendering pipeline, Lua bindings
+
+**Scripting (Lua Runtime Bridge):**
+- Purpose: Execute Lua game code, expose C++ engine as Lua tables/functions
 - Location: `include/enjin2/scripting/`, `src/scripting/`
-- Contains: LuaEngine (VM), LuaBindings (API bindings), C_LuaScript (component)
-- Depends on: LuaJIT (embedded), all other layers for bindings
-- Used by: Game logic scripting, UI scripting
+- Contains: `LuaEngine` (Lua state + static memory pool), `LuaBindings` (function registration), bindings_*.cpp modules, `LuaScriptSystem` (combined interface)
+- Depends on: Core, graphics, components, LuaJIT
+- Used by: C_LuaScript component, host application
+
+**Platform Abstraction:**
+- Purpose: Hardware/environment-specific code (SDL for desktop, ESP32 for embedded)
+- Location: `src/platform/sdl/`, `include/enjin2/platform/`
+- Contains: SDL rendering integration, input polling, platform-specific Lua bindings
+- Depends on: Core, graphics, scripting
+- Used by: Host application (main loop)
+
+**Input System:**
+- Purpose: Button/axis polling with per-frame state tracking
+- Location: `include/enjin2/input/`, `src/input/`
+- Contains: `InputState` (16 buttons + analog axes), button edge detection (just pressed/released)
+- Depends on: Type definitions
+- Used by: Lua bindings, C_LuaScript callbacks, host input dispatch
+
+**Utils & Math:**
+- Purpose: Helper functions and mathematics (noise, polar coordinates, collision, physics)
+- Location: `include/enjin2/utils/`, `include/enjin2/core/math.hpp`, `include/enjin2/core/collision.hpp`, `include/enjin2/core/physics.hpp`
+- Contains: Noise generation, polar math, 2D collision detection, stateless physics functions
+- Depends on: Type definitions
+- Used by: Components, Lua bindings, game code
 
 ## Data Flow
 
-**Frame Update Loop:**
+**Scene Update Loop:**
+```
+Host calls: SceneStateMachine::update(dt)
+  ↓
+  For each Object in current Scene:
+    → Object::awake()         [first time only]
+    → Object::start()         [before first update]
+    → Object::update(dt)      [every frame]
+      - Update all enabled components
+  ↓
+  For each Object in current Scene:
+    → Object::lateUpdate(dt)  [after all updates]
+      - Sprite animation, camera follow
+  ↓
+Host calls: SceneStateMachine::render(canvas)
+  ↓
+  For each Object in current Scene:
+    → Collect all C_Drawable components
+    → Sort by layer, sort order
+    → Apply camera offset (C_Camera screen offset)
+    → Render each drawable
+```
 
-1. **Input Phase:** Platform layer polls input → InputState struct
-2. **Update Phase:**
-   - SceneStateMachine::update(dt) calls Scene::update(dt)
-   - Scene::update(dt) → ObjectCollection::update(dt) → Object::update(dt) → Component::update(dt)
-   - Lua scripts receive update() callbacks via C_LuaScript components
-   - LateUpdate phase follows same hierarchy for animations/deferred updates
-3. **Rendering Phase:**
-   - SceneStateMachine::render(canvas) calls Scene::render(canvas)
-   - Scene collects all drawable components from objects
-   - Drawables sorted by (buffer_index, sort_order) using shouldDrawBefore()
-   - Scene renders sorted drawables in order via C_Drawable::draw(canvas)
-   - Lua scripts can draw via C_LuaScript::draw() with love2d.graphics-style API
+**Lua Scripting Data Flow:**
+```
+C_LuaScript component (attached to Object)
+  ↓
+  On awake: C_LuaScript::initializeScriptSystem()
+    - Creates LuaScriptSystem (engine + bindings)
+    - Loads script via executeFile() or loadScript()
+    - Calls Lua init() function
+  ↓
+  Each frame: C_LuaScript::update(dt)
+    - Fires input callbacks (on_button_pressed, on_button_released)
+    - Calls Lua update(self, dt)
+      * self = ScriptProxy userdata wrapping this C_LuaScript
+      * Lua can call engine.* bindings (scene.find, scene.spawn, graphics functions)
+      * Changes to object position, visibility, layer are persisted via ScriptProxy
+  ↓
+  Each frame: C_LuaScript::draw(canvas)
+    - Calls Lua draw(self)
+      * Lua receives LuaCanvas (type-erased wrapper over Pixel4 or uint8_t canvas)
+      * Can draw primitives, sprites, text via love2d.graphics style API
+```
 
 **State Management:**
-- Objects are created via Scene::addObject<T>() → stored in ObjectCollection
-- Scene lifecycle: initialize() → activate() → update/render → deactivate() → destroy
-- Objects track: awoken, started, active flags to control when callbacks fire
-- Components depend on owner Object, accessed via getComponent<T>()
+```
+Object
+  ├─ awoken flag (first lifecycle call guard)
+  ├─ started flag (second lifecycle call guard)
+  ├─ active flag (determines if update/render runs)
+  ├─ Component[0..15]
+  │   ├─ enabled flag
+  │   ├─ Lifecycle (awake, start, update, lateUpdate)
+  │   └─ Type-specific state
+  ├─ Position component (cached pointer for fast lookup)
+  ├─ Lua proxy (back-pointer for stale-proxy detection)
+  ├─ Name (const char*, caller-owned)
+  └─ Tags (up to 8, const char* array, caller-owned)
+
+Scene
+  ├─ ObjectCollection (manages 0..N objects)
+  ├─ Signals (onCreate, onActivate, onDeactivate, onDestroy)
+  └─ Rendering state (camera offset, layer visibility)
+
+SceneStateMachine
+  ├─ 32 scenes (pre-allocated array)
+  ├─ Current/next scene pointers
+  ├─ Transition state (type, duration, progress)
+  └─ Deferred transition queue (prevents re-entrancy from update())
+
+LuaBindings
+  ├─ Current canvas + input state (set by host before each update)
+  ├─ Sprite pool (16 fixed SpriteSheet slots for Lua animations)
+  ├─ Asset buffer (64KB for loaded sprite pixel data)
+  ├─ Layer canvas pointers (for multi-layer rendering)
+  ├─ Font registry (8 GFXfont* slots)
+  ├─ Persistent store (16 key-value pairs, JSON serializable)
+  ├─ Event bus (scene-scoped pub/sub)
+  └─ Game state machine (16 named states with on_enter/on_exit callbacks)
+```
 
 ## Key Abstractions
 
-**Object (Entity):**
-- Purpose: Container for components with lifecycle callbacks
+**Object:**
+- Purpose: Represents a game entity as a container of components
 - Examples: `include/enjin2/core/object.hpp`
-- Pattern: Automatically adds C_Position; max 16 components per object (static array)
-- Lifecycle: awake() → start() → update()/lateUpdate() → destroyed
+- Pattern: Static-allocation container with addComponent<T>(), getComponent<T>(), removeComponent<T>()
+- Caching: Position component cached for O(1) lookup (frequent rendering bottleneck)
 
 **Component:**
-- Purpose: Reusable behavior attached to objects
-- Examples: `C_Drawable`, `C_Sprite`, `C_LuaScript`, `C_Position`
-- Pattern: Virtual callbacks (awake, start, update, lateUpdate, onEnable, onDisable)
-- Dependencies: Can require sibling components via assertRequires<T>()
+- Purpose: Encapsulates a reusable behavior or data
+- Examples: `C_Position`, `C_Sprite`, `C_Drawable`, `C_LuaScript`, `C_Camera`, `C_Timer`
+- Pattern: Virtual lifecycle (awake, start, update, lateUpdate) + type-specific methods
+- Dependencies: `assertRequires<T>()` method for compile-time checking (fails debug builds, logs once in release)
 
 **Scene:**
-- Purpose: Organize objects and manage rendering
+- Purpose: Manages a collection of objects with synchronized lifecycle
 - Examples: `include/enjin2/core/scene.hpp`
-- Pattern: Objects collected in ObjectCollection (max 128); explicit lifecycle phases
-- Rendering: Collects C_Drawable components, sorts by layer, renders in order
+- Pattern: Template methods (onCreate, onActivate, onDeactivate, onUpdate, onRender) override in subclasses
+- Signals: Emitted on lifecycle transitions, allows external listeners (e.g., UI updates)
 
-**SceneStateMachine:**
-- Purpose: Manage scene transitions with optional visual effects
-- Examples: `include/enjin2/core/scene_state_machine.hpp`
-- Pattern: Deferred transitions (switchTo() queued after frame update) prevent re-entrancy
-- Transitions: IMMEDIATE, FADE_OUT_IN, SLIDE_* with progress signals
+**LuaCanvas:**
+- Purpose: Type-erased wrapper over 4-bit or 8-bit canvas for Lua drawing operations
+- Examples: `include/enjin2/scripting/bindings.hpp` (class definition)
+- Pattern: Holds void* canvasPtr + is4Bit flag, dispatches operations via template specialization in implementation
+- Compatibility: Accepts Canvas4<W,H>*, Canvas8<W,H>*, or ICanvas<Pixel4>* abstract interface
 
-**Canvas (ICanvas<T>):**
-- Purpose: Hardware-independent drawing interface
-- Examples: `include/enjin2/graphics/canvas.hpp`; Canvas4/Canvas8 implementations
-- Pattern: Template-based for 4-bit (Pixel4) or 8-bit (uint8_t) pixels
-- Bounds checking: inBounds() guards all pixel operations
-
-**Drawable Component (C_Drawable):**
-- Purpose: Base for all renderable components
-- Examples: `include/enjin2/components/drawable.hpp`; C_Sprite, C_LuaScript extend
-- Pattern: Pure virtual draw(ICanvas<Pixel4>& canvas); manages layer, blend mode, anchor
-- Rendering sort: Layer buffer index primary, then sort order within layer
-
-**Lua Proxy (ObjectProxy):**
-- Purpose: Safe Lua reference to C++ Object with validity tracking
+**ObjectProxy:**
+- Purpose: Lua userdata representing an Object, with stale-pointer safety
 - Examples: `include/enjin2/scripting/object_proxy.hpp`
-- Pattern: Object sets m_luaProxy pointer; destructor sets valid=false
-- Usage: Lua receives ObjectProxy userdata from engine.scene.find(); queries fail if invalid
+- Pattern: Non-owning pointer + valid flag; Object destructor sets valid=false, Lua __index checks flag first
+- Use case: Lua can safely pass objects returned from engine.scene.find() between frames without crashes
 
-**LuaBindings:**
-- Purpose: Register all Lua global functions and tables
-- Examples: `include/enjin2/scripting/bindings.hpp`
-- Pattern: Registered during LuaScriptSystem initialization; state persists across script reloads
-- Subsystem bindings: engine.scene.*, engine.time.*, engine.input.*, drawing primitives
+**ComponentProxy:**
+- Purpose: Lua userdata representing a component (e.g., C_Position), with stale-pointer safety
+- Examples: `include/enjin2/scripting/component_proxy.hpp`
+- Pattern: Identical to ObjectProxy—non-owning pointer + valid flag
+- Lifecycle: Created by self:get() Lua method, invalidated if component is removed or object destroyed
 
 ## Entry Points
 
-**Main Loop (Host Application):**
-- Location: Host creates Canvas, Scene, starts loop
-- Triggers: application main() or embedded system timer
-- Responsibilities: Calls ssm.update(dt) → ssm.render(canvas) each frame
+**Host Application (Desktop/ESP32):**
+- Location: `src/platform/sdl/sdl_main.cpp` (SDL example)
+- Triggers: Called from main()
+- Responsibilities:
+  - Initialize platform (SDL, input device)
+  - Create SceneStateMachine and scenes
+  - Main loop: poll input → update → render
+  - Inject InputState and canvas pointers to LuaBindings before each frame
 
-**Scene Initialization:**
-- Location: `include/enjin2/core/scene.hpp` Scene::initialize()
-- Triggers: SceneStateMachine::changeScene() or explicit Scene::activate()
-- Responsibilities: Calls onCreate(), initializes ObjectCollection, fires onCreateSignal
+**Object.awake():**
+- Location: `include/enjin2/core/object.hpp` (virtual, overridable)
+- Triggers: When object is added to scene via addObject<T>()
+- Responsibilities: Verify required components exist via assertRequires<T>(), initialize component graph
 
-**Object Creation:**
-- Location: `Scene::addObject<T>()` template method
-- Triggers: Application calls during Scene::onCreate() or runtime
-- Responsibilities: Creates Object, auto-adds C_Position, stores in ObjectCollection
+**Object.start():**
+- Location: `include/enjin2/core/object.hpp` (virtual, overridable)
+- Triggers: Before first update, after all objects in scene are awoken
+- Responsibilities: Initialize state that depends on other objects being fully set up
 
-**Rendering:**
-- Location: `Scene::render<PixelType>(ICanvas<PixelType>& canvas)`
-- Triggers: SceneStateMachine::render() each frame
-- Responsibilities: Collects drawables, sorts by layer, calls draw() on each
+**Object.update(float dt):**
+- Location: `include/enjin2/core/object.hpp` (virtual, overridable)
+- Triggers: Every frame, after scene state machines process transitions
+- Responsibilities: Game logic, physics simulation, state changes
 
-**Lua Script Execution:**
-- Location: `C_LuaScript::update/draw()` in component
-- Triggers: Object lifecycle (Scene::update → Object::update → Component::update)
-- Responsibilities: Calls Lua update(self, dt) and draw(self, canvas) with script access to engine.*
+**C_LuaScript.update(float dt):**
+- Location: `include/enjin2/components/lua_script.hpp`
+- Triggers: As part of Object::update() lifecycle
+- Responsibilities:
+  - Fire input edge callbacks (on_button_pressed/released)
+  - Call Lua update(self, dt) function
+  - Handle Lua errors per ScriptErrorPolicy
+
+**Scene lifecycle methods (onCreate, onActivate, onUpdate, onRender):**
+- Location: `include/enjin2/core/scene.hpp` (virtual, overridable)
+- Triggers: Scene creation, activation, each frame update, each render
+- Responsibilities: Scene-specific setup, background rendering, overlay rendering
 
 ## Error Handling
 
-**Strategy:** Graceful degradation with logging; embedded systems use printf over exceptions
+**Strategy:** Defensive layer-by-layer checks with policy-driven fallbacks
 
 **Patterns:**
 
-- **Component Dependencies:** assertRequires<T>() fails loudly (assert in debug, disables component in release)
-  - File: `include/enjin2/core/component.hpp`
+**Component Dependencies (assertRequires<T>()):**
+```cpp
+// In C_Sprite::awake() (example)
+void awake() {
+    assertRequires<C_Position>();  // Fails if Position not present
+}
+```
+- Debug: assert(false) with descriptive message, stack trace identifies component
+- Release: printf() once, disable this component, engine continues
+- Rationale: Embedded targets cannot crash; prefer degraded functionality
 
-- **Object/Component Limits:** Exceed static limits (16 components/object, 128 objects/scene) returns nullptr
-  - Files: `include/enjin2/core/object.hpp`, `include/enjin2/core/object_collection.hpp`
+**Lua Errors (C_LuaScript error policy):**
+```cpp
+enum class ScriptErrorPolicy {
+    Disable = 0,  // On error: disable script, log once
+    Log     = 1,  // On error: log every frame (debug)
+    Panic   = 2   // On error: invoke platform panic (abort/reset)
+};
+```
+- Default: Disable—script disabled on first error, engine continues
+- Development: Log—errors printed every frame for iteration
+- Critical: Panic—halt immediately for hardware failure scenarios
 
-- **Lua Errors:** ScriptErrorPolicy controls behavior
-  - Disable (default): Script disabled, error logged once
-  - Log: Error logged every frame (debug mode)
-  - Panic: Platform panic handler invoked
-  - File: `include/enjin2/components/lua_script.hpp`
+**Canvas Access:**
+- All canvas operations bounds-check pixel coordinates
+- Out-of-bounds writes are silently ignored (safe for partial off-screen draws)
+- Input indices validated in bindings before passing to graphics layer
 
-- **Invalid Lua Proxy:** ObjectProxy::valid flag prevents use-after-free
-  - Lua receives ObjectProxy from engine.scene.find(); Object destructor sets valid=false
-  - Subsequent Lua access raises error instead of crash
-  - Files: `include/enjin2/scripting/object_proxy.hpp`, `include/enjin2/core/object.hpp`
+**Scene Transitions (Deferred Execution):**
+```cpp
+void SceneStateMachine::update(float dt) {
+    // ... handle active transition ...
+    if (currentScene) currentScene->update(dt);
 
-- **Sprite Loading:** Returns false on .njn binary format errors; silently skips bad frames
-  - Files: `src/scripting/bindings_sprite_load.cpp`
+    // Deferred transition AFTER update returns (prevents re-entrancy)
+    if (hasPendingTransition) {
+        hasPendingTransition = false;
+        applyDeferredTransition(pendingSceneId);
+    }
+}
+```
+- Scene can call switchTo() safely from onUpdate()
+- Transition queued until after update() returns
+- Prevents stack corruption from nested scene changes
 
 ## Cross-Cutting Concerns
 
 **Logging:**
-- Approach: printf-based; no C++ exceptions for embedded compatibility
-- Used by: Error messages, debug info, asset loading
+- Mechanism: printf() to stdout (stdout redirected to log in production)
+- When: Component dependency failures (release builds), Lua errors, engine lifecycle events
+- Example: `printf("[enjin2] C_Sprite::awake: C_Position dependency missing\n");`
 
 **Validation:**
-- Component dependencies: assertRequires<T>() from Component base
-- Canvas bounds: inBounds() called before pixel access
-- Lua proxy validity: ObjectProxy::valid checked before dereference
+- Static: Compile-time checks via `std::is_base_of<Component, T>` in templates
+- Runtime: assertRequires<T>() for component graphs, bounds-checking in graphics
+- Example: `static_assert(std::is_base_of<Component, T>::value, "...")` in Object::addComponent<T>()
 
-**Input Handling:**
-- Platform abstraction in `src/platform/sdl/` and platform-specific code
-- InputState struct polled by platform layer, injected into Lua via setInput()
-- Input callbacks: C_LuaScript dispatches on_button_pressed/on_button_released per frame
+**Authentication/Authorization:**
+- Not applicable—embedded gaming context, no access control
+- Lua scripts run in same address space as engine (full trust model)
 
-**Memory Management:**
-- Static allocation: Fixed-size arrays throughout (no malloc after initialization)
-- Ownership: unique_ptr<> for scene management (SceneStateMachine owns scenes)
-- Object lifetime: ObjectCollection owns objects; removeObject() calls destructor
-- Lua memory: Embedded LuaJIT with fixed 256KB pool; custom allocator with static buffer
+**Resource Lifecycle:**
+- Memory: Static pools (component array per Object, sprite pool in LuaBindings, fixed canvas buffers)
+- Components: Unique_ptr array in Object, auto-destroyed on Object destruction
+- Lua State: Owned by LuaScriptSystem, destroyed when script component destroyed
+- Scenes: Unique_ptr array in SceneStateMachine, can be removed by removeScene() before active
 
 ---
 
-*Architecture analysis: 2026-02-28*
+*Architecture analysis: 2026-03-01*
