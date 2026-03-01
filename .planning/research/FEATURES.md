@@ -1,42 +1,29 @@
 # Feature Research
 
-**Domain:** Embedded/WASM 2D game engine — v1.6 Game Ready (C_Timer, C_StateMachine, ComponentProxy, signals/event bus, persistent objects)
-**Researched:** 2026-02-28
-**Confidence:** HIGH (code-verified against src/ and include/; target game requirements derived from first-principles analysis)
+**Domain:** 2D embedded game engine — v1.7 developer experience and new capability features
+**Researched:** 2026-03-01
+**Confidence:** HIGH (features are well-understood standard 2D engine patterns; enjin2 codebase confirmed in depth)
 
 ---
 
-## Scope
+## Existing Baseline (Already Built — Do Not Rebuild)
 
-v1.6 adds five capabilities needed to build complete small games (Arkanoid, physics sandbox, tamagotchi)
-purely from Lua on SDL3. The existing v1.5 baseline provides:
+The following are already present in enjin2. These inform complexity estimates and dependency analysis but are **not** v1.7 deliverables.
 
-- `engine.*` global table: scene.switch, scene.find, input polling, time, log, lua.collect/memory
-- `ScriptProxy` full userdata: `self` as first callback arg; `__index`/`__newindex` dispatch to C++ components
-- `ObjectProxy` with Object-destructor invalidation; named objects + 8-slot tag system
-- `SpriteSheet` with frame animation (Once/Loop/PingPong), 16-slot Lua sprite pool
-- `LayerCompositor` with 4 Canvas4 buffers, painter's-order composition
-- F5 hot-reload; input edge callbacks; `assertRequires<T>()`; `ScriptErrorPolicy`
-- `Signal<Args...>` exists in `core/signal.hpp` (C++-only, 16 connections/signal, no Lua bindings)
-- `LuaStore` exists in `bindings.hpp` (per-script key-value store, JSON save/load)
-- `engine.collision.*` with AABB, circle, point-in-rect, line-line, reflect bindings
-- `engine.random.*` with seed/integer/float bindings
-- `engine.store.*` with save/load/exists/delete/clear bindings
-
-What is NOT yet available from Lua scripts:
-- No time-based callback scheduling (C_Timer)
-- No structured state machine for object behavior (C_StateMachine)
-- No way for a script to access sibling C++ components (ComponentProxy / self:get())
-- No inter-object event/signal communication from Lua (event bus)
-- Objects are owned by scenes; no mechanism to survive a scene transition (persistent objects)
-
-The three target games define the feature acceptance bar:
-
-| Game | Primary Mechanics Needed |
-|------|--------------------------|
-| Arkanoid | Ball/paddle collision (exists via engine.collision), brick death, level clear detect, lives counter, speed ramp — all stateful, scene-flow driven |
-| Physics sandbox | Spawn/destroy objects from Lua (engine.scene.spawn/destroy already shipped), manual update loop for verlet positions, no engine physics needed |
-| Tamagotchi | Hunger/happiness decay over time, FSM states (idle/hungry/sleeping/happy/dead), background timers, cross-scene persistence |
+| Already Built | Where |
+|---------------|-------|
+| C_Camera (lerp, shake, bounds, lookAt) | `include/enjin2/components/camera.hpp` |
+| engine.camera.* Lua bindings (setPosition, lookAt, shake, setBounds) | `src/scripting/bindings_engine.cpp` |
+| LuaStore in-memory KV (save/load key-value) | `src/scripting/bindings_store.cpp` |
+| LuaStore JSON file I/O (VCV_RACK / desktop) | `src/scripting/bindings_store.cpp` |
+| Primitives (drawLine, drawRect, drawCircle, fillRect) | `include/enjin2/graphics/primitives.hpp` |
+| math::lerp, math::smoothstep, math::clamp | `include/enjin2/core/math.hpp` |
+| AnimationComponent (duration, play, pause, ping-pong) | `include/enjin2/ui/components.hpp` |
+| FillUpGauge component (unidirectional + bidirectional) | `include/enjin2/components/fill_up_gauge.hpp` |
+| Label component (text, wrapping, alignment, border) | `include/enjin2/components/label.hpp` |
+| C_Timer (after/every/cancel) | `include/enjin2/components/timer.hpp` |
+| EventBus (on/off/emit) | `src/scripting/lua_event_bus.cpp` |
+| SceneStateMachine (scene switch, deferred transitions) | `include/enjin2/core/scene_state_machine.hpp` |
 
 ---
 
@@ -44,241 +31,382 @@ The three target games define the feature acceptance bar:
 
 ### Table Stakes (Users Expect These)
 
-Features any game-capable scripting layer must provide. Missing these blocks the three target games
-from being buildable purely from Lua.
+Features any developer expects in a "developer experience" milestone. Missing these = milestone feels incomplete.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| C_Timer — delayed one-shot callback | Every game needs "do X after N seconds." Arkanoid: restart delay after ball loss. Tamagotchi: hunger tick every 30s. Without a timer, scripts must manually accumulate time in every update() function, which is error-prone and verbose. LÖVE2d users use hump.timer; Defold uses go.animate / timer.delay. | MEDIUM | C++ component: `float elapsed`, `float duration`, `lua_State*`, Lua function ref in registry, `bool repeat`, `bool active`. `update(dt)`: accumulate elapsed, fire callback when elapsed >= duration, reset or deactivate. Fixed pool of N timers on the component (or one timer per C_Timer component — one-component-per-timer is simpler). |
-| C_Timer — repeating interval callback | Tamagotchi needs periodic hunger/happiness decay (every 30s). Arkanoid needs speed ramp every N seconds. Repeating timers are as essential as one-shot. | MEDIUM | Same as above — `bool repeat` flag. On fire: if `repeat`, reset `elapsed = 0` and keep active. Lua API: `self:startTimer(duration, callback, repeat)` or engine-level `engine.timer.after(obj, duration, fn)`. |
-| C_StateMachine — named states with enter/exit/update | Tamagotchi is literally a textbook FSM (idle, hungry, sleeping, happy, dead). Arkanoid has game-level states (attract, playing, paused, game_over, victory). Without an FSM abstraction, scripts write ad-hoc `if state == "hungry" then ... end` chains that grow unmanageable. | MEDIUM | C++ component storing current/next state names (`char[32]`, no heap). Lua-side: table of state tables `{ enter=fn, update=fn(dt), exit=fn }`. C++ drives lifecycle: call `enter` on state entry, `update(dt)` every frame, `exit` on departure. `transition(newState)` defers to next frame (mirrors SSM deferred-transition pattern). |
-| ComponentProxy / self:get("ComponentType") | Lua scripts cannot read position from C_Position, animation state from C_Sprite, or drawable properties from C_Drawable without this. Arkanoid ball script needs its own position to compute collision responses. Tamagotchi pet script needs to toggle C_Sprite frame sets based on state. Without ComponentProxy, all component data must be manually mirrored into ScriptProxy `__index`, which does not scale. | HIGH | String-to-component type registry (static table, compile-time registered). `self:get("Position")` returns a lightweight proxy userdata wrapping the raw `C_Position*`. Proxy fields (x, y) map to component getters/setters. Must invalidate when owner Object is destroyed (same valid flag pattern as ObjectProxy/ScriptProxy). At minimum: Position, Sprite, Drawable. |
-| Lua-addressable event bus (engine.on / engine.emit) | Arkanoid: ball needs to tell the score system "brick destroyed, add 10 points." The score object cannot be passed as a closure capture without a reference. Without an event bus, scripts must `engine.scene.find("score")` every time they emit — which requires every object to be named and is fragile. Defold's `msg.post` is the dominant pattern for this. GDQuest's event bus singleton is the Godot pattern. | MEDIUM | Global named-event registry in LuaBindings. `engine.on("event_name", handler_fn)` registers a Lua callback. `engine.emit("event_name", ...)` calls all registered handlers with the remaining args. Fixed-capacity registry (e.g., 32 events × 8 handlers each = 256 Lua function refs). Must clear on scene switch (or support explicit `engine.off` to prevent leaks). |
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| **Debug draw bindings** (engine.debug.*) | Every 2D engine exposes drawing primitives for dev inspection; visualizing AABB/collision shapes is the first thing scripted when debugging movement bugs | LOW | Primitives already exist (drawLine, drawRect, drawCircle); needs Lua binding layer and canvas access | No new C++ needed — only bindings wiring. Expose rect, circle, line, cross-hair. Color param uses existing 4-bit palette. Draw to currentCanvas directly. |
+| **Camera follow helper** (engine.camera.follow) | C_Camera.lookAt() already exists; a `follow(target_name)` shorthand that resolves by object name is the obvious DX improvement developers expect | LOW | Depends on: C_Camera (done), engine.scene.find() (done), ObjectProxy (done) | C++ lookup via findByName + C_Camera.lookAt() per-frame. Single-frame polling model. Follow can be called in update(); camera lerp handles smoothing. No new component needed. |
+| **Save/load serialization — SDL3 path** | LuaStore exists but only auto-persists to JSON under VCV_RACK macro. Developers expect save/load to "just work" on SDL3 desktop | LOW | Depends on: LuaStore JSON I/O (done), ENJIN2_BUILD_SDL symbol (done) | One-line preprocessor guard change in `bindings_store.cpp` enables the existing file I/O for SDL3 builds. engine.store.setPath() / engine.store.flush() already work. |
+| **Persistent objects across scenes** | Developers using engine.scene.switch() expect some objects (audio, game manager state, player score) to survive scene transitions | MEDIUM | Depends on: SceneStateMachine (done), ObjectCollection (done), Object lifecycle | Industry standard is DontDestroyOnLoad (Unity). Mark an Object as "persistent" so SceneStateMachine skips destroying it on switch. CRITICAL constraint: zero dynamic allocation means persistent pool must be fixed-size (e.g., 4 slots). |
+| **Coroutine/async pattern for Lua** | Loading screens, cutscenes, and sequenced animations require waiting across frames without callback hell. Lua 5.1+ has built-in coroutines. Exposing a helper that advances registered coroutines each frame is table stakes for any Lua game engine. | MEDIUM | Depends on: LuaEngine (done), C_Timer (done) | Lua coroutines are cooperative. Engine registers N-slot scheduler; engine.async.start(fn) + engine.wait(seconds). No new C++ threads — pure cooperative. Max 8 active coroutines fits zero-alloc constraint. |
+| **Tween helpers** | Animating UI values (health bars, opacity, position) between two numbers over time is universally expected. Without tweens, every script reimplements the same lerp+timer pattern. | MEDIUM | Depends on: C_Timer (done), math::lerp (done), EventBus optional | Tween = start value, end value, duration, easing function, update callback, completion callback. Store up to 8 active tweens. Easing: linear, quadIn, quadOut, quadInOut, cubicInOut. API: engine.tween.to(table, {k=v}, duration, easing, done_cb). |
+| **UI component bindings** (engine.ui.*) | FillUpGauge and Label C++ components exist but have zero Lua bindings. Developers need to create and update progress bars and stat bars from scripts. | MEDIUM | Depends on: FillUpGauge (done), Label (done), ComponentProxy (done), C_Position (done) | Expose: engine.ui.newGauge(x, y, w, h, color, mode), engine.ui.setGauge(id, value), engine.ui.newLabel(x, y, w, h, text, color), engine.ui.setLabel(id, text). Fixed pool (8 gauges, 8 labels). Follows sprite pool pattern. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that go beyond what is strictly needed, but materially improve the Lua scripting experience.
+Features that make enjin2 stand out among embedded/Lua game engines.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Persistent objects across scenes | Tamagotchi pet needs to survive a scene switch from "play" scene back to "main" scene without its stats resetting. Without persistence, everything must be re-encoded in LuaStore on every transition. Persistent objects are the "DontDestroyOnLoad" pattern. | HIGH | Requires an object list outside Scene's ObjectCollection — held by SceneStateMachine (or a new PersistentRegistry). Objects in this list update and render like normal objects but are not destroyed on scene change. Complexity: ownership, rendering pipeline injection, name uniqueness. Alternative: just use LuaStore for state and re-create the visual object each scene. If LuaStore is sufficient for the three target games, this can be deferred. |
-| C_Timer — repeat count (fire N times then stop) | Arkanoid: "flash brick 3 times on hit, then remove." Tamagotchi: "play animation once, then return to idle." A repeat count (0 = infinite) avoids the need to track counters manually in Lua callbacks. | LOW | Add `int repeatCount` (0 = infinite) and `int firedCount` to C_Timer. On each fire: increment `firedCount`, deactivate if `firedCount >= repeatCount`. |
-| C_StateMachine — transition guards (canTransition callback) | Prevents invalid transitions. Tamagotchi should not enter "eating" from "sleeping." A `canTransition(fromState, toState)` callback lets Lua script reject the transition. | LOW | Optional `canTransition` Lua function per state. If defined, call before applying transition; if returns false, ignore the transition request. |
-| engine.on with automatic cleanup on scope exit | Event handlers registered in a script init() survive Lua state reloads if not explicitly removed. Auto-clearing all handlers registered by a specific C_LuaScript on that component's destruction prevents stale callbacks silently firing on dead objects. | MEDIUM | Tag each registration with the registering component's ID. On C_LuaScript destruction, remove all registrations with that tag. Requires component identity (owner pointer or ID). |
-| engine.emit with return value collection | Some events need responses ("how many lives do I have?"). If emit returns a table of all handler return values, scripts can implement query-style events. | LOW | After calling all handlers, collect non-nil return values into a table pushed to the Lua stack. Caller decides whether to use them. |
+| **Coroutine-aware tween** (yield until complete) | Combining tweens + coroutines lets Lua scripts write `engine.tween.await(obj, {x=100}, 0.5)` inside a coroutine — script suspends until tween finishes, eliminating callback nesting | HIGH | Requires tween system + coroutine system to be co-designed. The tween's on_complete callback resumes the suspended coroutine. This is the "async/await" feel for game scripting. |
+| **Debug draw is always-on toggle** (engine.debug.enabled) | A boolean that enables/disables all engine.debug.* calls without removing them from scripts — zero cost when disabled | LOW | No new C++ needed — just a bool flag in LuaBindings checked before each debug draw call. Follows the ScriptErrorPolicy precedent. |
+| **Camera follow with dead zone** (engine.camera.setDeadZone) | A dead zone radius/rect within which the camera does not follow — character can move slightly without camera movement, reducing jitter on pixel art games | MEDIUM | Extends C_Camera with dead zone rect. If target is within dead zone, no lookAt update. Adds m_deadZone fields to C_Camera. |
+| **Tween chaining** (.after(fn)) | Tweens that trigger another tween on completion — enables cutscene-quality sequences without coroutines | LOW | on_complete callback creates the next tween. Matches flux.lua's chain pattern. |
+| **engine.store.saveToFile / loadFromFile on SDL3** already implemented | LuaStore JSON I/O is fully implemented under VCV_RACK guard — switching to SDL3 preprocessor path gives save/load on desktop immediately with zero new logic | LOW | Change `#ifdef VCV_RACK` to `#if defined(VCV_RACK) || defined(ENJIN2_BUILD_SDL)`. All file I/O code already exists and tested. Verified in `src/scripting/bindings_store.cpp`. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Async/deferred timer delivery (queue timers across frames) | "I want setTimeout semantics" | Deferred callbacks fire at an indeterminate point relative to scene updates. If the object was destroyed between scheduling and firing, the callback accesses a dead object. Frame-synchronous delivery (fire during update) is safe because the owning Object is alive. | Fire all timer callbacks synchronously during C_Timer::update(dt). The callback executes within the same frame's update pass, when the owner object is guaranteed alive. |
-| Per-object event namespace (emit to specific object) | "I want to send a message to only one object" | Routing by object identity requires either named events scoped to a target, or a direct method call on a proxy. The complexity of a point-to-point routing system is not justified at enjin2 scale (< 128 objects). | Use `engine.scene.find("name")` to get an ObjectProxy, then call a method on it, or store the proxy as a closure variable. Direct is simpler than routed. |
-| Coroutine-based state machine (yield/resume states) | "I want async state sequences without an FSM component" | Lua coroutines work, but the C++ driver loop must correctly yield and resume across frames. If the owner Object is destroyed mid-coroutine, the coroutine cannot be safely resumed. Managing coroutine lifetime (associated with Object lifetime) is non-trivial. | Use C_StateMachine with enter/update/exit callbacks. Each state is an explicit data entry, not a suspended coroutine. This matches the embedded-safe zero-ambiguity philosophy of enjin2. |
-| Physics engine integration (Box2D bindings) | "Physics sandbox needs real physics" | Box2D requires dynamic allocation and a velocity/position solver that runs independently of the game loop frame order. The zero-alloc constraint and ESP32 target make a full physics engine incompatible with enjin2's design. | Physics sandbox is "verlet integration from Lua" — manually update position by velocity, clamp to bounds, handle user interactions. Engine.collision.* provides AABB and circle tests. No Box2D needed. |
-| Global persistent event subscriptions (survive full Lua reset) | "I want event handlers to survive F5 hot-reload" | Lua function refs in the registry are invalidated by lua_close. If the C++ event bus holds Lua function refs across a Lua state reset, those refs become dangling pointers. | On F5 hot-reload (full Lua state destroy/recreate), re-register all handlers from the new script's init(). The script already handles this by design — init() is always called after reload. |
-| Hierarchical state machines (nested states) | "I need substates within states" | Hierarchical FSMs (Harel statecharts) require a stack-based state manager, transition inheritance, and region semantics. This is 3-5x more complex than a flat FSM and not needed for Arkanoid/tamagotchi/sandbox. | Use flat C_StateMachine. If nested logic is needed, create a second C_StateMachine component on the same Object (two state machines running in parallel). |
-| self:getAll("ComponentType") returning multiple results | "An object might have multiple C_Sprite instances" | Multiple components of the same type per object is a deliberate enjin2 design point (getComponents<T>()), but returning a Lua table of proxies from getAll() requires temporary heap allocation or a fixed-size array on the Lua stack. | Expose self:get(type) returning the first match. For the known multi-drawable use case, access layer properties via self.layer (ScriptProxy __index). Multiple components of the same type on one object are rare in the three target games. |
+| Anti-Feature | Why Requested | Why Problematic | Alternative |
+|--------------|---------------|-----------------|-------------|
+| **Full async/threading** for Lua | "True async" loading feels cleaner | ESP32 and WASM have no pthreads; true async requires platform-specific threading violating zero-alloc and portability constraints | Use cooperative coroutines (coroutine.yield) — identical DX, zero platform dependency |
+| **Unlimited persistent objects** | "I want everything to persist" | Fixed static arrays are the foundation of the zero-alloc constraint; unlimited requires heap allocation | Fixed-size persistent pool (4 slots is enough for audio manager, game manager, etc.) — mirrors ESP32 constraint honestly |
+| **JSON save data with arbitrary nesting** | Full game state serialization feels comprehensive | LuaStore already caps table depth at 1 level (flat KV + 1-level tables); arbitrary nesting requires recursive malloc, violates zero-alloc | Document the flat-table design. Use multiple top-level keys to simulate structure. For large save data on SDL3, expose raw JSON file path via engine.store.setPath(). |
+| **Lua `require()` for tween/coroutine libs** | Developers familiar with flux.lua or tween.lua expect `require` | ESP32 has no filesystem; WASM sandboxes module loading; `require()` only works reliably on SDL3 | Embed easing functions and coroutine scheduler natively in engine.tween.* and engine.async.* — works everywhere |
+| **UI widget system with layout engine** | "Real" UI needs auto-layout | A layout engine on 128x128 pixels on ESP32 is overkill; significant C++ complexity and static memory | Fixed-position gauges and labels via engine.ui.*. Developers position manually — appropriate for pixel art HUDs. |
+| **Coroutine-per-object** (unlimited coroutines) | Each object wanting its own coroutine feels natural | Each active coroutine is a lua_State thread that holds stack memory — unbounded coroutines would exhaust Lua's memory on ESP32 | Fixed 8-slot coroutine pool. Scripts that need more can use C_Timer chaining (already available). |
+| **Debug draw with camera offset auto-applied** | "I want to draw in world space" | Adds a conditional offset pass in every engine.debug.* call; complex for shapes that span screen/world coordinates | Debug draw operates in screen space (no camera offset) — consistent, predictable, works for HUD-style debug info |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[C_Timer component]
-    └──requires──> [C_LuaScript on same Object] (Lua callback ref lives in same Lua state)
-    └──requires──> [float dt in Component::update()] (already shipped in v1.5)
-    └──requires──> [ScriptProxy userdata] (self passed to timer callback, already v1.5)
+[Debug draw bindings]
+    └──requires──> [Primitives (drawRect, drawLine, drawCircle)] (DONE)
+    └──requires──> [LuaBindings canvas access] (DONE)
+    └──enhances──> [Debug draw enabled toggle] (new flag in LuaBindings)
 
-[C_StateMachine component]
-    └──requires──> [float dt in Component::update()] (already v1.5)
-    └──requires──> [ScriptProxy userdata] (self in state callbacks, already v1.5)
-    └──optional──> [C_Timer] (timer-driven transitions are a common pattern)
+[Camera follow helper]
+    └──requires──> [C_Camera.lookAt()] (DONE)
+    └──requires──> [engine.scene.find()] (DONE)
+    └──enhances──> [Camera follow with dead zone] (new C_Camera fields, deferred)
 
-[ComponentProxy / self:get()]
-    └──requires──> [ScriptProxy userdata] (self:get() is a method on ScriptProxy, v1.5)
-    └──requires──> [ObjectProxy validity pattern] (proxy must invalidate when C++ object dies, v1.5)
-    └──requires──> [Component::getComponent<T>()] (already v1.5, used internally)
-    └──enhances──> [C_StateMachine] (state callbacks can read sibling Sprite to change frames)
-    └──enhances──> [C_Timer] (timer callbacks can read/write sibling component state)
+[Save/load serialization — SDL3 path]
+    └──requires──> [LuaStore JSON I/O] (DONE, under VCV_RACK guard)
+    └──requires──> [ENJIN2_BUILD_SDL preprocessor symbol] (DONE)
 
-[engine.on / engine.emit (event bus)]
-    └──requires──> [LuaBindings::registerEngineTable()] (add engine.on/emit sub-registrations, v1.5)
-    └──independent of──> [C_Timer, C_StateMachine, ComponentProxy]
-    └──enhances──> [C_Timer] (timer fires, emits event, other objects react)
-    └──conflicts with──> [persistent Lua function refs across scene switch] (refs must clear on switch)
+[Save/load serialization — ESP32 path]
+    └──requires──> [ESP32 NVS / Preferences API] (new stub needed)
 
 [Persistent objects across scenes]
-    └──requires──> [SceneStateMachine] (must hold a parallel object list, v1.5)
-    └──requires──> [engine.scene.spawn/destroy] (already shipped in v1.5)
-    └──conflicts with──> [ObjectProxy single-proxy-per-object constraint] (documented debt in PROJECT.md)
-    └──alternative──> [LuaStore for state + re-create per scene] (zero new C++ work)
+    └──requires──> [SceneStateMachine scene switching] (DONE)
+    └──requires──> [Object lifecycle (awake/start/update)] (DONE)
+    └──conflicts──> [Unlimited persistent objects] (anti-feature)
+
+[Coroutine/async Lua]
+    └──requires──> [Lua 5.1 coroutine API] (available — Lua built-in)
+    └──requires──> [C_Timer or per-frame tick] (DONE)
+    └──enables──> [Coroutine-aware tween await]
+
+[Tween helpers]
+    └──requires──> [math::lerp] (DONE)
+    └──requires──> [C_Timer] (DONE — for per-frame update)
+    └──enables──> [Coroutine-aware tween await]
+
+[Coroutine-aware tween await]
+    └──requires──> [Coroutine/async Lua] (v1.7)
+    └──requires──> [Tween helpers] (v1.7)
+
+[UI component bindings — engine.ui.*]
+    └──requires──> [FillUpGauge C++ component] (DONE — needs Canvas4 adaptation)
+    └──requires──> [Label C++ component] (DONE — needs std::string removal)
+    └──requires──> [C_Position] (DONE)
+    └──requires──> [LuaBindings pool pattern] (established by sprite pool)
 ```
 
 ### Dependency Notes
 
-- **ComponentProxy must come after ScriptProxy:** `self:get()` is a metamethod on the ScriptProxy userdata. The type registry and proxy invalidation pattern are extensions of the v1.5 proxy work, not independent systems.
-- **Event bus clear-on-scene-switch is not optional:** Stale Lua function refs from the previous scene firing after a switch is a use-after-free (Lua function ref in a closed Lua state, or ref to a dead Object). Must be scoped to scene lifetime or cleared by scene deactivation.
-- **C_Timer and C_StateMachine are mutually independent:** Either can be built first. However, combining them enables "timer-driven state transitions" (enter HUNGRY state after 30s of IDLE), which is the primary tamagotchi mechanic. Build C_Timer first because it has lower complexity.
-- **Persistent objects can be approximated without new C++ code:** LuaStore (already in v1.5) serializes state to JSON on scene exit and loads it on scene enter. For the three target games, this is likely sufficient and avoids the architectural complexity of a cross-scene object registry.
-
----
-
-## Game-Specific Feature Requirements
-
-### Arkanoid
-
-| Mechanic | Feature Required | Already Available |
-|----------|-----------------|-------------------|
-| Ball/wall collision + reflect | engine.collision.reflect() | YES (v1.5) |
-| Brick/ball collision (AABB) | engine.collision.aabb() | YES (v1.5) |
-| Brick destroy + score add | engine.emit("brick_hit", points) → score handler | NO — needs event bus |
-| Speed ramp (ball gets faster) | Manual velocity scaling in script | YES (pure Lua math) |
-| Restart delay after ball loss | engine.timer.after(2.0, fn) | NO — needs C_Timer |
-| Game states (attract/play/paused/game_over/victory) | C_StateMachine on a GameManager object | NO — needs C_StateMachine |
-| Lives counter persistence | LuaStore or local variable (single scene) | YES (LuaStore) |
-| Level clear detection | Count remaining bricks in update | YES (pure Lua logic) |
-
-### Physics Sandbox
-
-| Mechanic | Feature Required | Already Available |
-|----------|-----------------|-------------------|
-| Spawn objects at click | engine.scene.spawn() | YES (v1.5) |
-| Destroy objects | engine.scene.destroy() | YES (v1.5) |
-| Verlet position integration | Manual in Lua update(self, dt) | YES (pure Lua math) |
-| AABB boundary clamping | engine.collision.aabb() for floor/walls | YES (v1.5) |
-| Circle-circle collision | engine.collision.circleCircle() | YES (v1.5) |
-| Object selection by click | engine.scene.find() + point-in-rect | YES (v1.5) |
-| Object position read/write | self.x / self.y via ScriptProxy | YES (v1.5) |
-| Sibling component access (Sprite frame toggle) | self:get("Sprite") | NO — needs ComponentProxy |
-| Physics sandbox needs no timers, FSM, or events | — | — |
-
-Physics sandbox is the simplest of the three games for v1.6. The existing v1.5 baseline is nearly
-sufficient. ComponentProxy is the only new feature that adds meaningful value.
-
-### Tamagotchi
-
-| Mechanic | Feature Required | Already Available |
-|----------|-----------------|-------------------|
-| Pet states (idle/hungry/sleeping/happy/dead) | C_StateMachine on Pet object | NO — needs C_StateMachine |
-| Hunger decay every 30s | C_Timer repeating with hunger-- callback | NO — needs C_Timer |
-| Happiness decay every 45s | C_Timer repeating | NO — needs C_Timer |
-| Sleep state entered at 8PM (game time) | C_Timer one-shot or state condition | NO — needs C_Timer |
-| Feed action → happiness++ | engine.emit("feed") → pet handler | NO — needs event bus (or direct call) |
-| Change sprite on state change | self:get("Sprite"):setFrame(n) | NO — needs ComponentProxy |
-| Pet stats survive scene switch (main→menu→main) | LuaStore save/load on scene switch | YES (LuaStore in v1.5) |
-| Death detection (hunger == 0) | State machine transition condition | YES (pure Lua in state update) |
-
-Tamagotchi requires all five v1.6 features (C_Timer, C_StateMachine, ComponentProxy for sprite
-changes, event bus for user actions, LuaStore already serves persistence). It is the most
-feature-complete validation target.
+- **Coroutine + Tween co-design:** Build the tween system first, then add coroutine scheduling. Coroutine-aware await is an enhancement, not required for tween MVP.
+- **Save/load SDL3 path is trivial:** It is a one-line preprocessor guard change in `bindings_store.cpp`. Build this early in the milestone.
+- **Camera follow is a one-function add:** C++ camera already has lookAt(). The Lua-side helper just calls findByName + lookAt per-frame. No new C++ component.
+- **Debug draw is wiring, not invention:** All draw primitives exist. The work is: add LuaBindings entries, add enabled flag, route to currentCanvas.
+- **Persistent objects are the hardest architectural piece:** Requires a design decision about where persistent objects live (outside scene's ObjectCollection), and how SceneStateMachine skips them during scene destruction. Must be designed carefully around the zero-alloc static array model.
+- **UI components need C++ adaptation:** Label uses std::string and std::vector — these conflict with zero-alloc for embedded targets. Adaptation required before bindings can be written.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v1.6 — this milestone)
+### Launch With (v1.7 scope)
 
-Listed in implementation order (lower complexity and higher dependency priority first):
+These are the v1.7 deliverables as declared in PROJECT.md, analyzed for complexity ordering.
 
-- [ ] **C_Timer (one-shot + repeating)** — Lowest complexity new component. Unlocks Arkanoid
-      restart delay and tamagotchi need decay. Entry point to the milestone; proves the pattern
-      for future components.
-- [ ] **engine.on / engine.emit (event bus)** — Medium complexity, independent of C_Timer.
-      Unlocks brick-to-score communication in Arkanoid. Can be implemented in LuaBindings as
-      a named-event registry with fixed capacity. No new C++ types needed beyond what exists.
-- [ ] **C_StateMachine (flat FSM with enter/update/exit)** — Medium complexity. Unlocks
-      Arkanoid game-state management and tamagotchi pet states. Depends on C_Timer pattern
-      being established first (shared Lua function ref management pattern).
-- [ ] **ComponentProxy / self:get("Type")** — Highest complexity. Unlocks sprite-frame
-      switching from Lua state callbacks and is the keystone of script-to-component access.
-      Deferred to after C_Timer/FSM because it requires a type-registry design decision.
-- [ ] **Persistent objects (via LuaStore pattern)** — Re-assess after verifying LuaStore
-      covers all three target games. If LuaStore is sufficient, defer the full cross-scene
-      object registry to v1.7. If not sufficient, implement the lightweight "SSM-owned object
-      list" pattern.
+- [ ] **engine.debug.* bindings** — Wire primitives to Lua. Add `engine.debug.enabled` flag. Rect, circle, line, cross at minimum. (LOW — ~1 phase)
+- [ ] **Save/load SDL3 path** — Enable LuaStore JSON I/O for SDL3 builds via preprocessor change. (LOW — part of existing store phase)
+- [ ] **Camera follow helper** — Add `engine.camera.follow(name[, speed])` binding. (LOW — ~1 phase, building on C_Camera)
+- [ ] **Tween helpers** — 8-slot tween pool with easing; `engine.tween.to(table, {k=v}, dur, ease, done_cb)`. (MEDIUM — ~2 phases)
+- [ ] **Coroutine/async Lua** — Register 8-slot coroutine scheduler; `engine.async.start(fn)` and `engine.wait(seconds)`. (MEDIUM — ~2 phases)
+- [ ] **Persistent objects across scenes** — Fixed 4-slot pool; `engine.scene.persist(name)` / `engine.scene.unpersist(name)`. (MEDIUM-HIGH — ~2 phases; architectural)
+- [ ] **UI component bindings** — engine.ui.newGauge / setGauge / newLabel / setLabel. (MEDIUM — ~1-2 phases, after Label std::string adaptation)
 
-### Add After Validation (v1.x — v1.7 candidates)
+### Add After Validation (v1.7.x)
 
-- [ ] **C_Timer repeat count (fire N times)** — Useful for animation sequences; not strictly
-      needed for the three target games. Add when a concrete use case appears.
-- [ ] **C_StateMachine transition guards** — Adds safety; only needed if invalid transitions
-      are observed in practice during game development.
-- [ ] **engine.on automatic cleanup on component destroy** — Important for correctness at
-      scale; lower priority while scene count is small (one scene at a time).
-- [ ] **Full cross-scene persistent object registry** — Only if LuaStore + re-create pattern
-      proves insufficient for a fourth target game.
+- [ ] **Camera dead zone** — Extend C_Camera with dead zone rect after follow helper ships and is exercised.
+- [ ] **Coroutine-aware tween await** — Co-design enhancement after both coroutine and tween systems prove stable.
+- [ ] **Tween chaining** — Add `.after(fn)` syntax after core tween is working.
+- [ ] **ESP32 NVS save path** — Stub-complete-then-test; deferred until ESP32 build is verified in dev environment.
 
 ### Future Consideration (v2+)
 
-- [ ] **Coroutine-based scripted sequences** — Motivate with a concrete cutscene use case.
-      Currently the C_StateMachine + C_Timer combination covers the same patterns without
-      coroutine lifetime complexity.
-- [ ] **Hierarchical state machines** — No evidence of need from the three target games.
-- [ ] **Point-to-point event routing (msg.post style)** — Global broadcast is sufficient
-      at enjin2 scale. Named routing adds complexity without clear benefit below ~1000 objects.
-- [ ] **Tweening / go.animate equivalent** — Useful for UI animations; requires a curve
-      representation and property accessor by name. Combine with C_Timer when motivating
-      use case exists.
+- [ ] **WASM localStorage bridge** — Requires JS interop layer (emscripten val or Module call); significant scope.
+- [ ] **UI layout engine** — Not appropriate for pixel art embedded target.
+- [ ] **Per-pixel debug overlay** — Very niche, high implementation cost.
 
 ---
 
 ## Feature Prioritization Matrix
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| C_Timer (one-shot + repeating) | HIGH (all three games) | MEDIUM | P1 |
-| engine.on / engine.emit | HIGH (Arkanoid, tamagotchi decoupling) | MEDIUM | P1 |
-| C_StateMachine | HIGH (tamagotchi, Arkanoid game flow) | MEDIUM | P1 |
-| ComponentProxy / self:get() | HIGH (sprite switching, position reads) | HIGH | P1 |
-| Persistent objects (LuaStore path) | MEDIUM (LuaStore may be sufficient) | LOW | P1 (verify first) |
-| Persistent objects (cross-scene registry) | MEDIUM | HIGH | P2 (only if LuaStore insufficient) |
-| C_Timer repeat count | LOW (workaround: counter in callback) | LOW | P2 |
-| FSM transition guards | LOW (defensive programming) | LOW | P2 |
-| engine.on auto-cleanup on component destroy | MEDIUM (correctness) | MEDIUM | P2 |
+| Feature | Developer Value | Implementation Cost | Priority |
+|---------|-----------------|---------------------|----------|
+| Debug draw bindings | HIGH (daily dev tool) | LOW (wiring only) | P1 |
+| Camera follow helper | HIGH (every scrolling game) | LOW (one function) | P1 |
+| Save/load SDL3 path | HIGH (expected to work) | LOW (preprocessor fix) | P1 |
+| Tween helpers | HIGH (UI animation) | MEDIUM (pool + easing) | P1 |
+| Coroutine/async Lua | HIGH (loading, cutscenes) | MEDIUM (scheduler) | P1 |
+| UI component bindings | MEDIUM (gauges/labels) | MEDIUM (pool + Label adaptation) | P2 |
+| Persistent objects | MEDIUM (game managers) | HIGH (architecture) | P2 |
+| Camera dead zone | MEDIUM (polish) | LOW (C_Camera extend) | P3 |
+| Coroutine-aware tween await | HIGH (DX polish) | MEDIUM (co-design) | P2 |
+| ESP32 NVS save path | MEDIUM (platform complete) | MEDIUM (new #ifdef path) | P3 |
 
 **Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
+- P1: Must have for v1.7 launch — directly from PROJECT.md target features
+- P2: Should have, builds on P1 systems
 - P3: Nice to have, future consideration
 
 ---
 
-## Existing System Integration Points
+## Implementation Details for Each Feature
 
-Each new feature integrates with the following already-shipped systems:
+### Debug Draw (engine.debug.*)
 
-| New Feature | Integrates With | Integration Point |
-|-------------|----------------|-------------------|
-| C_Timer | `Component::update(float dt)` | Accumulate elapsed in update(), fire Lua callback via callWithProxy pattern |
-| C_Timer | `ScriptProxy` (v1.5) | Timer callback receives self as first arg, follows existing callWithProxy convention |
-| C_Timer | `LuaEngine` Lua registry | Store Lua function ref via `luaL_ref`; release with `luaL_unref` on stop |
-| C_StateMachine | `Component::update(float dt)` | State update(dt) called from C_StateMachine::update() |
-| C_StateMachine | `ScriptProxy` (v1.5) | enter/update/exit callbacks follow callWithProxy pattern |
-| C_StateMachine | `SceneStateMachine` deferred-transition pattern | State transitions should be deferred (last-wins within a frame) to prevent re-entrancy |
-| ComponentProxy | `ScriptProxy.__index` (v1.5) | `self:get("Type")` is a new method dispatched through ScriptProxy metatable |
-| ComponentProxy | `Object::getComponent<T>()` (v1.5) | C++ type lookup uses existing dynamic_cast path |
-| ComponentProxy | `ObjectProxy` validity pattern (v1.5) | ComponentProxy needs a `valid` flag cleared by Object destructor |
-| Event bus | `LuaBindings::registerEngineTable()` (v1.5) | Add `engine.on` and `engine.emit` during registerEngineTable() |
-| Event bus | Scene lifecycle (v1.5) | Clear all registered handlers on scene deactivation to prevent stale refs |
-| Event bus | `LuaEngine` Lua registry | Store handler function refs with `luaL_ref`; bulk-release on scene switch |
-| Persistent objects | `SceneStateMachine` (v1.5) | If full registry: SSM owns a separate object list updated/rendered alongside current scene |
-| Persistent objects | `LuaStore` (v1.5) | If LuaStore path: serialize state on scene deactivation, restore on scene activation |
-| Persistent objects | `engine.scene.spawn/destroy` (v1.5) | Persistent object creation via existing spawn binding; persistence flag marks it exempt from scene cleanup |
+**What:** Lua-accessible overlay drawing for development inspection.
+
+**Expected API:**
+```lua
+engine.debug.enabled = true          -- global toggle (false = all no-ops)
+engine.debug.rect(x, y, w, h, color) -- outline rectangle
+engine.debug.circle(x, y, r, color)  -- outline circle
+engine.debug.line(x1, y1, x2, y2, color)
+engine.debug.cross(x, y, size, color) -- crosshair (position marker)
+engine.debug.text(x, y, str, color)   -- debug text overlay
+```
+
+**Implementation notes:**
+- Routes to `Primitives<Pixel4>::drawRect/drawCircle/drawLine` on `currentCanvas`
+- `enabled` flag in LuaBindings; all bindings check it first (follows ScriptErrorPolicy pattern)
+- Screen-space coordinates (no camera offset) — consistent for HUD-style overlays
+- No new C++ component; pure binding additions in new `bindings_debug.cpp`
+- Complexity: LOW — primitives confirmed in codebase; pattern established
+
+**Confidence:** HIGH
+
+---
+
+### Camera Follow Helper (engine.camera.follow)
+
+**What:** Per-frame camera tracking of a named object — DX improvement over manually calling lookAt() every frame.
+
+**Expected API:**
+```lua
+engine.camera.follow("player")         -- snap-follow (lerp=1.0)
+engine.camera.follow("player", 0.05)   -- smooth follow (lerp=0.05)
+engine.camera.unfollow()               -- stop following
+```
+
+**Implementation notes:**
+- C_Camera already has `lookAt(x, y, lerpSpeed)` and engine.camera bindings already exist
+- LuaBindings stores `m_followTargetName[32]` and `m_followLerpSpeed` — applied each frame in camera update
+- Follow resolves target via `findByName()` + `C_Position.getPosition()` each frame (no caching to avoid stale pointers)
+- `unfollow()` clears the name; camera stays at last position
+- Camera lerp handles smoothing — no extra math needed
+- Camera update timing: follow update runs after object update() (camera is last; avoids one-frame lag)
+- Complexity: LOW
+
+**Confidence:** HIGH
+
+---
+
+### Save/Load Serialization (SDL3 path)
+
+**What:** Enable the existing LuaStore JSON file I/O for SDL3 builds (currently guarded behind VCV_RACK macro).
+
+**Expected behavior:**
+```lua
+engine.store.setPath("save.json")     -- set file path (SDL3 only)
+engine.store.save("score", 1234)      -- auto-writes to file if path set
+engine.store.flush()                  -- explicit flush
+engine.store.loadFromFile()           -- explicit load on game start
+```
+
+**Implementation notes:**
+- Code fully exists in `bindings_store.cpp` under `#ifdef VCV_RACK`
+- Change guard to `#if defined(VCV_RACK) || defined(ENJIN2_BUILD_SDL)` — verified: `ENJIN2_BUILD_SDL` is defined via CMake
+- ESP32 path: `Preferences.putString/getString` — new `#elif defined(ESP32)` block needed; currently stubs return false
+- WASM path: no-op returning false (file I/O unavailable in sandboxed WASM) — document this clearly
+- LuaStore auto-persist already works when `m_storePath` is set (confirmed in `lua_engine_store_save`)
+- Complexity: LOW for SDL3; MEDIUM for ESP32
+
+**Confidence:** HIGH (SDL3); MEDIUM (ESP32 — NVS has heap overhead, needs testing)
+
+---
+
+### Persistent Objects Across Scenes
+
+**What:** Objects flagged as persistent survive `engine.scene.switch()`.
+
+**Expected API:**
+```lua
+engine.scene.persist("audio_manager")      -- flag object as persistent
+engine.scene.unpersist("audio_manager")    -- remove flag
+engine.scene.is_persistent("audio_manager") -- query
+```
+
+**Implementation notes:**
+- enjin2 uses static arrays in ObjectCollection; "persistent" objects need special handling
+- Recommended architectural approach: **flag on Object, SSM skips destruction**
+  - Add `m_persistent = false` flag to Object
+  - `engine.scene.persist(name)` calls `findByName()` and sets the flag
+  - On `SceneStateMachine::switchTo()`, iterate ObjectCollection — skip `m_persistent == true` objects in the cleanup pass
+  - Persistent objects' `update()` still gets called from their scene (scenes are statically allocated in SSM and stay alive)
+- Unlike Unity: no DontDestroyOnLoad duplicate problem — enjin2 scenes are pre-allocated statically, not instantiated on load
+- Key invariant: object names must remain globally unique when persistence is active
+- Fixed limit: enforce max 4 persistent objects (document clearly)
+- Complexity: MEDIUM-HIGH — SSM modification required
+
+**Confidence:** MEDIUM — Design is clear but implementation requires SSM change; architectural choice not yet validated
+
+---
+
+### Coroutine/Async Lua (engine.async.*)
+
+**What:** Per-frame coroutine scheduler that resumes registered Lua coroutines, enabling `engine.wait(seconds)` syntax.
+
+**Expected API:**
+```lua
+engine.async.start(function()
+    engine.wait(1.0)       -- suspend for 1 second
+    setColor(7)
+    drawText("Done!", 10, 10)
+    engine.wait(0.5)
+    setColor(0)
+end)
+
+-- Cancel all running coroutines
+engine.async.cancelAll()
+```
+
+**Implementation notes:**
+- Lua 5.1+ has `coroutine.create`, `coroutine.resume`, `coroutine.yield` built in — no external library needed
+- Engine side: fixed array of 8 lua_State* threads (each created with `lua_newthread`)
+- `engine.async.start(fn)`: creates coroutine from fn, stores in slot, immediately resumes to kick off
+- `engine.wait(seconds)`: schedules a C_Timer callback to call `coroutine.resume` after delay, then calls `coroutine.yield` to suspend
+- Per-frame: LuaBindings update loop calls `coroutine.resume` on any SUSPENDED coroutines with no pending timer (immediate-yield coroutines advance next frame)
+- Memory: each Lua thread shares the main lua_State's heap — no extra static allocation beyond thread object refs
+- **Key constraint:** `engine.wait()` must only be called from inside a coroutine. `luaL_error` if called from main script flow.
+- Hot-reload: all coroutines cleared when Lua state is reset (F5)
+- Complexity: MEDIUM
+
+**Confidence:** MEDIUM — Pattern is well-established (Lua cooperative coroutines); enjin2-specific integration (C_Timer + coroutine.yield interlock) needs validation
+
+---
+
+### Tween Helpers (engine.tween.*)
+
+**What:** Fixed-pool tween system that animates Lua table fields from current to target values over time with easing.
+
+**Expected API:**
+```lua
+local id = engine.tween.to(self, {x=100, y=50}, 0.5, "quadOut", function()
+    print("done!")
+end)
+engine.tween.cancel(id)
+engine.tween.cancelAll()
+```
+
+**Implementation notes:**
+- Fixed pool of 8 TweenSlot structs in LuaBindings (zero allocation)
+- Each slot: `lua_ref` to target table, up to 4 field names, start values, end values, duration, elapsed, easing enum, completion callback ref
+- Per-frame: LuaBindings::updateTweens(dt) iterates active slots, advances elapsed, applies easing to compute t (0..1), sets table fields via `lua_rawset`
+- Easing functions (pure C++, ESP32-safe — no expf or trig):
+  - `linear`: t
+  - `quadIn`: t*t
+  - `quadOut`: t*(2-t)
+  - `quadInOut`: t<0.5 ? 2*t*t : -1+(4-2*t)*t
+  - `cubicIn`: t*t*t
+  - `cubicOut`: (t-1)^3+1
+  - Omit elastic/bounce (require expf or sin — costly on ESP32)
+- On completion: call callback if set, mark slot inactive
+- Complexity: LOW-MEDIUM — math confirmed in codebase; pool pattern established by sprite pool
+
+**Confidence:** HIGH
+
+---
+
+### UI Component Bindings (engine.ui.*)
+
+**What:** Lua bindings for FillUpGauge and Label components, following the sprite pool pattern.
+
+**Expected API:**
+```lua
+-- Gauges (progress/stat bars)
+local hp_bar = engine.ui.newGauge(x, y, w, h, color, "uni")  -- "uni" or "bi"
+engine.ui.setGauge(hp_bar, 0.75)    -- 0.0-1.0 for uni, -1.0-1.0 for bi
+engine.ui.removeGauge(hp_bar)
+
+-- Labels (text display)
+local lbl = engine.ui.newLabel(x, y, w, h, "Hello", fg_color, bg_color)
+engine.ui.setLabelText(lbl, "Score: 42")
+engine.ui.setLabelColor(lbl, color)
+engine.ui.removeLabel(lbl)
+```
+
+**Implementation notes:**
+- FillUpGauge C++ component exists — needs canvas type adapted from `Canvas<uint8_t>` to `Canvas4<Pixel4>` for LayerCompositor pipeline
+- Label C++ component exists — **uses std::string and std::vector (violates zero-alloc)** — requires adaptation: replace `std::string text` with `char text[64]` and fixed line array; remove `std::vector<std::string> lines`
+- Pool: 8 slots each for gauges and labels in LuaBindings; 1-indexed IDs following Lua convention
+- Draw: pool draw() called in LuaBindings::onRender() pass, draws to currentCanvas
+- FillUpGauge internal_canvas was `Canvas<uint8_t, 64, 64>` — change to `Canvas4<64, 64>`
+- Complexity: MEDIUM — C++ adaptation of Label is the blocking work
+
+**Confidence:** MEDIUM — C++ components exist and are complete; adaptation complexity depends on Label usage of std::string
+
+---
+
+## Complexity Summary
+
+| Feature | Phase Estimate | Risk |
+|---------|----------------|------|
+| Debug draw bindings | 1 phase | LOW — wiring only |
+| Camera follow helper | 1 phase | LOW — C_Camera fully capable |
+| Save/load SDL3 path | 0.5 phase (part of store phase) | LOW — preprocessor fix |
+| Tween helpers | 2 phases | LOW-MEDIUM — math is simple, pool pattern known |
+| Coroutine/async Lua | 2 phases | MEDIUM — scheduler co-design, edge cases (error in coroutine) |
+| UI component bindings | 2 phases | MEDIUM — Label needs std::string removal for embedded |
+| Persistent objects | 2 phases | MEDIUM-HIGH — architectural decision in SSM |
 
 ---
 
 ## Sources
 
-- Direct code inspection: `include/enjin2/core/component.hpp`, `include/enjin2/core/object.hpp`, `include/enjin2/core/scene.hpp`, `include/enjin2/core/scene_state_machine.hpp`, `include/enjin2/core/signal.hpp`, `include/enjin2/scripting/bindings.hpp`, `include/enjin2/scripting/object_proxy.hpp`, `src/scripting/bindings_engine.cpp`
-- `.planning/PROJECT.md` — authoritative requirements list, v1.6 Active requirements, out-of-scope decisions
-- `.planning/codebase/ARCHITECTURE.md` — frame update loop, component lifecycle, data flow
-- Arkanoid physics patterns: [GameDev.net Arkanoid physics thread](https://www.gamedev.net/forums/topic/372965-arkanoid-physics/), [Smiling Cat physics for block breaker](https://www.smilingcatentertainment.com/physics-for-a-block-breaker-game/), [love2d arkanoid tutorial](https://github.com/noooway/love2d_arkanoid_tutorial)
-- Tamagotchi FSM: [Tamagotchi and FSM analysis](https://liamharveysae.wordpress.com/2015/07/16/week-7-tamagotchis-and-the-finite-state-machine/), [Foundations of Python Programming: Tamagotchi](https://runestone.academy/ns/books/published/fopp/Classes/Tamagotchi.html)
-- Event bus patterns: [Nomad Game Engine event system](https://medium.com/@savas/nomad-game-engine-part-7-the-event-system-45a809ccb68f), [Game Programming Patterns: Event Queue](https://gameprogrammingpatterns.com/event-queue.html), [GDQuest event bus singleton](https://www.gdquest.com/tutorial/godot/design-patterns/event-bus-singleton/), [LÖVE signals module](https://love2d.org/forums/viewtopic.php?t=80224)
-- Persistent objects: [Unity DontDestroyOnLoad guide](https://uhiyama-lab.com/en/notes/unity/unity-dontdestroyonload-guide/), [Persistent Scene pattern](https://rwth-acis.github.io/i5-Toolkit-for-Unity/1.5.0/manual/Utilities/Persistent-Scene.html)
-- Timer design: [Unreal Engine gameplay timers](https://docs.unrealengine.com/4.27/en-US/ProgrammingAndScripting/ProgrammingWithCPP/UnrealArchitecture/Timers), [Delta-time accumulator pattern](https://medium.com/@lemapp09/beginning-game-development-implementing-timers-and-delays-with-coroutines-5a93d16d173e)
+- Codebase analysis: `/home/unwn/dev/enjin/src/scripting/bindings_store.cpp` (LuaStore full implementation confirmed; VCV_RACK guard identified)
+- Codebase analysis: `/home/unwn/dev/enjin/include/enjin2/components/camera.hpp` (C_Camera API confirmed)
+- Codebase analysis: `/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp` (draw primitives confirmed)
+- Codebase analysis: `/home/unwn/dev/enjin/include/enjin2/components/fill_up_gauge.hpp` (FillUpGauge confirmed, canvas type noted)
+- Codebase analysis: `/home/unwn/dev/enjin/include/enjin2/components/label.hpp` (Label confirmed; std::string/std::vector usage flagged as embedded incompatible)
+- Codebase analysis: `/home/unwn/dev/enjin/include/enjin2/core/math.hpp` (lerp, smoothstep confirmed)
+- Codebase analysis: `/home/unwn/dev/enjin/src/scripting/bindings_engine.cpp` (engine.camera.* confirmed; no debug/tween/coroutine bindings present)
+- [Lua coroutines for game scripting — Jonathan Fischer](https://www.jonathanfischer.net/lua-coroutines/)
+- [Coroutine-based async in Lua — Software Patterns Lexicon](https://softwarepatternslexicon.com/lua/concurrency-and-asynchronous-patterns-in-lua/coroutine-based-asynchronous-programming/)
+- [flux.lua — lightweight Lua tween library (rxi)](https://github.com/rxi/flux)
+- [tween.lua — Lua tweening/easing (kikito)](https://github.com/kikito/tween.lua)
+- [ESP32 NVS documentation — Espressif](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/storage/nvs_flash.html)
+- [DontDestroyOnLoad pattern — Unity docs](https://docs.unity3d.com/ScriptReference/Object.DontDestroyOnLoad.html)
+- [Improved lerp smoothing — Game Developer](https://www.gamedeveloper.com/programming/improved-lerp-smoothing-)
+- [Pixel-perfect camera in GameMaker — yal.cc](https://yal.cc/gamemaker-smooth-pixel-perfect-camera/)
+- [bump.lua debug utilities — kikito/GitHub](https://github.com/kikito/bump.lua)
 
 ---
-
-*Feature research for: enjin2 v1.6 — C_Timer, C_StateMachine, ComponentProxy, event bus, persistent objects*
-*Researched: 2026-02-28*
+*Feature research for: enjin2 v1.7 — debug draw, save/load, persistent objects, camera follow, coroutines, tweens, UI components*
+*Researched: 2026-03-01*

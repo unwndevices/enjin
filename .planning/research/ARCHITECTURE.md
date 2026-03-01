@@ -1,13 +1,8 @@
 # Architecture Research
 
-**Domain:** Embedded/WASM 2D game engine — v1.6 Game-Ready feature integration
-**Researched:** 2026-02-28
-**Confidence:** HIGH
-
-This document focuses exclusively on how the five v1.6 features (C_Timer, C_StateMachine,
-ComponentProxy/self:get(), signal/event bus, persistent objects) integrate with the existing
-Component/Object/Scene architecture. All analysis is derived from direct reading of the live
-codebase at HEAD (post-v1.5).
+**Domain:** 2D game engine — v1.7 new feature integration
+**Researched:** 2026-03-01
+**Confidence:** HIGH (full codebase read; all claims grounded in live source files)
 
 ---
 
@@ -16,717 +11,702 @@ codebase at HEAD (post-v1.5).
 ### System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Lua Script Layer                             │
-│  init(self)  update(self, dt)  draw(self)  on_button_pressed(self,b)│
-│  self:get("C_Timer")  engine.events.*  engine.scene.persist(obj)    │
-├─────────────────────────────────────────────────────────────────────┤
-│                    ScriptProxy / ComponentProxy                      │
-│   __index/__newindex dispatch  |  ComponentProxy full userdata      │
-├─────────────────────────────────────────────────────────────────────┤
-│                    C++ Component Layer                               │
-│  C_Timer    C_StateMachine    C_Position    C_Sprite    C_LuaScript │
-│     |              |               |            |            |       │
-│              Object (MAX_COMPONENTS=16, array of unique_ptr)        │
-├─────────────────────────────────────────────────────────────────────┤
-│                  Scene / ObjectCollection                            │
-│  ObjectCollection (owned MAX_OBJECTS=128 + external MAX_PERSIST=16) │
-│  SceneStateMachine (MAX_SCENES=32) + PersistentObjectRegistry       │
-├─────────────────────────────────────────────────────────────────────┤
-│                     Signal / EventBus Layer                          │
-│  Signal<Args...> (existing, MAX_CONNECTIONS=16, std::function)      │
-│  EventBus (NEW: named channels, int luaRefs[], const char* keys)    │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            Lua Script Layer                                  │
+│  engine.debug.*  engine.ui.*  engine.camera.follow()                         │
+│  engine.tween.*  engine.async.*  engine.scene.persist()                      │
+├───────────────────────────────────────┬─────────────────────────────────────┤
+│           LuaBindings                 │         LuaEventBus                   │
+│  (split across bindings_*.cpp)        │   (scene-scoped, re-entrant safe)     │
+│  [NEW: m_debugCanvas, m_tweens[],     │                                       │
+│   m_coroutines[], +persist ptr]       │                                       │
+├───────────────────────────────────────┴─────────────────────────────────────┤
+│                            Component Layer                                   │
+│  C_Camera  C_Timer  C_StateMachine  C_Sprite  C_Tilemap                      │
+│  [MODIFIED C_Camera: setFollowTarget()]                                      │
+│  [NO new C++ UI components — engine.ui.* is stateless draw API]             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                       Scene / Object Layer                                   │
+│  SceneStateMachine → Scene → ObjectCollection → Object → Component[]         │
+│  [NEW PersistentObjectRegistry — SSM-owned, survives scene transitions]      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                       Graphics / Canvas Layer                                │
+│  ICanvas<Pixel4>  LayerCompositor  Primitives<Pixel4>                        │
+│  [DEBUG DRAW: dedicated high-index layer; no new canvas type]               │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
-| Component | Responsibility | Communicates With |
-|-----------|---------------|-------------------|
-| `C_Timer` | Delayed and repeating Lua callbacks; owns static TimerSlot array | Fires via Lua registry refs; C_Timer::update() in Object update chain |
-| `C_StateMachine` | Named state machine; tracks current state; calls enter/exit/update Lua callbacks | Accessed from Lua via ComponentProxy returned by self:get() |
-| `ScriptProxy` | Existing full userdata passed as `self` to all Lua callbacks | Now also dispatches `self:get(typeName)` to new lua_proxy_get_component |
-| `ComponentProxy` | NEW full userdata returned by `self:get("TypeName")`; wraps Component* | Has per-type metatable (e.g. "C_Timer"); invalidated by Object::~Object() |
-| `EventBus` | Named string-keyed channels; static slot arrays; fires Lua callbacks cross-object | Wired into engine.events sub-table in registerEngineTable(); cleared on scene switch |
-| `PersistentObjectRegistry` | Static array of Object* surviving scene transitions; SSM-owned | SSM calls removeFrom/transferTo during applyDeferredTransition() |
+| Component / Module | Responsibility | Location |
+|--------------------|---------------|----------|
+| `LuaBindings` | Registers engine.* Lua tables; owns LuaStore, LuaEventBus, camera ptr, tween pool, coroutine scheduler | `include/enjin2/scripting/bindings.hpp` + split `.cpp` files |
+| `C_Camera` | World-to-screen offset, lerp follow, shake, bounds clamping; **[NEW]** follow-target tracking | `include/enjin2/components/camera.hpp` + `.cpp` |
+| `LuaStore` | Fixed-capacity (16-key) JSON-backed KV persistence | embedded in `bindings.hpp` / `bindings_store.cpp` |
+| `LuaEventBus` | Scene-scoped pub/sub, re-entrant-safe emit, hot-reload cleanup | `include/enjin2/scripting/lua_event_bus.hpp` |
+| `Scene` | Object lifecycle, render pipeline, camera offset application | `include/enjin2/core/scene.hpp` |
+| `SceneStateMachine` | Deferred transitions, scene registry; **[NEW]** persistent object migration | `include/enjin2/core/scene_state_machine.hpp` |
+| `PersistentObjectRegistry` | **[NEW]** Fixed-capacity Object* array surviving scene transitions; SSM-owned | new `enjin2_core` class |
 
 ---
 
 ## Recommended Project Structure
 
-```
-include/enjin2/
-├── components/
-│   ├── timer.hpp              NEW  -- C_Timer component + TimerSlot struct
-│   ├── state_machine.hpp      NEW  -- C_StateMachine component + StateSlot struct
-│   ├── lua_script.hpp         MOD  -- ScriptProxy __index dispatches self:get()
-│   └── ...existing...
-├── core/
-│   ├── event_bus.hpp          NEW  -- EventBus + EventChannel struct
-│   ├── persistent_registry.hpp NEW -- PersistentObjectRegistry
-│   ├── component_proxy.hpp    NEW  -- ComponentProxy userdata struct
-│   ├── object.hpp             MOD  -- add m_componentProxies[], registerComponentProxy()
-│   ├── object_collection.hpp  MOD  -- add m_external[] non-owning array
-│   ├── scene_state_machine.hpp MOD -- add m_persistent, modify applyDeferredTransition()
-│   └── ...existing...
-└── scripting/
-    ├── bindings.hpp           MOD  -- add engine.timer, engine.events sub-tables; ComponentProxy metatable
-    └── ...existing...
+Current split of `enjin2_lua` sources (already refactored; the "monolithic bindings.cpp" problem is partially solved):
 
-src/
-├── components/
-│   ├── timer.cpp              NEW  -- C_Timer implementation
-│   └── state_machine.cpp      NEW  -- C_StateMachine implementation
-├── core/
-│   ├── event_bus.cpp          NEW  -- EventBus implementation
-│   └── persistent_registry.cpp NEW -- PersistentObjectRegistry implementation
-└── scripting/
-    ├── bindings_timer.cpp     NEW  -- engine.timer.* Lua bindings + C_Timer metatable
-    ├── bindings_events.cpp    NEW  -- engine.events.* Lua bindings
-    └── bindings_engine.cpp    MOD  -- add engine.timer + engine.events sub-tables;
-                                       add engine.scene.persist/unpersist;
-                                       add resolveComponent() dispatch;
-                                       add lua_proxy_get_component
+```
+src/scripting/
+├── bindings.cpp                  # ScriptProxy metatable, ComponentProxy dispatch,
+│                                 # registerAll(), LuaBindings constructor/getBindings
+├── bindings_draw.cpp             # Drawing primitives, canvas ops
+├── bindings_engine.cpp           # registerEngineTable(): all engine.* sub-table wiring
+├── bindings_input_sprites.cpp    # Input polling + sprite pool
+├── bindings_layers_text.cpp      # Layer system + text rendering
+├── bindings_math.cpp             # Vec2/Point/Rect metatables + math globals
+├── bindings_physics.cpp          # engine.physics.*
+├── bindings_sprite_load.cpp      # Sprite asset loading
+├── bindings_store.cpp            # LuaStore impl + engine.store.* bindings
+├── bindings_system.cpp           # LuaScriptSystem glue
+├── lua_engine.cpp
+├── lua_event_bus.cpp
+└── lua_platform.cpp
+
+[ADD for v1.7:]
+├── bindings_debug.cpp            # engine.debug.* — rect/circle/line overlay
+├── bindings_tween.cpp            # engine.tween.* + TweenSlot pool tick
+├── bindings_async.cpp            # engine.async.* + LuaCoroutineScheduler tick
+└── bindings_ui.cpp               # engine.ui.* — stateless draw-only widgets
+```
+
+The remaining size issue in `bindings.cpp` (~1390 lines) is addressed by splitting proxy metatables:
+
+```
+[OPTIONAL split of existing bindings.cpp:]
+├── bindings_proxy.cpp            # ScriptProxy + ObjectProxy + ComponentProxy metatables
+└── bindings_register.cpp         # registerAll() orchestration only
 ```
 
 ### Structure Rationale
 
-- **`components/timer.hpp` + `timer.cpp`:** C_Timer is a standard Component subclass. The pattern is identical to C_Position and C_Sprite — C++ component in `components/`, Lua surface in a dedicated `bindings_timer.cpp`.
-- **`core/event_bus.hpp`:** EventBus is a core system (not a Component), analogous to `signal.hpp`. Placed in `core/` because it is Lua-independent — C++ objects could use it without Lua if needed.
-- **`core/component_proxy.hpp`:** ComponentProxy userdata struct is directly analogous to `scripting/object_proxy.hpp`. Standalone header prevents circular includes.
-- **`scripting/bindings_timer.cpp` + `bindings_events.cpp`:** Consistent with the existing 8-file bindings split strategy established in v1.5. Each domain gets its own file.
+- **One bindings_*.cpp per engine.X sub-table**: Matches the established split strategy. Registration wired in `registerEngineTable()` in `bindings_engine.cpp`.
+- **No new C++ component for UI**: `engine.ui.*` is stateless draw functions. Existing `FillUpGauge` and `Label` use `std::string`/`std::vector` and `ICanvas<uint8_t>`, making them incompatible with the Pixel4 zero-alloc pipeline.
+- **C_Tween not a new component**: Tween state lives in `LuaBindings::m_tweens[]`. Component-owned tween would burn one of the 16 component slots per object with no benefit over a centralized pool.
+- **PersistentObjectRegistry in enjin2_core**: Owned by `SceneStateMachine`, not by `LuaBindings`. Scene transitions happen at the C++ level, not just from Lua.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Component-as-Service (C_Timer, C_StateMachine)
+### Pattern 1: engine.* Sub-table Registration
 
-**What:** New components live as standard `Component` subclasses on an Object. They are added by C++ host code or from Lua via `engine.scene.spawn()` + add-component Lua functions. The component's `update(float dt)` drives internal logic. Lua accesses the component through a `ComponentProxy` returned by `self:get("C_Timer")`.
+**What:** Each feature domain gets an `engine.X` sub-table populated via `lua_newtable` + `luaBindFunctions`. Registration happens inside `registerEngineTable()` in `bindings_engine.cpp`.
 
-**When to use:** Any engine capability that needs to tick per-frame, owns internal state, and must be accessible from Lua on the same object.
+**When to use:** Any new Lua-visible API. Always.
 
-**Trade-offs:** Consumes one of the 16 component slots per object. This is correct — do not invent a global timer registry, which would break the per-object ownership model and complicate cleanup.
+**Trade-offs:** Sub-table isolation prevents naming collisions. Minor stack overhead per nested access is negligible at this scale.
 
-**C_Timer — zero-alloc data structures:**
-
+**Example (new `engine.debug` sub-table):**
 ```cpp
-// include/enjin2/components/timer.hpp
-namespace enjin2 {
-
-struct TimerSlot {
-    float remaining{0.0f};    // seconds until fire
-    float interval{0.0f};     // repeat interval (0 = one-shot)
-    int   luaRef{LUA_NOREF};  // Lua registry ref for callback function
-    bool  active{false};
-    bool  repeat{false};
-};
-
-class C_Timer : public Component {
-public:
-    static constexpr int MAX_TIMERS = 8;  // per-component static limit
-
-    explicit C_Timer(Object* owner);
-    ~C_Timer();  // luaL_unref all active refs
-
-    int  after(float delay, int luaRef);   // returns slot id (0..MAX_TIMERS-1)
-    int  every(float interval, int luaRef);
-    void cancel(int id);
-    void cancelAll();
-
-    void update(float dt) override;
-
-    void setLuaState(lua_State* L) { m_L = L; }
-
-private:
-    TimerSlot  m_slots[MAX_TIMERS]{};
-    lua_State* m_L{nullptr};  // injected by binding after addComponent
-};
-
-} // namespace enjin2
-```
-
-**Key zero-alloc decisions:**
-- `TimerSlot m_slots[MAX_TIMERS]` — fixed array on component stack; no heap.
-- Callbacks stored as Lua registry refs (integers from `luaL_ref`) — no C++ heap allocation.
-- `m_L` pointer injected after construction; all timer ops null-check `m_L`.
-
-**C_StateMachine — zero-alloc data structures:**
-
-```cpp
-// include/enjin2/components/state_machine.hpp
-namespace enjin2 {
-
-struct StateSlot {
-    const char* name{nullptr};       // Lua-interned string pointer (stable lifetime)
-    int         enterRef{LUA_NOREF};
-    int         updateRef{LUA_NOREF};
-    int         exitRef{LUA_NOREF};
-    bool        active{false};
-};
-
-class C_StateMachine : public Component {
-public:
-    static constexpr int MAX_STATES = 8;
-
-    explicit C_StateMachine(Object* owner);
-    ~C_StateMachine();  // luaL_unref all refs
-
-    void addState(const char* name, int enterRef, int updateRef, int exitRef);
-    bool transition(const char* stateName);
-    const char* currentState() const;
-
-    void update(float dt) override;
-    void start() override;  // fires enter for initial state if set
-
-    void setLuaState(lua_State* L) { m_L = L; }
-
-private:
-    StateSlot  m_states[MAX_STATES]{};
-    int        m_stateCount{0};
-    int        m_currentIdx{-1};
-    lua_State* m_L{nullptr};
-};
-
-} // namespace enjin2
-```
-
-**State name storage:** State names must outlive the component. Intern the string via Lua registry at binding time (`luaL_ref` on the string, retrieve pointer via `lua_rawgeti` + `lua_tostring`). The `const char*` stored in `StateSlot::name` points to the Lua-interned string, which is stable for the Lua state lifetime. This matches the existing pattern for object names in `lua_engine_scene_spawn`.
-
----
-
-### Pattern 2: ComponentProxy — self:get() Dispatch
-
-**What:** `self:get("TypeName")` returns a `ComponentProxy` full userdata wrapping a `Component*`. The proxy has a per-type metatable (e.g. `"C_Timer"`) whose `__index` dispatches method calls to the specific component. The proxy must be invalidated when its owner Object is destroyed — identical mechanism to `ObjectProxy`.
-
-**New struct (analogous to `object_proxy.hpp`):**
-
-```cpp
-// include/enjin2/core/component_proxy.hpp
-namespace enjin2 {
-
-struct ComponentProxy {
-    Component* component;  // Non-owning. Do NOT dereference if valid == false.
-    bool valid;            // Set false by Object::~Object() before components are freed.
-};
-
-} // namespace enjin2
-```
-
-**Integration into ScriptProxy `__index`:**
-
-The existing `ScriptProxy.__index` handler in `bindings.cpp` dispatches known string keys to `C_LuaScript` properties. Add `"get"` as a key that returns a closure:
-
-```cpp
-// In ScriptProxy __index handler (bindings.cpp)
-if (strcmp(key, "get") == 0) {
-    lua_pushcfunction(L, lua_proxy_get_component);
-    return 1;
-}
-```
-
-**`lua_proxy_get_component` implementation (in `bindings_engine.cpp`):**
-
-```cpp
-static int lua_proxy_get_component(lua_State* L) {
-    auto* sp = static_cast<ScriptProxy*>(luaL_checkudata(L, 1, "ScriptProxy"));
-    if (!sp->valid) { luaL_error(L, "ScriptProxy: owner object destroyed"); }
-    const char* typeName = luaL_checkstring(L, 2);
-    // Dispatch by name -- stays in binding layer, Object has no Lua knowledge
-    Component* comp = resolveComponent(sp->component->getOwner(), typeName);
-    if (!comp) { lua_pushnil(L); return 1; }
-
-    auto* proxy = static_cast<ComponentProxy*>(
-        lua_newuserdata(L, sizeof(ComponentProxy)));
-    proxy->component = comp;
-    proxy->valid     = true;
-    luaL_getmetatable(L, typeName);  // e.g. "C_Timer", "C_StateMachine"
-    lua_setmetatable(L, -2);
-
-    // Register proxy with Object for invalidation on destruction
-    sp->component->getOwner()->registerComponentProxy(proxy);
-    return 1;
-}
-
-// Type-name dispatch table -- lives in binding layer only
-static Component* resolveComponent(Object* obj, const char* typeName) {
-    if (strcmp(typeName, "C_Timer")        == 0) return obj->getComponent<C_Timer>();
-    if (strcmp(typeName, "C_StateMachine") == 0) return obj->getComponent<C_StateMachine>();
-    if (strcmp(typeName, "C_Position")     == 0) return obj->getComponent<C_Position>();
-    return nullptr;
-}
-```
-
-**Object modification for proxy invalidation:**
-
-`Object` gains a fixed array of ComponentProxy pointers and a registration method:
-
-```cpp
-// In object.hpp (private section)
-static constexpr size_t MAX_COMPONENT_PROXIES = MAX_COMPONENTS;  // one per component max
-ComponentProxy* m_componentProxies[MAX_COMPONENT_PROXIES]{};
-size_t m_componentProxyCount{0};
-
-// In object.hpp (public section)
-void registerComponentProxy(ComponentProxy* proxy) {
-    if (m_componentProxyCount < MAX_COMPONENT_PROXIES) {
-        m_componentProxies[m_componentProxyCount++] = proxy;
-    }
-}
-```
-
-`Object::~Object()` invalidates all registered ComponentProxy instances before the component array is destroyed:
-
-```cpp
-// In object.cpp ~Object()
-// Invalidate ComponentProxy instances (Phase 2 addition alongside existing ObjectProxy logic)
-for (size_t i = 0; i < m_componentProxyCount; ++i) {
-    if (m_componentProxies[i]) {
-        m_componentProxies[i]->valid = false;
-    }
-}
-```
-
----
-
-### Pattern 3: C_StateMachine Lua Surface via ComponentProxy Metatable
-
-**Lua surface (from script):**
-
-```lua
-local sm = self:get("C_StateMachine")
-
-local function on_idle_enter(self) engine.log("entering idle") end
-local function on_idle_update(self, dt) end
-local function on_idle_exit(self)  engine.log("leaving idle")  end
-
-sm:addState("idle",  on_idle_enter,  on_idle_update,  on_idle_exit)
-sm:addState("chase", on_chase_enter, on_chase_update, on_chase_exit)
-sm:transition("idle")
-
--- Per-frame (called automatically by C_StateMachine::update):
--- on_idle_update(self, dt) fires each frame while in "idle"
-```
-
-**`"C_StateMachine"` metatable methods:**
-
-```
-addState(name, enterFn, updateFn, exitFn)  -> nil
-transition(name)                           -> bool (success)
-current()                                  -> string (current state name)
-```
-
-Callbacks follow the `callWithProxy` convention — each callback receives `self` (the ScriptProxy) as first argument. This requires storing the ScriptProxy ref alongside the state refs, or re-pushing it during each callback dispatch. The cleanest approach: pass `self` as the first argument exactly as `callWithProxy` does already. The `C_StateMachine` binding has access to the ScriptProxy ref stored in the Lua registry (same mechanism as `callWithProxy`).
-
----
-
-### Pattern 4: EventBus — Named Channels for Cross-Object Communication
-
-**What:** `EventBus` is a static-alloc named channel system. Channels are identified by `const char*` name. Subscribers register Lua function refs. Publishers call `emit(channel, ...)` which fires all subscribers with variadic arguments forwarded from the Lua stack.
-
-**Why the existing `Signal<T>` is wrong for this use case:** `Signal<Args...>` uses `std::function` (heap-allocated closures larger than ~24 bytes) and is strongly-typed at compile time. The EventBus needs string-keyed channels unknown at compile time, and Lua function callbacks stored as integer registry refs with no C++ heap involvement.
-
-**EventBus data structure — zero alloc:**
-
-```cpp
-// include/enjin2/core/event_bus.hpp
-namespace enjin2 {
-
-struct EventListener {
-    int  luaRef{LUA_NOREF};
-    bool active{false};
-};
-
-struct EventChannel {
-    const char* name{nullptr};          // Lua-interned or static string
-    bool        channelActive{false};
-    static constexpr int MAX_LISTENERS = 8;
-    EventListener listeners[MAX_LISTENERS]{};
-    int           listenerCount{0};     // total slots used (including inactive gaps)
-};
-
-class EventBus {
-public:
-    static constexpr int MAX_CHANNELS = 16;
-
-    // Returns subscription ID (channel_idx * MAX_LISTENERS + listener_idx), or -1 on failure
-    int  subscribe(lua_State* L, const char* channel, int funcRef);
-    void unsubscribe(lua_State* L, int subId);
-    // nargs: number of args on Lua stack above the channel name to forward to callbacks
-    void emit(lua_State* L, const char* channel, int nargs);
-    void clear(lua_State* L);  // unref all listener refs, reset all slots
-
-private:
-    EventChannel m_channels[MAX_CHANNELS]{};
-    int          m_channelCount{0};
-
-    int findChannel(const char* name) const;   // returns index or -1
-    int findOrCreateChannel(const char* name); // returns index or -1 if full
-};
-
-} // namespace enjin2
-```
-
-**Lua surface — `engine.events` sub-table:**
-
-```lua
--- Subscribe to a named channel
-local sub_id = engine.events.subscribe("score_changed", function(score)
-    engine.log("new score:", score)
-end)
-
--- Emit with arguments (all args forwarded to all subscribers)
-engine.events.emit("score_changed", 100)
-
--- Unsubscribe when done
-engine.events.unsubscribe(sub_id)
-```
-
-**Variadic emit implementation:** `lua_events_emit` pops the channel string from arg 1, counts remaining args as `nargs = lua_gettop(L) - 1`, then calls `EventBus::emit(L, channel, nargs)`. Inside `emit`, for each active listener: push callback from registry, duplicate the nargs stack values above it, call with `lua_call(L, nargs, 0)`. This requires careful stack management — push callback first, then copy args.
-
-**Scene lifetime:** EventBus is stored on `LuaBindings` as a value member (zero heap). Pointer stored in Lua registry as `"enjin_event_bus"` (same pointer-to-pointer pattern as SSM and activeScene). EventBus::clear() is called from `applyDeferredTransition()` in SceneStateMachine before activating the new scene, preventing stale cross-scene subscriptions.
-
-**Engine wiring in `registerEngineTable()`:**
-
-```cpp
-// In bindings_engine.cpp registerEngineTable()
-static const LuaFuncDef kEventsFuncs[] = {
-    {"subscribe",   lua_events_subscribe},
-    {"unsubscribe", lua_events_unsubscribe},
-    {"emit",        lua_events_emit},
+// In bindings_engine.cpp :: registerEngineTable()
+static const LuaFuncDef kDebugFuncs[] = {
+    {"rect",   lua_engine_debug_rect},
+    {"circle", lua_engine_debug_circle},
+    {"line",   lua_engine_debug_line},
+    {"clear",  lua_engine_debug_clear},
 };
 lua_newtable(L);
-luaBindFunctions(L, -1, kEventsFuncs, ENJIN_ARRAY_LEN(kEventsFuncs));
-lua_setfield(L, -2, "events");
+luaBindFunctions(L, -1, kDebugFuncs, ENJIN_ARRAY_LEN(kDebugFuncs));
+lua_setfield(L, -2, "debug");
 ```
 
----
+### Pattern 2: Pointer-to-Pointer Registry for Injected State
 
-### Pattern 5: Persistent Objects — Surviving Scene Transitions
+**What:** Engine subsystem pointers (`m_ssm`, `m_activeScene`, `m_activeCamera`) are stored as `void**` lightuserdata in the Lua registry under keys like `"enjin_ssm"`. Static binding functions retrieve them at call time.
 
-**What:** Objects marked persistent are transferred from the departing scene to the arriving scene by `SceneStateMachine::applyDeferredTransition()`. SSM owns the persistent objects via a dedicated `unique_ptr` array. Scenes borrow them via a non-owning raw pointer array in ObjectCollection.
+**When to use:** Any new C++ subsystem that Lua bindings need to reach. Used for: existing SSM, active scene, active camera. New: persistent registry pointer.
 
-**Why SSM ownership:** ObjectCollection uses `unique_ptr<Object>` for owned objects. Persistent objects must NOT be destroyed when the old scene's ObjectCollection is torn down. The cleanest solution: SSM holds the `unique_ptr<Object>` for persistent objects in a dedicated `m_persistentOwned[]` array. The old scene's ObjectCollection holds a raw non-owning pointer that is removed before deactivation. The new scene's ObjectCollection also holds a raw non-owning pointer added before activation.
+**Trade-offs:** Pointer-to-pointer allows the host to swap the pointed-at object without re-running `registerAll()`. One indirection per call; negligible cost.
 
-**PersistentObjectRegistry — zero alloc:**
-
+**Example (persistent registry):**
 ```cpp
-// include/enjin2/core/persistent_registry.hpp
-namespace enjin2 {
+// In LuaBindings::registerAll():
+lua_pushlightuserdata(L, &m_persistentRegistry);
+lua_setfield(L, LUA_REGISTRYINDEX, "enjin_persist_reg");
 
-class PersistentObjectRegistry {
-public:
-    static constexpr int MAX_PERSISTENT = 16;
-
-    bool contains(Object* obj) const;
-    // Called when SSM takes ownership:
-    bool add(std::unique_ptr<Object> obj);
-    // Called when removing persistence (returns ownership to scene or destroys):
-    std::unique_ptr<Object> remove(Object* obj);
-
-    // Transfer into scene's external array (non-owning):
-    void injectInto(ObjectCollection& col) const;
-    // Remove from scene's external array before scene teardown:
-    void withdrawFrom(ObjectCollection& col) const;
-
-    int count() const { return m_count; }
-
-private:
-    std::unique_ptr<Object> m_owned[MAX_PERSISTENT]{};
-    int                     m_count{0};
-};
-
-} // namespace enjin2
-```
-
-**ObjectCollection modification — non-owning external array:**
-
-```cpp
-// In object_collection.hpp (private section)
-static constexpr size_t MAX_EXTERNAL = 16;  // matches PersistentObjectRegistry::MAX_PERSISTENT
-Object* m_external[MAX_EXTERNAL]{};          // non-owning raw pointers
-size_t  m_externalCount{0};
-
-// New public methods:
-bool injectExternal(Object* obj);       // add to m_external[]
-bool withdrawExternal(Object* obj);     // remove from m_external[]
-
-// update() and lateUpdate() iterate m_external[] in addition to owned objects[]
-```
-
-**SceneStateMachine modification:**
-
-```cpp
-// In scene_state_machine.hpp (private section)
-PersistentObjectRegistry m_persistent;  // value member, zero heap
-
-// In applyDeferredTransition():
-void applyDeferredTransition(uint32_t targetId) {
-    // ... existing scene lookup ...
-    if (currentScene) {
-        m_persistent.withdrawFrom(currentScene->getObjects());  // NEW
-        currentScene->deactivate();
-    }
-    currentScene = targetScene;
-    m_persistent.injectInto(currentScene->getObjects());         // NEW
-    if (!currentScene->isInitialized()) currentScene->initialize();
-    if (!currentScene->isActive()) currentScene->activate();
-    // ... signals ...
+// In static binding function:
+static PersistentObjectRegistry* getPersistReg(lua_State* L) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_persist_reg");
+    auto** pp = static_cast<PersistentObjectRegistry**>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    return (pp && *pp) ? *pp : nullptr;
 }
 ```
 
-**Lua surface:**
+### Pattern 3: Fixed-Capacity State Arrays (Zero Alloc)
 
-```lua
-local player = engine.scene.spawn("player")
-engine.scene.persist(player)     -- SSM takes ownership; player survives scene switch
+**What:** All mutable state for a new feature is stored as a fixed-size static array inside `LuaBindings`. Lua refs (`int`) are stored in parallel arrays. The sentinel `LUA_NOREF` marks empty slots.
 
--- Later:
-engine.scene.unpersist(player)   -- SSM returns ownership to current scene
-                                  -- (or destroys if current scene refuses it)
+**When to use:** Tween slot pool, coroutine registry. Mandatory given the zero-dynamic-allocation constraint.
+
+**Tween pool example:**
+```cpp
+static constexpr int MAX_TWEENS = 8;
+struct TweenSlot {
+    float from{0}, to{0}, duration{0}, elapsed{0};
+    int   callbackRef{LUA_NOREF};
+    int   targetRef{LUA_NOREF};    // Lua registry ref to ObjectProxy
+    char  property[16]{};          // "x", "y", "visible", etc.
+    uint8_t easing{0};             // 0=linear, 1=easeIn, 2=easeOut, 3=easeInOut
+    bool  active{false};
+};
+TweenSlot m_tweens[MAX_TWEENS];
 ```
 
-`engine.scene.persist(proxy)` is implemented in `lua_engine_scene_persist`:
-1. Validate ObjectProxy.
-2. Remove Object from current scene's owned collection (scene->removeObject, which returns the unique_ptr).
-3. Call `m_persistent.add(std::move(ownedPtr))`.
-4. Call `m_persistent.injectInto(currentScene->getObjects())` so the object continues to update this frame.
+### Pattern 4: Debug Draw via Dedicated Layer
+
+**What:** Debug primitives are drawn onto a fixed layer (layer index N-1, highest available). The debug layer is cleared before each render pass. `Primitives<Pixel4>` provides all needed draw functions. No new canvas type required.
+
+**When to use:** `engine.debug.rect()`, `engine.debug.circle()`, `engine.debug.line()`.
+
+**Trade-offs:** Uses one of 8 available layers. On ESP32 the debug layer must be compiled out (`#ifndef NDEBUG` or a CMake option `ENJIN2_DEBUG_DRAW`). On platforms where it exists, the debug layer is composited on top by `LayerCompositor`.
+
+**Integration:** `LuaBindings` gains `LuaCanvas* m_debugCanvas`. Set by the host alongside other layer canvases (extend `setLayers()` or add `setDebugCanvas()`). Debug draw functions write directly to `m_debugCanvas` via `LuaCanvas::drawRect` etc. (reuse existing `LuaCanvas` drawing methods).
+
+**Null guard:** When `m_debugCanvas == nullptr` (release builds, ESP32), all `engine.debug.*` functions are no-ops that return immediately.
+
+### Pattern 5: Lua Coroutines for Async Patterns
+
+**What:** Lua's native `coroutine.create()` + `lua_resume()` / `lua_yield()` provide the async mechanism. A `LuaCoroutineScheduler` (8-slot fixed array of `int` Lua registry refs) ticks coroutines each frame.
+
+**When to use:** Loading screens, cutscene sequencing, delayed sequences without nested C_Timer chains.
+
+**Trade-offs:** `lua_newthread` allocates on the Lua heap (not C++ heap), satisfying zero-C++-allocation. Dead threads are collected by Lua GC when refs are released. The coroutine count cap (8) must be a compile-time constant.
+
+**Critical lifecycle rule:** All coroutine refs must be `luaL_unref`'d on scene change and hot-reload, matching the `LuaEventBus::clearHandlers()` pattern exactly. This is called from `setActiveScene()` and `executeScript()`.
+
+**Yield mechanism:** `engine.async.wait(seconds)` records the resume timestamp and returns immediately if the scheduled time has not elapsed:
+```cpp
+// Per-frame in bindings.tickCoroutines(dt):
+for each active slot:
+    if slot.resumeAt <= m_totalTime:
+        status = lua_resume(thread, 0)  // resume with no args
+        if status == LUA_YIELD: slot is still running (wait again)
+        if status == LUA_OK:   slot is complete — unref + mark inactive
+        if status == error:    log + mark inactive
+```
 
 ---
 
 ## Data Flow
 
-### C_Timer Fire Sequence
+### Frame Update Flow (with v1.7 additions)
 
 ```
-SceneStateMachine::update(dt)
-    SceneStateMachine::applyPendingTransition() -- deferred, after update
-    Scene::update(dt)
-        ObjectCollection::update(dt)
-            Object::update(dt) for each active object
-                C_Timer::update(dt)
-                    for each active slot:
-                        slot.remaining -= dt
-                        if slot.remaining <= 0:
-                            lua_rawgeti(L, LUA_REGISTRYINDEX, slot.luaRef)
-                            lua_call(L, 0, 0)          -- fire callback
-                            if slot.repeat:
-                                slot.remaining = slot.interval
-                            else:
-                                luaL_unref(L, LUA_REGISTRYINDEX, slot.luaRef)
-                                slot.active = false
+SDL/WASM host per frame:
+    input_advance_frame()
+    input_platform_poll()
+    bindings.setInput(&inputState)
+    bindings.setTimeState(dt, totalTime, frame)
+
+    [NEW] bindings.tickTweens(dt)         // update TweenSlot pool, write to ObjectProxies
+    [NEW] bindings.tickCoroutines(dt)     // resume yielded async coroutines
+
+    ssm.update(dt)
+      └── currentScene.update(dt)
+            └── objects.forEach → obj.update(dt)
+                  └── C_Camera.update(dt)       [lerp + shake + [NEW] follow target]
+                  └── C_Timer.update(dt)
+                  └── C_StateMachine.update(dt)
+                  └── C_LuaScript.update(dt) → callWithProxy(update)
+
+    // Debug layer cleared before render
+    [NEW] if m_debugCanvas: m_debugCanvas->clear(TRANSPARENT)
+
+    ssm.render(layers[0])
+      └── currentScene.render(canvas)
+            └── Scene::renderObjects() with cam offset
+
+    LayerCompositor.composite(layers, output)   // existing
+    // Debug layer is one of the layers — composited automatically on top
+    blit output to GPU texture
 ```
 
-**Re-entrancy note:** Timer callbacks that call `engine.scene.switch()` are safe — the deferred transition mechanism in `SceneStateMachine::update()` executes AFTER `currentScene->update()` returns. No additional protection needed.
-
-### C_StateMachine Transition Sequence
+### Persistent Objects Lifecycle
 
 ```
-Lua: sm:transition("chase")
-    ComponentProxy.__index("transition") -> lua_statemachine_transition(L)
-        C_StateMachine::transition("chase")
-            1. Find slot index for "chase"
-            2. If m_currentIdx >= 0 and exitRef != LUA_NOREF:
-                   push ScriptProxy (from registry)
-                   lua_rawgeti(L, LUA_REGISTRYINDEX, exitRef)
-                   swap self to top, lua_call(L, 1, 0)
-            3. m_currentIdx = slot index for "chase"
-            4. If enterRef != LUA_NOREF:
-                   push ScriptProxy
-                   lua_rawgeti(L, LUA_REGISTRYINDEX, enterRef)
-                   swap self to top, lua_call(L, 1, 0)
+Host startup:
+    SceneStateMachine created; PersistentObjectRegistry m_persistent is a value member.
 
-Per-frame (C_StateMachine::update(dt)):
-    If m_currentIdx >= 0 and updateRef != LUA_NOREF:
-        push ScriptProxy
-        lua_rawgeti(L, LUA_REGISTRYINDEX, updateRef)
-        swap self to top
-        lua_pushnumber(L, dt)
-        lua_call(L, 2, 0)       -- update(self, dt)
+Lua: engine.scene.persist(proxy)
+    Validate ObjectProxy.
+    Scene::removeObject(obj) → returns unique_ptr.
+    m_persistent.add(std::move(ptr)).
+    m_persistent.injectInto(currentScene.getObjects()) → adds to external[] non-owning array.
+
+SceneStateMachine::applyDeferredTransition(targetId):
+    m_persistent.withdrawFrom(currentScene.getObjects())   // remove from external[]
+    currentScene.deactivate()                              // owned objects destroyed; persistent objects safe (SSM owns unique_ptr)
+    currentScene = targetScene
+    m_persistent.injectInto(currentScene.getObjects())     // add to new scene's external[]
+    currentScene.initialize() if needed
+    currentScene.activate()                                // start() called on persisted objects too
+
+Lua: engine.scene.unpersist(proxy)
+    m_persistent.withdrawFrom(currentScene.getObjects())
+    unique_ptr = m_persistent.remove(obj)
+    currentScene.addObject(std::move(ptr))                 // returns to scene ownership
 ```
 
-### ComponentProxy Lookup and Use
+### Camera Follow Target Data Flow
 
 ```
-Lua: local timer = self:get("C_Timer")
-    ScriptProxy.__index("get") -> returns lua_proxy_get_component closure
-    self:get("C_Timer") -> lua_proxy_get_component(L)
-        1. Validate ScriptProxy.valid
-        2. resolveComponent(owner, "C_Timer") -> dynamic_cast<C_Timer*>
-        3. Allocate ComponentProxy userdata
-        4. Attach "C_Timer" metatable
-        5. owner->registerComponentProxy(proxy)
-        Returns: ComponentProxy userdata
+Lua: engine.camera.follow(proxy, speed)
+    Validate ObjectProxy.valid.
+    Store Object* in C_Camera::m_followTarget; store speed in m_followSpeed.
 
-Lua: timer:after(1.0, callback)
-    ComponentProxy.__index("after") -> lua_ctimer_after(L)
-        1. luaL_checkudata(L, 1, "C_Timer") -> ComponentProxy*
-        2. if !proxy->valid: luaL_error(...)
-        3. float delay = luaL_checknumber(L, 2)
-        4. lua_pushvalue(L, 3); int ref = luaL_ref(L, LUA_REGISTRYINDEX)
-        5. C_Timer* t = static_cast<C_Timer*>(proxy->component)
-        6. int id = t->after(delay, ref)
-        7. lua_pushinteger(L, id)
-        Returns: slot id (for cancel)
+Per frame C_Camera::update(dt):
+    if m_followTarget != nullptr:
+        pos = m_followTarget->getComponent<C_Position>()->getPosition()
+        lookAt(pos.x + halfCanvasW, pos.y + halfCanvasH, m_followSpeed)
+        [if proxy->valid == false: clear m_followTarget]
+
+Lua: engine.camera.stopFollow()
+    C_Camera::clearFollowTarget()
 ```
 
-### Event Bus Signal Flow
+### Tween Data Flow
 
 ```
-Lua: engine.events.emit("score_changed", 100)
-    lua_events_emit(L)
-        channel = luaL_checkstring(L, 1)    -- "score_changed"
-        nargs   = lua_gettop(L) - 1         -- 1 (just the 100)
-        EventBus::emit(L, "score_changed", nargs=1)
-            ch = findChannel("score_changed")
-            for each active listener in ch.listeners[]:
-                lua_rawgeti(L, LUA_REGISTRYINDEX, listener.luaRef)
-                -- duplicate nargs values from bottom of arg list
-                for i in 1..nargs: lua_pushvalue(L, 2+i-1)   -- push copies of args
-                lua_call(L, nargs, 0)
-            -- all subscriber callbacks fired synchronously
+Lua: local id = engine.tween.to(proxy, "x", 100, 0.5, "easeOut")
+    C++: find free TweenSlot in m_tweens[]
+         store: from = current proxy.x, to = 100, duration = 0.5
+         store: easing = easeOut, targetRef = luaL_ref(proxy), property = "x"
+         return slot index as handle
+
+Per frame bindings.tickTweens(dt):
+    for each active TweenSlot:
+        elapsed += dt
+        t = clamp(elapsed / duration, 0.0, 1.0)
+        value = applyEasing(easing, t) * (to - from) + from
+        lua_rawgeti(L, LUA_REGISTRYINDEX, targetRef)  // push ObjectProxy
+        lua_pushnumber(L, value)
+        lua_setfield(L, -2, property)                  // proxy.__newindex dispatch
+        lua_pop(L, 1)
+        if elapsed >= duration:
+            if callbackRef != LUA_NOREF: fire callback, unref
+            luaL_unref(targetRef)
+            slot.active = false
+
+Lua: engine.tween.cancel(id)
+    m_tweens[id].active = false; unref targetRef + callbackRef
 ```
 
-### Persistent Object Transfer
+### Save/Load Serialization Data Flow (Extended)
 
 ```
-SSM::applyDeferredTransition(targetId)
-    1. m_persistent.withdrawFrom(currentScene->getObjects())
-       -- ObjectCollection removes obj from m_external[] (does NOT free)
-    2. currentScene->deactivate()
-       -- currentScene's owned ObjectCollection destroyed
-       -- persistent objects were withdrawn from external[] -- safe, SSM still owns unique_ptr
-    3. currentScene = targetScene
-    4. m_persistent.injectInto(currentScene->getObjects())
-       -- ObjectCollection adds obj to m_external[]; update/lateUpdate will include it
-    5. if !currentScene->isInitialized(): currentScene->initialize()
-    6. if !currentScene->isActive(): currentScene->activate()
-       -- start() called on persistent objects too (they may need re-start)
+Existing (already works on SDL3):
+    engine.store.save(key, value)   → LuaStore::setX() + LuaStore::saveToFile() [#ifdef VCV_RACK]
+    engine.store.load(key)          → LuaStore::get() → Lua value
+
+v1.7 change: remove VCV_RACK guard, replace with proper platform detection:
+    SDL3 / desktop  → std::fstream (already working)
+    ESP32           → NVS stub (returns false; deferred implementation)
+    WASM            → localStorage stub via emscripten_run_script or compile-time no-op
+
+No API change — only the file I/O guard logic changes.
 ```
 
 ---
 
-## Scaling Considerations
+## Integration Points (New vs. Modified)
 
-This engine targets embedded devices (ESP32, WASM). Scale is measured in objects and components per scene, not in concurrent users.
+### Explicit New/Modified Table
 
-| Concern | At 32 objects/scene | At 128 objects/scene |
-|---------|--------------------|-----------------------|
-| C_Timer slot scan | 8 slots x 32 = 256 checks/frame — negligible | 8 x 128 = 1024 — sub-microsecond on ESP32 |
-| EventBus emit scan | 16 channels x 8 listeners = 128 checks per emit — fine | Same (bus is global/scene-scoped, not per-object) |
-| ComponentProxy resolve | strcmp chain over ~5 known types — O(1) in practice | Same |
-| Persistent objects | Max 16 — no issue | Max 16 — no issue |
-| C_StateMachine lookup | strcmp over max 8 states per component — O(1) | Same |
-| Object::~Object() proxy sweep | MAX_COMPONENTS (16) + MAX_COMPONENT_PROXIES (16) iterations | Same |
+| Item | New or Modified | Integration Point | File(s) |
+|------|----------------|-------------------|---------|
+| Debug draw bindings | **New** | `registerEngineTable()` adds `"debug"` sub-table; `LuaBindings` gains `m_debugCanvas` | `bindings_debug.cpp` (new) + `bindings.hpp` (add field) |
+| Debug canvas wiring | **Modified** | `setLayers()` or new `setDebugCanvas()` in SDL main loop | `sdl_main.cpp`, `bindings.hpp` |
+| Camera follow | **Modified** | `C_Camera::update()` gains follow-target logic; `engine.camera` sub-table gains `follow`/`stopFollow` | `camera.cpp`, `bindings_engine.cpp` |
+| Save/load platform guard | **Modified** | Remove `#ifdef VCV_RACK` in `bindings_store.cpp`; add SDL/ESP32/WASM branches | `bindings_store.cpp` |
+| Persistent objects | **New** | `PersistentObjectRegistry` class; `SceneStateMachine::applyDeferredTransition()` modified; `engine.scene.persist/unpersist` added | `include/enjin2/core/persistent_registry.hpp` (new), `scene_state_machine.hpp` (mod), `bindings_engine.cpp` (mod) |
+| ObjectCollection external array | **Modified** | Non-owning `Object* m_external[]` array; `update()`/`lateUpdate()`/`forEach()` iterate it | `object_collection.hpp` + `object.hpp` if needed |
+| Overflow tests | **New** | ctest suites: EventBus 16-channel/8-subscriber saturation, sprite pool 16-slot, component array | `tests/overflow_*_test.cpp` (new) |
+| Null safety audit | **Modified** | Systematic pass through all `getBindings(L)` sites; add null guards where missing | all `bindings_*.cpp` |
+| `bindings.cpp` split (optional) | **Modified** | Move ScriptProxy/ObjectProxy/ComponentProxy metatables to `bindings_proxy.cpp` | `bindings.cpp` → `bindings_proxy.cpp` (new) |
+| Coroutines/async | **New** | `LuaCoroutineScheduler` embedded in `LuaBindings`; `tickCoroutines()` in SDL main loop; `engine.async` sub-table | `bindings_async.cpp` (new), `bindings.hpp` (add scheduler fields), `bindings_engine.cpp` (add sub-table) |
+| Tween helpers | **New** | `m_tweens[]` pool in `LuaBindings`; `tickTweens(dt)` in SDL main loop; `engine.tween` sub-table | `bindings_tween.cpp` (new), `bindings.hpp` (add TweenSlot array), `bindings_engine.cpp` |
+| UI component bindings | **New** | Stateless draw functions in `engine.ui` sub-table; no new C++ components | `bindings_ui.cpp` (new), `bindings_engine.cpp` |
 
-These ceilings are architectural limits, not performance bottlenecks for target game scale (Arkanoid, tamagotchi, physics sandbox at ESP32 frame budgets).
+### Internal Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| `LuaBindings` ↔ `C_Camera` | Direct pointer `m_activeCamera` (set by host) | Camera follow target is `Object*`; camera reads `C_Position` from target each frame; ObjectProxy invalidation must clear the follow ptr |
+| `LuaBindings` ↔ debug layer | `m_debugCanvas*` pointer (set by host alongside other layers) | Null when `ENJIN2_DEBUG_DRAW` is off; all debug functions null-check before drawing |
+| `LuaBindings` ↔ `PersistentObjectRegistry` | Pointer-to-pointer in Lua registry `"enjin_persist_reg"` | Registry owned by SceneStateMachine, not by LuaBindings |
+| `LuaBindings` tween ↔ ObjectProxy | `lua_rawgeti` + `lua_setfield` dispatch — same path as `self.x = value` in Lua | Tween slot holds `int targetRef` (luaL_ref to ObjectProxy); stale check via `proxy->valid` |
+| `LuaCoroutineScheduler` ↔ Lua state | `luaL_ref` thread refs cleared on scene change in `setActiveScene()` and in `executeScript()` (hot-reload) | Mirrors `LuaEventBus::clearHandlers()` exactly |
+| `SceneStateMachine` ↔ `PersistentObjectRegistry` | Value member `m_persistent`; `withdrawFrom/injectInto` called in `applyDeferredTransition()` | No Lua involvement — pure C++ transition boundary |
+| `LuaBindings` ↔ `LuaStore` | Direct member (not pointer); `m_storePath` triggers auto-save | Store platform I/O guard change is internal to `bindings_store.cpp` |
+
+---
+
+## New Components Detail
+
+### 1. Debug Draw (`engine.debug.*`)
+
+**C++ additions:** `LuaBindings` gains one new field:
+```cpp
+LuaCanvas* m_debugCanvas{nullptr};  // null = no debug layer (release/ESP32)
+```
+
+**`setDebugCanvas(LuaCanvas* canvas)` or extend `setLayers()`:**
+The SDL host passes a pointer to the highest-indexed layer canvas as the debug canvas. Could also be a dedicated 9th canvas created outside the layer compositor — but using an existing layer slot is simpler and avoids changing `MAX_LUA_LAYERS`.
+
+**Lua API:**
+```lua
+engine.debug.rect(x, y, w, h, color)
+engine.debug.circle(x, y, radius, color)
+engine.debug.line(x1, y1, x2, y2, color)
+engine.debug.text(x, y, str, color)
+engine.debug.clear()          -- also called automatically pre-render
+```
+
+**CMake guard:**
+```cmake
+option(ENJIN2_DEBUG_DRAW "Enable debug draw overlay layer" ON)  # OFF for ESP32 target
+```
+When `ENJIN2_DEBUG_DRAW=OFF`, `bindings_debug.cpp` registers no-op stubs. `m_debugCanvas` stays null.
+
+### 2. Camera Follow Helpers
+
+**`C_Camera` additions:**
+```cpp
+void setFollowTarget(Object* target, float lerpSpeed);  // lerpSpeed default 0.1
+void clearFollowTarget();
+Object* getFollowTarget() const { return m_followTarget; }
+
+private:
+    Object* m_followTarget{nullptr};
+    float   m_followSpeed{0.1f};
+```
+
+`C_Camera::update(float dt)` gains (after existing lerp/shake logic):
+```cpp
+if (m_followTarget) {
+    C_Position* pos = m_followTarget->getComponent<C_Position>();
+    if (pos) {
+        Point p = pos->getPosition();
+        lookAt(p.x + m_canvasW / 2.0f, p.y + m_canvasH / 2.0f, m_followSpeed);
+    }
+}
+```
+
+**`engine.camera` sub-table additions (in `bindings_engine.cpp`):**
+```lua
+engine.camera.follow(objectProxy, speed)    -- speed optional, default 0.1
+engine.camera.stopFollow()
+```
+
+**Stale follow target handling:** When `engine.scene.destroy(proxy)` is called, the ObjectProxy's `valid` flag becomes false. `C_Camera::update()` checks: if `m_followTarget` is set but its ObjectProxy ref is stale, clear follow target. Implementation: store `int followProxyRef` alongside `m_followTarget` so `update()` can validate via `proxy->valid`.
+
+### 3. Persistent Objects Across Scenes
+
+**`PersistentObjectRegistry` (new, `enjin2_core`):**
+```cpp
+class PersistentObjectRegistry {
+public:
+    static constexpr int MAX_PERSISTENT = 16;
+
+    // SSM takes ownership from Scene's ObjectCollection
+    bool add(std::unique_ptr<Object> obj);
+    // SSM returns ownership to Scene on unpersist
+    std::unique_ptr<Object> remove(Object* obj);
+    bool contains(const Object* obj) const;
+
+    // Scene transition hooks (called by SSM)
+    void injectInto(ObjectCollection& col);    // adds to col.m_external[]
+    void withdrawFrom(ObjectCollection& col);  // removes from col.m_external[]
+
+    int count() const { return m_count; }
+    Object* get(int i) { return m_owned[i].get(); }
+
+private:
+    std::unique_ptr<Object> m_owned[MAX_PERSISTENT]{};
+    int m_count{0};
+};
+```
+
+**`ObjectCollection` modification:**
+```cpp
+// New non-owning external array (for persistent objects borrowed from SSM)
+static constexpr size_t MAX_EXTERNAL = 16;
+Object* m_external[MAX_EXTERNAL]{};
+size_t  m_externalCount{0};
+
+bool injectExternal(Object* obj);    // add to m_external[]
+bool withdrawExternal(Object* obj);  // remove from m_external[]
+// update(), lateUpdate(), forEach() iterate m_external[] alongside owned m_objects[]
+```
+
+**Lua API extensions to `engine.scene`:**
+```lua
+engine.scene.persist(proxy)        -- SSM takes ownership; object survives scene switch
+engine.scene.unpersist(proxy)      -- return to current scene's owned collection
+engine.scene.find("name")          -- checks BOTH currentScene AND persistentRegistry
+```
+
+`engine.scene.find()` modification: after checking `currentScene->findByName()`, also call `m_persistent.findByName()` if not found.
+
+### 4. Coroutine/Async Pattern
+
+**`LuaCoroutineScheduler` (embedded in `LuaBindings`):**
+```cpp
+static constexpr int MAX_COROUTINES = 8;
+struct CoroutineSlot {
+    int   threadRef{LUA_NOREF};  // luaL_ref to Lua thread (lua_State*)
+    float resumeAt{0.0f};        // total time when to resume
+    bool  active{false};
+};
+CoroutineSlot m_coroutines[MAX_COROUTINES];
+
+void tickCoroutines();    // called each frame before ssm.update()
+void clearCoroutines();   // called from setActiveScene() and executeScript() (hot-reload)
+```
+
+**`tickCoroutines()` implementation:**
+```cpp
+void LuaBindings::tickCoroutines() {
+    lua_State* L = engine->getState();
+    for (int i = 0; i < MAX_COROUTINES; ++i) {
+        if (!m_coroutines[i].active) continue;
+        if (m_timeState.totalTime < m_coroutines[i].resumeAt) continue;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, m_coroutines[i].threadRef);
+        lua_State* thread = lua_tothread(L, -1);
+        lua_pop(L, 1);
+        int status = lua_resume(thread, L, 0);
+        if (status == LUA_OK) {
+            // coroutine finished
+            luaL_unref(L, LUA_REGISTRYINDEX, m_coroutines[i].threadRef);
+            m_coroutines[i] = {};
+        } else if (status != LUA_YIELD) {
+            printf("[async] coroutine error: %s\n", lua_tostring(thread, -1));
+            luaL_unref(L, LUA_REGISTRYINDEX, m_coroutines[i].threadRef);
+            m_coroutines[i] = {};
+        }
+        // LUA_YIELD: leave active, will check resumeAt again next frame
+    }
+}
+```
+
+**`engine.async.wait(seconds)` implementation:**
+```lua
+-- In Lua (registered C function stores resumeAt, then yields):
+engine.async.wait(1.5)   -- stores totalTime + 1.5 in slot.resumeAt, calls lua_yield
+engine.async.wait_frames(30)  -- stores frame + 30 in slot, yields
+```
+
+The C binding calls `lua_yield(L, 0)` directly — Lua resumes on the next `tickCoroutines()` call where `resumeAt` is satisfied.
+
+**Lua API:**
+```lua
+local co = coroutine.create(function()
+    engine.async.wait(2.0)
+    engine.log("two seconds passed")
+    engine.async.wait(1.0)
+    engine.log("one more second")
+end)
+local id = engine.async.start(co)   -- registers in scheduler, returns slot id
+engine.async.cancel(id)             -- unref + mark inactive
+```
+
+### 5. Tween Helpers
+
+**Lua API:**
+```lua
+-- Tween object property over time
+local id = engine.tween.to(proxy, "x", 100, 0.5)           -- linear
+local id = engine.tween.to(proxy, "x", 100, 0.5, "easeOut")-- with easing
+
+-- Value-only tween (no object target) — useful for custom blending
+local id = engine.tween.value(0, 1, 0.3, function(v)
+    engine.graphics.setColor(math.floor(v * 14))
+end)
+
+engine.tween.cancel(id)
+engine.tween.cancelAll()
+```
+
+**Supported easing (compile-time static functions):**
+- `linear`, `easeIn` (t²), `easeOut` (1-(1-t)²), `easeInOut` (cubic Hermite)
+
+**`tickTweens(float dt)`** iterates `m_tweens[]`, updates `elapsed`, computes eased value, writes to ObjectProxy via `lua_setfield` (same dispatch path as `self.x = value` from Lua scripts), fires `callbackRef` on completion.
+
+**Stale target guard:** Before each write, check `proxy->valid`. If false, cancel the slot silently.
+
+### 6. UI Component Bindings (`engine.ui.*`)
+
+**Decision: stateless draw functions, not C++ components.**
+
+The existing `FillUpGauge`, `Label`, `Slider` in `include/enjin2/components/` use `std::string`, `std::vector`, internal `Canvas8<>` buffers, and target `ICanvas<uint8_t>`. They are incompatible with the Pixel4 pipeline and violate zero-alloc for embedded.
+
+**`engine.ui.*` implemented as stateless Lua-callable draw functions in `bindings_ui.cpp`:**
+
+```lua
+-- Progress bar (horizontal fill from left)
+engine.ui.progressBar(x, y, w, h, value, fgColor, bgColor)
+-- value: 0.0 to 1.0; uses fillRect + drawRect from LuaCanvas
+
+-- Stat bar (integer current/max, same visual as progressBar)
+engine.ui.statBar(x, y, w, h, current, maximum, fgColor, bgColor)
+
+-- Panel (rounded-rect or flat background)
+engine.ui.panel(x, y, w, h, bgColor, borderColor)
+
+-- Label (text with background)
+engine.ui.label(x, y, w, h, text, textColor, bgColor)
+```
+
+Each function calls existing `LuaCanvas` methods (`fillRect`, `drawRect`, `text`). No state, no allocation, no C++ component required.
+
+**Internal developer guide note:** For animated UI (bars that fill over time, blinking indicators), compose with existing tools:
+- Use `engine.tween.to()` to animate a Lua variable.
+- Call `engine.ui.progressBar()` in `draw()` with the animated value.
+- This is deliberately simpler than a stateful UI widget system.
+
+---
+
+## Build Order
+
+Dependencies determine phase ordering. Phases with no arrows between them can be built in parallel.
+
+```
+Phase A: bindings.cpp refactoring (split to bindings_proxy.cpp)
+  → Reduces file size for all subsequent phases.
+  → No new features; isolatable change.
+  → Dependencies: none.
+
+Phase B: Overflow tests + null safety
+  → Discover existing overflow paths first; fix null guards.
+  → Dependencies: none (can run parallel to Phase A).
+
+Phase C: Debug draw bindings
+  → Needs bindings structure stable (Phase A).
+  → Add ENJIN2_DEBUG_DRAW CMake option.
+  → Add m_debugCanvas to LuaBindings (bindings.hpp + sdl_main.cpp).
+  → bindings_debug.cpp + engine.debug sub-table in bindings_engine.cpp.
+  → Dependencies: Phase A.
+
+Phase D: Camera follow helpers
+  → Modify C_Camera (src/components/camera.cpp).
+  → Modify bindings_engine.cpp (engine.camera sub-table additions).
+  → Dependencies: Phase A.
+
+Phase E: Save/load serialization hardening
+  → Remove VCV_RACK guard in bindings_store.cpp; add SDL/ESP32/WASM branches.
+  → No API change.
+  → Dependencies: Phase B (null safety first).
+
+Phase F: Persistent objects
+  → New PersistentObjectRegistry in enjin2_core.
+  → Modify ObjectCollection (m_external[]).
+  → Modify SceneStateMachine::applyDeferredTransition().
+  → Modify engine.scene.persist/unpersist/find in bindings_engine.cpp.
+  → Most invasive structural change — build last among core features.
+  → Dependencies: Phase B (null safety), Phase E (persistence integration).
+
+Phase G: Coroutines/async
+  → LuaCoroutineScheduler embedded in LuaBindings.
+  → bindings_async.cpp + engine.async sub-table.
+  → tickCoroutines() wired in sdl_main.cpp.
+  → clearCoroutines() called from setActiveScene() + executeScript().
+  → Dependencies: Phase A.
+
+Phase H: Tween helpers
+  → m_tweens[] + TweenSlot in LuaBindings.
+  → bindings_tween.cpp + engine.tween sub-table.
+  → tickTweens() wired in sdl_main.cpp.
+  → Dependencies: Phase D (ObjectProxy write path; camera follow establishes the pattern).
+
+Phase I: UI component bindings
+  → bindings_ui.cpp: stateless draw functions only.
+  → engine.ui sub-table wired in bindings_engine.cpp.
+  → Dependencies: Phase A, Phase C (establishes the stateless draw pattern for bindings).
+```
+
+**Parallelizable groups:**
+- Phase A + Phase B (fully independent)
+- Phase C + Phase D + Phase G (all depend only on A; independent of each other)
+- Phase H + Phase I (depend on A; H depends on D implicitly)
+
+**Suggested milestone delivery order:**
+1. A + B (foundation)
+2. C + D + E (quick wins with clear C++ targets)
+3. F (most invasive; all prior phases stable)
+4. G + H + I (new Lua capabilities on top of stable base)
 
 ---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Global Timer Registry
+### Anti-Pattern 1: Tween/Coroutine State in Lua Tables
 
-**What people do:** Create a `TimerManager` singleton outside the Component system.
+**What people do:** Store tween or coroutine scheduling state as Lua tables in the global environment.
 
-**Why it's wrong:** Breaks per-object ownership. When an Object is destroyed, its timers should stop automatically. A global registry requires explicit cancellation at destroy time, adding coordination complexity that violates zero-alloc discipline.
+**Why it's wrong:** Lua tables are GC-managed and do not survive hot-reload (full Lua state destroy/recreate). GC pause on ESP32 with many active tables causes frame spikes.
 
-**Do this instead:** C_Timer as a Component on the Object. When the Object is destroyed, its components array (`std::unique_ptr<Component>`) destroys C_Timer, whose destructor calls `luaL_unref` on all active Lua callback refs. Cleanup is automatic and zero-cost.
+**Do this instead:** All scheduler state in C++ fixed-capacity arrays inside `LuaBindings`. Use `luaL_ref` for Lua callbacks only.
 
----
+### Anti-Pattern 2: New C++ Component for Every UI Element
 
-### Anti-Pattern 2: std::function for EventBus Listeners
+**What people do:** Create `C_ProgressBar extends Component` with update/draw for each widget type.
 
-**What people do:** Use the existing `Signal<Args...>` (which uses `std::function` internally) as the EventBus listener store.
+**Why it's wrong:** Each component requires an Owner Object, occupies one of 16 component slots, and incurs the full awake/start/update lifecycle overhead for what is essentially a stateless draw call.
 
-**Why it's wrong:** `std::function` heap-allocates for callables larger than the small-buffer optimization (~24 bytes). Lua registry refs are `int` — no heap needed. The existing `Signal` is correct for strongly-typed C++ callbacks (Scene lifecycle signals), but wrong for string-keyed Lua EventBus where callbacks are just integer refs.
+**Do this instead:** `engine.ui.*` stateless draw functions. For animated state, compose with `engine.tween.to()` driving a Lua variable, read in `draw()`.
 
-**Do this instead:** Store `int luaRefs[]` arrays in `EventChannel`. Fire with `lua_rawgeti` + `lua_call`. Zero `std::function`, zero heap in the hot path.
+### Anti-Pattern 3: Persistent Object Pointer Without Re-injection
 
----
+**What people do:** Store `Object*` pointers across scene transitions without re-registering them with the new scene's ObjectCollection.
 
-### Anti-Pattern 3: Adding C_Timer Methods Directly to ScriptProxy Metatable
+**Why it's wrong:** `Scene::renderObjects()` and `ObjectCollection::update()` iterate only the scene's own collections. Unregistered objects are invisible and frozen.
 
-**What people do:** Add `self:timerAfter(...)`, `self:stateTransition(...)` etc. directly to the `ScriptProxy` metatable.
+**Do this instead:** `PersistentObjectRegistry::injectInto(newScene.getObjects())` is called by SSM before `newScene.activate()`. Persistent objects appear in the new scene's `m_external[]` and participate normally in update/render.
 
-**Why it's wrong:** Pollutes the ScriptProxy namespace indefinitely as more component types are added. Every new component type expands `ScriptProxy` with more methods, creating name collision risk.
+### Anti-Pattern 4: Debug Draw Accumulation List
 
-**Do this instead:** `self:get("C_Timer")` returns a separate `ComponentProxy` userdata with its own `"C_Timer"` metatable. Each component type has its own clean method namespace. `ScriptProxy` only gains a single `get` method.
+**What people do:** Accumulate debug shapes into a list each frame and render at end of frame.
 
----
+**Why it's wrong:** Growing list; requires explicit list management; violates zero-alloc.
 
-### Anti-Pattern 4: Forgetting ComponentProxy Invalidation on Object Destruction
+**Do this instead:** Debug layer cleared at start of each render pass. Scripts call `engine.debug.X()` during their `draw()` callback, which writes directly to the debug canvas. No accumulation; no list.
 
-**What people do:** Only invalidate `ObjectProxy` (already done in v1.5) but not `ComponentProxy` instances pointing to components on the same destroyed Object.
+### Anti-Pattern 5: Forgetting Coroutine/Tween Cleanup on Scene Change
 
-**Why it's wrong:** After `Object::~Object()`, any `ComponentProxy` held in a Lua variable will have a dangling `Component*`. Dereferencing it is undefined behavior. This is the same class of bug that ObjectProxy proxy invalidation was designed to prevent.
+**What people do:** Start coroutines or tweens in one scene, switch scenes, and leave the scheduler populated with stale refs that target destroyed objects.
 
-**Do this instead:** `Object::~Object()` iterates `m_componentProxies[]` and sets `valid = false` on each registered `ComponentProxy` before the component array (`components[]`) is destroyed. `lua_proxy_get_component` registers the new proxy immediately after construction.
+**Why it's wrong:** The `tickCoroutines()` / `tickTweens()` functions will attempt to resume threads or write to ObjectProxies from destroyed objects. The proxy `valid` flag catches tween staleness, but coroutine threads may access globals that no longer exist.
 
----
-
-### Anti-Pattern 5: Shared Ownership for Persistent Objects
-
-**What people do:** Change `ObjectCollection` to `std::shared_ptr<Object>` to allow shared ownership between scenes and the persistent registry.
-
-**Why it's wrong:** `std::shared_ptr` requires a heap-allocated control block — violates zero-alloc constraint. On ESP32, every heap allocation is a risk.
-
-**Do this instead:** SSM holds `std::unique_ptr<Object>` for persistent objects in `m_persistentOwned[]`. Scenes receive a raw non-owning `Object*` in `ObjectCollection::m_external[]`. The ownership boundary is clear: SSM owns persistent objects exclusively; scenes only borrow them.
-
----
-
-## Integration Points
-
-### New vs Modified Files (Explicit)
-
-| File | Status | What Changes |
-|------|--------|--------------|
-| `include/enjin2/components/timer.hpp` | NEW | C_Timer + TimerSlot struct |
-| `include/enjin2/components/state_machine.hpp` | NEW | C_StateMachine + StateSlot struct |
-| `include/enjin2/core/event_bus.hpp` | NEW | EventBus + EventChannel + EventListener structs |
-| `include/enjin2/core/component_proxy.hpp` | NEW | ComponentProxy userdata struct (analogous to object_proxy.hpp) |
-| `include/enjin2/core/persistent_registry.hpp` | NEW | PersistentObjectRegistry |
-| `include/enjin2/core/object.hpp` | MODIFIED | Add `m_componentProxies[]`, `m_componentProxyCount`, `registerComponentProxy()`; `~Object()` invalidates them |
-| `include/enjin2/core/object_collection.hpp` | MODIFIED | Add `m_external[]`, `m_externalCount`, `injectExternal()`, `withdrawExternal()`; update `update()`/`lateUpdate()` to iterate external |
-| `include/enjin2/core/scene_state_machine.hpp` | MODIFIED | Add `PersistentObjectRegistry m_persistent`; modify `applyDeferredTransition()` for withdraw/inject |
-| `include/enjin2/scripting/bindings.hpp` | MODIFIED | Add `EventBus m_eventBus` member; declare `engine.timer`, `engine.events` sub-table registration; add ComponentProxy metatable registration |
-| `src/components/timer.cpp` | NEW | C_Timer implementation |
-| `src/components/state_machine.cpp` | NEW | C_StateMachine implementation |
-| `src/core/event_bus.cpp` | NEW | EventBus implementation |
-| `src/core/persistent_registry.cpp` | NEW | PersistentObjectRegistry implementation |
-| `src/core/object.cpp` | MODIFIED | ComponentProxy invalidation in ~Object() |
-| `src/scripting/bindings_engine.cpp` | MODIFIED | Add `engine.timer` + `engine.events` + `engine.scene.persist/unpersist` to `registerEngineTable()`; add `resolveComponent()` dispatch; add `lua_proxy_get_component` |
-| `src/scripting/bindings_timer.cpp` | NEW | `engine.timer.*` (if any global timer API needed) + C_Timer ComponentProxy metatable methods |
-| `src/scripting/bindings_events.cpp` | NEW | `engine.events.*` Lua bindings; EventBus wiring |
-| `CMakeLists.txt` | MODIFIED | Add new .cpp files to `enjin2_lua` + `enjin2_core` `target_sources` blocks |
-
-### Build Order (Dependency-Ordered)
-
-| Phase | Feature | Prerequisite | Rationale |
-|-------|---------|-------------|-----------|
-| 1 | ComponentProxy / self:get() | None (only existing Object/ScriptProxy) | All other Lua-facing component features depend on ComponentProxy. Build the access mechanism before building the accessed components. |
-| 2 | C_Timer | ComponentProxy (Phase 1) | Most commonly needed game primitive. No dependency on C_StateMachine or EventBus. |
-| 3 | C_StateMachine | ComponentProxy (Phase 1) | Independent of C_Timer. Can be built in parallel with Phase 2, but Phase 1 must be complete. |
-| 4 | EventBus / Signals | None (only LuaBindings) | Cross-object, not component-based. Independent of Phases 1-3. Place here so first three phases can be validated before adding cross-object communication complexity. |
-| 5 | Persistent Objects | ObjectCollection (Phase 0 existing), SceneStateMachine | Most invasive structural change. Touches ObjectCollection, SceneStateMachine, and introduces non-owning external arrays. All earlier features should be green before making this change to isolate any regressions. |
+**Do this instead:** `LuaBindings::clearCoroutines()` and `LuaBindings::cancelAllTweens()` called from `setActiveScene()`. This matches `LuaEventBus::clearHandlers()` and `C_Timer::clearTimers()` — the established scene-change cleanup pattern.
 
 ---
 
 ## Sources
 
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/core/component.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/core/object.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/core/scene.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/core/object_collection.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/core/signal.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/scripting/bind_helpers.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/scripting/object_proxy.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/include/enjin2/components/lua_script.hpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/src/scripting/bindings_engine.cpp` — HIGH confidence
-- Direct reading of `/home/unwn/dev/enjin/.planning/PROJECT.md` — HIGH confidence (active v1.6 requirements)
+- `/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp` — LuaBindings class, LuaStore, LuaCanvas (HIGH confidence)
+- `/home/unwn/dev/enjin/src/scripting/bindings_engine.cpp` — registerEngineTable() and all sub-table registrations (HIGH confidence)
+- `/home/unwn/dev/enjin/src/scripting/bindings_store.cpp` — LuaStore impl, VCV_RACK platform guard, JSON I/O (HIGH confidence)
+- `/home/unwn/dev/enjin/include/enjin2/components/camera.hpp` — C_Camera full API (HIGH confidence)
+- `/home/unwn/dev/enjin/include/enjin2/core/scene.hpp` — Scene lifecycle, renderObjects() with camera offset (HIGH confidence)
+- `/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp` — applyDeferredTransition() hook point (HIGH confidence)
+- `/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp` — Primitives<Pixel4> (reused by debug draw) (HIGH confidence)
+- `/home/unwn/dev/enjin/include/enjin2/core/component.hpp` — ComponentProxy invalidation pattern (HIGH confidence)
+- `/home/unwn/dev/enjin/include/enjin2/components/fill_up_gauge.hpp` — shows why existing UI components are not reusable for Pixel4 pipeline (HIGH confidence)
+- `/home/unwn/dev/enjin/include/enjin2/components/label.hpp` — confirms std::string/std::vector usage (HIGH confidence)
+- `/home/unwn/dev/enjin/CMakeLists.txt` — enjin2_lua target_sources structure (HIGH confidence)
+- `/home/unwn/dev/enjin/.planning/PROJECT.md` — v1.7 feature list, constraints, key decisions, tech debt (HIGH confidence)
 
 ---
-*Architecture research for: enjin2 v1.6 Game Ready*
-*Researched: 2026-02-28*
+
+*Architecture research for: enjin2 v1.7 Developer Experience and New Capability*
+*Researched: 2026-03-01*

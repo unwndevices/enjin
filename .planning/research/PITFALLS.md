@@ -1,321 +1,323 @@
 # Pitfalls Research
 
-**Domain:** Adding C_Timer, C_StateMachine, ComponentProxy, signal/event bus, and persistent objects to existing zero-alloc 2D game engine with Lua scripting (enjin2 v1.6 Game Ready)
-**Researched:** 2026-02-28
-**Confidence:** HIGH (direct codebase analysis of all relevant headers, cross-referenced against existing v1.5 design decisions, and embedded constraints documented in PROJECT.md)
+**Domain:** Adding debug draw, save/load serialization, persistent objects, camera follow helpers, coroutines/async, tweens, UI components, bindings.cpp refactoring, and null safety to existing zero-alloc 2D game engine with Lua scripting (enjin2 v1.7 Developer Experience)
+**Researched:** 2026-03-01
+**Confidence:** HIGH (direct codebase analysis of all v1.6 shipped headers and bindings, cross-referenced against PROJECT.md constraints, and first-principles reasoning from embedded + Lua VM design)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Timer Callback Fires Into a Destroyed Lua State
+### Pitfall 1: Debug Draw Renders Into the Wrong Canvas Layer
 
 **What goes wrong:**
-`C_Timer` holds a Lua function reference (via `luaL_ref`) that it calls when the timer expires. If the scene transitions while a timer is still ticking, the scene's `ObjectCollection` destroys all objects (including the one holding `C_Timer`). If `C_Timer` is implemented with any external ownership — a static timer pool, a scene-level scheduler, or a signal connection — there is a window where the timer fires after the owning object is dead but before the timer slot is released.
+`engine.debug.*` bindings (e.g., `drawBBox`, `drawCircle`) draw directly to the current active canvas. If the developer calls `engine.debug.drawBBox(x, y, w, h)` inside `update()` — before `draw()` is called — the canvas has not been cleared yet (or was cleared at the start of the previous frame). The debug primitive is drawn onto stale pixel data from the previous frame, producing ghost overlaps or invisible shapes depending on what was rendered before.
 
-Even with correct C++ object ownership (timer lives inside the component, component destroyed with object), the Lua function reference stored via `luaL_ref` is allocated in a specific `lua_State*`. After a hot reload (F5), the old `lua_State` is closed and a new one opened. Any `luaL_ref` handles from the old state are invalid in the new state. If `C_Timer` does not null its ref on Lua state teardown, calling `lua_rawgeti` with the stale ref in the new state produces undefined behavior or a silent wrong function call.
+Even worse: if debug draw targets `layerCanvases[activeLayer]` but the scene renders objects on a different layer, the debug primitive is composited on the wrong layer and either appears behind all game content (drawn on layer 0 with game on layer 2) or is invisible (drawn on layer 3 which is transparent/hidden).
+
+A second ordering failure: debug draw from inside a C++ component's `draw()` method (called by `Scene::renderObjects()`) interleaves with sorted drawable rendering. A debug box drawn mid-render-pass appears under drawables rendered after it in the sort order, even if the developer expects it to be "on top."
 
 **Why it happens:**
-`luaL_ref` returns an integer key into the Lua registry. The integer looks valid across states but is not — registry keys are state-local. Developers familiar with integer handles from other systems (file descriptors, object IDs) may not realize the integer is state-coupled. Hot reload is especially dangerous because the C++ `C_Timer` object may survive across reloads if timers are registered at the scene level, while the `lua_State` it was registered against is gone.
+Debug draw is typically treated as a pass that happens after all gameplay rendering, in a dedicated debug render pass. enjin2 has no concept of a "post-render pass." The `Scene::renderObjects()` path collects and sorts drawables, then iterates — there is no hook after this loop. The natural place to call debug draw (inside `update()`, inside a Lua callback, inside a component `draw()`) is the wrong place.
 
 **How to avoid:**
-- `C_Timer` must store both a `lua_State*` and an `int` ref. In `C_Timer::update()`, check `L == expected_state` before calling `lua_rawgeti`. If they differ (e.g., after reload), the timer is stale — cancel it silently.
-- `C_LuaScript` already invalidates its `ScriptProxy` in its destructor before `lua_close`. Apply the same pattern: `C_Timer` should expose a `cancelLuaCallback()` method that the script system calls before tearing down the `lua_State`. This requires `C_Timer` to register itself with the `LuaScriptSystem` on callback registration.
-- Simpler alternative: `C_Timer` does not store Lua refs directly. Instead it stores a `const char*` Lua function name (a string literal with script-static lifetime), and calls `lua_getglobal(L, name)` at fire time. This avoids the ref lifetime problem entirely, at the cost of global function name requirement. For anonymous callbacks, the ref approach with teardown protocol is necessary.
-- In the destructor of `C_Timer`, call `luaL_unref(L, LUA_REGISTRYINDEX, ref)` to release the reference regardless of whether the timer fired.
+- `engine.debug.*` functions must write into a dedicated, always-on-top layer (e.g., `layerCanvases[layerCount - 1]`, or a separate debug overlay canvas). This layer is cleared at the start of each frame by the engine, not by the script.
+- The debug layer must be cleared automatically by the SDL runner (or WASM host) each frame, NOT by the Lua script. This guarantees debug primitives are fresh each frame regardless of when they are drawn.
+- Document that `engine.debug.*` functions are valid inside `draw(self)` only, not `update(self, dt)`. The debug layer is cleared after `draw()` completes.
+- Alternatively, buffer all debug draw calls in a fixed-size command list and flush them as the final rendering step. This avoids layer management entirely at the cost of a fixed command buffer (e.g., `DebugCmd cmds[64]`).
 
 **Warning signs:**
-- `C_Timer` stores `int ref` without storing `lua_State*`
-- No `luaL_unref` call in `C_Timer` destructor
-- `C_Timer` fires a callback after F5 reload and produces a wrong function call (calls a function from a previous script)
-- `C_LuaScript` teardown sequence does not notify live timers
+- `engine.debug.drawBBox()` called inside `update()` instead of `draw()`
+- Debug primitives appear one frame late (drawn onto current frame, visible next frame)
+- No dedicated debug canvas or layer — debug draws on `currentCanvas` which is the same canvas game content uses
+- No automatic clear of the debug layer at frame start
 
 **Phase to address:**
-C_Timer implementation phase — Lua callback registration and teardown protocol must be designed before writing any timer tick logic.
+Debug draw bindings phase — define the canvas routing and clear protocol before registering any `engine.debug.*` functions.
 
 ---
 
-### Pitfall 2: Timer Accumulator Drift Under Scene Transitions and Pauses
+### Pitfall 2: Coroutine Lua State Outlives the Lua Thread It Was Created On
 
 **What goes wrong:**
-`C_Timer` accumulates `elapsed += dt` in `update(float dt)`. When a scene transition occurs mid-countdown, the timer's owning object is destroyed along with the scene — the timer fires never (correct behavior). However, if objects persist across scenes (the persistent-objects feature being added in the same milestone), a timer on a persistent object continues accumulating during the new scene's `update()` calls.
+Lua coroutines are created via `coroutine.create(fn)`. Each coroutine is a `lua_State*` (a thread, sharing the parent state's registry). When a Lua script uses a coroutine for a loading screen or animation, the coroutine's `lua_State` is alive as long as something holds a reference to the coroutine thread.
 
-The problem: persistent object timers accumulate `dt` from the new scene's frame budget, which may be different from the old scene's (different update rates, different game states). More subtly, if the game ever suspends (SDL window loses focus, `dt` is clamped or set to zero), the timer's accumulated time does not advance. When the game resumes and `dt` is back to normal, the timer fires as if the suspension did not happen. This may be correct (timer pauses with game) or wrong (timer should be wall-clock based). The engine has no protocol for "timer intent."
+The failure: hot reload (F5) calls `lua_close()` on the parent `lua_State`. Any coroutine thread derived from that state is implicitly invalid after `lua_close()`. If the C++ side holds a `lua_State*` pointer to a coroutine thread (e.g., stored in a `C_Coroutine` component or in the `LuaBindings` coroutine registry), it now holds a dangling pointer. Calling `lua_resume()` on a closed thread's state is undefined behavior — it may crash, corrupt memory, or silently succeed (reading garbage).
 
-A second accumulator issue: floating-point accumulation over many frames. A 60-second timer at 60 Hz is 3,600 frames of `elapsed += dt`. Each frame's `dt` is a float computed from SDL frame timing, which has floating-point rounding error. After 3,600 additions, `elapsed` may be 60.003 or 59.998 seconds. If the timer fires on `elapsed >= duration` (correct approach), it fires at most one frame late — acceptable. If it fires on `elapsed == duration` (incorrect), it never fires.
+The second failure: if the `engine.coroutine.*` API stores active coroutine thread pointers in a fixed array (`lua_State* m_threads[MAX_COROUTINES]`), and hot reload closes the parent state without iterating that array to null the entries, each thread pointer is dangling. Any future `resume()` call fires into freed memory.
 
 **Why it happens:**
-Timer semantics (real-time vs game-time vs frame-count) are implicit in most game engine designs. The developer assumes "game time" but the game loop defines what that means. Floating-point accumulation is a known issue but often forgotten until tested over long durations.
+Coroutines are Lua-level objects. Developers model them as "lightweight threads" and store the thread pointer in C++ as if it were a persistent handle. But the thread's validity is coupled to the parent `lua_State` lifecycle. After `lua_close()`, the parent and all its threads are gone. The C++ `lua_State*` pointers in the coroutine array are not automatically nulled — the developer must explicitly clear them on teardown.
 
 **How to avoid:**
-- Always test `elapsed >= duration`, never `elapsed == duration` — use `>=` throughout, without exception.
-- Document explicitly in `C_Timer`'s API: "timer advances with game time (dt). If the owner object is paused (disabled), the timer does not advance. There is no wall-clock mode."
-- For persistent timers across scenes: ensure the persistent object's `update(float dt)` is called by the new scene's `ObjectCollection` or by a separate "persistent object manager" that is updated by `SceneStateMachine::update()` before the scene update. The dt source must be consistent.
-- Define `C_Timer::pause()` and `C_Timer::resume()` methods. When an object is deactivated (`setActive(false)`), the timer should automatically pause via the existing `isActive()` check in `ObjectCollection::update()` — no extra work needed since disabled objects do not receive `update()` calls.
+- The `engine.coroutine.*` implementation must expose a `clearCoroutines()` teardown function, symmetric with `C_Timer::clearTimers()` and `LuaEventBus::clearHandlers()`. This function is called by the script system before `lua_close()`.
+- Do NOT store raw `lua_State*` thread pointers in C++ after `lua_close()`. The teardown protocol is: (1) iterate all active coroutine slots, (2) set each slot's state pointer to `nullptr`, (3) call `lua_close()` on parent.
+- Coroutine threads should be tracked using `int` Lua registry refs (`luaL_ref(L, LUA_REGISTRYINDEX)` on the coroutine thread value), NOT raw `lua_State*` pointers. This way the GC controls thread lifetime, and `luaL_unref` on hot reload correctly frees the thread.
+- The fixed coroutine array: `CoroutineSlot slots[MAX_COROUTINES]` where each slot holds `int threadRef` (not `lua_State*`). To resume: `lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef)` → `lua_tothread(L, -1)` → `lua_resume(thread, ...)`.
 
 **Warning signs:**
-- `elapsed == duration` comparison anywhere in timer logic
-- No documentation on what "game time" means for persistent timers
-- Timer on a persistent object receives `dt` from two different scenes with no continuity guarantee
-- Timer duration specified as `0.0f` (fires immediately next frame) with no guard against division by zero or immediate re-fire in repeating mode
+- `lua_State* m_coroutineThreads[N]` in C++ without a nulling teardown before `lua_close()`
+- `lua_resume()` called after F5 reload on a thread ref from the previous Lua state
+- Coroutine array not cleared in the hot-reload path (`performReload()` → `registerAll()`)
+- `clearCoroutines()` not called before `lua_close()` in the shutdown sequence
 
 **Phase to address:**
-C_Timer implementation phase — timer accumulator semantics must be established in the interface design before writing tick logic.
+Coroutine/async phase — design the teardown protocol before implementing any resume/yield mechanism.
 
 ---
 
-### Pitfall 3: C_StateMachine Enter/Exit Callbacks Called During Object Construction
+### Pitfall 3: Tween Holds a Lua Callback Reference That Becomes Stale After Hot Reload
 
 **What goes wrong:**
-`C_StateMachine` is configured from Lua: the script calls methods like `sm:addState("idle", enter_fn, exit_fn, update_fn)` and then `sm:setState("idle")`. If `setState("idle")` is called inside the Lua `init(self)` callback, the enter function fires during initialization — before the object's other components have received `start()`. If `enter_fn` calls `self:get("C_Sprite")` (via the ComponentProxy being added in the same milestone) to change sprite frame, but `C_Sprite` does not exist yet or has not been started, the call either panics, returns nil, or uses an uninitialized component.
+A tween helper (e.g., `engine.tween.to(target, "x", 100, 0.5)`) animates a value over time and fires an `onComplete` callback when done. The `onComplete` callback is stored as a `luaL_ref` handle in the tween slot.
 
-The ordering: `awake()` → `start()` → `init(self)` (Lua). Actually, looking at the codebase: `ObjectCollection::start()` calls `Object::start()` → `Component::start()`. The Lua `init(self)` callback is called in `C_LuaScript::update()` on the first frame (the `hasScript && !initCalled` guard). This means `init(self)` fires during the first `update()` call, AFTER `awake()` and `start()`. So `C_Sprite` IS started by then.
+After F5 hot reload, the parent `lua_State` is destroyed and a new one is created. Any `luaL_ref` from the old state is invalid in the new state. If the tween system's fixed-size slot array (`TweenSlot slots[MAX_TWEENS]`) is stored in `LuaBindings` (which survives across `registerAll()` calls on the same `LuaBindings` instance), the stale `callbackRef` values remain in the slot array. On the next frame, the tween continues advancing (if `elapsed < duration`), fires the callback, calls `lua_rawgeti(newL, LUA_REGISTRYINDEX, staleRef)`, and gets a wrong function or nil.
 
-BUT: if the developer calls `engine.scene.spawn()` from within a state machine callback that fires during `update()`, the new object is added to `ObjectCollection` mid-iteration. `ObjectCollection::update()` iterates 0..objectCount — if `addObject()` increments `objectCount` mid-loop, the new object gets an immediate `update()` in the same frame, but without `awake()` or `start()` if initialization has already run.
-
-Looking at `Object::addComponent`: "Call start if object has already been started" — this is handled for components added after start. But `ObjectCollection::addObject` calls `awake()` and `start()` immediately if `initialized` is true. The issue is the mid-iteration object count change: if a callback spawns an object during `ObjectCollection::update()`, the new object at index `objectCount-1` may or may not be within the current loop range depending on whether the loop uses a snapshot count or reads `objectCount` fresh each iteration.
+The second failure: tweens that target Lua userdata properties (e.g., "animate `self.x` from 0 to 100") store a reference to the `ScriptProxy` userdata and a property string. After hot reload, the `ScriptProxy` is invalidated (its `valid = false` is set by `C_LuaScript`'s destructor). A tween that resumes and tries to write to the proxy via `__newindex` gets a "object has been destroyed" error — at best. At worst, if the validity check is absent in the tween write path, it writes to a dangling `C_LuaScript*`.
 
 **Why it happens:**
-State machines by nature fire callbacks in response to transitions. Those transitions happen during game logic (update calls). The game loop does not have a "safe callback zone" separate from the update zone. This is the same class of problem as the deferred scene transition — enjin2 already solved it for scene transitions via the deferred queue pattern, but that pattern must be extended to cover spawning from state machine callbacks.
+Tweens combine two hot-reload hazards in one: stale `luaL_ref` callback handles (same as C_Timer) and stale ScriptProxy targets (same as ObjectProxy). The compound nature means developers who handle one hazard correctly may miss the other.
 
 **How to avoid:**
-- `ObjectCollection::update()` must snapshot `objectCount` at loop entry: `size_t count = objectCount;` then loop `0..count`. Objects added during update are at indices `>= count` and receive their first update on the next frame. `awake()` and `start()` still fire immediately in `addObject()` when `initialized == true` — this is correct and safe.
-- State machine `setState()` during `init(self)` (first frame): this is safe because `awake()` and `start()` have already fired. Document this.
-- Prohibit (via documentation) calling `engine.scene.spawn()` from state machine callbacks that fire during the update loop. If spawn-during-state-transition is needed, use the same deferred approach as `engine.scene.switch()` — queue the spawn, execute it after the update loop completes.
-- `C_StateMachine` itself should not call enter/exit functions during `addState()` — only during explicit `setState()` or `update()`. Document this.
+- Tween teardown must be symmetric with C_Timer teardown. Add `clearTweens()` called before `lua_close()`, which calls `luaL_unref(L, LUA_REGISTRYINDEX, slot.callbackRef)` for all active slots, then sets all slot state to inactive.
+- Tween callbacks must store `lua_State*` alongside `int callbackRef` (same discipline as C_Timer). Compare `L == m_L` before `lua_rawgeti` at fire time.
+- Tween targets should use `int tweenTargetRef` (a registry ref to the target userdata) rather than raw `ScriptProxy*`. At advance time, check the userdata's `valid` flag before writing. If invalid, silently cancel the tween.
+- `registerAll()` must call `clearTweens()` before rebuilding the registry. Do not rely on slot reuse to overwrite stale refs.
 
 **Warning signs:**
-- `ObjectCollection::update()` loop reads `objectCount` fresh each iteration (not snapshotted)
-- Spawning objects from inside state machine enter/exit callbacks without a deferred queue
-- `C_StateMachine::addState()` triggers enter callback immediately
-- No documentation on safe vs unsafe call sites for `setState()`
+- `TweenSlot` holds `int callbackRef` without `lua_State*`
+- `clearTweens()` not called in hot-reload path
+- Tween target stored as raw `ScriptProxy*` instead of registry ref with validity check
+- No nil check after `lua_rawgeti` for tween callback
 
 **Phase to address:**
-C_StateMachine implementation phase AND persistent objects phase — deferred spawn queue must be in place before state machine callbacks are tested with spawn.
+Tween helpers phase — design teardown and target validity before implementing any advance/fire logic.
 
 ---
 
-### Pitfall 4: ComponentProxy Returns Stale C++ Pointer After Component Removal
+### Pitfall 4: Coroutines Yield Inside a pcall — Lua 5.1 Cannot Resume Across a pcall Boundary
 
 **What goes wrong:**
-`ComponentProxy` (or `self:get("C_Sprite")`) returns a pointer to a sibling component on the same object. The component pointer is valid as long as the component exists. But `Object::removeComponent<T>()` can be called at any time (from C++ or Lua). After removal, any Lua-held ComponentProxy that cached the raw pointer is dangling.
+enjin2 uses standard Lua 5.1 (likely LuaJIT based on `luajit/` directory). In Lua 5.1, a coroutine cannot yield across a C call stack boundary. If a coroutine yields inside a function that was called via `lua_pcall()` (which is how `callWithProxy()` calls all Lua functions), the yield raises an error: "attempt to yield across metamethod/C-call boundary."
 
-Unlike `ObjectProxy` (which has the `valid` flag set by `Object::~Object()`), a ComponentProxy pointing to a removed-but-not-destroyed component has no automatic invalidation. `removeComponent<T>()` calls `components[j] = std::move(...)` which invokes the destructor of the removed component — at that point, any ComponentProxy holding a raw pointer to it now points to freed memory.
-
-Additionally, `Object::removeComponent<T>()` shifts the remaining components in the array. A ComponentProxy holding a pointer to `components[3]` does not need updating — it holds the raw pointer to the `Component` object, not the array slot. The pointed-to `Component` is destroyed (via `unique_ptr` destructor), not moved. So the raw pointer is dangling, not just pointing to a different component.
+This is the most common coroutine pitfall in embedded Lua. The enjin2 binding layer calls all Lua functions through `callWithProxy()` which uses `lua_pcall()` internally. A script that does:
+```lua
+function update(self, dt)
+    coroutine.wrap(function()
+        coroutine.yield()  -- ERROR: yields across C pcall boundary
+    end)()
+end
+```
+will raise an error on the first yield.
 
 **Why it happens:**
-ComponentProxy is new. The `valid` flag pattern for ObjectProxy is established, but applying it to a per-component level requires either a validity flag in every component (cost: 1 byte per component) or a generation counter scheme. Developers adding ComponentProxy may model it on ObjectProxy and add the `valid` flag to the proxy struct — but then forget to set it to `false` in the component destructor.
+Lua 5.2+ and LuaJIT have continuations that allow yielding across C call boundaries. Lua 5.1 does not. Developers who know LuaJIT's C API (`lua_yieldk`, coroutines work with LuaJIT's special handling) or who learned coroutines on Lua 5.2+ make assumptions that do not hold in standard 5.1.
 
-The existing `Component` base class has no destructor hook into any proxy system. ObjectProxy works because `Object::~Object()` sets `m_luaProxy->valid = false` — but `Object` has a single proxy pointer (`m_luaProxy`). A component can be proxied from multiple scripts simultaneously, so the single-pointer approach does not generalize cleanly.
+The project uses LuaJIT (the `luajit/` directory is present). LuaJIT DOES support yielding across `lua_pcall` in some cases (via its CoCo coroutine implementation, which patches the C stack). However, this requires LuaJIT to be compiled with CoCo support (default on most platforms) and the yield cannot cross a non-yieldable C call. The behavior is platform-dependent — CoCo works on x86/ARM but may not work on ESP32 RISC-V or Emscripten.
 
 **How to avoid:**
-- Apply the same `valid` flag pattern: add `ComponentProxy* m_luaProxy` to the `Component` base class (mirroring `Object::m_luaProxy`). In `Component::~Component()`, if `m_luaProxy != nullptr`, set `m_luaProxy->valid = false`. On stale access in Lua, raise `luaL_error` with a clear message.
-- Accept the single-proxy-per-component constraint (same as single-proxy-per-object for `ObjectProxy`). Document that holding multiple Lua proxies to the same component is not supported.
-- The `ComponentProxy` Lua userdata struct should mirror `ObjectProxy`:
-  ```cpp
-  struct ComponentProxy {
-      Component* component;
-      bool valid;
-  };
-  ```
-  And `Component` should add: `ComponentProxy* m_luaProxy = nullptr;`
-- `Object::removeComponent<T>()` must null the removed component's `m_luaProxy->valid = false` before destruction. Since the `unique_ptr` destructor handles this only if `Component::~Component()` does it, ensure the virtual destructor chain is correct.
+- Do not yield inside `update(self, dt)` or `draw(self)` directly. These are called via `callWithProxy()` → `lua_pcall()`. A yield attempt raises an error.
+- The correct pattern: create a coroutine in `init(self)`, store it in a Lua local. In `update(self, dt)`, call `coroutine.resume(co)` explicitly. The coroutine body yields normally; the `resume()` call in `update()` is a Lua→Lua call, not a C→Lua pcall boundary.
+- For LuaJIT on ESP32: verify CoCo support at build time. If CoCo is absent (e.g., WASM), coroutine yield across any C boundary fails. Document the restriction: "coroutines must be resumed from Lua, not from C-called Lua functions."
+- Provide a `Coroutine` helper table in Lua (not a C binding) that wraps `coroutine.wrap()` with the correct resume-from-update pattern. This keeps the implementation in Lua where yield semantics are clear.
 
 **Warning signs:**
-- `ComponentProxy` struct exists but no corresponding `valid` flag field
-- `Component` base class has no `m_luaProxy` field
-- `Component::~Component()` does not set proxy validity to false
-- `Object::removeComponent<T>()` does not include proxy invalidation before destruction
-- Lua script holds ComponentProxy across a frame where the component was removed
+- `coroutine.yield()` called directly inside `update(self, dt)` or `draw(self)` without checking call origin
+- No documentation on the pcall boundary restriction
+- `engine.coroutine.create(fn)` C binding that calls `lua_resume()` from C inside a `lua_pcall()` scope
+- No cross-platform test for LuaJIT CoCo availability (especially WASM and ESP32 targets)
 
 **Phase to address:**
-ComponentProxy phase — design the validity protocol before implementing any `__index`/`__newindex` dispatch.
+Coroutine/async phase — design the coroutine resume pattern around pcall boundaries before writing any C bindings.
 
 ---
 
-### Pitfall 5: Signal Callbacks Holding Stale Object Pointers Across Scene Transitions
+### Pitfall 5: bindings.cpp Split Breaks Static Forward Declarations Between Translation Units
 
 **What goes wrong:**
-The existing `Signal<Args...>` class in `signal.hpp` stores `std::function<void(Args...)>` callbacks. These callbacks may be closures that capture `Object*` pointers or `Component*` pointers. When the emitting or receiving object is destroyed (scene transition, object removal), the callback slot in the `Signal` still exists — it is only cleared by `disconnect()` (via `SignalConnection` RAII) or `disconnectAll()`.
+`bindings.cpp` is 1390 lines with extensive forward declarations at the top (`static int lua_proxy_index_impl`, `static int lua_proxy_get_component_impl`, etc.). These static functions are used across the file. When the file is split into `bindings_debug.cpp`, `bindings_ui.cpp`, `bindings_tween.cpp`, etc., each new TU cannot see the `static` functions from `bindings.cpp`. `static` linkage is TU-local.
 
-If `SignalConnection` is stored in the component as a member (RAII teardown), it will disconnect automatically in the component destructor. But if a Lua script registers a signal handler via `engine.event.on("enemy_died", callback_fn)`, the registration is held in a Lua-side event bus (not a C++ `SignalConnection`). When the registering object is destroyed, the Lua function reference in the event bus becomes a reference to a function in a potentially-dead Lua context. When the event fires, the callback executes with a dangling or expired `self`.
+The failure mode: `bindings_ui.cpp` needs `getBindings(L)` (defined in `bindings.cpp`). If `getBindings` is declared `static`, it is invisible to `bindings_ui.cpp`. The new file will not compile (undefined reference), OR the developer copies `getBindings` into the new file, creating a second definition — which is fine for `static` (each TU gets its own copy) but produces duplicated logic that diverges over time.
 
-The existing `Signal<Scene*>` signals in `scene.hpp` (`onCreateSignal`, `onActivateSignal`) have MAX_CONNECTIONS=16. If a game registers 17 listeners for a signal, the 17th `connect()` call returns -1 (no space). The caller may not check this return value. The signal silently drops the 17th handler. The game logic that depends on that handler never runs.
+A second failure: the `g_currentBindings` global (line 16 of `bindings.cpp`: `static LuaBindings* g_currentBindings = nullptr`) is TU-local by `static` linkage. If any new `.cpp` file tries to access or set `g_currentBindings`, it accesses a different (uninitialized) copy of the variable, not the one set during initialization.
 
 **Why it happens:**
-The `std::function` in `Signal` is opaque — it captures pointers invisibly. `SignalConnection` RAII works correctly for C++ code, but Lua-registered callbacks have no RAII lifetime. The Lua function reference is held by the event bus, not by the registering object. Lua garbage collection does not help because the bus holds a strong reference (via `luaL_ref`).
+`static` at file scope means "internal linkage." This is correct for file-private helpers but prevents sharing across TUs. When a monolithic file is split, all the TU-private helpers that were implicitly shared within the file become invisible across the split.
+
+The correct pattern for the split: shared functions become `extern` (declared in a private header, defined in exactly one `.cpp`). File-private helpers remain `static` but only in the one `.cpp` that owns them.
 
 **How to avoid:**
-- For C++ signal connections from components: always store `SignalConnection` as a member variable of the subscribing component. The RAII destructor disconnects automatically on component destruction. Never call `signal.connect()` and discard the returned `SignalConnection`.
-- For Lua-side event bus: implement the bus with Object-scoped registration. `engine.event.on("event", handler)` internally associates the registration with the current `C_LuaScript` component (via the `self` ScriptProxy in scope). When the component is destroyed, automatically `luaL_unref` all its registered handlers. This requires the event bus to hold a list of `(event_name, luaL_ref, owning_component*)` tuples.
-- The event bus must use fixed-size static storage: `static constexpr int MAX_LISTENERS = 32; EventRegistration listeners[MAX_LISTENERS];` — zero heap allocation.
-- For the `Signal::connect()` return value: log and assert if `connect()` returns -1 (overflow). Do not silently drop callbacks. Increase MAX_CONNECTIONS or require explicit disconnect before registering.
+- Before splitting, audit `bindings.cpp` for functions that are referenced by more than one future TU. These must be converted to non-`static` member functions of `LuaBindings` (already accessible via the header) or to non-`static` free functions declared in `bindings_internal.hpp` (not installed as a public header).
+- `getBindings(L)` is already a `public static` member of `LuaBindings` — it is accessible from all TUs that include `bindings.hpp`. This is the correct model for shared binding utilities.
+- `g_currentBindings` — if it is used only in `bindings.cpp` for the ScriptProxy metatable, keep it `static` in that file and do not reference it from new TUs. New TUs use `getBindings(L)` instead.
+- Add a `bindings_internal.hpp` for non-public shared declarations (e.g., `REQUIRE_CANVAS` macro, `LuaFuncDef` helper). This header is included by all `bindings_*.cpp` files but not exported as a public API.
+- Compile-test each new split TU in isolation before committing. Use `nm` or `readelf` to verify no undefined symbols remain in the split files.
 
 **Warning signs:**
-- `signal.connect(lambda)` call not assigned to a `SignalConnection` member variable
-- Lua event bus that stores `luaL_ref` without an owning component reference
-- No `disconnectAll()` call in scene deactivation for scene-level signals
-- `Signal::connect()` return value unchecked — potential silent overflow at MAX_CONNECTIONS=16
-- Event bus implemented with `std::vector` (heap allocation)
+- `static int someHelper(lua_State* L)` function in `bindings.cpp` referenced by a new `bindings_*.cpp` file (linker error)
+- `g_currentBindings` accessed from more than one TU (reads zero instead of initialized pointer)
+- New `.cpp` file re-defines `getBindings` as a local copy (divergence risk)
+- No internal header for shared split-file declarations
 
 **Phase to address:**
-Signal/event bus phase — design the Lua registration lifetime before implementing `engine.event.on()`; the bus must know which component owns each registration.
+Bindings refactoring phase — audit `static` linkage before splitting; establish `bindings_internal.hpp` as the first step.
 
 ---
 
-### Pitfall 6: Persistent Objects Receive Update from Wrong Scene's dt
+### Pitfall 6: Save/Load Serialization Writes Non-Portable Binary Data on ESP32
 
 **What goes wrong:**
-Persistent objects survive scene transitions. They must be updated every frame regardless of which scene is active. The current architecture: `SceneStateMachine::update()` calls `currentScene->update(dt)`, which calls `ObjectCollection::update(dt)` for that scene's objects. Persistent objects are by definition NOT in any scene's `ObjectCollection`.
+The existing `LuaStore::saveToFile()` uses JSON (conditional on `VCV_RACK`). A new save/load serialization helper that goes beyond `LuaStore`'s 16-key limit may be tempted to write binary data (direct `fwrite` of structs) for speed and simplicity on embedded targets. This fails for two reasons:
 
-If persistent objects are stored in a separate "persistent collection" owned by `SceneStateMachine`, they must be updated by `SceneStateMachine::update()` before or after the scene update. The order matters: if a persistent object's timer fires and emits a signal, and that signal's handler lives in a scene object, the scene object must already exist and be updated (or not yet updated, depending on order) when the signal fires. This creates a subtle frame-ordering dependency.
+1. **ESP32 endianness vs WASM/SDL3 endianness**: ESP32 (Xtensa) is little-endian; x86/WASM is also little-endian. So endianness is not a problem here — but struct padding is. A struct written on ESP32 with a Xtensa-GCC layout may have different padding than the same struct compiled on x86-GCC. A save file written on SDL3 desktop may be unreadable on ESP32 if the struct layout differs.
 
-A second issue: during a scene transition (between `deactivate()` and `activate()`), there is a brief window where `currentScene` is null (in `completeTransition()`, `currentScene = nextScene` is set, but before `initialize()` and `activate()` are called). If a persistent object fires a signal during this window, any handler that tries to call `engine.scene.find()` will find nothing — the new scene is not yet initialized.
+2. **ESP32 NVS limitations**: ESP32 Non-Volatile Storage (NVS) has key-length limits (15 chars), value-size limits (per-namespace, ~4 KB per key for blob type, total NVS partition size of 16 KB typical), and write cycle limits (100K writes per key before flash wear). Binary blob NVS writes that serialize an entire `GameState` struct on every frame tick will exhaust flash in hours.
 
 **Why it happens:**
-Persistent objects are not a standard ECS feature. Most engines handle them with `DontDestroyOnLoad()` (Unity) semantics, which implicitly places objects in a "persistent scene" that is always active alongside the current scene. Without this model, the developer must define where persistent objects live in the update graph.
+Desktop developers reach for `fwrite(struct)` as the fastest path. Embedded developers know NVS but underestimate its limits. Neither group accounts for the multi-platform constraint that enjin2 explicitly carries.
 
 **How to avoid:**
-- Store persistent objects in a `ObjectCollection m_persistent` member of `SceneStateMachine`. Update them in `SceneStateMachine::update()` AFTER the scene update: persistent objects react to changes made this frame by scene objects.
-- During scene transition, flag persistent objects as "transition-safe" by checking `hasPendingTransition` before firing signals that depend on scene objects. This is a documentation requirement, not an enforcement mechanism.
-- Provide `engine.scene.persist(name)` to mark a scene object for persistence at transition time. The SSM moves the `unique_ptr` from the scene's `ObjectCollection` to `m_persistent` during `applyDeferredTransition()`. This avoids implementing a separate "persistent scene" concept.
-- If `engine.scene.find()` is called from a persistent object's Lua callback during a transition, it must return nil (no active scene) without crashing. The existing null guard on `m_activeScene` in `lua_engine_scene_find` handles this — verify it works for the null-currentScene window.
+- Use JSON-based save format only, matching the existing `LuaStore` pattern. JSON is human-readable, portable, and the `LuaStore` save/load infrastructure already exists — extend it rather than building a parallel system.
+- For the serialization helper, define max key/value limits that work across platforms: key length ≤ 15 chars (NVS limit), total keys ≤ 32 (fits in NVS partition), value strings ≤ 256 bytes.
+- Save only on explicit `engine.store.save()` call or scene transition, never inside `update()`. The existing `LuaStore::saveToFile()` guards this via the store path mechanism.
+- If binary format is required for ESP32 performance, use a fixed-layout struct with explicit `uint8_t` padding bytes (portable layout), document the format version, and add a magic number at the start for format validation.
+- NVS write path is deferred — mark it as WASM/SDL3 only for v1.7; ESP32 NVS integration requires a separate phase with wear-leveling analysis.
 
 **Warning signs:**
-- Persistent objects stored inside a scene's `ObjectCollection` (they will be destroyed on scene change)
-- `SceneStateMachine` does not call `update()` on a persistent collection separate from the current scene
-- No null guard for `currentScene` during scene transition in `SceneStateMachine::update()`
-- Persistent object signals fire during the transition window before the new scene is initialized
-- `engine.scene.persist()` API not implemented — developer must manually track which objects survive
+- `fwrite(&gameState, sizeof(GameState), 1, fp)` in any platform-shared code path
+- Save/load functions inside `update()` rather than in explicit API calls
+- NVS key names longer than 15 characters
+- No file format version or magic number in binary save files
+- Binary save written on SDL3 and tested only on SDL3 (endianness/padding differences with ESP32 not tested)
 
 **Phase to address:**
-Persistent objects phase — architecture must be decided (separate collection vs "persistent scene" vs move-on-transition) before any implementation begins.
+Save/load serialization phase — define the format constraints and platform scope before writing any serialization code.
 
 ---
 
-### Pitfall 7: ComponentProxy self:get() Conflicts with ScriptProxy __index Dispatch
+### Pitfall 7: Camera Follow Sets Position Every Frame, Fighting Manual Override
 
 **What goes wrong:**
-The existing `ScriptProxy.__index` handler dispatches property reads to C++ component fields: `self.x` reads from `C_Position`, `self.visible` reads from `C_Drawable`, `self.layer` reads from `C_Drawable`. The new `ComponentProxy` design adds `self:get("C_Timer")` to retrieve a sibling component.
+`engine.camera.follow(target)` is intended to call `C_Camera::lookAt(target.x, target.y, lerpSpeed)` every frame. If this is implemented as a "set it and forget it" registration (the camera stores a target reference and follows automatically in `C_Camera::update()`), a script that calls `engine.camera.shake(5, 0.3)` and also has a follow target active will have the shake cancelled: `lookAt()` sets the target position, and on the next frame `update()` lerps toward the target, overwriting the shake offset.
 
-Name collision risk: if a component adds a field called `"get"` to the `ScriptProxy.__index` dispatch table (or if the engine author names a property `"get"` in a future component), it shadows the `self:get()` method. The Lua `__index` handler is a single function — it must check for `"get"` first (method lookup) vs component field name lookup (dispatched to C++ components). The ordering of these checks in `__index` determines which wins.
+The existing `C_Camera::update()` applies lerp toward `m_target` and advances `m_shakeElapsed`. If `lookAt()` is called every frame from Lua (in the script's `update()`) AND shake is active, the lerp destination changes every frame — but the shake still accumulates correctly in `m_shakeOffset`. This is actually fine: shake is additive on top of the lerped position. The problem is ONLY if the follow implementation calls `setPosition()` (which resets lerp residual) instead of `lookAt()`.
 
-A second collision: if the script defines a global variable named `get` (or imports a library that does), and then calls `self.get("C_Timer")`, the `__index` lookup finds the script's global `get` before the proxy's `get`. This is standard Lua `__index` semantics — table-level values (from the proxy userdata's metatable) are checked after `rawget` on the userdata itself. But because the proxy is a full userdata with no table part, `rawget(self, "get")` returns nil, so `__index` is always called. The method resolution is then entirely in the `__index` handler.
-
-The real collision: `self.name`, `self.active`, `self.x`, `self.y`, `self.visible`, `self.layer` are all dispatched by the existing `ScriptProxy.__index`. If `self:get("C_Position")` returns a ComponentProxy, and that ComponentProxy also dispatches `.x` and `.y` via its own `__index`, there are now two paths to the same data. Scripts may use either path, and they must return consistent values.
+A second failure: `engine.camera.follow(target)` in the Lua script holds an `ObjectProxy` to the target object. If the target is destroyed (`engine.scene.destroy(target)`), the ObjectProxy's `valid` flag is `false`. The next frame's follow call reads `target.x` through the stale proxy — which raises a Lua error ("object has been destroyed"), crashing the script.
 
 **Why it happens:**
-`ScriptProxy` accumulates property dispatches organically as new components are added. Each new component contributes new property names. Without a documented namespace — "ScriptProxy handles object-level properties; ComponentProxy handles component-level methods" — the boundary is unclear and will be violated.
+Camera follow is often a "fire and forget" feature in game engines (Unity's `Camera.Follow(target)`). enjin2's design of explicitly calling `lookAt()` each frame from Lua is correct but requires the script to handle target lifetime. The ObjectProxy validity check is the correct protection, but scripts that trust `engine.camera.follow(target)` to be safe "forever" will not add the guard.
 
 **How to avoid:**
-- Define the dispatch hierarchy explicitly before implementation: `ScriptProxy.__index` handles ONLY object-level properties (`name`, `active`, `x`, `y`, `visible`, `layer`) and the `get(name)` method. It does NOT dispatch component-specific methods.
-- `self:get("C_Timer")` returns a `ComponentProxy` userdata with its own metatable. Component-specific operations go through the ComponentProxy, not through ScriptProxy.
-- Reserve `"get"` as a method name on `ScriptProxy` and document it as a permanent reservation. Future component properties must not use `"get"` as a property name.
-- Check for `"get"` as the first case in `ScriptProxy.__index`, before any component property dispatch. This ensures the method always resolves correctly regardless of what component properties exist.
-- ComponentProxy's `__index` dispatches only to that specific component's properties. It does NOT re-dispatch to the parent object. `componentProxy.x` raises an error if `C_Timer` has no `x` property.
+- `engine.camera.follow(target)` is a Lua convenience that the script must call each frame inside `update()`. It is NOT a registration. Document this explicitly: "call `engine.camera.follow(target)` every frame in `update()` — it is not an automatic subscription."
+- Do NOT implement follow as a C_Camera internal feature with `m_followTarget`. This creates a target lifetime coupling that is hard to clean up correctly.
+- In the Lua API: `engine.camera.follow(target)` should check if the passed `ObjectProxy` is valid (non-nil, `proxy.valid`) before reading its position. Provide a null guard in the C binding function that checks the ObjectProxy validity and silently returns if the target is destroyed.
+- Use `lookAt()` not `setPosition()` inside the follow implementation. `lookAt()` respects lerp and shake additive semantics.
 
 **Warning signs:**
-- `ScriptProxy.__index` dispatches `"get"` to a C++ component property (name collision)
-- ComponentProxy properties overlap with ScriptProxy properties (same name, different data source)
-- No explicit check for `"get"` as first case in `ScriptProxy.__index`
-- Script accessing `self.x` and `componentProxy.x` getting different values without explanation
+- `C_Camera` stores `ObjectProxy*` or `Object*` as `m_followTarget` (lifetime coupling)
+- `engine.camera.follow(target)` reads `target.x` without checking `proxy.valid`
+- Follow implementation calls `setPosition()` instead of `lookAt()`, cancelling lerp residual
+- No documentation that follow is per-frame, not a subscription
 
 **Phase to address:**
-ComponentProxy phase — define the ScriptProxy vs ComponentProxy namespace contract before implementing any `__index` handler.
+Camera follow helpers phase — define the per-frame pattern and validity guard before binding `engine.camera.follow()`.
 
 ---
 
-### Pitfall 8: Static Timer/State Machine Arrays Blow the Stack on ESP32
+### Pitfall 8: UI Component Bindings Allocate State in LuaBindings That Is Never Reset on Hot Reload
 
 **What goes wrong:**
-`C_Timer` and `C_StateMachine` are components stored inside `Object::components` (a `std::array<std::unique_ptr<Component>, 16>`). Each `unique_ptr` stores a heap-allocated component. The components themselves are on the heap (allocated via `new T(...)` in `addComponent`).
+`engine.ui.*` bindings (progress bars, stat bars, etc.) maintain rendering state in `LuaBindings` member variables. The pattern in existing bindings: add members to `LuaBindings`, initialize in `registerAll()`, read/write from `static int lua_engine_ui_*` C functions. If UI state (e.g., a `UIBar` array of active bar descriptors) is added as a member of `LuaBindings`, it must be reset in `registerAll()` — the same function used by hot reload.
 
-However, the STATIC ARRAY design for things like "all timers in the scene" creates a different problem. If `C_Timer` is implemented with an internal `struct Slot { float elapsed; float duration; int luaRef; bool active; bool repeating; } slots[MAX_TIMERS];` and `MAX_TIMERS = 8`, each `C_Timer` component is 8 * ~20 bytes = 160 bytes on the heap. This is fine.
+The failure: if `LuaBindings::registerAll()` does not explicitly reset the UI member arrays (`for(auto& bar : m_uiBars) bar = {};`), the bars retain state from the previous script on F5 reload. Scripts that do not call `engine.ui.createBar()` on reload see bars from the previous session rendered on screen. The bars are drawn from C++ during the draw pass — they do not depend on Lua calling any function to render.
 
-The problem is if a developer "improves" by making a scene-level timer scheduler: `struct TimerScheduler { TimerSlot slots[MAX_SCENE_TIMERS]; } g_scheduler;` with `MAX_SCENE_TIMERS = 128`. At 20 bytes per slot, that's 2,560 bytes. If placed globally (static storage), it is fine. If placed on the stack (local variable in `main()` or a scene method), it reduces the available stack by 2,560 bytes. ESP32 has 8 KB of stack by default (configurable, but limited). A large static local array can cause a stack overflow that manifests as a corrupt call stack, not a clear "stack overflow" error.
-
-More relevantly for this project: `ObjectCollection` has `std::array<std::unique_ptr<Object>, 128>`. Each `unique_ptr` is 8 bytes. Array total: 1,024 bytes of the `ObjectCollection` struct itself — but the `unique_ptr`s point to heap objects. The `ObjectCollection` is a value member of `Scene`. `Scene` is a value member of `SceneStateMachine::scenes[32]`. Total static storage for scenes: 32 * sizeof(Scene) + 128 objects per scene * heap. sizeof(Scene) includes `ObjectCollection` (1,024 bytes for the pointer array) + signals (each Signal<Scene*> has 16 `std::function` slots — each `std::function` is typically 32–64 bytes). Scene size can exceed 5 KB. 32 scenes * 5 KB = 160 KB — this is the `SceneStateMachine` struct size, which lives on the heap if allocated via `new` or on global storage if declared statically.
+A second failure: if UI component state includes `int luaCallbackRef` values (e.g., an `onChange` callback for a stat bar), these refs are invalid after hot reload. Same hazard as C_Timer and tweens, same fix: call `luaL_unref` before `lua_close`, null the refs in reset.
 
 **Why it happens:**
-Zero-alloc constraint means "no `malloc` / `new`" — static arrays are the tool. Static arrays have size, and the size must fit in available memory. ESP32 PSRAM (if present) can extend available RAM, but the project notes this as a concern. Adding new static arrays to components without accounting for their contribution to the total memory budget is the classic embedded memory bloat pattern.
+The existing `resetSpritePool()` function in `LuaBindings` is the correct pattern — it clears all sprite pool state explicitly. The hot-reload path calls `resetSpritePool()` from `registerAll()`. New subsystems added to `LuaBindings` must follow the same discipline: each subsystem needs a `resetXxx()` function called from `registerAll()`.
 
 **How to avoid:**
-- Define `MAX_TIMERS_PER_COMPONENT = 4` (not 8 or 16) for `C_Timer`. Four simultaneous timers per object is sufficient for game logic.
-- Define `MAX_STATES = 8` for `C_StateMachine`. Document why.
-- Define `MAX_SIGNAL_LISTENERS = 8` for the event bus (per event channel). The scene-level `Signal` already uses 16; an event bus channel is lower-traffic.
-- Track cumulative static memory: document a memory budget table in the implementation plan. Add each new component's sizeof contribution. Verify the total fits within the ESP32's available RAM (520 KB SRAM for ESP32-S3; 320 KB for base ESP32, plus PSRAM if present).
-- All new static arrays go in component member variables (on the heap, since components are heap-allocated), not in scene or SSM level structures.
-- Use `sizeof(C_Timer)`, `sizeof(C_StateMachine)` in a compile-time `static_assert` to ensure they fit the expected budget. Example: `static_assert(sizeof(C_Timer) <= 256, "C_Timer too large for embedded targets");`
+- Add `resetUIState()` (called from `registerAll()`) that zeros all UI member arrays: `for(auto& bar : m_uiBars) bar = {}`.
+- Any `int callbackRef` in UI state follows the `clearTimers()`/`clearHandlers()` teardown pattern: call `luaL_unref` for each active ref before zeroing.
+- Fixed-size UI arrays: `UIBarSlot m_uiBars[MAX_UI_BARS]` with `active` flag, matching all other fixed arrays in the engine. Do not use `std::vector`.
+- Document the reset requirement in a comment above each new member group in `LuaBindings`: `// UI state — reset in resetUIState() called from registerAll()`.
 
 **Warning signs:**
-- `MAX_TIMERS` defined as 16 or higher without a memory budget calculation
-- Large static arrays as local variables in methods (stack allocation)
-- No `static_assert` on component sizes
-- `std::function` used in component member arrays (each `std::function` is 32–64 bytes; use plain `int` luaRef + `const char*` name instead)
+- New `LuaBindings` member arrays without a corresponding `resetXxx()` call in `registerAll()`
+- UI bars visible after F5 reload without the script explicitly creating them
+- `int callbackRef` in UI state not `luaL_unref`'d before hot reload
+- `std::vector` used for UI state list (violates zero-alloc constraint)
 
 **Phase to address:**
-ALL phases — memory budget must be established at the start of the v1.6 milestone and verified for each new component type.
+UI component bindings phase — add `resetUIState()` before any UI state members are added; include it in `registerAll()` immediately.
 
 ---
 
-### Pitfall 9: Persistent Store Survives Hot Reload But Lua Script Expects Fresh State
+### Pitfall 9: Persistent Objects Own LuaStore Data That Is Reset When the Store Is Reloaded
 
 **What goes wrong:**
-The existing `LuaStore` (in `bindings.hpp`) is a per-`LuaBindings` instance. On F5 hot reload, `performReload()` calls `shutdown()` + `initialize()`. The `LuaBindings` object is recreated or its `resetSpritePool()` / `registerAll()` are called on the existing instance. Looking at the SDL runner structure: `LuaBindings` is inside `LuaScriptSystem` inside `C_LuaScript`. On F5, `performReload()` calls `scriptSystem->shutdown()` then creates a new `LuaScriptSystem`. The `LuaStore` inside the old system is destroyed; the new system starts with a fresh `LuaStore` — unless the store was persisted to disk (via `saveToFile`) and reloaded on startup (via `setStorePath` → `loadFromFile`).
+Persistent objects (objects that survive scene transitions) may carry Lua-side state through the `LuaStore` (via `engine.store.save()`/`engine.store.load()`). The store is loaded from disk in `setStorePath()` → `loadFromFile()`. On scene transition, the persistent object's `C_LuaScript` is NOT destroyed — it keeps its Lua state and its script's global variables.
 
-This creates an ambiguity: in-memory store data is lost on reload; file-persisted store data survives reload. During development (with hot reload), the script author may not realize the store is persisted to disk. After fixing a bug in the save format, they expect a fresh store but get corrupted data from the previous run. There is no `engine.store.reset()` to clear disk state from Lua.
+The failure: the script author designs the persistent object to save state to `engine.store` on every scene exit and reload from `engine.store` on every scene enter. On scene transition, the SSM destroys the old scene (destroying its `ObjectCollection`) before `activate()`-ing the new scene. The persistent object's Lua script fires its `on_scene_exit` event handler, calls `engine.store.save()`, and writes state to the in-memory store. Then on new scene init, the persistent script calls `engine.store.load()` and reads state back.
 
-A second issue: the persistent objects feature adds objects that survive scene transitions. If a persistent object carries state that should reset on game restart (score = 0, health = 3), but the `LuaStore` persists that state to disk, the "persistent" store outlives the "session restart." The developer must explicitly call `engine.store.clear()` at game start to reset session state — but "game start" is ambiguous (first ever launch vs engine restart vs scene reload).
+If, however, the persistent object's script is reloaded from disk (via `loadScriptFile()`) during the scene transition — which can happen if the persistent object's script path is relative and the new scene changes the asset path — the Lua state is torn down and `engine.store.load()` is never called. The store's in-memory data from `engine.store.save()` is still there, but the newly-loaded script starts fresh from its `init()` callback and must re-read from the store explicitly. Without a clear protocol for this, the persistent object's state is silently lost.
 
 **Why it happens:**
-Persistence semantics ("what survives what") are often underspecified. Three survival scopes exist: scene transitions, game restarts, and device restarts. The `LuaStore` currently survives device restarts (if file path is set). Object persistence targets scene transitions only. Without explicit scope documentation, developers conflate them.
+Persistent object lifecycle has three potentially different events: scene transition (object survives, Lua state survives), script reload (Lua state destroyed, object survives in C++), and session restart (everything destroyed). The interaction between store persistence and Lua state persistence is underspecified.
 
 **How to avoid:**
-- Document the three scopes in the API: `engine.store.*` = file-persistent (survives device restart); persistent objects = scene-persistent (survives scene transitions, not restarts); Lua global variables = frame-local (lost on reload).
-- Add `engine.store.reset()` as a Lua API that clears the in-memory store AND deletes the disk file. This allows scripts to implement "new game" semantics from Lua.
-- During development, log a warning when `setStorePath` points to a file that already exists and is loaded: "Loaded persistent store from [path] — call engine.store.reset() to clear". This surfaces the persistence to the developer.
-- Separate "session state" from "persistent preferences": define a convention where store keys prefixed with `session_` are cleared at game start. This is a documentation/convention recommendation, not an enforcement mechanism.
+- Define a strict ordering: persistent object scripts are NOT reloaded on scene transition. They keep their Lua state. Only the scene's scripts are torn down.
+- Document: "persistent objects' Lua scripts are not reloaded across scene transitions. The script's `update()` and `draw()` continue running. To save persistent state, call `engine.store.save()` at explicit save points (not in `update()`)."
+- If the persistent object's script must access scene-specific resources (sprites, tilemaps from the new scene), it should obtain those via `engine.scene.find()` after the new scene is active — not during the transition window.
+- Add a `on_scene_change(new_scene_id)` callback for persistent scripts (optional, only fires if defined). This gives persistent scripts a clear hook for scene-transition-aware logic without conflating it with `update()`.
 
 **Warning signs:**
-- Script authors confused about why score carries over after F5 reload (store loaded from disk on `setStorePath`)
-- No `engine.store.reset()` API
-- `LuaStore` loaded from file in `setStorePath` without logging that existing data was found
-- Persistent object state and `LuaStore` state used for the same concept with different survival semantics
+- Persistent object script calls `loadScriptFile()` during scene transition
+- `engine.store.save()` called inside `update()` on every frame for a persistent object
+- No documented distinction between "persistent Lua state" and "persisted store data"
+- Persistent object tries to access scene-specific objects during the transition window (m_activeScene is null)
 
 **Phase to address:**
-Persistent objects phase — define persistence scopes before exposing any persistence API to Lua scripts.
+Persistent objects phase (v1.7 variant) — define the Lua state persistence model before designing the scene transition hooks.
 
 ---
 
-### Pitfall 10: Multiple ObjectProxy to the Same Object — Last Caller Wins, Earlier Proxies Go Unnotified
+### Pitfall 10: Null Safety Fixes Introduce Behavioral Changes in Existing Binding Chains
 
 **What goes wrong:**
-`Object::setLuaProxy(proxy)` overwrites `m_luaProxy`. If `engine.scene.find("enemy")` is called twice in the same frame or across two different scripts, the second call creates a new `ObjectProxy` userdata, calls `setLuaProxy()` on the same object, and the first proxy's registration is silently overwritten. When the object is destroyed, only the second proxy gets notified (`valid = false`). The first proxy retains `valid = true` and a dangling `Object*`.
+The null safety improvement phase aims to add guards in binding chains where pointer dereferences currently fail silently or crash. The risk: adding a null guard changes a function that previously returned garbage or crashed to now return `nil` or `0`. Scripts that were "working" by relying on the garbage value (or by being tested on platforms where the nullptr dereference happened to read zeros) now get different behavior.
 
-This is documented in the existing codebase: "Only one ObjectProxy should be active per Object at a time. If engine.scene.find() is called multiple times for the same Object, the last call overwrites Object::m_luaProxy — the previous proxy is NOT invalidated."
+Example: a binding that currently does:
+```cpp
+C_Position* pos = owner ? owner->getPosition() : nullptr;
+lua_pushinteger(L, pos->getPosition().x);  // crashes if pos == nullptr
+```
+After fix:
+```cpp
+C_Position* pos = owner ? owner->getPosition() : nullptr;
+lua_pushinteger(L, pos ? static_cast<lua_Integer>(pos->getPosition().x) : 0);
+```
+Scripts on ESP32 that ran on objects that always had a `C_Position` never triggered the crash path. SDL3 desktop tests pass. But a script that intentionally used an object without `C_Position` was getting 0 (from the crash path's undefined behavior coincidentally reading zero) and now gets 0 from the null guard — no change. This is a good outcome.
 
-In v1.6, the ComponentProxy feature introduces the same problem at the component level. If two scripts call `self:get("C_Timer")` on the same object, two ComponentProxy userdata objects exist for the same `C_Timer*`. Only the last one is registered via `m_luaProxy`. When `C_Timer` is destroyed, the first ComponentProxy holds a stale `valid = true` with a dangling pointer.
-
-Additionally: the new `engine.scene.spawn()` / `engine.scene.destroy()` APIs (visible in `bindings.hpp`: `lua_engine_scene_spawn`, `lua_engine_scene_destroy`) can create/destroy objects dynamically. Destroy invalidates the registered proxy but not stale proxies from previous `find()` calls.
+The bad outcome: a binding that returns `nil` instead of a default value after null-guard addition causes Lua code that does `local x = self.x + 10` to get `nil + 10` → Lua runtime error. Previously, the same code got `0 + 10 = 10` (from the undefined-behavior-that-happened-to-work path). The null guard "fixes" the crash but "breaks" the script's arithmetic.
 
 **Why it happens:**
-Single-proxy constraint is an acknowledged existing limitation. Adding ComponentProxy extends the same limitation to every component. Each new proxy type needs the same single-registration discipline, but the base class (`Component`) does not currently enforce it.
+Null safety is retroactive. The existing script API has implicit contracts ("this always returns a number") that were enforced by the implementation coincidentally, not by design. When the contract is made explicit with a null guard, the implicit contract may change.
 
 **How to avoid:**
-- In the v1.6 milestone, enforce the documented constraint at runtime: if `Object::setLuaProxy()` is called when `m_luaProxy != nullptr` (an existing proxy is registered), log a warning: "Multiple ObjectProxy created for object [name] — only the latest proxy will be notified on destruction." This makes the limitation visible during development.
-- Apply the same logging to `Component::setLuaProxy()` when added.
-- For `ComponentProxy`: documents state "cache `self:get()` result in a local variable in `init()`, do not call `self:get()` every frame." This avoids multiple proxy creation.
-- Long-term fix (beyond v1.6): replace single `m_luaProxy` with a fixed-size array of proxy pointers (`ObjectProxy* m_luaProxies[4]`). All registered proxies are notified on destruction. This eliminates the stale proxy problem at the cost of 3 extra pointer-sized fields per object.
+- For every null guard added, document the new return value: "returns 0 if C_Position is absent" vs "returns nil if C_Position is absent." Prefer returning 0 (not nil) for numeric properties — this preserves arithmetic operability.
+- Run the existing test suite (all 27+ ctests) after each null guard addition. Do not batch null guard changes — add them one function at a time to isolate regressions.
+- Run example scripts (`scripts/arkanoid.lua`, `scripts/tamagotchi.lua`) under SDL3 before and after. Behavioral differences are regressions.
+- Where a null guard changes return type (crashes → nil), add an assertion in debug mode: "if owner is null here, this is a programming error — the script is accessing a property on an object that doesn't exist." Use `luaL_error` in that case rather than returning nil silently.
 
 **Warning signs:**
-- `engine.scene.find()` called every frame inside `update()` without caching
-- `self:get("C_Timer")` called every frame without caching the result
-- No runtime warning when `setLuaProxy()` overwrites an existing registration
-- `engine.scene.destroy()` invalidates the registered proxy but not previously-issued stale proxies
+- Null guards added in bulk across many functions in one commit
+- No test run between null guard additions
+- Null guard returns `nil` for properties previously guaranteed to return numbers (breaks script arithmetic)
+- No distinction between "expected null" (feature: C_Position is optional) and "unexpected null" (bug: owner destroyed, proxy should be invalid)
 
 **Phase to address:**
-ComponentProxy phase — enforce the single-proxy-per-component constraint with a development-mode warning from the start; document the cache-in-init pattern in the API.
+Null safety phase — add guards one function at a time, run ctests after each, document the return value contract for each guarded function.
 
 ---
 
@@ -323,14 +325,14 @@ ComponentProxy phase — enforce the single-proxy-per-component constraint with 
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| `C_Timer` stores `int` luaRef without `lua_State*` | Simpler struct | Fires stale callback after hot reload; dangling ref after lua_close | Never — always store L alongside the ref |
-| Timer `elapsed == duration` comparison | Reads like math | Never fires due to float equality; silent game logic failure | Never — always use `elapsed >= duration` |
-| Event bus with no owning-component tracking | Simple list of handlers | Handlers never removed; fire after owning object destroyed | Never — event registration must track owning component |
-| `ComponentProxy` without valid flag | Faster to implement | Dangling pointer crash when component removed mid-session | Never — mirrors ObjectProxy, must have valid flag |
-| Scene-level timer scheduler (global pool) | Avoids per-object overhead | Stack/global memory pressure; timers not naturally scoped to owner | Only if per-object timer count insufficient and memory budget confirmed |
-| `std::function` in timer slots | Clean API | 32–64 bytes per slot; 8 slots per C_Timer = 256–512 bytes per component | Never — use luaRef (int) + optional const char* name |
-| Persistent objects in scene ObjectCollection | Simpler implementation | Destroyed on scene transition (defeats the purpose) | Never |
-| `LuaStore` loaded silently without logging | Less noise | Developer confused by state carrying over after reload | Never in debug builds — always log when existing store data is loaded |
+| Debug draw writes to `currentCanvas` instead of dedicated layer | No layer setup needed | Debug primitives are destroyed by next `clear()` call; cannot survive across update/draw | Never — debug layer must be separate and auto-cleared |
+| Coroutine stores raw `lua_State*` thread pointer in C++ | Simple pointer equality check for resume | Dangling after `lua_close()`; undefined behavior on resume | Never — use `int` registry ref + `lua_tothread()` pattern |
+| Tween target as raw `ScriptProxy*` instead of registry ref | Avoids extra Lua stack operations | Write to freed memory if component destroyed mid-tween | Never — proxy validity must be checked at advance time |
+| bindings.cpp split without `bindings_internal.hpp` | Faster split (copy-paste helpers) | Duplicated `getBindings()` and macro logic diverges over time | Never — internal header is a one-time cost |
+| Binary save format for ESP32 speed | Fast serialization | Non-portable across compilers, struct padding differences, no NVS wear analysis | Only with explicit padding bytes, format version, and NVS write analysis |
+| Follow target stored in `C_Camera` as `Object*` | "Fire and forget" API | Dangling pointer when target destroyed; no proxy validity check | Never — per-frame `lookAt()` call from Lua is the correct pattern |
+| UI state not reset in `registerAll()` | Skip reset = faster reload | Stale UI bars visible after F5 hot reload | Never — `resetUIState()` in `registerAll()` is a one-liner |
+| `coroutine.yield()` from inside `update()` | Intuitive API | Fails on Lua 5.1 pcall boundary; unreliable on LuaJIT + WASM/ESP32 | Never — yield must be from a coroutine resumed in Lua, not from a C-called function |
 
 ---
 
@@ -338,17 +340,17 @@ ComponentProxy phase — enforce the single-proxy-per-component constraint with 
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| C_Timer + hot reload | luaRef valid from old lua_State; fires into wrong state after F5 | C_Timer::cancelLuaCallback() called by LuaScriptSystem before lua_close; ref freed via luaL_unref |
-| C_StateMachine + engine.scene.spawn() | Spawning in state enter callback causes mid-iteration object add | Queue spawn via deferred mechanism; execute after ObjectCollection::update() loop completes |
-| ComponentProxy + ScriptProxy.__index | "get" property name conflicts with self:get() method | Check "get" first in __index before any component property dispatch; reserve name permanently |
-| ComponentProxy + removeComponent | Raw component pointer dangling after removal | Component::~Component() sets m_luaProxy->valid = false; mirrors Object::~Object() pattern |
-| Signal + Lua event bus | std::function captures Object* from dead scene | Bus stores (event, luaRef, owning_component*) tuples; unref all tuples on component destruction |
-| Persistent objects + scene transitions | Object in scene ObjectCollection destroyed on switchTo() | Persistent objects in separate SSM-level collection; moved out of scene before deactivate() |
-| Persistent objects + engine.scene.find() | find() searches only current scene; persistent object not found | Extend find() to search persistent collection if scene search returns nullptr |
-| LuaStore + hot reload | Store loaded from disk on setStorePath; developer expects fresh state | Log warning when existing store data loaded; provide engine.store.reset() API |
-| C_StateMachine enter/exit + awake/start ordering | enter fires in init(self) before sibling components started | Components are started before init(self) runs (first update() frame); document this ordering |
-| Multiple ObjectProxy + engine.scene.destroy() | Earlier stale proxies not notified on destroy | Log development warning when setLuaProxy() overwrites existing registration; document cache-in-init |
-| C_Timer repeating + scene transition | Repeating timer on persistent object fires in new scene context | Timer's luaRef L must match current active lua_State; check at fire time |
+| Debug draw + camera offset | Debug boxes drawn in world space appear offset from intended position when camera is active | Debug draw functions accept screen-space coordinates (skipping camera offset), not world-space |
+| Coroutines + pcall boundary | `coroutine.yield()` inside `update(self, dt)` raises "attempt to yield across C boundary" | Create coroutine in `init()`, resume with `coroutine.resume(co)` from `update()` Lua code |
+| Tweens + hot reload | Tween's `callbackRef` is stale after F5; fires wrong function | `clearTweens()` before `lua_close()`; compare `L` at fire time |
+| Tweens + invalid target | Tween writes to destroyed ScriptProxy via stale raw pointer | Target stored as registry ref; `valid` flag checked before each write |
+| Persistent objects + scene.find() | `engine.scene.find()` returns nil for persistent objects not in current scene | Extend `find()` to search SSM-level persistent collection after scene search |
+| Persistent objects + store | Store reloaded from disk overwrites in-memory state written by persistent script | Persistent scripts save/load explicitly at defined save points, not in `update()` |
+| bindings.cpp split + `static` helpers | New TU cannot see `static int someHelper()` from `bindings.cpp` | Shared helpers → `LuaBindings` static member or `bindings_internal.hpp` extern |
+| Save/load + ESP32 NVS | Long key names (> 15 chars) silently fail NVS writes | Key names ≤ 15 chars enforced by LuaStore; NVS path documented as platform limit |
+| Camera follow + destroyed target | `engine.camera.follow(deadProxy)` reads invalid proxy, raises Lua error | Follow binding checks `proxy.valid` before reading `x`/`y`; returns silently if stale |
+| UI callbacks + hot reload | `int onChangeRef` in UIBarSlot is stale after F5 | `resetUIState()` calls `luaL_unref` for all active callback refs before zeroing slots |
+| Null safety + script arithmetic | Guard returns `nil` for numeric property; `nil + 10` is a Lua runtime error | Null guards return `0` for numeric properties, not `nil`; use `luaL_error` for unexpected null |
 
 ---
 
@@ -356,35 +358,36 @@ ComponentProxy phase — enforce the single-proxy-per-component constraint with 
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| `self:get("C_Timer")` called every frame | O(n) dynamic_cast scan per call * 60 Hz per script | Cache result in Lua local during init(): `local timer = self:get("C_Timer")` | Any target — dynamic_cast is not free even on desktop |
-| `engine.scene.find()` in timer callback | O(n) name scan per timer fire | Cache find result in Lua upvalue at registration time | ESP32 with 128 objects at high timer frequency |
-| `Signal::emit()` with 16 std::function slots | 16 indirect function calls per emit even when most are empty | Keep MAX_CONNECTIONS low per-signal; use per-channel event bus not monolithic bus | Any target — std::function indirect call overhead |
-| Repeating timer at very high frequency (< 1 frame period) | Timer fires multiple times per frame via catch-up loop | Clamp timer minimum duration to 1 frame; document frequency limits | Any target — catch-up loop can starve frame budget |
-| LuaStore save on every write | Disk I/O on every engine.store.save() call | Save only on scene transitions or explicit engine.store.save() call; never save in update() | SDL3 desktop with slow disks; ESP32 NVS has write cycle limits |
-| C_StateMachine update() calling Lua every frame | Lua pcall overhead per object per frame | Only call Lua state update function if state has an update handler; check for nil function before pcall | High object counts (> 32 state machines active simultaneously) on ESP32 |
+| Debug draw called every frame from `update()` drawing hundreds of bounding boxes | Frame time spikes; visible on ESP32 as lag | Guard with `if DEBUG_DRAW_ENABLED` compile flag; disable for release builds | ESP32 with > 32 objects under debug draw at 128x128 pixel budget |
+| Tween advances checked every frame for all MAX_TWEENS slots | O(MAX_TWEENS) scan per frame even for 1 active tween | Early-out counter: `m_activeTweenCount`; skip full scan if 0 | Any platform with MAX_TWEENS > 16 and sparse usage |
+| `coroutine.resume(co, dt)` called every frame even when coroutine is dead | `lua_resume()` on a dead coroutine returns `LUA_ERRRUN`; each failure pays pcall overhead | Check `coroutine.status(co) ~= "dead"` before resume; remove dead coroutines from active list | ESP32 with > 8 concurrent coroutines all finishing at different times |
+| Save file written on every `update()` loop via persistent object's Lua code | NVS write cycle exhaustion on ESP32; slow I/O on SDL3 | Document: save only on scene transitions or explicit user action | ESP32 after ~100K total writes to the same NVS key |
+| UI progress bars redrawn every frame with `fillRect()` covering full bar width | Pixel-perfect animation at cost of full bar repaint each frame | Bar rendering is cheap at 128x128; only a problem with > 32 bars simultaneously | ESP32 at very high frame rates with many UI elements; acceptable for Tomodachi use |
+| `engine.camera.follow(target)` calls `lookAt()` every frame with new target position | Lerp speed set to 1.0 (snap) negates smooth follow | Document lerpSpeed parameter; ensure script uses lerpSpeed < 1.0 for smooth follow | Any platform — incorrect lerpSpeed causes jitter or instant snap |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **C_Timer:** `luaL_unref(L, LUA_REGISTRYINDEX, ref)` called in destructor — verify ref is released on component destroy
-- [ ] **C_Timer:** Callback stores `lua_State*` alongside `int ref` — check that timer cancels gracefully after hot reload (old L != new L)
-- [ ] **C_Timer:** Accumulator uses `>=` not `==` for fire condition — verify `elapsed >= duration` in tick logic
-- [ ] **C_Timer:** Repeating mode resets `elapsed -= duration` (not `elapsed = 0`) to avoid drift — verify subtraction-based reset
-- [ ] **C_StateMachine:** `ObjectCollection::update()` snapshots `objectCount` at loop entry — grep for `for(size_t i = 0; i < objectCount` (unsafe) vs `size_t count = objectCount; for(size_t i = 0; i < count` (safe)
-- [ ] **C_StateMachine:** Enter/exit callbacks documented as "safe to call engine.scene APIs; must not call engine.scene.spawn() directly — use deferred queue"
-- [ ] **ComponentProxy:** `Component` base class has `ComponentProxy* m_luaProxy` field — check component.hpp
-- [ ] **ComponentProxy:** `Component::~Component()` sets `m_luaProxy->valid = false` — verify virtual destructor chain
-- [ ] **ComponentProxy:** `self:get("C_Timer")` documented as "cache result in init(), do not call per frame" — check API documentation
-- [ ] **ComponentProxy:** `ScriptProxy.__index` checks `"get"` as first case before component property dispatch — verify ordering in bindings.cpp
-- [ ] **Signal/event bus:** `engine.event.on()` registration stores owning component pointer alongside `luaRef` — verify EventRegistration struct includes component ref
-- [ ] **Signal/event bus:** All event registrations for a component are unref'd in component destructor — verify cleanup path
-- [ ] **Signal/event bus:** `Signal::connect()` return value checked for -1 (overflow) — verify in all C++ connection sites
-- [ ] **Persistent objects:** Stored in SSM-level `ObjectCollection`, not in any scene's collection — verify persistence target
-- [ ] **Persistent objects:** `engine.scene.find()` searches persistent collection if scene search misses — verify extended search path
-- [ ] **Persistent objects:** SSM `m_persistent.update(dt)` called in `SceneStateMachine::update()` after scene update — verify ordering
-- [ ] **LuaStore:** `engine.store.reset()` API exists and clears both in-memory and on-disk data — verify API surface
-- [ ] **Multiple proxies:** Development warning logged when `Object::setLuaProxy()` overwrites non-null `m_luaProxy` — verify warning present
+- [ ] **Debug draw:** Debug layer cleared at start of each frame automatically — verify the SDL runner and WASM host clear the debug canvas before `draw()` is called
+- [ ] **Debug draw:** `engine.debug.*` functions accept screen-space coordinates (not affected by camera offset) — verify coordinate system documented and consistent
+- [ ] **Coroutines:** `clearCoroutines()` called before `lua_close()` in the teardown sequence — verify coroutine registry refs are `luaL_unref`'d
+- [ ] **Coroutines:** Coroutine resume pattern documented as "resume from Lua `update()`, not from C pcall context" — check for yield-inside-pcall in example scripts
+- [ ] **Coroutines:** LuaJIT CoCo availability verified on WASM and ESP32 targets — check `LUAJIT_ENABLE_LUA52COMPAT` and `LUAJIT_USE_COCO` build flags
+- [ ] **Tweens:** `clearTweens()` called in `registerAll()` hot-reload path — verify in `performReload()` sequence
+- [ ] **Tweens:** Tween `callbackRef` stores `lua_State*` alongside `int` — verify struct has both fields
+- [ ] **Tweens:** Target validity check before write — verify tween advance reads target proxy's `valid` flag
+- [ ] **Bindings split:** `bindings_internal.hpp` exists and is included by all split files — verify no `static` helpers copied between TUs
+- [ ] **Bindings split:** `g_currentBindings` or equivalent global is in exactly ONE TU — verify via `nm` output before committing
+- [ ] **Bindings split:** All `bindings_*.cpp` files add to the same CMake target — verify CMakeLists.txt lists all split files
+- [ ] **Save/load:** Key names ≤ 15 chars enforced — verify LuaStore truncates or rejects longer keys
+- [ ] **Save/load:** No binary `fwrite` of structs in any shared code path — grep for `fwrite` usage
+- [ ] **Camera follow:** `engine.camera.follow()` binding checks ObjectProxy validity before reading position — verify null guard in C function
+- [ ] **Camera follow:** `lookAt()` used (not `setPosition()`) in follow implementation — verify lerp and shake are preserved
+- [ ] **UI state:** `resetUIState()` called from `registerAll()` — verify UI bars are cleared on F5 hot reload
+- [ ] **UI callbacks:** `luaL_unref` called for all active UI `callbackRef` values in `resetUIState()` — verify unref before zeroing
+- [ ] **Null safety:** All null-guarded numeric properties return `0` not `nil` — grep for guards that push nil for numeric accessors
+- [ ] **Null safety:** ctests pass after each null guard addition — verify test run as part of null safety phase process
 
 ---
 
@@ -392,14 +395,15 @@ ComponentProxy phase — enforce the single-proxy-per-component constraint with 
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Timer fires into dead lua_State after reload | MEDIUM | Add `lua_State*` to timer struct; add L comparison guard in fire() path; add cancelLuaCallback() teardown hook to LuaScriptSystem |
-| ComponentProxy dangling after removeComponent | HIGH | Add ComponentProxy* m_luaProxy to Component base; add valid=false in Component::~Component(); migrate all ComponentProxy creation to set component->m_luaProxy |
-| Signal callbacks with stale Object* from dead scene | MEDIUM | Add owning component tracking to event bus; add cleanup loop in component destructor; audit all lambda captures in signal connections |
-| Persistent objects destroyed on scene transition | MEDIUM | Move persistent collection to SSM level; implement engine.scene.persist() API; migrate existing persistent object creation code |
-| ObjectCollection::update() mid-iteration add | LOW | Snapshot objectCount before loop; single-line fix in update(); verify with spawn-during-state-machine-callback test |
-| LuaStore state confusion after reload | LOW | Add load-existing-data log warning; add engine.store.reset() API; document three persistence scopes |
-| Multiple proxy stale notification | MEDIUM (long-term) | Replace m_luaProxy single pointer with m_luaProxies[4] array; notify all on destruction; remove MAX_OBJECTS constraint on proxies |
-| Static array memory overflow on ESP32 | HIGH | Reduce MAX_TIMERS / MAX_STATES to fit budget; add static_assert size checks; measure sizeof each new component type before shipping |
+| Debug draw on wrong layer/canvas | LOW | Define dedicated debug canvas; update `engine.debug.*` binding to route there; add auto-clear in frame start |
+| Coroutine raw `lua_State*` dangling after reload | MEDIUM | Add `int threadRef` to slot struct; replace all `lua_State*` slot fields; add `clearCoroutines()` call before `lua_close()` |
+| Tween stale `callbackRef` after reload | LOW | Same pattern as C_Timer: add `lua_State*` to tween slot; add `clearTweens()` to hot-reload path |
+| bindings.cpp split breaks compilation | MEDIUM | Identify undefined symbols via linker output; move each to `bindings_internal.hpp` as `extern`; remove `static` keyword from affected helpers |
+| Binary save format non-portable on ESP32 | HIGH | Rewrite serializer in JSON (extend LuaStore); migrate existing save files or version-gate with magic number |
+| Camera follow crashes on destroyed target | LOW | Add `proxy.valid` check in `engine.camera.follow()` binding; return 0 silently if stale |
+| UI state survives hot reload | LOW | Add `resetUIState()` called from `registerAll()`; implement `luaL_unref` loop for callback refs |
+| Null guard returns nil for numeric property, breaks script arithmetic | LOW | Change guard to return `0`; rerun ctests; check affected scripts |
+| Persistent object store data lost on script reload | MEDIUM | Define persistent script lifecycle: scripts not reloaded on scene transition; add `on_scene_change` callback hook |
 
 ---
 
@@ -407,33 +411,35 @@ ComponentProxy phase — enforce the single-proxy-per-component constraint with 
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Timer callback fires into dead Lua state | C_Timer phase — design Lua ref teardown protocol first | F5 reload with active timer: no wrong-callback fire in new state |
-| Timer accumulator drift | C_Timer phase — use >= comparison, subtraction-based reset | 100-frame timer fires exactly once; 10-frame repeating timer fires 10 times in 100 frames |
-| StateMachine enter/exit during construction | C_StateMachine phase — snapshot objectCount in update() loop | Spawn from state enter callback: object initialized correctly next frame |
-| ComponentProxy dangling pointer | ComponentProxy phase — add m_luaProxy to Component base class | Remove component while proxy held: Lua access raises error, not C++ crash |
-| Signal callbacks with stale Object* | Signal/event bus phase — design bus with owning-component tracking | Object destroyed while event registered: event fires zero times, no crash |
-| Persistent objects wrong update source | Persistent objects phase — define SSM-level collection before implementation | Persistent timer on scene-transitioned object: continues ticking correctly |
-| ComponentProxy vs ScriptProxy name collision | ComponentProxy phase — define dispatch hierarchy, reserve "get" | `self:get("C_Timer")` works; no component property named "get" exists |
-| Static array memory overflow | All phases — establish memory budget before first component | sizeof(C_Timer) + sizeof(C_StateMachine) fits within per-object budget; static_assert passes |
-| LuaStore persistence confusion | Persistent objects phase — document three scopes; add reset() API | F5 reload with store path set: load warning appears; engine.store.reset() clears disk file |
-| Multiple proxy stale notification | ComponentProxy phase — add development warning on proxy overwrite | engine.scene.find() called twice: warning logged; documented cache-in-init pattern |
+| Debug draw on wrong canvas/layer | Debug draw bindings phase | Debug box visible at correct position after `clear()` + `draw()` cycle; not present next frame after engine clears debug layer |
+| Coroutine thread dangling after reload | Coroutine/async phase | F5 reload with active coroutine: no crash; new script starts with clean coroutine state |
+| Coroutine yield across pcall boundary | Coroutine/async phase | `coroutine.resume(co)` from Lua `update()` succeeds on all three platforms (SDL3, WASM, ESP32) |
+| Tween stale callback after reload | Tween helpers phase | F5 reload with active tween: no wrong-callback fire; tween state clean in new session |
+| Tween writes to destroyed proxy | Tween helpers phase | Destroy tween target mid-tween: no crash; tween silently cancelled |
+| bindings.cpp split breaks compilation | Bindings refactoring phase | Full clean build after split; `nm` output shows no duplicated symbols |
+| Binary save non-portable | Save/load serialization phase | Save on SDL3, load on ESP32 (or vice versa): data round-trips correctly |
+| Camera follow crashes on stale proxy | Camera follow phase | `engine.scene.destroy(target)` while follow active: no crash; camera stops following |
+| UI state survives hot reload | UI component bindings phase | F5 reload with active UI bars: bars absent after reload without script re-creating them |
+| Null guard returns nil for numeric | Null safety phase | All 27+ ctests pass; `scripts/arkanoid.lua` runs without arithmetic errors |
+| Persistent object store data lost | Persistent objects phase | Scene transition with persistent object: script's in-Lua state preserved; `engine.store` data accessible |
 
 ---
 
 ## Sources
 
-- Codebase analysis: `include/enjin2/core/object.hpp` — `Object::setLuaProxy()`, single `m_luaProxy` field, `Object::removeComponent<T>()` shift logic (2026-02-28)
-- Codebase analysis: `include/enjin2/core/component.hpp` — `Component::~Component() = default` (no proxy teardown); `Component::enabled`; `assertRequires<T>()` (2026-02-28)
-- Codebase analysis: `include/enjin2/scripting/object_proxy.hpp` — `ObjectProxy { Object* object; bool valid; }` pattern (2026-02-28)
-- Codebase analysis: `include/enjin2/scripting/bindings.hpp` — `ScriptProxy { C_LuaScript* component; bool valid; }`, `LuaStore` fixed-size store, `lua_engine_scene_spawn`/`lua_engine_scene_destroy` present (2026-02-28)
-- Codebase analysis: `include/enjin2/core/signal.hpp` — `MAX_CONNECTIONS=16`, `std::function<void(Args...)>` slots, `SignalConnection` RAII (2026-02-28)
-- Codebase analysis: `include/enjin2/core/scene_state_machine.hpp` — `applyDeferredTransition()`, `switchTo()` deferred queue, `hasPendingTransition` flag (2026-02-28)
-- Codebase analysis: `include/enjin2/core/object_collection.hpp` — `update()` loop over `objectCount` (not snapshotted), `addObject()` calls `awake()+start()` when `initialized==true` (2026-02-28)
-- Codebase analysis: `include/enjin2/core/scene.hpp` — `Scene` holds `ObjectCollection`; `SceneStateMachine* m_ssm`; no persistent collection (2026-02-28)
-- Project context: `PROJECT.md` — Single-proxy-per-object documented constraint; deferred scene transition established; zero-alloc constraint; ScriptErrorPolicy behavior; v1.6 target features list (2026-02-28)
-- Lua reference manual 5.x: `luaL_ref` / `luaL_unref` semantics; registry keys are state-local; lua_State lifetime (authoritative)
-- Embedded constraints: ESP32-S3 520 KB SRAM; stack default 8 KB; no FPU on base ESP32; `std::function` typical size 32–64 bytes (libstdc++ implementation detail)
+- Codebase analysis: `include/enjin2/scripting/bindings.hpp` — `LuaBindings` member layout, `LuaStore` fixed-capacity arrays, `resetSpritePool()` pattern, `registerAll()` as hot-reload entrypoint (2026-03-01)
+- Codebase analysis: `src/scripting/bindings.cpp` — `g_currentBindings` static global, `static int lua_proxy_*` forward declarations, 1390-line monolith (2026-03-01)
+- Codebase analysis: `include/enjin2/components/camera.hpp` — `C_Camera::lookAt()` vs `setPosition()` semantics, `getScreenOffset()`, `m_shakeOffset` additive (2026-03-01)
+- Codebase analysis: `include/enjin2/components/timer.hpp` — `clearTimers()` teardown pattern, `lua_State*` + `int callbackRef` slot design (2026-03-01)
+- Codebase analysis: `include/enjin2/scripting/lua_event_bus.hpp` — `clearHandlers()` pattern, `int threadRef` approach for Lua object lifetime (2026-03-01)
+- Codebase analysis: `include/enjin2/core/scene.hpp` — `Scene::renderObjects()` post-sort rendering, no post-render hook (2026-03-01)
+- Codebase analysis: `include/enjin2/components/drawable.hpp` — `m_screenSpace` flag, `drawWithOffset()` camera-offset routing (2026-03-01)
+- Codebase analysis: `src/scripting/bindings_draw.cpp` — `REQUIRE_CANVAS` macro, null-guard pattern for canvas access (2026-03-01)
+- Project context: `PROJECT.md` — zero-alloc constraint, multi-platform (ESP32/WASM/SDL3), 1390-line bindings.cpp documented as debt, hot-reload full-state-destroy semantics, `LuaStore` existing fixed-capacity implementation (2026-03-01)
+- Lua 5.1 reference: coroutine yield semantics; `coroutine.yield()` cannot cross C call boundary (`lua_pcall` scope); `lua_State*` thread validity coupled to parent state lifecycle
+- LuaJIT documentation: CoCo coroutine continuations (platform-dependent); `lua_yieldk` not available in 5.1 compatibility mode; yield behavior on WASM/Emscripten requires explicit verification
+- ESP32 NVS documentation: 15-char key limit; ~4 KB per blob key; 100K write cycle limit per flash sector; total NVS partition typically 16 KB (Espressif NVS API reference, verified against ESP-IDF docs)
 
 ---
-*Pitfalls research for: Adding C_Timer, C_StateMachine, ComponentProxy, signal/event bus, and persistent objects to existing zero-alloc 2D game engine with Lua scripting (enjin2 v1.6 Game Ready)*
-*Researched: 2026-02-28*
+*Pitfalls research for: Adding debug draw, save/load serialization, persistent objects, camera follow helpers, coroutines/async, tweens, UI components, bindings refactoring, and null safety to enjin2 v1.7*
+*Researched: 2026-03-01*
