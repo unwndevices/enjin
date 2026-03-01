@@ -171,3 +171,21 @@ Plans:
 Plans:
 - [ ] 44-01-PLAN.md — C_Camera C++ component, C_Drawable drawWithOffset() + screen-space flag, Scene render pipeline modification, C++ test suite (CAM-01..CAM-06)
 - [ ] 44-02-PLAN.md — C_Camera_Proxy Lua bindings, engine.camera.* sub-table, C_Tilemap integration, Lua integration test suite (CAM-07..CAM-09)
+
+### Phase 45: Optimized 2D Physics Engine
+
+**Goal:** Stateless physics helper toolkit exposed as `engine.physics.*` Lua functions — gravity, drag, springs, attraction, bounce, orbiting, raycasting, and velocity integration — with pre-computed trig tables for embedded performance
+**Requirements**: PHYS-01, PHYS-02, PHYS-03, PHYS-04, PHYS-05, PHYS-06, PHYS-07, PHYS-08, PHYS-09, PHYS-10, PHYS-11, PHYS-12, PHYS-13
+**Depends on:** Phase 44
+**Success Criteria** (what must be TRUE):
+  1. Header-only C++ physics helpers in `physics.hpp` provide stateless inline functions: applyGravity, bounce, applyDrag, springForce, attract, orbitVelocity, applyVelocity
+  2. TrigLUT completed with real 256-entry precomputed sine table (not std::sin delegation)
+  3. `engine.physics.*` Lua sub-table exposes all helpers plus setGravity/getGravity global state
+  4. applyGravity accepts both 3-arg (global gravity) and 5-arg (override gravity) forms
+  5. All physics functions accept both Vec2 userdata and plain number pairs
+  6. DDA tilemap raycast + linear object scan via `engine.physics.raycast()`
+**Plans:** 2 plans
+
+Plans:
+- [ ] 45-01-PLAN.md — C++ physics helpers (physics.hpp), TrigLUT completion, C++ unit tests (PHYS-01..PHYS-08)
+- [ ] 45-02-PLAN.md — Lua bindings (bindings_physics.cpp), engine.physics.* sub-table, raycast, Lua integration tests (PHYS-09..PHYS-13)

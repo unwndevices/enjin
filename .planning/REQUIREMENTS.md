@@ -61,6 +61,22 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 - [x] **CAM-08**: engine.camera.* global Lua sub-table for scene-level camera access without ComponentProxy
 - [x] **CAM-09**: C_Tilemap drawWithOffset integrates camera offset additively with tilemap-scoped scroll
 
+### Physics Helpers
+
+- [ ] **PHYS-01**: Header-only `physics.hpp` with inline `applyGravity(vx, vy, gx, gy, dt)` returning new velocity
+- [ ] **PHYS-02**: `physics::bounce(vx, vy, nx, ny, restitution)` reflects velocity via `collision::reflect` scaled by restitution
+- [ ] **PHYS-03**: `physics::applyDrag(vx, vy, drag, dt)` applies velocity damping clamped to prevent sign flip
+- [ ] **PHYS-04**: `physics::springForce(pos, target, vel, stiffness, damping, dt)` returns damped Hooke's law velocity
+- [ ] **PHYS-05**: `physics::attract(x, y, ax, ay, strength, maxForce)` returns capped inverse-square force vector
+- [ ] **PHYS-06**: `physics::orbitVelocity(x, y, cx, cy, speed)` returns tangential velocity perpendicular to radius
+- [ ] **PHYS-07**: `physics::applyVelocity(x, y, vx, vy, dt)` integrates position by velocity
+- [ ] **PHYS-08**: TrigLUT completed with real 256-entry precomputed sine table (not std::sin delegation)
+- [ ] **PHYS-09**: `engine.physics.*` Lua sub-table with all helper functions callable from scripts
+- [ ] **PHYS-10**: `engine.physics.setGravity(gx, gy)` / `getGravity()` for global gravity state
+- [ ] **PHYS-11**: `engine.physics.applyGravity` accepts both 3-arg (global) and 5-arg (override) forms
+- [ ] **PHYS-12**: All physics Lua bindings accept both Vec2 userdata and plain (x, y) number pairs
+- [ ] **PHYS-13**: `engine.physics.raycast(x1, y1, x2, y2)` returns hit info via DDA tilemap + linear object scan
+
 ## Future Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -135,14 +151,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAM-07 | Phase 44 | Planned |
 | CAM-08 | Phase 44 | Planned |
 | CAM-09 | Phase 44 | Planned |
+| PHYS-01 | Phase 45 | Planned |
+| PHYS-02 | Phase 45 | Planned |
+| PHYS-03 | Phase 45 | Planned |
+| PHYS-04 | Phase 45 | Planned |
+| PHYS-05 | Phase 45 | Planned |
+| PHYS-06 | Phase 45 | Planned |
+| PHYS-07 | Phase 45 | Planned |
+| PHYS-08 | Phase 45 | Planned |
+| PHYS-09 | Phase 45 | Planned |
+| PHYS-10 | Phase 45 | Planned |
+| PHYS-11 | Phase 45 | Planned |
+| PHYS-12 | Phase 45 | Planned |
+| PHYS-13 | Phase 45 | Planned |
 
 **Coverage:**
 - v1.6 requirements: 19 total (complete)
 - Phase 43 requirements: 8 total (4 complete in Plan 01, 4 planned in Plan 02)
 - Phase 44 requirements: 9 total (planned)
-- Mapped to phases: 36
+- Phase 45 requirements: 13 total (planned)
+- Mapped to phases: 49
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after Phase 43 Plan 01 completion (TMAP-01..TMAP-04 complete)*
+*Last updated: 2026-03-01 after Phase 45 planning (PHYS-01..PHYS-13 planned)*
