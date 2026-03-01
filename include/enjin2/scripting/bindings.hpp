@@ -425,6 +425,10 @@ private:
     // -- Active camera (scene-level singleton) -----------------------------------
     C_Camera* m_activeCamera{nullptr};  ///< Non-owning; set by host or cleared on scene change
 
+    // -- Physics global gravity (engine.physics.setGravity/getGravity) ----------
+    float m_gravityX{0.0f};    ///< Global gravity X (default: no gravity)
+    float m_gravityY{0.0f};    ///< Global gravity Y (default: no gravity)
+
     // -- Lightweight global state machine (engine.state.*) ----------------------
     static constexpr int MAX_GAME_STATES = 16;  ///< Maximum named states
     char m_currentGameState[64]{"none"};         ///< Current game state name
@@ -646,6 +650,18 @@ private:
     static int lua_getFont(lua_State* L);
     static int lua_getTextWidth(lua_State* L);
     static int lua_getTextHeight(lua_State* L);
+
+    // engine.physics.* binding functions (Phase 45: PHYS-09..PHYS-13)
+    static int lua_engine_physics_setGravity(lua_State* L);
+    static int lua_engine_physics_getGravity(lua_State* L);
+    static int lua_engine_physics_applyGravity(lua_State* L);
+    static int lua_engine_physics_bounce(lua_State* L);
+    static int lua_engine_physics_applyDrag(lua_State* L);
+    static int lua_engine_physics_springForce(lua_State* L);
+    static int lua_engine_physics_attract(lua_State* L);
+    static int lua_engine_physics_orbitVelocity(lua_State* L);
+    static int lua_engine_physics_applyVelocity(lua_State* L);
+    static int lua_engine_physics_raycast(lua_State* L);
 
     // engine.* table binding functions (ENG-01..ENG-06)
     static int lua_engine_scene_switch(lua_State* L);

@@ -191,6 +191,23 @@ void LuaBindings::registerEngineTable() {
     luaBindFunctions(L, -1, kStateFuncs, ENJIN_ARRAY_LEN(kStateFuncs));
     lua_setfield(L, -2, "state");
 
+    // --- engine.physics sub-table (Phase 45: PHYS-09..PHYS-13) ---
+    static const LuaFuncDef kPhysicsFuncs[] = {
+        {"setGravity",    lua_engine_physics_setGravity},
+        {"getGravity",    lua_engine_physics_getGravity},
+        {"applyGravity",  lua_engine_physics_applyGravity},
+        {"bounce",        lua_engine_physics_bounce},
+        {"applyDrag",     lua_engine_physics_applyDrag},
+        {"springForce",   lua_engine_physics_springForce},
+        {"attract",       lua_engine_physics_attract},
+        {"orbitVelocity", lua_engine_physics_orbitVelocity},
+        {"applyVelocity", lua_engine_physics_applyVelocity},
+        {"raycast",       lua_engine_physics_raycast},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kPhysicsFuncs, ENJIN_ARRAY_LEN(kPhysicsFuncs));
+    lua_setfield(L, -2, "physics");
+
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
     lua_setfield(L, -2, "log");

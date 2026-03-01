@@ -170,6 +170,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_sprite_load.cpp
         src/scripting/bindings_layers_text.cpp
         src/scripting/bindings_engine.cpp
+        src/scripting/bindings_physics.cpp
         src/scripting/bindings_math.cpp
         src/scripting/bindings_store.cpp
         src/scripting/bindings_system.cpp
