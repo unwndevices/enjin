@@ -747,6 +747,9 @@ private:
     static int lua_engine_store_exists(lua_State* L);
     static int lua_engine_store_delete(lua_State* L);
     static int lua_engine_store_clear(lua_State* L);
+    // Phase 48: STORE-02 — explicit save control
+    static int lua_engine_store_flush(lua_State* L);
+    static int lua_engine_store_path(lua_State* L);
 
     /**
      * @brief Register the ObjectProxy metatable (called from registerAll()).

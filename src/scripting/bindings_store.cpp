@@ -509,4 +509,27 @@ int LuaBindings::lua_engine_store_clear(lua_State* L) {
     return 0;
 }
 
+// --- engine.store.flush() --- (Phase 48: STORE-02)
+// Explicitly writes the current store to disk. Returns true on success, false if no path set.
+int LuaBindings::lua_engine_store_flush(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushboolean(L, 0); return 1; }
+    if (b->m_storePath[0] == '\0') { lua_pushboolean(L, 0); return 1; }  // no path set
+    bool ok = b->m_store.saveToFile(b->m_storePath);
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+}
+
+// --- engine.store.path(filepath) --- (Phase 48: STORE-02)
+// Sets the save file path at runtime and loads any existing data from the new path.
+int LuaBindings::lua_engine_store_path(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    const char* path = luaL_checkstring(L, 1);
+    strncpy(b->m_storePath, path, sizeof(b->m_storePath) - 1);
+    b->m_storePath[sizeof(b->m_storePath) - 1] = '\0';
+    b->m_store.loadFromFile(b->m_storePath);  // load existing data; silent no-op if file missing
+    return 0;
+}
+
 } // namespace enjin2

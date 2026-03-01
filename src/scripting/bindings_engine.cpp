@@ -105,6 +105,8 @@ void LuaBindings::registerEngineTable() {
         {"exists", lua_engine_store_exists},
         {"delete", lua_engine_store_delete},
         {"clear",  lua_engine_store_clear},
+        {"flush",  lua_engine_store_flush},   // Phase 48: STORE-02
+        {"path",   lua_engine_store_path},    // Phase 48: STORE-02
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kStoreFuncs, ENJIN_ARRAY_LEN(kStoreFuncs));
