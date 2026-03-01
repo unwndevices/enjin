@@ -173,11 +173,11 @@ Plans:
   2. engine.camera.stopFollow() clears the follow target so the camera stops tracking
   3. LuaStore reads and writes JSON files on SDL3 desktop builds without a VCV_RACK compile flag
   4. engine.store.flush() explicitly writes pending store data to disk; engine.store.path(filepath) redirects the save file location at runtime
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 48-01: Camera follow — C_Camera::setFollowTarget()/clearFollowTarget(), engine.camera.follow/stopFollow bindings, proxy validity guard
-- [ ] 48-02: Save/load SDL3 — VCV_RACK guard replaced, bindings_store.cpp updated, engine.store.flush() and engine.store.path() bindings
+- [ ] 48-01-PLAN.md — Camera follow: m_followTargetProxy in LuaBindings, engine.camera.follow/stopFollow bindings, tickCameraFollow(dt), camera_follow_test.cpp
+- [ ] 48-02-PLAN.md — Store SDL3 I/O: VCV_RACK guard replaced with !ESP32 && !EMSCRIPTEN, engine.store.flush() and engine.store.path() bindings, store_test.cpp extended
 
 ### Phase 49: Coroutine/Async Scheduler
 
