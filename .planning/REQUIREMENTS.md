@@ -25,8 +25,8 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### Camera Follow
 
-- [ ] **CAM-01**: engine.camera.follow(target, speed) resolves named object and tracks per-frame
-- [ ] **CAM-02**: engine.camera.stopFollow() clears follow target
+- [x] **CAM-01**: engine.camera.follow(target, speed) resolves named object and tracks per-frame
+- [x] **CAM-02**: engine.camera.stopFollow() clears follow target
 
 ### Save/Load
 
@@ -107,8 +107,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEBUG-01 | Phase 47 | Complete |
 | DEBUG-02 | Phase 47 | Complete |
 | DEBUG-03 | Phase 47 | Complete |
-| CAM-01 | Phase 48 | Pending |
-| CAM-02 | Phase 48 | Pending |
+| CAM-01 | Phase 48 | Complete |
+| CAM-02 | Phase 48 | Complete |
 | STORE-01 | Phase 48 | Complete |
 | STORE-02 | Phase 48 | Complete |
 | ASYNC-01 | Phase 49 | Pending |

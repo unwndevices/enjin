@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-01T20:01:34.156Z"
+last_updated: "2026-03-01T20:09:00.000Z"
 progress:
   total_phases: 16
   completed_phases: 10
@@ -60,6 +60,9 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 46]: overflow_test uses C_LuaScript fixture (not raw LuaEngine) because LuaEventBus::subscribe() requires m_L != nullptr
 - [Phase 47]: Debug layer (index 4) excluded from g_lua_layers — accessible only via engine.debug.* not setLayer()
 - [Phase 47]: REQUIRE_DEBUG_CANVAS macro provides zero-cost early-return guard when debug is disabled or canvas is null
+- [Phase 48-01]: lua_engine_camera_follow/stopFollow implemented as LuaBindings member functions (not file-scope statics) to access private m_followTargetProxy/m_followSpeed — same pattern as Phase 47 debug bindings
+- [Phase 48-01]: setActiveScene() must be called before setActiveCamera() (setActiveScene clears m_activeCamera on scene change)
+- [Phase 48-01]: Scripts must store follow proxy in Lua global (not local) for it to survive GC between frames
 - [Phase 48-camera-follow-save-load]: Platform detection uses !defined(ESP32) && !defined(__EMSCRIPTEN__) for bindings_store.cpp file I/O guard — VCV_RACK was an accidental enabler
 - [Phase 48-camera-follow-save-load]: engine.store.flush() supplements auto-persist (does not clear the store); engine.store.path() is a void setter that auto-loads existing data
 
@@ -90,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 48-02-PLAN.md (store flush/path bindings)
+Stopped at: Completed 48-01-PLAN.md (camera follow bindings)
 Resume file: None

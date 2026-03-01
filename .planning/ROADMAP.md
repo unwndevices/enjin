@@ -71,7 +71,7 @@ Phases 39-42 complete. See milestones/v1.6-ROADMAP.md for full detail.
 - [x] **Phase 45: Optimized 2D Physics Engine** - engine.physics.* stateless helpers, TrigLUT, DDA raycast (completed 2026-03-01)
 - [x] **Phase 46: Bindings Refactoring + Null Safety** - Split bindings.cpp monolith, harden null guards, fix sprite test, add overflow tests (completed 2026-03-01)
 - [x] **Phase 47: Debug Draw Bindings** - engine.debug.* sub-table routing to dedicated debug canvas with zero-cost toggle (completed 2026-03-01)
-- [ ] **Phase 48: Camera Follow + Save/Load** - engine.camera.follow/stopFollow, LuaStore SDL3 I/O, engine.store.flush/path
+- [x] **Phase 48: Camera Follow + Save/Load** - engine.camera.follow/stopFollow, LuaStore SDL3 I/O, engine.store.flush/path (completed 2026-03-01)
 - [ ] **Phase 49: Coroutine/Async Scheduler** - engine.async.* 8-slot coroutine pool with wait/cancel, ESP32 library open
 - [ ] **Phase 50: Tween Helpers** - engine.tween.* 8-slot pool with 4 inline easing functions, proxy-field animation
 - [ ] **Phase 51: Persistent Objects** - engine.scene.persist/unpersist, PersistentObjectRegistry, find() searches persistent registry
@@ -173,7 +173,7 @@ Plans:
   2. engine.camera.stopFollow() clears the follow target so the camera stops tracking
   3. LuaStore reads and writes JSON files on SDL3 desktop builds without a VCV_RACK compile flag
   4. engine.store.flush() explicitly writes pending store data to disk; engine.store.path(filepath) redirects the save file location at runtime
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 48-01-PLAN.md — Camera follow: m_followTargetProxy in LuaBindings, engine.camera.follow/stopFollow bindings, tickCameraFollow(dt), camera_follow_test.cpp
@@ -258,7 +258,7 @@ Plans:
 | 45. Physics Engine | v1.7 | 2/2 | Complete | 2026-03-01 |
 | 46. Bindings Refactoring + Null Safety | 2/2 | Complete    | 2026-03-01 | - |
 | 47. Debug Draw Bindings | 1/1 | Complete    | 2026-03-01 | - |
-| 48. Camera Follow + Save/Load | 1/2 | In Progress|  | - |
+| 48. Camera Follow + Save/Load | 2/2 | Complete   | 2026-03-01 | - |
 | 49. Coroutine/Async Scheduler | v1.7 | 0/2 | Not started | - |
 | 50. Tween Helpers | v1.7 | 0/2 | Not started | - |
 | 51. Persistent Objects | v1.7 | 0/2 | Not started | - |
