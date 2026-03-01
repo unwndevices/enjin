@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Game Ready
-status: complete
-last_updated: "2026-03-01T15:00:00.000Z"
+milestone: v1.7
+milestone_name: Developer Experience & New Capability
+status: active
+last_updated: "2026-03-01T18:00:00.000Z"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.6 complete — planning next milestone
+**Current focus:** v1.7 Developer Experience & New Capability
 
 ## Current Position
 
-Phase: v1.6 COMPLETE — all 4 phases (39-42) shipped
-Plan: All plans complete
-Status: Milestone v1.6 Game Ready archived
-Last activity: 2026-03-01 - Completed v1.6 milestone archival
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-01 — Milestone v1.7 started
 
-Progress: [████████████████████] 100%
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 
 ## Performance Metrics
 

@@ -8,6 +8,21 @@ enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded de
 
 enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation.
 
+## Current Milestone: v1.7 Developer Experience & New Capability
+
+**Goal:** Polish the developer experience with debug draw, save/load, persistent objects, and camera follow; harden the engine with overflow tests, bindings refactoring, and null safety; add coroutines, tweens, and UI components for Lua.
+
+**Target features:**
+- Debug draw bindings (engine.debug.*)
+- Save/load serialization helper
+- Persistent objects across scenes
+- Camera follow helpers
+- Overflow tests and null safety hardening
+- Bindings.cpp refactoring
+- Coroutine/async for Lua
+- Tween helpers
+- UI component bindings (engine.ui.*)
+
 ## Current State
 
 **Shipped: v1.6 Game Ready (2026-02-28)**
@@ -111,9 +126,24 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ### Active
 
-<!-- Next milestone requirements go here -->
+<!-- Current milestone: v1.7 Developer Experience + Polish + New Capability -->
 
-- [ ] Persistent objects across scenes (deferred from v1.6 — verify LuaStore sufficiency first)
+#### Developer Experience / Polish
+- [ ] Debug draw bindings (engine.debug.* for bounding boxes, collision shapes)
+- [ ] Save/load serialization helper (persistent game state beyond LuaStore)
+- [ ] Persistent objects across scenes
+- [ ] Camera follow helpers (engine.camera.follow(target))
+
+#### Robustness / Quality
+- [ ] Fix sprite_load_test.cpp compilation error (missing lua_wrapper.hpp)
+- [ ] Add overflow tests for event bus, sprite pool, component destruction
+- [ ] Address monolithic bindings files (1390-line bindings.cpp split)
+- [ ] Null safety improvements in binding chains
+
+#### New Capability
+- [ ] Coroutine/async pattern for Lua (loading screens, tween animations)
+- [ ] Tween helpers
+- [ ] UI component bindings (engine.ui.* — progress bars, stat bars) + internal guide
 
 ### Out of Scope
 
@@ -234,4 +264,4 @@ enjin2 is a game-ready 2D engine with complete Lua scripting and component infra
 | EVENT-05 hot-reload in executeScript() not registerAll() | registerAll() runs once at initialize(); hot-reload goes through executeScript() | ✓ Working - Phase 42 |
 
 ---
-*Last updated: 2026-03-01 after v1.6 milestone completion*
+*Last updated: 2026-03-01 after v1.7 milestone start*
