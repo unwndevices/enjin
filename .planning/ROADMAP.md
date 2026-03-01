@@ -142,11 +142,11 @@ Plans:
   2. Numeric-returning binding functions return 0 (not nil) when called on a null or invalid target, preventing Lua arithmetic errors in scripts
   3. sprite_load_test.cpp compiles and links without errors
   4. Overflow tests for event bus (beyond 16 channels / 8 subscribers), sprite pool (beyond pool capacity), and component destruction execute successfully via ctest
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 46-01: bindings.cpp split — bindings_internal.hpp, TU extraction, static-linkage audit, ctest verification
-- [ ] 46-02: Null safety pass + test fixes — null guards on all binding chains, sprite_load_test fix, overflow test suite
+- [ ] 46-01-PLAN.md — bindings.cpp split: bindings_internal.hpp shared constants, bindings_proxy.cpp extraction (component + object proxy metatables), CMakeLists.txt update, ctest verification
+- [ ] 46-02-PLAN.md — Null safety pass + test fixes: lua_wrapper.hpp for sprite_load_test, null guards on all binding chains, overflow_test.cpp (event bus, sprite pool, component destruction)
 
 ### Phase 47: Debug Draw Bindings
 
