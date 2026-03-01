@@ -16,10 +16,14 @@ namespace enjin2 {
 class ObjectCollection {
 private:
     static constexpr size_t MAX_OBJECTS = 128;  ///< Maximum objects in collection
-    
+    static constexpr size_t MAX_EXTERNAL = 4;   ///< Maximum external (persistent) objects
+
     std::array<std::unique_ptr<Object>, MAX_OBJECTS> objects;
     size_t objectCount;
     bool initialized;
+
+    Object* m_external[MAX_EXTERNAL]{};   ///< Non-owning injection slots for persistent objects
+    size_t m_externalCount{0};
     
 public:
     /**
@@ -71,7 +75,7 @@ public:
     }
     
     /**
-     * @brief Update all objects in the collection
+     * @brief Update all objects in the collection (owned + externals)
      * @param dt Time since last frame in seconds
      */
     void update(float dt) {
@@ -80,16 +84,26 @@ public:
                 objects[i]->update(dt);
             }
         }
+        for (size_t i = 0; i < m_externalCount; ++i) {
+            if (m_external[i] && m_external[i]->isActive()) {
+                m_external[i]->update(dt);
+            }
+        }
     }
 
     /**
-     * @brief Late update all objects in the collection
+     * @brief Late update all objects in the collection (owned + externals)
      * @param dt Time since last frame in seconds
      */
     void lateUpdate(float dt) {
         for (size_t i = 0; i < objectCount; ++i) {
             if (objects[i] && objects[i]->isActive()) {
                 objects[i]->lateUpdate(dt);
+            }
+        }
+        for (size_t i = 0; i < m_externalCount; ++i) {
+            if (m_external[i] && m_external[i]->isActive()) {
+                m_external[i]->lateUpdate(dt);
             }
         }
     }
@@ -123,9 +137,10 @@ public:
     }
     
     /**
-     * @brief Remove an object from the collection
+     * @brief Remove an object from the collection (destroys the object)
      * @param object Object to remove
      * @return True if object was removed
+     * @note DESTRUCTIVE — do NOT use for persistence; use extractObject() instead
      */
     bool removeObject(Object* object) {
         for (size_t i = 0; i < objectCount; ++i) {
@@ -140,6 +155,60 @@ public:
             }
         }
         return false;
+    }
+
+    /**
+     * @brief Extract an object from the collection without destroying it
+     *
+     * Removes the object from the owned array and returns unique_ptr ownership
+     * to the caller. The object is NOT destroyed. Use this before calling
+     * PersistentObjectRegistry::add() to transfer ownership without invalidating
+     * any associated Lua proxy.
+     *
+     * @param object Raw pointer to the object to extract
+     * @return unique_ptr owning the object, or nullptr if not found
+     */
+    std::unique_ptr<Object> extractObject(Object* object) {
+        for (size_t i = 0; i < objectCount; ++i) {
+            if (objects[i].get() == object) {
+                std::unique_ptr<Object> extracted = std::move(objects[i]);
+                for (size_t j = i; j < objectCount - 1; ++j) {
+                    objects[j] = std::move(objects[j + 1]);
+                }
+                objects[objectCount - 1] = nullptr;
+                objectCount--;
+                return extracted;
+            }
+        }
+        return nullptr;
+    }
+
+    /**
+     * @brief Inject a non-owning external (persistent) object pointer
+     *
+     * Adds the object to m_external[] so it participates in update/lateUpdate/
+     * findByName/forEach iterations alongside owned objects. Does NOT transfer
+     * ownership. Ownership remains with PersistentObjectRegistry.
+     *
+     * @param obj Non-owning pointer to inject (nullptr-safe, silently ignored)
+     */
+    void injectExternal(Object* obj) {
+        if (!obj || m_externalCount >= MAX_EXTERNAL) return;
+        m_external[m_externalCount++] = obj;
+    }
+
+    /**
+     * @brief Clear all external (persistent) object injection slots
+     *
+     * Zeros all m_external[] pointers and resets m_externalCount to 0.
+     * Must be called before a scene transition clears the scene, so the
+     * registry retains sole ownership of persistent objects.
+     */
+    void clearExternal() {
+        for (size_t i = 0; i < MAX_EXTERNAL; ++i) {
+            m_external[i] = nullptr;
+        }
+        m_externalCount = 0;
     }
     
     /**
@@ -197,7 +266,7 @@ public:
     }
     
     /**
-     * @brief Apply function to all objects
+     * @brief Apply function to all objects (owned + externals)
      * @param func Function to apply (takes Object* parameter)
      */
     void forEach(std::function<void(Object*)> func) {
@@ -206,10 +275,15 @@ public:
                 func(objects[i].get());
             }
         }
+        for (size_t i = 0; i < m_externalCount; ++i) {
+            if (m_external[i]) {
+                func(m_external[i]);
+            }
+        }
     }
-    
+
     /**
-     * @brief Find object by name
+     * @brief Find object by name (searches owned then externals)
      * @param name Name to search for (nullptr returns nullptr immediately)
      * @return Pointer to first matching Object or nullptr if not found
      */
@@ -221,11 +295,17 @@ public:
                 return objects[i].get();
             }
         }
+        for (size_t i = 0; i < m_externalCount; ++i) {
+            if (m_external[i] && m_external[i]->getName() &&
+                strcmp(m_external[i]->getName(), name) == 0) {
+                return m_external[i];
+            }
+        }
         return nullptr;
     }
 
     /**
-     * @brief Find all objects with a given tag
+     * @brief Find all objects with a given tag (owned + externals)
      * @param tag Tag to search for
      * @param results Caller-provided buffer to receive Object pointers
      * @param maxResults Maximum number of results to write into buffer
@@ -239,17 +319,27 @@ public:
                 results[found++] = objects[i].get();
             }
         }
+        for (size_t i = 0; i < m_externalCount && found < maxResults; ++i) {
+            if (m_external[i] && m_external[i]->hasTag(tag)) {
+                results[found++] = m_external[i];
+            }
+        }
         return found;
     }
 
     /**
-     * @brief Apply function to all active objects
+     * @brief Apply function to all active objects (owned + externals)
      * @param func Function to apply (takes Object* parameter)
      */
     void forEachActive(std::function<void(Object*)> func) {
         for (size_t i = 0; i < objectCount; ++i) {
             if (objects[i] && objects[i]->isActive()) {
                 func(objects[i].get());
+            }
+        }
+        for (size_t i = 0; i < m_externalCount; ++i) {
+            if (m_external[i] && m_external[i]->isActive()) {
+                func(m_external[i]);
             }
         }
     }

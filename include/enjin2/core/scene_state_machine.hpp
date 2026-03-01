@@ -37,14 +37,105 @@ public:
         SLIDING         ///< Sliding between scenes
     };
 
+public:
+    /**
+     * @brief Fixed-size registry for persistent objects that survive scene transitions.
+     *
+     * Owned by SceneStateMachine. Stores unique_ptr ownership of extracted objects.
+     * Objects are injected into scene ObjectCollections as non-owning externals.
+     */
+    struct PersistentObjectRegistry {
+        static constexpr int MAX_PERSISTENT = 4;
+
+        std::unique_ptr<Object> objects[MAX_PERSISTENT];
+        bool pendingRemoval[MAX_PERSISTENT]{};
+
+        /**
+         * @brief Add an object to the registry
+         * @param obj unique_ptr to add (ownership transferred)
+         * @return true if added, false if registry is full
+         */
+        bool add(std::unique_ptr<Object> obj) {
+            for (int i = 0; i < MAX_PERSISTENT; ++i) {
+                if (!objects[i]) {
+                    objects[i] = std::move(obj);
+                    pendingRemoval[i] = false;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * @brief Mark an object for removal on next transition
+         * @param obj Raw pointer of the object to mark
+         */
+        void markForRemoval(Object* obj) {
+            for (int i = 0; i < MAX_PERSISTENT; ++i) {
+                if (objects[i].get() == obj) {
+                    pendingRemoval[i] = true;
+                    return;
+                }
+            }
+        }
+
+        /**
+         * @brief Check if an object is already in the registry
+         * @param obj Raw pointer to check
+         * @return true if found (ignores pendingRemoval state)
+         */
+        bool contains(Object* obj) const {
+            for (int i = 0; i < MAX_PERSISTENT; ++i) {
+                if (objects[i].get() == obj) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * @brief Find a non-removed object by name
+         * @param name Name to search for
+         * @return Pointer to matching Object or nullptr
+         */
+        Object* findByName(const char* name) const {
+            if (!name) return nullptr;
+            for (int i = 0; i < MAX_PERSISTENT; ++i) {
+                if (objects[i] && !pendingRemoval[i] &&
+                    objects[i]->getName() &&
+                    strcmp(objects[i]->getName(), name) == 0) {
+                    return objects[i].get();
+                }
+            }
+            return nullptr;
+        }
+
+        /**
+         * @brief Destroy all objects marked for removal and clear their slots
+         *
+         * Resetting the unique_ptr destroys the Object, which sets
+         * ObjectProxy::valid = false in ~Object().
+         */
+        void flushPendingRemovals() {
+            for (int i = 0; i < MAX_PERSISTENT; ++i) {
+                if (pendingRemoval[i]) {
+                    objects[i].reset();
+                    pendingRemoval[i] = false;
+                }
+            }
+        }
+    };
+
 private:
     static constexpr size_t MAX_SCENES = 32;        ///< Maximum number of scenes
     static constexpr float TRANSITION_TIME = 0.5f;  ///< Default transition time in seconds
-    
+
     std::array<std::unique_ptr<Scene>, MAX_SCENES> scenes;
     size_t sceneCount;
     Scene* currentScene;
     Scene* nextScene;
+
+    PersistentObjectRegistry m_persistentRegistry;  ///< Registry for persistent objects
     
     TransitionState transitionState;
     TransitionType transitionType;
@@ -308,6 +399,46 @@ public:
     }
 
     /**
+     * @brief Extract an object from the current scene and register it as persistent.
+     *
+     * The object survives all subsequent scene transitions. It is injected as a
+     * non-owning external into each scene's ObjectCollection so it participates in
+     * update/lateUpdate/findByName/forEach. If the object is already persistent,
+     * returns true (silent no-op — no duplicate slot consumed).
+     *
+     * @param obj Raw pointer to an owned object in the current scene
+     * @return true if now persistent, false if object not in current scene or registry full
+     */
+    bool persistObject(Object* obj) {
+        if (!obj || !currentScene) return false;
+        if (m_persistentRegistry.contains(obj)) return true;  // already persistent
+        std::unique_ptr<Object> extracted = currentScene->getObjects().extractObject(obj);
+        if (!extracted) return false;
+        return m_persistentRegistry.add(std::move(extracted));
+    }
+
+    /**
+     * @brief Schedule a persistent object for destruction on the next scene transition.
+     *
+     * The object remains alive until applyDeferredTransition() calls
+     * flushPendingRemovals(). Its proxy will be invalidated at that point.
+     *
+     * @param obj Raw pointer of the persistent object to remove
+     */
+    void unpersistObject(Object* obj) {
+        m_persistentRegistry.markForRemoval(obj);
+    }
+
+    /**
+     * @brief Find a persistent object by name (skips pending-removal objects)
+     * @param name Name to search for
+     * @return Pointer to matching Object or nullptr
+     */
+    Object* findPersistentByName(const char* name) const {
+        return m_persistentRegistry.findByName(name);
+    }
+
+    /**
      * @brief Connect to transition start event
      * @param callback Function called with transition type
      * @return Signal connection handle
@@ -378,18 +509,38 @@ private:
 
         bool isSelf = (targetScene == currentScene);
         if (isSelf) {
+            // Destroy objects scheduled for removal before clearing externals
+            m_persistentRegistry.flushPendingRemovals();
             // Full reset: deactivate -> clear init guard -> re-activate
             Scene* scene = currentScene;
+            scene->getObjects().clearExternal();  // detach persistent pointers before reset
             scene->deactivate();              // fires onDeactivate(); sets active = false
             scene->resetInitialized();        // sets initialized = false (bypasses guard)
             scene->setStateMachine(this);     // re-inject (already set; explicit for clarity)
+            // Re-inject surviving persistent objects into the reset scene
+            for (int i = 0; i < PersistentObjectRegistry::MAX_PERSISTENT; ++i) {
+                if (m_persistentRegistry.objects[i]) {
+                    scene->getObjects().injectExternal(m_persistentRegistry.objects[i].get());
+                }
+            }
             scene->activate();               // initialize() fires -> onCreate(); then onActivate()
         } else {
+            // Destroy objects scheduled for removal before clearing old scene's externals
+            m_persistentRegistry.flushPendingRemovals();
             // Normal cross-scene immediate transition
             Scene* oldScene = currentScene;
-            if (currentScene) { currentScene->deactivate(); }
+            if (currentScene) {
+                currentScene->getObjects().clearExternal();  // detach persistent pointers before deactivate
+                currentScene->deactivate();
+            }
             currentScene = targetScene;
             currentScene->setStateMachine(this);
+            // Inject persistent objects into new scene
+            for (int i = 0; i < PersistentObjectRegistry::MAX_PERSISTENT; ++i) {
+                if (m_persistentRegistry.objects[i]) {
+                    currentScene->getObjects().injectExternal(m_persistentRegistry.objects[i].get());
+                }
+            }
             if (!currentScene->isInitialized()) { currentScene->initialize(); }
             if (!currentScene->isActive()) { currentScene->activate(); }
             onSceneChangeCompleteSignal.emit(oldScene, currentScene);
