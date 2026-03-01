@@ -63,14 +63,14 @@ Requirements for v1.6 Game Ready. Each maps to roadmap phases.
 
 ### Physics Helpers
 
-- [ ] **PHYS-01**: Header-only `physics.hpp` with inline `applyGravity(vx, vy, gx, gy, dt)` returning new velocity
-- [ ] **PHYS-02**: `physics::bounce(vx, vy, nx, ny, restitution)` reflects velocity via `collision::reflect` scaled by restitution
-- [ ] **PHYS-03**: `physics::applyDrag(vx, vy, drag, dt)` applies velocity damping clamped to prevent sign flip
-- [ ] **PHYS-04**: `physics::springForce(pos, target, vel, stiffness, damping, dt)` returns damped Hooke's law velocity
-- [ ] **PHYS-05**: `physics::attract(x, y, ax, ay, strength, maxForce)` returns capped inverse-square force vector
-- [ ] **PHYS-06**: `physics::orbitVelocity(x, y, cx, cy, speed)` returns tangential velocity perpendicular to radius
-- [ ] **PHYS-07**: `physics::applyVelocity(x, y, vx, vy, dt)` integrates position by velocity
-- [ ] **PHYS-08**: TrigLUT completed with real 256-entry precomputed sine table (not std::sin delegation)
+- [x] **PHYS-01**: Header-only `physics.hpp` with inline `applyGravity(vx, vy, gx, gy, dt)` returning new velocity
+- [x] **PHYS-02**: `physics::bounce(vx, vy, nx, ny, restitution)` reflects velocity via `collision::reflect` scaled by restitution
+- [x] **PHYS-03**: `physics::applyDrag(vx, vy, drag, dt)` applies velocity damping clamped to prevent sign flip
+- [x] **PHYS-04**: `physics::springForce(pos, target, vel, stiffness, damping, dt)` returns damped Hooke's law velocity
+- [x] **PHYS-05**: `physics::attract(x, y, ax, ay, strength, maxForce)` returns capped inverse-square force vector
+- [x] **PHYS-06**: `physics::orbitVelocity(x, y, cx, cy, speed)` returns tangential velocity perpendicular to radius
+- [x] **PHYS-07**: `physics::applyVelocity(x, y, vx, vy, dt)` integrates position by velocity
+- [x] **PHYS-08**: TrigLUT completed with real 256-entry precomputed sine table (not std::sin delegation)
 - [ ] **PHYS-09**: `engine.physics.*` Lua sub-table with all helper functions callable from scripts
 - [ ] **PHYS-10**: `engine.physics.setGravity(gx, gy)` / `getGravity()` for global gravity state
 - [ ] **PHYS-11**: `engine.physics.applyGravity` accepts both 3-arg (global) and 5-arg (override) forms

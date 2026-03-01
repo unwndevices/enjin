@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 44 of 44 (2D Camera System) — COMPLETE
-Plan: 02 COMPLETE — Phase 44 fully done
-Status: Phase 44 complete — C_Camera Lua bindings (CAM-07..CAM-09), engine.camera.* global sub-table, C_Camera_Proxy, C_Tilemap drawWithOffset camera integration
-Last activity: 2026-02-28 - Completed quick task 007: Implement 7 scripting API improvements
+Phase: 45 of 45 (Optimized 2D Physics Engine) — IN PROGRESS
+Plan: 01 COMPLETE — physics.hpp stateless helpers + TrigLUT LUT + physics_test (28/28 pass)
+Status: Phase 45 Plan 01 complete — 7 inline physics helpers (applyGravity, bounce, applyDrag, springForce, attract, orbitVelocity, applyVelocity), TrigLUT constexpr sin_table[256], physics_test 28/28 pass
+Last activity: 2026-03-01 - Completed Phase 45 Plan 01: physics.hpp + TrigLUT + tests
 
 Progress: [████████████████████] 100% (44 phases complete)
 
@@ -101,6 +101,14 @@ None.
 - Phase 44 added: 2d Camera System
 - Phase 45 added: Optimized 2D physics engine
 
+### Phase 45 Decisions
+
+- [Phase 45-01]: physics.hpp fully header-only inline — matches collision.hpp pattern; no .cpp needed
+- [Phase 45-01]: TrigLUT constexpr sin_table[256] in math.hpp; getSineValue() moved inline; math.cpp stub eliminated
+- [Phase 45-01]: cos(x) = sin(x+64) via quarter-turn phase offset — single 256-entry table covers both sin and cos
+- [Phase 45-01]: applyDrag factor clamped to [0,1] — prevents velocity sign flip on overdrag (large_drag * large_dt)
+- [Phase 45-01]: attract() uses distSq += 1e-4f epsilon guard — prevents NaN on coincident points without branching
+
 ### Technical Debt (carried)
 
 - Full Emscripten toolchain build not verified (code inspection conclusive)
@@ -109,6 +117,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-28
-Stopped at: Completed 44-02-PLAN.md — C_Camera Lua bindings (C_Camera_Proxy, engine.camera.*, C_Tilemap drawWithOffset, camera_lua_test 10/10)
+Last session: 2026-03-01
+Stopped at: Completed 45-01-PLAN.md — physics.hpp stateless helpers (7 functions), TrigLUT constexpr LUT, physics_test 28/28
 Resume file: None

@@ -184,7 +184,7 @@ Plans:
   4. applyGravity accepts both 3-arg (global gravity) and 5-arg (override gravity) forms
   5. All physics functions accept both Vec2 userdata and plain number pairs
   6. DDA tilemap raycast + linear object scan via `engine.physics.raycast()`
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 45-01-PLAN.md — C++ physics helpers (physics.hpp), TrigLUT completion, C++ unit tests (PHYS-01..PHYS-08)
