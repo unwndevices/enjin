@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Phase 49 — Coroutine Async Scheduler
+**Current focus:** v1.7 Phase 50 — Tween Helpers
 
 ## Current Position
 
-Phase: 49 of 52 (Coroutine Async Scheduler)
-Plan: 1 of N in current phase (complete)
+Phase: 50 of 52 (Tween Helpers)
+Plan: 1 of 1 in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-01 — Phase 49 Plan 01 complete: 8-slot coroutine pool with engine.async.start/wait/cancel/cancelAll; lua_resume compat guard; tickCoroutines in SDL runner; clearCoroutines on hot-reload/scene-change
+Last activity: 2026-03-01 — Phase 50 Plan 01 complete: 8-slot TweenSlot pool with engine.tween.to/cancel/cancelAll; four inline easing functions (multiply/add only); tickTweens in SDL runner; clearTweens on hot-reload/scene-change
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 13 plans (Phases 43-48 complete, 49-01 and 49-02 complete)
+- v1.7 (in progress): 14 plans (Phases 43-49 complete, 50-01 complete)
 
 *Updated after each plan completion*
 
@@ -69,6 +69,9 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 49-01]: Float epsilon 0.001f used in tickCoroutines wait timer — 5*0.1f != 0.5f exactly in IEEE 754 float
 - [Phase 49-01]: Post-yield dt subtraction: after lua_resume returns LUA_YIELD, subtract current frame dt so start tick counts toward wait duration
 - [Phase 49-01]: clearSlot uses template<typename Slot> to access private CoroutineSlot from file-scope static in bindings_async.cpp
+- [Phase 50-01]: TweenEasing private enum — cast to uint8_t at call site so file-scope tweenEase() in separate TU doesn't hit private-access error
+- [Phase 50-01]: cancel leaves tween at current interpolated position; does NOT snap to end, does NOT fire done_cb
+- [Phase 50-01]: tickTweens called after tickCoroutines in SDL runner; clearTweens called alongside clearCoroutines in both registerAll() and setActiveScene()
 
 ### Pending Todos
 
@@ -97,5 +100,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 49-01-PLAN.md (coroutine async scheduler bindings)
+Stopped at: Completed 50-01-PLAN.md (tween helpers — engine.tween.* pool and SDL integration)
 Resume file: None

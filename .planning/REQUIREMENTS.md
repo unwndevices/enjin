@@ -42,9 +42,9 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### Tween Helpers
 
-- [ ] **TWEEN-01**: engine.tween.to(target, {props}, duration, easing, done_cb) animates Lua table fields
-- [ ] **TWEEN-02**: engine.tween.cancel(id) and engine.tween.cancelAll() cleanup
-- [ ] **TWEEN-03**: 4+ inline easing functions (linear, easeIn, easeOut, easeInOut) — no FPU-heavy math
+- [x] **TWEEN-01**: engine.tween.to(target, {props}, duration, easing, done_cb) animates Lua table fields
+- [x] **TWEEN-02**: engine.tween.cancel(id) and engine.tween.cancelAll() cleanup
+- [x] **TWEEN-03**: 4+ inline easing functions (linear, easeIn, easeOut, easeInOut) — no FPU-heavy math
 
 ### Persistent Objects
 
@@ -115,9 +115,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ASYNC-02 | Phase 49 | Complete |
 | ASYNC-03 | Phase 49 | Complete |
 | ASYNC-04 | Phase 49 | Complete |
-| TWEEN-01 | Phase 50 | Pending |
-| TWEEN-02 | Phase 50 | Pending |
-| TWEEN-03 | Phase 50 | Pending |
+| TWEEN-01 | Phase 50 | Complete |
+| TWEEN-02 | Phase 50 | Complete |
+| TWEEN-03 | Phase 50 | Complete |
 | PERSIST-01 | Phase 51 | Pending |
 | PERSIST-02 | Phase 51 | Pending |
 | PERSIST-03 | Phase 51 | Pending |

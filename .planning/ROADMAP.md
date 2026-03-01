@@ -204,7 +204,7 @@ Plans:
   1. A Lua script can call engine.tween.to(target, {props}, duration, easing, done_cb) and the specified table fields animate to their target values over the given duration
   2. engine.tween.cancel(id) stops a specific tween and engine.tween.cancelAll() stops all tweens, both freeing Lua refs correctly
   3. The four easing functions (linear, easeIn, easeOut, easeInOut) produce visually distinct motion curves; no FPU-heavy math (no std::pow with float exponents)
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 50-01-PLAN.md — TweenSlot[8] pool, bindings_tween.cpp (to/cancel/cancelAll + tickTweens + clearTweens + 4 inline easing functions), SDL runner wiring, cleanup hooks in registerAll/setActiveScene, engine.tween.* sub-table registration
@@ -260,6 +260,6 @@ Plans:
 | 47. Debug Draw Bindings | 1/1 | Complete    | 2026-03-01 | - |
 | 48. Camera Follow + Save/Load | 2/2 | Complete    | 2026-03-01 | - |
 | 49. Coroutine/Async Scheduler | 2/2 | Complete    | 2026-03-01 | - |
-| 50. Tween Helpers | v1.7 | 0/2 | Not started | - |
+| 50. Tween Helpers | 1/2 | In Progress|  | - |
 | 51. Persistent Objects | v1.7 | 0/2 | Not started | - |
 | 52. UI Component Bindings | v1.7 | 0/2 | Not started | - |
