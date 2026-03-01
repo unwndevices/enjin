@@ -456,6 +456,29 @@ private:
     CoroutineSlot m_coroutinePool[COROUTINE_POOL_SIZE]; ///< Fixed coroutine pool
     int m_nextCoroutineId{0};                           ///< Next ID to assign (wraps are fine)
 
+    // -- Tween pool (Phase 50: TWEEN-01..TWEEN-03) ---------------------------------
+    static constexpr int TWEEN_POOL_SIZE = 8;   ///< Fixed tween pool — zero alloc
+    static constexpr int TWEEN_MAX_PROPS = 4;   ///< Maximum animated properties per tween
+    static constexpr int TWEEN_KEY_MAX   = 32;  ///< Maximum key string length per property
+
+    enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3 };
+
+    struct TweenSlot {
+        int      targetRef{LUA_NOREF};                    ///< luaL_ref for the target Lua table
+        int      doneCbRef{LUA_NOREF};                    ///< luaL_ref for optional done callback (LUA_NOREF = none)
+        char     keys[TWEEN_MAX_PROPS][TWEEN_KEY_MAX]{};  ///< Property key names to animate
+        float    startVals[TWEEN_MAX_PROPS]{};             ///< Starting values sampled at tween creation
+        float    endVals[TWEEN_MAX_PROPS]{};               ///< Target end values
+        int      propCount{0};                             ///< Number of active properties
+        float    elapsed{0.0f};                            ///< Elapsed time in seconds
+        float    duration{1.0f};                           ///< Total tween duration in seconds
+        TweenEasing easing{TweenEasing::Linear};           ///< Easing function to apply
+        int      id{0};                                    ///< Monotonically increasing cancel ID
+        bool     active{false};                            ///< Slot in use
+    };
+    TweenSlot m_tweenPool[TWEEN_POOL_SIZE]; ///< Fixed tween pool
+    int       m_nextTweenId{0};             ///< Next ID to assign
+
 public:
     /**
      * @brief Constructor
@@ -567,6 +590,19 @@ public:
      * Called on scene transition (setActiveScene) and hot-reload (registerAll).
      */
     void clearCoroutines();
+
+    /**
+     * @brief Tick all active tweens — advance elapsed time and interpolate properties.
+     * Called once per frame from SDL runner after tickCoroutines(dt).
+     * @param dt Delta time in seconds
+     */
+    void tickTweens(float dt);
+
+    /**
+     * @brief Cancel all active tweens and unref their targets/callbacks.
+     * Called on scene transition (setActiveScene) and hot-reload (registerAll).
+     */
+    void clearTweens();
 
     /**
      * @brief Inject debug canvas pointer (called from host alongside setLayers)
@@ -773,6 +809,7 @@ private:
     void registerEngineTable();
     void registerDebugSubtable(lua_State* L);  ///< engine.debug.* sub-table (called from registerEngineTable)
     void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
+    void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
     void registerProxyMetatable();
 
     // engine.random.* binding functions
@@ -789,6 +826,11 @@ private:
     static int lua_engine_async_wait(lua_State* L);
     static int lua_engine_async_cancel(lua_State* L);
     static int lua_engine_async_cancelAll(lua_State* L);
+
+    // engine.tween.* binding functions (Phase 50: TWEEN-01..TWEEN-03)
+    static int lua_engine_tween_to(lua_State* L);
+    static int lua_engine_tween_cancel(lua_State* L);
+    static int lua_engine_tween_cancelAll(lua_State* L);
 
     // engine.store.* binding functions (persistent KV store)
     static int lua_engine_store_save(lua_State* L);

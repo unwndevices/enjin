@@ -176,6 +176,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_math.cpp
         src/scripting/bindings_store.cpp
         src/scripting/bindings_async.cpp
+        src/scripting/bindings_tween.cpp
         src/scripting/bindings_system.cpp
         src/components/lua_script.cpp
         src/components/timer.cpp
