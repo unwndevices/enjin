@@ -99,6 +99,7 @@ None.
 - Phases 39-42 added: v1.6 Game Ready milestone
 - Phase 43 added: Tilemap system
 - Phase 44 added: 2d Camera System
+- Phase 45 added: Optimized 2D physics engine
 
 ### Technical Debt (carried)
 
