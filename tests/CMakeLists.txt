@@ -478,6 +478,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME physics_lua_test COMMAND physics_lua_test)
+
+    # Debug draw binding test (Phase 47: DEBUG-01..DEBUG-03)
+    add_executable(debug_draw_test
+        debug_draw_test.cpp
+    )
+    target_include_directories(debug_draw_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(debug_draw_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME debug_draw_test COMMAND debug_draw_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
