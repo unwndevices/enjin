@@ -5,10 +5,10 @@ milestone_name: Developer Experience & New Capability
 status: active
 last_updated: "2026-03-01T18:00:00.000Z"
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 10
+  completed_phases: 3
+  total_plans: 19
+  completed_plans: 6
 ---
 
 # Project State
@@ -18,21 +18,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Developer Experience & New Capability
+**Current focus:** v1.7 Phase 46 — Bindings Refactoring + Null Safety
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-01 — Milestone v1.7 started
+Phase: 46 of 52 (Bindings Refactoring + Null Safety)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-03-01 — v1.7 roadmap extended with phases 46-52
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
+Progress: [######░░░░░░░░░░░░░░] 30% (phases 43-45 complete; 46-52 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 85
+- Total plans completed: 91
 - v1.0: 21 plans (Phases 1-6)
 - v1.1: 17 plans (Phases 7-15)
 - v1.2: 5 plans (Phases 16-18)
@@ -40,7 +40,7 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 6 plans (Phases 43-45)
+- v1.7 (in progress): 6 plans (Phases 43-45 complete)
 
 *Updated after each plan completion*
 
@@ -50,24 +50,27 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 
 All decisions logged in PROJECT.md Key Decisions table.
 
+Key decisions affecting v1.7 phases 46-52:
+- bindings_internal.hpp must be created before any bindings file is extracted (pitfall: static linkage breakage)
+- Coroutine scheduler resumes via lua_resume from C outside pcall scope (pitfall: yield-across-pcall boundary)
+- engine.ui.* bypasses C++ Label/FillUpGauge entirely — stateless LuaCanvas draw calls only
+- PersistentObjectRegistry owned by SceneStateMachine (not LuaBindings) — object ownership is C++ level
+
 ### Pending Todos
 
 None.
 
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Status | Directory |
-|---|-------------|------|--------|--------|-----------|
-| 007 | Implement 7 scripting API improvements: built-in constants, configurable resolution, engine.graphics namespace, text scale parameter, float-to-int coordinate casting, game-state manager, and text centering helpers | 2026-02-28 | 993d89f | Verified | [007-implement-7-scripting-api-improvements-b](./quick/007-implement-7-scripting-api-improvements-b/) |
-
 ### Blockers/Concerns
 
 - [Phase 25 CARRIED] ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
+- [Phase 49 RESEARCH FLAG] LuaJIT CoCo availability on WASM/ESP32 must be verified before writing coroutine resume path
+- [Phase 51 RESEARCH FLAG] ObjectCollection::m_external[] update ordering requires design review before implementation
 
 ### Roadmap Evolution
 
 - v1.0-v1.6: All milestones archived. See MILESTONES.md.
-- Phases 43-45 in progress as v1.7 content
+- Phases 43-45 complete as v1.7 Tilemap + Camera + Physics content
+- Phases 46-52 roadmapped 2026-03-01 as v1.7 DX + new capability content
 
 ### Technical Debt (carried)
 
@@ -80,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed v1.6 milestone archival
+Stopped at: Roadmap created for phases 46-52; ready to plan Phase 46
 Resume file: None

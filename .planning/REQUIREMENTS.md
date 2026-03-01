@@ -100,38 +100,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BIND-01 | — | Pending |
-| BIND-02 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| DEBUG-01 | — | Pending |
-| DEBUG-02 | — | Pending |
-| DEBUG-03 | — | Pending |
-| CAM-01 | — | Pending |
-| CAM-02 | — | Pending |
-| STORE-01 | — | Pending |
-| STORE-02 | — | Pending |
-| ASYNC-01 | — | Pending |
-| ASYNC-02 | — | Pending |
-| ASYNC-03 | — | Pending |
-| ASYNC-04 | — | Pending |
-| TWEEN-01 | — | Pending |
-| TWEEN-02 | — | Pending |
-| TWEEN-03 | — | Pending |
-| PERSIST-01 | — | Pending |
-| PERSIST-02 | — | Pending |
-| PERSIST-03 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
-| UI-05 | — | Pending |
+| BIND-01 | Phase 46 | Pending |
+| BIND-02 | Phase 46 | Pending |
+| TEST-01 | Phase 46 | Pending |
+| TEST-02 | Phase 46 | Pending |
+| DEBUG-01 | Phase 47 | Pending |
+| DEBUG-02 | Phase 47 | Pending |
+| DEBUG-03 | Phase 47 | Pending |
+| CAM-01 | Phase 48 | Pending |
+| CAM-02 | Phase 48 | Pending |
+| STORE-01 | Phase 48 | Pending |
+| STORE-02 | Phase 48 | Pending |
+| ASYNC-01 | Phase 49 | Pending |
+| ASYNC-02 | Phase 49 | Pending |
+| ASYNC-03 | Phase 49 | Pending |
+| ASYNC-04 | Phase 49 | Pending |
+| TWEEN-01 | Phase 50 | Pending |
+| TWEEN-02 | Phase 50 | Pending |
+| TWEEN-03 | Phase 50 | Pending |
+| PERSIST-01 | Phase 51 | Pending |
+| PERSIST-02 | Phase 51 | Pending |
+| PERSIST-03 | Phase 51 | Pending |
+| UI-01 | Phase 52 | Pending |
+| UI-02 | Phase 52 | Pending |
+| UI-03 | Phase 52 | Pending |
+| UI-04 | Phase 52 | Pending |
+| UI-05 | Phase 52 | Pending |
 
 **Coverage:**
 - v1.7 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-01*
-*Last updated: 2026-03-01 after initial definition*
+*Last updated: 2026-03-01 after roadmap phases 46-52 created*
