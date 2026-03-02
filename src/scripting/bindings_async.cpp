@@ -257,7 +257,12 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
     int n = static_cast<int>(luaL_optinteger(L, 1, 0));
     if (n <= 0) return 0;  // resume immediately — no yield
 
-    // Find the calling coroutine in the pool and set waitFrames
+    // Find the calling coroutine in the pool and set waitFrames.
+    // Use n-1 because the tick where the coroutine calls wait_frames() counts as frame 1.
+    // Example: wait_frames(3) with tick counting:
+    //   Tick 1: coroutine starts, calls wait_frames(3) → waitFrames=2, yields
+    //   Tick 2: waitFrames 2→1, skip
+    //   Tick 3: waitFrames 1→0, resume (exactly 3 ticks from start)
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
         CoroutineSlot& slot = b->m_coroutinePool[i];
         if (!slot.active || slot.threadRef == LUA_NOREF) continue;
@@ -266,7 +271,7 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
         lua_pop(L, 1);
         if (co == L) {
             slot.waitRemaining = 0.0f;  // mutual exclusion: clear time-wait
-            slot.waitFrames    = n;
+            slot.waitFrames    = n - 1; // n-1: current tick counts as frame 1
             break;
         }
     }

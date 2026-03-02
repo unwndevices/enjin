@@ -537,6 +537,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME tween_test COMMAND tween_test)
 
+    # QoL features test (Phase 57: QOL-01, QOL-02, QOL-03)
+    add_executable(qol_test
+        qol_test.cpp
+    )
+    target_include_directories(qol_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(qol_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME qol_test COMMAND qol_test)
+
     # Persistent Lua binding test (Phase 51: PERSIST-01..PERSIST-03)
     add_executable(persistent_lua_test
         persistent_lua_test.cpp
