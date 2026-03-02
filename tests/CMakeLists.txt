@@ -536,6 +536,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME tween_test COMMAND tween_test)
+
+    # Persistent Lua binding test (Phase 51: PERSIST-01..PERSIST-03)
+    add_executable(persistent_lua_test
+        persistent_lua_test.cpp
+    )
+    target_include_directories(persistent_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(persistent_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME persistent_lua_test COMMAND persistent_lua_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
