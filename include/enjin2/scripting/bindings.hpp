@@ -463,6 +463,8 @@ private:
     struct CoroutineSlot {
         int   threadRef{LUA_NOREF};   ///< luaL_ref handle anchoring the coroutine thread; LUA_NOREF = inactive
         float waitRemaining{0.0f};    ///< seconds until next resume (0 = ready now)
+        int   waitFrames{0};          ///< frames remaining before resume (0 = not frame-waiting)  [Phase 57: QOL-02]
+        int   waitTweenId{0};         ///< tween ID this coroutine is awaiting (0 = not waiting)   [Phase 57: QOL-01]
         int   id{0};                  ///< monotonically increasing cancel ID returned to Lua
         bool  active{false};          ///< slot in use
     };
@@ -843,11 +845,15 @@ private:
     static int lua_engine_async_wait(lua_State* L);
     static int lua_engine_async_cancel(lua_State* L);
     static int lua_engine_async_cancelAll(lua_State* L);
+    // Phase 57: QOL-02
+    static int lua_engine_async_wait_frames(lua_State* L);
 
     // engine.tween.* binding functions (Phase 50: TWEEN-01..TWEEN-03)
     static int lua_engine_tween_to(lua_State* L);
     static int lua_engine_tween_cancel(lua_State* L);
     static int lua_engine_tween_cancelAll(lua_State* L);
+    // Phase 57: QOL-01
+    static int lua_engine_tween_await(lua_State* L);
 
     // engine.ui.* binding functions (Phase 52: UI-01..UI-04)
     static int lua_engine_ui_progressBar(lua_State* L);

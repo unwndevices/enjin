@@ -44,6 +44,8 @@ static void clearSlot(Slot& slot, lua_State* L) {
     }
     slot.threadRef     = LUA_NOREF;
     slot.waitRemaining = 0.0f;
+    slot.waitFrames    = 0;          // Phase 57: QOL-02
+    slot.waitTweenId   = 0;          // Phase 57: QOL-01
     slot.id            = 0;
     slot.active        = false;
 }
@@ -117,6 +119,7 @@ int LuaBindings::lua_engine_async_wait(lua_State* L) {
         lua_pop(L, 1);
 
         if (co == L) {
+            slot.waitFrames    = 0;  // mutual exclusion: clear frame-wait [Phase 57: QOL-02]
             slot.waitRemaining = static_cast<float>(seconds);
             break;
         }
@@ -170,9 +173,18 @@ void LuaBindings::tickCoroutines(float dt) {
         CoroutineSlot& slot = m_coroutinePool[i];
         if (!slot.active) continue;
 
-        // Decrement wait timer — only if the slot has pending wait time.
-        // Use 0.001f epsilon to handle float accumulation (5 * 0.1f != 0.5f exactly).
-        if (slot.waitRemaining > 0.001f) {
+        // Wait-tween gate: coroutine is suspended waiting for a tween to complete.
+        // The resume will fire from tickTweens when the tween completes — skip here.
+        if (slot.waitTweenId != 0) continue;  // Phase 57: QOL-01
+
+        // Frame-first dual-mode wait check (Phase 57: QOL-02)
+        // Frame check MUST come before time check (mutual exclusion).
+        if (slot.waitFrames > 0) {
+            --slot.waitFrames;
+            if (slot.waitFrames > 0) continue;  // still waiting — skip resume
+            // fell through: waitFrames just hit 0, resume this frame
+        } else if (slot.waitRemaining > 0.001f) {
+            // Time-based wait — use 0.001f epsilon to handle float accumulation
             slot.waitRemaining -= dt;
             if (slot.waitRemaining > 0.001f) continue;  // still waiting
         }
@@ -200,10 +212,12 @@ void LuaBindings::tickCoroutines(float dt) {
 #endif
 
         if (status == LUA_YIELD) {
-            // Coroutine yielded — waitRemaining was set before yield in async.wait.
-            // Subtract the current frame's dt so this tick counts toward the wait duration.
-            // (Without this, the first tick that starts a coroutine wastes a full frame.)
-            slot.waitRemaining -= dt;
+            // Coroutine yielded — for time-based waits subtract this frame's dt
+            // so the current tick counts toward the wait duration.
+            // (Without this, the first tick after a wait() wastes a full frame.)
+            if (slot.waitFrames == 0) {
+                slot.waitRemaining -= dt;
+            }
         } else if (status == LUA_OK) {
             // Coroutine finished normally
             clearSlot(slot, L);
@@ -228,13 +242,45 @@ void LuaBindings::clearCoroutines() {
     m_nextCoroutineId = 0;
 }
 
+// ── Phase 57 QOL-02: engine.async.wait_frames(n) ────────────────────────────
+// Yields the calling coroutine for exactly n frames before resuming.
+// wait_frames(0) and wait_frames(-1) return immediately without yielding.
+// Mutually exclusive with wait(seconds): setting waitFrames clears waitRemaining.
+int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
+    if (!lua_isyieldable(L)) {
+        luaL_error(L, "engine.async.wait_frames() called outside a coroutine");
+        return 0;
+    }
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) return lua_yield(L, 0);
+
+    int n = static_cast<int>(luaL_optinteger(L, 1, 0));
+    if (n <= 0) return 0;  // resume immediately — no yield
+
+    // Find the calling coroutine in the pool and set waitFrames
+    for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
+        CoroutineSlot& slot = b->m_coroutinePool[i];
+        if (!slot.active || slot.threadRef == LUA_NOREF) continue;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        lua_State* co = lua_tothread(L, -1);
+        lua_pop(L, 1);
+        if (co == L) {
+            slot.waitRemaining = 0.0f;  // mutual exclusion: clear time-wait
+            slot.waitFrames    = n;
+            break;
+        }
+    }
+    return lua_yield(L, 0);
+}
+
 // ── registerAsyncSubtable: engine.async.* (called from registerEngineTable) ──
 void LuaBindings::registerAsyncSubtable(lua_State* L) {
     static const LuaFuncDef kAsyncFuncs[] = {
-        {"start",     lua_engine_async_start},
-        {"wait",      lua_engine_async_wait},
-        {"cancel",    lua_engine_async_cancel},
-        {"cancelAll", lua_engine_async_cancelAll},
+        {"start",       lua_engine_async_start},
+        {"wait",        lua_engine_async_wait},
+        {"cancel",      lua_engine_async_cancel},
+        {"cancelAll",   lua_engine_async_cancelAll},
+        {"wait_frames", lua_engine_async_wait_frames},  // Phase 57: QOL-02
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kAsyncFuncs, ENJIN_ARRAY_LEN(kAsyncFuncs));
