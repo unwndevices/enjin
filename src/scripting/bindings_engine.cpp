@@ -418,6 +418,7 @@ int LuaBindings::lua_engine_scene_persist(lua_State* L) {
 
     LuaBindings* b = getBindings(L);
     if (!b || !b->m_ssm) {
+        printf("[enjin] WARNING: engine.scene.persist() called without SceneStateMachine context — no-op\n");
         lua_pushnil(L);
         return 1;
     }
