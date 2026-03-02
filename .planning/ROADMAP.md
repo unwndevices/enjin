@@ -132,11 +132,11 @@ Plans:
 **Requirements**: DEBT-01, DEBT-02
 **Success Criteria** (what must be TRUE):
   1. Switching scenes or triggering hot reload while camera follow is active does not leave a stale `m_followTargetProxy` reference
-  2. Calling `engine.scene.persist()` in a script running without SceneStateMachine context prints a `lua_warning()` instead of silently doing nothing
-**Plans**: TBD
+  2. Calling `engine.scene.persist()` in a script running without SceneStateMachine context prints a `printf()` warning instead of silently doing nothing
+**Plans**: 1 plan
 
 Plans:
-- [ ] 56-01: TBD
+- [ ] 56-01-PLAN.md — Camera proxy clear (bindings.cpp setActiveScene + registerAll) + persist() warning (bindings_engine.cpp) + tests
 
 ### Phase 57: QoL Features
 **Goal**: Coroutines can await tween completion, scripts can yield for N frames, camera follow has a configurable dead zone
@@ -180,6 +180,6 @@ Plans:
 | 53. Environment and Build Verification | 2/3 | In Progress|  | - |
 | 54. JSON Serializer Refactor | 1/1 | Complete    | 2026-03-02 | - |
 | 55. Platform Storage Backends | 2/2 | Complete    | 2026-03-02 | - |
-| 56. Tech Debt Cleanup | v1.8 | 0/? | Not started | - |
+| 56. Tech Debt Cleanup | v1.8 | 0/1 | Not started | - |
 | 57. QoL Features | v1.8 | 0/? | Not started | - |
 | 58. Documentation and Build Tooling | v1.8 | 0/? | Not started | - |
