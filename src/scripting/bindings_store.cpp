@@ -406,8 +406,54 @@ bool LuaStore::loadFromFile(const char* path) {
     return true;
 }
 
+#elif defined(__EMSCRIPTEN__)
+// Forward declarations — defined in wasm_storage.cpp (EM_JS)
+extern "C" {
+    void wasm_storage_write(const char* json_ptr);
+    int  wasm_storage_read(char* out_ptr, int out_cap);
+}
+
+bool LuaStore::saveToFile(const char*) const {
+    char buf[STORE_BUFFER_MAX];
+    if (!writeStoreToBuffer(buf, STORE_BUFFER_MAX)) return false;
+    wasm_storage_write(buf);
+    return true;
+}
+
+bool LuaStore::loadFromFile(const char*) {
+    char buf[STORE_BUFFER_MAX];
+    if (!wasm_storage_read(buf, static_cast<int>(STORE_BUFFER_MAX))) {
+        return true;  // no saved data — not an error
+    }
+    clear();
+    const char* p = buf;
+    skipWhitespace(p);
+    if (*p != '{') return false;
+    ++p;
+    skipWhitespace(p);
+    if (*p == '}') return true;
+    while (*p) {
+        skipWhitespace(p);
+        if (m_count >= STORE_MAX_KEYS) return false;
+        StoreSlot& slot = m_entries[m_count];
+        slot = StoreSlot{};
+        if (!readJsonString(p, slot.key, STORE_MAX_KEY)) return false;
+        skipWhitespace(p);
+        if (*p != ':') return false;
+        ++p;
+        skipWhitespace(p);
+        if (!readJsonValue(p, slot)) return false;
+        m_count++;
+        skipWhitespace(p);
+        if (*p == ',') { ++p; continue; }
+        if (*p == '}') break;
+        return false;
+    }
+    return true;
+}
+
 #else
-// ESP32 stub (STORE-03) / WASM stub (STORE-04) — deferred
+// ESP32 stub (STORE-03) — implemented in Plan 55-02
 bool LuaStore::saveToFile(const char*) const { return false; }
 bool LuaStore::loadFromFile(const char*) { return false; }
 #endif
@@ -532,10 +578,12 @@ int LuaBindings::lua_engine_store_save(lua_State* L) {
                key, b->m_store.count(), LuaStore::STORE_MAX_KEYS);
     }
 
-    // Auto-persist to file if store path is set
+    // Auto-persist to file if store path is set (desktop only — WASM/ESP32 use flush())
+#if !defined(__EMSCRIPTEN__) && !defined(ESP32)
     if (ok && b->m_storePath[0] != '\0') {
         b->m_store.saveToFile(b->m_storePath);
     }
+#endif
 
     lua_pushboolean(L, ok ? 1 : 0);
     return 1;
@@ -577,10 +625,12 @@ int LuaBindings::lua_engine_store_delete(lua_State* L) {
     const char* key = luaL_checkstring(L, 1);
     bool removed = b->m_store.remove(key);
 
-    // Auto-persist
+    // Auto-persist (desktop only — WASM/ESP32 use flush())
+#if !defined(__EMSCRIPTEN__) && !defined(ESP32)
     if (removed && b->m_storePath[0] != '\0') {
         b->m_store.saveToFile(b->m_storePath);
     }
+#endif
 
     lua_pushboolean(L, removed ? 1 : 0);
     return 1;
@@ -594,23 +644,35 @@ int LuaBindings::lua_engine_store_clear(lua_State* L) {
 
     b->m_store.clear();
 
-    // Auto-persist (writes empty store)
+    // Auto-persist (writes empty store; desktop only — WASM/ESP32 use flush())
+#if !defined(__EMSCRIPTEN__) && !defined(ESP32)
     if (b->m_storePath[0] != '\0') {
         b->m_store.saveToFile(b->m_storePath);
     }
+#endif
 
     return 0;
 }
 
 // --- engine.store.flush() --- (Phase 48: STORE-02)
-// Explicitly writes the current store to disk. Returns true on success, false if no path set.
+// Explicitly writes the current store to persistent storage. Returns true on success.
+// flush() is the commit point for WASM/ESP32 — writes full store blob to localStorage (WASM) or NVS (ESP32)
 int LuaBindings::lua_engine_store_flush(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushboolean(L, 0); return 1; }
-    if (b->m_storePath[0] == '\0') { lua_pushboolean(L, 0); return 1; }  // no path set
+
+#if defined(__EMSCRIPTEN__) || defined(ESP32)
+    // flush() is the commit point for WASM/ESP32 — writes full store blob to localStorage (WASM) or NVS (ESP32)
+    bool ok = b->m_store.saveToFile(nullptr);  // path arg unused on these platforms
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+#else
+    // Desktop: requires a path to be set
+    if (b->m_storePath[0] == '\0') { lua_pushboolean(L, 0); return 1; }
     bool ok = b->m_store.saveToFile(b->m_storePath);
     lua_pushboolean(L, ok ? 1 : 0);
     return 1;
+#endif
 }
 
 // --- engine.store.path(filepath) --- (Phase 48: STORE-02)
