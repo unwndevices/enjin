@@ -114,7 +114,7 @@ const config = {
     },
 
     prism: {
-      additionalLanguages: ['cpp', 'cmake', 'bash'],
+      additionalLanguages: ['cpp', 'cmake', 'bash', 'lua'],
     },
   },
 };

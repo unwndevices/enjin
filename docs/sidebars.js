@@ -1,21 +1,29 @@
- module.exports = {
-   guidesSidebar: [
-     'intro',
-     'getting-started',
-     {
-       type: 'category',
-       label: 'Core Concepts',
-       items: ['architecture', 'components'],
-     },
-     {
-       type: 'category',
-       label: 'Graphics',
-       items: ['canvas', 'sprites', 'text-rendering'],
-     },
-     {
-       type: 'category',
-       label: 'Scenes',
-       items: ['scene-management', 'scene-transitions'],
-     },
-   ],
- };
+module.exports = {
+  guidesSidebar: [
+    'intro',
+    'getting-started',
+    {
+      type: 'category',
+      label: 'Core Concepts',
+      items: ['architecture', 'components'],
+    },
+    {
+      type: 'category',
+      label: 'Graphics',
+      items: ['canvas', 'sprites', 'text-rendering'],
+    },
+    {
+      type: 'category',
+      label: 'Scenes',
+      items: ['scene-management', 'scene-transitions'],
+    },
+    {
+      type: 'category',
+      label: 'Tutorials',
+      items: [
+        'tutorials/your-first-script',
+        'tutorials/async-coroutines',
+      ],
+    },
+  ],
+};

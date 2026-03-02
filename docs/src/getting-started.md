@@ -29,18 +29,27 @@ cmake --build .
 
 ## Quick Example
 
-```cpp
-#include <enjin2.hpp>
+Run the SDL3 binary with a Lua script:
 
-using namespace enjin2;
+```bash
+./build/sdl3/enjin2_sdl --script scripts/tamagotchi.lua
+```
 
-int main() {
-    // Create canvas and draw a rectangle
-    Canvas8_128x64 canvas;
-    canvas.fillRect(10, 10, 108, 44, 15);
+Every Lua script defines two globals the engine calls each frame:
 
-    return 0;
-}
+```lua
+function update(dt)
+    -- dt: delta time in seconds (clamped to 0.05)
+    if engine.input.just_pressed(BTN.A) then
+        engine.state.switch("playing")
+    end
+end
+
+function draw()
+    clear(COLOR.BLACK)
+    setColor(COLOR.WHITE)
+    textCentered("Hello, enjin2!", 32)
+end
 ```
 
 ## Next Steps
