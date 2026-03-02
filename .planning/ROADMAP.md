@@ -79,7 +79,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 - [x] **Phase 55: Platform Storage Backends** - WASM localStorage + ESP32 NVS implementations (completed 2026-03-02)
 - [x] **Phase 56: Tech Debt Cleanup** - Clear m_followTargetProxy dangling ref + honest persist() warning (completed 2026-03-02)
 - [x] **Phase 57: QoL Features** - tween.await(), wait_frames(), camera dead zone (completed 2026-03-02)
-- [ ] **Phase 58: Documentation and Build Tooling** - Getting Started update + tutorials + Lua highlighting
+- [x] **Phase 58: Documentation and Build Tooling** - Getting Started update + tutorials + Lua highlighting (completed 2026-03-02)
 
 ## Phase Details
 
@@ -186,4 +186,4 @@ Plans:
 | 55. Platform Storage Backends | 2/2 | Complete    | 2026-03-02 | - |
 | 56. Tech Debt Cleanup | 1/1 | Complete    | 2026-03-02 | - |
 | 57. QoL Features | 3/3 | Complete    | 2026-03-02 | - |
-| 58. Documentation and Build Tooling | v1.8 | 0/3 | Not started | - |
+| 58. Documentation and Build Tooling | v1.8 | Complete    | 2026-03-02 | - |
