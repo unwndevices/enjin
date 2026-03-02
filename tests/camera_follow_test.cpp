@@ -346,6 +346,136 @@ static void test_follow_no_camera_no_crash() {
 }
 
 // ============================================================
+// test_follow_proxy_cleared_on_scene_change: DEBT-01
+// After engine.camera.follow() and bindings.setActiveScene(&scene2),
+// tickCameraFollow() should NOT move the camera (proxy cleared).
+// ============================================================
+static void test_follow_proxy_cleared_on_scene_change() {
+    printf("--- test_follow_proxy_cleared_on_scene_change: DEBT-01 scene change clears proxy ---\n");
+
+    Scene scene1(10u);
+    Scene scene2(11u);
+
+    // Target in scene1 at a known position far from origin
+    Object* targetObj = scene1.addObject<Object>();
+    targetObj->setName("debt01_target");
+    targetObj->getPosition()->setPosition(200, 0);
+
+    // Script object in scene1 with LuaScript + Camera
+    Object* scriptObj = scene1.addObject<Object>();
+    C_LuaScript* script = scriptObj->addComponent<C_LuaScript>(64u, 64u);
+    C_Camera* camera = scriptObj->addComponent<C_Camera>();
+
+    LuaBindings& bindings = script->getScriptSystem().getBindings();
+    bindings.setActiveScene(&scene1);
+    bindings.setActiveCamera(camera);
+    camera->setPosition(0.0f, 0.0f);
+
+    // Load script that calls engine.camera.follow(g_target, 1.0) in init
+    bool loaded = script->loadScript(
+        "g_target = nil\n"
+        "function init(self)\n"
+        "    g_target = engine.scene.find('debt01_target')\n"
+        "    if g_target then engine.camera.follow(g_target, 1.0) end\n"
+        "end\n"
+        "function update(self, dt) end\n"
+    );
+    ASSERT(loaded, "test_follow_proxy_cleared_on_scene_change: script loaded");
+
+    scriptObj->update(0.016f);
+    ASSERT(!script->hasErrors(), "test_follow_proxy_cleared_on_scene_change: no script errors");
+
+    // First tick: camera should move toward (200, 0) confirming follow is active
+    bindings.tickCameraFollow(0.016f);
+    Vec2 posAfterFollow = camera->getPosition();
+    ASSERT_NEAR_F(posAfterFollow.x, 200.0f, 0.5f,
+        "test_follow_proxy_cleared_on_scene_change: follow was active (camera moved to x=200)");
+
+    // Reset camera to origin so we can detect any subsequent movement
+    camera->setPosition(0.0f, 0.0f);
+
+    // Switch to scene2 — this should clear m_followTargetProxy (DEBT-01 fix)
+    bindings.setActiveScene(&scene2);
+
+    // Re-set the camera (setActiveScene clears m_activeCamera; we restore it to
+    // isolate the proxy-clear behavior from the camera-clear behavior).
+    bindings.setActiveCamera(camera);
+
+    // Tick again — camera should NOT move (follow proxy cleared by setActiveScene)
+    bindings.tickCameraFollow(0.016f);
+    Vec2 posAfterSceneChange = camera->getPosition();
+    ASSERT_NEAR_F(posAfterSceneChange.x, 0.0f, 0.01f,
+        "test_follow_proxy_cleared_on_scene_change: camera x did not move after scene change (DEBT-01)");
+    ASSERT_NEAR_F(posAfterSceneChange.y, 0.0f, 0.01f,
+        "test_follow_proxy_cleared_on_scene_change: camera y did not move after scene change (DEBT-01)");
+}
+
+// ============================================================
+// test_follow_proxy_cleared_on_hot_reload: DEBT-01
+// After engine.camera.follow() and a second loadScript() (hot-reload via registerAll),
+// tickCameraFollow() should NOT move the camera (proxy cleared).
+// ============================================================
+static void test_follow_proxy_cleared_on_hot_reload() {
+    printf("--- test_follow_proxy_cleared_on_hot_reload: DEBT-01 hot-reload clears proxy ---\n");
+
+    Scene scene(12u);
+
+    // Target at a known position far from origin
+    Object* targetObj = scene.addObject<Object>();
+    targetObj->setName("debt01_target2");
+    targetObj->getPosition()->setPosition(300, 0);
+
+    // Script object with LuaScript + Camera
+    Object* scriptObj = scene.addObject<Object>();
+    C_LuaScript* script = scriptObj->addComponent<C_LuaScript>(64u, 64u);
+    C_Camera* camera = scriptObj->addComponent<C_Camera>();
+
+    LuaBindings& bindings = script->getScriptSystem().getBindings();
+    bindings.setActiveScene(&scene);
+    bindings.setActiveCamera(camera);
+    camera->setPosition(0.0f, 0.0f);
+
+    // Load script that establishes camera follow in init
+    bool loaded = script->loadScript(
+        "g_target2 = nil\n"
+        "function init(self)\n"
+        "    g_target2 = engine.scene.find('debt01_target2')\n"
+        "    if g_target2 then engine.camera.follow(g_target2, 1.0) end\n"
+        "end\n"
+        "function update(self, dt) end\n"
+    );
+    ASSERT(loaded, "test_follow_proxy_cleared_on_hot_reload: script loaded");
+
+    scriptObj->update(0.016f);
+    ASSERT(!script->hasErrors(), "test_follow_proxy_cleared_on_hot_reload: no script errors");
+
+    // First tick: camera should move to (300, 0) confirming follow is active
+    bindings.tickCameraFollow(0.016f);
+    Vec2 posAfterFollow = camera->getPosition();
+    ASSERT_NEAR_F(posAfterFollow.x, 300.0f, 0.5f,
+        "test_follow_proxy_cleared_on_hot_reload: follow was active (camera moved to x=300)");
+
+    // Reset camera to origin
+    camera->setPosition(0.0f, 0.0f);
+
+    // Hot-reload: load a new script — this internally calls registerAll() which should
+    // clear m_followTargetProxy (DEBT-01 fix).
+    bool reloaded = script->loadScript(
+        "function init(self) end\n"
+        "function update(self, dt) end\n"
+    );
+    ASSERT(reloaded, "test_follow_proxy_cleared_on_hot_reload: hot-reload script loaded");
+
+    // Tick again — camera should NOT move (follow proxy cleared by registerAll during hot-reload)
+    bindings.tickCameraFollow(0.016f);
+    Vec2 posAfterReload = camera->getPosition();
+    ASSERT_NEAR_F(posAfterReload.x, 0.0f, 0.01f,
+        "test_follow_proxy_cleared_on_hot_reload: camera x did not move after hot-reload (DEBT-01)");
+    ASSERT_NEAR_F(posAfterReload.y, 0.0f, 0.01f,
+        "test_follow_proxy_cleared_on_hot_reload: camera y did not move after hot-reload (DEBT-01)");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -355,6 +485,8 @@ int main() {
     test_follow_nil_proxy_no_crash();
     test_follow_invalid_proxy_silent_stop();
     test_follow_no_camera_no_crash();
+    test_follow_proxy_cleared_on_scene_change();
+    test_follow_proxy_cleared_on_hot_reload();
 
     printf("\n=== Camera Follow Test: %d passed, %d failed ===\n", passes, failures);
     return failures;
