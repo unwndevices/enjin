@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-02T00:15:07Z"
+last_updated: "2026-03-02T00:03:08.864Z"
 progress:
   total_phases: 16
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 38
-  completed_plans: 37
+  completed_plans: 38
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 ## Current Position
 
 Phase: 51 of 52 (Persistent Objects)
-Plan: 1 of 2 in current phase (complete)
+Plan: 2 of 2 in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-02 — Phase 51 Plan 01 complete: PersistentObjectRegistry (4-slot SSM-owned), extractObject/injectExternal/clearExternal, extended ObjectCollection iteration, applyDeferredTransition persistence; 41/41 tests pass
+Last activity: 2026-03-02 — Phase 51 Plan 02 complete: engine.scene.persist/unpersist/find Lua bindings, 8-case Lua integration test suite (47 assertions); 42/42 tests pass
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 16 plans (Phases 43-49 complete, 50-01, 50-02, 51-01 complete)
+- v1.7 (in progress): 17 plans (Phases 43-49 complete, 50-01, 50-02, 51-01, 51-02 complete)
 
 *Updated after each plan completion*
 
@@ -76,6 +76,8 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 51-persistent-objects]: persistObject() immediately re-injects extracted object as external into current scene so object remains live during the scene it was persisted in
 - [Phase 51-persistent-objects]: PersistentObjectRegistry is nested public struct so tests can instantiate it directly without SSM overhead
 - [Phase 51-persistent-objects]: flushPendingRemovals fires at START of applyDeferredTransition before clearExternal so destroyed objects are never re-injected
+- [Phase 51-persistent-objects]: persist() binding returns nil on overflow consistent with coroutine/tween pool pattern
+- [Phase 51-persistent-objects]: find() fallback uses getBindings(L)->m_ssm; active scene priority maintained (local shadows persistent)
 
 ### Pending Todos
 
@@ -104,5 +106,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 51-01-PLAN.md (persistent objects C++ infrastructure — PersistentObjectRegistry, extractObject, m_external[] injection, 41/41 tests pass)
+Stopped at: Completed 51-02-PLAN.md (persistent objects Lua bindings — engine.scene.persist/unpersist/find, 8-test Lua integration suite, 42/42 tests pass)
 Resume file: None
