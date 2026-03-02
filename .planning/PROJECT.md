@@ -10,20 +10,18 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ## Current State
 
-**Shipped: v1.7 Developer Experience & New Capability (2026-03-02)**
-- C_Tilemap 64x64 grid with viewport-culled rendering, scroll, coordinate helpers, full Lua proxy
-- C_Camera with lerp follow, screen shake, bounds clamping, drawWithOffset() render pipeline, engine.camera.* API
-- Stateless engine.physics.* toolkit — gravity, drag, springs, bounce, raycast, TrigLUT
-- Bindings refactored: 1390-line monolith split via bindings_internal.hpp, null safety guards, overflow tests
-- engine.debug.* top-layer debug canvas; engine.camera.follow/stopFollow per-frame tracking
-- LuaStore SDL3 JSON I/O with engine.store.flush/path
-- engine.async.* 8-slot coroutine scheduler with wait/cancel; ESP32 coroutine library opened
-- engine.tween.* 8-slot pool with 4 inline easing functions
-- engine.scene.persist/unpersist with PersistentObjectRegistry; find() searches persistent registry
-- engine.ui.* stateless immediate-mode draw calls (progressBar, statBar, panel, label)
-- 10 phases, 19 plans, 62 files changed, ~27,100 LOC C++, 43 ctests passing
+**Shipped: v1.8 Ship Ready (2026-03-03)**
+- `scripts/setup-dev.sh` — idempotent toolchain installer for Emscripten 3.1.73 + ESP-IDF v5.5 to XDG paths
+- `build.sh` — unified build entry point replacing build_wasm.sh; SDL3/WASM/ESP32 all verified building
+- `LuaStore::writeStoreToBuffer()` — allocation-free JSON serializer shared across all 3 platforms
+- WASM localStorage bridge — `engine.store.save/flush/load` persists across page reloads
+- ESP32 NVS backend — `engine.store` persists across power cycles, 15-char key validation
+- `engine.tween.await(id)` suspends coroutine until tween completes; `engine.async.wait_frames(n)` yields for N frames
+- `engine.camera.setDeadZone(w, h)` — camera stops following target within dead zone boundary
+- Docusaurus tutorials: Lua syntax highlighting, "Your First Script" + "Async Coroutines" tutorials
+- 6 phases, 13 plans, 78 files changed, ~61,700 LOC C++/hpp, 57 commits
 
-**Previously shipped: v1.0-v1.6** — See MILESTONES.md for full details
+**Previously shipped: v1.0-v1.7** — See MILESTONES.md for full details
 
 ## Requirements
 
@@ -119,24 +117,25 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - ✓ engine.tween.* 8-slot pool with 4 inline easing functions — v1.7 (Phase 50, TWEEN-01..03)
 - ✓ engine.scene.persist/unpersist with PersistentObjectRegistry — v1.7 (Phase 51, PERSIST-01..03)
 - ✓ engine.ui.* stateless draw calls + internal component guide — v1.7 (Phase 52, UI-01..05)
+- ✓ setup-dev.sh installs Emscripten 3.1.73 + ESP-IDF v5.5 to XDG paths — v1.8 (Phase 53, BLDINFRA-01)
+- ✓ build.sh unified script for SDL3/WASM/ESP32 with $EMSDK graceful fallback — v1.8 (Phase 53, BLDINFRA-02/03)
+- ✓ All v1.7 features compile under Emscripten (.js+.wasm output) and ESP-IDF (flashable firmware) — v1.8 (Phase 53, PLAT-01/02)
+- ✓ ENJIN_LAYER_COUNT set and documented with PSRAM rationale for ESP32 target — v1.8 (Phase 53, PLAT-03)
+- ✓ LuaStore::writeStoreToBuffer() allocation-free JSON serializer shared across all platforms — v1.8 (Phase 54, STORE-01)
+- ✓ engine.store WASM localStorage bridge — flush-only persistence across page reloads — v1.8 (Phase 55, STORE-02)
+- ✓ engine.store ESP32 NVS backend — persist across power cycles, nvs_commit() — v1.8 (Phase 55, STORE-03)
+- ✓ NVS key validation rejects keys > 15 chars with Lua error — v1.8 (Phase 55, STORE-04)
+- ✓ m_followTargetProxy cleared on scene change and hot reload — v1.8 (Phase 56, DEBT-01)
+- ✓ engine.scene.persist() emits printf warning without SceneStateMachine context — v1.8 (Phase 56, DEBT-02)
+- ✓ engine.tween.await(id) suspends coroutine until tween completes — v1.8 (Phase 57, QOL-01)
+- ✓ engine.async.wait_frames(n) yields coroutine for exactly n frames — v1.8 (Phase 57, QOL-02)
+- ✓ engine.camera.setDeadZone(w, h) with centered dead zone boundary — v1.8 (Phase 57, QOL-03)
+- ✓ Getting Started guide updated for SDL3 runner API, no stale Canvas8 references — v1.8 (Phase 58, DOC-01)
+- ✓ "Your First Script" Docusaurus tutorial with tamagotchi.lua walkthrough — v1.8 (Phase 58, DOC-02)
+- ✓ "Async Coroutines" tutorial covering engine.async + engine.tween.await — v1.8 (Phase 58, DOC-03)
+- ✓ Lua syntax highlighting enabled in Docusaurus (prism additionalLanguages) — v1.8 (Phase 58, DOC-04)
 
 ### Active
-
-## Current Milestone: v1.8 Ship Ready
-
-**Goal:** Make enjin2 deployable on all 3 targets (SDL3, WASM, ESP32), clean up tech debt, and provide onboarding documentation.
-
-**Target features:**
-- Dev environment setup script for Arch Linux (Emscripten + ESP-IDF + build helpers)
-- Verify and fix Emscripten/WASM build with all v1.7 features
-- Verify and fix ESP32 build with v1.7 features (5-layer stack, coroutines, store)
-- WASM localStorage bridge for LuaStore
-- ESP32 NVS storage for LuaStore
-- Tech debt cleanup (m_followTargetProxy, PERSIST standalone gap)
-- QoL additions (tween await, wait_frames, camera dead zone)
-- Docusaurus tutorials with getting started guide
-- Usage examples in API docs
-- Tutorial built around arkanoid/tamagotchi demo scripts
 
 ### Out of Scope
 
@@ -162,23 +161,22 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ## Context
 
-**After v1.7:**
-enjin2 is a feature-complete 2D engine with Lua scripting, component infrastructure, and developer tools:
-- 8 engine.* Lua sub-tables: scene, input, time, camera, physics, debug, async, tween, ui, store, event, + more
-- Tilemap, camera, physics toolkit, debug draw, coroutines, tweens, persistent objects, UI components
-- Bindings split into focused files (bindings.cpp, bindings_proxy.cpp, bindings_engine.cpp, bindings_async.cpp, bindings_tween.cpp, bindings_debug.cpp, bindings_ui.cpp, bindings_physics.cpp, bindings_store.cpp)
-- ~27,100 LOC C++ across 125 source files, CMake multi-target
-- 43 ctest suites passing, 26/26 v1.7 requirements satisfied
+**After v1.8:**
+enjin2 is deployable on all 3 targets with a complete dev toolchain, persistent storage, and onboarding docs:
+- Toolchain: setup-dev.sh (Emscripten 3.1.73 + ESP-IDF v5.5), build.sh unified entry point, all 3 platforms verified
+- Storage: LuaStore works on SDL3 (JSON file), WASM (localStorage), and ESP32 (NVS blob) with shared serializer
+- engine.* Lua sub-tables: scene, input, time, camera, physics, debug, async, tween, ui, store, event (12 sub-tables)
+- QoL coroutine additions: tween.await(), wait_frames(), camera dead zone
+- Documentation: Getting Started (SDL3), "Your First Script" tutorial, "Async Coroutines" tutorial, Lua highlighting
+- ~61,700 LOC C++/hpp across 130+ source files, CMake multi-target
+- ctests: 148 assertions in qol_test alone; all suites passing
 
 **Known tech debt:**
-- m_followTargetProxy not cleared in registerAll/setActiveScene (safe due to lua_ok gate)
-- PERSIST-01/02/03 are silent no-ops in SDL standalone mode (no SceneStateMachine by design)
 - Single-proxy-per-component constraint: multiple self:get() calls overwrite proxy registration (last wins)
 - EventBus m_L=nullptr window between scene change and script load (safe for Lua-reachable paths)
 - `getPaletteRGB()` snapshot semantics (re-invoke after palette mutation; SDL runner unaffected)
-- Full Emscripten toolchain build not verified in dev environment
-- ESP32 PSRAM availability for 5-layer stack — may require compile-time layer count reduction
 - `hasComponent()` const calls non-const `getComponent<T>()` — pre-existing design smell
+- C_LuaScript::setInput() must be wired per-frame by host on WASM/ESP32 platforms (SDL runner done)
 
 ## Constraints
 
@@ -265,6 +263,14 @@ enjin2 is a feature-complete 2D engine with Lua scripting, component infrastruct
 | TweenEasing as private enum cast to uint8_t | File-scope tweenEase() in separate TU avoids private-access error | ✓ Working - Phase 50 |
 | PersistentObjectRegistry owned by SceneStateMachine (not LuaBindings) | Object ownership is C++ level; SSM owns lifecycle | ✓ Working - Phase 51 |
 | engine.ui.* bypasses C++ Label/FillUpGauge entirely | std::string incompatible with zero-alloc Pixel4 pipeline | ✓ Working - Phase 52 |
+| writeStoreToBuffer placed before #if !defined(ESP32) guard | Shared JSON serializer available on all 3 platforms | ✓ Working - Phase 54 |
+| wasm_storage.cpp holds only EM_JS declarations | loadFromFile needs access to static JSON parser in bindings_store.cpp | ✓ Working - Phase 55 |
+| flush() WASM/ESP32 branch calls saveToFile(nullptr) | Bypasses desktop empty-path guard; correct for platform paths | ✓ Working - Phase 55 |
+| m_followTargetProxy clear inside if (scene != m_activeScene) guard | Only clear on actual scene change, not on every registerAll() call | ✓ Working - Phase 56 |
+| printf() for persist() warning (not lua_warning, not stderr) | Matches project-wide diagnostic pattern across all platforms | ✓ Working - Phase 56 |
+| waitTweenId gate in tickCoroutines skips frame/time check | Resume fires from tickTweens — avoids double-resume race | ✓ Working - Phase 57 |
+| Coroutine resume in tickTweens placed before done_cb pcall | Avoids yield-across-pcall boundary error | ✓ Working - Phase 57 |
+| Dead zone rectangle centered on camera position (not target) | Classic platformer feel; target re-enters zone from center outward | ✓ Working - Phase 57 |
 
 ---
-*Last updated: 2026-03-02 after v1.8 milestone started*
+*Last updated: 2026-03-03 after v1.8 milestone*

@@ -1,5 +1,25 @@
 # Milestones
 
+## v1.8 Ship Ready (Shipped: 2026-03-03)
+
+**Phases completed:** 6 phases (53-58), 13 plans
+**Timeline:** 2 days (2026-03-02 → 2026-03-03)
+**Git range:** 57 commits, 78 files changed, +10,336 / -320 lines
+**Requirements:** 19/19 satisfied (all phases complete, checkboxes stale)
+
+**Key accomplishments:**
+- `scripts/setup-dev.sh` — idempotent one-shot installer for Emscripten 3.1.73 + ESP-IDF v5.5 to XDG paths (Phase 53)
+- `build.sh` — unified build script replacing build_wasm.sh, single entry point for SDL3/WASM/ESP32 (Phase 53)
+- All three platform builds verified: SDL3, WASM (Emscripten), ESP32 (IDF) compile clean with v1.7 feature set (Phase 53)
+- `LuaStore::writeStoreToBuffer()` — allocation-free JSON serializer shared across all 3 platforms (Phase 54)
+- WASM localStorage bridge — `engine.store.save/flush/load` survives page reloads (Phase 55)
+- ESP32 NVS backend — `engine.store` persists across power cycles with 15-char key validation (Phase 55)
+- `engine.tween.await(id)` suspends coroutine until tween completes; `engine.async.wait_frames(n)` yields for N frames (Phase 57)
+- `engine.camera.setDeadZone(w, h)` — camera stops following target within dead zone boundary (Phase 57)
+- Docusaurus tutorials: Lua syntax highlighting, "Your First Script" + "Async Coroutines" tutorials (Phase 58)
+
+---
+
 ## v1.7 Developer Experience & New Capability (Shipped: 2026-03-02)
 
 **Phases completed:** 10 phases (43-52), 19 plans
