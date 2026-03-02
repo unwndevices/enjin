@@ -416,9 +416,9 @@ ASSERT(pixel_bg == 0, "progressBar leaves bg color in unfilled area");
    - Recommendation: Use float 0..1 via `luaL_checknumber`. This is the canonical progress bar API.
 
 4. **Location of UI-05 internal guide document**
-   - What we know: CONTEXT.md says an "internal guide document exists explaining how to add a new engine.ui.* component."
-   - What's unclear: Directory — `.planning/phases/52-ui-component-bindings/`, `docs/`, or the .planning root?
-   - Recommendation: Create as `docs/ui-component-guide.md` (or `.planning/phases/52-ui-component-bindings/UI-GUIDE.md` if docs/ does not exist). Check with `ls /home/unwn/dev/enjin/docs` before planning.
+   - What we know: CONTEXT.md says an "internal guide document exists explaining how to add a new engine.ui.* component." The `docs/` directory exists but is a Docusaurus/Doxygen documentation site — not the right place for an internal developer guide. The `.planning/` tree contains project artifacts.
+   - What's unclear: Whether a `docs/` subfolder specifically for internal guides exists or whether a new location should be created.
+   - Recommendation: Place the guide at `.planning/phases/52-ui-component-bindings/UI-COMPONENT-GUIDE.md`. This keeps the artifact co-located with the phase that introduced it and is consistent with how planning artifacts are stored. The planner can expose its path as a known reference for future phases.
 
 ## Sources
 
