@@ -170,9 +170,12 @@ void LuaBindings::tickCoroutines(float dt) {
         CoroutineSlot& slot = m_coroutinePool[i];
         if (!slot.active) continue;
 
-        // Decrement wait timer
-        slot.waitRemaining -= dt;
-        if (slot.waitRemaining > 0.0f) continue;  // still waiting
+        // Decrement wait timer — only if the slot has pending wait time.
+        // Use 0.001f epsilon to handle float accumulation (5 * 0.1f != 0.5f exactly).
+        if (slot.waitRemaining > 0.001f) {
+            slot.waitRemaining -= dt;
+            if (slot.waitRemaining > 0.001f) continue;  // still waiting
+        }
 
         // Retrieve coroutine thread from registry
         lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
@@ -197,8 +200,10 @@ void LuaBindings::tickCoroutines(float dt) {
 #endif
 
         if (status == LUA_YIELD) {
-            // Coroutine yielded — waitRemaining was set before yield in async.wait
-            // Nothing to do here; the slot remains active with updated waitRemaining
+            // Coroutine yielded — waitRemaining was set before yield in async.wait.
+            // Subtract the current frame's dt so this tick counts toward the wait duration.
+            // (Without this, the first tick that starts a coroutine wastes a full frame.)
+            slot.waitRemaining -= dt;
         } else if (status == LUA_OK) {
             // Coroutine finished normally
             clearSlot(slot, L);
