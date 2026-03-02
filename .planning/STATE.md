@@ -18,15 +18,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 56 execution complete — 1/1 plans done
+**Current focus:** Phase 57 executing — 1/3 plans done (wait_frames + tween.await complete)
 
 ## Current Position
 
-Phase: 56 of 58 — Plan 56-01 COMPLETE
-Status: DEBT-01 fixed (m_followTargetProxy cleared on scene change and hot reload), DEBT-02 fixed (printf warning in persist() no-SSM guard) — 40+49 tests pass
-Last activity: 2026-03-02 — Phase 56-01 complete (DEBT-01 and DEBT-02 scripting bindings fixes)
+Phase: 57 of 58 — Plan 57-01 COMPLETE, Plans 57-02 and 57-03 pending
+Status: QOL-01 (tween.await) and QOL-02 (wait_frames) implemented — 28+53 tests pass
+Last activity: 2026-03-02 — Phase 57-01 complete (coroutine QoL APIs)
 
-Progress: [████░░░░░░] 33% (v1.8 milestone — 3/6 phases complete, Phase 56 executing)
+Progress: [████░░░░░░] 33% (v1.8 milestone — 3/6 phases complete, Phase 57 executing)
 
 ## Performance Metrics
 
@@ -55,9 +55,15 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 None.
 
+### Decisions
+
+- [Phase 57-01] waitTweenId gate in tickCoroutines skips frame/time check — resume fires from tickTweens instead (avoids double-resume)
+- [Phase 57-01] Coroutine resume in tickTweens placed before done_cb pcall to avoid yield-across-pcall boundary error
+- [Phase 57-01] Inline slot clear in bindings_tween.cpp (6 fields) — clearSlot template is file-static to bindings_async.cpp
+
 ### Blockers/Concerns
 
-- [Phase 57] tween-await polling requires integration test; re-entrant resume from done_cb is a real documented failure mode.
+None.
 
 ### Technical Debt (carried into v1.8)
 
@@ -71,5 +77,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Phase 56-01 complete — all plans done
+Stopped at: Phase 57-01 complete — Plans 57-02 and 57-03 pending
 Resume file: None

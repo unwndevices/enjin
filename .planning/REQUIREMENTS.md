@@ -33,8 +33,8 @@ Requirements for v1.8 milestone. Each maps to roadmap phases.
 
 ### QoL Features
 
-- [ ] **QOL-01**: `engine.tween.await()` inside a coroutine suspends until tween completes (polling implementation)
-- [ ] **QOL-02**: `engine.async.wait_frames(n)` Lua helper yields for exactly n frames
+- [x] **QOL-01**: `engine.tween.await()` inside a coroutine suspends until tween completes (polling implementation)
+- [x] **QOL-02**: `engine.async.wait_frames(n)` Lua helper yields for exactly n frames
 - [ ] **QOL-03**: `engine.camera.setDeadZone(w, h)` with offset-clamp boundary tracking
 
 ### Documentation
@@ -86,8 +86,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STORE-04 | Phase 55 | Pending |
 | DEBT-01 | Phase 56 | Complete |
 | DEBT-02 | Phase 56 | Complete |
-| QOL-01 | Phase 57 | Pending |
-| QOL-02 | Phase 57 | Pending |
+| QOL-01 | Phase 57 | Complete |
+| QOL-02 | Phase 57 | Complete |
 | QOL-03 | Phase 57 | Pending |
 | DOC-01 | Phase 58 | Pending |
 | DOC-02 | Phase 58 | Pending |
