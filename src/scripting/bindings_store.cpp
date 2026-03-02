@@ -453,9 +453,49 @@ bool LuaStore::loadFromFile(const char*) {
 }
 
 #else
-// ESP32 stub (STORE-03) — implemented in Plan 55-02
-bool LuaStore::saveToFile(const char*) const { return false; }
-bool LuaStore::loadFromFile(const char*) { return false; }
+// ESP32 NVS backend (STORE-03)
+extern "C" {
+    bool esp32_storage_write(const char* json, size_t len_including_null);
+    bool esp32_storage_read(char* out, size_t cap);
+}
+
+bool LuaStore::saveToFile(const char*) const {
+    char buf[STORE_BUFFER_MAX];
+    if (!writeStoreToBuffer(buf, STORE_BUFFER_MAX)) return false;
+    return esp32_storage_write(buf, strlen(buf) + 1);
+}
+
+bool LuaStore::loadFromFile(const char*) {
+    char buf[STORE_BUFFER_MAX];
+    if (!esp32_storage_read(buf, STORE_BUFFER_MAX)) {
+        return true;  // no saved data — not an error
+    }
+    clear();
+    const char* p = buf;
+    skipWhitespace(p);
+    if (*p != '{') return false;
+    ++p;
+    skipWhitespace(p);
+    if (*p == '}') return true;
+    while (*p) {
+        skipWhitespace(p);
+        if (m_count >= STORE_MAX_KEYS) return false;
+        StoreSlot& slot = m_entries[m_count];
+        slot = StoreSlot{};
+        if (!readJsonString(p, slot.key, STORE_MAX_KEY)) return false;
+        skipWhitespace(p);
+        if (*p != ':') return false;
+        ++p;
+        skipWhitespace(p);
+        if (!readJsonValue(p, slot)) return false;
+        m_count++;
+        skipWhitespace(p);
+        if (*p == ',') { ++p; continue; }
+        if (*p == '}') break;
+        return false;
+    }
+    return true;
+}
 #endif
 
 //==============================================================================
@@ -547,6 +587,14 @@ int LuaBindings::lua_engine_store_save(lua_State* L) {
     if (!b) { lua_pushboolean(L, 0); return 1; }
 
     const char* key = luaL_checkstring(L, 1);
+
+#ifdef ESP32
+    // NVS key limit: 15 characters max (STORE-04)
+    if (strlen(key) > 15) {
+        return luaL_error(L, "engine.store.save: key '%s' exceeds 15-character NVS limit on ESP32", key);
+    }
+#endif
+
     int vtype = lua_type(L, 2);
     bool ok = false;
 
