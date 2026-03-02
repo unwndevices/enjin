@@ -185,6 +185,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_math.cpp
         src/scripting/bindings_store.cpp
         src/scripting/wasm_storage.cpp
+        src/scripting/esp32_storage.cpp
         src/scripting/bindings_async.cpp
         src/scripting/bindings_tween.cpp
         src/scripting/bindings_system.cpp

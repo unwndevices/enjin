@@ -30,6 +30,7 @@ if(TARGET enjin2_lua)
         idf::vfs
         idf::spiffs
         idf::newlib
+        idf::nvs_flash
     )
 endif()
 

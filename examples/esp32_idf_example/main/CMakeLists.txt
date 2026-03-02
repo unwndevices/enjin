@@ -7,6 +7,7 @@ idf_component_register(
     REQUIRES
         esp_system
         freertos
+        nvs_flash
 )
 
 target_link_libraries(${COMPONENT_LIB} PRIVATE
