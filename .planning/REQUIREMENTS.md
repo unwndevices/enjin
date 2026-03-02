@@ -54,10 +54,10 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 
 ### UI Components
 
-- [ ] **UI-01**: engine.ui.progressBar(x,y,w,h,value,fg,bg) stateless draw call
-- [ ] **UI-02**: engine.ui.statBar(x,y,w,h,current,max,fg,bg) stateless draw call
-- [ ] **UI-03**: engine.ui.panel(x,y,w,h,bg,border) stateless draw call
-- [ ] **UI-04**: engine.ui.label(x,y,text,fg) stateless draw call
+- [x] **UI-01**: engine.ui.progressBar(x,y,w,h,value,fg,bg) stateless draw call
+- [x] **UI-02**: engine.ui.statBar(x,y,w,h,current,max,fg,bg) stateless draw call
+- [x] **UI-03**: engine.ui.panel(x,y,w,h,bg,border) stateless draw call
+- [x] **UI-04**: engine.ui.label(x,y,text,fg) stateless draw call
 - [x] **UI-05**: Internal guide document for building new engine.ui.* components
 
 ## Future Requirements
@@ -121,10 +121,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERSIST-01 | Phase 51 | Complete |
 | PERSIST-02 | Phase 51 | Complete |
 | PERSIST-03 | Phase 51 | Complete |
-| UI-01 | Phase 52 | Pending |
-| UI-02 | Phase 52 | Pending |
-| UI-03 | Phase 52 | Pending |
-| UI-04 | Phase 52 | Pending |
+| UI-01 | Phase 52 | Complete |
+| UI-02 | Phase 52 | Complete |
+| UI-03 | Phase 52 | Complete |
+| UI-04 | Phase 52 | Complete |
 | UI-05 | Phase 52 | Complete |
 
 **Coverage:**

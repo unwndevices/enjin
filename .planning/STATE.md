@@ -79,6 +79,10 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 51-persistent-objects]: persist() binding returns nil on overflow consistent with coroutine/tween pool pattern
 - [Phase 51-persistent-objects]: find() fallback uses getBindings(L)->m_ssm; active scene priority maintained (local shadows persistent)
 - [Phase 52]: Guide placed in phase directory; full C++ code examples included for direct copy-paste; quick-reference file map at end for orientation
+- [Phase 52-01]: REQUIRE_CANVAS(b, L) macro used (not REQUIRE_DEBUG_CANVAS) — no enabled toggle; uses currentCanvas not m_debugCanvas
+- [Phase 52-01]: luaL_checknumber for value/current/max params (float); luaL_checkinteger silently truncates 0.5 to 0
+- [Phase 52-01]: statBar division-by-zero: (max > 0.0f) ? (current/max) : 0.0f
+- [Phase 52-01]: fillW overflow guard: if (fillW > w) fillW = w after uint16_t cast
 
 ### Pending Todos
 
@@ -107,5 +111,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 52-02-PLAN.md (UI component developer guide — stateless canvas-call pattern, 355-line UI-COMPONENT-GUIDE.md)
+Stopped at: Completed 52-01-PLAN.md (engine.ui.* Lua sub-table — progressBar/statBar/panel/label, 7-case test suite, 43/43 tests pass)
 Resume file: None
