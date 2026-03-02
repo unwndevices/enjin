@@ -182,6 +182,49 @@
 
 ---
 
+## Milestone: v1.8 — Ship Ready
+
+**Shipped:** 2026-03-03
+**Phases:** 6 | **Plans:** 13 | **Commits:** 57 | **Files changed:** 78
+
+### What Was Built
+- `scripts/setup-dev.sh` — idempotent toolchain installer for Emscripten 3.1.73 + ESP-IDF v5.5 to XDG paths (Phase 53)
+- `build.sh` — unified build entry replacing build_wasm.sh; all 3 platforms verified building (Phase 53)
+- `LuaStore::writeStoreToBuffer()` — allocation-free JSON serializer shared by SDL3/WASM/ESP32 (Phase 54)
+- WASM localStorage bridge — `engine.store` persists across page reloads (Phase 55)
+- ESP32 NVS backend — `engine.store` persists across power cycles with 15-char key validation (Phase 55)
+- `engine.tween.await(id)` + `engine.async.wait_frames(n)` + `engine.camera.setDeadZone()` (Phase 57)
+- Docusaurus tutorials with Lua syntax highlighting, Getting Started + "Your First Script" + "Async Coroutines" (Phase 58)
+
+### What Worked
+- Small, well-scoped phases (1 plan each for 54, 56) executed very quickly with clear acceptance criteria
+- Phase 54 extracting writeStoreToBuffer() before the platform backends was the correct sequencing — both Phase 55 backends used it directly
+- Platform guard structure established in 55-01 (WASM) was immediately reused in 55-02 (ESP32) — minimal rework
+- QoL features (Phase 57) were tightly coupled and correctly planned in 3 atomic plans (coroutine slot extension, camera dead zone, integration tests)
+- Documentation phase (58) was effective as a cap phase — 3 parallel deliverables with no inter-dependencies executed cleanly
+
+### What Was Inefficient
+- REQUIREMENTS.md checkboxes were never updated during milestone execution — all 11 "pending" items were actually complete, causing a misleading traceability table at archival time
+- No milestone audit was run — the audit would have surfaced the stale REQUIREMENTS.md and confirmed E2E storage flows across all 3 platforms
+- SUMMARY.md one_liner field still not populated (same issue as v1.7) — automated accomplishment extraction returns nothing
+
+### Patterns Established
+- **writeStoreToBuffer as platform-universal serializer**: placed before all platform #ifdef guards so any future storage backend gets it for free
+- **Platform storage guard structure**: `#ifdef __EMSCRIPTEN__` → `#elif ESP32` → `#else` (SDL3 default) pattern used in both saveToFile and loadFromFile — replicable for future platform I/O
+- **waitTweenId gate in tickCoroutines**: skipping frame/time check and resuming in tickTweens avoids double-resume — correct pattern for any future "await external event" coroutine primitive
+
+### Key Lessons
+1. Update REQUIREMENTS.md checkboxes during execution, not only during archival — stale traceability wastes archival audit time and loses historical correctness
+2. The `gsd:audit-milestone` step catches not just code gaps but documentation gaps — skipping it means requirements tracking stays stale
+3. Cap phases (documentation, tutorials) benefit from upfront content research: knowing what to write about before planning results in tighter, more accurate plans
+
+### Cost Observations
+- Model mix: balanced profile (sonnet for research/planning, sonnet for execution)
+- Sessions: ~5 (Phase 53 toolchain sprint, Phase 54 serializer, Phase 55 storage backends, Phase 56+57 QoL, Phase 58 docs)
+- Notable: 13 plans in 2 days — efficient cadence driven by clear phase decomposition; storage phases were the deepest work
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -196,6 +239,7 @@
 | v1.5 | 12 | 21 | Scripting foundation — audit-driven gap closure, pointer-to-pointer registry, live-wiring tests |
 | v1.6 | 4 | 4 | Game ready — pattern replication from Phase 39, fastest milestone, audit passed clean |
 | v1.7 | 10 | 19 | DX + new capability — structural refactoring as prerequisite, fixed-capacity pool pattern, 26/26 requirements |
+| v1.8 | 6 | 13 | Ship ready — platform storage backends, QoL coroutine additions, onboarding docs, all 3 targets verified |
 
 ### Cumulative Quality
 
@@ -209,12 +253,14 @@
 | v1.5 | 22+ | scene_render, named_objects, scene_transition, engine_table, script_proxy, error_policy, input_callback, gc_assert, drawable_decoupling, proxy_lifetime, live-wiring |
 | v1.6 | 27+ | component_proxy_test, timer_test, state_machine_test, eventbus_test |
 | v1.7 | 43 | tilemap_test, camera_test, camera_lua_test, physics_test, physics_lua_test, sprite_load_test, overflow_test, debug_draw_test, camera_follow_test, store_test, coroutine_async_test, tween_test, persistent_objects_test, persistent_lua_test, ui_binding_test |
+| v1.8 | 46+ | qol_test (tween.await, wait_frames, camera dead zone — 148 assertions), store_test extended |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Research phases that identify exact targets make execution predictable (v1.3, v1.4, v1.5, v1.7)
+1. Research phases that identify exact targets make execution predictable (v1.3, v1.4, v1.5, v1.7, v1.8)
 2. lua_CFunction-only bindings eliminate UB risks from std::function capture (v1.3, v1.4, v1.5)
 3. Header-only zero-alloc structs are the optimal pattern for this codebase (v1.3 InputState, v1.4 SpriteSheet/LayerCompositor)
 4. Integration paths need live-wiring tests, not just unit tests — unit tests pass with null pointers; live tests catch initialization-order bugs (v1.5)
 5. Structural refactoring as a prerequisite phase pays dividends across all subsequent phases in the same milestone (v1.7 Phase 46)
 6. Fixed-capacity pool pattern (N-slot array + clear) is the universal zero-alloc subsystem pattern — replicated 4x across v1.6-v1.7
+7. Update REQUIREMENTS.md checkboxes during execution — stale traceability at archival time causes misleading gap analysis (v1.7, v1.8)
