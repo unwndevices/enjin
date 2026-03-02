@@ -229,6 +229,49 @@ void LuaBindings::tickTweens(float dt) {
 
         // Check if tween has completed
         if (t >= 1.0f) {
+            int completedId = slot.id;  // save before clearTweenSlot zeroes it
+
+            // Phase 57 QOL-01: Resume coroutines awaiting this tween.
+            // MUST be BEFORE done_cb pcall — lua_resume cannot be inside pcall.
+            for (int j = 0; j < COROUTINE_POOL_SIZE; ++j) {
+                CoroutineSlot& cslot = m_coroutinePool[j];
+                if (!cslot.active || cslot.waitTweenId != completedId) continue;
+                cslot.waitTweenId = 0;
+
+                lua_rawgeti(L, LUA_REGISTRYINDEX, cslot.threadRef);
+                lua_State* co = lua_tothread(L, -1);
+                lua_pop(L, 1);
+                if (!co) continue;
+
+                int status;
+#if LUA_VERSION_NUM >= 504
+                int nres = 0;
+                status = lua_resume(co, L, 0, &nres);
+                if (nres > 0) lua_pop(co, nres);
+#else
+                status = lua_resume(co, 0);
+                if (lua_gettop(co) > 0) lua_settop(co, 0);
+#endif
+                if (status != LUA_YIELD) {
+                    // Coroutine finished (LUA_OK) or errored — inline clear
+                    // (clearSlot is static in bindings_async.cpp — not visible here)
+                    if (cslot.threadRef != LUA_NOREF) {
+                        luaL_unref(L, LUA_REGISTRYINDEX, cslot.threadRef);
+                    }
+                    cslot.threadRef     = LUA_NOREF;
+                    cslot.waitRemaining = 0.0f;
+                    cslot.waitFrames    = 0;
+                    cslot.waitTweenId   = 0;
+                    cslot.id            = 0;
+                    cslot.active        = false;
+                    if (status != LUA_OK) {
+                        const char* err = lua_tostring(co, -1);
+                        fprintf(stderr, "[tween.await error] %s\n", err ? err : "(unknown)");
+                    }
+                }
+                // LUA_YIELD: coroutine re-yielded (chained wait) — slot stays active
+            }
+
             // Fire done_cb if provided
             if (slot.doneCbRef != LUA_NOREF) {
                 lua_rawgeti(L, LUA_REGISTRYINDEX, slot.doneCbRef);
@@ -259,12 +302,52 @@ void LuaBindings::clearTweens() {
     m_nextTweenId = 0;
 }
 
+// ── Phase 57 QOL-01: engine.tween.await(id) ──────────────────────────────────
+// Suspends the calling coroutine until the specified tween completes.
+// If the tween ID is invalid or already complete, resumes immediately (no yield).
+// Must be called from within a coroutine (yieldable context).
+int LuaBindings::lua_engine_tween_await(lua_State* L) {
+    if (!lua_isyieldable(L)) {
+        luaL_error(L, "engine.tween.await() called outside a coroutine");
+        return 0;
+    }
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) return lua_yield(L, 0);
+
+    int tweenId = static_cast<int>(luaL_checkinteger(L, 1));
+
+    // Check if tween is still active — if not, resume immediately (expired/invalid ID)
+    bool found = false;
+    for (int i = 0; i < TWEEN_POOL_SIZE; ++i) {
+        if (b->m_tweenPool[i].active && b->m_tweenPool[i].id == tweenId) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) return 0;  // tween already done — no yield
+
+    // Find calling coroutine slot and set waitTweenId
+    for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
+        CoroutineSlot& slot = b->m_coroutinePool[i];
+        if (!slot.active || slot.threadRef == LUA_NOREF) continue;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        lua_State* co = lua_tothread(L, -1);
+        lua_pop(L, 1);
+        if (co == L) {
+            slot.waitTweenId = tweenId;
+            break;
+        }
+    }
+    return lua_yield(L, 0);
+}
+
 // ── registerTweenSubtable: engine.tween.* (called from registerEngineTable) ───
 void LuaBindings::registerTweenSubtable(lua_State* L) {
     static const LuaFuncDef kTweenFuncs[] = {
         {"to",        lua_engine_tween_to},
         {"cancel",    lua_engine_tween_cancel},
         {"cancelAll", lua_engine_tween_cancelAll},
+        {"await",     lua_engine_tween_await},  // Phase 57: QOL-01
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kTweenFuncs, ENJIN_ARRAY_LEN(kTweenFuncs));
