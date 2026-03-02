@@ -449,6 +449,8 @@ private:
     // -- Camera follow (Phase 48: CAM-01, CAM-02) -----------------------------------
     ObjectProxy* m_followTargetProxy{nullptr};  ///< Non-owning; null = not following
     float        m_followSpeed{0.1f};           ///< lerp speed passed to lookAt()
+    float        m_deadZoneW{0.0f};             ///< Dead zone width (0 = disabled)   [Phase 57: QOL-03]
+    float        m_deadZoneH{0.0f};             ///< Dead zone height (0 = disabled)  [Phase 57: QOL-03]
 
     // -- Lightweight global state machine (engine.state.*) ----------------------
     static constexpr int MAX_GAME_STATES = 16;  ///< Maximum named states
@@ -839,6 +841,8 @@ private:
     // engine.camera.follow/stopFollow binding functions (Phase 48: CAM-01, CAM-02)
     static int lua_engine_camera_follow(lua_State* L);
     static int lua_engine_camera_stopFollow(lua_State* L);
+    // Phase 57: QOL-03
+    static int lua_engine_camera_setDeadZone(lua_State* L);
 
     // engine.async.* binding functions (Phase 49: ASYNC-01..ASYNC-03)
     static int lua_engine_async_start(lua_State* L);

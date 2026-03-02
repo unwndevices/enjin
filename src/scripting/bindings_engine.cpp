@@ -144,6 +144,7 @@ void LuaBindings::registerEngineTable() {
         {"clearBounds",  lua_engine_camera_clearBounds},
         {"follow",       lua_engine_camera_follow},      // Phase 48: CAM-01
         {"stopFollow",   lua_engine_camera_stopFollow},  // Phase 48: CAM-02
+        {"setDeadZone",  lua_engine_camera_setDeadZone}, // Phase 57: QOL-03
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kCameraFuncs, ENJIN_ARRAY_LEN(kCameraFuncs));
@@ -983,6 +984,23 @@ static int lua_engine_camera_clearBounds(lua_State* L) {
 // engine.camera.follow / stopFollow bindings (Phase 48: CAM-01, CAM-02)
 //==============================================================================
 
+// --- engine.camera.setDeadZone(w, h) --- Phase 57: QOL-03 ---
+// Sets a rectangular dead zone centered on the camera's current position.
+// While the follow target is inside the rectangle, the camera freezes (lookAt not called).
+// setDeadZone(0, 0) disables the dead zone (camera follows normally).
+// Negative values are clamped to 0.
+int LuaBindings::lua_engine_camera_setDeadZone(lua_State* L) {
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) return 0;
+    float w = static_cast<float>(luaL_checknumber(L, 1));
+    float h = static_cast<float>(luaL_checknumber(L, 2));
+    if (w < 0.0f) w = 0.0f;
+    if (h < 0.0f) h = 0.0f;
+    b->m_deadZoneW = w;
+    b->m_deadZoneH = h;
+    return 0;
+}
+
 // --- engine.camera.follow(proxy [, speed]) --- CAM-01 ---
 // Stores the follow target proxy in LuaBindings so tickCameraFollow() can track it each frame.
 // If proxy is nil, invalid, or has a null object, silently clears the follow target (no error).
@@ -1034,9 +1052,22 @@ void LuaBindings::tickCameraFollow(float /*dt*/) {
     auto* pos = m_followTargetProxy->object->getComponent<C_Position>();
     if (!pos) return;
 
-    cam->lookAt(static_cast<float>(pos->getPosition().x),
-                static_cast<float>(pos->getPosition().y),
-                m_followSpeed);
+    float targetX = static_cast<float>(pos->getPosition().x);
+    float targetY = static_cast<float>(pos->getPosition().y);
+
+    // Phase 57 QOL-03: Dead zone check — freeze camera if target is inside rectangle centered on camera
+    if (m_deadZoneW > 0.0f && m_deadZoneH > 0.0f) {
+        Vec2 camPos = cam->getPosition();
+        float dx = targetX - camPos.x;
+        float dy = targetY - camPos.y;
+        if (dx < 0.0f) dx = -dx;
+        if (dy < 0.0f) dy = -dy;
+        if (dx <= m_deadZoneW * 0.5f && dy <= m_deadZoneH * 0.5f) {
+            return;  // target inside dead zone — freeze camera
+        }
+    }
+
+    cam->lookAt(targetX, targetY, m_followSpeed);
 }
 
 } // namespace enjin2
