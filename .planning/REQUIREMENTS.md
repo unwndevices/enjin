@@ -9,9 +9,9 @@ Requirements for v1.8 milestone. Each maps to roadmap phases.
 
 ### Build Infrastructure
 
-- [ ] **BLDINFRA-01**: Developer can run a single setup script on Arch Linux to install Emscripten (emsdk 3.1.73) and ESP-IDF (v5.5) toolchains
-- [ ] **BLDINFRA-02**: Developer can build for SDL3, WASM, or ESP32 via `build.sh --target [sdl3|wasm|esp32]` helper scripts
-- [ ] **BLDINFRA-03**: Build scripts detect `$EMSDK` environment variable and fall back gracefully with actionable error
+- [x] **BLDINFRA-01**: Developer can run a single setup script on Arch Linux to install Emscripten (emsdk 3.1.73) and ESP-IDF (v5.5) toolchains
+- [x] **BLDINFRA-02**: Developer can build for SDL3, WASM, or ESP32 via `build.sh --target [sdl3|wasm|esp32]` helper scripts
+- [x] **BLDINFRA-03**: Build scripts detect `$EMSDK` environment variable and fall back gracefully with actionable error
 
 ### Platform Verification
 
@@ -74,9 +74,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BLDINFRA-01 | Phase 53 | Pending |
-| BLDINFRA-02 | Phase 53 | Pending |
-| BLDINFRA-03 | Phase 53 | Pending |
+| BLDINFRA-01 | Phase 53 | Complete |
+| BLDINFRA-02 | Phase 53 | Complete |
+| BLDINFRA-03 | Phase 53 | Complete |
 | PLAT-01 | Phase 53 | Pending |
 | PLAT-02 | Phase 53 | Pending |
 | PLAT-03 | Phase 53 | Pending |

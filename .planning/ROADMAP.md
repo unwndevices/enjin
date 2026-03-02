@@ -93,10 +93,12 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
   3. `build.sh --target esp32` produces flashable firmware with all v1.7 features compiling under ESP-IDF
   4. `build.sh --target sdl3` succeeds; running without `$EMSDK` set prints an actionable error message
   5. `ENJIN_LAYER_COUNT` for ESP32 target is set and documented in code with PSRAM rationale
-**Plans**: TBD
+**Plans**: 3
 
 Plans:
-- [ ] 53-01: TBD
+- [ ] 53-01: Setup script (scripts/setup-dev.sh — Emscripten 3.1.73 + ESP-IDF v5.5 to XDG paths)
+- [ ] 53-02: Unified build script (build.sh — replaces build_wasm.sh, all three targets)
+- [ ] 53-03: Platform verification + ENJIN_LAYER_COUNT fix (compile SDL3/WASM/ESP32, #ifdef ESP32 guard)
 
 ### Phase 54: JSON Serializer Refactor
 **Goal**: Shared JSON serialization helper extracted and verified, unlocking both storage backends
@@ -174,7 +176,7 @@ Plans:
 | 27-38. Lua Scripting Foundation | v1.5 | 21/21 | Complete | 2026-02-28 |
 | 39-42. Game Ready | v1.6 | 4/4 | Complete | 2026-02-28 |
 | 43-52. Developer Experience | v1.7 | 19/19 | Complete | 2026-03-02 |
-| 53. Environment and Build Verification | v1.8 | 0/? | Not started | - |
+| 53. Environment and Build Verification | 2/3 | In Progress|  | - |
 | 54. JSON Serializer Refactor | v1.8 | 0/? | Not started | - |
 | 55. Platform Storage Backends | v1.8 | 0/? | Not started | - |
 | 56. Tech Debt Cleanup | v1.8 | 0/? | Not started | - |
