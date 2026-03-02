@@ -75,7 +75,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 **Milestone Goal:** Make enjin2 deployable on all 3 targets (SDL3, WASM, ESP32), clean up tech debt, and provide onboarding documentation.
 
 - [ ] **Phase 53: Environment and Build Verification** - Dev setup script + confirm all three platforms compile
-- [ ] **Phase 54: JSON Serializer Refactor** - Extract shared writeStoreToBuffer() helper from saveToFile
+- [x] **Phase 54: JSON Serializer Refactor** - Extract shared writeStoreToBuffer() helper from saveToFile (completed 2026-03-02)
 - [ ] **Phase 55: Platform Storage Backends** - WASM localStorage + ESP32 NVS implementations
 - [ ] **Phase 56: Tech Debt Cleanup** - Clear m_followTargetProxy dangling ref + honest persist() warning
 - [ ] **Phase 57: QoL Features** - tween.await(), wait_frames(), camera dead zone
@@ -177,7 +177,7 @@ Plans:
 | 39-42. Game Ready | v1.6 | 4/4 | Complete | 2026-02-28 |
 | 43-52. Developer Experience | v1.7 | 19/19 | Complete | 2026-03-02 |
 | 53. Environment and Build Verification | 2/3 | In Progress|  | - |
-| 54. JSON Serializer Refactor | v1.8 | 0/? | Not started | - |
+| 54. JSON Serializer Refactor | 1/1 | Complete   | 2026-03-02 | - |
 | 55. Platform Storage Backends | v1.8 | 0/? | Not started | - |
 | 56. Tech Debt Cleanup | v1.8 | 0/? | Not started | - |
 | 57. QoL Features | v1.8 | 0/? | Not started | - |
