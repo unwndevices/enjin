@@ -8,38 +8,22 @@ enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded de
 
 enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation.
 
-## Current Milestone: v1.7 Developer Experience & New Capability
-
-**Goal:** Polish the developer experience with debug draw, save/load, persistent objects, and camera follow; harden the engine with overflow tests, bindings refactoring, and null safety; add coroutines, tweens, and UI components for Lua.
-
-**Target features:**
-- Debug draw bindings (engine.debug.*)
-- Save/load serialization helper
-- Persistent objects across scenes
-- Camera follow helpers
-- Overflow tests and null safety hardening
-- Bindings.cpp refactoring
-- Coroutine/async for Lua
-- Tween helpers
-- UI component bindings (engine.ui.*)
-
 ## Current State
 
-**Shipped: v1.6 Game Ready (2026-02-28)**
-- ComponentProxy self:get() — Lua scripts access sibling components with typed proxy userdata and stale-safe invalidation
-- C_Timer with delayed/repeating Lua callbacks (after/every/cancel) — 8-slot zero-alloc timer array with luaL_ref lifecycle
-- C_StateMachine with deferred transitions — named states with enter/update/exit hooks matching SceneStateMachine semantics
-- EventBus scene-scoped pub/sub — on/off/emit API with fixed-capacity arrays, re-entrant-safe emit, hot-reload cleanup
-- 4 phases, 4 plans, 38 files changed, ~83,800 LOC C++
+**Shipped: v1.7 Developer Experience & New Capability (2026-03-02)**
+- C_Tilemap 64x64 grid with viewport-culled rendering, scroll, coordinate helpers, full Lua proxy
+- C_Camera with lerp follow, screen shake, bounds clamping, drawWithOffset() render pipeline, engine.camera.* API
+- Stateless engine.physics.* toolkit — gravity, drag, springs, bounce, raycast, TrigLUT
+- Bindings refactored: 1390-line monolith split via bindings_internal.hpp, null safety guards, overflow tests
+- engine.debug.* top-layer debug canvas; engine.camera.follow/stopFollow per-frame tracking
+- LuaStore SDL3 JSON I/O with engine.store.flush/path
+- engine.async.* 8-slot coroutine scheduler with wait/cancel; ESP32 coroutine library opened
+- engine.tween.* 8-slot pool with 4 inline easing functions
+- engine.scene.persist/unpersist with PersistentObjectRegistry; find() searches persistent registry
+- engine.ui.* stateless immediate-mode draw calls (progressBar, statBar, panel, label)
+- 10 phases, 19 plans, 62 files changed, ~27,100 LOC C++, 43 ctests passing
 
-**Previously shipped: v1.5 Lua Scripting Foundation (2026-02-28)**
-- Full `engine.*` Lua global table: scene switch/find, input polling, time, logging, GC control
-- `ScriptProxy` full userdata — `self` as first callback arg; `__index`/`__newindex` dispatch to C++ components
-- `ScriptErrorPolicy` (Disable/Log/Panic) + on-edge input callbacks + GC control + assertRequires<T>()
-- Named objects + 8-slot tag system; ObjectProxy from engine.scene.find(); deferred scene self-transitions
-- 12 phases, 21 plans, 152 files changed
-
-**Previously shipped: v1.0-v1.4** — See MILESTONES.md for full details
+**Previously shipped: v1.0-v1.6** — See MILESTONES.md for full details
 
 ## Requirements
 
@@ -123,27 +107,22 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - ✓ C_Timer delayed/repeating Lua callbacks (after/every/cancel) — v1.6 (Phase 40, TIMER-01..05)
 - ✓ C_StateMachine named states with deferred transitions — v1.6 (Phase 41, FSM-01..05)
 - ✓ EventBus scene-scoped pub/sub (on/off/emit) — v1.6 (Phase 42, EVENT-01..05)
+- ✓ C_Tilemap 64x64 grid with viewport-culled rendering and Lua proxy — v1.7 (Phase 43, TMAP-01..08)
+- ✓ C_Camera with lerp follow, screen shake, bounds, drawWithOffset(), engine.camera.* API — v1.7 (Phase 44, CAM-01..09)
+- ✓ Stateless engine.physics.* toolkit with TrigLUT pre-computed trig tables — v1.7 (Phase 45, PHYS-01..13)
+- ✓ bindings.cpp split via bindings_internal.hpp, null safety guards — v1.7 (Phase 46, BIND-01, BIND-02)
+- ✓ sprite_load_test fixed, overflow tests for event bus/sprite pool/component destruction — v1.7 (Phase 46, TEST-01, TEST-02)
+- ✓ engine.debug.* top-layer debug canvas with zero-cost toggle — v1.7 (Phase 47, DEBUG-01..03)
+- ✓ engine.camera.follow/stopFollow per-frame tracking — v1.7 (Phase 48, CAM-01, CAM-02)
+- ✓ LuaStore SDL3 JSON I/O with engine.store.flush/path — v1.7 (Phase 48, STORE-01, STORE-02)
+- ✓ engine.async.* 8-slot coroutine scheduler with wait/cancel, ESP32 library — v1.7 (Phase 49, ASYNC-01..04)
+- ✓ engine.tween.* 8-slot pool with 4 inline easing functions — v1.7 (Phase 50, TWEEN-01..03)
+- ✓ engine.scene.persist/unpersist with PersistentObjectRegistry — v1.7 (Phase 51, PERSIST-01..03)
+- ✓ engine.ui.* stateless draw calls + internal component guide — v1.7 (Phase 52, UI-01..05)
 
 ### Active
 
-<!-- Current milestone: v1.7 Developer Experience + Polish + New Capability -->
-
-#### Developer Experience / Polish
-- [ ] Debug draw bindings (engine.debug.* for bounding boxes, collision shapes)
-- [ ] Save/load serialization helper (persistent game state beyond LuaStore)
-- [ ] Persistent objects across scenes
-- [ ] Camera follow helpers (engine.camera.follow(target))
-
-#### Robustness / Quality
-- [ ] Fix sprite_load_test.cpp compilation error (missing lua_wrapper.hpp)
-- [ ] Add overflow tests for event bus, sprite pool, component destruction
-- [ ] Address monolithic bindings files (1390-line bindings.cpp split)
-- [ ] Null safety improvements in binding chains
-
-#### New Capability
-- [ ] Coroutine/async pattern for Lua (loading screens, tween animations)
-- [ ] Tween helpers
-- [ ] UI component bindings (engine.ui.* — progress bars, stat bars) + internal guide
+(No active milestone — run `/gsd:new-milestone` to start next)
 
 ### Out of Scope
 
@@ -169,23 +148,22 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ## Context
 
-**After v1.6:**
-enjin2 is a game-ready 2D engine with complete Lua scripting and component infrastructure:
-- ComponentProxy self:get() — access C_Timer, C_StateMachine, C_Position, C_Tilemap, C_Camera from Lua
-- C_Timer (after/every/cancel), C_StateMachine (addState/setState/getState with deferred transitions)
-- EventBus scene-scoped pub/sub (engine.event.on/off/emit) with re-entrant-safe emit
-- Full `engine.*` Lua global table: scene, input, time, lua, log, event sub-tables
-- `ScriptProxy` full userdata; `ScriptErrorPolicy`; on-edge input callbacks; GC control; assertRequires<T>()
-- ~83,800 LOC C++, CMake multi-target (enjin2_core, enjin2_graphics, enjin2_input, enjin2_lua, enjin2_wasm, enjin2_sdl)
-- 27+ ctest suites passing (component_proxy, timer, state_machine, eventbus, + all prior)
+**After v1.7:**
+enjin2 is a feature-complete 2D engine with Lua scripting, component infrastructure, and developer tools:
+- 8 engine.* Lua sub-tables: scene, input, time, camera, physics, debug, async, tween, ui, store, event, + more
+- Tilemap, camera, physics toolkit, debug draw, coroutines, tweens, persistent objects, UI components
+- Bindings split into focused files (bindings.cpp, bindings_proxy.cpp, bindings_engine.cpp, bindings_async.cpp, bindings_tween.cpp, bindings_debug.cpp, bindings_ui.cpp, bindings_physics.cpp, bindings_store.cpp)
+- ~27,100 LOC C++ across 125 source files, CMake multi-target
+- 43 ctest suites passing, 26/26 v1.7 requirements satisfied
 
 **Known tech debt:**
+- m_followTargetProxy not cleared in registerAll/setActiveScene (safe due to lua_ok gate)
+- PERSIST-01/02/03 are silent no-ops in SDL standalone mode (no SceneStateMachine by design)
 - Single-proxy-per-component constraint: multiple self:get() calls overwrite proxy registration (last wins)
 - EventBus m_L=nullptr window between scene change and script load (safe for Lua-reachable paths)
 - `getPaletteRGB()` snapshot semantics (re-invoke after palette mutation; SDL runner unaffected)
 - Full Emscripten toolchain build not verified in dev environment
-- ESP32 PSRAM availability for 4-layer stack — may require compile-time layer count reduction to 2
-- `C_LuaScript::setInput()` must be called per-frame by host in WASM/ESP32 (SDL runner wired)
+- ESP32 PSRAM availability for 5-layer stack — may require compile-time layer count reduction
 - `hasComponent()` const calls non-const `getComponent<T>()` — pre-existing design smell
 
 ## Constraints
@@ -263,5 +241,16 @@ enjin2 is a game-ready 2D engine with complete Lua scripting and component infra
 | emit() snapshots refs to local array before pcall loop | Re-entrant safety: off()/on() inside handler doesn't corrupt iteration | ✓ Working - Phase 42 |
 | EVENT-05 hot-reload in executeScript() not registerAll() | registerAll() runs once at initialize(); hot-reload goes through executeScript() | ✓ Working - Phase 42 |
 
+| Tile ID 0 transparent sentinel with frameIndex pass-through | No subtract-1 in hot path; tileset frame 0 is wasted | ✓ Working - Phase 43 |
+| C_Drawable::drawWithOffset() virtual + m_screenSpace flag | Camera offset skipped for UI elements | ✓ Working - Phase 44 |
+| TrigLUT 256-entry precomputed sine table (not std::sin) | ESP32 has no FPU; LUT is O(1) lookup | ✓ Working - Phase 45 |
+| bindings_internal.hpp static constexpr metatable constants | TU-local, ODR-safe, no companion .cpp needed | ✓ Working - Phase 46 |
+| ENJIN_LAYER_COUNT=5 with layer 4 reserved for debug | Debug canvas excluded from Lua setLayer(); only engine.debug.* writes to it | ✓ Working - Phase 47 |
+| tickCameraFollow/tickCoroutines/tickTweens order in SDL runner | Camera updates before coroutines; coroutines before tweens | ✓ Working - Phases 48-50 |
+| Coroutine scheduler resumes via lua_resume outside pcall scope | Avoids yield-across-pcall boundary | ✓ Working - Phase 49 |
+| TweenEasing as private enum cast to uint8_t | File-scope tweenEase() in separate TU avoids private-access error | ✓ Working - Phase 50 |
+| PersistentObjectRegistry owned by SceneStateMachine (not LuaBindings) | Object ownership is C++ level; SSM owns lifecycle | ✓ Working - Phase 51 |
+| engine.ui.* bypasses C++ Label/FillUpGauge entirely | std::string incompatible with zero-alloc Pixel4 pipeline | ✓ Working - Phase 52 |
+
 ---
-*Last updated: 2026-03-01 after v1.7 milestone start*
+*Last updated: 2026-03-02 after v1.7 milestone completion*

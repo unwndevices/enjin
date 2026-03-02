@@ -1,5 +1,31 @@
 # Milestones
 
+## v1.7 Developer Experience & New Capability (Shipped: 2026-03-02)
+
+**Phases completed:** 10 phases (43-52), 19 plans
+**Timeline:** 3 days (2026-02-28 → 2026-03-02)
+**Git range:** 62 files changed, +7,178 lines
+**Requirements:** 26/26 satisfied (audit passed)
+
+**Key accomplishments:**
+- C_Tilemap 64x64 grid with viewport-culled rendering, scroll, coordinate helpers, and full Lua proxy
+- C_Camera with lerp follow, screen shake, bounds clamping, drawWithOffset() render pipeline, and engine.camera.* API
+- Stateless engine.physics.* toolkit — gravity, drag, springs, bounce, raycast, TrigLUT pre-computed trig tables
+- Bindings refactoring: 1390-line monolith split via bindings_internal.hpp, systematic null safety guards, overflow tests
+- engine.debug.* top-layer debug canvas with zero-cost toggle; engine.camera.follow/stopFollow per-frame tracking
+- LuaStore SDL3 JSON I/O with engine.store.flush/path; engine.async.* 8-slot coroutine scheduler with wait/cancel
+- engine.tween.* 8-slot pool with 4 inline easing functions; engine.scene.persist/unpersist with PersistentObjectRegistry
+- engine.ui.* stateless immediate-mode draw calls (progressBar, statBar, panel, label)
+
+**Tech debt (non-blocking):**
+- m_followTargetProxy not cleared in registerAll/setActiveScene (safe due to lua_ok gate, defensive fix recommended)
+- PERSIST-01/02/03 are silent no-ops in SDL standalone mode (no SceneStateMachine by design)
+- Full Emscripten toolchain build not verified (code inspection conclusive)
+
+**See:** [milestones/v1.7-ROADMAP.md](milestones/v1.7-ROADMAP.md) | [milestones/v1.7-REQUIREMENTS.md](milestones/v1.7-REQUIREMENTS.md)
+
+---
+
 ## v1.6 Game Ready (Shipped: 2026-02-28)
 
 **Phases completed:** 4 phases (39-42), 4 plans, 8 tasks

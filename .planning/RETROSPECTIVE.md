@@ -132,6 +132,56 @@
 
 ---
 
+## Milestone: v1.7 — Developer Experience & New Capability
+
+**Shipped:** 2026-03-02
+**Phases:** 10 | **Plans:** 19 | **Requirements:** 26/26
+
+### What Was Built
+- C_Tilemap 64x64 grid with viewport-culled rendering, coordinate helpers, and full Lua proxy (Phase 43)
+- C_Camera with lerp follow, screen shake, bounds, drawWithOffset() render pipeline, engine.camera.* API (Phase 44)
+- Stateless engine.physics.* toolkit — gravity, drag, springs, bounce, raycast, TrigLUT (Phase 45)
+- Bindings refactored: 1390-line monolith split via bindings_internal.hpp, systematic null safety guards (Phase 46)
+- engine.debug.* top-layer debug canvas with zero-cost toggle (Phase 47)
+- engine.camera.follow/stopFollow + LuaStore SDL3 JSON I/O with flush/path (Phase 48)
+- engine.async.* 8-slot coroutine scheduler with wait/cancel (Phase 49)
+- engine.tween.* 8-slot pool with 4 inline easing functions (Phase 50)
+- engine.scene.persist/unpersist with PersistentObjectRegistry (Phase 51)
+- engine.ui.* stateless immediate-mode draw calls + internal component guide (Phase 52)
+
+### What Worked
+- Phases 43-45 (tilemap, camera, physics) were content-heavy but self-contained — each introduced a new component/system with no cross-dependencies between them
+- Phase 46 (bindings refactoring) as structural foundation was correctly sequenced — all subsequent binding files (47-52) built on bindings_internal.hpp and null-guard patterns
+- Fixed-capacity pool pattern (CoroutineSlot[8], TweenSlot[8], PersistentObjectRegistry[4]) reused across phases 49-51 — consistent API and cleanup semantics
+- registerEngineTable() sub-table registration pattern scaled cleanly from 10 to 18+ sub-tables
+- REQUIREMENTS.md was strictly milestone-scoped (lesson from v1.6) — clean archival, no mixed-scope confusion
+- Pre-milestone audit passed clean (26/26) — 42/42 integration exports wired, 6/6 E2E flows verified
+
+### What Was Inefficient
+- Phases 43-45 were originally created without a formal REQUIREMENTS.md — their requirements (TMAP, CAM, PHYS) are phase-scoped but not tracked in the milestone traceability table
+- Some ROADMAP.md plan checkboxes were left unchecked (`- [ ]`) despite plans being complete — stale state in roadmap
+- SUMMARY.md one_liner field was null for all v1.7 summaries — the template field was never populated, making automated accomplishment extraction fail
+- STATE.md progress counts were stale (counted all 16 project phases, not 10 v1.7 phases) — gsd-tools milestone counting issue persists from v1.4
+
+### Patterns Established
+- **REQUIRE_CANVAS/REQUIRE_DEBUG_CANVAS macros**: zero-cost early-return guards for optional canvas pointers — reusable for any future canvas-dependent binding
+- **tickX() / clearX() pair**: each subsystem (coroutines, tweens, camera follow) provides tick + clear; SDL runner calls tick each frame, registerAll/setActiveScene calls clear
+- **engine.ui.* stateless immediate-mode draw**: bypasses C++ component layer entirely; LuaCanvas draw calls only — correct pattern when C++ components use incompatible types (std::string)
+- **PersistentObjectRegistry as SSM-owned**: object ownership stays in C++ layer, not Lua bindings — correct ownership model for cross-scene lifecycle
+
+### Key Lessons
+1. Structural refactoring (Phase 46) should be planned as a prerequisite when multiple new binding files will follow — the split paid for itself across 6 subsequent phases
+2. Fixed-capacity pool pattern (8-slot array + clearSlot) is the universal pattern for zero-alloc subsystems — established for timers (v1.6), reused for coroutines, tweens, persistent objects
+3. SUMMARY.md one_liner field should be populated during execution for automated milestone reporting — missing data means manual accomplishment extraction
+4. The tick-order contract (camera -> coroutines -> tweens) is architecturally significant and should be documented as a system invariant, not just an implementation detail
+
+### Cost Observations
+- Model mix: balanced profile (sonnet for research/planning, opus for execution)
+- Sessions: ~6 (Phases 43-45 content sprint, Phase 46 refactoring, Phases 47-48 DX sprint, Phases 49-50 async/tween sprint, Phases 51-52 persistence/UI sprint)
+- Notable: 19 plans across 10 phases in 3 days — largest v1.x milestone by phase count; all 26 requirements passed audit
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -145,6 +195,7 @@
 | v1.4 | 4 | 8 | Engine capabilities — fastest execution, research-driven plans |
 | v1.5 | 12 | 21 | Scripting foundation — audit-driven gap closure, pointer-to-pointer registry, live-wiring tests |
 | v1.6 | 4 | 4 | Game ready — pattern replication from Phase 39, fastest milestone, audit passed clean |
+| v1.7 | 10 | 19 | DX + new capability — structural refactoring as prerequisite, fixed-capacity pool pattern, 26/26 requirements |
 
 ### Cumulative Quality
 
@@ -157,10 +208,13 @@
 | v1.4 | 4 | sprite_test, compositor_test |
 | v1.5 | 22+ | scene_render, named_objects, scene_transition, engine_table, script_proxy, error_policy, input_callback, gc_assert, drawable_decoupling, proxy_lifetime, live-wiring |
 | v1.6 | 27+ | component_proxy_test, timer_test, state_machine_test, eventbus_test |
+| v1.7 | 43 | tilemap_test, camera_test, camera_lua_test, physics_test, physics_lua_test, sprite_load_test, overflow_test, debug_draw_test, camera_follow_test, store_test, coroutine_async_test, tween_test, persistent_objects_test, persistent_lua_test, ui_binding_test |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Research phases that identify exact targets make execution predictable (v1.3, v1.4, v1.5)
+1. Research phases that identify exact targets make execution predictable (v1.3, v1.4, v1.5, v1.7)
 2. lua_CFunction-only bindings eliminate UB risks from std::function capture (v1.3, v1.4, v1.5)
 3. Header-only zero-alloc structs are the optimal pattern for this codebase (v1.3 InputState, v1.4 SpriteSheet/LayerCompositor)
 4. Integration paths need live-wiring tests, not just unit tests — unit tests pass with null pointers; live tests catch initialization-order bugs (v1.5)
+5. Structural refactoring as a prerequisite phase pays dividends across all subsequent phases in the same milestone (v1.7 Phase 46)
+6. Fixed-capacity pool pattern (N-slot array + clear) is the universal zero-alloc subsystem pattern — replicated 4x across v1.6-v1.7
