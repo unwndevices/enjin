@@ -481,6 +481,8 @@ void LuaBindings::registerAll() {
     clearCoroutines();
     clearTweens();     // TWEEN-02: clean slate on every hot-reload
     m_followTargetProxy = nullptr;  // DEBT-01: clear follow target on hot reload
+    m_deadZoneW = 0.0f;             // Phase 57 QOL-03: clear dead zone on hot reload
+    m_deadZoneH = 0.0f;
 
     // Store event bus pointer in registry for engine.event.* closures
     lua_pushlightuserdata(L, &m_eventBus);
@@ -717,6 +719,8 @@ void LuaBindings::setActiveScene(Scene* scene) {
         clearCoroutines();
         clearTweens();     // TWEEN-02: clean slate on scene transition
         m_followTargetProxy = nullptr;  // DEBT-01: clear follow target on scene change
+        m_deadZoneW = 0.0f;             // Phase 57 QOL-03: clear dead zone on scene change
+        m_deadZoneH = 0.0f;
     }
     m_activeScene = scene;
 }
