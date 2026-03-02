@@ -373,6 +373,38 @@ static void test08_find_priority_active_scene_first() {
 }
 
 // ============================================================
+// Test 9 (DEBT-02): engine.scene.persist() without SSM returns nil
+// Verifies that calling persist() when no SceneStateMachine is registered
+// returns nil (not true) and does not crash. The production fix adds a
+// printf warning at the no-SSM guard before returning nil.
+// ============================================================
+static void test09_persist_without_ssm_prints_warning() {
+    printf("--- Test 9 (DEBT-02): persist() without SSM returns nil ---\n");
+
+    // Bare fixture: LuaEngine + LuaBindings, NO setSceneStateMachine call
+    LuaEngine engine;
+    LuaBindings bindings(&engine);
+    engine.initialize();
+    bindings.registerAll();
+    // Intentionally NOT calling bindings.setSceneStateMachine(&ssm)
+
+    // Need an active scene so engine.scene.spawn() works to create a proxy
+    Scene scene(99u);
+    bindings.setActiveScene(&scene);
+
+    // Spawn an object and get a proxy, then call persist() — should return nil
+    LuaResult r = engine.executeString(
+        "local obj = engine.scene.spawn('debt02_obj')\n"
+        "persist_result = engine.scene.persist(obj)\n"
+        "persist_is_nil = (persist_result == nil)\n"
+    );
+    ASSERT(r.success, "test09: persist-without-ssm script ran without Lua error");
+
+    bool isNil = engine.getGlobalBool("persist_is_nil");
+    ASSERT(isNil, "test09: persist() returns nil when no SSM is set (DEBT-02)");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -384,6 +416,7 @@ int main() {
     test06_double_persist_noop();
     test07_self_transition_preserves();
     test08_find_priority_active_scene_first();
+    test09_persist_without_ssm_prints_warning();
 
     printf("\n=== Persistent Lua Test: %d passed, %d failed ===\n", passes, failures);
     return failures;
