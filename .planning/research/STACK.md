@@ -1,34 +1,36 @@
 # Stack Research
 
-**Domain:** Zero-alloc 2D game engine — debug draw, save/load, persistent objects, camera follow helpers, coroutine/async, tween helpers, UI component bindings, bindings.cpp refactoring (v1.7)
-**Researched:** 2026-03-01
-**Confidence:** HIGH (derived from direct codebase analysis + LuaJIT C API verification)
+**Domain:** Cross-platform 2D engine hardening — WASM/Emscripten build verification, ESP32 NVS storage, WASM localStorage bridge, Arch Linux dev setup scripting, Docusaurus tutorial authoring (v1.8)
+**Researched:** 2026-03-02
+**Confidence:** HIGH for Emscripten/ESP-IDF/Docusaurus APIs (verified via official docs, WebSearch with multiple agreeing sources); MEDIUM for specific version pinning (emsdk 3.1.73 vs 4.x trade-off)
 
 ---
 
 ## Scope
 
-This document covers **only stack additions and API-level decisions for v1.7 Developer Experience & New Capability**. It does not re-research validated capabilities from v1.0–v1.6 (Lua scripting, ScriptProxy, ComponentProxy, C_Timer, C_StateMachine, EventBus, C_Tilemap, C_Camera, physics bindings, etc.).
+This document covers **only stack additions and integration decisions for v1.8 Ship Ready**. It does not re-research validated v1.0–v1.7 capabilities (SDL3 runner, LuaJIT scripting, CMake multi-target build, Docusaurus + Doxygen pipeline, etc.).
+
+The v1.8 work is an integration and hardening milestone — new code is thin, mostly glue. The major technical decisions are:
+
+1. Which Emscripten version to pin for the WASM build
+2. How to bridge `localStorage` to `LuaStore::saveToFile/loadFromFile` on WASM
+3. Which ESP-IDF NVS API calls satisfy `LuaStore` on ESP32
+4. What Arch Linux packages the dev setup script needs
+5. How to structure tutorial docs in the existing Docusaurus site
 
 ---
 
 ## What Already Exists (Critical Integration Context)
 
-Reading the live codebase reveals these constraints and integration points relevant to v1.7:
-
-| Existing Element | Implication for v1.7 |
-|------------------|----------------------|
-| `Primitives<TPixel>` — drawLine, drawRect, drawCircle, fillRect, drawTriangle in `graphics/primitives.hpp` | Debug draw needs NO new C++ drawing code — all shapes already implemented. Bindings only. |
-| `C_Camera::getScreenOffset()` + `Scene::renderObjects()` camera offset pipeline | Debug draw must accept a camera offset or draw in screen-space to stay aligned with world objects |
-| `LuaStore` with `saveToFile(path)` / `loadFromFile(path)` — 16-slot fixed KV store, handwritten JSON | LuaStore IS the save/load mechanism. v1.7 work is exposing richer serialization (e.g. `engine.store.saveAll()` trigger) and documenting it as the canonical save system — not a new library |
-| `LuaStore::saveToFile()` is `#ifdef VCV_RACK` only — ESP32 returns false | Save/load is desktop/SDL-only until NVS support added. This is an existing known limitation — document clearly, do NOT add ESP32 NVS in v1.7 |
-| `engine.store.*` binding already wired in `bindings_engine.cpp:101` | Persistent objects across scenes reuse the same store. "Persistent objects" = naming + tagging + store state preserved via LuaStore, not a new object lifecycle mechanism |
-| `engine.camera.*` has `setPosition`, `getPosition`, `lookAt(x,y,speed)`, `shake`, `setBounds`, `clearBounds` | `camera.follow(target)` helper is the missing piece — convenience wrapper around `lookAt()` that takes an ObjectProxy and reads its C_Position each frame |
-| LuaJIT 2.1 (Lua 5.1 API) with `lua_newthread`, `lua_resume`, `lua_yield`, `lua_status` in C API | Coroutine C API is available. `coroutine` library is part of LuaJIT standard libs. Desktop opens `luaL_openlibs` (includes coroutine). ESP32 does NOT open the coroutine library — must add `luaopen_coroutine` in embedded path if coroutines are required there |
-| `bindings.cpp` is 1390 lines; total scripting cpp files are 3408 lines across 9 files | bindings.cpp is the main monolith to split. The pattern for splitting already exists: `bindings_engine.cpp` (904 lines), `bindings_draw.cpp` (363 lines), etc. |
-| `bind_helpers.hpp` provides `LuaFuncDef` + `luaBindFunctions()` + `ENJIN_ARRAY_LEN` | All new binding files follow this pattern — no new helper infrastructure needed |
-| `math::lerp()` exposed via `engine.math.lerp` | Tween helpers build on top of lerp — implemented as a C++ `C_Tween` component or pure Lua scheduler, not a new math library |
-| `ScriptProxy` `__index` / `__newindex` dispatch pattern | UI component bindings (`engine.ui.*`) follow the same sub-table registration pattern already used by engine.camera, engine.physics, engine.collision |
+| Existing Element | Implication for v1.8 |
+|-----------------|----------------------|
+| `build_wasm.sh` — sources emsdk from `../emsdk`, calls `emcmake cmake` | Setup script must install emsdk alongside the repo, or update script path. The `source emsdk_env.sh` pattern is already used — dev script just automates this |
+| `CMakeLists.txt` — `ENJIN2_BUILD_WASM=ON` target with Embind, `EXPORT_ES6=1`, `MODULARIZE=1` | Emscripten 4.x requires C++17 for Embind. CMake already sets `CMAKE_CXX_STANDARD 17` globally — this constraint is already satisfied |
+| `src/scripting/bindings_store.cpp` — `#if !defined(ESP32) && !defined(__EMSCRIPTEN__)` guard around `saveToFile`/`loadFromFile` | WASM and ESP32 implementations live inside this guard region. The `#else` stub `return false` is the integration point — replace with real implementations |
+| `src/bindings/emscripten_bindings.cpp` — uses `emscripten::val`, `typed_memory_view`, `EM_BINDINGS` | `EM_JS` macro for localStorage is the natural companion — same file, or a new `emscripten_store.cpp` |
+| `luajit/src/ljamalg.c` — LuaJIT amalgamated build with `LUAJIT_DISABLE_JIT`, `LUAJIT_DISABLE_FFI` | LuaJIT interpreter-only mode is already the WASM strategy — confirmed correct by research. Do not attempt JIT on WASM |
+| `src/scripting/lua_platform.cpp` — ESP32 branch includes `esp_heap_caps.h`, `esp_spiffs.h` | NVS headers (`nvs_flash.h`, `nvs.h`) follow the same pattern — include under `#ifdef ESP32` guard |
+| Docusaurus 3.9.2 already installed at `docs/package.json` with `@docusaurus/plugin-content-docs` (id: `api`) | Tutorial docs go into `docs/src/` (the guides plugin, `routeBasePath: '/'`). No new Docusaurus plugins needed for tutorials |
 
 ---
 
@@ -36,37 +38,240 @@ Reading the live codebase reveals these constraints and integration points relev
 
 ### Core Technologies
 
-All v1.7 features are pure C++ + existing LuaJIT — no new external dependencies are required.
-
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| LuaJIT 2.1 (Lua 5.1 API) | bundled in repo | Coroutine/async, tween scheduling | `lua_newthread` / `lua_resume` / `lua_yield` are in the bundled LuaJIT. Coroutines are a first-class Lua feature — no third-party scheduler library needed |
-| `Primitives<Pixel4>` (existing) | already in codebase | Debug draw shapes | drawLine, drawRect, drawCircle already exist in `graphics/primitives.hpp`. Zero new code for the drawing layer |
-| `LuaStore` (existing) | already in codebase | Save/load serialization, persistent objects | Already exposes `saveToFile` / `loadFromFile` with a minimal handwritten JSON writer. Only bindings changes needed |
-| `C_Camera` (existing) | already in codebase | Camera follow helpers | `lookAt(x, y, lerpSpeed)` already exists. `follow(target)` is a per-frame call to `lookAt` with target object's position |
+| Emscripten (emsdk) | **3.1.73** (pin, not `latest`) | Cross-compile enjin2 to WASM | 3.1.73 is the last widely-validated 3.1.x release. Emscripten 4.x landed early 2025 and requires a full rebuild. Pinning 3.1.73 avoids the 4.x Embind C++17 enforcement surprise (the project already uses C++17, so 4.x is actually safe — but 3.1.73 is what `build_wasm.sh` was written against, and version stability matters for reproducibility). If choosing 4.x, use 4.0.0+. The project's `CMAKE_CXX_STANDARD 17` satisfies the C++17 Embind requirement in either version. |
+| ESP-IDF | **v5.5.x** (latest stable) | Build and flash ESP32 target | v5.5.3 is the current stable as of 2026-03. NVS API is unchanged between v4.x and v5.x at the C call level. v6.0-beta1 exists but is beta — use stable. The AUR `esp-idf` package installs v5.5. |
+| ESP-IDF NVS component | Bundled in ESP-IDF v5.5 | Key-value persistent storage for LuaStore on ESP32 | NVS is the canonical Espressif mechanism for small key-value pairs. 15-char key limit, 4000-byte string limit — fits LuaStore's `STORE_MAX_KEY=16` and `STORE_MAX_STRING` constraints exactly. No external library. |
+| Emscripten `EM_JS` macro | Part of Emscripten SDK | localStorage bridge from C++ to browser | `localStorage` is synchronous on the JS side — no Asyncify needed. `EM_JS` with `UTF8ToString`/`stringToUTF8` is the correct, zero-overhead pattern for a C++ ↔ localStorage bridge. |
+| Docusaurus 3.9.2 (existing) | Already installed | Tutorial authoring | No version change needed. The existing dual-plugin setup (`guides` + `api`) supports tutorial docs in `docs/src/tutorials/`. Use `_category_.json` with `position` and `link.type: "generated-index"` for category pages. |
 
-### New C++ Components (to be authored in v1.7)
+### Supporting Libraries
 
-| Component | Header Location | Purpose | Implementation Notes |
-|-----------|-----------------|---------|----------------------|
-| `C_Tween` | `include/enjin2/components/tween.hpp` | Fixed-slot (8 slots) tween engine per object | Stores start/end/duration/elapsed/easing per slot. update(dt) advances all active tweens. Zero heap — static `TweenSlot[8]` array. Easing functions inline (linear, easeIn, easeOut, easeInOut). Exposes via `engine.tween.*` sub-table |
-| `DebugDraw` helper | `include/enjin2/scripting/debug_draw.hpp` | Stateless screen-space debug overlay | `engine.debug.*` bindings call `Primitives4::drawRect/Circle/Line` directly on a designated debug layer canvas. Not a component — just a set of static functions + a layer index pointer injected at init |
-
-### Supporting Libraries (existing, referenced in v1.7 bindings)
-
-| Library | Source | Purpose | When Used |
-|---------|--------|---------|-----------|
-| `bind_helpers.hpp` | `include/enjin2/scripting/bind_helpers.hpp` | `LuaFuncDef` + `luaBindFunctions()` for sub-table registration | All new binding files (bindings_debug.cpp, bindings_tween.cpp, bindings_ui.cpp, bindings_camera_follow.cpp split) |
-| `Primitives<Pixel4>` | `include/enjin2/graphics/primitives.hpp` | drawRect, drawCircle, drawLine, fillRect for debug overlay | `engine.debug.rect(x,y,w,h,color)`, `engine.debug.circle(cx,cy,r,color)`, `engine.debug.line(...)` |
-| `LuaStore` | `include/enjin2/scripting/bindings.hpp` | Persistent cross-scene state | `engine.store.save(key,val)` / `engine.store.load(key)` already wired; `engine.store.flush()` to trigger file write |
-| `lua_newthread` / `lua_resume` / `lua_yield` | LuaJIT C API (bundled) | Coroutine management from C binding | `engine.co.*` sub-table wraps coroutine creation and resume cycle for loading screens / async tasks |
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| `nvs_flash.h` + `nvs.h` | ESP-IDF v5.5 (bundled) | NVS init + handle management | In `bindings_store.cpp` ESP32 branch: `nvs_flash_init()` once at boot, `nvs_open()` / `nvs_set_str()` / `nvs_get_str()` / `nvs_commit()` / `nvs_close()` per store operation |
+| `<emscripten.h>` | Emscripten SDK (bundled) | `EM_JS` macro for localStorage calls | In `bindings_store.cpp` WASM branch — already included transitively via the build, but include explicitly for `EM_JS` |
+| `@docusaurus/plugin-content-docs` | 3.9.2 (already installed) | Tutorial content instance | Already wired as the `guides` preset — tutorials drop into `docs/src/tutorials/` with appropriate frontmatter |
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| CMake (existing) | Build system | New bindings files added to `enjin2_lua` target `SOURCES` list. No new CMake changes needed beyond file additions |
-| ctest (existing) | Unit tests | New test files follow existing pattern: `tests/tween_test.cpp`, `tests/debug_draw_test.cpp`, `tests/coroutine_test.cpp` |
+| `emsdk` (git clone) | Emscripten SDK manager | Install at `~/emsdk` or alongside repo. `./emsdk install 3.1.73 && ./emsdk activate 3.1.73`. The `build_wasm.sh` looks for `../emsdk` relative to the project — dev script should honor this path or parameterize it |
+| `idf.py` (ESP-IDF) | ESP32 build + flash | Installed via `esp-idf` AUR package (places ESP-IDF at `/opt/esp-idf`) or manual clone + `./install.sh esp32` |
+| `yay` / `paru` (AUR helper) | Install AUR packages | Required for `esp-idf` from AUR. The dev script should check for an AUR helper before attempting AUR installs |
+| `python3` >= 3.10 | Emscripten + ESP-IDF runtime | Both toolchains require Python 3.10+. Arch ships current Python; verify with `python --version` |
+| Doxygen + Node 18+ | Doc generation (existing) | No change for v1.8 — already in the repo. Tutorial docs are plain Markdown, not Doxygen-generated |
+
+---
+
+## Arch Linux Package List (Dev Setup Script)
+
+This is the authoritative list for the `setup-dev-arch.sh` script. Verified against ESP-IDF v5.5 official Linux docs and Arch package search results.
+
+### Pacman (official repos)
+
+```bash
+sudo pacman -S --needed \
+  # WASM toolchain prerequisites
+  python python-pip \
+  cmake ninja \
+  git \
+  # ESP-IDF prerequisites
+  gcc make flex bison gperf \
+  ccache dfu-util libusb \
+  # Existing project deps (verify presence)
+  lua doxygen nodejs npm
+```
+
+### AUR (via yay/paru)
+
+```bash
+yay -S --needed \
+  esp-idf \
+  ncurses5-compat-libs  # required for xtensa-esp32-elf-gdb on Arch
+```
+
+**Notes:**
+- `emscripten` is in the official `extra` repo (`sudo pacman -S emscripten`) at version 5.0.2-1 as of 2026-03. However, the project uses a manually-cloned emsdk for version pinning — using the pacman `emscripten` package bypasses version control. Recommend: skip pacman `emscripten`, clone emsdk manually and pin to 3.1.73.
+- `esp-idf` AUR package places ESP-IDF at `/opt/esp-idf`. After install, run `/opt/esp-idf/install.sh esp32` and source `/opt/esp-idf/export.sh` in the shell.
+- The emsdk clone goes to `~/emsdk` or a project-adjacent path. The `build_wasm.sh` script expects `../emsdk` — the dev setup script should clone there or update the path variable.
+
+---
+
+## API Patterns
+
+### WASM localStorage Bridge (`bindings_store.cpp` — WASM branch)
+
+The `localStorage` API is synchronous in the browser — no Asyncify or async bridge needed. Use `EM_JS` to call `localStorage.setItem`/`getItem` directly:
+
+```cpp
+// In bindings_store.cpp, inside #ifdef __EMSCRIPTEN__
+
+#include <emscripten.h>
+
+// Write a C string to localStorage under a key
+EM_JS(void, js_localStorage_setItem, (const char* key, const char* value), {
+    try {
+        localStorage.setItem(UTF8ToString(key), UTF8ToString(value));
+    } catch(e) {
+        // Storage quota exceeded or private browsing restriction
+        console.warn('[enjin2] localStorage.setItem failed:', e);
+    }
+});
+
+// Read a C string from localStorage — writes into caller-provided buffer
+EM_JS(int, js_localStorage_getItem, (const char* key, char* out, int maxLen), {
+    var val = localStorage.getItem(UTF8ToString(key));
+    if (val === null) return 0;
+    var encoded = intArrayFromString(val);
+    var len = Math.min(encoded.length, maxLen - 1);
+    writeArrayToMemory(encoded.slice(0, len), out);
+    HEAP8[out + len] = 0;  // null terminator
+    return len;
+});
+
+// LuaStore::saveToFile — serialize via existing JSON writer, push to localStorage
+bool LuaStore::saveToFile(const char* path) const {
+    // Reuse existing JSON serialization via in-memory buffer
+    // (write to a static char buffer, then push to localStorage)
+    static char jsonBuf[4096];  // size to fit max store content
+    // ... fill jsonBuf with JSON ...
+    js_localStorage_setItem(path, jsonBuf);
+    return true;
+}
+
+// LuaStore::loadFromFile — pull from localStorage, parse via existing JSON reader
+bool LuaStore::loadFromFile(const char* path) {
+    static char buf[4096];
+    int len = js_localStorage_getItem(path, buf, sizeof(buf));
+    if (len == 0) return false;
+    // ... parse buf via existing readJsonValue logic ...
+    return true;
+}
+```
+
+**Integration note:** The existing JSON serializer in `bindings_store.cpp` writes to `std::ofstream`. For WASM, the serializer must write to a `char[]` buffer instead, then pass it to `js_localStorage_setItem`. This means extracting the JSON writer into a `writeToBuffer(char* buf, int maxLen)` helper that works on both branches. The reader already parses `const char*` — WASM only needs to fill that buffer from localStorage.
+
+**Key limit:** `localStorage` strings have a per-item size limit of ~5 MB in modern browsers. The LuaStore max content (16 keys × max string values) is well under 4 KB — no risk of exceeding storage limits.
+
+### ESP32 NVS Storage (`bindings_store.cpp` — ESP32 branch)
+
+The NVS API sequence: `nvs_flash_init()` once at boot, then per-operation `nvs_open()` → read/write → `nvs_commit()` → `nvs_close()`.
+
+```cpp
+// In bindings_store.cpp, inside #ifdef ESP32
+
+#include "nvs_flash.h"
+#include "nvs.h"
+
+// NVS namespace for enjin2 store — max 15 chars
+static constexpr const char* NVS_NAMESPACE = "enjin2_store";
+
+// LuaStore::saveToFile — store all keys into NVS under the namespace
+// The 'path' parameter is repurposed as the NVS partition label (use nullptr for default "nvs")
+bool LuaStore::saveToFile(const char*) const {
+    nvs_handle_t h;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &h);
+    if (err != ESP_OK) return false;
+
+    bool ok = true;
+    for (int i = 0; i < m_count; ++i) {
+        const StoreSlot& slot = m_entries[i];
+        // Serialize each slot as a compact string value
+        // Key must be <= 15 chars (NVS limit); STORE_MAX_KEY=16 — truncate to 15
+        char nvsKey[16];
+        strncpy(nvsKey, slot.key, 15);
+        nvsKey[15] = '\0';
+
+        // Store type tag + serialized value in one NVS string
+        char valueBuf[STORE_MAX_STRING + 8];  // type prefix + value
+        // ... encode slot into valueBuf ...
+        if (nvs_set_str(h, nvsKey, valueBuf) != ESP_OK) { ok = false; break; }
+    }
+
+    if (ok) nvs_commit(h);
+    nvs_close(h);
+    return ok;
+}
+
+// LuaStore::loadFromFile — iterate known keys OR use NVS iterator
+bool LuaStore::loadFromFile(const char*) {
+    nvs_flash_init();  // idempotent after first call (returns ESP_ERR_NVS_... which is safe to ignore here)
+    nvs_handle_t h;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &h);
+    if (err != ESP_OK) return false;
+
+    // Use NVS iterator to enumerate all stored keys in the namespace
+    nvs_iterator_t it = nullptr;
+    err = nvs_entry_find("nvs", NVS_NAMESPACE, NVS_TYPE_STR, &it);
+    clear();
+    while (err == ESP_OK && it != nullptr) {
+        nvs_entry_info_t info;
+        nvs_entry_info(it, &info);
+        // Read value for this key
+        size_t needed = 0;
+        nvs_get_str(h, info.key, nullptr, &needed);
+        if (needed > 0 && needed < STORE_MAX_STRING + 8) {
+            char valueBuf[STORE_MAX_STRING + 8];
+            nvs_get_str(h, info.key, valueBuf, &needed);
+            // ... decode valueBuf back into StoreSlot ...
+        }
+        err = nvs_entry_next(&it);
+    }
+    if (it) nvs_release_iterator(it);
+    nvs_close(h);
+    return true;
+}
+```
+
+**NVS key constraint:** NVS keys are max 15 chars. `STORE_MAX_KEY` in `LuaStore` is 16 (15 chars + null). A 15-char NVS key exactly matches — the last character of a 15-char `STORE_MAX_KEY` value must be truncated. Solution: keep `STORE_MAX_KEY` at 16 in the store struct (it controls the in-memory char array), but truncate to 15 when writing to NVS. Document this.
+
+**Type encoding:** NVS stores strings only. Encode the slot type as a prefix byte in the value string: `"N1.5"` for Number 1.5, `"Shello"` for String "hello", `"B1"` for Bool true, `"T{...}"` for Table. This avoids per-type NVS key proliferation.
+
+**`nvs_flash_init()` placement:** For ESP32, this should be called once in `app_main` before the engine runs. In the enjin2 ESP32 host integration, add it to the platform init sequence. The `loadFromFile` stub can call it defensively (it is idempotent after success).
+
+**NVS iterator availability:** `nvs_entry_find` / `nvs_entry_next` / `nvs_release_iterator` are available since ESP-IDF 4.0. Confirmed present in v5.5.
+
+### Docusaurus Tutorial Structure
+
+The existing Docusaurus site has a guides plugin rooted at `docs/src/` with `routeBasePath: '/'`. Tutorial docs go in a `tutorials/` subdirectory:
+
+```
+docs/src/
+  tutorials/
+    _category_.json          ← category metadata
+    getting-started.md       ← intro page
+    arkanoid-demo.md         ← tutorial using arkanoid script
+    tamagotchi-demo.md       ← tutorial using tamagotchi script
+    platform-targets.md      ← how to build for SDL/WASM/ESP32
+```
+
+`_category_.json` pattern:
+```json
+{
+  "label": "Tutorials",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Step-by-step guides for building games with enjin2."
+  }
+}
+```
+
+Document frontmatter:
+```yaml
+---
+id: getting-started
+title: Getting Started
+sidebar_label: Getting Started
+sidebar_position: 1
+description: Set up enjin2 and run your first script in 5 minutes.
+---
+```
+
+No new Docusaurus plugins are needed. The project already has `prism.additionalLanguages: ['cpp', 'cmake', 'bash']` — code blocks in tutorials can use all three languages.
 
 ---
 
@@ -74,157 +279,16 @@ All v1.7 features are pure C++ + existing LuaJIT — no new external dependencie
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| External tween library (EnTT, tweeny, cpptween) | All require dynamic allocation or templates that break ESP32/WASM constraints | Implement `C_Tween` with a fixed `TweenSlot[8]` array — same pattern as C_Timer's fixed 8-slot array |
-| External JSON library (nlohmann/json, rapidjson) | LuaStore's handwritten JSON writer already covers the save/load use case; adding a full parser increases binary size by 50–150 KB | Keep the existing minimal JSON writer; extend capacity if needed (increase STORE_MAX_KEYS) |
-| Lua async frameworks (copas, luasocket) | Desktop/server-oriented, require sockets and `io` library, incompatible with ESP32 and WASM | Use Lua coroutines directly via `coroutine.create` + a C-side `resume` table managed by `engine.co.*` |
-| Separate "persistent object" system (DontDestroyOnLoad) | Would require heap allocation or a global object pool separate from scenes — breaks zero-alloc constraint and scene isolation | Use named objects + LuaStore: save object state to store before scene switch, restore on scene load. This is the correct pattern for the target hardware |
-| Additional easing libraries | Single-header easing libs (e.g. easing.h) add 20+ functions but the target Lua API only needs linear, ease-in, ease-out, ease-in-out for game UX | Implement 4 inline easing functions directly in `C_Tween` using `t*t`, `t*t*(3-2*t)` etc. |
-| LVGL or other embedded GUI frameworks | Full UI framework for a 16-color 128x128 display is extreme overkill; adds thousands of LOC and incompatible allocation patterns | Implement `engine.ui.*` as thin wrappers around existing `Primitives4` + text renderer: progress bars are fillRect + drawRect + text, stat bars are the same |
-| ESP32 NVS for save/load | Out-of-scope for v1.7; requires platform-specific ESP-IDF APIs | Keep `saveToFile` as SDL/desktop-only. Document that ESP32 save/load is deferred. The `#ifdef VCV_RACK` guard is already in place |
-| Lua 5.4 coroutine.close() | LuaJIT is Lua 5.1 API — `coroutine.close` does not exist | Use `coroutine.status == "dead"` to detect completion; gc handles dead threads |
-
----
-
-## Feature-Specific Stack Decisions
-
-### Debug Draw Bindings (`engine.debug.*`)
-
-**What exists:** `Primitives<Pixel4>` with full shape set. `layerCanvases[]` array in `LuaBindings`. Layer 0 is the bottom layer; a dedicated debug layer (highest index, e.g. layer 3 for 4-layer builds) keeps debug overlays above game content.
-
-**What to build:**
-- New `bindings_debug.cpp` — static functions that call `Primitives4::drawRect/drawCircle/drawLine/fillRect` on a canvas retrieved from `layerCanvases[debugLayer]`
-- `m_debugLayer` injected into `LuaBindings` (default: `layerCount - 1`)
-- Functions: `engine.debug.rect(x,y,w,h,color)`, `engine.debug.circle(cx,cy,r,color)`, `engine.debug.line(x1,y1,x2,y2,color)`, `engine.debug.point(x,y,color)`, `engine.debug.setLayer(n)`
-
-**No new C++ drawing code.** The only new code is in the bindings.
-
-### Save/Load Serialization Helper
-
-**What exists:** `LuaStore` with `saveToFile(path)` / `loadFromFile(path)`. `engine.store.save/load/exists/delete/clear` already wired. The store is automatically flushed on `engine.store.save()` when `m_storePath` is set.
-
-**What to add:**
-- `engine.store.flush()` — explicit trigger for `saveToFile(m_storePath)` without a save operation, useful to persist after batch writes
-- `engine.store.path()` — returns current store path string for debugging
-- Better documentation of the existing API as the canonical serialization mechanism
-
-**No new C++ serialization code.** The minimal JSON writer is sufficient for the target use case (game state persistence, not level data).
-
-### Persistent Objects Across Scenes
-
-**Pattern:** There is no Unity-style `DontDestroyOnLoad`. The zero-alloc scene model means objects are owned by their scene.
-
-**Correct approach:** Persistent state is data stored in `LuaStore` (or a global Lua table) before scene transition. On the new scene's `init()`, the script reads back from the store. This is documented as the canonical pattern.
-
-**What to add (if any):** Possibly `engine.store.saveTable(key, tbl)` and `engine.store.loadTable(key)` as convenience helpers for storing entire Lua tables (the existing table slot mechanism exists in `StoreSlot::TableEntry` but it is 1-level deep — document the limitation clearly).
-
-**No new C++ persistence infrastructure.** This is a documentation + binding convenience task.
-
-### Camera Follow Helpers
-
-**What exists:** `engine.camera.lookAt(x, y, speed)` — per-frame call with lerp speed. `C_Camera::lookAt(x, y, lerpSpeed)` in the C++ component.
-
-**What to add:**
-- `engine.camera.follow(name, speed)` — looks up object by name via `m_activeScene->findByName(name)`, reads `C_Position` if available, calls `lookAt(pos.x, pos.y, speed)`. This is the "follow helper" — a named-object wrapper around the existing `lookAt`.
-- `engine.camera.followObject(proxy, speed)` — takes an ObjectProxy userdata instead of a name string, avoids the findByName scan.
-
-**No new C++ camera code.** `C_Camera::lookAt` already handles lerp follow. The helpers are 15–20 lines of binding code each.
-
-### Coroutine/Async for Lua
-
-**What exists:** LuaJIT bundles the coroutine library. Desktop opens `luaL_openlibs` (includes `coroutine`). ESP32's `openEmbeddedLibraries` does NOT open the coroutine library — it must be added.
-
-**What to add:**
-- Add `luaopen_coroutine` to `LuaPlatform::openEmbeddedLibraries()` in `src/scripting/lua_platform.cpp` for ESP32 path (guard with memory check like the UTF8 library)
-- `engine.co.*` sub-table: `engine.co.start(fn)` — creates a coroutine and registers it for resumption each frame, `engine.co.cancel(handle)`, `engine.co.isRunning(handle)`
-- C-side: `LuaBindings` holds a fixed array of `luaref` coroutine handles (`int m_coRefs[8]`). `updateCoroutines(L)` called each frame resumes each live coroutine. Dead coroutines (status "dead") are auto-removed via `luaL_unref`.
-- Lua-side: Users write `function myTask() engine.co.wait(2.0); doThing() end` where `engine.co.wait(seconds)` yields with a timeout stored in C.
-
-**`engine.co.wait(seconds)`** requires a C-side yield interceptor: before `lua_resume`, store a "wake time" per slot. `updateCoroutines` skips resume if `totalTime < wakeTime`. This is entirely self-contained in `LuaBindings`.
-
-**No external co-routine scheduler library.** LuaJIT's native coroutine C API is sufficient.
-
-### Tween Helpers
-
-**What to build:**
-- `C_Tween` component: 8 `TweenSlot` fixed array. Each slot: `from`, `to`, `duration`, `elapsed`, `easing (enum: Linear/EaseIn/EaseOut/EaseInOut/EasePingPong)`, `active`, `callbackRef (int)`. `update(dt)` advances all active slots, fires `callbackRef` on completion via `lua_rawgeti`+`lua_pcall`.
-- `engine.tween.*` sub-table: `engine.tween.to(self, property, targetVal, duration, easing)` — starts a tween on a named property. For MVP: `x` and `y` properties of the script's `C_Position`. Returns a handle integer.
-- `engine.tween.cancel(handle)`, `engine.tween.isRunning(handle)`
-
-**Easing functions (inline, no library):**
-```cpp
-static float ease_in(float t)       { return t * t; }
-static float ease_out(float t)      { return t * (2.0f - t); }
-static float ease_inout(float t)    { return t < 0.5f ? 2*t*t : -1+(4-2*t)*t; }
-static float smoothstep(float t)    { return t * t * (3.0f - 2.0f * t); }
-```
-
-These 4 functions + linear are sufficient for all game UI tween use cases.
-
-### UI Component Bindings (`engine.ui.*`)
-
-**What exists:** `include/enjin2/ui/` has `component.hpp`, `system.hpp`, `theme.hpp`, `widget.hpp`. These are C++ UI classes. The Lua bindings for them do not yet exist.
-
-**What to add:**
-- New `bindings_ui.cpp` with `engine.ui.*` sub-table
-- MVP bindings: `engine.ui.progressBar(x,y,w,h,value,max,fgColor,bgColor)` — draws filled rect (progress portion) + outline rect (border). Pure draw call, no state.
-- `engine.ui.statBar(x,y,w,h,value,max,fgColor,bgColor,label)` — progress bar + text label
-- `engine.ui.label(x,y,text,color,size)` — thin wrapper around `drawText`
-- `engine.ui.panel(x,y,w,h,bgColor,borderColor)` — fillRect + drawRect
-
-These are stateless draw calls. They do NOT wrap the C++ UI component classes — those are heavyweight and the Lua use case is immediate-mode draw-style UI for HUDs and overlays.
-
-**If stateful UI is needed (later):** A `C_UIBar` component would own the value state and update itself. Deferred to post-v1.7.
-
-### Bindings.cpp Refactoring
-
-**Current state:** `bindings.cpp` is 1390 lines. It contains:
-- `ScriptProxy` metatable implementation (LuaProxy `__index`/`__newindex`)
-- `ObjectProxy` push/metatable helpers
-- `ComponentProxy` metatables for all component types (C_Position_Proxy, C_Timer_Proxy, C_StateMachine_Proxy)
-- `LuaStore` class implementation
-- `LuaCanvas` method implementations
-- `LuaBindings::registerAll()` coordinator
-- `LuaBindings::resetSpritePool()`
-
-**Split target:**
-- `bindings.cpp` → retains only `registerAll()` + `LuaCanvas` methods (the registry coordinator)
-- New `bindings_proxy.cpp` → ScriptProxy metatable, ObjectProxy metatable, ComponentProxy metatables
-- New `bindings_store_impl.cpp` (or extend `bindings_store.cpp`) → `LuaStore` class methods
-- `bindings_debug.cpp` → `engine.debug.*`
-- `bindings_tween.cpp` → `engine.tween.*` + `C_Tween` update dispatch
-- `bindings_ui.cpp` → `engine.ui.*`
-
-The existing pattern (`#include "../../include/enjin2/scripting/bindings.hpp"` + `namespace enjin2`) is the template for all new files.
-
-**No changes to `bindings.hpp`** except adding new static method declarations for the new sub-tables.
-
-### Null Safety Improvements
-
-**Pattern:** The existing null guard is:
-```cpp
-LuaBindings* b = LuaBindings::getBindings(L);
-if (!b) return 0;
-```
-
-All new binding functions must follow this. Additionally, all pointer chains (`b->m_activeCamera`, `b->m_activeScene`) must be individually null-checked before dereferencing. The existing `engine.camera.*` bindings use a local helper `getCameraFromBindings(L)` that returns `nullptr` if `m_activeCamera` is null — the same helper pattern applies to all new features.
-
----
-
-## Installation
-
-No new package installations required. All v1.7 changes are:
-
-1. New `.cpp` files added to `src/scripting/`
-2. New `.hpp` files added to `include/enjin2/components/` (for `C_Tween`) and `include/enjin2/scripting/` (for debug draw helpers)
-3. New CMake `target_sources` entries for new `.cpp` files in the `enjin2_lua` target
-
-```cmake
-# In CMakeLists.txt, add to enjin2_lua SOURCES:
-src/scripting/bindings_debug.cpp
-src/scripting/bindings_tween.cpp
-src/scripting/bindings_ui.cpp
-src/scripting/bindings_proxy.cpp
-```
+| `pacman -S emscripten` (Arch official package) | Gives system Emscripten 5.0.2 — not version-pinned and differs from what `build_wasm.sh` expects | Clone emsdk manually, pin to 3.1.73. Dev script should `git clone https://github.com/emscripten-core/emsdk && ./emsdk install 3.1.73 && ./emsdk activate 3.1.73` |
+| Asyncify for localStorage | localStorage is synchronous — Asyncify adds significant binary size bloat (~1.5–2x) with zero benefit here | `EM_JS` with synchronous `localStorage.setItem`/`getItem` — clean, zero overhead |
+| IndexedDB for WASM storage | IndexedDB is asynchronous — would require Asyncify or JSPI, both of which complicate the build considerably | `localStorage` is synchronous, sufficient for LuaStore's small key-value payload (< 4 KB) |
+| JSPI (JS Promise Integration) | Still phase 4 in W3C spec, only in Chrome 137+ and Firefox 139+ — not universally supported | Stick with synchronous localStorage via `EM_JS` |
+| FAT filesystem for ESP32 NVS | FAT/LittleFS require flash partition configuration, significantly more setup | NVS is purpose-built for small key-value pairs, requires only `nvs_flash_init()` and partition table entry (default ESP-IDF project includes NVS partition by default) |
+| `esp-idf` v6.0-beta1 | Beta — API may change before stable release | v5.5.x is the current stable with 30-month support window |
+| Wasmoon / Fengari (Lua WASM runtimes) | Pre-compiled Lua environments, not the LuaJIT interpreter used by enjin2 | The existing `luajit/src/ljamalg.c` with `LUAJIT_DISABLE_JIT` + `LUAJIT_DISABLE_FFI` is the correct approach |
+| LuaJIT JIT compilation on WASM | LuaJIT's JIT uses architecture-specific assembly — cannot compile to WASM | Already handled: `LUAJIT_DISABLE_JIT` is in the CMakeLists.txt WASM branch |
+| Docusaurus plugins for tutorials | The existing `@docusaurus/plugin-content-docs` (guides instance) handles tutorials natively via `_category_.json` and `sidebar_position` frontmatter | No new plugins — add tutorial `.md` files to `docs/src/tutorials/` |
+| Separate NVS key per StoreSlot field | Would use `STORE_MAX_KEYS * N` NVS keys per store, hitting namespace limits | Serialize entire slot as a single prefixed string value — one NVS key per LuaStore key |
 
 ---
 
@@ -232,40 +296,50 @@ src/scripting/bindings_proxy.cpp
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Native Lua coroutines via `lua_newthread` | External scheduler (copas, luvit) | Never for this codebase — external schedulers require socket/io libraries incompatible with ESP32 and WASM |
-| `C_Tween` component with 8 fixed slots | EnTT tweeny or cpptween | If the project ever drops the zero-alloc constraint and targets desktop-only |
-| `LuaStore` for persistent objects | Separate `PersistentObjectRegistry` | If objects needed to be C++ objects surviving scene destruction — current scene model (Scene owns objects via ObjectCollection) makes this impossible without a heap-allocated global pool |
-| Stateless `engine.ui.*` draw calls | Wrapping C++ `ui/component.hpp` | The existing C++ UI system uses dynamic allocation and is designed for a different use pattern; expose it in a later milestone when the Lua game complexity demands retained-mode UI |
-| Inline 4 easing functions | Single-header easing library | Only if more than 8 easing modes are required and the binary size increase is acceptable |
+| Emscripten 3.1.73 (pinned) | Emscripten 4.x (latest) | If starting a new WASM project from scratch in 2026, prefer 4.x. For v1.8, pinning 3.1.73 first, then optionally bumping to 4.x in a separate phase de-risks the build verification work |
+| `EM_JS` for localStorage | `emscripten::val` (val.h) | `val.h` is more idiomatic for complex object interaction; `EM_JS` is simpler and more explicit for two-function read/write bridge |
+| NVS string serialization (type-prefixed) | One NVS key per slot field (e.g. `key_type`, `key_val`) | Multiple keys per slot adds complexity and hits NVS namespace key count limits faster. Single prefixed string is simpler |
+| `esp-idf` AUR package | Manual ESP-IDF clone + install | Manual clone gives more control over version and path. AUR package is convenient for a dev setup script targeting common Arch users |
+| `_category_.json` tutorial category | Manually maintaining `sidebars.js` entries | `_category_.json` is the modern Docusaurus 3 approach — auto-generated sidebars are simpler to maintain and scale |
 
 ---
 
 ## Version Compatibility
 
-| Component | Lua Version | Notes |
-|-----------|-------------|-------|
-| `lua_newthread` / `lua_resume` / `lua_yield` | Lua 5.1 (LuaJIT 2.1) | Available in bundled LuaJIT. `lua_resume` signature changed in 5.4 — do NOT use the 5.4 variant |
-| `coroutine` library | Lua 5.1 | Available in LuaJIT. Desktop: `luaL_openlibs` already includes it. ESP32: add `luaL_requiref(L, LUA_COLIBNAME, luaopen_coroutine, 1)` to `openEmbeddedLibraries` |
-| `LuaStore::saveToFile` | N/A | `#ifdef VCV_RACK` guard — returns false on ESP32 silently. v1.7 must document this in the API reference |
-| `C_Tween` | C++17 | `if constexpr` is already used in the codebase (scene.hpp:124); same standard is in use |
+| Component | Version | Compatibility Notes |
+|-----------|---------|---------------------|
+| Emscripten 3.1.73 | emsdk 3.1.73 | Works with `CMAKE_CXX_STANDARD 17`. Embind in 3.1.x does not require C++17 (that became mandatory in 4.0.20). The project already uses C++17 so either version works — pinning 3.1.73 for stability |
+| Emscripten 4.0.x | emsdk 4.x | Requires C++17 for Embind (project already satisfies this). If upgrading to 4.x, add `--std=c++17` explicitly to emcc CFLAGS or rely on `CMAKE_CXX_STANDARD 17` being propagated |
+| ESP-IDF v5.5.x | NVS API | `nvs_entry_find` / `nvs_entry_next` / `nvs_release_iterator` available since v4.0. All API calls used are stable in v5.5. |
+| NVS key max length | ESP-IDF all versions | 15 characters maximum. `LuaStore::STORE_MAX_KEY = 16` (15 chars + null) — truncate to 15 when writing to NVS. |
+| `localStorage` key/value size | Browser standard | ~5 MB per item limit; LuaStore JSON payload < 4 KB. No risk of exceeding limit. |
+| Docusaurus 3.9.2 | Already installed | `_category_.json` with `position` and `link.type: "generated-index"` supported since Docusaurus 3.0. `sidebar_position` frontmatter unchanged. |
+| LuaJIT amalgam (`ljamalg.c`) | Emscripten 3.1.73 | `LUAJIT_DISABLE_JIT` + `LUAJIT_DISABLE_FFI` already set in CMakeLists.txt WASM branch. Amalgam build compiles as a single `.c` file passed to `emcc`. No compatibility issues. |
+| Python 3.10+ | Emscripten 3.x / 4.x minimum | Emscripten changed minimum Python from 3.8 to 3.10. Arch Linux ships current Python (3.13.x as of 2026) — no issue. |
+| Node.js 18.3+ | Emscripten 4.x minimum | Emscripten 4.x requires Node 18.3+. Arch ships current Node — no issue. The project already requires Node ≥ 18 for Docusaurus. |
 
 ---
 
 ## Sources
 
-- Direct codebase analysis:
-  - `/home/unwn/dev/enjin/src/scripting/bindings.cpp` — 1390-line monolith, split targets identified
-  - `/home/unwn/dev/enjin/src/scripting/bindings_engine.cpp` — 904 lines, engine sub-table registration pattern
-  - `/home/unwn/dev/enjin/include/enjin2/components/camera.hpp` — C_Camera API (setPosition, lookAt, shake, setBounds)
-  - `/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp` — full shape set available for debug draw
-  - `/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp` — LuaStore, LuaBindings member layout
-  - `/home/unwn/dev/enjin/src/scripting/bindings_store.cpp` — LuaStore JSON save/load implementation
-  - `/home/unwn/dev/enjin/src/scripting/lua_platform.cpp` — ESP32 library open list, coroutine not yet included
-  - `/home/unwn/dev/enjin/luajit/src/lua.h` — `lua_newthread`, `lua_resume`, `lua_yield`, `lua_status` confirmed present
-  - `/home/unwn/dev/enjin/luajit/src/lj_ffdef.h` — `coroutine_create`, `coroutine_yield`, etc. confirmed in LuaJIT
-  - `/home/unwn/dev/enjin/.planning/PROJECT.md` — v1.7 feature list and constraints
+- [Emscripten emsdk GitHub](https://github.com/emscripten-core/emsdk) — install procedure, `./emsdk install 3.1.73` pattern
+- [Emscripten Downloads — official docs](https://emscripten.org/docs/getting_started/downloads.html) — Python 3.10+ minimum, Node 18.3+ minimum
+- [Emscripten ChangeLog](https://github.com/emscripten-core/emscripten/blob/main/ChangeLog.md) — Embind C++17 requirement in 4.0.20, confirmed via OpenCV issue #28178
+- [Emscripten EM_JS + localStorage patterns — web.dev](https://web.dev/articles/emscripten-embedding-js-snippets) — `EM_JS` with `UTF8ToString`/`stringToUTF8` pattern, MEDIUM confidence (official Emscripten/Google source)
+- [Emscripten Filesystem API docs](https://emscripten.org/docs/api_reference/Filesystem-API.html) — localStorage vs IndexedDB trade-offs, synchronous vs async
+- [Synchronous LocalStorage filesystem gist](https://gist.github.com/makryl/96d87b23d7a7c3cc5bc1eee1021bb6ff) — community WASM localStorage bridge pattern, LOW confidence (single source, unverified)
+- [ESP-IDF NVS Flash API Reference — stable v5.5.3](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html) — `nvs_open`, `nvs_set_str`, `nvs_get_str`, `nvs_commit`, `nvs_entry_find`, key 15-char limit, HIGH confidence
+- [ESP-IDF Releases — GitHub](https://github.com/espressif/esp-idf/releases) — v5.5.x is current stable, v6.0-beta1 exists
+- [ESP-IDF Toolchain Setup Linux — stable](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/linux-macos-setup.html) — official Arch Linux pacman dependency list: `gcc git make flex bison gperf python cmake ninja ccache dfu-util libusb python-pip`
+- [Arch Linux emscripten package](https://archlinux.org/packages/extra/x86_64/emscripten/) — version 5.0.2-1 in `extra` repo; confirms pacman path exists but is not version-pinned
+- [AUR esp-idf package](https://aur.archlinux.org/packages/esp-idf) — installs ESP-IDF 5.5 to `/opt/esp-idf`
+- [AUR gcc-xtensa-esp32-elf-bin](https://aur.archlinux.org/packages/gcc-xtensa-esp32-elf-bin) — standalone Xtensa GCC (not needed with modern ESP-IDF which auto-downloads toolchain)
+- [ArchWiki ESP32](https://wiki.archlinux.org/title/ESP32) — ncurses5-compat-libs requirement for gdb on Arch
+- [ESP32 PSRAM static allocation — ESP-IDF docs](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/external-ram.html) — `EXT_RAM_BSS_ATTR` for 5-layer canvas on PSRAM-equipped ESP32
+- [Docusaurus sidebar autogenerated docs](https://docusaurus.io/docs/sidebar/autogenerated) — `_category_.json`, `sidebar_position` frontmatter, `link.type: "generated-index"`
+- Codebase direct analysis: `CMakeLists.txt`, `build_wasm.sh`, `src/scripting/bindings_store.cpp`, `src/bindings/emscripten_bindings.cpp`, `src/scripting/lua_platform.cpp`, `docs/package.json`, `docs/docusaurus.config.js`
 
 ---
 
-*Stack research for: enjin2 v1.7 Developer Experience & New Capability*
-*Researched: 2026-03-01*
+*Stack research for: enjin2 v1.8 Ship Ready — cross-platform hardening*
+*Researched: 2026-03-02*

@@ -1,445 +1,386 @@
 # Pitfalls Research
 
-**Domain:** Adding debug draw, save/load serialization, persistent objects, camera follow helpers, coroutines/async, tweens, UI components, bindings.cpp refactoring, and null safety to existing zero-alloc 2D game engine with Lua scripting (enjin2 v1.7 Developer Experience)
-**Researched:** 2026-03-01
-**Confidence:** HIGH (direct codebase analysis of all v1.6 shipped headers and bindings, cross-referenced against PROJECT.md constraints, and first-principles reasoning from embedded + Lua VM design)
+**Domain:** Adding Emscripten/WASM build verification, ESP32 NVS storage, WASM localStorage bridge, Arch Linux dev setup scripts, coroutine-tween integration, camera dead zone, and Docusaurus tutorials to an existing zero-alloc 2D game engine with Lua scripting (enjin2 v1.8 Ship Ready)
+**Researched:** 2026-03-02
+**Confidence:** HIGH (direct codebase analysis of shipped v1.7 sources, Emscripten official docs, ESP-IDF official docs, community issue trackers, and first-principles reasoning from embedded + Lua VM design)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Debug Draw Renders Into the Wrong Canvas Layer
+### Pitfall 1: emscripten_set_main_loop — Stack Objects Destroyed Before Loop Runs
 
 **What goes wrong:**
-`engine.debug.*` bindings (e.g., `drawBBox`, `drawCircle`) draw directly to the current active canvas. If the developer calls `engine.debug.drawBBox(x, y, w, h)` inside `update()` — before `draw()` is called — the canvas has not been cleared yet (or was cleared at the start of the previous frame). The debug primitive is drawn onto stale pixel data from the previous frame, producing ghost overlaps or invisible shapes depending on what was rendered before.
-
-Even worse: if debug draw targets `layerCanvases[activeLayer]` but the scene renders objects on a different layer, the debug primitive is composited on the wrong layer and either appears behind all game content (drawn on layer 0 with game on layer 2) or is invisible (drawn on layer 3 which is transparent/hidden).
-
-A second ordering failure: debug draw from inside a C++ component's `draw()` method (called by `Scene::renderObjects()`) interleaves with sorted drawable rendering. A debug box drawn mid-render-pass appears under drawables rendered after it in the sort order, even if the developer expects it to be "on top."
+Any object created on the stack in `main()` before `emscripten_set_main_loop()` is called will be destroyed when `simulate_infinite_loop = 0` and `main()` returns. The loop callback then holds dangling references to those destroyed objects. With `simulate_infinite_loop = 1`, Emscripten throws a longjmp-style exception to abort `main()` — code after the call never executes, silently skipping any cleanup or initialization intended to run post-call.
 
 **Why it happens:**
-Debug draw is typically treated as a pass that happens after all gameplay rendering, in a dedicated debug render pass. enjin2 has no concept of a "post-render pass." The `Scene::renderObjects()` path collects and sorts drawables, then iterates — there is no hook after this loop. The natural place to call debug draw (inside `update()`, inside a Lua callback, inside a component `draw()`) is the wrong place.
+Native game engines own the loop. Emscripten inverts control: `emscripten_set_main_loop` registers a callback that the browser calls once per frame via `requestAnimationFrame`. This means `main()` must hand off all state to static or heap-allocated objects before registering the callback.
 
 **How to avoid:**
-- `engine.debug.*` functions must write into a dedicated, always-on-top layer (e.g., `layerCanvases[layerCount - 1]`, or a separate debug overlay canvas). This layer is cleared at the start of each frame by the engine, not by the script.
-- The debug layer must be cleared automatically by the SDL runner (or WASM host) each frame, NOT by the Lua script. This guarantees debug primitives are fresh each frame regardless of when they are drawn.
-- Document that `engine.debug.*` functions are valid inside `draw(self)` only, not `update(self, dt)`. The debug layer is cleared after `draw()` completes.
-- Alternatively, buffer all debug draw calls in a fixed-size command list and flush them as the final rendering step. This avoids layer management entirely at the cost of a fixed command buffer (e.g., `DebugCmd cmds[64]`).
+- All engine state (`LuaScriptSystem`, canvas arrays, bindings) must be static or dynamically allocated — never stack-local in `main()`.
+- Use a static global `WasmRunner` struct that holds all state. Register the loop callback as a C function that calls into this struct.
+- Call `emscripten_set_main_loop(loopCallback, 0, 1)` with `fps=0` (uses `requestAnimationFrame`) and `simulate_infinite_loop=1` as the final statement in `main()`.
+- Never place initialization code after `emscripten_set_main_loop()` — it will not execute.
 
 **Warning signs:**
-- `engine.debug.drawBBox()` called inside `update()` instead of `draw()`
-- Debug primitives appear one frame late (drawn onto current frame, visible next frame)
-- No dedicated debug canvas or layer — debug draws on `currentCanvas` which is the same canvas game content uses
-- No automatic clear of the debug layer at frame start
+- Segfault or null-pointer access immediately on first frame render
+- Engine state appears reset every frame
+- Initialization log messages appear but no rendering occurs
 
-**Phase to address:**
-Debug draw bindings phase — define the canvas routing and clear protocol before registering any `engine.debug.*` functions.
+**Phase to address:** Emscripten/WASM build verification phase (first phase touching WASM main loop)
 
 ---
 
-### Pitfall 2: Coroutine Lua State Outlives the Lua Thread It Was Created On
+### Pitfall 2: ASYNCIFY Code-Size Explosion — Do Not Use It for Coroutine Wait
 
 **What goes wrong:**
-Lua coroutines are created via `coroutine.create(fn)`. Each coroutine is a `lua_State*` (a thread, sharing the parent state's registry). When a Lua script uses a coroutine for a loading screen or animation, the coroutine's `lua_State` is alive as long as something holds a reference to the coroutine thread.
+ASYNCIFY rewrites the entire WASM binary to make synchronous code suspendable. Without `-O3`, an already-large binary becomes 3-5x larger. Even with optimization, ASYNCIFY adds ~50% binary overhead. More critically: ASYNCIFY instruments every function in the call graph unless `ASYNCIFY_IMPORTS` and `ASYNCIFY_REMOVE` are explicitly configured — meaning it will instrument Lua VM internals, the entire bindings layer, and every engine system.
 
-The failure: hot reload (F5) calls `lua_close()` on the parent `lua_State`. Any coroutine thread derived from that state is implicitly invalid after `lua_close()`. If the C++ side holds a `lua_State*` pointer to a coroutine thread (e.g., stored in a `C_Coroutine` component or in the `LuaBindings` coroutine registry), it now holds a dangling pointer. Calling `lua_resume()` on a closed thread's state is undefined behavior — it may crash, corrupt memory, or silently succeed (reading garbage).
-
-The second failure: if the `engine.coroutine.*` API stores active coroutine thread pointers in a fixed array (`lua_State* m_threads[MAX_COROUTINES]`), and hot reload closes the parent state without iterating that array to null the entries, each thread pointer is dangling. Any future `resume()` call fires into freed memory.
+For enjin2's use case (coroutine `wait` implemented via `lua_yield`/`lua_resume` outside pcall scope), ASYNCIFY is not needed. The coroutine scheduler already yields at the C boundary correctly. Using ASYNCIFY as a shortcut for tween-await integration would cause binary bloat for no benefit.
 
 **Why it happens:**
-Coroutines are Lua-level objects. Developers model them as "lightweight threads" and store the thread pointer in C++ as if it were a persistent handle. But the thread's validity is coupled to the parent `lua_State` lifecycle. After `lua_close()`, the parent and all its threads are gone. The C++ `lua_State*` pointers in the coroutine array are not automatically nulled — the developer must explicitly clear them on teardown.
+Developers see `emscripten_sleep()` described as "yield to the browser event loop" and assume it maps cleanly to `engine.async.wait()`. In reality, `emscripten_sleep` requires ASYNCIFY and pauses the entire WASM instance — not just the Lua coroutine. enjin2's coroutine scheduler uses `lua_resume` outside pcall, which is correct and does not need ASYNCIFY.
 
 **How to avoid:**
-- The `engine.coroutine.*` implementation must expose a `clearCoroutines()` teardown function, symmetric with `C_Timer::clearTimers()` and `LuaEventBus::clearHandlers()`. This function is called by the script system before `lua_close()`.
-- Do NOT store raw `lua_State*` thread pointers in C++ after `lua_close()`. The teardown protocol is: (1) iterate all active coroutine slots, (2) set each slot's state pointer to `nullptr`, (3) call `lua_close()` on parent.
-- Coroutine threads should be tracked using `int` Lua registry refs (`luaL_ref(L, LUA_REGISTRYINDEX)` on the coroutine thread value), NOT raw `lua_State*` pointers. This way the GC controls thread lifetime, and `luaL_unref` on hot reload correctly frees the thread.
-- The fixed coroutine array: `CoroutineSlot slots[MAX_COROUTINES]` where each slot holds `int threadRef` (not `lua_State*`). To resume: `lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef)` → `lua_tothread(L, -1)` → `lua_resume(thread, ...)`.
+- Do not add `-sASYNCIFY` to `emcmake cmake` flags.
+- The existing `tickCoroutines()` + `lua_resume` pattern works in WASM as-is: the WASM main loop callback (registered via `emscripten_set_main_loop`) calls `tickCoroutines(dt)` once per frame, which advances timers and resumes suspended coroutines via `lua_resume`. This is equivalent to the SDL runner.
+- If `engine.async.wait()` is called from inside the WASM main loop callback (not from inside a blocking `main()`), no ASYNCIFY is needed.
+- Verify by running the async demo script through the WASM build — coroutines should resume on schedule without ASYNCIFY.
 
 **Warning signs:**
-- `lua_State* m_coroutineThreads[N]` in C++ without a nulling teardown before `lua_close()`
-- `lua_resume()` called after F5 reload on a thread ref from the previous Lua state
-- Coroutine array not cleared in the hot-reload path (`performReload()` → `registerAll()`)
-- `clearCoroutines()` not called before `lua_close()` in the shutdown sequence
+- Build flags include `-sASYNCIFY` or `emscripten_sleep()` calls in the WASM host
+- WASM binary exceeds 2MB for what should be a ~500KB build
+- Build times increase 3-4x over the SDL build
 
-**Phase to address:**
-Coroutine/async phase — design the teardown protocol before implementing any resume/yield mechanism.
+**Phase to address:** WASM build verification phase
 
 ---
 
-### Pitfall 3: Tween Holds a Lua Callback Reference That Becomes Stale After Hot Reload
+### Pitfall 3: ESP32 NVS Key Length Silently Truncates at 15 Characters
 
 **What goes wrong:**
-A tween helper (e.g., `engine.tween.to(target, "x", 100, 0.5)`) animates a value over time and fires an `onComplete` callback when done. The `onComplete` callback is stored as a `luaL_ref` handle in the tween slot.
+The NVS key name limit is exactly 15 ASCII characters. NVS does not return an error for keys longer than 15 characters — it silently truncates them. This means two keys like `"player_health_current"` and `"player_health_maximum"` both truncate to `"player_health_m"` and collide, causing one to silently overwrite the other.
 
-After F5 hot reload, the parent `lua_State` is destroyed and a new one is created. Any `luaL_ref` from the old state is invalid in the new state. If the tween system's fixed-size slot array (`TweenSlot slots[MAX_TWEENS]`) is stored in `LuaBindings` (which survives across `registerAll()` calls on the same `LuaBindings` instance), the stale `callbackRef` values remain in the slot array. On the next frame, the tween continues advancing (if `elapsed < duration`), fires the callback, calls `lua_rawgeti(newL, LUA_REGISTRYINDEX, staleRef)`, and gets a wrong function or nil.
-
-The second failure: tweens that target Lua userdata properties (e.g., "animate `self.x` from 0 to 100") store a reference to the `ScriptProxy` userdata and a property string. After hot reload, the `ScriptProxy` is invalidated (its `valid = false` is set by `C_LuaScript`'s destructor). A tween that resumes and tries to write to the proxy via `__newindex` gets a "object has been destroyed" error — at best. At worst, if the validity check is absent in the tween write path, it writes to a dangling `C_LuaScript*`.
+LuaStore uses keys up to `STORE_MAX_KEY` characters (check current constant). If this constant is larger than 15, any LuaStore key over 15 characters will collide in NVS storage while appearing distinct in the in-memory store.
 
 **Why it happens:**
-Tweens combine two hot-reload hazards in one: stale `luaL_ref` callback handles (same as C_Timer) and stale ScriptProxy targets (same as ObjectProxy). The compound nature means developers who handle one hazard correctly may miss the other.
+The NVS spec requires 15-character maximum. LuaStore's in-memory key storage has its own constant (likely larger). When the NVS backend serializes keys, it truncates without warning.
 
 **How to avoid:**
-- Tween teardown must be symmetric with C_Timer teardown. Add `clearTweens()` called before `lua_close()`, which calls `luaL_unref(L, LUA_REGISTRYINDEX, slot.callbackRef)` for all active slots, then sets all slot state to inactive.
-- Tween callbacks must store `lua_State*` alongside `int callbackRef` (same discipline as C_Timer). Compare `L == m_L` before `lua_rawgeti` at fire time.
-- Tween targets should use `int tweenTargetRef` (a registry ref to the target userdata) rather than raw `ScriptProxy*`. At advance time, check the userdata's `valid` flag before writing. If invalid, silently cancel the tween.
-- `registerAll()` must call `clearTweens()` before rebuilding the registry. Do not rely on slot reuse to overwrite stale refs.
+- Validate key length in the NVS backend adapter: `if (strlen(key) > 15) { ESP_LOGW(TAG, "NVS key truncated: %s", key); }` or return false immediately.
+- Keep a NVS-specific namespace constant: `static constexpr int NVS_MAX_KEY = 15;`
+- Document this limit in the Lua API: `engine.store.save("k", v)` — keys must be 15 characters or fewer on ESP32.
+- Consider key hashing for long keys if needed, but simpler: enforce the limit and fail loudly during development.
 
 **Warning signs:**
-- `TweenSlot` holds `int callbackRef` without `lua_State*`
-- `clearTweens()` not called in hot-reload path
-- Tween target stored as raw `ScriptProxy*` instead of registry ref with validity check
-- No nil check after `lua_rawgeti` for tween callback
+- Two distinct keys return the same value when loaded on ESP32 but different values on SDL3
+- Saving one key silently overwrites another on embedded target
+- `nvs_get_str` or `nvs_set_str` returns `ESP_ERR_NVS_NOT_FOUND` for a key that was just written
 
-**Phase to address:**
-Tween helpers phase — design teardown and target validity before implementing any advance/fire logic.
+**Phase to address:** ESP32 NVS LuaStore backend phase
 
 ---
 
-### Pitfall 4: Coroutines Yield Inside a pcall — Lua 5.1 Cannot Resume Across a pcall Boundary
+### Pitfall 4: NVS Namespace RAM Overhead — 22KB per 1MB Partition
 
 **What goes wrong:**
-enjin2 uses standard Lua 5.1 (likely LuaJIT based on `luajit/` directory). In Lua 5.1, a coroutine cannot yield across a C call stack boundary. If a coroutine yields inside a function that was called via `lua_pcall()` (which is how `callWithProxy()` calls all Lua functions), the yield raises an error: "attempt to yield across metamethod/C-call boundary."
-
-This is the most common coroutine pitfall in embedded Lua. The enjin2 binding layer calls all Lua functions through `callWithProxy()` which uses `lua_pcall()` internally. A script that does:
-```lua
-function update(self, dt)
-    coroutine.wrap(function()
-        coroutine.yield()  -- ERROR: yields across C pcall boundary
-    end)()
-end
-```
-will raise an error on the first yield.
+NVS consumes approximately 22 KB of RAM per 1 MB of NVS flash partition and 5.5 KB of RAM per 1,000 keys. On an ESP32 with 320 KB internal RAM and a 5-layer canvas stack already consuming substantial static memory, opening a large NVS namespace can cause `ESP_ERR_NO_MEM` at runtime even if flash space is plentiful.
 
 **Why it happens:**
-Lua 5.2+ and LuaJIT have continuations that allow yielding across C call boundaries. Lua 5.1 does not. Developers who know LuaJIT's C API (`lua_yieldk`, coroutines work with LuaJIT's special handling) or who learned coroutines on Lua 5.2+ make assumptions that do not hold in standard 5.1.
-
-The project uses LuaJIT (the `luajit/` directory is present). LuaJIT DOES support yielding across `lua_pcall` in some cases (via its CoCo coroutine implementation, which patches the C stack). However, this requires LuaJIT to be compiled with CoCo support (default on most platforms) and the yield cannot cross a non-yieldable C call. The behavior is platform-dependent — CoCo works on x86/ARM but may not work on ESP32 RISC-V or Emscripten.
+NVS caches page metadata in heap. Opening a namespace involves loading page headers into RAM. The more pages in the NVS partition, the higher the RAM cost.
 
 **How to avoid:**
-- Do not yield inside `update(self, dt)` or `draw(self)` directly. These are called via `callWithProxy()` → `lua_pcall()`. A yield attempt raises an error.
-- The correct pattern: create a coroutine in `init(self)`, store it in a Lua local. In `update(self, dt)`, call `coroutine.resume(co)` explicitly. The coroutine body yields normally; the `resume()` call in `update()` is a Lua→Lua call, not a C→Lua pcall boundary.
-- For LuaJIT on ESP32: verify CoCo support at build time. If CoCo is absent (e.g., WASM), coroutine yield across any C boundary fails. Document the restriction: "coroutines must be resumed from Lua, not from C-called Lua functions."
-- Provide a `Coroutine` helper table in Lua (not a C binding) that wraps `coroutine.wrap()` with the correct resume-from-update pattern. This keeps the implementation in Lua where yield semantics are clear.
+- Use the minimum viable NVS partition size: 12 KB (3 pages) is the official minimum; 24–32 KB is sufficient for game save data with small values.
+- Open the NVS namespace once at startup, keep the handle open for the session, and close it at shutdown. Do not open/close repeatedly per operation.
+- Use `ESP_ERROR_CHECK(nvs_flash_init())` and check for `ESP_ERR_NVS_NO_FREE_PAGES` or `ESP_ERR_NVS_NEW_VERSION_FOUND` — both require `nvs_flash_erase()` followed by `nvs_flash_init()` again.
+- Keep LuaStore key count small (≤16 keys matching `STORE_MAX_KEYS`) to avoid RAM growth.
 
 **Warning signs:**
-- `coroutine.yield()` called directly inside `update(self, dt)` or `draw(self)` without checking call origin
-- No documentation on the pcall boundary restriction
-- `engine.coroutine.create(fn)` C binding that calls `lua_resume()` from C inside a `lua_pcall()` scope
-- No cross-platform test for LuaJIT CoCo availability (especially WASM and ESP32 targets)
+- ESP32 boot fails with `heap_caps_malloc` errors after `nvs_flash_init()`
+- `esp_get_free_heap_size()` drops dramatically after store initialization
+- `nvs_open()` returns `ESP_ERR_NVS_NOT_ENOUGH_SPACE`
 
-**Phase to address:**
-Coroutine/async phase — design the coroutine resume pattern around pcall boundaries before writing any C bindings.
+**Phase to address:** ESP32 NVS LuaStore backend phase
 
 ---
 
-### Pitfall 5: bindings.cpp Split Breaks Static Forward Declarations Between Translation Units
+### Pitfall 5: WASM localStorage Bridge — Synchronous Writes Block Render Frame
 
 **What goes wrong:**
-`bindings.cpp` is 1390 lines with extensive forward declarations at the top (`static int lua_proxy_index_impl`, `static int lua_proxy_get_component_impl`, etc.). These static functions are used across the file. When the file is split into `bindings_debug.cpp`, `bindings_ui.cpp`, `bindings_tween.cpp`, etc., each new TU cannot see the `static` functions from `bindings.cpp`. `static` linkage is TU-local.
-
-The failure mode: `bindings_ui.cpp` needs `getBindings(L)` (defined in `bindings.cpp`). If `getBindings` is declared `static`, it is invisible to `bindings_ui.cpp`. The new file will not compile (undefined reference), OR the developer copies `getBindings` into the new file, creating a second definition — which is fine for `static` (each TU gets its own copy) but produces duplicated logic that diverges over time.
-
-A second failure: the `g_currentBindings` global (line 16 of `bindings.cpp`: `static LuaBindings* g_currentBindings = nullptr`) is TU-local by `static` linkage. If any new `.cpp` file tries to access or set `g_currentBindings`, it accesses a different (uninitialized) copy of the variable, not the one set during initialization.
+`localStorage.setItem()` in JavaScript is synchronous but relatively slow (10–100ms on cold writes for large strings). If the WASM-to-JS localStorage bridge calls `EM_ASM` or `emscripten_run_script` on every `engine.store.save()` call (auto-persist behavior), each save blocks the render frame. For LuaStore with auto-persist enabled (save-on-every-write), a script that calls `engine.store.save()` inside `update()` will drop frames every update cycle.
 
 **Why it happens:**
-`static` at file scope means "internal linkage." This is correct for file-private helpers but prevents sharing across TUs. When a monolithic file is split, all the TU-private helpers that were implicitly shared within the file become invisible across the split.
-
-The correct pattern for the split: shared functions become `extern` (declared in a private header, defined in exactly one `.cpp`). File-private helpers remain `static` but only in the one `.cpp` that owns them.
+The SDL3 LuaStore backend auto-persists to file on save (matching the current `engine.store.save` → `saveToFile()` pattern in `bindings_store.cpp`). Porting this directly to WASM means calling `localStorage.setItem()` synchronously on every save call. Unlike file I/O on desktop (which is fast for small files), browser storage operations have non-trivial overhead and jitter.
 
 **How to avoid:**
-- Before splitting, audit `bindings.cpp` for functions that are referenced by more than one future TU. These must be converted to non-`static` member functions of `LuaBindings` (already accessible via the header) or to non-`static` free functions declared in `bindings_internal.hpp` (not installed as a public header).
-- `getBindings(L)` is already a `public static` member of `LuaBindings` — it is accessible from all TUs that include `bindings.hpp`. This is the correct model for shared binding utilities.
-- `g_currentBindings` — if it is used only in `bindings.cpp` for the ScriptProxy metatable, keep it `static` in that file and do not reference it from new TUs. New TUs use `getBindings(L)` instead.
-- Add a `bindings_internal.hpp` for non-public shared declarations (e.g., `REQUIRE_CANVAS` macro, `LuaFuncDef` helper). This header is included by all `bindings_*.cpp` files but not exported as a public API.
-- Compile-test each new split TU in isolation before committing. Use `nm` or `readelf` to verify no undefined symbols remain in the split files.
+- In the WASM backend, do NOT auto-persist on every `engine.store.save()`. Mark the store dirty and only flush on `engine.store.flush()` or on page unload (`window.beforeunload`).
+- Implement `EM_JS` or `EM_ASM` flush function called only from `lua_engine_store_flush()` — not from `lua_engine_store_save()`.
+- Serialize the entire LuaStore to a single JSON string and call `localStorage.setItem("enjin2_store", json)` once per flush, not per key.
+- Register a `window.addEventListener("beforeunload", ...)` in the WASM JavaScript glue to call `module.flush()` when the user navigates away.
 
 **Warning signs:**
-- `static int someHelper(lua_State* L)` function in `bindings.cpp` referenced by a new `bindings_*.cpp` file (linker error)
-- `g_currentBindings` accessed from more than one TU (reads zero instead of initialized pointer)
-- New `.cpp` file re-defines `getBindings` as a local copy (divergence risk)
-- No internal header for shared split-file declarations
+- Frame time spikes from 16ms to 30–100ms whenever `engine.store.save()` is called in `update()`
+- `localStorage.setItem` appears in browser DevTools performance flame chart inside the render frame
+- Store data is inconsistent between page loads (partial writes due to mid-frame interruption)
 
-**Phase to address:**
-Bindings refactoring phase — audit `static` linkage before splitting; establish `bindings_internal.hpp` as the first step.
+**Phase to address:** WASM localStorage bridge phase
 
 ---
 
-### Pitfall 6: Save/Load Serialization Writes Non-Portable Binary Data on ESP32
+### Pitfall 6: localStorage Quota Exceeded — 5MB Browser Hard Limit
 
 **What goes wrong:**
-The existing `LuaStore::saveToFile()` uses JSON (conditional on `VCV_RACK`). A new save/load serialization helper that goes beyond `LuaStore`'s 16-key limit may be tempted to write binary data (direct `fwrite` of structs) for speed and simplicity on embedded targets. This fails for two reasons:
-
-1. **ESP32 endianness vs WASM/SDL3 endianness**: ESP32 (Xtensa) is little-endian; x86/WASM is also little-endian. So endianness is not a problem here — but struct padding is. A struct written on ESP32 with a Xtensa-GCC layout may have different padding than the same struct compiled on x86-GCC. A save file written on SDL3 desktop may be unreadable on ESP32 if the struct layout differs.
-
-2. **ESP32 NVS limitations**: ESP32 Non-Volatile Storage (NVS) has key-length limits (15 chars), value-size limits (per-namespace, ~4 KB per key for blob type, total NVS partition size of 16 KB typical), and write cycle limits (100K writes per key before flash wear). Binary blob NVS writes that serialize an entire `GameState` struct on every frame tick will exhaust flash in hours.
+Browsers enforce a 5 MB per-origin localStorage quota. If a WASM game serializes the entire LuaStore as JSON (including embedded Lua table values, long strings, or repeated saves) the stored JSON can grow beyond the quota. `localStorage.setItem()` throws a `QuotaExceededError` DOMException in JavaScript, which, if not caught, bubbles up as an Emscripten exception and either crashes the WASM module or silently drops the save.
 
 **Why it happens:**
-Desktop developers reach for `fwrite(struct)` as the fastest path. Embedded developers know NVS but underestimate its limits. Neither group accounts for the multi-platform constraint that enjin2 explicitly carries.
+LuaStore allows strings up to `STORE_MAX_STRING` bytes and tables up to `STORE_MAX_TABLE_ENTRIES` entries. A fully saturated store with maximum-length strings could easily exceed 5 KB, and while that is within quota, nested tables with long string values, or any future expansion of `STORE_MAX_KEYS`, pushes toward the limit. Additionally, if localStorage is shared with other data (e.g., Docusaurus PWA caching), the effective budget is smaller.
 
 **How to avoid:**
-- Use JSON-based save format only, matching the existing `LuaStore` pattern. JSON is human-readable, portable, and the `LuaStore` save/load infrastructure already exists — extend it rather than building a parallel system.
-- For the serialization helper, define max key/value limits that work across platforms: key length ≤ 15 chars (NVS limit), total keys ≤ 32 (fits in NVS partition), value strings ≤ 256 bytes.
-- Save only on explicit `engine.store.save()` call or scene transition, never inside `update()`. The existing `LuaStore::saveToFile()` guards this via the store path mechanism.
-- If binary format is required for ESP32 performance, use a fixed-layout struct with explicit `uint8_t` padding bytes (portable layout), document the format version, and add a magic number at the start for format validation.
-- NVS write path is deferred — mark it as WASM/SDL3 only for v1.7; ESP32 NVS integration requires a separate phase with wear-leveling analysis.
+- Wrap all `localStorage.setItem()` calls in a try/catch in the JavaScript glue:
+  ```javascript
+  try { localStorage.setItem(key, value); }
+  catch(e) { console.error("enjin2: localStorage quota exceeded", e); }
+  ```
+- Return a boolean from the JS flush function back to WASM via `EM_JS` so `engine.store.flush()` can return `false` on quota failure.
+- Keep LuaStore serialized JSON small: the 16-key / 64-char string limits make this naturally bounded (~2–3 KB max), well within quota.
+- Do not store binary data or base64-encoded images in LuaStore.
 
 **Warning signs:**
-- `fwrite(&gameState, sizeof(GameState), 1, fp)` in any platform-shared code path
-- Save/load functions inside `update()` rather than in explicit API calls
-- NVS key names longer than 15 characters
-- No file format version or magic number in binary save files
-- Binary save written on SDL3 and tested only on SDL3 (endianness/padding differences with ESP32 not tested)
+- `engine.store.flush()` returns false in WASM but true on SDL3
+- Browser console shows `QuotaExceededError`
+- Save data silently disappears between page refreshes
 
-**Phase to address:**
-Save/load serialization phase — define the format constraints and platform scope before writing any serialization code.
+**Phase to address:** WASM localStorage bridge phase
 
 ---
 
-### Pitfall 7: Camera Follow Sets Position Every Frame, Fighting Manual Override
+### Pitfall 7: Tween Await Integration — Resuming a Coroutine from a Tween Callback
 
 **What goes wrong:**
-`engine.camera.follow(target)` is intended to call `C_Camera::lookAt(target.x, target.y, lerpSpeed)` every frame. If this is implemented as a "set it and forget it" registration (the camera stores a target reference and follows automatically in `C_Camera::update()`), a script that calls `engine.camera.shake(5, 0.3)` and also has a follow target active will have the shake cancelled: `lookAt()` sets the target position, and on the next frame `update()` lerps toward the target, overwriting the shake offset.
-
-The existing `C_Camera::update()` applies lerp toward `m_target` and advances `m_shakeElapsed`. If `lookAt()` is called every frame from Lua (in the script's `update()`) AND shake is active, the lerp destination changes every frame — but the shake still accumulates correctly in `m_shakeOffset`. This is actually fine: shake is additive on top of the lerped position. The problem is ONLY if the follow implementation calls `setPosition()` (which resets lerp residual) instead of `lookAt()`.
-
-A second failure: `engine.camera.follow(target)` in the Lua script holds an `ObjectProxy` to the target object. If the target is destroyed (`engine.scene.destroy(target)`), the ObjectProxy's `valid` flag is `false`. The next frame's follow call reads `target.x` through the stale proxy — which raises a Lua error ("object has been destroyed"), crashing the script.
+`engine.tween.to()` accepts an optional `done_cb` callback. If a coroutine calls `engine.tween.to()` and then attempts to `engine.async.wait()` on the tween completing (rather than a timeout), there is no native mechanism to resume the coroutine from inside the tween `done_cb`. The done callback fires via `lua_pcall` from `tickTweens()`. If the callback tries to `coroutine.resume()` a suspended coroutine, this is a re-entrant coroutine resume inside `tickTweens()` — undefined behavior that can corrupt the coroutine pool.
 
 **Why it happens:**
-Camera follow is often a "fire and forget" feature in game engines (Unity's `Camera.Follow(target)`). enjin2's design of explicitly calling `lookAt()` each frame from Lua is correct but requires the script to handle target lifetime. The ObjectProxy validity check is the correct protection, but scripts that trust `engine.camera.follow(target)` to be safe "forever" will not add the guard.
+`tickTweens()` iterates `m_tweenPool` linearly and calls `done_cb` via `lua_pcall`. `tickCoroutines()` runs before `tickTweens()` in the SDL runner (confirmed: `tickCoroutines(dt)` precedes `tickTweens(dt)` in `sdl_main.cpp`). A done callback that calls `coroutine.resume()` on a slot in `m_coroutinePool` tries to resume a coroutine from inside the tween tick loop — outside the scheduler's designed resume path.
 
 **How to avoid:**
-- `engine.camera.follow(target)` is a Lua convenience that the script must call each frame inside `update()`. It is NOT a registration. Document this explicitly: "call `engine.camera.follow(target)` every frame in `update()` — it is not an automatic subscription."
-- Do NOT implement follow as a C_Camera internal feature with `m_followTarget`. This creates a target lifetime coupling that is hard to clean up correctly.
-- In the Lua API: `engine.camera.follow(target)` should check if the passed `ObjectProxy` is valid (non-nil, `proxy.valid`) before reading its position. Provide a null guard in the C binding function that checks the ObjectProxy validity and silently returns if the target is destroyed.
-- Use `lookAt()` not `setPosition()` inside the follow implementation. `lookAt()` respects lerp and shake additive semantics.
+- The tween-await pattern (`engine.tween.await(...)`) must not use re-entrant coroutine resume. Instead, implement it as a yield + polling approach:
+  - `engine.tween.await(target, props, duration, easing)` stores the tween ID and yields the current coroutine.
+  - On each `tickCoroutines()` frame, before checking wait time, check if the awaited tween slot is still active. If not, clear the wait and resume.
+- Alternatively: the `done_cb` sets a flag (e.g., into the coroutine's `waitRemaining` field set to 0) so the next `tickCoroutines()` naturally resumes it — without any re-entrant `coroutine.resume()` call.
+- Never call `coroutine.resume()` from inside a tween `done_cb` that fires from `tickTweens()`.
 
 **Warning signs:**
-- `C_Camera` stores `ObjectProxy*` or `Object*` as `m_followTarget` (lifetime coupling)
-- `engine.camera.follow(target)` reads `target.x` without checking `proxy.valid`
-- Follow implementation calls `setPosition()` instead of `lookAt()`, cancelling lerp residual
-- No documentation that follow is per-frame, not a subscription
+- Coroutine resumes twice in one frame (visible as double-stepping animation)
+- `lua_resume` returns `LUA_ERRRUN` with "cannot resume running coroutine"
+- Tween completes but coroutine never wakes up (if done_cb discards resume attempt silently)
 
-**Phase to address:**
-Camera follow helpers phase — define the per-frame pattern and validity guard before binding `engine.camera.follow()`.
+**Phase to address:** Tween await QoL phase
 
 ---
 
-### Pitfall 8: UI Component Bindings Allocate State in LuaBindings That Is Never Reset on Hot Reload
+### Pitfall 8: Camera Dead Zone Applied Before Lerp — Jitter at Zone Boundary
 
 **What goes wrong:**
-`engine.ui.*` bindings (progress bars, stat bars, etc.) maintain rendering state in `LuaBindings` member variables. The pattern in existing bindings: add members to `LuaBindings`, initialize in `registerAll()`, read/write from `static int lua_engine_ui_*` C functions. If UI state (e.g., a `UIBar` array of active bar descriptors) is added as a member of `LuaBindings`, it must be reset in `registerAll()` — the same function used by hot reload.
-
-The failure: if `LuaBindings::registerAll()` does not explicitly reset the UI member arrays (`for(auto& bar : m_uiBars) bar = {};`), the bars retain state from the previous script on F5 reload. Scripts that do not call `engine.ui.createBar()` on reload see bars from the previous session rendered on screen. The bars are drawn from C++ during the draw pass — they do not depend on Lua calling any function to render.
-
-A second failure: if UI component state includes `int luaCallbackRef` values (e.g., an `onChange` callback for a stat bar), these refs are invalid after hot reload. Same hazard as C_Timer and tweens, same fix: call `luaL_unref` before `lua_close`, null the refs in reset.
+A naively implemented camera dead zone checks whether the target is outside the dead zone rectangle and, if so, snaps the camera target to the zone edge and applies lerp from the current camera position. If the dead zone check is applied before the lerp step, the effective lerp target jumps discontinuously every frame the target moves in/out of the zone boundary. This produces a visible stutter — the camera oscillates between "dead zone engaged" (no movement) and "dead zone disengaged" (sudden lerp pull) at the boundary.
 
 **Why it happens:**
-The existing `resetSpritePool()` function in `LuaBindings` is the correct pattern — it clears all sprite pool state explicitly. The hot-reload path calls `resetSpritePool()` from `registerAll()`. New subsystems added to `LuaBindings` must follow the same discipline: each subsystem needs a `resetXxx()` function called from `registerAll()`.
+Developers treat the dead zone as a simple "if outside rect, follow; else stop" gate. But lerp follow requires a smooth target position — the dead zone should offset the lerp target (how much to pursue), not toggle the lerp on and off. When toggling, the camera position jumps one lerp-step's worth of distance every time the target crosses the boundary.
 
 **How to avoid:**
-- Add `resetUIState()` (called from `registerAll()`) that zeros all UI member arrays: `for(auto& bar : m_uiBars) bar = {}`.
-- Any `int callbackRef` in UI state follows the `clearTimers()`/`clearHandlers()` teardown pattern: call `luaL_unref` for each active ref before zeroing.
-- Fixed-size UI arrays: `UIBarSlot m_uiBars[MAX_UI_BARS]` with `active` flag, matching all other fixed arrays in the engine. Do not use `std::vector`.
-- Document the reset requirement in a comment above each new member group in `LuaBindings`: `// UI state — reset in resetUIState() called from registerAll()`.
+- Compute the dead zone delta first: `clamp(target.x - camera.x, -deadZoneHalfW, deadZoneHalfW)` gives the displacement within the zone. Subtract this from the target to get the "pull target."
+- Only begin lerp movement when the target is outside the dead zone. When inside, the "pull target" equals the current camera position — lerp has nothing to do.
+- The C_Camera `update()` with dead zone should look like:
+  ```
+  float dx = target.x - m_x;
+  float dy = target.y - m_y;
+  float pullX = dx - clamp(dx, -m_deadZoneW/2, m_deadZoneW/2);
+  float pullY = dy - clamp(dy, -m_deadZoneH/2, m_deadZoneH/2);
+  m_x += pullX * m_lerpSpeed * dt * 10.0f;
+  m_y += pullY * m_lerpSpeed * dt * 10.0f;
+  ```
+- Camera updates must run after object updates each frame (confirmed in SDL runner order).
 
 **Warning signs:**
-- New `LuaBindings` member arrays without a corresponding `resetXxx()` call in `registerAll()`
-- UI bars visible after F5 reload without the script explicitly creating them
-- `int callbackRef` in UI state not `luaL_unref`'d before hot reload
-- `std::vector` used for UI state list (violates zero-alloc constraint)
+- Camera jitters when target hovers at the dead zone boundary
+- Lerp speed feels inconsistent — fast when far, stuttery when near boundary
+- Dead zone appears asymmetric (easier to escape from one side than the other)
 
-**Phase to address:**
-UI component bindings phase — add `resetUIState()` before any UI state members are added; include it in `registerAll()` immediately.
+**Phase to address:** Camera dead zone QoL phase
 
 ---
 
-### Pitfall 9: Persistent Objects Own LuaStore Data That Is Reset When the Store Is Reloaded
+### Pitfall 9: Arch Linux emsdk/ESP-IDF Setup Script Breaks on Python Version Drift
 
 **What goes wrong:**
-Persistent objects (objects that survive scene transitions) may carry Lua-side state through the `LuaStore` (via `engine.store.save()`/`engine.store.load()`). The store is loaded from disk in `setStorePath()` → `loadFromFile()`. On scene transition, the persistent object's `C_LuaScript` is NOT destroyed — it keeps its Lua state and its script's global variables.
+ESP-IDF's `install.sh` and emsdk's `emsdk install` script both assume a stable Python version. Arch Linux's rolling release model means `python` can advance to a minor or major version (e.g., 3.12 → 3.13 → 3.14) at any `pacman -Syu`. ESP-IDF's install script has a known history of breaking on Arch (GitHub issue #7809). Symptoms include: `pip` refusing to install into the system Python (PEP 668 "externally managed" error since Python 3.11), virtual environment creation failures, and `idf.py` import errors for specific Python packages compiled against older ABI.
 
-The failure: the script author designs the persistent object to save state to `engine.store` on every scene exit and reload from `engine.store` on every scene enter. On scene transition, the SSM destroys the old scene (destroying its `ObjectCollection`) before `activate()`-ing the new scene. The persistent object's Lua script fires its `on_scene_exit` event handler, calls `engine.store.save()`, and writes state to the in-memory store. Then on new scene init, the persistent script calls `engine.store.load()` and reads state back.
-
-If, however, the persistent object's script is reloaded from disk (via `loadScriptFile()`) during the scene transition — which can happen if the persistent object's script path is relative and the new scene changes the asset path — the Lua state is torn down and `engine.store.load()` is never called. The store's in-memory data from `engine.store.save()` is still there, but the newly-loaded script starts fresh from its `init()` callback and must re-read from the store explicitly. Without a clear protocol for this, the persistent object's state is silently lost.
+emsdk similarly creates a virtual environment and installs Python packages; if the system Python upgrades between installs, the venv's package hashes become invalid and `emsdk activate` fails silently.
 
 **Why it happens:**
-Persistent object lifecycle has three potentially different events: scene transition (object survives, Lua state survives), script reload (Lua state destroyed, object survives in C++), and session restart (everything destroyed). The interaction between store persistence and Lua state persistence is underspecified.
+Arch tracks Python releases aggressively and does not maintain compatibility shims. Both ESP-IDF and emsdk depend on specific Python packages (`pyserial`, `kconfiglib`, `cryptography`, etc.) that may not be binary-compatible with the new Python ABI until upstream releases new wheels.
 
 **How to avoid:**
-- Define a strict ordering: persistent object scripts are NOT reloaded on scene transition. They keep their Lua state. Only the scene's scripts are torn down.
-- Document: "persistent objects' Lua scripts are not reloaded across scene transitions. The script's `update()` and `draw()` continue running. To save persistent state, call `engine.store.save()` at explicit save points (not in `update()`)."
-- If the persistent object's script must access scene-specific resources (sprites, tilemaps from the new scene), it should obtain those via `engine.scene.find()` after the new scene is active — not during the transition window.
-- Add a `on_scene_change(new_scene_id)` callback for persistent scripts (optional, only fires if defined). This gives persistent scripts a clear hook for scene-transition-aware logic without conflating it with `update()`.
+- Pin the emsdk version: use `emsdk install 3.1.XX` (a specific tagged version) rather than `latest`. Record the version in the setup script.
+- Use `python -m venv` explicitly for ESP-IDF: `python3 -m venv $IDF_PATH/.venv && source $IDF_PATH/.venv/bin/activate && pip install -r $IDF_PATH/requirements.txt`
+- Add a Python version check at the top of the setup script: `python3 --version | grep -E "3\.(11|12|13)"` — warn if outside tested range.
+- Do not use `sudo pip install` — always use a venv or `--user` installs.
+- For emsdk: prefer the AUR `emsdk` package or install into a project-local directory and source `emsdk_env.sh` rather than modifying system paths.
+- Add `set -e` to the setup script and explicit error messages for each step.
 
 **Warning signs:**
-- Persistent object script calls `loadScriptFile()` during scene transition
-- `engine.store.save()` called inside `update()` on every frame for a persistent object
-- No documented distinction between "persistent Lua state" and "persisted store data"
-- Persistent object tries to access scene-specific objects during the transition window (m_activeScene is null)
+- `pip install` fails with "externally-managed-environment" error
+- `idf.py` fails to import `kconfiglib` or `pyparsing`
+- `emcc --version` hangs or prints "emsdk: command not found" after successful install
+- Setup script completes with exit code 0 but `emcc` and `idf.py` are not on PATH
 
-**Phase to address:**
-Persistent objects phase (v1.7 variant) — define the Lua state persistence model before designing the scene transition hooks.
+**Phase to address:** Dev environment setup script phase
 
 ---
 
-### Pitfall 10: Null Safety Fixes Introduce Behavioral Changes in Existing Binding Chains
+### Pitfall 10: ESP32 5-Layer Stack Exceeds Internal RAM Without PSRAM
 
 **What goes wrong:**
-The null safety improvement phase aims to add guards in binding chains where pointer dereferences currently fail silently or crash. The risk: adding a null guard changes a function that previously returned garbage or crashed to now return `nil` or `0`. Scripts that were "working" by relying on the garbage value (or by being tested on platforms where the nullptr dereference happened to read zeros) now get different behavior.
-
-Example: a binding that currently does:
-```cpp
-C_Position* pos = owner ? owner->getPosition() : nullptr;
-lua_pushinteger(L, pos->getPosition().x);  // crashes if pos == nullptr
-```
-After fix:
-```cpp
-C_Position* pos = owner ? owner->getPosition() : nullptr;
-lua_pushinteger(L, pos ? static_cast<lua_Integer>(pos->getPosition().x) : 0);
-```
-Scripts on ESP32 that ran on objects that always had a `C_Position` never triggered the crash path. SDL3 desktop tests pass. But a script that intentionally used an object without `C_Position` was getting 0 (from the crash path's undefined behavior coincidentally reading zero) and now gets 0 from the null guard — no change. This is a good outcome.
-
-The bad outcome: a binding that returns `nil` instead of a default value after null-guard addition causes Lua code that does `local x = self.x + 10` to get `nil + 10` → Lua runtime error. Previously, the same code got `0 + 10 = 10` (from the undefined-behavior-that-happened-to-work path). The null guard "fixes" the crash but "breaks" the script's arithmetic.
+enjin2 v1.7 ships with `ENJIN_LAYER_COUNT=5` (4 game layers + 1 debug layer). Each Canvas4 of 320×240 pixels at 4-bit (nibble) packing requires 320×240/2 = 38,400 bytes = ~37.5 KB per layer. Five layers = ~187.5 KB of canvas data. ESP32 has 320 KB internal RAM, with significant portions consumed by Lua VM state, Lua scripts, coroutine stacks, and system firmware overhead. A 5-layer stack may leave insufficient heap for Lua.
 
 **Why it happens:**
-Null safety is retroactive. The existing script API has implicit contracts ("this always returns a number") that were enforced by the implementation coincidentally, not by design. When the contract is made explicit with a null guard, the implicit contract may change.
+enjin2 uses static allocation for canvases, so the canvas array is allocated at program start before Lua is initialized. If static arrays are placed in BSS (internal RAM by default on ESP32), the 187.5 KB canvas block may coexist with Lua's ~50–80 KB minimum heap and other static allocations, leaving less than 32 KB free heap — too little for reliable Lua operation.
 
 **How to avoid:**
-- For every null guard added, document the new return value: "returns 0 if C_Position is absent" vs "returns nil if C_Position is absent." Prefer returning 0 (not nil) for numeric properties — this preserves arithmetic operability.
-- Run the existing test suite (all 27+ ctests) after each null guard addition. Do not batch null guard changes — add them one function at a time to isolate regressions.
-- Run example scripts (`scripts/arkanoid.lua`, `scripts/tamagotchi.lua`) under SDL3 before and after. Behavioral differences are regressions.
-- Where a null guard changes return type (crashes → nil), add an assertion in debug mode: "if owner is null here, this is a programming error — the script is accessing a property on an object that doesn't exist." Use `luaL_error` in that case rather than returning nil silently.
+- Compile enjin2 with `ENJIN_LAYER_COUNT=2` or `ENJIN_LAYER_COUNT=3` for ESP32 targets by default (game layers only, no debug layer on embedded).
+- If 5 layers are needed, place canvas arrays in PSRAM using `DRAM_ATTR` + `heap_caps_malloc` at init, or declare canvas buffers with `__attribute__((section(".spiram")))` if the linker script supports it.
+- Add a compile-time static assert for ESP32 builds: `static_assert(ENJIN_LAYER_COUNT <= 3 || CONFIG_ESP32_SPIRAM_SUPPORT, "5-layer stack requires PSRAM on ESP32")`.
+- The `lua_platform.cpp` already handles ESP32 memory via `heap_caps_malloc` — extend this to canvas allocation or document the ESP32 layer count constraint explicitly.
 
 **Warning signs:**
-- Null guards added in bulk across many functions in one commit
-- No test run between null guard additions
-- Null guard returns `nil` for properties previously guaranteed to return numbers (breaks script arithmetic)
-- No distinction between "expected null" (feature: C_Position is optional) and "unexpected null" (bug: owner destroyed, proxy should be invalid)
+- ESP32 fails to boot with heap panic or stack overflow
+- Lua VM initialization returns null (`lua_newstate` fails)
+- `esp_get_free_heap_size()` is below 30 KB after canvas initialization
+- Build passes but device hangs on `lua_newstate()` call
 
-**Phase to address:**
-Null safety phase — add guards one function at a time, run ctests after each, document the return value contract for each guarded function.
+**Phase to address:** ESP32 build verification phase
 
 ---
 
 ## Technical Debt Patterns
 
+Shortcuts that seem reasonable but create long-term problems.
+
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Debug draw writes to `currentCanvas` instead of dedicated layer | No layer setup needed | Debug primitives are destroyed by next `clear()` call; cannot survive across update/draw | Never — debug layer must be separate and auto-cleared |
-| Coroutine stores raw `lua_State*` thread pointer in C++ | Simple pointer equality check for resume | Dangling after `lua_close()`; undefined behavior on resume | Never — use `int` registry ref + `lua_tothread()` pattern |
-| Tween target as raw `ScriptProxy*` instead of registry ref | Avoids extra Lua stack operations | Write to freed memory if component destroyed mid-tween | Never — proxy validity must be checked at advance time |
-| bindings.cpp split without `bindings_internal.hpp` | Faster split (copy-paste helpers) | Duplicated `getBindings()` and macro logic diverges over time | Never — internal header is a one-time cost |
-| Binary save format for ESP32 speed | Fast serialization | Non-portable across compilers, struct padding differences, no NVS wear analysis | Only with explicit padding bytes, format version, and NVS write analysis |
-| Follow target stored in `C_Camera` as `Object*` | "Fire and forget" API | Dangling pointer when target destroyed; no proxy validity check | Never — per-frame `lookAt()` call from Lua is the correct pattern |
-| UI state not reset in `registerAll()` | Skip reset = faster reload | Stale UI bars visible after F5 hot reload | Never — `resetUIState()` in `registerAll()` is a one-liner |
-| `coroutine.yield()` from inside `update()` | Intuitive API | Fails on Lua 5.1 pcall boundary; unreliable on LuaJIT + WASM/ESP32 | Never — yield must be from a coroutine resumed in Lua, not from a C-called function |
+| Auto-persist on every `store.save()` in WASM | Matches SDL3 behavior exactly | Drops frames; may hit localStorage quota on every update() call | Never for WASM — flush-only is correct |
+| Using `emscripten_run_script` for JS bridge | Simple to write | No type safety, no error propagation, slow; deprecation risk | Never — use `EM_JS` or `EM_ASM_INT` instead |
+| `ASYNCIFY` for coroutine wait in WASM | No scheduler changes needed | 50%+ binary bloat, slower WASM, instruments entire Lua VM | Never — the existing lua_resume pattern handles this correctly |
+| Opening NVS namespace on every store operation | Simpler implementation | RAM fragmentation, handle leak if not closed, slower per-op | Never — open once at init, close at shutdown |
+| Setup script installs to system Python (`sudo pip`) | Fewer venv steps | Breaks on every Arch Python update; violates PEP 668 | Never on Arch Linux rolling |
+| Using `emscripten_set_main_loop` with `fps=60` | Feels predictable | Bypasses vsync/rAF; causes tearing and energy waste | Never — use fps=0 (rAF) |
+| Hardcoding emsdk `latest` in setup script | Always installs newest | Breaks reproducibility; `latest` may be untested with Lua | Only acceptable for development; pin version for CI |
+| Dead zone implemented as on/off lerp toggle | Easy to understand | Jitter at zone boundary; non-deterministic camera position | Never for smooth follow; use offset-clamp pattern instead |
 
 ---
 
 ## Integration Gotchas
 
+Common mistakes when connecting these new features to the existing system.
+
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Debug draw + camera offset | Debug boxes drawn in world space appear offset from intended position when camera is active | Debug draw functions accept screen-space coordinates (skipping camera offset), not world-space |
-| Coroutines + pcall boundary | `coroutine.yield()` inside `update(self, dt)` raises "attempt to yield across C boundary" | Create coroutine in `init()`, resume with `coroutine.resume(co)` from `update()` Lua code |
-| Tweens + hot reload | Tween's `callbackRef` is stale after F5; fires wrong function | `clearTweens()` before `lua_close()`; compare `L` at fire time |
-| Tweens + invalid target | Tween writes to destroyed ScriptProxy via stale raw pointer | Target stored as registry ref; `valid` flag checked before each write |
-| Persistent objects + scene.find() | `engine.scene.find()` returns nil for persistent objects not in current scene | Extend `find()` to search SSM-level persistent collection after scene search |
-| Persistent objects + store | Store reloaded from disk overwrites in-memory state written by persistent script | Persistent scripts save/load explicitly at defined save points, not in `update()` |
-| bindings.cpp split + `static` helpers | New TU cannot see `static int someHelper()` from `bindings.cpp` | Shared helpers → `LuaBindings` static member or `bindings_internal.hpp` extern |
-| Save/load + ESP32 NVS | Long key names (> 15 chars) silently fail NVS writes | Key names ≤ 15 chars enforced by LuaStore; NVS path documented as platform limit |
-| Camera follow + destroyed target | `engine.camera.follow(deadProxy)` reads invalid proxy, raises Lua error | Follow binding checks `proxy.valid` before reading `x`/`y`; returns silently if stale |
-| UI callbacks + hot reload | `int onChangeRef` in UIBarSlot is stale after F5 | `resetUIState()` calls `luaL_unref` for all active callback refs before zeroing slots |
-| Null safety + script arithmetic | Guard returns `nil` for numeric property; `nil + 10` is a Lua runtime error | Null guards return `0` for numeric properties, not `nil`; use `luaL_error` for unexpected null |
+| WASM main loop | Calling `emscripten_set_main_loop` before engine is initialized | Initialize all state as static globals, then register the loop callback as the last statement in `main()` |
+| WASM LuaStore backend | Using the existing `saveToFile` stub (returns false) and treating it as correct behavior | Replace the stub with `EM_JS` bridge to `localStorage.setItem()` in a WASM-specific compilation unit |
+| ESP32 NVS backend | Using `nvs_set_str` for LuaStore's serialized JSON blob | LuaStore's JSON may exceed 4000-byte NVS string limit; use `nvs_set_blob` for the store payload |
+| Tween await | Yielding inside a `done_cb` via `coroutine.yield()` | Use a polling approach: yield the coroutine from `engine.async.wait`, check tween completion on each scheduler tick |
+| Camera dead zone + screen shake | Applying dead zone check after screen shake offset | Dead zone operates on target-to-camera delta in world space; screen shake is a render-time offset applied after camera update |
+| Arch setup script + emsdk | Sourcing `emsdk_env.sh` without checking if emsdk is initialized | Check `command -v emcc` before sourcing; print actionable error if not found |
+| ESP32 build + bindings split | Including `bindings_internal.hpp` from a new NVS-specific file | `bindings_internal.hpp` uses TU-local constexpr — safe, but verify it compiles cleanly in the ESP32 toolchain (Xtensa-specific warnings) |
+| Docusaurus C++ code blocks | Using `<` and `>` in angle-bracket template syntax in MDX | Escape as `&lt;` and `&gt;` in prose; in fenced code blocks (triple backtick), angle brackets are safe |
 
 ---
 
 ## Performance Traps
 
+Patterns that work at small scale but fail under real conditions.
+
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Debug draw called every frame from `update()` drawing hundreds of bounding boxes | Frame time spikes; visible on ESP32 as lag | Guard with `if DEBUG_DRAW_ENABLED` compile flag; disable for release builds | ESP32 with > 32 objects under debug draw at 128x128 pixel budget |
-| Tween advances checked every frame for all MAX_TWEENS slots | O(MAX_TWEENS) scan per frame even for 1 active tween | Early-out counter: `m_activeTweenCount`; skip full scan if 0 | Any platform with MAX_TWEENS > 16 and sparse usage |
-| `coroutine.resume(co, dt)` called every frame even when coroutine is dead | `lua_resume()` on a dead coroutine returns `LUA_ERRRUN`; each failure pays pcall overhead | Check `coroutine.status(co) ~= "dead"` before resume; remove dead coroutines from active list | ESP32 with > 8 concurrent coroutines all finishing at different times |
-| Save file written on every `update()` loop via persistent object's Lua code | NVS write cycle exhaustion on ESP32; slow I/O on SDL3 | Document: save only on scene transitions or explicit user action | ESP32 after ~100K total writes to the same NVS key |
-| UI progress bars redrawn every frame with `fillRect()` covering full bar width | Pixel-perfect animation at cost of full bar repaint each frame | Bar rendering is cheap at 128x128; only a problem with > 32 bars simultaneously | ESP32 at very high frame rates with many UI elements; acceptable for Tomodachi use |
-| `engine.camera.follow(target)` calls `lookAt()` every frame with new target position | Lerp speed set to 1.0 (snap) negates smooth follow | Document lerpSpeed parameter; ensure script uses lerpSpeed < 1.0 for smooth follow | Any platform — incorrect lerpSpeed causes jitter or instant snap |
+| `localStorage.setItem` on every `engine.store.save()` | Frame time spikes 10–100ms each save call | Flush-only pattern: dirty flag + explicit `flush()` | First time `save()` is called from `update()` |
+| NVS `nvs_open`/`nvs_close` per operation | Each open costs ~1ms RAM load + flash read; noticeable lag | Open namespace handle once at boot; keep open | Immediately visible on ESP32 at any save frequency |
+| `emscripten_set_main_loop` with `fps=60` instead of `0` | Frame tearing, energy waste, vsync mismatch | Always use `fps=0` for rAF-synchronized rendering | Immediately |
+| 5-layer canvas stack in internal RAM on ESP32 | Boot failure or Lua heap exhaustion | Reduce layer count for ESP32; use PSRAM for canvas buffers | At boot, before any game code runs |
+| Coroutine wait implemented with ASYNCIFY `emscripten_sleep` | WASM binary 50%+ larger; all VM calls are slower | Use `tickCoroutines(dt)` polling loop, not ASYNCIFY | Build time; noticeable in browser load performance |
+| Dead zone toggling lerp on/off frame-by-frame | Camera jitter at zone boundary; visible oscillation | Use offset-clamp formula; lerp the pull delta, not a binary switch | When target velocity ≈ lerp speed at boundary |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Debug draw:** Debug layer cleared at start of each frame automatically — verify the SDL runner and WASM host clear the debug canvas before `draw()` is called
-- [ ] **Debug draw:** `engine.debug.*` functions accept screen-space coordinates (not affected by camera offset) — verify coordinate system documented and consistent
-- [ ] **Coroutines:** `clearCoroutines()` called before `lua_close()` in the teardown sequence — verify coroutine registry refs are `luaL_unref`'d
-- [ ] **Coroutines:** Coroutine resume pattern documented as "resume from Lua `update()`, not from C pcall context" — check for yield-inside-pcall in example scripts
-- [ ] **Coroutines:** LuaJIT CoCo availability verified on WASM and ESP32 targets — check `LUAJIT_ENABLE_LUA52COMPAT` and `LUAJIT_USE_COCO` build flags
-- [ ] **Tweens:** `clearTweens()` called in `registerAll()` hot-reload path — verify in `performReload()` sequence
-- [ ] **Tweens:** Tween `callbackRef` stores `lua_State*` alongside `int` — verify struct has both fields
-- [ ] **Tweens:** Target validity check before write — verify tween advance reads target proxy's `valid` flag
-- [ ] **Bindings split:** `bindings_internal.hpp` exists and is included by all split files — verify no `static` helpers copied between TUs
-- [ ] **Bindings split:** `g_currentBindings` or equivalent global is in exactly ONE TU — verify via `nm` output before committing
-- [ ] **Bindings split:** All `bindings_*.cpp` files add to the same CMake target — verify CMakeLists.txt lists all split files
-- [ ] **Save/load:** Key names ≤ 15 chars enforced — verify LuaStore truncates or rejects longer keys
-- [ ] **Save/load:** No binary `fwrite` of structs in any shared code path — grep for `fwrite` usage
-- [ ] **Camera follow:** `engine.camera.follow()` binding checks ObjectProxy validity before reading position — verify null guard in C function
-- [ ] **Camera follow:** `lookAt()` used (not `setPosition()`) in follow implementation — verify lerp and shake are preserved
-- [ ] **UI state:** `resetUIState()` called from `registerAll()` — verify UI bars are cleared on F5 hot reload
-- [ ] **UI callbacks:** `luaL_unref` called for all active UI `callbackRef` values in `resetUIState()` — verify unref before zeroing
-- [ ] **Null safety:** All null-guarded numeric properties return `0` not `nil` — grep for guards that push nil for numeric accessors
-- [ ] **Null safety:** ctests pass after each null guard addition — verify test run as part of null safety phase process
+Things that appear complete but are missing critical pieces.
+
+- [ ] **WASM LuaStore:** `saveToFile` stub returns `false` — looks like "build passes" but store is silently dropped on every save. Verify by calling `engine.store.save("x", 1)` → reload page → `engine.store.load("x")` returns value.
+- [ ] **ESP32 NVS keys:** Keys under 15 characters pass. Add explicit test with a 16-character key to confirm truncation warning fires, not silent collision.
+- [ ] **WASM main loop:** Build succeeds, `.wasm` file generated, but running in browser shows blank canvas because state objects were stack-allocated in `main()`. Verify with a script that draws a colored rectangle and reloads — must persist across frame callbacks.
+- [ ] **Camera dead zone:** Feature appears to work but has jitter at boundary. Test by moving target at constant low velocity across the dead zone edge — camera should track smoothly, not oscillate.
+- [ ] **Tween await:** `engine.tween.await()` returns at end of tween but coroutine is resumed twice in one frame when done_cb and scheduler both trigger on same tick. Verify frame count matches expected tween duration exactly.
+- [ ] **Arch setup script:** Script exits 0 on first run. Verify idempotency: run twice — second run should skip already-installed steps or reinstall cleanly without conflict.
+- [ ] **ESP32 5-layer build:** Compiles without error. Verify `esp_get_free_heap_size()` after canvas init and Lua init leaves ≥ 40 KB free. Log this at boot.
+- [ ] **localStorage quota:** Single-key store flushes correctly. Test with maximum-capacity store (16 keys, max-length strings) — verify flush returns true and data survives reload.
+- [ ] **Docusaurus tutorials:** Renders in dev mode. Verify production build (`npm run build`) completes without MDX parse errors — angle brackets in prose, template syntax in code, and JSX-incompatible HTML are common build-time failures that don't appear in dev mode.
 
 ---
 
 ## Recovery Strategies
 
+When pitfalls occur despite prevention, how to recover.
+
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Debug draw on wrong layer/canvas | LOW | Define dedicated debug canvas; update `engine.debug.*` binding to route there; add auto-clear in frame start |
-| Coroutine raw `lua_State*` dangling after reload | MEDIUM | Add `int threadRef` to slot struct; replace all `lua_State*` slot fields; add `clearCoroutines()` call before `lua_close()` |
-| Tween stale `callbackRef` after reload | LOW | Same pattern as C_Timer: add `lua_State*` to tween slot; add `clearTweens()` to hot-reload path |
-| bindings.cpp split breaks compilation | MEDIUM | Identify undefined symbols via linker output; move each to `bindings_internal.hpp` as `extern`; remove `static` keyword from affected helpers |
-| Binary save format non-portable on ESP32 | HIGH | Rewrite serializer in JSON (extend LuaStore); migrate existing save files or version-gate with magic number |
-| Camera follow crashes on destroyed target | LOW | Add `proxy.valid` check in `engine.camera.follow()` binding; return 0 silently if stale |
-| UI state survives hot reload | LOW | Add `resetUIState()` called from `registerAll()`; implement `luaL_unref` loop for callback refs |
-| Null guard returns nil for numeric property, breaks script arithmetic | LOW | Change guard to return `0`; rerun ctests; check affected scripts |
-| Persistent object store data lost on script reload | MEDIUM | Define persistent script lifecycle: scripts not reloaded on scene transition; add `on_scene_change` callback hook |
+| WASM state in stack-local `main()` | MEDIUM | Refactor engine state to static struct; no API changes needed; test in browser immediately |
+| ASYNCIFY bloat already added | LOW | Remove `-sASYNCIFY` flag; rebuild; verify coroutines still work via `tickCoroutines` path |
+| NVS key collision from truncation | HIGH | Existing saved data may be corrupted in flash; run `nvs_flash_erase()` + re-init; rename keys to ≤15 chars throughout LuaStore backend |
+| ESP32 heap exhaustion from 5 layers | MEDIUM | Reduce `ENJIN_LAYER_COUNT` to 3 in ESP32 CMake preset; rebuild; verify Lua boots |
+| localStorage quota error in production | LOW | Catch the DOMException in JS glue; return false to WASM; game handles gracefully if `flush()` return value is checked |
+| Tween-coroutine double-resume | MEDIUM | Remove re-entrant `coroutine.resume()` from `done_cb`; implement polling check in `tickCoroutines`; clear tween ID from slot on completion |
+| Camera dead zone jitter | LOW | Replace toggle pattern with offset-clamp formula; no API changes; unit-testable in isolation |
+| Arch setup script Python breakage | MEDIUM | Add `python3 -m venv` isolation; test in a fresh Arch Docker container; document tested Python version range |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
+How roadmap phases should address these pitfalls.
+
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Debug draw on wrong canvas/layer | Debug draw bindings phase | Debug box visible at correct position after `clear()` + `draw()` cycle; not present next frame after engine clears debug layer |
-| Coroutine thread dangling after reload | Coroutine/async phase | F5 reload with active coroutine: no crash; new script starts with clean coroutine state |
-| Coroutine yield across pcall boundary | Coroutine/async phase | `coroutine.resume(co)` from Lua `update()` succeeds on all three platforms (SDL3, WASM, ESP32) |
-| Tween stale callback after reload | Tween helpers phase | F5 reload with active tween: no wrong-callback fire; tween state clean in new session |
-| Tween writes to destroyed proxy | Tween helpers phase | Destroy tween target mid-tween: no crash; tween silently cancelled |
-| bindings.cpp split breaks compilation | Bindings refactoring phase | Full clean build after split; `nm` output shows no duplicated symbols |
-| Binary save non-portable | Save/load serialization phase | Save on SDL3, load on ESP32 (or vice versa): data round-trips correctly |
-| Camera follow crashes on stale proxy | Camera follow phase | `engine.scene.destroy(target)` while follow active: no crash; camera stops following |
-| UI state survives hot reload | UI component bindings phase | F5 reload with active UI bars: bars absent after reload without script re-creating them |
-| Null guard returns nil for numeric | Null safety phase | All 27+ ctests pass; `scripts/arkanoid.lua` runs without arithmetic errors |
-| Persistent object store data lost | Persistent objects phase | Scene transition with persistent object: script's in-Lua state preserved; `engine.store` data accessible |
+| `emscripten_set_main_loop` stack object destruction | WASM build verification | Script draws rect, page reload preserves behavior |
+| ASYNCIFY bloat | WASM build verification | Build flags reviewed; binary size baseline documented |
+| NVS key 15-char limit | ESP32 NVS storage phase | Test with 16-char key; confirm warning/rejection |
+| NVS namespace RAM overhead | ESP32 NVS storage phase | Log heap after `nvs_flash_init()`; must leave ≥40 KB |
+| localStorage frame-blocking | WASM localStorage bridge phase | Profile with browser DevTools; no spikes in `update()` |
+| localStorage quota exceeded | WASM localStorage bridge phase | Test with max-capacity store; flush returns bool correctly |
+| Tween-coroutine re-entrant resume | Tween await QoL phase | Coroutine wakes exactly once per tween; frame timing matches duration |
+| Camera dead zone jitter | Camera dead zone QoL phase | Target at constant velocity across boundary; smooth tracking |
+| Arch Python version breakage | Dev setup script phase | Run script on fresh Arch install; run twice for idempotency |
+| ESP32 5-layer heap exhaustion | ESP32 build verification phase | `esp_get_free_heap_size()` logged at boot; ≥40 KB after init |
 
 ---
 
 ## Sources
 
-- Codebase analysis: `include/enjin2/scripting/bindings.hpp` — `LuaBindings` member layout, `LuaStore` fixed-capacity arrays, `resetSpritePool()` pattern, `registerAll()` as hot-reload entrypoint (2026-03-01)
-- Codebase analysis: `src/scripting/bindings.cpp` — `g_currentBindings` static global, `static int lua_proxy_*` forward declarations, 1390-line monolith (2026-03-01)
-- Codebase analysis: `include/enjin2/components/camera.hpp` — `C_Camera::lookAt()` vs `setPosition()` semantics, `getScreenOffset()`, `m_shakeOffset` additive (2026-03-01)
-- Codebase analysis: `include/enjin2/components/timer.hpp` — `clearTimers()` teardown pattern, `lua_State*` + `int callbackRef` slot design (2026-03-01)
-- Codebase analysis: `include/enjin2/scripting/lua_event_bus.hpp` — `clearHandlers()` pattern, `int threadRef` approach for Lua object lifetime (2026-03-01)
-- Codebase analysis: `include/enjin2/core/scene.hpp` — `Scene::renderObjects()` post-sort rendering, no post-render hook (2026-03-01)
-- Codebase analysis: `include/enjin2/components/drawable.hpp` — `m_screenSpace` flag, `drawWithOffset()` camera-offset routing (2026-03-01)
-- Codebase analysis: `src/scripting/bindings_draw.cpp` — `REQUIRE_CANVAS` macro, null-guard pattern for canvas access (2026-03-01)
-- Project context: `PROJECT.md` — zero-alloc constraint, multi-platform (ESP32/WASM/SDL3), 1390-line bindings.cpp documented as debt, hot-reload full-state-destroy semantics, `LuaStore` existing fixed-capacity implementation (2026-03-01)
-- Lua 5.1 reference: coroutine yield semantics; `coroutine.yield()` cannot cross C call boundary (`lua_pcall` scope); `lua_State*` thread validity coupled to parent state lifecycle
-- LuaJIT documentation: CoCo coroutine continuations (platform-dependent); `lua_yieldk` not available in 5.1 compatibility mode; yield behavior on WASM/Emscripten requires explicit verification
-- ESP32 NVS documentation: 15-char key limit; ~4 KB per blob key; 100K write cycle limit per flash sector; total NVS partition typically 16 KB (Espressif NVS API reference, verified against ESP-IDF docs)
+- [Emscripten emscripten_set_main_loop documentation](https://emscripten.org/docs/api_reference/emscripten.h.html)
+- [Emscripten Runtime Environment — main loop design](https://emscripten.org/docs/porting/emscripten-runtime-environment.html)
+- [Emscripten Asyncify documentation](https://emscripten.org/docs/porting/asyncify.html)
+- [Emscripten File System API — MEMFS and IDBFS](https://emscripten.org/docs/api_reference/Filesystem-API.html)
+- [ESP-IDF NVS Flash API Reference (v5.5.3)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html)
+- [ESP-IDF External RAM (PSRAM) Guide](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/external-ram.html)
+- [ESP-IDF install.sh breakage on Arch Linux — GitHub Issue #7809](https://github.com/espressif/esp-idf/issues/7809)
+- [ArchWiki ESP32 page](https://wiki.archlinux.org/title/ESP32)
+- [Emscripten Asyncify + coroutines broken issue #8979](https://github.com/emscripten-core/emscripten/issues/8979)
+- [Emscripten set_main_loop multiple calls issue #2325](https://github.com/emscripten-core/emscripten/issues/2325)
+- [LocalStorage vs IndexedDB vs OPFS vs WASM-SQLite — RxDB 2025](https://rxdb.info/articles/localstorage-indexeddb-cookies-opfs-sqlite-wasm.html)
+- [Lua coroutine yield-across-C-boundary — lua-l archive](https://lua-l.lua.narkive.com/uMsdDdA3/attempt-to-yield-across-metamethod-c-call-boundary)
+- [Improved Lerp Smoothing — Game Developer Magazine](https://www.gamedeveloper.com/programming/improved-lerp-smoothing-)
+- [Docusaurus code blocks documentation](https://docusaurus.io/docs/markdown-features/code-blocks)
+- enjin2 v1.7 codebase: `src/scripting/bindings_store.cpp`, `bindings_async.cpp`, `bindings_tween.cpp`, `components/camera.cpp`, `platform/sdl/sdl_main.cpp`, `src/bindings/emscripten_bindings.cpp`
+- enjin2 PROJECT.md — Known tech debt and constraints
 
 ---
-*Pitfalls research for: Adding debug draw, save/load serialization, persistent objects, camera follow helpers, coroutines/async, tweens, UI components, bindings refactoring, and null safety to enjin2 v1.7*
-*Researched: 2026-03-01*
+*Pitfalls research for: enjin2 v1.8 Ship Ready — Emscripten/WASM, ESP32 NVS, WASM localStorage, Arch dev scripts, coroutine-tween, camera dead zone, Docusaurus tutorials*
+*Researched: 2026-03-02*

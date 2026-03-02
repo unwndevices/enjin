@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** enjin2 v1.7 — Developer Experience & New Capability
-**Domain:** Zero-alloc 2D game engine, Lua scripting layer expansion (embedded + SDL3 + WASM)
-**Researched:** 2026-03-01
+**Project:** enjin2 v1.8 Ship Ready
+**Domain:** Cross-platform 2D embedded game engine — WASM/ESP32 hardening, platform storage backends, developer tooling, tutorial documentation
+**Researched:** 2026-03-02
 **Confidence:** HIGH
 
 ## Executive Summary
 
-enjin2 v1.7 is a developer experience milestone that adds seven new Lua API surfaces to an existing, well-validated engine: debug draw (`engine.debug.*`), camera follow helpers (`engine.camera.follow`), save/load serialization hardening, persistent objects across scenes, coroutine/async scheduling (`engine.async.*`), tween helpers (`engine.tween.*`), and UI component bindings (`engine.ui.*`). The milestone is also paired with a structural refactoring of the 1390-line `bindings.cpp` monolith and a systematic null safety pass across all binding chains. Critically, every v1.7 feature is achievable with the existing C++ codebase — no new external libraries are required and all constraints (zero dynamic allocation, ESP32/WASM portability, LuaJIT 5.1 API compatibility) are already solved by patterns established in v1.0–v1.6.
+enjin2 v1.8 is a hardening milestone, not a feature milestone. The engine's three-platform architecture (SDL3 desktop, WASM/Emscripten, ESP32) already exists at the v1.7 code level, but two of three platforms have unverified builds and stub-only storage implementations. The primary work is: (1) prove all three platforms compile and produce runnable artifacts, (2) replace `return false` storage stubs with real platform backends (localStorage on WASM, NVS flash on ESP32), (3) wire two v1.7 subsystems together that were built but not integrated (tween completion into coroutine scheduler), and (4) create onboarding tooling and documentation that makes the engine usable by someone other than its author.
 
-The recommended approach is to build in dependency order: stabilize the binding structure first (split `bindings.cpp`, establish `bindings_internal.hpp`), deliver quick-win low-complexity features (debug draw, camera follow, save/load SDL3 path), then layer on the medium-complexity systems requiring new pooled state (coroutines, tweens), and finish with the architecturally invasive persistent objects system. UI component bindings are stateless draw calls and can be delivered in any later phase. All scheduler state (tweens, coroutines) must live in fixed C++ arrays inside `LuaBindings` — never in Lua tables — because Lua tables do not survive hot reload.
+The recommended approach follows a strict dependency order: build verification must come before platform-specific storage work, and the shared JSON serializer refactor must precede both storage backends. The WASM and ESP32 backends share the same serialization strategy — the entire LuaStore is serialized to a single JSON blob written to one storage key — which minimizes divergence and allows both platforms to reuse the existing `readJson*` parsing infrastructure. Emscripten 3.1.73 should be pinned for reproducibility (the project already satisfies the C++17 constraint required by 4.x). ESP-IDF v5.5.x (current stable) is the correct target. No new external libraries are needed for any feature in scope.
 
-The primary risks are concentrated in three areas: (1) coroutine lifecycle management — specifically yielding across the `lua_pcall` boundary raised by `callWithProxy()`, and ensuring all thread refs are `luaL_unref`'d before `lua_close()` on hot reload; (2) the persistent objects architectural change — `PersistentObjectRegistry` requires modifying `ObjectCollection`, `SceneStateMachine`, and `engine.scene` Lua bindings simultaneously; and (3) the bindings split — `static` linkage of existing helpers in `bindings.cpp` must be audited before any files are extracted to avoid linker errors. All other features are low-risk and directly grounded in confirmed codebase capabilities.
+The top risks are platform-specific and well-understood: WASM build gaps introduced by v1.7 features that have never been compiled under Emscripten; ESP32 heap exhaustion if the 5-layer canvas stack is allocated in internal RAM without PSRAM; NVS key collisions from silent 15-character truncation; and re-entrant coroutine resume if tween-await is implemented naively via `done_cb`. All of these have clear, established mitigations. No risk requires architectural rethinking — the existing platform-guard pattern (`#if !defined(ESP32) && !defined(__EMSCRIPTEN__)`) is the correct integration structure.
 
 ---
 
@@ -19,142 +19,175 @@ The primary risks are concentrated in three areas: (1) coroutine lifecycle manag
 
 ### Recommended Stack
 
-All v1.7 work is pure C++ + LuaJIT with no new external dependencies. The existing `Primitives<Pixel4>` shape set, `LuaStore` JSON persistence, `C_Camera::lookAt()`, and `lua_newthread`/`lua_resume`/`lua_yield` from the bundled LuaJIT are sufficient for every planned feature. Two new C++ constructs are needed: a `TweenSlot[8]` fixed array in `LuaBindings` for the tween pool, and a `PersistentObjectRegistry` class owned by `SceneStateMachine` for persistent objects. Everything else is binding code.
+v1.8 requires no new framework dependencies. All stack additions are toolchain configuration and standard platform APIs that ship with the existing build environments. The Emscripten `EM_JS` macro (bundled with emsdk) is the correct bridge for WASM localStorage — it is synchronous, zero-overhead, and avoids the ASYNCIFY bloat trap. The ESP-IDF NVS component (bundled with ESP-IDF v5.5) satisfies the LuaStore KV model exactly within its constraints. Docusaurus 3.9.2 is already installed and requires only content files and a one-line prism config change to support Lua syntax highlighting in tutorials.
 
 **Core technologies:**
-- LuaJIT 2.1 (Lua 5.1 API, bundled): coroutine scheduling, tween callbacks — native `lua_newthread`/`lua_resume`/`lua_yield` confirmed present; `coroutine` library must be explicitly opened in the ESP32 `openEmbeddedLibraries()` path (currently absent)
-- `Primitives<Pixel4>` (existing): debug draw shapes — `drawRect`, `drawCircle`, `drawLine`, `fillRect` already implemented; zero new drawing code needed
-- `LuaStore` (existing): save/load and persistent object data — only the `#ifdef VCV_RACK` platform guard needs replacing with proper SDL/ESP32/WASM branching
-- `C_Camera::lookAt()` (existing): camera follow — the helper is 15-20 lines of binding code wrapping the already-implemented lerp function
-- `bind_helpers.hpp` + `LuaFuncDef`/`luaBindFunctions()` (existing): the registration pattern all new `bindings_*.cpp` files follow
+- **Emscripten emsdk 3.1.73 (pinned):** WASM cross-compilation — pin for reproducibility; project already uses C++17 so 4.x is also safe, but 3.1.73 matches what `build_wasm.sh` was written against
+- **ESP-IDF v5.5.x (current stable):** ESP32 build and flash — NVS API is unchanged from v4.x to v5.x at the call level; v6.0-beta1 exists but should not be used
+- **EM_JS macro (Emscripten bundled):** localStorage bridge from C++ — synchronous, no Asyncify, matches LuaStore's synchronous `saveToFile` signature
+- **nvs_flash.h + nvs.h (ESP-IDF bundled):** ESP32 persistent KV storage — 15-char key limit fits LuaStore's constraint; 4000-byte string limit vastly exceeds worst-case JSON payload
+- **Docusaurus 3.9.2 (already installed):** Tutorial authoring — add `'lua'` to prism `additionalLanguages` and create `docs/src/tutorials/` directory; no new plugins
 
 **What NOT to add:**
-- No external tween libraries (EnTT tweeny, cpptween) — breaks zero-alloc and ESP32 constraints
-- No external JSON library — LuaStore's handwritten writer is sufficient
-- No Lua async frameworks (copas, luasocket) — require sockets, incompatible with embedded targets
-- No LVGL or layout engine — grossly over-engineered for a 128x128 pixel display
-- No `DontDestroyOnLoad` heap mechanism — use `PersistentObjectRegistry` with fixed-size ownership
+- `pacman -S emscripten` — gives system Emscripten 5.0.2 (not version-pinned); use manually-cloned emsdk pinned to 3.1.73
+- `-sASYNCIFY` — 50%+ binary bloat for zero benefit; the existing `tickCoroutines(dt)` + `lua_resume` pattern is correct on WASM as-is
+- IndexedDB / IDBFS — asynchronous; conflicts with synchronous `saveToFile` signature; localStorage is sufficient for 16-key LuaStore
+- ESP-IDF v6.0-beta1 — use stable v5.5.x
+- Separate NVS key per LuaStore slot — NVS key enumeration is diagnostic-only; serialize as a single JSON blob
 
 ### Expected Features
 
-**Must have (table stakes) — v1.7 scope:**
-- `engine.debug.*` bindings (rect, circle, line, cross, text, enabled flag) — every game engine exposes debug primitives; wiring-only, all shapes already exist in codebase
-- `engine.camera.follow(proxy, speed)` / `engine.camera.stopFollow()` — obvious DX improvement over calling `lookAt()` manually every frame; single function addition
-- Save/load serialization on SDL3 path — `LuaStore` JSON I/O is already written behind `#ifdef VCV_RACK`; change to SDL/ESP32/WASM preprocessor branching
-- `engine.async.*` coroutine scheduler — loading screens and cutscenes require waiting across frames; 8-slot fixed pool with `engine.async.wait(seconds)` yield
-- `engine.tween.*` tween helpers — 8-slot pool with easing (linear, easeIn, easeOut, easeInOut); animates Lua table fields via `lua_setfield` dispatch
-- `engine.ui.*` UI draw bindings (progressBar, statBar, panel, label) — stateless immediate-mode draw calls; existing FillUpGauge/Label C++ components cannot be wrapped due to `std::string`/`std::vector` incompatibility with the zero-alloc Pixel4 pipeline
-- Persistent objects across scenes — fixed-size `PersistentObjectRegistry`; `engine.scene.persist(proxy)` / `engine.scene.unpersist(proxy)`
+All features are P1 for "ship ready" status, with two additional P2 QoL items. The dependency chain is clear: build verification gates storage backends; dev setup script enables build verification; the shared JSON serializer refactor gates both storage backends. Full details in `.planning/research/FEATURES.md`.
 
-**Should have (differentiators):**
-- `engine.debug.enabled` boolean global toggle (zero cost when false) — enables/disables all debug draws without removing calls from scripts
-- Coroutine-aware tween await (`engine.tween.await()` that yields inside a coroutine until tween completes) — requires both systems stable first; eliminates callback nesting
-- Tween chaining (`.after(fn)`) — `on_complete` triggers next tween; cutscene-quality sequences
+**Must have (table stakes):**
+- **Dev environment setup script** — Arch Linux; onboarding gate before any platform verification can happen
+- **WASM build verified** — all v1.7 features compile under `__EMSCRIPTEN__`; produces `.js` + `.wasm`
+- **ESP32 build verified** — all v1.7 features compile under ESP-IDF; PSRAM constraint for 5-layer stack documented or resolved
+- **WASM localStorage bridge** — `LuaStore::saveToFile`/`loadFromFile` implemented for `__EMSCRIPTEN__` via `EM_JS`; flush-only pattern to avoid frame blocking
+- **ESP32 NVS storage** — `LuaStore::saveToFile`/`loadFromFile` implemented for `ESP32` via single JSON blob in NVS; `nvs_commit()` on write
+- **Tech debt: m_followTargetProxy** — 2-line fix clearing dangling camera follow reference on scene transitions and hot reload
+- **Tech debt: PERSIST standalone gap** — emit `lua_warning()` when `engine.scene.persist()` called without SceneStateMachine context
+- **Tween-await integration** — `engine.tween.await()` inside a coroutine suspends until tween completes; polling implementation, not re-entrant resume
+- **Docusaurus Getting Started guide** (updated) — remove stale Canvas8 reference; match v1.7 SDL3 runner API
+- **Docusaurus tutorials** — "Your First Script" (tamagotchi walkthrough) and "Async Coroutines" (engine.async + engine.tween.await)
 
-**Defer to v1.7.x / v2+:**
-- Camera dead zone (C_Camera extension — deferred until follow helper is validated)
-- ESP32 NVS save path (requires NVS wear analysis; deferred, stubs return false)
-- WASM localStorage bridge (requires JS interop/emscripten val layer)
-- UI layout engine (not appropriate for pixel art embedded target)
+**Should have (competitive):**
+- **wait_frames helper** — `engine.async.wait_frames(n)` as a Lua-level wrapper over `engine.async.wait(0)`; no new C bindings
+- **Camera dead zone** — `engine.camera.setDeadZone(w, h)`; offset-clamp formula, not toggle pattern
+- **Build helper scripts** — `build.sh --target [sdl3|wasm|esp32]` thin wrappers
+
+**Defer (v2+):**
+- WASM OPFS/IndexedDB storage (localStorage is sufficient for 16-key LuaStore)
+- ESP32 hot reload via SPIFFS
+- Interactive WASM demo in docs (lives in DROP project, not docs site)
+- API doc inline examples (extract from tutorials after they are stable)
 
 ### Architecture Approach
 
-The architecture is layered: Lua script → `LuaBindings` (split across `bindings_*.cpp`) → component/scene layer → graphics/canvas layer. All new v1.7 state lives in `LuaBindings` fixed arrays (`TweenSlot m_tweens[8]`, `CoroutineSlot m_coroutines[8]`), registered via `engine.*` sub-tables using the established `lua_newtable` + `luaBindFunctions()` pattern. The one exception is `PersistentObjectRegistry`, which is a value member of `SceneStateMachine` (not `LuaBindings`), because object ownership must survive at the C++ level independently of the Lua state. Frame update order is: `tickTweens(dt)` → `tickCoroutines(dt)` → `ssm.update(dt)` → clear debug canvas → `ssm.render()` → `LayerCompositor.composite()`.
+The architecture change for v1.8 is concentrated entirely in `src/scripting/bindings_store.cpp`. The existing `#if !defined(ESP32) && !defined(__EMSCRIPTEN__)` platform guard already provides the correct dispatch structure — v1.8 fills in the two stub `#else` branches. A prerequisite refactor extracts a `writeStoreToBuffer(char* out, size_t cap)` helper from the existing `std::ofstream`-based `saveToFile`, enabling both WASM and ESP32 backends to share the same JSON serializer. No new subsystems, no new headers, no API surface changes. The rest of the work is build infrastructure (scripts), documentation (Docusaurus tutorials), and isolated feature additions (camera dead zone, tween-await) that touch well-defined, contained modules.
 
 **Major components:**
-1. `LuaBindings` (modified) — gains `m_debugCanvas*`, `m_tweens[8]`, `m_coroutines[8]`; split from 1390-line monolith into focused `bindings_*.cpp` files via `bindings_internal.hpp`
-2. `PersistentObjectRegistry` (new) — SSM-owned `unique_ptr<Object>[16]` array; injects/withdraws from `ObjectCollection::m_external[]` on scene transitions
-3. `LuaCoroutineScheduler` (embedded in `LuaBindings`) — 8-slot `CoroutineSlot` array; `tickCoroutines()` resumes live coroutines each frame; `clearCoroutines()` on hot reload
-4. Debug canvas — dedicated highest-index layer; cleared automatically each frame before render; all `engine.debug.*` calls route there; null on release/ESP32 builds
-5. `C_Camera` (modified) — gains `setFollowTarget(Object*, float)` / `clearFollowTarget()`; follow resolves per-frame via `C_Position`; stale proxy detection via `valid` flag
+1. **`bindings_store.cpp` platform dispatch** — existing guard structure; add `#elif __EMSCRIPTEN__` and `#elif ESP32` branches with real implementations; extract `writeStoreToBuffer` shared helper
+2. **WASM host / `emscripten_bindings.cpp`** — verify all v1.7 features compile under Emscripten; fix any missing preprocessor guards from v1.7 additions
+3. **ESP32 host** — verify 5-layer canvas stack fits available RAM; wire `nvs_flash_init()` into platform init before LuaBindings construction
+4. **Build infrastructure** — `scripts/setup-dev.sh` (new), `scripts/build-wasm.sh` (refactored from root `build_wasm.sh` with path detection), `scripts/build-sdl.sh` and `build-esp32.sh` (new)
+5. **Docusaurus tutorials** — `docs/src/tutorials/` directory with `_category_.json`, tutorial pages, and `'lua'` added to prism config; `docs/sidebars.js` updated with tutorials category
+6. **`bindings_tween.cpp` + coroutine scheduler** — tween-await via yield + polling (coroutine sets awaited tween ID; `tickCoroutines()` checks completion each tick)
+7. **`components/camera.cpp`** — dead zone using offset-clamp formula; `m_deadZoneW`/`m_deadZoneH` fields
 
 ### Critical Pitfalls
 
-1. **Coroutine yield across pcall boundary** — `engine.async.wait()` called from inside `update(self, dt)` (invoked via `callWithProxy()` → `lua_pcall()`) raises "attempt to yield across C-call boundary" in Lua 5.1. Prevention: design the scheduler so `engine.async.start(fn)` registers the coroutine in the C-side scheduler; the scheduler resumes it via `lua_resume()` from outside any pcall scope. Coroutines must be resumed from C each frame, not yielded from within a pcall context.
+1. **`emscripten_set_main_loop` destroys stack objects** — engine state allocated on the stack in `main()` is destroyed when the loop takes control. All engine state must be static or heap-allocated before registering the loop callback. Use `fps=0` (requestAnimationFrame). Never place initialization code after the call.
 
-2. **Stale Lua refs after hot reload** — Tweens and coroutines hold `luaL_ref` handles into a `lua_State` destroyed on F5. Prevention: implement `clearTweens()` and `clearCoroutines()` symmetric to `C_Timer::clearTimers()`; call both from `registerAll()` (the hot-reload entrypoint). Store `lua_State*` alongside each `int callbackRef` in tween slots; compare at fire time. Store coroutine threads as `int threadRef` (registry ref), never as raw `lua_State*`.
+2. **ASYNCIFY bloat — do not use it** — the existing `tickCoroutines(dt)` + `lua_resume` scheduler pattern works correctly in WASM without ASYNCIFY. Adding `-sASYNCIFY` would instrument the entire Lua VM and inflate the binary 50%+. Never use `emscripten_sleep()` as a coroutine wait mechanism.
 
-3. **Debug draw on wrong canvas** — Calling `engine.debug.*` inside `update()` draws onto stale pixel data; drawing to `currentCanvas` (game layer) buries debug shapes under game content. Prevention: route all `engine.debug.*` to `m_debugCanvas` (highest-index dedicated layer); clear it automatically at frame start in the SDL runner, not in Lua scripts.
+3. **ESP32 NVS key silent truncation at 15 characters** — NVS silently truncates keys longer than 15 characters, causing undetected collisions. Validate and reject keys longer than 15 chars in the NVS backend. Document the constraint at the Lua API level.
 
-4. **bindings.cpp split breaks static linkage** — `static` helpers in `bindings.cpp` (including `g_currentBindings`) are TU-local; splitting to `bindings_debug.cpp` etc. makes them invisible to new TUs. Prevention: create `bindings_internal.hpp` for shared non-public declarations before any file is split; confirm `getBindings(L)` is a `public static` member of `LuaBindings` (already accessible from all TUs); audit all `static` functions before extracting.
+4. **ESP32 5-layer canvas stack exhausts internal RAM** — 5 layers at 320x240 4-bit = ~187 KB static allocation. With Lua VM overhead, this can exhaust the 320 KB internal RAM without PSRAM. Default to `ENJIN_LAYER_COUNT=3` for ESP32 targets unless PSRAM is confirmed. Add a compile-time `static_assert`.
 
-5. **Persistent objects — undefined Lua script lifecycle** — Scripts on persistent objects may call `engine.store.save()` on every `update()` frame (causing NVS wear or I/O stalls), or try to access scene-specific objects during the transition window when `m_activeScene` is null. Prevention: document that persistent object Lua scripts are NOT reloaded on scene transition; provide an optional `on_scene_change(new_id)` callback; prohibit store writes inside `update()`.
+5. **localStorage write blocks render frames** — calling `localStorage.setItem()` on every `engine.store.save()` causes 10-100ms frame spikes. Use flush-only pattern: dirty flag + explicit `flush()` + `window.beforeunload` handler. Never persist on every individual key write.
+
+6. **Re-entrant coroutine resume from tween `done_cb`** — calling `coroutine.resume()` from inside `tickTweens()` is undefined behavior that can corrupt the coroutine pool. Implement tween-await as yield + polling: the coroutine yields with a tween ID stored; `tickCoroutines()` checks if that tween is still active each frame without any re-entrant resume.
 
 ---
 
 ## Implications for Roadmap
 
-Based on research, seven phases are appropriate for v1.7. The order is dependency-driven: bindings structure first, quick wins second, complex schedulers third, invasive architectural change fourth, and stateless UI last.
+Based on combined research, the dependency graph enforces a clear phase sequence. Build verification is the critical path — nothing platform-specific can be written or tested until the respective platform builds succeed. The serializer refactor is a small prerequisite that unlocks both storage backends in parallel.
 
-### Phase 1: Bindings Refactoring + Null Safety Foundation
+### Phase 1: Environment and Build Verification
 
-**Rationale:** All subsequent binding work is easier with a smaller `bindings.cpp` and a `bindings_internal.hpp` that prevents static-linkage breakage across split files. Null safety must be done incrementally with test runs after each guard addition, not batched. These are parallelizable but both must complete before new binding files are added at scale.
-**Delivers:** Split `bindings.cpp` → `bindings_proxy.cpp` + reduced coordinator; `bindings_internal.hpp`; null guard additions with zero return values for numeric properties; all 27+ ctests still pass.
-**Addresses:** Bindings monolith tech debt (PROJECT.md); null safety pass (PROJECT.md).
-**Avoids:** Pitfall 4 (static linkage breakage on split), Pitfall 10 (null guards returning nil instead of 0 breaking script arithmetic).
+**Rationale:** The dev setup script and build verification are the mandatory foundation. Nothing else in this milestone is testable until all three platforms compile. Build verification and the setup script are independent of each other and can be worked in parallel, but both must complete before Phase 2.
 
-### Phase 2: Debug Draw Bindings
+**Delivers:** Working Arch Linux dev setup script (idempotent, pinned versions, venv isolation); confirmed WASM build (`.js` + `.wasm` output); confirmed ESP32 build (IDF firmware); PSRAM layer count decision documented in code.
 
-**Rationale:** Debug draw is wiring only — no new C++ drawing code. It establishes the dedicated debug canvas mechanism and confirms layer routing architecture works before coroutines and tweens are added. Highest developer value at lowest implementation cost.
-**Delivers:** `bindings_debug.cpp`; `engine.debug.*` sub-table (rect, circle, line, cross, text, enabled flag); `m_debugCanvas` added to `LuaBindings`; `ENJIN2_DEBUG_DRAW` CMake option; debug canvas auto-cleared in SDL runner before each `draw()` pass.
-**Addresses:** Debug draw (table stakes P1); `engine.debug.enabled` toggle (differentiator).
-**Avoids:** Pitfall 1 (debug draw on wrong canvas/layer — dedicated layer + auto-clear protocol locked in here).
+**Addresses:** Dev environment setup script, WASM build verification, ESP32 build verification (all P1 table stakes)
 
-### Phase 3: Camera Follow Helpers + Save/Load SDL3 Hardening
+**Avoids:** Pitfall 1 (emscripten_set_main_loop stack objects — caught during WASM verification), Pitfall 2 (ASYNCIFY temptation — explicitly excluded at this phase), Pitfall 4 (ESP32 5-layer heap exhaustion — resolved here with PSRAM/layer count decision), Pitfall 9 (Arch Python version drift — setup script uses pinned emsdk version and venv isolation)
 
-**Rationale:** Camera follow and save/load are both low-complexity changes — follow is 15-20 lines of binding code; save/load is a preprocessor guard change. They are independent of each other and of the complex scheduler systems. Ship these before coroutines and tweens to reduce milestone scope uncertainty early.
-**Delivers:** `engine.camera.follow(proxy, speed)` / `engine.camera.stopFollow()`; `C_Camera::setFollowTarget()`; ObjectProxy validity guard before each follow frame; `#ifdef VCV_RACK` replaced with SDL/ESP32/WASM branching in `bindings_store.cpp`; `engine.store.flush()` and `engine.store.path()`.
-**Addresses:** Camera follow helper (table stakes P1); save/load SDL3 path (table stakes P1).
-**Avoids:** Pitfall 7 (follow crashes on destroyed target — proxy validity checked before reading position), Pitfall 6 (binary save format non-portability — JSON-only via LuaStore).
+**Research flag:** MEDIUM — actual WASM build status is LOW confidence (PROJECT.md flags "Full Emscripten toolchain build not verified"). Expect to find and fix unknown preprocessor guard gaps introduced by v1.7 features. Budget time for discovery, not just execution. Also note: existing `build_wasm.sh` hardcodes `../emsdk` path; setup script installs to `$HOME/emsdk` — path detection logic must be resolved here.
 
-### Phase 4: Coroutine / Async Scheduler
+### Phase 2: JSON Serializer Refactor
 
-**Rationale:** Coroutines have the most critical and platform-sensitive pitfall in the milestone (pcall yield boundary). Building them before tweens allows the scheduler to be independently validated across SDL3, WASM, and ESP32 before tween-coroutine co-design work begins. The `clearCoroutines()` teardown protocol must be locked in before writing any resume/yield logic.
-**Delivers:** `bindings_async.cpp`; `LuaCoroutineScheduler` embedded in `LuaBindings`; `engine.async.start(co)`, `engine.async.cancel(id)`, `engine.async.wait(seconds)`, `engine.async.wait_frames(n)`; `tickCoroutines()` wired in SDL runner; `clearCoroutines()` in hot-reload path; LuaJIT CoCo availability verified on WASM/ESP32; `luaopen_coroutine` added to ESP32 `openEmbeddedLibraries()`.
-**Addresses:** Coroutine/async Lua (table stakes P1).
-**Avoids:** Pitfall 2 (coroutine thread dangling after reload — `int threadRef` not raw `lua_State*`; `clearCoroutines()` before `lua_close()`), Pitfall 4 (yield across pcall boundary — scheduler resumes from C outside pcall scope).
+**Rationale:** Both storage backends need to write LuaStore to a `char[]` buffer rather than `std::ofstream`. Extracting `writeStoreToBuffer()` from the existing `saveToFile` is a prerequisite for both platforms. Isolating this as its own phase keeps the change reviewable and confirms the shared serialization foundation is correct before both backends build on it.
 
-### Phase 5: Tween Helpers
+**Delivers:** `writeStoreToBuffer(char* out, size_t cap)` helper extracted and verified on the SDL3 target; existing SDL3 JSON I/O behavior unchanged; `readJson*` parsing functions confirmed reusable as-is for both load paths.
 
-**Rationale:** Tweens depend on the ObjectProxy write dispatch path (established by camera follow in Phase 3) and benefit from the coroutine scheduler being stable. The 8-slot `TweenSlot` pool follows the fixed-array pattern proven in prior phases. The coroutine-aware tween await (differentiator) can be added here as Phase 5b once both systems are validated.
-**Delivers:** `bindings_tween.cpp`; `TweenSlot m_tweens[8]` in `LuaBindings`; `engine.tween.to(proxy, prop, target, dur, easing)`, `engine.tween.value(from, to, dur, cb)`, `engine.tween.cancel(id)`, `engine.tween.cancelAll()`; 4 inline easing functions (linear, easeIn, easeOut, easeInOut, no external library); `tickTweens(dt)` wired in SDL runner; `clearTweens()` in hot-reload path; proxy validity check before each write.
-**Addresses:** Tween helpers (table stakes P1); tween chaining (differentiator via `on_complete`).
-**Avoids:** Pitfall 3 (stale callback ref after hot reload — `clearTweens()` in `registerAll()`; `lua_State*` alongside `int callbackRef`), Pitfall 3b (write to destroyed proxy — `valid` flag checked at every tween advance step).
+**Addresses:** Internal architecture prerequisite for Phases 3 and 4
 
-### Phase 6: Persistent Objects Across Scenes
+**Avoids:** Divergent serializers on WASM and ESP32; the single-blob NVS approach eliminates the NVS key enumeration limitation documented in ARCHITECTURE.md
 
-**Rationale:** Most architecturally invasive change — requires simultaneous modification of `ObjectCollection`, `SceneStateMachine`, and `engine.scene` Lua bindings. All prior phases must be stable before this change. The `PersistentObjectRegistry` design (SSM-owned unique_ptr array, inject/withdraw on scene transition) is fully specified and does not conflict with tween or coroutine systems.
-**Delivers:** `PersistentObjectRegistry` class in `enjin2_core`; `ObjectCollection::m_external[]` non-owning array; `SceneStateMachine::applyDeferredTransition()` modified; `engine.scene.persist(proxy)`, `engine.scene.unpersist(proxy)`, `engine.scene.is_persistent(name)`; `engine.scene.find()` extended to search persistent registry; optional `on_scene_change(new_id)` Lua callback for persistent objects.
-**Addresses:** Persistent objects across scenes (table stakes P2).
-**Avoids:** Pitfall 9 (persistent object store data lost on script reload — persistent scripts are NOT reloaded on scene transition; lifecycle documented explicitly), Pitfall 5b (stale scene access during transition window — `on_scene_change` callback fires only after new scene is active).
+**Research flag:** SKIP — well-understood internal refactor; full code examples in ARCHITECTURE.md.
 
-### Phase 7: UI Component Bindings
+### Phase 3: Platform Storage Backends (WASM + ESP32)
 
-**Rationale:** Stateless draw functions — no new C++ components, no pooled state, no allocation. Can be delivered at any point after Phase 1 (bindings structure stable) but is appropriately last because it benefits from the debug draw canvas patterns (Phase 2), and requires `resetUIState()` in `registerAll()` written carefully after the hot-reload discipline is fully established across all prior phases.
-**Delivers:** `bindings_ui.cpp`; `engine.ui.progressBar(x,y,w,h,value,fgColor,bgColor)`, `engine.ui.statBar(x,y,w,h,cur,max,fg,bg)`, `engine.ui.panel(x,y,w,h,bg,border)`, `engine.ui.label(x,y,w,h,text,fg,bg)`; all implemented as stateless `LuaCanvas` draw calls (fillRect + drawRect + text); `resetUIState()` called from `registerAll()`.
-**Addresses:** UI component bindings (table stakes P2).
-**Avoids:** Pitfall 8 (UI state survives hot reload — `resetUIState()` in `registerAll()` zeroes all UI member arrays before rebuild).
+**Rationale:** Both backends are independent of each other and both depend on Phase 2. WASM localStorage and ESP32 NVS can be implemented in parallel. They share the single-JSON-blob strategy, so they are reviewed together even if developed independently.
+
+**Delivers:** `engine.store.save/flush/load` working correctly on WASM (localStorage persistence across page reload) and on ESP32 (NVS persistence across power cycles).
+
+**Uses:** EM_JS macro (Emscripten), `nvs_flash.h`/`nvs.h` (ESP-IDF), `writeStoreToBuffer` from Phase 2
+
+**Implements:** `#elif defined(__EMSCRIPTEN__)` and `#elif defined(ESP32)` branches in `bindings_store.cpp`
+
+**Avoids:** Pitfall 3 (NVS key 15-char truncation — explicit validation and warn/reject), Pitfall 4b (NVS RAM overhead — open namespace handle once at init, not per operation), Pitfall 5 (localStorage frame blocking — flush-only pattern with `window.beforeunload`), Pitfall 6 (localStorage quota — try/catch in EM_JS glue, return bool to WASM caller)
+
+**Research flag:** SKIP — both EM_JS localStorage and NVS API patterns are HIGH confidence with official documentation and complete code examples in STACK.md and ARCHITECTURE.md.
+
+### Phase 4: Tech Debt Cleanup
+
+**Rationale:** `m_followTargetProxy` and the PERSIST standalone gap are contained correctness issues that do not depend on platform work and do not block other features. After builds are green, these should be addressed as a focused cleanup pass before adding new QoL behavior.
+
+**Delivers:** Camera follow proxy cleared on scene transition and hot reload (latent state corruption eliminated). `engine.scene.persist()` emits `lua_warning()` in standalone mode (honest behavior replaces silent no-op).
+
+**Addresses:** Both tech debt items from PROJECT.md; both are P1 for correctness.
+
+**Avoids:** Latent null dereference on scene transitions; misleading silent behavior in standalone scripts that use persist without SceneStateMachine.
+
+**Research flag:** SKIP — both are 2-line fixes at well-identified call sites documented in FEATURES.md.
+
+### Phase 5: QoL Features (Tween-Await, wait_frames, Camera Dead Zone)
+
+**Rationale:** These three features are independent of each other and of the platform work. They can be worked together in one phase. Tween-await should be implemented first (highest value, highest risk); camera dead zone last (most precise implementation required for correct boundary behavior).
+
+**Delivers:** `engine.tween.await()` for sequential animation without callback nesting; `engine.async.wait_frames(n)` Lua helper (no new C bindings); `engine.camera.setDeadZone(w, h)` with smooth offset-clamp boundary tracking.
+
+**Implements:** Tween-await via polling (coroutine stores tween ID; `tickCoroutines()` checks completion — no re-entrant `lua_resume` from `done_cb`); `wait_frames` as Lua-level loop over `engine.async.wait(0)`; dead zone in `components/camera.cpp` using offset-clamp formula
+
+**Avoids:** Pitfall 7 (tween-coroutine re-entrant resume — explicitly use polling), Pitfall 8 (camera dead zone boundary jitter — offset-clamp, not toggle pattern)
+
+**Research flag:** SKIP for wait_frames (pure Lua helper, HIGH confidence). MEDIUM for tween-await — the polling implementation requires an integration test confirming the coroutine wakes exactly once per tween at the correct frame boundary. The re-entrant resume trap is a real failure mode documented in PITFALLS.md.
+
+### Phase 6: Documentation and Build Tooling
+
+**Rationale:** Documentation and build helper scripts have no engine dependencies — they can begin in parallel with Phases 2-4 and finalize here. Tutorials are placed last to accurately reflect the final v1.8 API (including tween-await and camera dead zone from Phase 5) rather than documenting work-in-progress.
+
+**Delivers:** Updated `getting-started.md` (v1.7 SDL3 runner API, no stale Canvas8 references); "Your First Script" tutorial (tamagotchi walkthrough); "Async Coroutines" tutorial (engine.async + engine.tween.await); `build.sh` target wrappers; `'lua'` added to Docusaurus prism config.
+
+**Addresses:** All documentation features; build helper scripts (P1 and P2 respectively from FEATURES.md).
+
+**Avoids:** MDX build-time failures from angle brackets in prose (fenced code blocks only); Docusaurus dev-only success masking production build errors — always verify with `npm run build`
+
+**Research flag:** SKIP — Docusaurus structure is HIGH confidence; tutorial directory pattern and sidebar wiring are explicit in ARCHITECTURE.md; Arch package list is verified in STACK.md.
 
 ### Phase Ordering Rationale
 
-- **Foundation before features:** Splitting `bindings.cpp` and fixing null safety first eliminates the static-linkage landmine that would break every subsequent bindings file. Non-negotiable.
-- **Quick wins second:** Debug draw, camera follow, and save/load are each low-complexity. Delivering them early builds confidence and de-risks the milestone before complex systems are added.
-- **Coroutines before tweens:** The pcall yield boundary pitfall is the most platform-sensitive risk in the milestone. Isolating and validating coroutines on all three targets before adding tween-coroutine interaction prevents compounding failures.
-- **Persistent objects last among core features:** The only change touching `SceneStateMachine` core logic. Doing it last means all other systems are stable and tested before the most invasive surgery.
-- **UI last:** Zero architectural dependency, P2 priority. Position at the end reflects priority, not risk.
+- **Build verification is the critical path blocker.** Nothing platform-specific can be implemented or tested until the build is clean. This is the single most impactful ordering decision in the milestone.
+- **Serializer refactor is a small prerequisite that benefits from isolation.** Keeping it separate from the storage backend implementations makes each phase reviewable and reduces risk of mixing a refactor with new behavior.
+- **WASM and ESP32 storage are independent** of each other once they share the Phase 2 serializer, enabling parallel work if needed.
+- **Tech debt before QoL** — fixes correctness issues in existing behavior before adding new behavior.
+- **Documentation finalizes after QoL features complete** to ensure tutorials reflect the actual shipped v1.8 API.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 4 (Coroutines):** LuaJIT CoCo availability on WASM (Emscripten) and ESP32 RISC-V must be verified at build time before writing the resume path. The behavior of `lua_resume()` when CoCo is absent differs from documented behavior on other platforms. Needs a targeted test binary built for each target before coroutine API design is finalized.
-- **Phase 6 (Persistent Objects):** The `ObjectCollection::m_external[]` non-owning array modification touches the core object update/render loop. The explicit ordering of `withdrawFrom` vs `deactivate` vs `injectInto` vs `activate` within `applyDeferredTransition()` requires a design review session before implementation begins to avoid one-frame-late update bugs or double-update during transition.
+Phases needing closer attention during planning or execution:
+- **Phase 1 (WASM build):** LOW confidence on current WASM build status — PROJECT.md explicitly flags the Emscripten toolchain build as unverified. Expect undocumented compile errors from v1.7 additions (coroutines, tweens, persistent objects, UI, store, camera). Budget time for iterative fix cycles. The emsdk path mismatch between `build_wasm.sh` (`../emsdk`) and `setup-dev.sh` (`$HOME/emsdk`) must also be resolved here.
+- **Phase 5 (tween-await):** The polling implementation requires a clear integration test to confirm the coroutine wakes exactly once per tween at the correct frame. The re-entrant resume trap from `done_cb` is a real failure mode with documented corruption consequences.
 
-Phases with standard, well-documented patterns (skip research-phase):
-- **Phase 1 (Bindings Refactoring):** Standard C++ TU splitting; `bindings_internal.hpp` is a known pattern.
-- **Phase 2 (Debug Draw):** Pure wiring onto confirmed `Primitives<Pixel4>`. No research needed.
-- **Phase 3 (Camera Follow + Save/Load):** Minimal changes to well-understood existing systems.
-- **Phase 5 (Tweens):** Fixed-pool tween math is elementary; easing functions are four inline equations; pool pattern established in prior phases.
-- **Phase 7 (UI Bindings):** Stateless draw calls using confirmed `LuaCanvas` methods.
+Phases with well-documented patterns (can proceed without additional research):
+- **Phase 2 (serializer refactor):** Internal refactor with complete code example in ARCHITECTURE.md.
+- **Phase 3 (storage backends):** Both EM_JS localStorage and NVS API are HIGH confidence with official documentation and code examples in STACK.md and ARCHITECTURE.md.
+- **Phase 4 (tech debt):** 2-line fixes at identified call sites.
+- **Phase 6 (docs/tooling):** Docusaurus structure and Arch package list are fully specified.
 
 ---
 
@@ -162,50 +195,46 @@ Phases with standard, well-documented patterns (skip research-phase):
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Full codebase read; all technologies confirmed in live source files; no new external dependencies required; every feature is purely additive binding work on confirmed primitives |
-| Features | HIGH | All features are standard 2D engine patterns; each is mapped to confirmed existing C++ infrastructure; complexity estimates grounded in direct code analysis, not speculation |
-| Architecture | HIGH | Architecture research reads directly from live headers (`bindings.hpp`, `camera.hpp`, `scene_state_machine.hpp`, `object_collection.hpp`); all patterns are established and in use in v1.0–v1.6 |
-| Pitfalls | HIGH | Pitfalls derived from direct codebase constraints: Lua 5.1 API, `#ifdef VCV_RACK`, `static` linkage in `bindings.cpp`, NVS key limits, `callWithProxy()` pcall scope — not speculative; each has a confirmed source |
+| Stack | HIGH | Emscripten/ESP-IDF/Docusaurus APIs verified against official docs. Version pinning rationale is solid. The emsdk 3.1.73 vs 4.x choice is a conservative stability decision — both are technically correct given the project's C++17 baseline. |
+| Features | HIGH | All features confirmed against live codebase. Dependency graph is precise and verified by reading actual source files. No speculative features — every item maps to a confirmed integration point. |
+| Architecture | HIGH | Integration points confirmed by reading `bindings_store.cpp`, `CMakeLists.txt`, `emscripten_bindings.cpp`, `build_wasm.sh`, `docusaurus.config.js`, and `sidebars.js`. The EM_ASM bridge and NVS single-blob patterns are fully specified with code examples. |
+| Pitfalls | HIGH | Pitfalls derived from official docs (Emscripten, ESP-IDF), direct codebase analysis, and community issue trackers. All 10 pitfalls are specific, actionable, and cross-referenced to phases with concrete prevention strategies. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **LuaJIT CoCo on WASM/ESP32:** Whether LuaJIT is compiled with CoCo coroutine continuations on Emscripten and ESP32 RISC-V is not confirmed by research. This directly affects whether `engine.async.wait()` (which calls `lua_yield`) will work on those platforms when the coroutine is resumed from C via `lua_resume`. Resolution: add a compile-time CoCo availability check; document yield behavior per platform; implement a C_Timer-based fallback if CoCo is absent on a given target.
+- **WASM build current state:** The actual compile error count and nature of v1.7 Emscripten gaps is unknown until `build_wasm.sh` is run. Phase 1 must be treated as an investigation phase, not pure execution. The deliverable includes finding and fixing all gaps, not just confirming a clean build.
 
-- **`ObjectCollection::m_external[]` update ordering:** The exact update/render ordering for external (persistent) objects injected into a scene's `ObjectCollection` is not yet designed. It must be confirmed that persistent objects get the correct update order relative to owned objects, and that `forEach()` iterates both consistently. Resolution: design the explicit ordering before Phase 6 implementation; add an overflow test for the external array capacity limit.
+- **ESP32 PSRAM availability:** Whether the target hardware has PSRAM determines `ENJIN_LAYER_COUNT` for ESP32. This is a hardware-specific decision that cannot be confirmed in advance. Phase 1 must produce an explicit documented determination: 3-layer if no PSRAM, 5-layer if PSRAM confirmed.
 
-- **Label component std::string removal scope:** FEATURES.md notes `Label` uses `std::string`/`std::vector`, making it incompatible with the zero-alloc pipeline. The architecture decision for v1.7 is to implement `engine.ui.*` as stateless draw calls (bypassing `Label` entirely). If stateful label UI is needed post-v1.7, adapting the C++ `Label` component (replace `std::string text` with `char text[64]`) is a separate effort. Resolution: document the decision clearly in Phase 7; do not attempt C++ `Label` adaptation in v1.7 scope.
+- **NVS string vs blob for JSON payload:** ARCHITECTURE.md recommends `nvs_set_str` for the single JSON blob but mentions `nvs_set_blob` as the fallback if the payload exceeds the 4000-byte NVS string limit. At Phase 3 implementation time, measure the worst-case serialized LuaStore size to confirm which NVS API is appropriate.
+
+- **emsdk path assumption in `build_wasm.sh`:** The existing script expects `../emsdk`; the dev setup script installs to `$HOME/emsdk`. The build script must add path detection logic (check `$EMSDK` env var, fall back to `../emsdk`, fail with actionable error) before Phase 1 verification produces a reproducible clean result.
 
 ---
 
 ## Sources
 
-### Primary (HIGH confidence — direct codebase analysis)
-- `/home/unwn/dev/enjin/src/scripting/bindings.cpp` — 1390-line monolith; `static` linkage audit; `g_currentBindings` TU locality confirmed
-- `/home/unwn/dev/enjin/src/scripting/bindings_engine.cpp` — `registerEngineTable()` sub-table registration pattern; `engine.camera.*` baseline confirmed
-- `/home/unwn/dev/enjin/src/scripting/bindings_store.cpp` — `LuaStore` full implementation; `#ifdef VCV_RACK` platform guard confirmed
-- `/home/unwn/dev/enjin/include/enjin2/scripting/bindings.hpp` — `LuaBindings` member layout; `LuaStore`, `LuaCanvas`; `resetSpritePool()` hot-reload pattern
-- `/home/unwn/dev/enjin/include/enjin2/components/camera.hpp` — `C_Camera` full API (lookAt, shake, setBounds, getScreenOffset) confirmed
-- `/home/unwn/dev/enjin/include/enjin2/graphics/primitives.hpp` — full shape set (drawRect, drawCircle, drawLine, fillRect) confirmed for debug draw
-- `/home/unwn/dev/enjin/include/enjin2/core/scene_state_machine.hpp` — `applyDeferredTransition()` hook point for persistent objects
-- `/home/unwn/dev/enjin/include/enjin2/components/timer.hpp` — `clearTimers()` teardown pattern (template for coroutine/tween teardown)
-- `/home/unwn/dev/enjin/include/enjin2/scripting/lua_event_bus.hpp` — `clearHandlers()` pattern; `int threadRef` Lua object lifetime model
-- `/home/unwn/dev/enjin/include/enjin2/components/fill_up_gauge.hpp` — confirms Canvas8/`ICanvas<uint8_t>` incompatibility with Pixel4 pipeline
-- `/home/unwn/dev/enjin/include/enjin2/components/label.hpp` — confirms `std::string`/`std::vector` usage; not usable for zero-alloc UI bindings
-- `/home/unwn/dev/enjin/luajit/src/lua.h` — `lua_newthread`, `lua_resume`, `lua_yield`, `lua_status` confirmed present in bundled LuaJIT
-- `/home/unwn/dev/enjin/src/scripting/lua_platform.cpp` — ESP32 library open list; `coroutine` library NOT included; must be added
-- `/home/unwn/dev/enjin/.planning/PROJECT.md` — v1.7 feature list, zero-alloc constraint, 1390-line bindings.cpp tech debt, hot-reload semantics
+### Primary (HIGH confidence)
+- [ESP-IDF NVS Flash API Reference v5.5.3](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html) — key/namespace limits, API surface, commit requirement
+- [Emscripten Interacting with code docs](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html) — EM_JS, EM_ASM, UTF8ToString patterns
+- [Emscripten Runtime Environment docs](https://emscripten.org/docs/porting/emscripten-runtime-environment.html) — main loop design, emscripten_set_main_loop behavior
+- [Emscripten Asyncify documentation](https://emscripten.org/docs/porting/asyncify.html) — why to avoid it for this use case
+- [Docusaurus Autogenerated Sidebar docs](https://docusaurus.io/docs/next/sidebar/autogenerated) — `_category_.json`, `sidebar_position` front matter
+- [ESP-IDF Toolchain Setup Linux (stable)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/linux-macos-setup.html) — Arch Linux pacman package list
+- Codebase: `src/scripting/bindings_store.cpp`, `bindings_async.cpp`, `bindings_tween.cpp`, `components/camera.cpp`, `CMakeLists.txt`, `build_wasm.sh`, `docs/docusaurus.config.js`, `docs/sidebars.js`, `.planning/PROJECT.md`
 
-### Secondary (MEDIUM confidence — community consensus, multiple sources agree)
-- [Lua coroutines for game scripting — Jonathan Fischer](https://www.jonathanfischer.net/lua-coroutines/) — coroutine resume pattern for game engines
-- [flux.lua (rxi)](https://github.com/rxi/flux) — tween API design reference; easing function selection
-- [tween.lua (kikito)](https://github.com/kikito/tween.lua) — confirms 4-easing-function minimum for game UX
-- [Espressif NVS API reference](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/storage/nvs_flash.html) — 15-char key limit, ~4 KB blob value, 100K write cycle limit
-- [Improved lerp smoothing — Game Developer](https://www.gamedeveloper.com/programming/improved-lerp-smoothing-) — supports per-frame `lookAt()` pattern over snap follow
-- [LuaJIT CoCo documentation](https://coco.luajit.org/) — platform-dependent coroutine continuation support; WASM/ESP32 gap identified as unconfirmed
+### Secondary (MEDIUM confidence)
+- [AUR esp-idf package](https://aur.archlinux.org/packages/esp-idf) — Arch Linux install path, placement at `/opt/esp-idf`
+- [ArchWiki ESP32](https://wiki.archlinux.org/title/ESP32) — `ncurses5-compat-libs` requirement for precompiled gdb on Arch
+- [Emscripten GitHub issue #15491](https://github.com/emscripten-core/emscripten/issues/15491) — IDBFS CMake linker flag warning; why localStorage avoids the issue
+- [LocalStorage vs IndexedDB vs OPFS — RxDB 2025](https://rxdb.info/articles/localstorage-indexeddb-cookies-opfs-sqlite-wasm.html) — storage API trade-offs for synchronous use cases
+- [ESP-IDF install.sh breakage on Arch Linux — GitHub Issue #7809](https://github.com/espressif/esp-idf/issues/7809) — Python version drift on rolling Arch; venv isolation pattern
+
+### Tertiary (LOW confidence)
+- [Synchronous localStorage WASM gist](https://gist.github.com/makryl/96d87b23d7a7c3cc5bc1eee1021bb6ff) — community WASM localStorage bridge pattern; single source, cross-validated against official EM_JS docs
 
 ---
-
-*Research completed: 2026-03-01*
+*Research completed: 2026-03-02*
 *Ready for roadmap: yes*
