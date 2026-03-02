@@ -78,7 +78,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 - [x] **Phase 54: JSON Serializer Refactor** - Extract shared writeStoreToBuffer() helper from saveToFile (completed 2026-03-02)
 - [x] **Phase 55: Platform Storage Backends** - WASM localStorage + ESP32 NVS implementations (completed 2026-03-02)
 - [x] **Phase 56: Tech Debt Cleanup** - Clear m_followTargetProxy dangling ref + honest persist() warning (completed 2026-03-02)
-- [ ] **Phase 57: QoL Features** - tween.await(), wait_frames(), camera dead zone
+- [x] **Phase 57: QoL Features** - tween.await(), wait_frames(), camera dead zone (completed 2026-03-02)
 - [ ] **Phase 58: Documentation and Build Tooling** - Getting Started update + tutorials + Lua highlighting
 
 ## Phase Details
@@ -136,7 +136,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 56-01-PLAN.md — Camera proxy clear (bindings.cpp setActiveScene + registerAll) + persist() warning (bindings_engine.cpp) + tests
+- [x] 56-01-PLAN.md — Camera proxy clear (bindings.cpp setActiveScene + registerAll) + persist() warning (bindings_engine.cpp) + tests
 
 ### Phase 57: QoL Features
 **Goal**: Coroutines can await tween completion, scripts can yield for N frames, camera follow has a configurable dead zone
@@ -149,9 +149,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 57-01-PLAN.md — CoroutineSlot extension + wait_frames binding (bindings.hpp, bindings_async.cpp) + tween.await binding (bindings_tween.cpp)
-- [ ] 57-02-PLAN.md — Camera dead zone (bindings.hpp m_deadZoneW/H + bindings_engine.cpp setDeadZone + tickCameraFollow check + bindings.cpp cleanup)
-- [ ] 57-03-PLAN.md — Integration tests (tests/qol_test.cpp + tests/CMakeLists.txt)
+- [x] 57-01-PLAN.md — CoroutineSlot extension + wait_frames binding (bindings.hpp, bindings_async.cpp) + tween.await binding (bindings_tween.cpp)
+- [x] 57-02-PLAN.md — Camera dead zone (bindings.hpp m_deadZoneW/H + bindings_engine.cpp setDeadZone + tickCameraFollow check + bindings.cpp cleanup)
+- [x] 57-03-PLAN.md — Integration tests (tests/qol_test.cpp + tests/CMakeLists.txt)
 
 ### Phase 58: Documentation and Build Tooling
 **Goal**: A new developer can read Getting Started, follow a tutorial, and know the engine's async capabilities
@@ -183,5 +183,5 @@ Plans:
 | 54. JSON Serializer Refactor | 1/1 | Complete    | 2026-03-02 | - |
 | 55. Platform Storage Backends | 2/2 | Complete    | 2026-03-02 | - |
 | 56. Tech Debt Cleanup | 1/1 | Complete    | 2026-03-02 | - |
-| 57. QoL Features | 2/3 | In Progress|  | - |
+| 57. QoL Features | 3/3 | Complete    | 2026-03-02 | - |
 | 58. Documentation and Build Tooling | v1.8 | 0/? | Not started | - |

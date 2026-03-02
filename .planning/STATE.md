@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Ship Ready
 status: unknown
-last_updated: "2026-03-02T22:29:39.254Z"
+last_updated: "2026-03-02T23:35:00.000Z"
 progress:
   total_phases: 12
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 28
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # Project State
@@ -18,15 +18,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 57 executing — 2/3 plans done (all QoL APIs implemented)
+**Current focus:** Phase 57 COMPLETE — all 3 plans done, QOL-01/02/03 satisfied
 
 ## Current Position
 
-Phase: 57 of 58 — Plans 57-01 and 57-02 COMPLETE, Plan 57-03 pending
-Status: QOL-01/02/03 all implemented — 40+28+53 tests pass; integration test suite pending
-Last activity: 2026-03-03 — Phase 57-02 complete (camera dead zone)
+Phase: 57 of 58 — COMPLETE (all 3 plans done)
+Status: QOL-01/02/03 implemented and tested — 27+28+53+40=148 assertions, 0 failures
+Last activity: 2026-03-03 — Phase 57 complete (qol_test integration suite)
 
-Progress: [████░░░░░░] 33% (v1.8 milestone — 3/6 phases complete, Phase 57 executing)
+Progress: [█████░░░░░] 42% (v1.8 milestone — 4/6 phases complete, Phase 58 next)
 
 ## Performance Metrics
 
@@ -62,6 +62,9 @@ None.
 - [Phase 57-01] Inline slot clear in bindings_tween.cpp (6 fields) — clearSlot template is file-static to bindings_async.cpp
 - [Phase 57-02] Dead zone rectangle centered on camera position (not target) — classic platformer feel
 - [Phase 57-02] Both cleanup locations (setActiveScene + registerAll) immediately follow m_followTargetProxy = nullptr — consistent cleanup group
+- [Phase 57-03] Lua globals use integers (0/1) not booleans — getGlobalNumber() returns 0 for Lua boolean values
+- [Phase 57-03] wait_frames off-by-one fixed: slot.waitFrames = n-1 so calling tick counts as frame 1
+- [Phase 57-03] Camera dead zone tests use lerpSpeed=1.0 for immediate snap (camera->update(dt) not needed)
 
 ### Blockers/Concerns
 
@@ -79,5 +82,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Phase 57-02 complete — Plan 57-03 (qol_test integration suite) pending
+Stopped at: Phase 57 complete — all 3 plans done, Phase 58 is next
 Resume file: None
