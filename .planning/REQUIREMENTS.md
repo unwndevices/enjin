@@ -58,7 +58,7 @@ Requirements for v1.7 Developer Experience & New Capability milestone. Each maps
 - [ ] **UI-02**: engine.ui.statBar(x,y,w,h,current,max,fg,bg) stateless draw call
 - [ ] **UI-03**: engine.ui.panel(x,y,w,h,bg,border) stateless draw call
 - [ ] **UI-04**: engine.ui.label(x,y,text,fg) stateless draw call
-- [ ] **UI-05**: Internal guide document for building new engine.ui.* components
+- [x] **UI-05**: Internal guide document for building new engine.ui.* components
 
 ## Future Requirements
 
@@ -125,7 +125,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-02 | Phase 52 | Pending |
 | UI-03 | Phase 52 | Pending |
 | UI-04 | Phase 52 | Pending |
-| UI-05 | Phase 52 | Pending |
+| UI-05 | Phase 52 | Complete |
 
 **Coverage:**
 - v1.7 requirements: 26 total

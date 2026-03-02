@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Developer Experience & New Capability
 status: unknown
-last_updated: "2026-03-02T00:05:50.515Z"
+last_updated: "2026-03-02T00:37:38.602Z"
 progress:
   total_phases: 16
   completed_phases: 14
-  total_plans: 38
-  completed_plans: 37
+  total_plans: 40
+  completed_plans: 38
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 Phase 51 — Persistent Objects
+**Current focus:** v1.7 Phase 52 — UI Component Bindings
 
 ## Current Position
 
-Phase: 51 of 52 (Persistent Objects)
+Phase: 52 of 52 (UI Component Bindings)
 Plan: 2 of 2 in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-02 — Phase 51 Plan 02 complete: engine.scene.persist/unpersist/find Lua bindings, 8-case Lua integration test suite (47 assertions); 42/42 tests pass
+Last activity: 2026-03-02 — Phase 52 Plan 02 complete: UI-COMPONENT-GUIDE.md internal developer guide (355 lines) covering stateless canvas-call pattern, wiring checklist, hot-reload contract, color model, anti-patterns, and test fixture reference
 
 Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 complete)
 
@@ -40,7 +40,7 @@ Progress: [######░░░░░░░░░░░░░░] 34% (phases 43-47 c
 - v1.4: 8 plans (Phases 23-26)
 - v1.5: 21 plans (Phases 27-38)
 - v1.6: 4 plans (Phases 39-42)
-- v1.7 (in progress): 17 plans (Phases 43-49 complete, 50-01, 50-02, 51-01, 51-02 complete)
+- v1.7 (in progress): 19 plans (Phases 43-49 complete, 50-01, 50-02, 51-01, 51-02, 52-01, 52-02 complete)
 
 *Updated after each plan completion*
 
@@ -78,6 +78,7 @@ Key decisions affecting v1.7 phases 46-52:
 - [Phase 51-persistent-objects]: flushPendingRemovals fires at START of applyDeferredTransition before clearExternal so destroyed objects are never re-injected
 - [Phase 51-persistent-objects]: persist() binding returns nil on overflow consistent with coroutine/tween pool pattern
 - [Phase 51-persistent-objects]: find() fallback uses getBindings(L)->m_ssm; active scene priority maintained (local shadows persistent)
+- [Phase 52]: Guide placed in phase directory; full C++ code examples included for direct copy-paste; quick-reference file map at end for orientation
 
 ### Pending Todos
 
@@ -106,5 +107,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 51-02-PLAN.md (persistent objects Lua bindings — engine.scene.persist/unpersist/find, 8-test Lua integration suite, 42/42 tests pass)
+Stopped at: Completed 52-02-PLAN.md (UI component developer guide — stateless canvas-call pattern, 355-line UI-COMPONENT-GUIDE.md)
 Resume file: None
