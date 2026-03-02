@@ -813,6 +813,7 @@ private:
     void registerDebugSubtable(lua_State* L);  ///< engine.debug.* sub-table (called from registerEngineTable)
     void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
     void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
+    void registerUISubtable(lua_State* L);     ///< engine.ui.* sub-table (called from registerEngineTable)
     void registerProxyMetatable();
 
     // engine.random.* binding functions
@@ -834,6 +835,12 @@ private:
     static int lua_engine_tween_to(lua_State* L);
     static int lua_engine_tween_cancel(lua_State* L);
     static int lua_engine_tween_cancelAll(lua_State* L);
+
+    // engine.ui.* binding functions (Phase 52: UI-01..UI-04)
+    static int lua_engine_ui_progressBar(lua_State* L);
+    static int lua_engine_ui_statBar(lua_State* L);
+    static int lua_engine_ui_panel(lua_State* L);
+    static int lua_engine_ui_label(lua_State* L);
 
     // engine.store.* binding functions (persistent KV store)
     static int lua_engine_store_save(lua_State* L);
