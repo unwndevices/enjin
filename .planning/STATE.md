@@ -18,13 +18,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 57 executing — 1/3 plans done (wait_frames + tween.await complete)
+**Current focus:** Phase 57 executing — 2/3 plans done (all QoL APIs implemented)
 
 ## Current Position
 
-Phase: 57 of 58 — Plan 57-01 COMPLETE, Plans 57-02 and 57-03 pending
-Status: QOL-01 (tween.await) and QOL-02 (wait_frames) implemented — 28+53 tests pass
-Last activity: 2026-03-02 — Phase 57-01 complete (coroutine QoL APIs)
+Phase: 57 of 58 — Plans 57-01 and 57-02 COMPLETE, Plan 57-03 pending
+Status: QOL-01/02/03 all implemented — 40+28+53 tests pass; integration test suite pending
+Last activity: 2026-03-03 — Phase 57-02 complete (camera dead zone)
 
 Progress: [████░░░░░░] 33% (v1.8 milestone — 3/6 phases complete, Phase 57 executing)
 
@@ -60,6 +60,8 @@ None.
 - [Phase 57-01] waitTweenId gate in tickCoroutines skips frame/time check — resume fires from tickTweens instead (avoids double-resume)
 - [Phase 57-01] Coroutine resume in tickTweens placed before done_cb pcall to avoid yield-across-pcall boundary error
 - [Phase 57-01] Inline slot clear in bindings_tween.cpp (6 fields) — clearSlot template is file-static to bindings_async.cpp
+- [Phase 57-02] Dead zone rectangle centered on camera position (not target) — classic platformer feel
+- [Phase 57-02] Both cleanup locations (setActiveScene + registerAll) immediately follow m_followTargetProxy = nullptr — consistent cleanup group
 
 ### Blockers/Concerns
 
@@ -76,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-02
-Stopped at: Phase 57-01 complete — Plans 57-02 and 57-03 pending
+Last session: 2026-03-03
+Stopped at: Phase 57-02 complete — Plan 57-03 (qol_test integration suite) pending
 Resume file: None
