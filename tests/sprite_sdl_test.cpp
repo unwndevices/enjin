@@ -38,9 +38,9 @@ void input_platform_poll(InputState* state) {
 }
 } // namespace enjin2
 
-static constexpr int CANVAS_W      = 128;
-static constexpr int CANVAS_H      = 128;
-static constexpr int DEFAULT_SCALE = 4;
+static constexpr int CANVAS_W      = 320;
+static constexpr int CANVAS_H      = 240;
+static constexpr int DEFAULT_SCALE = 2;
 static constexpr int WIN_W         = CANVAS_W * DEFAULT_SCALE;
 static constexpr int WIN_H         = CANVAS_H * DEFAULT_SCALE;
 
