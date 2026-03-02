@@ -120,10 +120,11 @@ Plans:
   1. On WASM, `engine.store.save()` + `engine.store.flush()` persists values that survive a page reload and are readable via `engine.store.load()`
   2. On ESP32, `engine.store.save()` + `engine.store.flush()` persists values that survive a power cycle and are readable via `engine.store.load()`
   3. Calling `engine.store.save()` with a key longer than 15 characters on ESP32 is rejected with a Lua error, not silently truncated
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 55-01: TBD
+- [ ] 55-01-PLAN.md — WASM localStorage backend (wasm_storage.cpp + bindings_store.cpp WASM branch + flush() update)
+- [ ] 55-02-PLAN.md — ESP32 NVS backend (esp32_storage.cpp + bindings_store.cpp ESP32 branch + key validation + nvs_flash_init)
 
 ### Phase 56: Tech Debt Cleanup
 **Goal**: Two latent correctness issues eliminated — no dangling camera proxy after scene change, no silent persist no-op
