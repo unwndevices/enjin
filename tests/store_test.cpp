@@ -428,6 +428,132 @@ static void test_store_path_loads_existing() {
 }
 
 // ============================================================
+// test_write_store_to_buffer_empty
+// ============================================================
+static void test_write_store_to_buffer_empty() {
+    printf("--- writeStoreToBuffer empty store ---\n");
+    LuaStore store;
+    char buf[256];
+    bool ok = store.writeStoreToBuffer(buf, sizeof(buf));
+    ASSERT(ok, "writeStoreToBuffer empty store should return true");
+    ASSERT(strcmp(buf, "{}") == 0, "empty store should produce {}");
+}
+
+// ============================================================
+// test_write_store_to_buffer_compact_output
+// ============================================================
+static void test_write_store_to_buffer_compact_output() {
+    printf("--- writeStoreToBuffer compact output ---\n");
+    LuaStore store;
+    store.setNumber("score", 1000);
+    store.setString("player", "Alice");
+    store.setBool("done", true);
+
+    char buf[4096];
+    bool ok = store.writeStoreToBuffer(buf, sizeof(buf));
+    ASSERT(ok, "writeStoreToBuffer should return true when buffer fits");
+    // Compact: no spaces or newlines
+    const char* p = buf;
+    bool has_space = false;
+    while (*p) { if (*p == ' ' || *p == '\n') { has_space = true; break; } ++p; }
+    ASSERT(!has_space, "compact output should have no spaces or newlines");
+    // Must start with { and end with }
+    ASSERT(buf[0] == '{', "output must start with {");
+    ASSERT(buf[strlen(buf) - 1] == '}', "output must end with }");
+}
+
+// ============================================================
+// test_write_store_to_buffer_round_trip
+// ============================================================
+static void test_write_store_to_buffer_round_trip() {
+    printf("--- writeStoreToBuffer round-trip ---\n");
+    LuaStore store;
+    store.setNumber("score", 1000);
+    store.setString("player", "Alice");
+    store.setBool("complete", true);
+    auto* tbl = store.setTable("stats");
+    ASSERT(tbl != nullptr, "setTable should succeed");
+    if (tbl) {
+        tbl->tableEntries[0] = LuaStore::TableEntry{};
+        strncpy(tbl->tableEntries[0].key, "kills", LuaStore::STORE_MAX_KEY - 1);
+        tbl->tableEntries[0].type = LuaStore::StoreType::Number;
+        tbl->tableEntries[0].numVal = 42;
+        tbl->tableCount = 1;
+    }
+
+    char buf[4096];
+    bool ok = store.writeStoreToBuffer(buf, sizeof(buf));
+    ASSERT(ok, "writeStoreToBuffer should return true");
+
+    // Write buf to /tmp and load back via loadFromFile
+    const char* tmpPath = "/tmp/enjin_store_buf_test.json";
+    {
+        FILE* f = fopen(tmpPath, "w");
+        ASSERT(f != nullptr, "should be able to open tmp file for write");
+        if (f) { fputs(buf, f); fclose(f); }
+    }
+
+    LuaStore store2;
+    bool loaded = store2.loadFromFile(tmpPath);
+    ASSERT(loaded, "loadFromFile should parse compact JSON from writeStoreToBuffer");
+    ASSERT(store2.count() == 4, "loaded store should have 4 entries");
+
+    const auto* score = store2.get("score");
+    ASSERT(score && score->type == LuaStore::StoreType::Number, "score should be number");
+    ASSERT(score && score->numVal == 1000.0, "score should be 1000");
+
+    const auto* player = store2.get("player");
+    ASSERT(player && player->type == LuaStore::StoreType::String, "player should be string");
+    ASSERT(player && strcmp(player->strVal, "Alice") == 0, "player should be Alice");
+
+    const auto* complete = store2.get("complete");
+    ASSERT(complete && complete->type == LuaStore::StoreType::Bool, "complete should be bool");
+    ASSERT(complete && complete->boolVal == true, "complete should be true");
+
+    const auto* stats = store2.get("stats");
+    ASSERT(stats && stats->type == LuaStore::StoreType::Table, "stats should be table");
+    ASSERT(stats && stats->tableCount == 1, "stats should have 1 entry");
+    ASSERT(stats && stats->tableEntries[0].numVal == 42.0, "kills should be 42");
+
+    remove(tmpPath);
+}
+
+// ============================================================
+// test_write_store_to_buffer_overflow
+// ============================================================
+static void test_write_store_to_buffer_overflow() {
+    printf("--- writeStoreToBuffer overflow ---\n");
+    LuaStore store;
+    store.setNumber("score", 1000);
+
+    // Buffer of 4 bytes: too small for {"score":1000}
+    char buf[4];
+    buf[0] = 'X'; buf[1] = 'X'; buf[2] = 'X'; buf[3] = 'X';
+    bool ok = store.writeStoreToBuffer(buf, sizeof(buf));
+    ASSERT(!ok, "writeStoreToBuffer should return false on overflow");
+    ASSERT(buf[3] == '\0', "buffer must be null-terminated on overflow at buf[cap-1]");
+}
+
+// ============================================================
+// test_write_store_to_buffer_escaped_string
+// ============================================================
+static void test_write_store_to_buffer_escaped_string() {
+    printf("--- writeStoreToBuffer escaped string ---\n");
+    LuaStore store;
+    store.setString("msg", "line1\nline2");
+
+    char buf[4096];
+    bool ok = store.writeStoreToBuffer(buf, sizeof(buf));
+    ASSERT(ok, "writeStoreToBuffer with escaped string should return true");
+    // The \n in the value must appear as the two-char sequence \n in JSON
+    ASSERT(strstr(buf, "\\n") != nullptr, "newline in string must be JSON-escaped as \\n");
+    // Must NOT contain a literal newline inside the JSON string value
+    // (the { is first char, so a literal \n before the closing } would be wrong)
+    // Simple check: no literal newline characters in output at all
+    ASSERT(strchr(buf, '\n') == nullptr, "output must not contain literal newlines");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -451,6 +577,13 @@ int main() {
     test_store_flush_no_path();
     test_store_flush_with_path();
     test_store_path_loads_existing();
+
+    // Phase 54: STORE-01 — writeStoreToBuffer
+    test_write_store_to_buffer_empty();
+    test_write_store_to_buffer_compact_output();
+    test_write_store_to_buffer_round_trip();
+    test_write_store_to_buffer_overflow();
+    test_write_store_to_buffer_escaped_string();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
     return (failures == 0) ? 0 : 1;
