@@ -10,8 +10,22 @@ namespace enjin2 {
  *
  * Valid range: 1-8. Change and rebuild to adjust the layer stack.
  * Layer 0 = backmost (background), layer N-1 = frontmost (top).
+ *
+ * Platform values:
+ *   - ESP32-S3 (PSRAM): 4 layers (see #ifdef ESP32 block below)
+ *   - SDL3 / WASM:      5 layers (4 user + 1 debug via engine.debug.*)
  */
+#ifdef ESP32
+// ESP32-S3 with 8MB PSRAM: 320x240 x 4-bit = ~38KB per layer buffer.
+// 4 layers = ~152KB total framebuffer memory. PSRAM (8MB) provides
+// ample headroom for layer buffers without touching SRAM (512KB).
+// Without PSRAM, reduce to 2-3 layers to stay within SRAM limits.
+constexpr uint8_t ENJIN_LAYER_COUNT = 4;
+#else
+// Desktop (SDL3) and WASM: 5 layers (4 user-facing + 1 debug layer
+// accessible only via engine.debug.* bindings in sdl_main.cpp).
 constexpr uint8_t ENJIN_LAYER_COUNT = 5;
+#endif
 static_assert(ENJIN_LAYER_COUNT >= 1 && ENJIN_LAYER_COUNT <= 8,
               "ENJIN_LAYER_COUNT must be between 1 and 8 (inclusive)");
 
