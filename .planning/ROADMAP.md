@@ -236,11 +236,11 @@ Plans:
   3. engine.ui.panel(x,y,w,h,bg,border) draws a filled rectangle with a distinct border color; engine.ui.label(x,y,text,fg) renders text at the specified position
   4. All four draw calls are stateless — no per-call allocation, no retained state between frames
   5. An internal guide document exists explaining how to add a new engine.ui.* component (canvas call pattern, stateless contract, hot-reload considerations)
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 52-01: bindings_ui.cpp — engine.ui.* sub-table (progressBar/statBar/panel/label), stateless LuaCanvas draw calls, resetUIState() in registerAll()
-- [ ] 52-02: Internal guide — ui-component-guide.md documenting the stateless draw pattern, canvas call conventions, and hot-reload rules
+- [ ] 52-01-PLAN.md — bindings_ui.cpp with engine.ui.* sub-table (progressBar/statBar/panel/label), stateless LuaCanvas draw calls, header declarations, CMake wiring, ui_binding_test.cpp (7 test cases)
+- [ ] 52-02-PLAN.md — UI-COMPONENT-GUIDE.md internal developer guide documenting stateless draw pattern, canvas API, wiring checklist, hot-reload rules
 
 ## Progress
 
