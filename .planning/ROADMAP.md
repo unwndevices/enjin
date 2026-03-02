@@ -146,10 +146,12 @@ Plans:
   1. `engine.tween.await(id)` inside a coroutine suspends execution until the tween with that id completes, then resumes exactly once
   2. `engine.async.wait_frames(n)` yields the coroutine for exactly n frames before resuming
   3. `engine.camera.setDeadZone(w, h)` causes the camera to stop following the target when the target is within the dead zone boundary, and resumes smooth follow once the target exits it
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 57-01: TBD
+- [ ] 57-01-PLAN.md — CoroutineSlot extension + wait_frames binding (bindings.hpp, bindings_async.cpp) + tween.await binding (bindings_tween.cpp)
+- [ ] 57-02-PLAN.md — Camera dead zone (bindings.hpp m_deadZoneW/H + bindings_engine.cpp setDeadZone + tickCameraFollow check + bindings.cpp cleanup)
+- [ ] 57-03-PLAN.md — Integration tests (tests/qol_test.cpp + tests/CMakeLists.txt)
 
 ### Phase 58: Documentation and Build Tooling
 **Goal**: A new developer can read Getting Started, follow a tutorial, and know the engine's async capabilities
@@ -181,5 +183,5 @@ Plans:
 | 54. JSON Serializer Refactor | 1/1 | Complete    | 2026-03-02 | - |
 | 55. Platform Storage Backends | 2/2 | Complete    | 2026-03-02 | - |
 | 56. Tech Debt Cleanup | 1/1 | Complete    | 2026-03-02 | - |
-| 57. QoL Features | v1.8 | 0/? | Not started | - |
+| 57. QoL Features | v1.8 | 0/3 | Not started | - |
 | 58. Documentation and Build Tooling | v1.8 | 0/? | Not started | - |
