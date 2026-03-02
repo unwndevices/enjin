@@ -74,7 +74,9 @@ target_include_directories(enjin2_core
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_compile_definitions(enjin2_core PUBLIC VCV_RACK)
+if(NOT ESP32)
+    target_compile_definitions(enjin2_core PUBLIC VCV_RACK)
+endif()
 
 # Graphics library
 add_library(enjin2_graphics STATIC)
@@ -89,7 +91,9 @@ target_include_directories(enjin2_graphics
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_compile_definitions(enjin2_graphics PUBLIC VCV_RACK)
+if(NOT ESP32)
+    target_compile_definitions(enjin2_graphics PUBLIC VCV_RACK)
+endif()
 target_link_libraries(enjin2_graphics PRIVATE enjin2_core)
 
 # UI library
@@ -104,46 +108,51 @@ target_include_directories(enjin2_ui
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         ${CMAKE_SOURCE_DIR}/../Libs/Adafruit-GFX-Library
 )
-target_compile_definitions(enjin2_ui PUBLIC VCV_RACK)
+if(NOT ESP32)
+    target_compile_definitions(enjin2_ui PUBLIC VCV_RACK)
+endif()
 target_link_libraries(enjin2_ui PRIVATE enjin2_graphics)
 
 # Lua bindings
 if(ENJIN2_BUILD_LUA)
     if(EMSCRIPTEN)
-        # Build LuaJIT from source for WebAssembly
-        message(STATUS "Building LuaJIT from source for WebAssembly")
-        
-        # Use LuaJIT amalgamated build for optimal performance
-        set(LUAJIT_CORE_SOURCES
-            luajit/src/ljamalg.c
+        # LuaJIT does not support WebAssembly (no WASM architecture backend).
+        # Use standard Lua 5.1.5 (LuaJIT API-compatible, pure C) for the WASM target.
+        message(STATUS "Building Lua 5.1.5 from source for WebAssembly (LuaJIT is x86/ARM only)")
+        include(FetchContent)
+        FetchContent_Declare(
+            lua51
+            URL https://www.lua.org/ftp/lua-5.1.5.tar.gz
         )
-        
-        # Create embedded LuaJIT library
-        add_library(luajit_embedded STATIC ${LUAJIT_CORE_SOURCES})
-        target_include_directories(luajit_embedded PUBLIC luajit/src)
-        
-        # LuaJIT-specific compile definitions for WebAssembly
-        target_compile_definitions(luajit_embedded PRIVATE
-            LUAJIT_DISABLE_FFI  # Disable FFI for simpler WebAssembly build
-            LUAJIT_DISABLE_JIT  # Disable JIT compilation for WebAssembly
-            LUA_USE_APICHECK    # Enable API checking for debugging
-        )
-        
-        set(LUA_LIBRARIES luajit_embedded)
-        set(LUA_INCLUDE_DIRS luajit/src)
+        FetchContent_MakeAvailable(lua51)
+
+        file(GLOB LUA51_SOURCES "${lua51_SOURCE_DIR}/src/l*.c")
+        # Exclude standalone interpreter (lua.c) and compiler (luac.c)
+        list(FILTER LUA51_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
+
+        add_library(lua51_wasm STATIC ${LUA51_SOURCES})
+        target_include_directories(lua51_wasm PUBLIC ${lua51_SOURCE_DIR}/src)
+
+        set(LUA_LIBRARIES lua51_wasm)
+        set(LUA_INCLUDE_DIRS ${lua51_SOURCE_DIR}/src)
     elseif(ESP32)
-        # ESP32 platform - use NodeMCU Lua or ESP-IDF Lua component
-        message(STATUS "Building with ESP32 Lua support")
-        
-        # ESP32 users should provide LUA_INCLUDE_DIRS and LUA_LIBRARIES
-        # Example for NodeMCU lua:
-        # set(LUA_INCLUDE_DIRS "${IDF_PATH}/components/lua/include")
-        # set(LUA_LIBRARIES lua)
-        
-        if(NOT DEFINED LUA_INCLUDE_DIRS OR NOT DEFINED LUA_LIBRARIES)
-            message(WARNING "ESP32 build requires LUA_INCLUDE_DIRS and LUA_LIBRARIES to be set")
-            message(STATUS "Example: cmake -DLUA_INCLUDE_DIRS=/path/to/lua/include -DLUA_LIBRARIES=lua")
-        endif()
+        # LuaJIT requires a native CPU architecture — use standard Lua 5.1.5 for ESP32 cross-compilation.
+        message(STATUS "Building Lua 5.1.5 from source for ESP32")
+        include(FetchContent)
+        FetchContent_Declare(
+            lua51
+            URL https://www.lua.org/ftp/lua-5.1.5.tar.gz
+        )
+        FetchContent_MakeAvailable(lua51)
+
+        file(GLOB LUA51_SOURCES "${lua51_SOURCE_DIR}/src/l*.c")
+        list(FILTER LUA51_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
+
+        add_library(lua51_esp32 STATIC ${LUA51_SOURCES})
+        target_include_directories(lua51_esp32 PUBLIC ${lua51_SOURCE_DIR}/src)
+
+        set(LUA_LIBRARIES lua51_esp32)
+        set(LUA_INCLUDE_DIRS ${lua51_SOURCE_DIR}/src)
     else()
         # Desktop platforms - use system Lua
         find_package(Lua QUIET)
@@ -186,10 +195,11 @@ if(ENJIN2_BUILD_LUA)
         src/components/camera.cpp
         src/scripting/lua_event_bus.cpp
     )
-    # Private include directories for strict isolation
     target_include_directories(enjin2_lua
         PRIVATE
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            ${LUA_INCLUDE_DIRS}
+        INTERFACE
             ${LUA_INCLUDE_DIRS}
     )
     target_link_libraries(enjin2_lua PRIVATE
@@ -250,9 +260,7 @@ if(ENJIN2_BUILD_WASM)
     target_sources(enjin2_wasm PRIVATE
         src/bindings/emscripten_bindings.cpp
     )
-    target_include_directories(enjin2_wasm PRIVATE
-        $<$<BOOL:${ENJIN2_BUILD_LUA}>:luajit/src>
-    )
+    # Lua include dirs are propagated via enjin2_lua -> LUA_INCLUDE_DIRS (PUBLIC on lua51_wasm or luajit_embedded)
     target_compile_definitions(enjin2_wasm PRIVATE
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
     )

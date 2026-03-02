@@ -9,8 +9,24 @@
 #include "esp_system.h"
 #include "esp_log.h"
 
-// Forward declaration from esp32_lua_integration.cpp
-extern "C" void app_main();
+#include "enjin2/scripting/lua_engine.hpp"
 
-// ESP-IDF requires app_main to be defined
-// The actual implementation is in esp32_lua_integration.cpp
+static const char* TAG = "enjin2";
+
+extern "C" void app_main() {
+    ESP_LOGI(TAG, "Enjin2 ESP32 Lua example starting");
+
+    enjin2::LuaEngine engine;
+    if (!engine.initialize()) {
+        ESP_LOGE(TAG, "Failed to initialize Lua engine");
+        return;
+    }
+
+    const char* script = "print('Hello from Enjin2 Lua on ESP32!')";
+    engine.executeString(script);
+
+    ESP_LOGI(TAG, "Script executed. Idling.");
+    while (true) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}

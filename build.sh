@@ -92,12 +92,6 @@ build_wasm() {
         cp "$OUT/enjin2.js"   "$DROP_PUBLIC_DIR/"
         cp "$OUT/enjin2.wasm" "$DROP_PUBLIC_DIR/"
         echo "Files copied to $DROP_PUBLIC_DIR"
-    else
-        echo ""
-        echo "DROP public directory not found at $DROP_PUBLIC_DIR"
-        echo "Manual copy required:"
-        echo "  cp $OUT/enjin2.js <DROP_PROJECT>/public/"
-        echo "  cp $OUT/enjin2.wasm <DROP_PROJECT>/public/"
     fi
 }
 

@@ -7,7 +7,7 @@
 #include <cstring>
 
 // Include GFX font support
-#ifndef VCV_RACK
+#ifdef ARDUINO
 #include <Arduino.h>
 #endif
 #include "gfxfont.h"

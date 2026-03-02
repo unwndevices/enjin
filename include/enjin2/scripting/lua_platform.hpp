@@ -19,14 +19,8 @@
         #include "lauxlib.h"
         #include "lualib.h"
     }
-    // LuaJIT compatibility: map lua_pcallk to lua_pcall only for Lua 5.1
-    #if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 502
-        #ifndef lua_pcallk
-        #define lua_pcallk(L,n,r,c,ctx,k) lua_pcall(L,n,r,c)
-        #endif
-    #endif
 #elif defined(ESP32)
-    // ESP32-specific Lua implementation
+    // Standard Lua 5.1.5 for ESP32 (LuaJIT requires native CPU architecture)
     extern "C" {
         #include "lua.h"
         #include "lauxlib.h"
@@ -34,6 +28,31 @@
     }
 #else
     #error "Platform not supported for Lua integration"
+#endif
+
+// Lua 5.1 compat: LUA_OK, lua_pcallk, and luaL_testudata are absent in standard
+// Lua 5.1 (present in LuaJIT 2.x as extensions and in Lua 5.2+ as standard).
+// Applies to both VCV_RACK (standard Lua build) and ESP32.
+#if defined(LUA_VERSION_NUM) && LUA_VERSION_NUM < 502 && !defined(LUAJIT_VERSION)
+#ifndef lua_pcallk
+#define lua_pcallk(L,n,r,c,ctx,k) lua_pcall(L,n,r,c)
+#endif
+#ifndef LUA_OK
+#define LUA_OK 0
+#endif
+static inline void* luaL_testudata(lua_State* L, int ud, const char* tname) {
+    void* p = lua_touserdata(L, ud);
+    if (p) {
+        if (lua_getmetatable(L, ud)) {
+            lua_getfield(L, LUA_REGISTRYINDEX, tname);
+            if (!lua_rawequal(L, -1, -2)) p = nullptr;
+            lua_pop(L, 2);
+        } else {
+            p = nullptr;
+        }
+    }
+    return p;
+}
 #endif
 
 namespace enjin2 {
@@ -48,7 +67,7 @@ struct LuaPlatformConfig {
     static constexpr bool ENABLE_FILE_IO = true;          ///< Enable file operations on desktop
     static constexpr bool ENABLE_DEBUG = true;            ///< Enable debug facilities on desktop
 #elif defined(ESP32)
-    static constexpr size_t MEMORY_LIMIT = 256 * 1024;     ///< Memory limit for ESP32 (256KB)
+    static constexpr size_t MEMORY_LIMIT = 2 * 1024 * 1024; ///< Memory limit for ESP32 (2MB from PSRAM)
     static constexpr bool ENABLE_ALL_LIBS = false;        ///< Minimal libraries only on ESP32
     static constexpr bool ENABLE_FILE_IO = false;         ///< No file I/O on ESP32 for security
     static constexpr bool ENABLE_DEBUG = false;           ///< No debug on ESP32 to save memory

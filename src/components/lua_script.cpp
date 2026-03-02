@@ -4,6 +4,9 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#ifdef ESP32
+#include <esp_system.h>
+#endif
 
 namespace enjin2 {
 

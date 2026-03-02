@@ -3,12 +3,15 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#ifdef ESP32
+#include <esp_heap_caps.h>
+#endif
 
 namespace enjin2 {
 
 // Static member definitions
 size_t LuaEngine::memoryUsed = 0;
-char LuaEngine::memoryPool[LuaPlatformConfig::MEMORY_LIMIT];
+char* LuaEngine::memoryPool = nullptr;
 
 LuaEngine::LuaEngine() : L(nullptr), initialized(false) {
 }
@@ -22,7 +25,22 @@ bool LuaEngine::initialize() {
         return true;
     }
     
-    // Reset memory pool
+    // Allocate memory pool
+#ifdef ESP32
+    // Prefer PSRAM (MALLOC_CAP_SPIRAM) on ESP32-S3 with 8MB PSRAM to keep DRAM free.
+    // Fall back to internal heap if PSRAM is unavailable.
+    memoryPool = static_cast<char*>(
+        heap_caps_malloc(LuaPlatformConfig::MEMORY_LIMIT, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!memoryPool) {
+        memoryPool = static_cast<char*>(
+            heap_caps_malloc(LuaPlatformConfig::MEMORY_LIMIT, MALLOC_CAP_8BIT));
+    }
+    if (!memoryPool) {
+        return false;
+    }
+#else
+    memoryPool = new char[LuaPlatformConfig::MEMORY_LIMIT];
+#endif
     memoryUsed = 0;
     std::memset(memoryPool, 0, LuaPlatformConfig::MEMORY_LIMIT);
     
@@ -53,6 +71,14 @@ void LuaEngine::shutdown() {
     initialized = false;
     loadedScripts.clear();
     memoryUsed = 0;
+    if (memoryPool) {
+#ifdef ESP32
+        free(memoryPool);
+#else
+        delete[] memoryPool;
+#endif
+        memoryPool = nullptr;
+    }
 }
 
 LuaResult LuaEngine::executeString(const std::string& code) {

@@ -6,9 +6,9 @@ status: roadmap
 last_updated: "2026-03-02T00:00:00Z"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 3
 ---
 
 # Project State
@@ -18,22 +18,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** Phase 53 — Environment and Build Verification
+**Current focus:** Phase 54 — next unstarted phase
 
 ## Current Position
 
-Phase: 53 of 58 (Environment and Build Verification)
-Plan: 2 of 3 in current phase
-Status: Wave 1 complete, Wave 2 pending (53-03 checkpoint plan — requires toolchains activated)
-Last activity: 2026-03-02 — Plans 53-01 + 53-02 complete (setup-dev.sh + build.sh created)
+Phase: 53 of 58 COMPLETE
+Status: Phase 53 verified — all 3 plans done, all 3 platform builds passing
+Last activity: 2026-03-02 — Phase 53 complete (SDL3 ✓, WASM ✓, ESP32 ✓)
 
-Progress: [░░░░░░░░░░] 0% (v1.8 milestone)
+Progress: [█░░░░░░░░░] 17% (v1.8 milestone — 1/6 phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 102 (v1.0-v1.7)
-- v1.0: 21 | v1.1: 17 | v1.2: 5 | v1.3: 7 | v1.4: 8 | v1.5: 21 | v1.6: 4 | v1.7: 19
+- Total plans completed: 105 (v1.0-v1.8 so far)
+- v1.0: 21 | v1.1: 17 | v1.2: 5 | v1.3: 7 | v1.4: 8 | v1.5: 21 | v1.6: 4 | v1.7: 19 | v1.8: 3
 
 ## Accumulated Context
 
@@ -47,9 +46,6 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 53 CRITICAL] WASM build status LOW confidence — Emscripten toolchain never verified against v1.7 additions. Treat as investigation phase; budget time for iterative fix cycles.
-- [Phase 53] build_wasm.sh hardcodes `../emsdk`; setup script installs to `$HOME/emsdk`. Path detection must be resolved in Phase 53.
-- [Phase 53] ESP32 PSRAM availability unknown — determines ENJIN_LAYER_COUNT (3 without PSRAM, 5 with). Must be documented in code.
 - [Phase 57] tween-await polling requires integration test; re-entrant resume from done_cb is a real documented failure mode.
 
 ### Technical Debt (carried into v1.8)
@@ -64,5 +60,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Phase 53 planned — 3 plans ready to execute (wave 1: 53-01 + 53-02 parallel; wave 2: 53-03)
+Stopped at: Phase 53 complete — ready for Phase 54
 Resume file: None

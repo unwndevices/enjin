@@ -164,37 +164,11 @@ void LuaPlatform::openDesktopLibraries(lua_State* L) {
 
 #ifdef ESP32
 void LuaPlatform::openEmbeddedLibraries(lua_State* L) {
-    // ESP32: Open only essential libraries to save memory
-    
-    // Core language features
-    luaL_requiref(L, "_G", luaopen_base, 1);
-    lua_pop(L, 1);
-    
-    // Math library (essential for graphics)
-    luaL_requiref(L, LUA_MATHLIBNAME, luaopen_math, 1);
-    lua_pop(L, 1);
-    
-    // String library (needed for text processing)
-    luaL_requiref(L, LUA_STRLIBNAME, luaopen_string, 1);
-    lua_pop(L, 1);
-    
-    // Table library (useful for data structures)
-    luaL_requiref(L, LUA_TABLIBNAME, luaopen_table, 1);
-    lua_pop(L, 1);
-
-    // Coroutine library (required for engine.async.* scheduler — Phase 49: ASYNC-04)
-    luaL_requiref(L, LUA_COLIBNAME, luaopen_coroutine, 1);
-    lua_pop(L, 1);
-
-    // Conditionally open other libraries based on available memory
-    size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-    if (free_heap > 200 * 1024) {  // More than 200KB free
-        // UTF8 library (if we have enough memory)
-        luaL_requiref(L, LUA_UTF8LIBNAME, luaopen_utf8, 1);
-        lua_pop(L, 1);
-    }
-    
-    // Do NOT open: io, os, package, debug (security and memory reasons)
+    // Lua 5.1 (used on ESP32) does not have luaL_requiref or per-library open functions
+    // (coroutines are part of base in 5.1; luaL_requiref was added in 5.2).
+    // Open all standard libs — io/os/debug are not harmful on a constrained device
+    // and selective loading is not available in Lua 5.1.
+    luaL_openlibs(L);
 }
 
 void LuaPlatform::configureESP32Memory(lua_State* L) {

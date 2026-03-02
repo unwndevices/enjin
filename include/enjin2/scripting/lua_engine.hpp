@@ -54,7 +54,7 @@ private:
     
     // Static memory management  
     static size_t memoryUsed;               ///< Current memory usage
-    static char memoryPool[]; ///< Static memory pool (size defined by platform)
+    static char* memoryPool; ///< Memory pool pointer (PSRAM on ESP32, heap on desktop)
     
 public:
     /**
