@@ -549,6 +549,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME persistent_lua_test COMMAND persistent_lua_test)
+
+    # UI component binding test (Phase 52: UI-01..UI-04)
+    add_executable(ui_binding_test
+        ui_binding_test.cpp
+    )
+    target_include_directories(ui_binding_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(ui_binding_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME ui_binding_test COMMAND ui_binding_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
