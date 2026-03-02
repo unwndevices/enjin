@@ -28,8 +28,8 @@ Requirements for v1.8 milestone. Each maps to roadmap phases.
 
 ### Tech Debt
 
-- [ ] **DEBT-01**: `m_followTargetProxy` cleared on scene transition and hot reload (no dangling reference)
-- [ ] **DEBT-02**: `engine.scene.persist()` emits `lua_warning()` when called without SceneStateMachine context
+- [x] **DEBT-01**: `m_followTargetProxy` cleared on scene transition and hot reload (no dangling reference)
+- [x] **DEBT-02**: `engine.scene.persist()` emits `lua_warning()` when called without SceneStateMachine context
 
 ### QoL Features
 
@@ -84,8 +84,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STORE-02 | Phase 55 | Pending |
 | STORE-03 | Phase 55 | Pending |
 | STORE-04 | Phase 55 | Pending |
-| DEBT-01 | Phase 56 | Pending |
-| DEBT-02 | Phase 56 | Pending |
+| DEBT-01 | Phase 56 | Complete |
+| DEBT-02 | Phase 56 | Complete |
 | QOL-01 | Phase 57 | Pending |
 | QOL-02 | Phase 57 | Pending |
 | QOL-03 | Phase 57 | Pending |

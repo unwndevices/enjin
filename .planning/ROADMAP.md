@@ -77,7 +77,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 - [ ] **Phase 53: Environment and Build Verification** - Dev setup script + confirm all three platforms compile
 - [x] **Phase 54: JSON Serializer Refactor** - Extract shared writeStoreToBuffer() helper from saveToFile (completed 2026-03-02)
 - [x] **Phase 55: Platform Storage Backends** - WASM localStorage + ESP32 NVS implementations (completed 2026-03-02)
-- [ ] **Phase 56: Tech Debt Cleanup** - Clear m_followTargetProxy dangling ref + honest persist() warning
+- [x] **Phase 56: Tech Debt Cleanup** - Clear m_followTargetProxy dangling ref + honest persist() warning (completed 2026-03-02)
 - [ ] **Phase 57: QoL Features** - tween.await(), wait_frames(), camera dead zone
 - [ ] **Phase 58: Documentation and Build Tooling** - Getting Started update + tutorials + Lua highlighting
 
@@ -180,6 +180,6 @@ Plans:
 | 53. Environment and Build Verification | 2/3 | In Progress|  | - |
 | 54. JSON Serializer Refactor | 1/1 | Complete    | 2026-03-02 | - |
 | 55. Platform Storage Backends | 2/2 | Complete    | 2026-03-02 | - |
-| 56. Tech Debt Cleanup | v1.8 | 0/1 | Not started | - |
+| 56. Tech Debt Cleanup | 1/1 | Complete   | 2026-03-02 | - |
 | 57. QoL Features | v1.8 | 0/? | Not started | - |
 | 58. Documentation and Build Tooling | v1.8 | 0/? | Not started | - |
