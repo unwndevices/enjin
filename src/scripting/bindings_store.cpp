@@ -104,6 +104,99 @@ LuaStore::StoreSlot* LuaStore::findOrCreate(const char* key) {
 }
 
 //==============================================================================
+// Buffer-based JSON serialization (shared — all platforms)
+//==============================================================================
+
+static size_t bufWriteChar(char* out, size_t cap, size_t pos, char c) {
+    if (pos + 1 < cap) out[pos] = c;
+    return pos + 1;
+}
+
+static size_t bufWriteStr(char* out, size_t cap, size_t pos, const char* s) {
+    while (*s) {
+        if (pos + 1 < cap) out[pos] = *s;
+        ++pos; ++s;
+    }
+    return pos;
+}
+
+static size_t bufWriteJsonEscaped(char* out, size_t cap, size_t pos, const char* s) {
+    pos = bufWriteChar(out, cap, pos, '"');
+    for (const char* p = s; *p; ++p) {
+        switch (*p) {
+            case '"':  pos = bufWriteStr(out, cap, pos, "\\\""); break;
+            case '\\': pos = bufWriteStr(out, cap, pos, "\\\\"); break;
+            case '\n': pos = bufWriteStr(out, cap, pos, "\\n");  break;
+            case '\r': pos = bufWriteStr(out, cap, pos, "\\r");  break;
+            case '\t': pos = bufWriteStr(out, cap, pos, "\\t");  break;
+            default:   pos = bufWriteChar(out, cap, pos, *p);    break;
+        }
+    }
+    return bufWriteChar(out, cap, pos, '"');
+}
+
+static size_t bufWriteSlotValue(char* out, size_t cap, size_t pos,
+                                const LuaStore::StoreSlot& slot) {
+    switch (slot.type) {
+        case LuaStore::StoreType::Number: {
+            char numBuf[64];
+            int n = snprintf(numBuf, sizeof(numBuf), "%g", slot.numVal);
+            for (int j = 0; j < n; ++j)
+                pos = bufWriteChar(out, cap, pos, numBuf[j]);
+            break;
+        }
+        case LuaStore::StoreType::String:
+            pos = bufWriteJsonEscaped(out, cap, pos, slot.strVal);
+            break;
+        case LuaStore::StoreType::Bool:
+            pos = bufWriteStr(out, cap, pos, slot.boolVal ? "true" : "false");
+            break;
+        case LuaStore::StoreType::Table: {
+            pos = bufWriteChar(out, cap, pos, '{');
+            for (int i = 0; i < slot.tableCount; ++i) {
+                if (i > 0) pos = bufWriteChar(out, cap, pos, ',');
+                const auto& te = slot.tableEntries[i];
+                pos = bufWriteJsonEscaped(out, cap, pos, te.key);
+                pos = bufWriteChar(out, cap, pos, ':');
+                // Build a temporary StoreSlot to reuse bufWriteSlotValue recursively
+                LuaStore::StoreSlot tmp{};
+                tmp.type = te.type;
+                tmp.numVal = te.numVal;
+                tmp.boolVal = te.boolVal;
+                strncpy(tmp.strVal, te.strVal, LuaStore::STORE_MAX_STRING - 1);
+                tmp.strVal[LuaStore::STORE_MAX_STRING - 1] = '\0';
+                tmp.tableCount = 0;
+                pos = bufWriteSlotValue(out, cap, pos, tmp);
+            }
+            pos = bufWriteChar(out, cap, pos, '}');
+            break;
+        }
+        default:
+            pos = bufWriteStr(out, cap, pos, "null");
+            break;
+    }
+    return pos;
+}
+
+bool LuaStore::writeStoreToBuffer(char* out, size_t cap) const {
+    size_t pos = 0;
+    pos = bufWriteChar(out, cap, pos, '{');
+    for (int i = 0; i < m_count; ++i) {
+        if (i > 0) pos = bufWriteChar(out, cap, pos, ',');
+        pos = bufWriteJsonEscaped(out, cap, pos, m_entries[i].key);
+        pos = bufWriteChar(out, cap, pos, ':');
+        pos = bufWriteSlotValue(out, cap, pos, m_entries[i]);
+    }
+    pos = bufWriteChar(out, cap, pos, '}');
+    if (pos < cap) {
+        out[pos] = '\0';
+        return true;
+    }
+    if (cap > 0) out[cap - 1] = '\0';
+    return false;
+}
+
+//==============================================================================
 // JSON File I/O (Desktop only — excluded on ESP32 and WASM)
 //==============================================================================
 

@@ -340,6 +340,19 @@ public:
      *  @return true on success */
     bool loadFromFile(const char* path);
 
+    /** @brief Serialise the store to a caller-supplied buffer as compact JSON.
+     *  No heap allocation — safe for WASM and ESP32 callers.
+     *  Sufficient for typical game saves; absolute worst-case (all 16 keys,
+     *  all 16 table entries, all max-length escaped strings) is ~100KB.
+     *  @param out  Buffer to write into (null-terminated on success or truncation)
+     *  @param cap  Buffer capacity in bytes (including null terminator)
+     *  @return true if the entire store fit in the buffer; false if truncated */
+    bool writeStoreToBuffer(char* out, size_t cap) const;
+
+    /** @brief Recommended buffer size for writeStoreToBuffer.
+     *  Covers all typical game saves (keys ≤16 chars, values ≤64 chars). */
+    static constexpr size_t STORE_BUFFER_MAX = 4096;
+
 private:
     StoreSlot m_entries[STORE_MAX_KEYS];
     int       m_count{0};
