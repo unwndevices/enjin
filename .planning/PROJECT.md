@@ -122,7 +122,21 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ### Active
 
-(No active milestone — run `/gsd:new-milestone` to start next)
+## Current Milestone: v1.8 Ship Ready
+
+**Goal:** Make enjin2 deployable on all 3 targets (SDL3, WASM, ESP32), clean up tech debt, and provide onboarding documentation.
+
+**Target features:**
+- Dev environment setup script for Arch Linux (Emscripten + ESP-IDF + build helpers)
+- Verify and fix Emscripten/WASM build with all v1.7 features
+- Verify and fix ESP32 build with v1.7 features (5-layer stack, coroutines, store)
+- WASM localStorage bridge for LuaStore
+- ESP32 NVS storage for LuaStore
+- Tech debt cleanup (m_followTargetProxy, PERSIST standalone gap)
+- QoL additions (tween await, wait_frames, camera dead zone)
+- Docusaurus tutorials with getting started guide
+- Usage examples in API docs
+- Tutorial built around arkanoid/tamagotchi demo scripts
 
 ### Out of Scope
 
@@ -253,4 +267,4 @@ enjin2 is a feature-complete 2D engine with Lua scripting, component infrastruct
 | engine.ui.* bypasses C++ Label/FillUpGauge entirely | std::string incompatible with zero-alloc Pixel4 pipeline | ✓ Working - Phase 52 |
 
 ---
-*Last updated: 2026-03-02 after v1.7 milestone completion*
+*Last updated: 2026-03-02 after v1.8 milestone started*

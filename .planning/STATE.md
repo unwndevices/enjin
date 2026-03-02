@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: Developer Experience & New Capability
-status: complete
-last_updated: "2026-03-02T12:30:00Z"
+milestone: v1.8
+milestone_name: Ship Ready
+status: requirements
+last_updated: "2026-03-02T00:00:00Z"
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 19
-  completed_plans: 19
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -18,16 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.7 complete — planning next milestone
+**Current focus:** v1.8 Ship Ready — defining requirements
 
 ## Current Position
 
-Milestone: v1.7 Developer Experience & New Capability — SHIPPED 2026-03-02
-All 10 phases (43-52) complete, 19/19 plans, 26/26 requirements satisfied
-Status: Complete
-Last activity: 2026-03-02 — Milestone archived, git tagged v1.7
-
-Progress: [####################] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-02 — Milestone v1.8 started
 
 ## Performance Metrics
 
@@ -74,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: v1.7 milestone complete and archived
+Stopped at: v1.8 milestone started — defining requirements
 Resume file: None
