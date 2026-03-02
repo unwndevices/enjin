@@ -162,10 +162,12 @@ Plans:
   2. The "Your First Script" tutorial walks through tamagotchi.lua with Lua code blocks that render with syntax highlighting
   3. The "Async Coroutines" tutorial demonstrates `engine.async` and `engine.tween.await()` with working code examples
   4. Lua code blocks in any Docusaurus page render with syntax highlighting (not plain text)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 58-01: TBD
+- [ ] 58-01-PLAN.md — Infrastructure: Lua prism config + Getting Started patch + Tutorials sidebar wiring (DOC-01, DOC-04)
+- [ ] 58-02-PLAN.md — "Your First Script" tutorial (docs/src/tutorials/your-first-script.md) (DOC-02)
+- [ ] 58-03-PLAN.md — "Async Coroutines" tutorial (docs/src/tutorials/async-coroutines.md) (DOC-03)
 
 ## Progress
 
@@ -184,4 +186,4 @@ Plans:
 | 55. Platform Storage Backends | 2/2 | Complete    | 2026-03-02 | - |
 | 56. Tech Debt Cleanup | 1/1 | Complete    | 2026-03-02 | - |
 | 57. QoL Features | 3/3 | Complete    | 2026-03-02 | - |
-| 58. Documentation and Build Tooling | v1.8 | 0/? | Not started | - |
+| 58. Documentation and Build Tooling | v1.8 | 0/3 | Not started | - |
