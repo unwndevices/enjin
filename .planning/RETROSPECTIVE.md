@@ -225,6 +225,46 @@
 
 ---
 
+## Milestone: v1.9 — Tech Debt Resolved
+
+**Shipped:** 2026-03-03
+**Phases:** 1 (Phase 59) | **Plans:** 2 | **Commits:** 10 | **Files changed:** 12
+
+### What Was Built
+- `const T* getComponent() const` overload in `object.hpp` — `hasComponent<T>() const` is now well-formed C++ (DEBT-01)
+- `setLuaProxy()` debug-build `#ifndef NDEBUG` warning for double-registration — fires when non-null proxy is overwritten with a different non-null proxy (DEBT-02)
+- EventBus `emit()` `m_L=nullptr` window documented with hot-reload ordering invariant comment (DEBT-03)
+- `getPaletteRGB` WASM binding annotated with snapshot semantics (DEBT-04)
+- WASM `setInputState()`+`updateFrame()` free functions — function-local statics for zero-alloc per-frame state; mirrors SDL3 runner order (DEBT-05)
+- ESP32 example upgraded from one-shot idle loop to jitter-free `vTaskDelayUntil` game loop at ~62.5fps (DEBT-05)
+
+### What Worked
+- Extremely focused 2-plan structure: 59-01 handled pure C++/documentation changes, 59-02 handled platform integration — clear subsystem boundary
+- All 5 debt items resolved in ~20 minutes total execution time with zero deviations from plan
+- Phase 59 was purely additive (const overload, debug warnings, comments, new free functions) — no behavior changes, no test regressions (44/44 passing)
+- Separating documentation debt (DEBT-03/04) from API debt (DEBT-01/02) and platform debt (DEBT-05) into a logical execution order was efficient
+
+### What Was Inefficient
+- No milestone audit was run (consistent with v1.8) — Phase 59 is isolated enough that audit risk was low, but the habit should be maintained
+- SUMMARY.md `one_liner` field not populated — automated accomplishment extraction returns nothing for the third milestone running
+
+### Patterns Established
+- **Const overload pair**: `const T* getMethod() const` alongside `T* getMethod()` — selects automatically in const contexts, no caller changes
+- **`#ifndef NDEBUG` printf for debug warnings**: debug-only diagnostics without `fprintf(stderr)` — matches project's existing component.hpp style
+- **WASM per-frame pattern**: `setInputState()` before `updateFrame()` — mirrors SDL3 `input_advance_frame -> input_platform_poll -> setInput` sequence; function-local statics for per-frame state
+
+### Key Lessons
+1. Accumulated tech debt should be categorized by subsystem (API correctness, documentation, platform integration) — subsystem grouping maps cleanly to plan boundaries
+2. Documentation debt (clarifying existing semantics) is faster to clear than implementation debt — DEBT-03 and DEBT-04 were pure comment additions
+3. Phase 59's zero-regression result confirms that non-behavioral changes (const overloads, debug guards, comments, free functions) are safe to batch into a single debt-clearing phase
+
+### Cost Observations
+- Model mix: balanced profile (sonnet for research/planning, sonnet for execution)
+- Sessions: 1 (all 5 debt items in one session, 20 min execution)
+- Notable: highest efficiency-to-change ratio of any milestone — zero feature risk, zero regressions
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -240,6 +280,7 @@
 | v1.6 | 4 | 4 | Game ready — pattern replication from Phase 39, fastest milestone, audit passed clean |
 | v1.7 | 10 | 19 | DX + new capability — structural refactoring as prerequisite, fixed-capacity pool pattern, 26/26 requirements |
 | v1.8 | 6 | 13 | Ship ready — platform storage backends, QoL coroutine additions, onboarding docs, all 3 targets verified |
+| v1.9 | 1 | 2 | Tech debt cleared — const overload, debug warning, documentation, WASM input wiring, ESP32 per-frame loop |
 
 ### Cumulative Quality
 
@@ -254,6 +295,7 @@
 | v1.6 | 27+ | component_proxy_test, timer_test, state_machine_test, eventbus_test |
 | v1.7 | 43 | tilemap_test, camera_test, camera_lua_test, physics_test, physics_lua_test, sprite_load_test, overflow_test, debug_draw_test, camera_follow_test, store_test, coroutine_async_test, tween_test, persistent_objects_test, persistent_lua_test, ui_binding_test |
 | v1.8 | 46+ | qol_test (tween.await, wait_frames, camera dead zone — 148 assertions), store_test extended |
+| v1.9 | 46+ | No new tests — all 44/44 suites passing; const overload + WASM bindings verified by existing suite |
 
 ### Top Lessons (Verified Across Milestones)
 

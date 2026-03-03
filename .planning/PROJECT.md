@@ -10,18 +10,16 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 
 ## Current State
 
-**Shipped: v1.8 Ship Ready (2026-03-03)**
-- `scripts/setup-dev.sh` — idempotent toolchain installer for Emscripten 3.1.73 + ESP-IDF v5.5 to XDG paths
-- `build.sh` — unified build entry point replacing build_wasm.sh; SDL3/WASM/ESP32 all verified building
-- `LuaStore::writeStoreToBuffer()` — allocation-free JSON serializer shared across all 3 platforms
-- WASM localStorage bridge — `engine.store.save/flush/load` persists across page reloads
-- ESP32 NVS backend — `engine.store` persists across power cycles, 15-char key validation
-- `engine.tween.await(id)` suspends coroutine until tween completes; `engine.async.wait_frames(n)` yields for N frames
-- `engine.camera.setDeadZone(w, h)` — camera stops following target within dead zone boundary
-- Docusaurus tutorials: Lua syntax highlighting, "Your First Script" + "Async Coroutines" tutorials
-- 6 phases, 13 plans, 78 files changed, ~61,700 LOC C++/hpp, 57 commits
+**Shipped: v1.9 Tech Debt Resolved (2026-03-03)**
+- `const T* getComponent() const` overload added — `hasComponent<T>() const` is now well-formed C++ (DEBT-01)
+- `setLuaProxy()` debug-build warning for double-registration (DEBT-02)
+- EventBus `m_L=nullptr` window documented at `emit()` with hot-reload ordering invariant (DEBT-03)
+- `getPaletteRGB` snapshot semantics documented at WASM binding site (DEBT-04)
+- WASM `setInputState()`+`updateFrame()` free functions — closes cross-platform input wiring gap (DEBT-05)
+- ESP32 example upgraded to jitter-free FreeRTOS `vTaskDelayUntil` per-frame game loop (DEBT-05)
+- 1 phase, 2 plans, 12 files changed
 
-**Previously shipped: v1.0-v1.7** — See MILESTONES.md for full details
+**Previously shipped: v1.0-v1.8** — See MILESTONES.md for full details
 
 ## Requirements
 
@@ -172,11 +170,8 @@ enjin2 is deployable on all 3 targets with a complete dev toolchain, persistent 
 - ctests: 148 assertions in qol_test alone; all suites passing
 
 **Known tech debt:**
-- Single-proxy-per-component constraint: multiple self:get() calls overwrite proxy registration (last wins)
-- EventBus m_L=nullptr window between scene change and script load (safe for Lua-reachable paths)
-- `getPaletteRGB()` snapshot semantics (re-invoke after palette mutation; SDL runner unaffected)
-- `hasComponent()` const calls non-const `getComponent<T>()` — pre-existing design smell
-- C_LuaScript::setInput() must be wired per-frame by host on WASM/ESP32 platforms (SDL runner done)
+- Single-proxy-per-component constraint: multiple self:get() calls overwrite proxy registration (last wins; debug warning fires in Phase 59)
+- ESP32 LuaEngine → LuaScriptSystem migration: `setInput()` commented out in example pending migration (wiring pattern documented)
 
 ## Constraints
 
@@ -271,6 +266,11 @@ enjin2 is deployable on all 3 targets with a complete dev toolchain, persistent 
 | waitTweenId gate in tickCoroutines skips frame/time check | Resume fires from tickTweens — avoids double-resume race | ✓ Working - Phase 57 |
 | Coroutine resume in tickTweens placed before done_cb pcall | Avoids yield-across-pcall boundary error | ✓ Working - Phase 57 |
 | Dead zone rectangle centered on camera position (not target) | Classic platformer feel; target re-enters zone from center outward | ✓ Working - Phase 57 |
+| printf() for setLuaProxy debug warning (not fprintf/stderr) | Matches existing component.hpp style in release branch | ✓ Working - Phase 59 |
+| setLuaProxy warning condition: old && new && old != new | Clearing via nullptr and idempotent re-registration are both silent | ✓ Working - Phase 59 |
+| setInputState/updateFrame as free functions in WASM bindings | JS host owns LuaScriptSystem; free functions match existing WASM architecture | ✓ Working - Phase 59 |
+| s_wasm_input as function-local static in WASM lambda | Zero heap allocation; persists across calls; safe for single-instance WASM | ✓ Working - Phase 59 |
+| ESP32 example stays on LuaEngine (not migrated to LuaScriptSystem) | Example purpose is wiring pattern; migration documented in commented setInput call | — Pending |
 
 ---
-*Last updated: 2026-03-03 after v1.8 milestone*
+*Last updated: 2026-03-03 after v1.9 milestone*

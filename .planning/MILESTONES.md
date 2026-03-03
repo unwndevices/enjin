@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.9 Tech Debt Resolved (Shipped: 2026-03-03)
+
+**Phases completed:** 1 phase (59), 2 plans, 4 tasks
+**Timeline:** 1 day (2026-03-03)
+**Git range:** 10 commits, 12 files changed, +1,051 / -28 lines
+**Requirements:** DEBT-01 through DEBT-05 — all resolved
+
+**Key accomplishments:**
+- `const T* getComponent() const` overload added to `object.hpp` — `hasComponent<T>() const` is now well-formed C++ without non-const call (DEBT-01)
+- `setLuaProxy()` debug-build warning for double-registration — `#ifndef NDEBUG` printf fires when non-null proxy is overwritten with a different non-null proxy (DEBT-02)
+- EventBus `emit()` `m_L=nullptr` window documented with hot-reload ordering invariant — resolves silent footgun in scene-change sequence (DEBT-03)
+- `getPaletteRGB` snapshot semantics documented at WASM binding site — callers know static buffer is not live-updated (DEBT-04)
+- WASM `setInputState()`+`updateFrame()` free functions added to Emscripten bindings — mirrors SDL3 runner order; function-local statics for zero-alloc per-frame state (DEBT-05)
+- ESP32 example upgraded from idle loop to jitter-free FreeRTOS `vTaskDelayUntil` game loop at ~62.5fps (DEBT-05)
+
+---
+
 ## v1.8 Ship Ready (Shipped: 2026-03-03)
 
 **Phases completed:** 6 phases (53-58), 13 plans

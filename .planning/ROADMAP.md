@@ -11,6 +11,7 @@
 - [x] **v1.6 Game Ready** - Phases 39-42 (shipped 2026-02-28)
 - [x] **v1.7 Developer Experience & New Capability** - Phases 43-52 (shipped 2026-03-02)
 - [x] **v1.8 Ship Ready** - Phases 53-58 (shipped 2026-03-03)
+- [x] **v1.9 Tech Debt Resolved** - Phase 59 (shipped 2026-03-03)
 
 ## Phases
 
@@ -82,6 +83,13 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 
 </details>
 
+<details>
+<summary>✅ v1.9 Tech Debt Resolved (Phase 59) — SHIPPED 2026-03-03</summary>
+
+- [x] Phase 59: Tech Debt and Known Issues (2/2 plans) — completed 2026-03-03
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -95,16 +103,4 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 | 39-42. Game Ready | v1.6 | 4/4 | Complete | 2026-02-28 |
 | 43-52. Developer Experience | v1.7 | 19/19 | Complete | 2026-03-02 |
 | 53-58. Ship Ready | v1.8 | 13/13 | Complete | 2026-03-03 |
-| 59. Tech Debt | — | 2/2 | Complete | 2026-03-03 |
-
-### Phase 59: Tech Debt and Known Issues
-
-**Goal:** Eliminate five accumulated technical debt items across four subsystems — const-correctness in Object API, single-proxy contract enforcement, EventBus window documentation, getPaletteRGB snapshot documentation, and cross-platform input wiring for WASM/ESP32.
-**Requirements**: DEBT-01, DEBT-02, DEBT-03, DEBT-04, DEBT-05
-**Depends on:** Phase 58
-**Plans:** 2/2 plans complete
-**Completed:** 2026-03-03
-
-Plans:
-- [x] 59-01-PLAN.md — Const overload, setLuaProxy assert, EventBus + getPaletteRGB documentation
-- [x] 59-02-PLAN.md — WASM setInputState/updateFrame bindings + ESP32 per-frame example loop
+| 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
