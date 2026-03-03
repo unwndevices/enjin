@@ -145,7 +145,7 @@ public:
     template<typename T>
     T* getComponent() {
         static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
-        
+
         for (size_t i = 0; i < componentCount; ++i) {
             if (auto component = dynamic_cast<T*>(components[i].get())) {
                 return component;
@@ -153,7 +153,23 @@ public:
         }
         return nullptr;
     }
-    
+
+    /**
+     * @brief Get a component of specified type (const overload — called by hasComponent() const and read-only contexts)
+     * @tparam T Component type
+     * @return Const pointer to component or nullptr if not found
+     */
+    template<typename T>
+    const T* getComponent() const {
+        static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
+        for (size_t i = 0; i < componentCount; ++i) {
+            if (auto component = dynamic_cast<const T*>(components[i].get())) {
+                return component;
+            }
+        }
+        return nullptr;
+    }
+
     /**
      * @brief Get all components of specified type
      * @tparam T Component type (must derive from Component)

@@ -1,10 +1,7 @@
 #pragma once
 
-#ifndef NDEBUG
 #include <cassert>
-#else
 #include <cstdio>
-#endif
 #include <type_traits>
 #include "object.hpp"
 #include "../scripting/component_proxy.hpp"
@@ -80,7 +77,16 @@ public:
      * Called by lua_proxy_get_component_impl when allocating a ComponentProxy userdata.
      * @param proxy Non-owning pointer to the Lua userdata struct; may be nullptr to clear.
      */
-    void setLuaProxy(ComponentProxy* proxy) { m_luaProxy = proxy; }
+    void setLuaProxy(ComponentProxy* proxy) {
+#ifndef NDEBUG
+        if (proxy != nullptr && m_luaProxy != nullptr && m_luaProxy != proxy) {
+            printf("[enjin2] WARNING: Component::setLuaProxy — overwriting existing proxy. "
+                   "Previous proxy will not be invalidated on destruction. "
+                   "Only one ComponentProxy per component is supported.\n");
+        }
+#endif
+        m_luaProxy = proxy;
+    }
 
     /**
      * @brief Get the owner object
