@@ -53,7 +53,19 @@ int LuaEventBus::subscribe(const char* name, int callbackRef) {
 }
 
 void LuaEventBus::emit(const char* name) {
-    if (!m_L) return;
+    if (!m_L) {
+        // m_L is nullptr in the window between clearHandlers() (called on scene
+        // deactivation or hot-reload) and setLuaState() (called from
+        // executeScript() / loadScriptFile() once the new Lua state is ready).
+        // This window is safe: no Lua callbacks can be registered during scene
+        // setup, so no subscriber list exists to invoke.
+        // C++ code that calls emit() during this window silently drops the event
+        // — this is intentional. If a C++ lifecycle hook must emit events during
+        // scene setup, it must call setLuaState() first.
+        // INVARIANT: clearHandlers() must always be called BEFORE setLuaState()
+        // on hot-reload; reversing the order would cause luaL_unref on wrong state.
+        return;
+    }
     Channel* ch = findChannel(name);
     if (!ch) return;
 
@@ -122,7 +134,8 @@ void LuaEventBus::clearHandlers() {
             m_channels[c].name[0] = '\0';
         }
     }
-    m_L = nullptr;  // safe sentinel -- prevents double-unref
+    m_L = nullptr;  // safe sentinel — prevents double-unref on subsequent clearHandlers() call.
+                    // Must be set AFTER all luaL_unref calls above. setLuaState() re-arms it.
 }
 
 int LuaEventBus::getActiveSubscriberCount() const {

@@ -130,6 +130,12 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         });
 
     // Palette functions — core graphics, not behind ENJIN2_BUILD_LUA guard
+
+    // Snapshot semantics: fills a static buffer from g_palette at call time and returns
+    // a typed_memory_view (a live JS view into WASM linear memory at that buffer address).
+    // The buffer is NOT updated when setPaletteColor() is called — Callers MUST re-invoke
+    // getPaletteRGB() after any setPaletteColor() call to get fresh data.
+    // The SDL3 runner is unaffected (it reads g_palette.resolve() directly at render time).
     function("getPaletteRGB", +[]() -> val {
         static uint8_t buf[45];
         for (int i = 0; i < 15; ++i) {
