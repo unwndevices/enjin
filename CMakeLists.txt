@@ -265,6 +265,10 @@ if(ENJIN2_BUILD_WASM)
     add_executable(enjin2_wasm)
     target_sources(enjin2_wasm PRIVATE
         src/bindings/emscripten_bindings.cpp
+        # EM_JS symbols in static libraries are dropped by wasm-ld (no other
+        # symbol in the object file is referenced). Compile directly into the
+        # executable so the linker sees the __em_js_* metadata.
+        $<$<BOOL:${ENJIN2_BUILD_LUA}>:src/scripting/wasm_storage.cpp>
     )
     # Lua include dirs are propagated via enjin2_lua -> LUA_INCLUDE_DIRS (PUBLIC on lua51_wasm or luajit_embedded)
     target_compile_definitions(enjin2_wasm PRIVATE
@@ -276,6 +280,7 @@ if(ENJIN2_BUILD_WASM)
         enjin2_core
         enjin2_graphics
         enjin2_ui
+        enjin2_input
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:enjin2_lua>
     )
     
