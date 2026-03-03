@@ -30,5 +30,6 @@ void Canvas8<WIDTH, HEIGHT>::exportToBMP(const char *filename) const
 // Explicit template instantiations for common canvas sizes
 template void Canvas8<128, 64>::exportToBMP(const char *filename) const;
 template void Canvas8<128, 128>::exportToBMP(const char *filename) const;
+template void Canvas8<320, 240>::exportToBMP(const char *filename) const;
 
 } // namespace enjin2

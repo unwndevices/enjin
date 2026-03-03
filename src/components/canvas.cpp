@@ -4,16 +4,16 @@
 
 namespace enjin2 {
 
-C_Canvas::C_Canvas(Object* owner, uint8_t width, uint8_t height) 
+C_Canvas::C_Canvas(Object* owner, uint16_t width, uint16_t height)
     : C_Drawable(owner, width, height)
     , canvas_width(width)
     , canvas_height(height)
     , position(nullptr) {
-    
+
     createCanvas(width, height);
 }
 
-void C_Canvas::createCanvas(uint8_t width, uint8_t height) {
+void C_Canvas::createCanvas(uint16_t width, uint16_t height) {
     // Create canvas based on common sizes to avoid template explosion
     if (width <= 32 && height <= 32) {
         internal_canvas = std::unique_ptr<ICanvas<uint8_t>>(new Canvas8<32, 32>());
@@ -23,8 +23,12 @@ void C_Canvas::createCanvas(uint8_t width, uint8_t height) {
         internal_canvas = std::unique_ptr<ICanvas<uint8_t>>(new Canvas8<64, 64>());
     } else if (width <= 128 && height <= 64) {
         internal_canvas = std::unique_ptr<ICanvas<uint8_t>>(new Canvas8<128, 64>());
-    } else {
+    } else if (width <= 128 && height <= 128) {
         internal_canvas = std::unique_ptr<ICanvas<uint8_t>>(new Canvas8<128, 128>());
+    } else if (width <= 320 && height <= 240) {
+        internal_canvas = std::unique_ptr<ICanvas<uint8_t>>(new Canvas8<320, 240>());
+    } else {
+        internal_canvas = std::unique_ptr<ICanvas<uint8_t>>(new Canvas8<320, 240>());
     }
     
     // Clear canvas to black

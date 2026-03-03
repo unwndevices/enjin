@@ -18,8 +18,15 @@
 // Constants
 // ---------------------------------------------------------------------------
 
-static constexpr int CANVAS_W      = 128;
-static constexpr int CANVAS_H      = 128;
+#ifndef ENJIN2_CANVAS_WIDTH
+#define ENJIN2_CANVAS_WIDTH 128
+#endif
+#ifndef ENJIN2_CANVAS_HEIGHT
+#define ENJIN2_CANVAS_HEIGHT 128
+#endif
+
+static constexpr int CANVAS_W      = ENJIN2_CANVAS_WIDTH;
+static constexpr int CANVAS_H      = ENJIN2_CANVAS_HEIGHT;
 static constexpr int DEFAULT_SCALE = 4;
 static constexpr int WIN_W         = CANVAS_W * DEFAULT_SCALE; // 512
 static constexpr int WIN_H         = CANVAS_H * DEFAULT_SCALE; // 512

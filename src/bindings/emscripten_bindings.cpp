@@ -9,12 +9,21 @@
 #include "../../include/enjin2/core/types.hpp"
 #include <string>
 
+// Configurable canvas dimensions — set via CMake compile definitions,
+// fall back to 128x128 for standalone compilation.
+#ifndef ENJIN2_CANVAS_WIDTH
+#define ENJIN2_CANVAS_WIDTH 128
+#endif
+#ifndef ENJIN2_CANVAS_HEIGHT
+#define ENJIN2_CANVAS_HEIGHT 128
+#endif
+
 using namespace emscripten;
 using namespace enjin2;
 
 /**
  * @brief Emscripten bindings for enjin2 Lua scripting system
- * 
+ *
  * This file exposes enjin2's Lua engine and graphics classes to JavaScript
  * through WebAssembly, allowing DROP to use the same engine as hardware.
  */
@@ -29,7 +38,7 @@ int testFunction() {
 static void forceSymbolLinking() {
     // Create instances to force symbol inclusion
     LuaScriptSystem dummy1;
-    Canvas4<128, 128> dummy2;
+    Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT> dummy2;
     LuaCanvas dummy3(&dummy2);
     // Don't actually call anything, just reference the types
     (void)dummy1;
@@ -130,16 +139,16 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
     });
 #endif
 
-    // Canvas4 template specialization for 128x128 (even width required for 4-bit packing)
-    class_<Canvas4<128, 128>>("Canvas4_128x128")
+    // Canvas4 template specialization — size configured via CMake
+    class_<Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>>("Canvas4")
         .constructor<>()
-        .function("clear", +[](Canvas4<128, 128>& canvas, uint8_t color) {
+        .function("clear", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, uint8_t color) {
             canvas.clear(Pixel4(color));
         })
-        .function("setPixel", +[](Canvas4<128, 128>& canvas, int x, int y, uint8_t color) {
+        .function("setPixel", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, int x, int y, uint8_t color) {
             canvas.setPixel(x, y, Pixel4(color));
         })
-        .function("getPixel", +[](Canvas4<128, 128>& canvas, int x, int y) -> uint8_t {
+        .function("getPixel", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, int x, int y) -> uint8_t {
             return static_cast<uint8_t>(canvas.getPixel(x, y));
         });
 
@@ -155,6 +164,10 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         .function("getPixel", +[](Canvas4<64, 32>& canvas, int x, int y) -> uint8_t {
             return static_cast<uint8_t>(canvas.getPixel(x, y));
         });
+
+    // Runtime-queryable canvas dimensions so JS can adapt to configured size
+    function("getCanvasWidth", +[]() -> int { return ENJIN2_CANVAS_WIDTH; });
+    function("getCanvasHeight", +[]() -> int { return ENJIN2_CANVAS_HEIGHT; });
 
     // Palette functions — core graphics, not behind ENJIN2_BUILD_LUA guard
 
@@ -192,13 +205,13 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
 
 #ifdef ENJIN2_BUILD_LUA
     // Factory functions for creating LuaCanvas with specific canvas types
-    function("createLuaCanvas128", +[]() -> LuaCanvas* {
-        static Canvas4<128, 128> canvas;
+    function("createLuaCanvas", +[]() -> LuaCanvas* {
+        static Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT> canvas;
         return new LuaCanvas(&canvas);
     }, allow_raw_pointers());
 
-    // Function to create LuaCanvas from existing Canvas4_128x128
-    function("createLuaCanvasFromCanvas128", +[](Canvas4<128, 128>& canvas) -> LuaCanvas* {
+    // Function to create LuaCanvas from existing Canvas4
+    function("createLuaCanvasFromCanvas", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas) -> LuaCanvas* {
         return new LuaCanvas(&canvas);
     }, allow_raw_pointers());
 
@@ -209,18 +222,18 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
 #endif
 
     // Helper functions for getting canvas data as typed array
-    function("getCanvasData128", +[](Canvas4<128, 128>& canvas) -> val {
+    function("getCanvasData", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas) -> val {
         // Create a simple Uint8Array with pixel data by reading each pixel
-        auto width = 128;
-        auto height = 128;
+        constexpr auto width = ENJIN2_CANVAS_WIDTH;
+        constexpr auto height = ENJIN2_CANVAS_HEIGHT;
         auto data = new uint8_t[width * height];
-        
+
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 data[y * width + x] = canvas.getPixel(x, y).value;
             }
         }
-        
+
         return val(typed_memory_view(width * height, data));
     });
 
@@ -229,22 +242,22 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         auto width = 64;
         auto height = 32;
         auto data = new uint8_t[width * height];
-        
+
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 data[y * width + x] = canvas.getPixel(x, y).value;
             }
         }
-        
+
         return val(typed_memory_view(width * height, data));
     });
 
     // Helper for setting canvas data from JavaScript TypedArray
-    function("setCanvasData128", +[](Canvas4<128, 128>& canvas, val jsArray) {
+    function("setCanvasData", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, val jsArray) {
         auto length = jsArray["length"].as<unsigned>();
-        auto width = 128;
-        auto height = 128;
-        
+        constexpr auto width = ENJIN2_CANVAS_WIDTH;
+        constexpr auto height = ENJIN2_CANVAS_HEIGHT;
+
         for (unsigned i = 0; i < std::min(length, static_cast<unsigned>(width * height)); ++i) {
             int x = i % width;
             int y = i / width;
@@ -252,35 +265,35 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
             canvas.setPixel(x, y, Pixel4{value});
         }
     });
-    
+
     // Fast bulk pixel operations
-    function("fastFillRect", +[](Canvas4<128, 128>& canvas, int x, int y, int w, int h, uint8_t color) {
+    function("fastFillRect", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, int x, int y, int w, int h, uint8_t color) {
         Pixel4 pixel{color};
-        int x2 = std::min(x + w, 128);
-        int y2 = std::min(y + h, 128);
+        int x2 = std::min(x + w, (int)ENJIN2_CANVAS_WIDTH);
+        int y2 = std::min(y + h, (int)ENJIN2_CANVAS_HEIGHT);
         x = std::max(x, 0);
         y = std::max(y, 0);
-        
+
         for (int py = y; py < y2; py++) {
             for (int px = x; px < x2; px++) {
                 canvas.setPixel(px, py, pixel);
             }
         }
     });
-    
-    function("fastDrawLine", +[](Canvas4<128, 128>& canvas, int x1, int y1, int x2, int y2, uint8_t color) {
+
+    function("fastDrawLine", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, int x1, int y1, int x2, int y2, uint8_t color) {
         Pixel4 pixel{color};
-        
+
         // Bresenham's line algorithm
         int dx = abs(x2 - x1);
         int dy = abs(y2 - y1);
         int sx = x1 < x2 ? 1 : -1;
         int sy = y1 < y2 ? 1 : -1;
         int err = dx - dy;
-        
+
         int x = x1, y = y1;
         while (true) {
-            if (x >= 0 && x < 128 && y >= 0 && y < 128) {
+            if (x >= 0 && x < ENJIN2_CANVAS_WIDTH && y >= 0 && y < ENJIN2_CANVAS_HEIGHT) {
                 canvas.setPixel(x, y, pixel);
             }
             if (x == x2 && y == y2) break;
@@ -294,7 +307,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         auto length = jsArray["length"].as<unsigned>();
         auto width = 64;
         auto height = 32;
-        
+
         for (unsigned i = 0; i < std::min(length, static_cast<unsigned>(width * height)); ++i) {
             int x = i % width;
             int y = i / width;
@@ -302,22 +315,22 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
             canvas.setPixel(x, y, Pixel4{value});
         }
     });
-    
+
     // High-performance batch drawing functions to reduce embind overhead
-    function("drawPixelsBatch", +[](Canvas4<128, 128>& canvas, val jsPixelArray) -> void {
+    function("drawPixelsBatch", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, val jsPixelArray) -> void {
         auto length = jsPixelArray["length"].as<unsigned>();
         // Expect array of [x, y, color, x, y, color, ...]
         for (unsigned i = 0; i + 2 < length; i += 3) {
             int x = jsPixelArray[i].as<int>();
             int y = jsPixelArray[i + 1].as<int>();
             uint8_t color = jsPixelArray[i + 2].as<uint8_t>();
-            if (x >= 0 && x < 128 && y >= 0 && y < 128) {
+            if (x >= 0 && x < ENJIN2_CANVAS_WIDTH && y >= 0 && y < ENJIN2_CANVAS_HEIGHT) {
                 canvas.setPixel(x, y, Pixel4{color});
             }
         }
     });
-    
-    function("drawLinesBatch", +[](Canvas4<128, 128>& canvas, val jsLineArray) -> void {
+
+    function("drawLinesBatch", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, val jsLineArray) -> void {
         auto length = jsLineArray["length"].as<unsigned>();
         // Expect array of [x1, y1, x2, y2, color, x1, y1, x2, y2, color, ...]
         for (unsigned i = 0; i + 4 < length; i += 5) {
@@ -326,17 +339,17 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
             int x2 = jsLineArray[i + 2].as<int>();
             int y2 = jsLineArray[i + 3].as<int>();
             uint8_t color = jsLineArray[i + 4].as<uint8_t>();
-            
+
             // Simple line drawing (Bresenham's algorithm)
             int dx = abs(x2 - x1);
             int dy = abs(y2 - y1);
             int sx = x1 < x2 ? 1 : -1;
             int sy = y1 < y2 ? 1 : -1;
             int err = dx - dy;
-            
+
             int x = x1, y = y1;
             while (true) {
-                if (x >= 0 && x < 128 && y >= 0 && y < 128) {
+                if (x >= 0 && x < ENJIN2_CANVAS_WIDTH && y >= 0 && y < ENJIN2_CANVAS_HEIGHT) {
                     canvas.setPixel(x, y, Pixel4{color});
                 }
                 if (x == x2 && y == y2) break;
@@ -346,8 +359,8 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
             }
         }
     });
-    
-    function("fillRectsBatch", +[](Canvas4<128, 128>& canvas, val jsRectArray) -> void {
+
+    function("fillRectsBatch", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas, val jsRectArray) -> void {
         auto length = jsRectArray["length"].as<unsigned>();
         // Expect array of [x, y, w, h, color, x, y, w, h, color, ...]
         for (unsigned i = 0; i + 4 < length; i += 5) {
@@ -356,9 +369,9 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
             int w = jsRectArray[i + 2].as<int>();
             int h = jsRectArray[i + 3].as<int>();
             uint8_t color = jsRectArray[i + 4].as<uint8_t>();
-            
-            for (int py = y; py < y + h && py < 128; py++) {
-                for (int px = x; px < x + w && px < 128; px++) {
+
+            for (int py = y; py < y + h && py < ENJIN2_CANVAS_HEIGHT; py++) {
+                for (int px = x; px < x + w && px < ENJIN2_CANVAS_WIDTH; px++) {
                     if (px >= 0 && py >= 0) {
                         canvas.setPixel(px, py, Pixel4{color});
                     }
@@ -391,11 +404,11 @@ end
 -- These functions are automatically registered by the C++ bindings
 
 function getWidth()
-    return 128  -- Default for now, will be overridden by actual canvas
+    return )" + std::to_string(ENJIN2_CANVAS_WIDTH) + R"(
 end
 
 function getHeight()
-    return 128  -- Default for now, will be overridden by actual canvas
+    return )" + std::to_string(ENJIN2_CANVAS_HEIGHT) + R"(
 end
 
 -- Note: clear, setPixel, getPixel, etc. should be registered directly by C++ bindings
@@ -406,7 +419,7 @@ function clear(color)
 end
 
 function setPixel(x, y, color)
-    -- This should be overridden by C++ binding  
+    -- This should be overridden by C++ binding
     print("Warning: setPixel() not bound to C++")
 end
 

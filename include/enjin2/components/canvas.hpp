@@ -34,7 +34,7 @@ namespace enjin2
          * @param width Canvas width in pixels
          * @param height Canvas height in pixels
          */
-        C_Canvas(Object *owner, uint8_t width, uint8_t height);
+        C_Canvas(Object *owner, uint16_t width, uint16_t height);
 
         /**
          * @brief Destructor
@@ -81,13 +81,13 @@ namespace enjin2
          * @brief Get canvas width
          * @return Width in pixels
          */
-        uint8_t getWidth() const { return canvas_width; }
+        uint16_t getWidth() const { return canvas_width; }
 
         /**
          * @brief Get canvas height
          * @return Height in pixels
          */
-        uint8_t getHeight() const { return canvas_height; }
+        uint16_t getHeight() const { return canvas_height; }
 
         /**
          * @brief Set matte color (transparent color that won't be drawn)
@@ -103,8 +103,8 @@ namespace enjin2
 
     private:
         std::unique_ptr<ICanvas<uint8_t>> internal_canvas; ///< Internal canvas for drawing
-        uint8_t canvas_width;                              ///< Canvas width
-        uint8_t canvas_height;                             ///< Canvas height
+        uint16_t canvas_width;                             ///< Canvas width
+        uint16_t canvas_height;                            ///< Canvas height
         uint8_t matte_color = 16;                          ///< Matte color (transparent, default 16)
         C_Position *position;                              ///< Cached position component
 
@@ -113,7 +113,7 @@ namespace enjin2
          * @param width Canvas width
          * @param height Canvas height
          */
-        void createCanvas(uint8_t width, uint8_t height);
+        void createCanvas(uint16_t width, uint16_t height);
 
         /**
          * @brief Apply blend mode when drawing to target canvas (deferred — ENG-01)

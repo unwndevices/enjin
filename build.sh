@@ -59,6 +59,8 @@ build_sdl3() {
         -DENJIN2_BUILD_TESTS=OFF \
         -DENJIN2_BUILD_EXAMPLES=OFF \
         -DCMAKE_BUILD_TYPE=Release \
+        -DENJIN2_CANVAS_WIDTH="${ENJIN2_CANVAS_WIDTH:-128}" \
+        -DENJIN2_CANVAS_HEIGHT="${ENJIN2_CANVAS_HEIGHT:-128}" \
         "$SCRIPT_DIR"
     cmake --build "$OUT" --target enjin2_sdl -j"$(nproc)"
     echo ""
@@ -79,6 +81,8 @@ build_wasm() {
         -DENJIN2_BUILD_TESTS=OFF \
         -DENJIN2_BUILD_EXAMPLES=OFF \
         -DCMAKE_BUILD_TYPE=Release \
+        -DENJIN2_CANVAS_WIDTH="${ENJIN2_CANVAS_WIDTH:-128}" \
+        -DENJIN2_CANVAS_HEIGHT="${ENJIN2_CANVAS_HEIGHT:-128}" \
         "$SCRIPT_DIR"
     emmake make -j"$(nproc)" enjin2_wasm
     echo ""

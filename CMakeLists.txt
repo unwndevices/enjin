@@ -35,6 +35,10 @@ option(ENJIN2_BUILD_LUA "Build Lua bindings" ON)
 option(ENJIN2_BUILD_WASM "Build for WebAssembly" OFF)
 option(ENJIN2_USE_SIMD "Use SIMD optimizations" ON)
 
+# Configurable canvas dimensions (must be even for 4-bit packing)
+set(ENJIN2_CANVAS_WIDTH 128 CACHE STRING "Canvas width in pixels (must be even)")
+set(ENJIN2_CANVAS_HEIGHT 128 CACHE STRING "Canvas height in pixels")
+
 # -- Static analysis (clang-tidy) -----------------------------------------
 # Usage: cmake -B build -DCLANG_TIDY=ON && cmake --build build --target lint
 option(CLANG_TIDY "Enable clang-tidy lint target (runs clang-tidy on all src/*.cpp)" OFF)
@@ -265,6 +269,8 @@ if(ENJIN2_BUILD_WASM)
     # Lua include dirs are propagated via enjin2_lua -> LUA_INCLUDE_DIRS (PUBLIC on lua51_wasm or luajit_embedded)
     target_compile_definitions(enjin2_wasm PRIVATE
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
+        ENJIN2_CANVAS_WIDTH=${ENJIN2_CANVAS_WIDTH}
+        ENJIN2_CANVAS_HEIGHT=${ENJIN2_CANVAS_HEIGHT}
     )
     target_link_libraries(enjin2_wasm PRIVATE
         enjin2_core
@@ -344,6 +350,8 @@ if(ENJIN2_BUILD_SDL)
     )
     target_compile_definitions(enjin2_sdl PRIVATE
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
+        ENJIN2_CANVAS_WIDTH=${ENJIN2_CANVAS_WIDTH}
+        ENJIN2_CANVAS_HEIGHT=${ENJIN2_CANVAS_HEIGHT}
     )
     target_compile_options(enjin2_sdl PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Woverride>)
 endif()

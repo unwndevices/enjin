@@ -1,6 +1,6 @@
 /**
  * TypeScript definitions for enjin2 WebAssembly module
- * 
+ *
  * These definitions allow TypeScript to understand the API exposed
  * by the enjin2 WebAssembly module's Emscripten bindings.
  */
@@ -51,7 +51,7 @@ export interface LuaScriptSystem {
   getMemoryUsage(): number;
 }
 
-export interface Canvas4_128x128 {
+export interface Canvas4 {
   clear(color: number): void;
   setPixel(x: number, y: number, color: number): void;
   getPixel(x: number, y: number): number;
@@ -68,18 +68,29 @@ export interface Enjin2Module extends EmscriptenModule {
   LuaEngine: new() => LuaEngine;
   LuaBindings: new(engine: LuaEngine) => LuaBindings;
   LuaScriptSystem: new() => LuaScriptSystem;
-  Canvas4_128x128: new() => Canvas4_128x128;
+  Canvas4: new() => Canvas4;
   Canvas4_64x32: new() => Canvas4_64x32;
-  
+
   // Factory functions
-  createLuaCanvas128(): LuaCanvas;
+  createLuaCanvas(): LuaCanvas;
   createLuaCanvas64x32(): LuaCanvas;
-  
+
+  // Canvas dimension queries
+  getCanvasWidth(): number;
+  getCanvasHeight(): number;
+
   // Data access helpers
-  getCanvasData128(canvas: Canvas4_128x128): Uint8Array;
+  getCanvasData(canvas: Canvas4): Uint8Array;
   getCanvasData64x32(canvas: Canvas4_64x32): Uint8Array;
-  setCanvasData128(canvas: Canvas4_128x128, data: Uint8Array): void;
+  setCanvasData(canvas: Canvas4, data: Uint8Array): void;
   setCanvasData64x32(canvas: Canvas4_64x32, data: Uint8Array): void;
+
+  // Fast drawing operations
+  fastFillRect(canvas: Canvas4, x: number, y: number, w: number, h: number, color: number): void;
+  fastDrawLine(canvas: Canvas4, x1: number, y1: number, x2: number, y2: number, color: number): void;
+  drawPixelsBatch(canvas: Canvas4, pixels: number[]): void;
+  drawLinesBatch(canvas: Canvas4, lines: number[]): void;
+  fillRectsBatch(canvas: Canvas4, rects: number[]): void;
 
   // Palette
   getPaletteRGB(): Uint8Array;

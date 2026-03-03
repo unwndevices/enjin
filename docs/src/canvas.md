@@ -12,6 +12,38 @@ Canvas provides drawing operations for graphics rendering.
 
 `Canvas4<T_WIDTH, T_HEIGHT>` - 4-bit packed canvas for memory efficiency.
 
+## Configuring Canvas Dimensions
+
+The WASM and SDL build targets use a configurable canvas size controlled by two environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `ENJIN2_CANVAS_WIDTH` | `128` | Canvas width in pixels (must be even) |
+| `ENJIN2_CANVAS_HEIGHT` | `128` | Canvas height in pixels |
+
+Set them before building:
+
+```bash
+# 320x240 WASM build
+ENJIN2_CANVAS_WIDTH=320 ENJIN2_CANVAS_HEIGHT=240 ./build.sh --target wasm
+
+# 320x240 SDL build
+ENJIN2_CANVAS_WIDTH=320 ENJIN2_CANVAS_HEIGHT=240 ./build.sh --target sdl3
+```
+
+Or pass directly to CMake:
+
+```bash
+cmake -B build -DENJIN2_CANVAS_WIDTH=320 -DENJIN2_CANVAS_HEIGHT=240 ...
+```
+
+In JavaScript, query the configured size at runtime:
+
+```js
+const width = module.getCanvasWidth();   // e.g. 320
+const height = module.getCanvasHeight(); // e.g. 240
+```
+
 ## Creating a Canvas
 
 ```cpp
