@@ -19,6 +19,19 @@
 #include <cstdio>
 #include <cstring>
 
+// lua_isyieldable compat guard: available in Lua 5.3+ and LuaJIT 2.1+
+// For Lua 5.1 (used in WASM/ESP32 builds), provide a fallback.
+#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 503
+    #ifndef lua_isyieldable
+    static inline int enjin_lua_isyieldable_tween(lua_State* L) {
+        int ismain = lua_pushthread(L);
+        lua_pop(L, 1);
+        return !ismain;
+    }
+    #define lua_isyieldable(L) enjin_lua_isyieldable_tween(L)
+    #endif
+#endif
+
 namespace enjin2 {
 
 // ── Private helper: clear a single tween slot and unref target + done_cb ──────

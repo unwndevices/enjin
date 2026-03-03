@@ -273,7 +273,9 @@ bool LuaStore::saveToFile(const char* path) const {
     return out.good();
 }
 
-// Minimal JSON reader — whitespace-tolerant, handles our restricted value types
+#endif  // desktop-only saveToFile / writeJsonEscaped / writeSlotValue
+
+// Minimal JSON reader — shared by all platforms (desktop, WASM, ESP32)
 static void skipWhitespace(const char*& p) {
     while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') ++p;
 }
@@ -369,6 +371,8 @@ static bool readJsonValue(const char*& p, LuaStore::StoreSlot& slot) {
     }
     return false;
 }
+
+#if !defined(ESP32) && !defined(__EMSCRIPTEN__)
 
 bool LuaStore::loadFromFile(const char* path) {
     std::ifstream in(path);
