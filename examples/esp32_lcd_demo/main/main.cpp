@@ -238,7 +238,7 @@ extern "C" void app_main() {
     // =========================================================================
     // Graphics pipeline setup
     // =========================================================================
-    enjin2::LuaScriptSystem lua;
+    static enjin2::LuaScriptSystem lua;
     if (!lua.initialize()) {
         ESP_LOGE(TAG, "Failed to initialize Lua script system");
         esp_vfs_spiffs_unregister("storage");
