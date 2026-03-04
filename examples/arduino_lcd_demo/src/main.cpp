@@ -102,32 +102,24 @@ static void IRAM_ATTR expand_strip(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
 }
 
 /**
- * @brief Flush the composited frame to LCD using strip-pipelined DMA
+ * @brief Flush the composited frame to LCD using strip-based rendering
  *
- * Uses TFT_eSPI's DMA support. Two internal DRAM buffers alternate:
- * expand strip N+1 while DMA sends strip N.
+ * Expands each strip from Canvas4 (PSRAM) into an internal DRAM buffer,
+ * then pushes via SPI. Single buffer is sufficient without DMA overlap.
  */
 static void flush_frame_strips(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
                                 uint16_t* strip_buf[2]) {
-    int cur = 0;
     tft.startWrite();
     for (int s = 0; s < STRIP_COUNT; s++) {
         int y = s * STRIP_H;
 
         // Expand this strip: PSRAM canvas -> internal DRAM buffer
-        expand_strip(canvas, y, strip_buf[cur]);
+        expand_strip(canvas, y, strip_buf[0]);
 
-        // Wait for previous DMA to finish before reusing the buffer
-        tft.dmaWait();
-
-        // Set address window and push pixels via DMA
+        // Set address window and push pixels
         tft.setAddrWindow(0, y, LCD_W, STRIP_H);
-        tft.pushPixelsDMA(strip_buf[cur], LCD_W * STRIP_H);
-
-        cur ^= 1;
+        tft.pushPixels(strip_buf[0], LCD_W * STRIP_H);
     }
-    // Wait for final strip DMA to complete
-    tft.dmaWait();
     tft.endWrite();
 }
 
@@ -161,7 +153,6 @@ void setup() {
     tft.init();
     tft.setRotation(1);  // Landscape 320x240
     tft.fillScreen(TFT_BLACK);
-    tft.initDMA();
     // Backlight is handled by TFT_eSPI via TFT_BL pin define
     Serial.printf("ILI9341 initialized: %dx%d landscape\n", LCD_W, LCD_H);
 
@@ -244,7 +235,6 @@ void loop() {
         // Demo complete — clean shutdown (once)
         if (frame_number == TOTAL_FRAMES) {
             Serial.println("Demo complete — shutting down");
-            tft.dmaWait();
 
             if (g_lua) {
                 g_lua->shutdown();

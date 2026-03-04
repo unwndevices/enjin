@@ -122,7 +122,11 @@
 /*
 @@ LUA_32BITS enables Lua with 32-bit integers and 32-bit floats.
 */
+#if defined(ESP32) || defined(ESP_PLATFORM)
+#define LUA_32BITS	1
+#elif !defined(LUA_32BITS)
 #define LUA_32BITS	0
+#endif
 
 
 /*

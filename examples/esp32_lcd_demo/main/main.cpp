@@ -6,12 +6,13 @@
  * Display: ILI9341 320x240 SPI LCD
  *
  * Rendering pipeline (per frame):
- *   Lua update(dt) → LayerCompositor::composite() → strip expand+DMA → LCD
+ *   Lua update(dt) → fused composite+expand+DMA per strip → LCD
  *
  * Uses strip-based DMA pipelining with internal DRAM buffers (like LVGL):
- *   - Two small strip buffers in DMA-capable internal SRAM
- *   - Expand strip N to DRAM, DMA strip N to LCD, overlap with strip N+1
- *   - Avoids PSRAM DMA (which falls back to CPU-polling SPI transfers)
+ *   - Two strip buffers in DMA-capable internal SRAM (double-buffered)
+ *   - Composite + expand strip N to DRAM while DMA sends strip N-1
+ *   - Fused pass eliminates PSRAM output buffer round-trip
+ *   - 80MHz SPI, 40-line strips, pair LUT for two-pixel-at-a-time conversion
  */
 
 #include <cstdio>
@@ -52,10 +53,10 @@ static constexpr int        PIN_LCD_RST  = -1;  // No reset pin
 static constexpr uint16_t LCD_W = 320;
 static constexpr uint16_t LCD_H = 240;
 
-// --- Strip-based DMA: 20-line strips, 12 strips per frame ---
-static constexpr int STRIP_H = 20;                              // Lines per strip
-static constexpr int STRIP_COUNT = LCD_H / STRIP_H;             // 12 strips
-static constexpr size_t STRIP_BYTES = LCD_W * STRIP_H * 2;      // 12,800 bytes per strip
+// --- Strip-based DMA: 40-line strips, 6 strips per frame ---
+static constexpr int STRIP_H = 40;                              // Lines per strip
+static constexpr int STRIP_COUNT = LCD_H / STRIP_H;             // 6 strips
+static constexpr size_t STRIP_BYTES = LCD_W * STRIP_H * 2;      // 25,600 bytes per strip
 static_assert(LCD_H % STRIP_H == 0, "LCD_H must be divisible by STRIP_H");
 
 // --- Frame control ---
@@ -96,6 +97,7 @@ static void psram_delete(T* ptr) {
  * @brief Pre-computed palette → RGB565 big-endian lookup table (16 entries)
  */
 static uint16_t s_rgb565_lut[16];
+static uint32_t s_pair_lut[256];  // packed byte → two RGB565 pixels (even|odd) as uint32_t
 
 static void build_rgb565_lut() {
     for (int i = 0; i < 16; i++) {
@@ -107,47 +109,78 @@ static void build_rgb565_lut() {
             s_rgb565_lut[i] = __builtin_bswap16(rgb565);
         }
     }
+    // Build pair LUT: maps each packed byte to two RGB565 pixels in one uint32_t.
+    // Low nibble (bits 3:0) = even-x pixel → low 16 bits (little-endian).
+    // High nibble (bits 7:4) = odd-x pixel → high 16 bits.
+    for (int b = 0; b < 256; b++) {
+        uint16_t even_px = s_rgb565_lut[b & 0x0F];
+        uint16_t odd_px  = s_rgb565_lut[(b >> 4) & 0x0F];
+        s_pair_lut[b] = static_cast<uint32_t>(odd_px) << 16 | even_px;
+    }
 }
 
 /**
- * @brief Expand one horizontal strip of Canvas4 → RGB565 into an internal DRAM buffer
+ * @brief Composite + expand one strip directly from layer PSRAM → DRAM RGB565
  *
- * Reads from PSRAM (compositor output), writes to internal DRAM (strip buffer).
- * Uses pre-computed LUT for zero-branch conversion.
+ * Merges all visible layers and converts to RGB565 in a single pass per packed byte,
+ * eliminating the intermediate PSRAM output buffer round-trip (~76.8KB saved per frame).
+ * Uses the pair LUT for two-pixel-at-a-time conversion.
  */
-static void IRAM_ATTR expand_strip(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
-                                   int y_start, uint16_t* out) {
-    const enjin2::PackedPixel4* buf = canvas.getBuffer();
+static void IRAM_ATTR composite_expand_strip(const Compositor& comp,
+                                             int y_start, uint16_t* out) {
     static constexpr int ROW_BYTES = LCD_W / 2;  // 160 packed bytes per row
 
     for (int row = 0; row < STRIP_H; row++) {
-        const enjin2::PackedPixel4* src = buf + (y_start + row) * ROW_BYTES;
-        uint16_t* dst = out + row * LCD_W;
+        const int buf_offset = (y_start + row) * ROW_BYTES;
+        uint32_t* dst32 = reinterpret_cast<uint32_t*>(out + row * LCD_W);
+
+        // Cache layer buffer pointers for this row
+        const uint8_t* layer_rows[enjin2::ENJIN_LAYER_COUNT];
+        for (uint8_t l = 0; l < enjin2::ENJIN_LAYER_COUNT; l++) {
+            layer_rows[l] = reinterpret_cast<const uint8_t*>(
+                comp.layers[l].getBuffer()) + buf_offset;
+        }
 
         for (int i = 0; i < ROW_BYTES; i++) {
-            uint8_t packed = src[i].getByte();
-            dst[i * 2]     = s_rgb565_lut[packed & 0x0F];
-            dst[i * 2 + 1] = s_rgb565_lut[(packed >> 4) & 0x0F];
+            // Seed from layer 0 (background)
+            uint8_t composited = comp.visible[0] ? layer_rows[0][i] : 0x00;
+
+            // Painter's order: merge layers 1..N-1
+            for (uint8_t l = 1; l < enjin2::ENJIN_LAYER_COUNT; l++) {
+                if (!comp.visible[l]) continue;
+                uint8_t src_byte = layer_rows[l][i];
+
+                uint8_t src_low = src_byte & 0x0F;
+                if (src_low != 0x0F)
+                    composited = (composited & 0xF0) | src_low;
+
+                uint8_t src_high = src_byte & 0xF0;
+                if (src_high != 0xF0)
+                    composited = (composited & 0x0F) | src_high;
+            }
+
+            // Convert composited packed byte → two RGB565 pixels via pair LUT
+            dst32[i] = s_pair_lut[composited];
         }
     }
 }
 
 /**
- * @brief Flush the composited frame to LCD using strip-pipelined DMA
+ * @brief Flush frame to LCD: composite + expand + strip-pipelined DMA
  *
- * Splits the 320×240 frame into 12 strips of 20 lines each.
- * Uses two internal DRAM buffers: while DMA sends strip N, the CPU
- * expands strip N+1 into the other buffer (true overlap).
+ * Splits the 320×240 frame into strips. For each strip, composites all layers
+ * and expands to RGB565 directly into a DRAM buffer, then DMA-sends it to the LCD.
+ * Uses two buffers for overlap: CPU processes strip N+1 while DMA sends strip N.
  */
-static void flush_frame_strips(esp_lcd_panel_handle_t panel,
-                                const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
-                                uint16_t* strip_buf[2]) {
+static void flush_frame_composited(esp_lcd_panel_handle_t panel,
+                                   const Compositor& comp,
+                                   uint16_t* strip_buf[2]) {
     int cur = 0;
     for (int s = 0; s < STRIP_COUNT; s++) {
         int y = s * STRIP_H;
 
-        // Expand this strip: PSRAM canvas → internal DRAM buffer
-        expand_strip(canvas, y, strip_buf[cur]);
+        // Composite + expand this strip: PSRAM layers → internal DRAM buffer
+        composite_expand_strip(comp, y, strip_buf[cur]);
 
         // Wait for previous strip's DMA to finish
         xSemaphoreTake(s_dma_done_sem, portMAX_DELAY);
@@ -230,7 +263,7 @@ extern "C" void app_main() {
     io_config.cs_gpio_num = PIN_LCD_CS;
     io_config.dc_gpio_num = PIN_LCD_DC;
     io_config.spi_mode = 0;
-    io_config.pclk_hz = 40 * 1000 * 1000;  // 40MHz SPI clock
+    io_config.pclk_hz = 80 * 1000 * 1000;  // 80MHz SPI clock (ILI9341 supports 80MHz writes)
     io_config.trans_queue_depth = 10;
     io_config.on_color_trans_done = on_color_trans_done;
     io_config.lcd_cmd_bits = 8;
@@ -241,7 +274,7 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "LCD panel IO init failed: %s", esp_err_to_name(ret));
         return;
     }
-    ESP_LOGI(TAG, "LCD panel IO created (40MHz, CS=%d, DC=%d)", PIN_LCD_CS, PIN_LCD_DC);
+    ESP_LOGI(TAG, "LCD panel IO created (80MHz, CS=%d, DC=%d)", PIN_LCD_CS, PIN_LCD_DC);
 
     // LCD panel (ILI9341)
     esp_lcd_panel_handle_t panel = nullptr;
@@ -366,11 +399,8 @@ extern "C" void app_main() {
         // 2. Lua update — draws to layer canvases via bindings
         lua->callFunction("update", dt);
 
-        // 3. Composite all layers → output
-        g_comp->composite();
-
-        // 4. Strip-pipelined DMA: expand + send 12 strips with overlap
-        flush_frame_strips(panel, g_comp->output, strip_buf);
+        // 3. Composite + expand + DMA in one fused strip pipeline
+        flush_frame_composited(panel, *g_comp, strip_buf);
 
         // FPS tracking
         fps_accumulator += elapsed_us;

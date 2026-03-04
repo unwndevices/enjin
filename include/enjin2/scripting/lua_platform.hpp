@@ -21,6 +21,14 @@
     }
 #elif defined(ESP32)
     // Lua 5.4.8 for ESP32 (built from source via FetchContent)
+    // Xtensa newlib <limits.h> may not expose LLONG_MAX in C++ mode;
+    // Lua 5.4 luaconf.h uses it as a proxy for long long support.
+    #include <climits>
+    #ifndef LLONG_MAX
+    #define LLONG_MAX __LONG_LONG_MAX__
+    #define LLONG_MIN (-LLONG_MAX - 1LL)
+    #define ULLONG_MAX (2ULL * LLONG_MAX + 1ULL)
+    #endif
     extern "C" {
         #include "lua.h"
         #include "lauxlib.h"
