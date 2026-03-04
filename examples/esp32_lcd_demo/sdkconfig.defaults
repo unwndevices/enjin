@@ -19,3 +19,6 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 
 # Stack: 8KB for main task (Lua needs headroom)
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# 1000Hz tick rate so vTaskDelay(1) = 1ms instead of 10ms
+CONFIG_FREERTOS_HZ=1000

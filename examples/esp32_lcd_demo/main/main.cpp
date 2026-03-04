@@ -192,7 +192,7 @@ extern "C" void app_main() {
     io_config.cs_gpio_num = PIN_LCD_CS;
     io_config.dc_gpio_num = PIN_LCD_DC;
     io_config.spi_mode = 0;
-    io_config.pclk_hz = 40 * 1000 * 1000;  // 40MHz SPI clock
+    io_config.pclk_hz = 80 * 1000 * 1000;  // 80MHz SPI clock
     io_config.trans_queue_depth = 10;
     io_config.on_color_trans_done = on_color_trans_done;
     io_config.lcd_cmd_bits = 8;
@@ -203,7 +203,7 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "LCD panel IO init failed: %s", esp_err_to_name(ret));
         return;
     }
-    ESP_LOGI(TAG, "LCD panel IO created (40MHz, CS=%d, DC=%d)", PIN_LCD_CS, PIN_LCD_DC);
+    ESP_LOGI(TAG, "LCD panel IO created (80MHz, CS=%d, DC=%d)", PIN_LCD_CS, PIN_LCD_DC);
 
     // LCD panel (ILI9341)
     esp_lcd_panel_handle_t panel = nullptr;
