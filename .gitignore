@@ -64,3 +64,5 @@ build_*/
 
 # CMake generated
 compile_commands.json
+/examples/esp32_sdcard_demo/build
+/examples/esp32_spiffs_demo/build
