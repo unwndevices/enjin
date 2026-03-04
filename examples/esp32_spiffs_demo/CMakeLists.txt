@@ -32,7 +32,7 @@ if(TARGET enjin2_lua)
     )
 endif()
 
-# lua51_esp32 uses longjmp which ESP-IDF wraps via FreeRTOS (__wrap_longjmp).
-if(TARGET lua51_esp32)
-    target_link_libraries(lua51_esp32 PRIVATE idf::freertos)
+# lua54_esp32 uses longjmp which ESP-IDF wraps via FreeRTOS (__wrap_longjmp).
+if(TARGET lua54_esp32)
+    target_link_libraries(lua54_esp32 PRIVATE idf::freertos)
 endif()
