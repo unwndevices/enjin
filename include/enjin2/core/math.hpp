@@ -18,6 +18,14 @@ namespace enjin2 {
  */
 namespace math {
 
+    // Arduino.h defines PI/TWO_PI as macros — undefine to avoid clash
+    #ifdef PI
+    #undef PI
+    #endif
+    #ifdef TWO_PI
+    #undef TWO_PI
+    #endif
+
     constexpr float PI = 3.14159265358979323846f;  ///< Pi constant
     constexpr float TWO_PI = 2.0f * PI;              ///< 2*Pi constant
 
