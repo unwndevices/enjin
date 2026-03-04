@@ -2,6 +2,8 @@
 #include "nvs_flash.h"
 #include <cstring>
 
+extern "C" {
+
 // Write the JSON blob to NVS under namespace "enjin2", key "store".
 // len_including_null must include the null terminator.
 // Returns true if nvs_set_blob AND nvs_commit both succeed.
@@ -33,4 +35,6 @@ bool esp32_storage_read(char* out, size_t cap) {
     nvs_close(handle);
     return (err == ESP_OK);
 }
+
+} // extern "C"
 #endif
