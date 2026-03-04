@@ -87,19 +87,27 @@ static void psram_delete(T* ptr) {
 }
 
 /**
- * @brief Convert a 4-bit palette index to big-endian RGB565 for SPI transfer
+ * @brief Pre-computed palette → RGB565 big-endian lookup table (16 entries)
+ *
+ * Built once before the frame loop. Eliminates per-pixel function calls
+ * to isTransparent() + resolve() + RGB→RGB565 conversion + byte swap.
  */
-static inline uint16_t palette_to_rgb565(uint8_t idx) {
-    if (enjin2::g_palette.isTransparent(idx)) {
-        return 0;  // Transparent → black
+static uint16_t s_rgb565_lut[16];
+
+static void build_rgb565_lut() {
+    for (int i = 0; i < 16; i++) {
+        if (enjin2::g_palette.isTransparent(i)) {
+            s_rgb565_lut[i] = 0;
+        } else {
+            enjin2::RGB c = enjin2::g_palette.resolve(i);
+            uint16_t rgb565 = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
+            s_rgb565_lut[i] = __builtin_bswap16(rgb565);
+        }
     }
-    enjin2::RGB c = enjin2::g_palette.resolve(idx);
-    uint16_t rgb565 = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
-    return __builtin_bswap16(rgb565);  // Big-endian for SPI
 }
 
 /**
- * @brief Expand packed Canvas4 output to RGB565 framebuffer
+ * @brief Expand packed Canvas4 output to RGB565 framebuffer using LUT
  */
 static void expand_canvas_to_rgb565(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
                                     uint16_t* out) {
@@ -108,10 +116,8 @@ static void expand_canvas_to_rgb565(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
 
     for (size_t i = 0; i < buf_size; i++) {
         uint8_t packed = buf[i].getByte();
-        uint8_t lo = packed & 0x0F;         // Even pixel (low nibble)
-        uint8_t hi = (packed >> 4) & 0x0F;  // Odd pixel (high nibble)
-        out[i * 2]     = palette_to_rgb565(lo);
-        out[i * 2 + 1] = palette_to_rgb565(hi);
+        out[i * 2]     = s_rgb565_lut[packed & 0x0F];
+        out[i * 2 + 1] = s_rgb565_lut[(packed >> 4) & 0x0F];
     }
 }
 
@@ -295,6 +301,9 @@ extern "C" void app_main() {
     }
     ESP_LOGI(TAG, "demo.lua loaded from SPIFFS");
 
+    // Build palette→RGB565 LUT (avoids per-pixel function calls in hot loop)
+    build_rgb565_lut();
+
     // =========================================================================
     // Frame loop
     // =========================================================================
@@ -341,6 +350,9 @@ extern "C" void app_main() {
             fps_accumulator = 0;
             fps_frame_count = 0;
         }
+
+        // Yield to IDLE task so watchdog gets fed
+        vTaskDelay(1);
     }
 
     // =========================================================================
