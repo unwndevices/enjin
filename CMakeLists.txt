@@ -121,42 +121,43 @@ target_link_libraries(enjin2_ui PRIVATE enjin2_graphics)
 if(ENJIN2_BUILD_LUA)
     if(EMSCRIPTEN)
         # LuaJIT does not support WebAssembly (no WASM architecture backend).
-        # Use standard Lua 5.1.5 (LuaJIT API-compatible, pure C) for the WASM target.
-        message(STATUS "Building Lua 5.1.5 from source for WebAssembly (LuaJIT is x86/ARM only)")
+        # Building Lua 5.4.8 from source for WebAssembly (LuaJIT is x86/ARM only)
+        message(STATUS "Building Lua 5.4.8 from source for WebAssembly (LuaJIT is x86/ARM only)")
         include(FetchContent)
         FetchContent_Declare(
-            lua51
-            URL https://www.lua.org/ftp/lua-5.1.5.tar.gz
+            lua54
+            URL https://www.lua.org/ftp/lua-5.4.8.tar.gz
         )
-        FetchContent_MakeAvailable(lua51)
+        FetchContent_MakeAvailable(lua54)
 
-        file(GLOB LUA51_SOURCES "${lua51_SOURCE_DIR}/src/l*.c")
+        file(GLOB LUA54_SOURCES "${lua54_SOURCE_DIR}/src/l*.c")
         # Exclude standalone interpreter (lua.c) and compiler (luac.c)
-        list(FILTER LUA51_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
+        list(FILTER LUA54_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
 
-        add_library(lua51_wasm STATIC ${LUA51_SOURCES})
-        target_include_directories(lua51_wasm PUBLIC ${lua51_SOURCE_DIR}/src)
+        add_library(lua54_wasm STATIC ${LUA54_SOURCES})
+        target_include_directories(lua54_wasm PUBLIC ${lua54_SOURCE_DIR}/src)
 
-        set(LUA_LIBRARIES lua51_wasm)
-        set(LUA_INCLUDE_DIRS ${lua51_SOURCE_DIR}/src)
+        set(LUA_LIBRARIES lua54_wasm)
+        set(LUA_INCLUDE_DIRS ${lua54_SOURCE_DIR}/src)
     elseif(ESP32)
-        # LuaJIT requires a native CPU architecture — use standard Lua 5.1.5 for ESP32 cross-compilation.
-        message(STATUS "Building Lua 5.1.5 from source for ESP32")
+        # LuaJIT requires a native CPU architecture — use standard Lua 5.4.8 for ESP32 cross-compilation.
+        # Building Lua 5.4.8 from source for ESP32
+        message(STATUS "Building Lua 5.4.8 from source for ESP32")
         include(FetchContent)
         FetchContent_Declare(
-            lua51
-            URL https://www.lua.org/ftp/lua-5.1.5.tar.gz
+            lua54
+            URL https://www.lua.org/ftp/lua-5.4.8.tar.gz
         )
-        FetchContent_MakeAvailable(lua51)
+        FetchContent_MakeAvailable(lua54)
 
-        file(GLOB LUA51_SOURCES "${lua51_SOURCE_DIR}/src/l*.c")
-        list(FILTER LUA51_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
+        file(GLOB LUA54_SOURCES "${lua54_SOURCE_DIR}/src/l*.c")
+        list(FILTER LUA54_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
 
-        add_library(lua51_esp32 STATIC ${LUA51_SOURCES})
-        target_include_directories(lua51_esp32 PUBLIC ${lua51_SOURCE_DIR}/src)
+        add_library(lua54_esp32 STATIC ${LUA54_SOURCES})
+        target_include_directories(lua54_esp32 PUBLIC ${lua54_SOURCE_DIR}/src)
 
-        set(LUA_LIBRARIES lua51_esp32)
-        set(LUA_INCLUDE_DIRS ${lua51_SOURCE_DIR}/src)
+        set(LUA_LIBRARIES lua54_esp32)
+        set(LUA_INCLUDE_DIRS ${lua54_SOURCE_DIR}/src)
     else()
         # Desktop platforms - use system Lua
         find_package(Lua QUIET)
@@ -167,7 +168,7 @@ if(ENJIN2_BUILD_LUA)
                 "Lua was requested (ENJIN2_BUILD_LUA=ON) but could not be found.\n"
                 "Install Lua from https://lua.org/ or set ENJIN2_BUILD_LUA=OFF to build without Lua support.\n"
                 "Package managers:\n"
-                "  Debian/Ubuntu: apt-get install liblua5.1-dev\n"
+                "  Debian/Ubuntu: apt-get install liblua5.4-dev\n"
                 "  macOS: brew install lua\n"
             )
         endif()
@@ -270,7 +271,7 @@ if(ENJIN2_BUILD_WASM)
         # executable so the linker sees the __em_js_* metadata.
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:src/scripting/wasm_storage.cpp>
     )
-    # Lua include dirs are propagated via enjin2_lua -> LUA_INCLUDE_DIRS (PUBLIC on lua51_wasm or luajit_embedded)
+    # Lua include dirs are propagated via enjin2_lua -> LUA_INCLUDE_DIRS (PUBLIC on lua54_wasm or luajit_embedded)
     target_compile_definitions(enjin2_wasm PRIVATE
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
         ENJIN2_CANVAS_WIDTH=${ENJIN2_CANVAS_WIDTH}
