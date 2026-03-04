@@ -17,21 +17,6 @@
 
 #include <cstdio>
 
-// lua_isyieldable compat guard: available in Lua 5.3+ and LuaJIT 2.1+
-// For older LuaJIT or Lua 5.1, lua_isyieldable may not exist.
-// We use a fallback that checks whether L is a coroutine thread (not the main thread).
-#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 503
-    #ifndef lua_isyieldable
-    // On LuaJIT 5.1: coroutines are yieldable, main thread is not.
-    // lua_pushthread returns 1 if L is the main thread, 0 otherwise.
-    static inline int enjin_lua_isyieldable(lua_State* L) {
-        int ismain = lua_pushthread(L);
-        lua_pop(L, 1);
-        return !ismain;
-    }
-    #define lua_isyieldable(L) enjin_lua_isyieldable(L)
-    #endif
-#endif
 
 namespace enjin2 {
 
@@ -200,16 +185,10 @@ void LuaBindings::tickCoroutines(float dt) {
             continue;
         }
 
-        // Resume coroutine — Lua 5.4 vs 5.1/LuaJIT API compat guard
-        int status;
-#if LUA_VERSION_NUM >= 504
+        // Resume coroutine — Lua 5.4 unconditional API
         int nres = 0;
-        status = lua_resume(co, L, 0, &nres);
+        int status = lua_resume(co, L, 0, &nres);
         if (nres > 0) lua_pop(co, nres);
-#else
-        status = lua_resume(co, 0);
-        if (lua_gettop(co) > 0) lua_settop(co, 0);
-#endif
 
         if (status == LUA_YIELD) {
             // Coroutine yielded — for time-based waits subtract this frame's dt

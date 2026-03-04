@@ -164,10 +164,7 @@ void LuaPlatform::openDesktopLibraries(lua_State* L) {
 
 #ifdef ESP32
 void LuaPlatform::openEmbeddedLibraries(lua_State* L) {
-    // Lua 5.1 (used on ESP32) does not have luaL_requiref or per-library open functions
-    // (coroutines are part of base in 5.1; luaL_requiref was added in 5.2).
-    // Open all standard libs — io/os/debug are not harmful on a constrained device
-    // and selective loading is not available in Lua 5.1.
+    // Open all standard Lua libraries; io/os/debug are restricted by configureSecurityRestrictions() below.
     luaL_openlibs(L);
 }
 
