@@ -6,7 +6,12 @@
  * Display: ILI9341 320x240 SPI LCD
  *
  * Rendering pipeline (per frame):
- *   Lua update(dt) → LayerCompositor::composite() → Canvas4→RGB565 → DMA to LCD
+ *   Lua update(dt) → LayerCompositor::composite() → strip expand+DMA → LCD
+ *
+ * Uses strip-based DMA pipelining with internal DRAM buffers (like LVGL):
+ *   - Two small strip buffers in DMA-capable internal SRAM
+ *   - Expand strip N to DRAM, DMA strip N to LCD, overlap with strip N+1
+ *   - Avoids PSRAM DMA (which falls back to CPU-polling SPI transfers)
  */
 
 #include <cstdio>
@@ -46,7 +51,12 @@ static constexpr int        PIN_LCD_RST  = -1;  // No reset pin
 // --- Display dimensions ---
 static constexpr uint16_t LCD_W = 320;
 static constexpr uint16_t LCD_H = 240;
-static constexpr size_t   LCD_BUF_SIZE = LCD_W * LCD_H * 2;  // RGB565 = 2 bytes/pixel
+
+// --- Strip-based DMA: 20-line strips, 12 strips per frame ---
+static constexpr int STRIP_H = 20;                              // Lines per strip
+static constexpr int STRIP_COUNT = LCD_H / STRIP_H;             // 12 strips
+static constexpr size_t STRIP_BYTES = LCD_W * STRIP_H * 2;      // 12,800 bytes per strip
+static_assert(LCD_H % STRIP_H == 0, "LCD_H must be divisible by STRIP_H");
 
 // --- Frame control ---
 static constexpr int TOTAL_FRAMES     = 300;
@@ -64,13 +74,9 @@ static bool IRAM_ATTR on_color_trans_done(esp_lcd_panel_io_handle_t panel_io,
 }
 
 // --- Large objects live in PSRAM (too big for DRAM) ---
-// LayerCompositor<320,240> ≈ 192KB, LuaScriptSystem ≈ 65KB
 using Compositor = enjin2::LayerCompositor<LCD_W, LCD_H>;
 static Compositor* g_comp = nullptr;
 
-/**
- * @brief Allocate an object in PSRAM via placement new
- */
 template <typename T, typename... Args>
 static T* psram_new(Args&&... args) {
     void* mem = heap_caps_malloc(sizeof(T), MALLOC_CAP_SPIRAM);
@@ -88,9 +94,6 @@ static void psram_delete(T* ptr) {
 
 /**
  * @brief Pre-computed palette → RGB565 big-endian lookup table (16 entries)
- *
- * Built once before the frame loop. Eliminates per-pixel function calls
- * to isTransparent() + resolve() + RGB→RGB565 conversion + byte swap.
  */
 static uint16_t s_rgb565_lut[16];
 
@@ -107,17 +110,52 @@ static void build_rgb565_lut() {
 }
 
 /**
- * @brief Expand packed Canvas4 output to RGB565 framebuffer using LUT
+ * @brief Expand one horizontal strip of Canvas4 → RGB565 into an internal DRAM buffer
+ *
+ * Reads from PSRAM (compositor output), writes to internal DRAM (strip buffer).
+ * Uses pre-computed LUT for zero-branch conversion.
  */
-static void expand_canvas_to_rgb565(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
-                                    uint16_t* out) {
+static void IRAM_ATTR expand_strip(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
+                                   int y_start, uint16_t* out) {
     const enjin2::PackedPixel4* buf = canvas.getBuffer();
-    const size_t buf_size = canvas.getBufferSize();
+    static constexpr int ROW_BYTES = LCD_W / 2;  // 160 packed bytes per row
 
-    for (size_t i = 0; i < buf_size; i++) {
-        uint8_t packed = buf[i].getByte();
-        out[i * 2]     = s_rgb565_lut[packed & 0x0F];
-        out[i * 2 + 1] = s_rgb565_lut[(packed >> 4) & 0x0F];
+    for (int row = 0; row < STRIP_H; row++) {
+        const enjin2::PackedPixel4* src = buf + (y_start + row) * ROW_BYTES;
+        uint16_t* dst = out + row * LCD_W;
+
+        for (int i = 0; i < ROW_BYTES; i++) {
+            uint8_t packed = src[i].getByte();
+            dst[i * 2]     = s_rgb565_lut[packed & 0x0F];
+            dst[i * 2 + 1] = s_rgb565_lut[(packed >> 4) & 0x0F];
+        }
+    }
+}
+
+/**
+ * @brief Flush the composited frame to LCD using strip-pipelined DMA
+ *
+ * Splits the 320×240 frame into 12 strips of 20 lines each.
+ * Uses two internal DRAM buffers: while DMA sends strip N, the CPU
+ * expands strip N+1 into the other buffer (true overlap).
+ */
+static void flush_frame_strips(esp_lcd_panel_handle_t panel,
+                                const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
+                                uint16_t* strip_buf[2]) {
+    int cur = 0;
+    for (int s = 0; s < STRIP_COUNT; s++) {
+        int y = s * STRIP_H;
+
+        // Expand this strip: PSRAM canvas → internal DRAM buffer
+        expand_strip(canvas, y, strip_buf[cur]);
+
+        // Wait for previous strip's DMA to finish
+        xSemaphoreTake(s_dma_done_sem, portMAX_DELAY);
+
+        // Start DMA of this strip from internal DRAM → SPI → LCD
+        esp_lcd_panel_draw_bitmap(panel, 0, y, LCD_W, y + STRIP_H, strip_buf[cur]);
+
+        cur ^= 1;
     }
 }
 
@@ -177,7 +215,7 @@ extern "C" void app_main() {
     buscfg.sclk_io_num = PIN_LCD_SCK;
     buscfg.quadwp_io_num = -1;
     buscfg.quadhd_io_num = -1;
-    buscfg.max_transfer_sz = LCD_BUF_SIZE;
+    buscfg.max_transfer_sz = STRIP_BYTES;  // Only need to fit one strip
 
     ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
     if (ret != ESP_OK) {
@@ -192,7 +230,7 @@ extern "C" void app_main() {
     io_config.cs_gpio_num = PIN_LCD_CS;
     io_config.dc_gpio_num = PIN_LCD_DC;
     io_config.spi_mode = 0;
-    io_config.pclk_hz = 80 * 1000 * 1000;  // 80MHz SPI clock
+    io_config.pclk_hz = 40 * 1000 * 1000;  // 40MHz SPI clock
     io_config.trans_queue_depth = 10;
     io_config.on_color_trans_done = on_color_trans_done;
     io_config.lcd_cmd_bits = 8;
@@ -203,7 +241,7 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "LCD panel IO init failed: %s", esp_err_to_name(ret));
         return;
     }
-    ESP_LOGI(TAG, "LCD panel IO created (80MHz, CS=%d, DC=%d)", PIN_LCD_CS, PIN_LCD_DC);
+    ESP_LOGI(TAG, "LCD panel IO created (40MHz, CS=%d, DC=%d)", PIN_LCD_CS, PIN_LCD_DC);
 
     // LCD panel (ILI9341)
     esp_lcd_panel_handle_t panel = nullptr;
@@ -226,27 +264,26 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "ILI9341 initialized: %dx%d landscape", LCD_W, LCD_H);
 
     // =========================================================================
-    // DMA double-buffer allocation (PSRAM)
+    // Strip DMA buffers — internal DRAM (true DMA-capable, not PSRAM)
     // =========================================================================
     s_dma_done_sem = xSemaphoreCreateBinary();
-    xSemaphoreGive(s_dma_done_sem);  // Start with "done" so first frame doesn't block
+    xSemaphoreGive(s_dma_done_sem);  // Start with "done" so first strip doesn't block
 
-    uint16_t* rgb565_buf[2];
-    rgb565_buf[0] = static_cast<uint16_t*>(
-        heap_caps_malloc(LCD_BUF_SIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA));
-    rgb565_buf[1] = static_cast<uint16_t*>(
-        heap_caps_malloc(LCD_BUF_SIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA));
+    uint16_t* strip_buf[2];
+    strip_buf[0] = static_cast<uint16_t*>(
+        heap_caps_malloc(STRIP_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
+    strip_buf[1] = static_cast<uint16_t*>(
+        heap_caps_malloc(STRIP_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
 
-    if (!rgb565_buf[0] || !rgb565_buf[1]) {
-        ESP_LOGE(TAG, "Failed to allocate RGB565 DMA buffers (%d bytes each)", LCD_BUF_SIZE);
+    if (!strip_buf[0] || !strip_buf[1]) {
+        ESP_LOGE(TAG, "Failed to allocate strip DMA buffers (%d bytes each)", STRIP_BYTES);
         return;
     }
-    memset(rgb565_buf[0], 0, LCD_BUF_SIZE);
-    memset(rgb565_buf[1], 0, LCD_BUF_SIZE);
-    ESP_LOGI(TAG, "DMA double buffers allocated (%d bytes each in PSRAM)", LCD_BUF_SIZE);
+    ESP_LOGI(TAG, "Strip DMA buffers allocated (%d bytes each in internal DRAM, %d lines/strip)",
+             STRIP_BYTES, STRIP_H);
 
     // =========================================================================
-    // Graphics pipeline setup (all large objects in PSRAM)
+    // Graphics pipeline setup (large objects in PSRAM)
     // =========================================================================
 
     // Compositor: 4 layers × 38KB + output = ~192KB → PSRAM
@@ -310,7 +347,6 @@ extern "C" void app_main() {
     int64_t last_time = esp_timer_get_time();
     int64_t fps_accumulator = 0;
     int fps_frame_count = 0;
-    int cur_buf = 0;
 
     ESP_LOGI(TAG, "Running %d frames...", TOTAL_FRAMES);
 
@@ -333,13 +369,8 @@ extern "C" void app_main() {
         // 3. Composite all layers → output
         g_comp->composite();
 
-        // 4. Expand composited Canvas4 → RGB565
-        expand_canvas_to_rgb565(g_comp->output, rgb565_buf[cur_buf]);
-
-        // 5. Wait for previous DMA to finish, then send new buffer
-        xSemaphoreTake(s_dma_done_sem, portMAX_DELAY);
-        esp_lcd_panel_draw_bitmap(panel, 0, 0, LCD_W, LCD_H, rgb565_buf[cur_buf]);
-        cur_buf ^= 1;
+        // 4. Strip-pipelined DMA: expand + send 12 strips with overlap
+        flush_frame_strips(panel, g_comp->output, strip_buf);
 
         // FPS tracking
         fps_accumulator += elapsed_us;
@@ -366,8 +397,8 @@ extern "C" void app_main() {
     lua->shutdown();
     psram_delete(lua);
     psram_delete(g_comp);
-    heap_caps_free(rgb565_buf[0]);
-    heap_caps_free(rgb565_buf[1]);
+    heap_caps_free(strip_buf[0]);
+    heap_caps_free(strip_buf[1]);
     vSemaphoreDelete(s_dma_done_sem);
 
     esp_vfs_spiffs_unregister("storage");

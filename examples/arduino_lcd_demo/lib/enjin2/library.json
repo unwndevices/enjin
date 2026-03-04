@@ -1,0 +1,20 @@
+{
+  "name": "enjin2",
+  "version": "1.0.0",
+  "description": "Enjin2 engine — Arduino LCD demo build",
+  "build": {
+    "includeDir": "../../../../include",
+    "srcDir": "../../../../src",
+    "srcFilter": [
+      "+<*>",
+      "-<bindings/>",
+      "-<platform/>",
+      "-<scripting/wasm_storage.cpp>",
+      "-<ui/widget.cpp>",
+      "-<ui/layout.cpp>"
+    ],
+    "flags": [
+      "-std=gnu++17"
+    ]
+  }
+}
