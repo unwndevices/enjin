@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <new>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -62,22 +63,28 @@ static bool IRAM_ATTR on_color_trans_done(esp_lcd_panel_io_handle_t panel_io,
     return high_task_woken == pdTRUE;
 }
 
-// --- Graphics pipeline globals ---
-static enjin2::LayerCompositor<LCD_W, LCD_H> g_compositor;
+// --- Large objects live in PSRAM (too big for DRAM) ---
+// LayerCompositor<320,240> ≈ 192KB, LuaScriptSystem ≈ 65KB
+using Compositor = enjin2::LayerCompositor<LCD_W, LCD_H>;
+static Compositor* g_comp = nullptr;
 
-static enjin2::LuaCanvas g_lua_layers[4] = {
-    enjin2::LuaCanvas(&g_compositor.layers[0]),
-    enjin2::LuaCanvas(&g_compositor.layers[1]),
-    enjin2::LuaCanvas(&g_compositor.layers[2]),
-    enjin2::LuaCanvas(&g_compositor.layers[3]),
-};
+/**
+ * @brief Allocate an object in PSRAM via placement new
+ */
+template <typename T, typename... Args>
+static T* psram_new(Args&&... args) {
+    void* mem = heap_caps_malloc(sizeof(T), MALLOC_CAP_SPIRAM);
+    if (!mem) return nullptr;
+    return new (mem) T(std::forward<Args>(args)...);
+}
 
-static enjin2::LuaCanvas* g_layer_ptrs[4] = {
-    &g_lua_layers[0],
-    &g_lua_layers[1],
-    &g_lua_layers[2],
-    &g_lua_layers[3],
-};
+template <typename T>
+static void psram_delete(T* ptr) {
+    if (ptr) {
+        ptr->~T();
+        heap_caps_free(ptr);
+    }
+}
 
 /**
  * @brief Convert a 4-bit palette index to big-endian RGB565 for SPI transfer
@@ -93,9 +100,6 @@ static inline uint16_t palette_to_rgb565(uint8_t idx) {
 
 /**
  * @brief Expand packed Canvas4 output to RGB565 framebuffer
- *
- * Reads packed 4-bit pixel pairs from the compositor output and converts
- * each to a 16-bit RGB565 value via palette lookup.
  */
 static void expand_canvas_to_rgb565(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
                                     uint16_t* out) {
@@ -236,25 +240,56 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "DMA double buffers allocated (%d bytes each in PSRAM)", LCD_BUF_SIZE);
 
     // =========================================================================
-    // Graphics pipeline setup
+    // Graphics pipeline setup (all large objects in PSRAM)
     // =========================================================================
-    static enjin2::LuaScriptSystem lua;
-    if (!lua.initialize()) {
+
+    // Compositor: 4 layers × 38KB + output = ~192KB → PSRAM
+    g_comp = psram_new<Compositor>();
+    if (!g_comp) {
+        ESP_LOGE(TAG, "Failed to allocate compositor in PSRAM");
+        return;
+    }
+    ESP_LOGI(TAG, "LayerCompositor allocated in PSRAM (%d bytes)", sizeof(Compositor));
+
+    // LuaCanvas wrappers (tiny, ok on stack)
+    enjin2::LuaCanvas lua_layers[4] = {
+        enjin2::LuaCanvas(&g_comp->layers[0]),
+        enjin2::LuaCanvas(&g_comp->layers[1]),
+        enjin2::LuaCanvas(&g_comp->layers[2]),
+        enjin2::LuaCanvas(&g_comp->layers[3]),
+    };
+    enjin2::LuaCanvas* layer_ptrs[4] = {
+        &lua_layers[0], &lua_layers[1], &lua_layers[2], &lua_layers[3],
+    };
+
+    // LuaScriptSystem: ~65KB (assetBuffer) → PSRAM
+    auto* lua = psram_new<enjin2::LuaScriptSystem>();
+    if (!lua) {
+        ESP_LOGE(TAG, "Failed to allocate LuaScriptSystem in PSRAM");
+        psram_delete(g_comp);
+        return;
+    }
+
+    if (!lua->initialize()) {
         ESP_LOGE(TAG, "Failed to initialize Lua script system");
+        psram_delete(lua);
+        psram_delete(g_comp);
         esp_vfs_spiffs_unregister("storage");
         return;
     }
-    ESP_LOGI(TAG, "Lua script system initialized");
+    ESP_LOGI(TAG, "Lua script system initialized (in PSRAM)");
 
     // Wire layer canvases into the Lua bindings
-    lua.getBindings().setLayers(g_layer_ptrs, 4, g_compositor.visible);
-    lua.getBindings().setCanvas(g_layer_ptrs[0]);
+    lua->getBindings().setLayers(layer_ptrs, 4, g_comp->visible);
+    lua->getBindings().setCanvas(layer_ptrs[0]);
 
     // Load the demo script
-    auto result = lua.loadScript("/spiffs/demo.lua");
+    auto result = lua->loadScript("/spiffs/demo.lua");
     if (!result.success) {
         ESP_LOGE(TAG, "Failed to load demo.lua: %s", result.error.c_str());
-        lua.shutdown();
+        lua->shutdown();
+        psram_delete(lua);
+        psram_delete(g_comp);
         esp_vfs_spiffs_unregister("storage");
         return;
     }
@@ -281,16 +316,16 @@ extern "C" void app_main() {
         }
 
         // 1. Clear layers for new frame
-        g_compositor.clearAll();
+        g_comp->clearAll();
 
         // 2. Lua update — draws to layer canvases via bindings
-        lua.callFunction("update", dt);
+        lua->callFunction("update", dt);
 
         // 3. Composite all layers → output
-        g_compositor.composite();
+        g_comp->composite();
 
         // 4. Expand composited Canvas4 → RGB565
-        expand_canvas_to_rgb565(g_compositor.output, rgb565_buf[cur_buf]);
+        expand_canvas_to_rgb565(g_comp->output, rgb565_buf[cur_buf]);
 
         // 5. Wait for previous DMA to finish, then send new buffer
         xSemaphoreTake(s_dma_done_sem, portMAX_DELAY);
@@ -316,7 +351,9 @@ extern "C" void app_main() {
     // Wait for last DMA transfer
     xSemaphoreTake(s_dma_done_sem, portMAX_DELAY);
 
-    lua.shutdown();
+    lua->shutdown();
+    psram_delete(lua);
+    psram_delete(g_comp);
     heap_caps_free(rgb565_buf[0]);
     heap_caps_free(rgb565_buf[1]);
     vSemaphoreDelete(s_dma_done_sem);
