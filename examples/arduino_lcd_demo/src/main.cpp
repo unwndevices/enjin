@@ -131,8 +131,9 @@ static void flush_frame_strips(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
     tft.endWrite();
 }
 
-// --- Enjin2 objects (allocated in setup) ---
+// --- Enjin2 objects (allocated in setup, must outlive setup() scope) ---
 static enjin2::LuaScriptSystem* g_lua = nullptr;
+static enjin2::LuaCanvas* g_lua_layers = nullptr;  // Array of 4, PSRAM-allocated
 static uint16_t* strip_buf[2] = {nullptr, nullptr};
 
 // --- Frame timing ---
@@ -185,15 +186,19 @@ void setup() {
     }
     Serial.printf("LayerCompositor allocated in PSRAM (%d bytes)\n", sizeof(Compositor));
 
-    // LuaCanvas wrappers
-    enjin2::LuaCanvas lua_layers[4] = {
-        enjin2::LuaCanvas(&g_comp->layers[0]),
-        enjin2::LuaCanvas(&g_comp->layers[1]),
-        enjin2::LuaCanvas(&g_comp->layers[2]),
-        enjin2::LuaCanvas(&g_comp->layers[3]),
-    };
+    // LuaCanvas wrappers — must outlive setup(), allocated in PSRAM
+    void* layers_mem = heap_caps_malloc(sizeof(enjin2::LuaCanvas) * 4, MALLOC_CAP_SPIRAM);
+    if (!layers_mem) {
+        Serial.println("ERROR: Failed to allocate LuaCanvas array");
+        psram_delete(g_comp);
+        return;
+    }
+    g_lua_layers = static_cast<enjin2::LuaCanvas*>(layers_mem);
+    for (int i = 0; i < 4; i++) {
+        new (&g_lua_layers[i]) enjin2::LuaCanvas(&g_comp->layers[i]);
+    }
     enjin2::LuaCanvas* layer_ptrs[4] = {
-        &lua_layers[0], &lua_layers[1], &lua_layers[2], &lua_layers[3],
+        &g_lua_layers[0], &g_lua_layers[1], &g_lua_layers[2], &g_lua_layers[3],
     };
 
     // --- Lua script system (PSRAM) ---
@@ -245,6 +250,11 @@ void loop() {
                 g_lua->shutdown();
                 psram_delete(g_lua);
                 g_lua = nullptr;
+            }
+            if (g_lua_layers) {
+                for (int i = 0; i < 4; i++) g_lua_layers[i].~LuaCanvas();
+                heap_caps_free(g_lua_layers);
+                g_lua_layers = nullptr;
             }
             psram_delete(g_comp);
             g_comp = nullptr;
