@@ -55,6 +55,7 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 8 | move to lua 5.4 and check all impacted areas | 2026-03-04 | 876beb8 | [8-move-to-lua-5-4-and-check-all-impacted-a](./quick/8-move-to-lua-5-4-and-check-all-impacted-a/) |
+| 9 | update examples arduino to lua54 lib + idf CMakeLists | 2026-03-04 | 0ea4d52 | [9-update-examples-arduino-to-lua54-lib-idf](./quick/9-update-examples-arduino-to-lua54-lib-idf/) |
 
 ### Technical Debt (carried forward)
 
@@ -68,5 +69,5 @@ None — all five accumulated debt items resolved in Phase 59:
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed quick task 8: move to lua 5.4 and check all impacted areas
+Stopped at: Completed quick task 9: update examples arduino to lua54 lib + idf CMakeLists
 Resume file: None
