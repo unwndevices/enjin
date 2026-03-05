@@ -223,10 +223,10 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
 
     // Helper functions for getting canvas data as typed array
     function("getCanvasData", +[](Canvas4<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT>& canvas) -> val {
-        // Create a simple Uint8Array with pixel data by reading each pixel
+        // Static buffer — avoids per-frame heap allocation (was leaking ~4.6 MB/s at 60fps)
         constexpr auto width = ENJIN2_CANVAS_WIDTH;
         constexpr auto height = ENJIN2_CANVAS_HEIGHT;
-        auto data = new uint8_t[width * height];
+        static uint8_t data[width * height];
 
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -238,10 +238,10 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
     });
 
     function("getCanvasData64x32", +[](Canvas4<64, 32>& canvas) -> val {
-        // Create a simple Uint8Array with pixel data by reading each pixel
-        auto width = 64;
-        auto height = 32;
-        auto data = new uint8_t[width * height];
+        // Static buffer — same fix as getCanvasData
+        constexpr auto width = 64;
+        constexpr auto height = 32;
+        static uint8_t data[width * height];
 
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
