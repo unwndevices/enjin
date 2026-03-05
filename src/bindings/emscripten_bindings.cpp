@@ -137,6 +137,13 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         sys.getBindings().tickTweens(dt);
         sys.getBindings().tickCameraFollow(dt);
     });
+
+    // Call pre-compiled __frame(dt) without luaL_loadstring.
+    // executeScript("__frame(X)") compiles a new Lua chunk every call (luaL_loadstring).
+    // callFunction uses lua_getglobal + lua_pcall on the existing function -- zero compilation.
+    function("callFrameFunction", +[](LuaScriptSystem& sys, float dt) {
+        sys.callFunction("__frame", static_cast<double>(dt));
+    });
 #endif
 
     // Canvas4 template specialization — size configured via CMake
