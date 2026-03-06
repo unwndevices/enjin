@@ -16,7 +16,7 @@ local flipH, flipV, rot90 = false, false, false
 
 function update(dt)
     if sprite >= 0 then
-        updateSprite(sprite, dt)
+        gfx.updateSprite(sprite, dt)
     end
     if engine.input.just_pressed(1) then flipH = not flipH end
     if engine.input.just_pressed(2) then rot90 = not rot90 end
@@ -24,15 +24,15 @@ function update(dt)
 end
 
 function draw()
-    clear(0)
+    gfx.clear(0)
 
     if sprite >= 0 then
-        local cx = getWidth() / 2
-        local cy = getHeight() / 2
-        drawSprite(sprite, cx - 19, cy - 19, flipH, flipV, rot90)
+        local cx = gfx.getWidth() / 2
+        local cy = gfx.getHeight() / 2
+        gfx.drawSprite(sprite, cx - 19, cy - 19, flipH, flipV, rot90)
     end
 
-    setColor(15)
-    text("Btn1:FlipH Btn2:Rot90", 2, 2)
-    text("Btn3:FlipV", 2, 12)
+    gfx.setColor(15)
+    gfx.text("Btn1:FlipH Btn2:Rot90", 2, 2)
+    gfx.text("Btn3:FlipV", 2, 12)
 end

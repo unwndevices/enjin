@@ -48,8 +48,8 @@ struct SpriteFixture {
         lua_setglobal(L, "_pd");
 
         // Create sprites: slot 0 = small 4x4, slot 1 = pikachu 38x38
-        engine.executeString("_s0 = newSprite(_td, 4, 4, 1, 1)");
-        engine.executeString("_s1 = newSprite(_pd, 38, 38, 1, 1)");
+        engine.executeString("_s0 = gfx.newSprite(_td, 4, 4, 1, 1)");
+        engine.executeString("_s1 = gfx.newSprite(_pd, 38, 38, 1, 1)");
     }
 
     void exec(const char* code) { engine.executeString(code); }
@@ -65,7 +65,7 @@ int main() {
     // ── TEST 1: Normal draw (no flip) ──
     {
         f.clear();
-        f.exec("drawSprite(_s0, 10, 20)");
+        f.exec("gfx.drawSprite(_s0, 10, 20)");
         ASSERT(f.px(10, 20) == 1, "normal: top-left = 1");
         ASSERT(f.px(13, 20) == 4, "normal: top-right = 4");
         ASSERT(f.px(10, 23) == 13, "normal: bottom-left = 13");
@@ -77,7 +77,7 @@ int main() {
     // ── TEST 2: flipH ──
     {
         f.clear();
-        f.exec("drawSprite(_s0, 10, 20, true, false, false)");
+        f.exec("gfx.drawSprite(_s0, 10, 20, true, false, false)");
         ASSERT(f.px(10, 20) == 4, "flipH: top-left = 4");
         ASSERT(f.px(13, 20) == 1, "flipH: top-right = 1");
         ASSERT(f.px(10, 23) == 0, "flipH: bottom-left = 0");
@@ -88,7 +88,7 @@ int main() {
     // ── TEST 3: flipV ──
     {
         f.clear();
-        f.exec("drawSprite(_s0, 10, 20, false, true, false)");
+        f.exec("gfx.drawSprite(_s0, 10, 20, false, true, false)");
         ASSERT(f.px(10, 20) == 13, "flipV: top-left = 13");
         ASSERT(f.px(13, 20) == 0, "flipV: top-right = 0");
         ASSERT(f.px(10, 23) == 1, "flipV: bottom-left = 1");
@@ -99,7 +99,7 @@ int main() {
     // ── TEST 4: flipH + flipV (180° rotation) ──
     {
         f.clear();
-        f.exec("drawSprite(_s0, 10, 20, true, true, false)");
+        f.exec("gfx.drawSprite(_s0, 10, 20, true, true, false)");
         ASSERT(f.px(10, 20) == 0, "flipHV: top-left = 0");
         ASSERT(f.px(13, 20) == 13, "flipHV: top-right = 13");
         ASSERT(f.px(10, 23) == 4, "flipHV: bottom-left = 4");
@@ -110,7 +110,7 @@ int main() {
     // ── TEST 5: rotate90 ──
     {
         f.clear();
-        f.exec("drawSprite(_s0, 10, 20, false, false, true)");
+        f.exec("gfx.drawSprite(_s0, 10, 20, false, false, true)");
         // 90° CW: dest(cellH-1-fy, fx) reads src(fx, fy)
         // original (0,0)=1 → dst at (cellH-1-0, 0)=(3,0) → pixel(13,20)
         // original (3,0)=4 → dst at (3, 3) → pixel(13,23)
@@ -124,7 +124,7 @@ int main() {
     // ── TEST 6: backward compatibility ──
     {
         f.clear();
-        f.exec("drawSprite(_s0, 0, 0)");
+        f.exec("gfx.drawSprite(_s0, 0, 0)");
         ASSERT(f.px(0, 0) == 1, "compat: drawSprite(h,x,y) still works");
         printf("  PASS: backward compatibility\n");
     }
@@ -132,12 +132,12 @@ int main() {
     // ── TEST 7: pikachu flipH sanity check ──
     {
         f.clear();
-        f.exec("drawSprite(_s1, 0, 0)");
+        f.exec("gfx.drawSprite(_s1, 0, 0)");
         uint8_t norm_l = f.px(0, 0);
         uint8_t norm_r = f.px(37, 0);
 
         f.clear();
-        f.exec("drawSprite(_s1, 0, 0, true, false, false)");
+        f.exec("gfx.drawSprite(_s1, 0, 0, true, false, false)");
         uint8_t flip_l = f.px(0, 0);
         uint8_t flip_r = f.px(37, 0);
 

@@ -7,31 +7,31 @@ end
 
 function draw(self)
     -- Layer 1 (BG): fill with dark blue (palette index 1)
-    setLayer(LAYER_BG)
-    clear(1)
+    gfx.setLayer(gfx.LAYER_BG)
+    gfx.clear(1)
 
     -- Layer 2 (MID): draw a green rectangle in the center
-    setLayer(LAYER_MID)
-    setColor(11)  -- green
-    rectangle("fill", 32, 32, 64, 64)
+    gfx.setLayer(gfx.LAYER_MID)
+    gfx.setColor(11)  -- green
+    gfx.rectangle("fill", 32, 32, 64, 64)
 
     -- Layer 3 (FG): draw a red circle overlapping the rectangle
-    setLayer(LAYER_FG)
-    setColor(8)  -- red
-    circle("fill", 64, 64, 24)
+    gfx.setLayer(gfx.LAYER_FG)
+    gfx.setColor(8)  -- red
+    gfx.circle("fill", 64, 64, 24)
 
     -- Layer 4 (UI): draw score text area at top
-    setLayer(LAYER_UI)
-    setColor(7)  -- white
-    rectangle("fill", 0, 0, 128, 12)
-    setColor(0)  -- black
+    gfx.setLayer(gfx.LAYER_UI)
+    gfx.setColor(7)  -- white
+    gfx.rectangle("fill", 0, 0, 128, 12)
+    gfx.setColor(0)  -- black
     -- Draw "SCORE" as pixel dots (simplified)
     for i = 0, 4 do
-        point(4 + i * 2, 4)
+        gfx.point(4 + i * 2, 4)
     end
 
     -- Report layer info
-    local count = getLayerCount()
-    local current = getLayer()
+    local count = gfx.getLayerCount()
+    local current = gfx.getLayer()
     print("Layers: " .. count .. ", current: " .. current)
 end

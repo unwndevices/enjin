@@ -9,22 +9,22 @@ local sprite = -1  -- sprite handle (0-15)
 
 function update(self, dt)
     if sprite >= 0 then
-        updateSprite(sprite, dt)  -- dt is seconds; updateSprite expects seconds (Phase 28)
+        gfx.updateSprite(sprite, dt)  -- dt is seconds; updateSprite expects seconds (Phase 28)
     end
 end
 
 function draw(self)
-    clear(0)
+    gfx.clear(0)
 
     -- Draw pikachu centered on screen
     if sprite >= 0 then
-        local cx = math.floor((getWidth() - PIKACHU_W) / 2)
-        local cy = math.floor((getHeight() - PIKACHU_H) / 2) - 10
-        drawSprite(sprite, cx, cy)
+        local cx = math.floor((gfx.getWidth() - PIKACHU_W) / 2)
+        local cy = math.floor((gfx.getHeight() - PIKACHU_H) / 2) - 10
+        gfx.drawSprite(sprite, cx, cy)
     else
         -- Fallback: draw error indicator
-        setColor(2)
-        rectangle(0, 0, getWidth(), getHeight())
+        gfx.setColor(2)
+        gfx.rectangle(0, 0, gfx.getWidth(), gfx.getHeight())
     end
 
     -- Draw palette strip at the bottom for visual verification
@@ -33,19 +33,19 @@ end
 
 function draw_palette_strip()
     local strip_h = 8
-    local strip_y = getHeight() - strip_h
+    local strip_y = gfx.getHeight() - strip_h
     local cell_w = 8
 
     for i = 0, 14 do
-        setColor(i)
-        rectangle(i * cell_w, strip_y, cell_w, strip_h)
+        gfx.setColor(i)
+        gfx.rectangle(i * cell_w, strip_y, cell_w, strip_h)
     end
 end
 
 -- Initialize sprite on script load
 if PIKACHU_DATA then
-    sprite = newSprite(PIKACHU_DATA, PIKACHU_W, PIKACHU_H, 1, 1)
+    sprite = gfx.newSprite(PIKACHU_DATA, PIKACHU_W, PIKACHU_H, 1, 1)
     if sprite >= 0 then
-        setFrame(sprite, 0)
+        gfx.setFrame(sprite, 0)
     end
 end

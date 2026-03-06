@@ -8,9 +8,7 @@
 --
 -- Run with: ./sprite_sdl_test --script scripts/spawn_destroy_demo.lua
 
--- ═══════════════════════════════════════════════════════
 -- State
--- ═══════════════════════════════════════════════════════
 local W, H = 128, 128
 local objects = {}       -- array of {proxy=ObjectProxy, color=int, size=int, age=float}
 local spawn_count = 0
@@ -21,12 +19,10 @@ local flash_color = 0
 
 engine.random.seed(42)
 
--- ═══════════════════════════════════════════════════════
 -- UPDATE
--- ═══════════════════════════════════════════════════════
 function update(dt)
-    W = getWidth()
-    H = getHeight()
+    W = gfx.getWidth()
+    H = gfx.getHeight()
 
     -- Move cursor with arrows
     local spd = 60
@@ -86,15 +82,13 @@ function update(dt)
     end
 end
 
--- ═══════════════════════════════════════════════════════
 -- DRAW
--- ═══════════════════════════════════════════════════════
 function draw()
     -- Background: flash or black
     if flash_timer > 0 then
-        clear(flash_color)
+        gfx.clear(flash_color)
     else
-        clear(0)
+        gfx.clear(0)
     end
 
     -- Draw all spawned objects as pulsing shapes
@@ -109,24 +103,24 @@ function draw()
         local r = o.size + math.floor(pulse)
         if r < 1 then r = 1 end
 
-        setColor(o.color)
-        circle(x, y, r)
+        gfx.setColor(o.color)
+        gfx.circle(x, y, r)
 
         -- Number label
-        setColor(7)
-        text(tostring(i), x - 2, y - o.size - 6)
+        gfx.setColor(7)
+        gfx.text(tostring(i), x - 2, y - o.size - 6)
     end
 
     -- Draw cursor crosshair
-    setColor(7)
+    gfx.setColor(7)
     local cx = math.floor(cursor_x)
     local cy = math.floor(cursor_y)
-    line(cx - 3, cy, cx + 3, cy)
-    line(cx, cy - 3, cx, cy + 3)
+    gfx.line(cx - 3, cy, cx + 3, cy)
+    gfx.line(cx, cy - 3, cx, cy + 3)
 
     -- HUD
-    setColor(7)
-    text("Z=spawn  X=destroy", 1, 1)
-    text("alive:" .. #objects, 1, H - 16)
-    text("s:" .. spawn_count .. " d:" .. destroy_count, 1, H - 8)
+    gfx.setColor(7)
+    gfx.text("Z=spawn  X=destroy", 1, 1)
+    gfx.text("alive:" .. #objects, 1, H - 16)
+    gfx.text("s:" .. spawn_count .. " d:" .. destroy_count, 1, H - 8)
 end

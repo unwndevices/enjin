@@ -1,6 +1,6 @@
 -- scripts/tamagotchi.lua
 -- Tamagotchi game for Enjin Lua
--- Note: all drawing globals are also available via engine.graphics.*
+-- Note: all drawing functions are available via gfx.* namespace
 
 local W, H = engine.config.resolution()
 
@@ -35,9 +35,7 @@ end
 
 engine.state.switch("alive")
 
--- ═══════════════════════════════════════════════════════════════════════════
 -- UPDATE
--- ═══════════════════════════════════════════════════════════════════════════
 
 function update(dt)
     if dt > 0.05 then dt = 0.05 end
@@ -113,97 +111,95 @@ function update(dt)
     end
 end
 
--- ═══════════════════════════════════════════════════════════════════════════
 -- DRAW
--- ═══════════════════════════════════════════════════════════════════════════
 
 local function drawProgressBar(x, y, w, h, val, color)
-    setColor(COLOR.DARK_GRAY)
-    rectangle(x, y, w, h)
-    setColor(color)
+    gfx.setColor(gfx.COLOR.DARK_GRAY)
+    gfx.rectangle(x, y, w, h)
+    gfx.setColor(color)
     local fillW = (val / 100) * w
     if fillW > 0 then
-        rectangle(x, y, fillW, h)
+        gfx.rectangle(x, y, fillW, h)
     end
 end
 
 function draw()
-    clear(COLOR.BLACK)
+    gfx.clear(gfx.COLOR.BLACK)
     local cur = engine.state.current()
 
     -- Title
-    setColor(COLOR.WHITE)
-    textCentered("TAMAGOTCHI", 10, 2)
+    gfx.setColor(gfx.COLOR.WHITE)
+    gfx.textCentered("TAMAGOTCHI", 10, 2)
 
     -- Stats
-    setColor(COLOR.GRAY)
-    text("HUNGER:", 10, 34)
-    drawProgressBar(80, 33, 100, 10, stats.hunger, COLOR.RED)
+    gfx.setColor(gfx.COLOR.GRAY)
+    gfx.text("HUNGER:", 10, 34)
+    drawProgressBar(80, 33, 100, 10, stats.hunger, gfx.COLOR.RED)
 
-    text("HAPPINESS:", 10, 49)
-    drawProgressBar(80, 48, 100, 10, stats.happiness, COLOR.GREEN)
+    gfx.text("HAPPINESS:", 10, 49)
+    drawProgressBar(80, 48, 100, 10, stats.happiness, gfx.COLOR.GREEN)
 
-    text("ENERGY:", 10, 64)
-    drawProgressBar(80, 63, 100, 10, stats.energy, COLOR.BLUE)
+    gfx.text("ENERGY:", 10, 64)
+    drawProgressBar(80, 63, 100, 10, stats.energy, gfx.COLOR.BLUE)
 
     -- Draw pet
     local petX, petY = W / 2, H / 2 + 30
 
-    setColor(COLOR.PINK)
-    circle(petX, petY, 30)
+    gfx.setColor(gfx.COLOR.PINK)
+    gfx.circle(petX, petY, 30)
 
     -- Face
     if cur == "alive" then
-        setColor(COLOR.BLACK)
+        gfx.setColor(gfx.COLOR.BLACK)
         -- eyes
-        circle(petX - 10, petY - 5, 3)
-        circle(petX + 10, petY - 5, 3)
+        gfx.circle(petX - 10, petY - 5, 3)
+        gfx.circle(petX + 10, petY - 5, 3)
         -- mouth
         if stats.happiness > 50 then
-            line(petX - 5, petY + 10, petX + 5, petY + 10)
-            setPixel(petX - 6, petY + 9)
-            setPixel(petX + 6, petY + 9)
+            gfx.line(petX - 5, petY + 10, petX + 5, petY + 10)
+            gfx.setPixel(petX - 6, petY + 9)
+            gfx.setPixel(petX + 6, petY + 9)
         else
-            line(petX - 5, petY + 10, petX + 5, petY + 10)
-            setPixel(petX - 6, petY + 11)
-            setPixel(petX + 6, petY + 11)
+            gfx.line(petX - 5, petY + 10, petX + 5, petY + 10)
+            gfx.setPixel(petX - 6, petY + 11)
+            gfx.setPixel(petX + 6, petY + 11)
         end
     elseif cur == "sleeping" then
-        setColor(COLOR.BLACK)
-        line(petX - 15, petY - 5, petX - 5, petY - 5)
-        line(petX + 5, petY - 5, petX + 15, petY - 5)
+        gfx.setColor(gfx.COLOR.BLACK)
+        gfx.line(petX - 15, petY - 5, petX - 5, petY - 5)
+        gfx.line(petX + 5, petY - 5, petX + 15, petY - 5)
         -- Zzz
-        setColor(COLOR.WHITE)
+        gfx.setColor(gfx.COLOR.WHITE)
         if math.floor(engine.time.now() * 2) % 2 == 0 then
-            text("Z", petX + 35, petY - 30)
+            gfx.text("Z", petX + 35, petY - 30)
         end
-        text("z", petX + 45, petY - 40)
+        gfx.text("z", petX + 45, petY - 40)
     elseif cur == "dead" then
-        setColor(COLOR.BLACK)
+        gfx.setColor(gfx.COLOR.BLACK)
         -- dead eyes (X)
-        line(petX - 15, petY - 10, petX - 5, petY)
-        line(petX - 15, petY, petX - 5, petY - 10)
-        line(petX + 5, petY - 10, petX + 15, petY)
-        line(petX + 5, petY, petX + 15, petY - 10)
+        gfx.line(petX - 15, petY - 10, petX - 5, petY)
+        gfx.line(petX - 15, petY, petX - 5, petY - 10)
+        gfx.line(petX + 5, petY - 10, petX + 15, petY)
+        gfx.line(petX + 5, petY, petX + 15, petY - 10)
         -- dead mouth
-        circle(petX, petY + 10, 4)
+        gfx.circle(petX, petY + 10, 4)
     end
 
     -- Interaction message
     if msg_timer > 0 then
-        setColor(COLOR.YELLOW)
-        textCentered(msg_text, petY - 50)
+        gfx.setColor(gfx.COLOR.YELLOW)
+        gfx.textCentered(msg_text, petY - 50)
     end
 
     -- Controls prompt
     if cur == "dead" then
-        setColor(COLOR.RED)
-        textCentered("PET DIED! PRESS A OR START TO RESET", H - 20)
+        gfx.setColor(gfx.COLOR.RED)
+        gfx.textCentered("PET DIED! PRESS A OR START TO RESET", H - 20)
     elseif cur == "alive" then
-        setColor(COLOR.GRAY)
-        textCentered("LEFT: FEED   RIGHT: PLAY   A: SLEEP", H - 20)
+        gfx.setColor(gfx.COLOR.GRAY)
+        gfx.textCentered("LEFT: FEED   RIGHT: PLAY   A: SLEEP", H - 20)
     elseif cur == "sleeping" then
-        setColor(COLOR.GRAY)
-        textCentered("A: WAKE UP (IF ENERGY > 50)", H - 20)
+        gfx.setColor(gfx.COLOR.GRAY)
+        gfx.textCentered("A: WAKE UP (IF ENERGY > 50)", H - 20)
     end
 end

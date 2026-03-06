@@ -69,7 +69,7 @@ static void test_setLayer_getLayer_roundtrip()
     printf("--- setLayer/getLayer roundtrip ---\n");
 
     LayerBindingFixture f;
-    LuaResult r = f.exec("setLayer(3); result = getLayer()");
+    LuaResult r = f.exec("gfx.setLayer(3); result = gfx.getLayer()");
     ASSERT(r.success, "setLayer/getLayer script should succeed");
     ASSERT(f.getNum("result") == 3.0,
            "roundtrip: getLayer() should return 3 after setLayer(3)");
@@ -83,8 +83,8 @@ static void test_setLayer_clamp_low()
     printf("--- setLayer clamp low ---\n");
 
     LayerBindingFixture f;
-    LuaResult r = f.exec("setLayer(0); result = getLayer()");
-    ASSERT(r.success, "setLayer(0) script should succeed");
+    LuaResult r = f.exec("gfx.setLayer(0); result = gfx.getLayer()");
+    ASSERT(r.success, "gfx.setLayer(0) script should succeed");
     ASSERT(f.getNum("result") == 1.0,
            "clamp low: setLayer(0) should clamp to layer 1");
 }
@@ -97,8 +97,8 @@ static void test_setLayer_clamp_high()
     printf("--- setLayer clamp high ---\n");
 
     LayerBindingFixture f;
-    LuaResult r = f.exec("setLayer(99); result = getLayer()");
-    ASSERT(r.success, "setLayer(99) script should succeed");
+    LuaResult r = f.exec("gfx.setLayer(99); result = gfx.getLayer()");
+    ASSERT(r.success, "gfx.setLayer(99) script should succeed");
     ASSERT(f.getNum("result") == 4.0,
            "clamp high: setLayer(99) should clamp to layer 4");
 }
@@ -113,12 +113,12 @@ static void test_clearLayer_specific()
     LayerBindingFixture f;
 
     // Draw something on layer 1 (Lua index 1, cpp index 0)
-    f.exec("setLayer(1); setPixel(0, 0, 7)");
+    f.exec("gfx.setLayer(1); gfx.setPixel(0, 0, 7)");
     // Draw something on layer 2 (Lua index 2, cpp index 1)
-    f.exec("setLayer(2); setPixel(0, 0, 3)");
+    f.exec("gfx.setLayer(2); gfx.setPixel(0, 0, 3)");
 
     // Clear only layer 2 to color 5
-    f.exec("clearLayer(2, 5)");
+    f.exec("gfx.clearLayer(2, 5)");
 
     // Layer 1 pixel should be untouched (7)
     uint8_t layer1_val = f.compositor.layers[0].getPixel(0, 0).value;
@@ -139,8 +139,8 @@ static void test_getLayerCount()
     printf("--- getLayerCount ---\n");
 
     LayerBindingFixture f;
-    LuaResult r = f.exec("result = getLayerCount()");
-    ASSERT(r.success, "getLayerCount script should succeed");
+    LuaResult r = f.exec("result = gfx.getLayerCount()");
+    ASSERT(r.success, "gfx.getLayerCount script should succeed");
     ASSERT(f.getNum("result") == 4.0,
            "getLayerCount: should return 4");
 }
@@ -155,20 +155,20 @@ static void test_setLayerVisible_isLayerVisible()
     LayerBindingFixture f;
 
     // All layers start visible
-    LuaResult r1 = f.exec("result = isLayerVisible(2) and 1 or 0");
-    ASSERT(r1.success, "isLayerVisible(2) initial check should succeed");
+    LuaResult r1 = f.exec("result = gfx.isLayerVisible(2) and 1 or 0");
+    ASSERT(r1.success, "gfx.isLayerVisible(2) initial check should succeed");
     ASSERT(f.getNum("result") == 1.0,
            "visibility: layer 2 should start visible");
 
     // Hide layer 2
-    LuaResult r2 = f.exec("setLayerVisible(2, false); result = isLayerVisible(2) and 1 or 0");
-    ASSERT(r2.success, "setLayerVisible(2, false) should succeed");
+    LuaResult r2 = f.exec("gfx.setLayerVisible(2, false); result = gfx.isLayerVisible(2) and 1 or 0");
+    ASSERT(r2.success, "gfx.setLayerVisible(2, false) should succeed");
     ASSERT(f.getNum("result") == 0.0,
-           "visibility: layer 2 should be hidden after setLayerVisible(2, false)");
+           "visibility: layer 2 should be hidden after gfx.setLayerVisible(2, false)");
 
     // Other layers still visible
-    LuaResult r3 = f.exec("result = isLayerVisible(1) and 1 or 0");
-    ASSERT(r3.success, "isLayerVisible(1) should succeed");
+    LuaResult r3 = f.exec("result = gfx.isLayerVisible(1) and 1 or 0");
+    ASSERT(r3.success, "gfx.isLayerVisible(1) should succeed");
     ASSERT(f.getNum("result") == 1.0,
            "visibility: layer 1 should still be visible");
 

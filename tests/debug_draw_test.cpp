@@ -160,21 +160,21 @@ static void test_draw_no_op_when_disabled() {
 }
 
 // ============================================================
-// Test 5: LAYER_DEBUG global constant is registered as 5
+// Test 5: gfx.LAYER_DEBUG constant is registered as 5
 // ============================================================
 static void test_layer_debug_constant() {
-    printf("--- LAYER_DEBUG global constant ---\n");
+    printf("--- gfx.LAYER_DEBUG constant ---\n");
 
     DebugFixture f;
 
     LuaResult r = f.exec(
-        "layer_debug_val = LAYER_DEBUG\n"
-        "layer_debug_type = (type(LAYER_DEBUG) == 'number') and 1 or 0\n"
+        "layer_debug_val = gfx.LAYER_DEBUG\n"
+        "layer_debug_type = (type(gfx.LAYER_DEBUG) == 'number') and 1 or 0\n"
     );
 
-    ASSERT(r.success,                          "LAYER_DEBUG constant check must not error");
-    ASSERT(f.getNum("layer_debug_val")  == 5.0, "LAYER_DEBUG must equal 5");
-    ASSERT(f.getNum("layer_debug_type") == 1.0, "LAYER_DEBUG must be a number");
+    ASSERT(r.success,                          "gfx.LAYER_DEBUG constant check must not error");
+    ASSERT(f.getNum("layer_debug_val")  == 5.0, "gfx.LAYER_DEBUG must equal 5");
+    ASSERT(f.getNum("layer_debug_type") == 1.0, "gfx.LAYER_DEBUG must be a number");
 }
 
 // ============================================================

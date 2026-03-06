@@ -85,16 +85,16 @@ static void test_constants() {
     ASSERT((int)f.getNum("btn_b")     == 5, "BTN.B == 5");
     ASSERT((int)f.getNum("btn_start") == 6, "BTN.START == 6");
 
-    // COLOR constants
+    // COLOR constants (nested under gfx)
     r = f.exec(
-        "c_black = COLOR.BLACK\n"
-        "c_red   = COLOR.RED\n"
-        "c_white = COLOR.WHITE\n"
-        "c_green = COLOR.GREEN\n"
-        "c_blue  = COLOR.BLUE\n"
-        "c_trans = COLOR.TRANSPARENT\n"
+        "c_black = gfx.COLOR.BLACK\n"
+        "c_red   = gfx.COLOR.RED\n"
+        "c_white = gfx.COLOR.WHITE\n"
+        "c_green = gfx.COLOR.GREEN\n"
+        "c_blue  = gfx.COLOR.BLUE\n"
+        "c_trans = gfx.COLOR.TRANSPARENT\n"
     );
-    ASSERT(r.success, "COLOR table access did not error");
+    ASSERT(r.success, "gfx.COLOR table access did not error");
     ASSERT((int)f.getNum("c_black") ==  0, "COLOR.BLACK == 0");
     ASSERT((int)f.getNum("c_red")   ==  8, "COLOR.RED == 8");
     ASSERT((int)f.getNum("c_white") ==  7, "COLOR.WHITE == 7");
@@ -104,25 +104,25 @@ static void test_constants() {
 }
 
 // ============================================================
-// test_engine_graphics: engine.graphics.* alias sub-table (API-03)
+// test_gfx_table: gfx.* namespace table (API-01)
 // ============================================================
-static void test_engine_graphics() {
-    printf("--- test_engine_graphics: engine.graphics alias sub-table ---\n");
+static void test_gfx_table() {
+    printf("--- test_gfx_table: gfx.* namespace table ---\n");
     Fixture f;
 
     LuaResult r = f.exec(
-        "ok_circle    = (type(engine.graphics.circle)    == 'function') and 1 or 0\n"
-        "ok_rect      = (type(engine.graphics.rectangle) == 'function') and 1 or 0\n"
-        "ok_setColor  = (type(engine.graphics.setColor)  == 'function') and 1 or 0\n"
-        "ok_line      = (type(engine.graphics.line)      == 'function') and 1 or 0\n"
-        "ok_text      = (type(engine.graphics.text)      == 'function') and 1 or 0\n"
+        "ok_circle    = (type(gfx.circle)    == 'function') and 1 or 0\n"
+        "ok_rect      = (type(gfx.rectangle) == 'function') and 1 or 0\n"
+        "ok_setColor  = (type(gfx.setColor)  == 'function') and 1 or 0\n"
+        "ok_line      = (type(gfx.line)      == 'function') and 1 or 0\n"
+        "ok_text      = (type(gfx.text)      == 'function') and 1 or 0\n"
     );
-    ASSERT(r.success, "engine.graphics access did not error");
-    ASSERT((int)f.getNum("ok_circle")   == 1, "engine.graphics.circle is a function");
-    ASSERT((int)f.getNum("ok_rect")     == 1, "engine.graphics.rectangle is a function");
-    ASSERT((int)f.getNum("ok_setColor") == 1, "engine.graphics.setColor is a function");
-    ASSERT((int)f.getNum("ok_line")     == 1, "engine.graphics.line is a function");
-    ASSERT((int)f.getNum("ok_text")     == 1, "engine.graphics.text is a function");
+    ASSERT(r.success, "gfx table access did not error");
+    ASSERT((int)f.getNum("ok_circle")   == 1, "gfx.circle is a function");
+    ASSERT((int)f.getNum("ok_rect")     == 1, "gfx.rectangle is a function");
+    ASSERT((int)f.getNum("ok_setColor") == 1, "gfx.setColor is a function");
+    ASSERT((int)f.getNum("ok_line")     == 1, "gfx.line is a function");
+    ASSERT((int)f.getNum("ok_text")     == 1, "gfx.text is a function");
 }
 
 // ============================================================
@@ -132,17 +132,17 @@ static void test_float_coords() {
     printf("--- test_float_coords: float coordinates accepted ---\n");
     Fixture f;
 
-    LuaResult r = f.exec("circle('fill', 10.7, 20.3, 5)");
-    ASSERT(r.success, "circle() accepts float coords");
+    LuaResult r = f.exec("gfx.circle('fill', 10.7, 20.3, 5)");
+    ASSERT(r.success, "gfx.circle() accepts float coords");
 
-    r = f.exec("line(1.5, 2.5, 10.9, 20.1)");
-    ASSERT(r.success, "line() accepts float coords");
+    r = f.exec("gfx.line(1.5, 2.5, 10.9, 20.1)");
+    ASSERT(r.success, "gfx.line() accepts float coords");
 
-    r = f.exec("rectangle(10.6, 20.4, 4, 4)");
-    ASSERT(r.success, "rectangle() accepts float coords");
+    r = f.exec("gfx.rectangle(10.6, 20.4, 4, 4)");
+    ASSERT(r.success, "gfx.rectangle() accepts float coords");
 
-    r = f.exec("point(5.7, 3.2)");
-    ASSERT(r.success, "point() accepts float coords");
+    r = f.exec("gfx.point(5.7, 3.2)");
+    ASSERT(r.success, "gfx.point() accepts float coords");
 }
 
 // ============================================================
@@ -154,15 +154,15 @@ static void test_text_scale() {
 
     // text with scale 2 should not error and should NOT change global textSize
     LuaResult r = f.exec(
-        "text('hello', 0, 0, 2)\n"
-        "size_after = getTextSize()\n"
+        "gfx.text('hello', 0, 0, 2)\n"
+        "size_after = gfx.getTextSize()\n"
     );
-    ASSERT(r.success, "text('hello', 0, 0, 2) did not error");
-    ASSERT((int)f.getNum("size_after") == 1, "text() with scale 2 does not change global textSize");
+    ASSERT(r.success, "gfx.text('hello', 0, 0, 2) did not error");
+    ASSERT((int)f.getNum("size_after") == 1, "gfx.text() with scale 2 does not change global textSize");
 
     // backward compat: text with 3 args still works
-    r = f.exec("text('hi', 0, 0)");
-    ASSERT(r.success, "text('hi', 0, 0) backward compat works");
+    r = f.exec("gfx.text('hi', 0, 0)");
+    ASSERT(r.success, "gfx.text('hi', 0, 0) backward compat works");
 }
 
 // ============================================================
@@ -172,17 +172,17 @@ static void test_text_centered_aligned() {
     printf("--- test_text_centered_aligned: new text functions ---\n");
     Fixture f;
 
-    LuaResult r = f.exec("textCentered('hi', 8)");
-    ASSERT(r.success, "textCentered('hi', 8) did not error");
+    LuaResult r = f.exec("gfx.textCentered('hi', 8)");
+    ASSERT(r.success, "gfx.textCentered('hi', 8) did not error");
 
-    r = f.exec("textAligned('hi', 0, 8, 'center')");
-    ASSERT(r.success, "textAligned center did not error");
+    r = f.exec("gfx.textAligned('hi', 0, 8, 'center')");
+    ASSERT(r.success, "gfx.textAligned center did not error");
 
-    r = f.exec("textAligned('hi', 15, 8, 'right')");
-    ASSERT(r.success, "textAligned right did not error");
+    r = f.exec("gfx.textAligned('hi', 15, 8, 'right')");
+    ASSERT(r.success, "gfx.textAligned right did not error");
 
-    r = f.exec("textAligned('hi', 0, 8, 'left')");
-    ASSERT(r.success, "textAligned left (default) did not error");
+    r = f.exec("gfx.textAligned('hi', 0, 8, 'left')");
+    ASSERT(r.success, "gfx.textAligned left (default) did not error");
 }
 
 // ============================================================
@@ -247,18 +247,61 @@ static void test_engine_state() {
 }
 
 // ============================================================
+// test_bare_globals_removed: old bare globals error (API-04)
+// ============================================================
+static void test_bare_globals_removed() {
+    printf("--- test_bare_globals_removed: old bare globals error ---\n");
+    Fixture f;
+
+    // Calling old bare global clear() should fail (nil value error)
+    LuaResult r1 = f.exec("clear(1)");
+    ASSERT(!r1.success, "bare clear() should error (is nil)");
+
+    // Calling old bare global setColor() should fail
+    LuaResult r2 = f.exec("setColor(1, 0, 0)");
+    ASSERT(!r2.success, "bare setColor() should error (is nil)");
+
+    // Calling old bare global line() should fail
+    LuaResult r3 = f.exec("line(0, 0, 10, 10)");
+    ASSERT(!r3.success, "bare line() should error (is nil)");
+
+    // Calling old bare global text() should fail
+    LuaResult r4 = f.exec("text('hello', 0, 0)");
+    ASSERT(!r4.success, "bare text() should error (is nil)");
+
+    // Removed enjin input globals should also fail
+    LuaResult r5 = f.exec("isButtonHeld(0)");
+    ASSERT(!r5.success, "bare isButtonHeld() should error (is nil)");
+
+    // But gfx.clear() should work (proves namespace is registered)
+    LuaResult r6 = f.exec("gfx.clear(1)");
+    ASSERT(r6.success, "gfx.clear() should succeed");
+
+    // And print() should still work as bare global
+    LuaResult r7 = f.exec("print('hello')");
+    ASSERT(r7.success, "bare print() should still work");
+
+    // And BTN should still work as bare global
+    LuaResult r8 = f.exec("local x = BTN.UP");
+    ASSERT(r8.success, "bare BTN.UP should still work");
+
+    printf("  bare_globals_removed: all assertions passed\n");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
     printf("=== scripting_api_test ===\n");
 
     test_constants();
-    test_engine_graphics();
+    test_gfx_table();
     test_float_coords();
     test_text_scale();
     test_text_centered_aligned();
     test_engine_config_resolution();
     test_engine_state();
+    test_bare_globals_removed();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

@@ -81,13 +81,13 @@ static void test_resetSpritePool_clears_all_slots()
     HotReloadFixture f;
 
     // Allocate first sprite — should get slot 0
-    LuaResult r1 = f.exec("handle1 = newSprite(testSpriteData, 4, 4, 1, 1)");
+    LuaResult r1 = f.exec("handle1 = gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
     ASSERT(r1.success, "newSprite should succeed");
     ASSERT(f.getNum("handle1") == 0.0,
            "first newSprite should return handle 0");
 
     // Allocate second sprite — should get slot 1
-    LuaResult r2 = f.exec("handle2 = newSprite(testSpriteData, 4, 4, 1, 1)");
+    LuaResult r2 = f.exec("handle2 = gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
     ASSERT(r2.success, "second newSprite should succeed");
     ASSERT(f.getNum("handle2") == 1.0,
            "second newSprite should return handle 1");
@@ -96,7 +96,7 @@ static void test_resetSpritePool_clears_all_slots()
     f.bindings.resetSpritePool();
 
     // Allocate again — should get slot 0 (pool was cleared)
-    LuaResult r3 = f.exec("handle3 = newSprite(testSpriteData, 4, 4, 1, 1)");
+    LuaResult r3 = f.exec("handle3 = gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
     ASSERT(r3.success, "newSprite after reset should succeed");
     ASSERT(f.getNum("handle3") == 0.0,
            "after resetSpritePool, newSprite should return handle 0 again");
@@ -114,12 +114,12 @@ static void test_registerAll_resets_drawing_state()
     HotReloadFixture f;
 
     // Change drawing state from defaults
-    f.exec("setColor(5)");
-    f.exec("setLineWidth(3)");
+    f.exec("gfx.setColor(5)");
+    f.exec("gfx.setLineWidth(3)");
 
     // Verify state was changed
-    LuaResult rc = f.exec("c = getColor(); w = getLineWidth()");
-    ASSERT(rc.success, "getColor/getLineWidth should succeed");
+    LuaResult rc = f.exec("c = gfx.getColor(); w = gfx.getLineWidth()");
+    ASSERT(rc.success, "gfx.getColor/gfx.getLineWidth should succeed");
     ASSERT(f.getNum("c") == 5.0, "color should be 5 after setColor(5)");
     ASSERT(f.getNum("w") == 3.0, "lineWidth should be 3 after setLineWidth(3)");
 
@@ -129,8 +129,8 @@ static void test_registerAll_resets_drawing_state()
     f.bindings.setLayers(f.layerPtrs, 4, f.compositor.visible);
 
     // Verify defaults are restored
-    LuaResult rd = f.exec("c2 = getColor(); w2 = getLineWidth()");
-    ASSERT(rd.success, "getColor/getLineWidth after registerAll should succeed");
+    LuaResult rd = f.exec("c2 = gfx.getColor(); w2 = gfx.getLineWidth()");
+    ASSERT(rd.success, "gfx.getColor/gfx.getLineWidth after registerAll should succeed");
     ASSERT(f.getNum("c2") == 15.0,
            "after registerAll, color should be reset to 15");
     ASSERT(f.getNum("w2") == 1.0,
@@ -149,12 +149,12 @@ static void test_registerAll_resets_sprite_pool()
     HotReloadFixture f;
 
     // Allocate 3 sprites
-    f.exec("newSprite(testSpriteData, 4, 4, 1, 1)");
-    f.exec("newSprite(testSpriteData, 4, 4, 1, 1)");
-    f.exec("newSprite(testSpriteData, 4, 4, 1, 1)");
+    f.exec("gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
+    f.exec("gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
+    f.exec("gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
 
     // Next allocation should be slot 3
-    f.exec("pre_handle = newSprite(testSpriteData, 4, 4, 1, 1)");
+    f.exec("pre_handle = gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
     ASSERT(f.getNum("pre_handle") == 3.0,
            "4th sprite should get handle 3");
 
@@ -167,7 +167,7 @@ static void test_registerAll_resets_sprite_pool()
     lua_setglobal(f.engine.getState(), "testSpriteData");
 
     // First allocation after registerAll should be slot 0 again
-    f.exec("post_handle = newSprite(testSpriteData, 4, 4, 1, 1)");
+    f.exec("post_handle = gfx.newSprite(testSpriteData, 4, 4, 1, 1)");
     ASSERT(f.getNum("post_handle") == 0.0,
            "after registerAll, first newSprite should return handle 0");
 }
@@ -184,7 +184,7 @@ static void test_reload_cycle_preserves_bindings()
     HotReloadFixture f;
 
     // Draw on layer 2 before reload
-    f.exec("setLayer(2); setColor(7); setPixel(5, 5, 7)");
+    f.exec("gfx.setLayer(2); gfx.setColor(7); gfx.setPixel(5, 5, 7)");
     uint8_t pre = f.compositor.layers[1].getPixel(5, 5).value;
     ASSERT(pre == 7, "pre-reload: pixel (5,5) on layer 2 should be 7");
 
@@ -198,22 +198,22 @@ static void test_reload_cycle_preserves_bindings()
     f.compositor.clearAll();
 
     // Verify bindings still work after reload cycle
-    LuaResult r1 = f.exec("setLayer(3); setColor(9); setPixel(7, 7, 9)");
-    ASSERT(r1.success, "post-reload setLayer/setPixel should succeed");
+    LuaResult r1 = f.exec("gfx.setLayer(3); gfx.setColor(9); gfx.setPixel(7, 7, 9)");
+    ASSERT(r1.success, "post-reload gfx.setLayer/gfx.setPixel should succeed");
 
     uint8_t post = f.compositor.layers[2].getPixel(7, 7).value;
     ASSERT(post == 9,
            "post-reload: pixel (7,7) on layer 3 should be 9");
 
-    // Verify getLayer reports correct layer
-    f.exec("result = getLayer()");
+    // Verify gfx.getLayer reports correct layer
+    f.exec("result = gfx.getLayer()");
     ASSERT(f.getNum("result") == 3.0,
-           "post-reload: getLayer should return 3");
+           "post-reload: gfx.getLayer should return 3");
 
-    // Verify getLayerCount still works
-    f.exec("count = getLayerCount()");
+    // Verify gfx.getLayerCount still works
+    f.exec("count = gfx.getLayerCount()");
     ASSERT(f.getNum("count") == 4.0,
-           "post-reload: getLayerCount should return 4");
+           "post-reload: gfx.getLayerCount should return 4");
 }
 
 // ============================================================

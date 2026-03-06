@@ -77,7 +77,7 @@ struct TextFixture {
 static void test_getTextWidth_default_size1() {
     printf("--- getTextWidth default font size 1 ---\n");
     TextFixture f;
-    f.exec("w = getTextWidth('Hello')");
+    f.exec("w = gfx.getTextWidth('Hello')");
     // 5 chars * 6 px = 30
     ASSERT(f.getNum("w") == 30.0, "getTextWidth('Hello') should be 30 at size 1");
 }
@@ -88,7 +88,7 @@ static void test_getTextWidth_default_size1() {
 static void test_getTextWidth_default_size2() {
     printf("--- getTextWidth default font size 2 ---\n");
     TextFixture f;
-    f.exec("setTextSize(2); w = getTextWidth('Hi')");
+    f.exec("gfx.setTextSize(2); w = gfx.getTextWidth('Hi')");
     // 2 chars * 6 px * 2 = 24
     ASSERT(f.getNum("w") == 24.0, "getTextWidth('Hi') should be 24 at size 2");
 }
@@ -99,7 +99,7 @@ static void test_getTextWidth_default_size2() {
 static void test_getTextWidth_empty() {
     printf("--- getTextWidth empty string ---\n");
     TextFixture f;
-    f.exec("w = getTextWidth('')");
+    f.exec("w = gfx.getTextWidth('')");
     ASSERT(f.getNum("w") == 0.0, "getTextWidth('') should be 0");
 }
 
@@ -109,8 +109,8 @@ static void test_getTextWidth_empty() {
 static void test_getTextHeight_default_size1() {
     printf("--- getTextHeight default font size 1 ---\n");
     TextFixture f;
-    f.exec("h = getTextHeight()");
-    ASSERT(f.getNum("h") == 8.0, "getTextHeight() should be 8 at size 1 (default 5x7)");
+    f.exec("h = gfx.getTextHeight()");
+    ASSERT(f.getNum("h") == 8.0, "gfx.getTextHeight() should be 8 at size 1 (default 5x7)");
 }
 
 // ============================================================
@@ -119,8 +119,8 @@ static void test_getTextHeight_default_size1() {
 static void test_getTextHeight_default_size3() {
     printf("--- getTextHeight default font size 3 ---\n");
     TextFixture f;
-    f.exec("setTextSize(3); h = getTextHeight()");
-    ASSERT(f.getNum("h") == 24.0, "getTextHeight() should be 24 at size 3");
+    f.exec("gfx.setTextSize(3); h = gfx.getTextHeight()");
+    ASSERT(f.getNum("h") == 24.0, "gfx.getTextHeight() should be 24 at size 3");
 }
 
 // ============================================================
@@ -129,8 +129,8 @@ static void test_getTextHeight_default_size3() {
 static void test_getTextHeight_default8() {
     printf("--- getTextHeight default8 font size 1 ---\n");
     TextFixture f;
-    f.exec("setFont('default8'); h = getTextHeight()");
-    ASSERT(f.getNum("h") == 14.0, "getTextHeight() should be 14 for default8 at size 1");
+    f.exec("gfx.setFont('default8'); h = gfx.getTextHeight()");
+    ASSERT(f.getNum("h") == 14.0, "gfx.getTextHeight() should be 14 for default8 at size 1");
 }
 
 // ============================================================
@@ -139,7 +139,7 @@ static void test_getTextHeight_default8() {
 static void test_text_draws_pixels() {
     printf("--- text() draws pixels ---\n");
     TextFixture f;
-    f.exec("setColor(7); text('A', 0, 0)");
+    f.exec("gfx.setColor(7); gfx.text('A', 0, 0)");
     // 'A' at size 1 should write some non-zero pixels in the 6x8 area at (0,0)
     ASSERT(f.hasNonZeroPixel(0, 0, 6, 8), "text('A',0,0) should produce non-zero pixels in 6x8 region");
 }
@@ -150,7 +150,7 @@ static void test_text_draws_pixels() {
 static void test_text_no_bleed() {
     printf("--- text() no bleed beyond glyph ---\n");
     TextFixture f;
-    f.exec("setColor(7); text('A', 10, 10)");
+    f.exec("gfx.setColor(7); gfx.text('A', 10, 10)");
     // Row 0..9 and column 0..9 should be blank (character starts at 10,10)
     ASSERT(f.regionIsBlank(0, 0, 10, 10), "area before origin should be blank");
     // Past the glyph: column 16+ should be blank (10 + 6 = 16)
@@ -163,8 +163,8 @@ static void test_text_no_bleed() {
 static void test_setTextSize_roundtrip() {
     printf("--- setTextSize / getTextSize roundtrip ---\n");
     TextFixture f;
-    f.exec("setTextSize(4); sz = getTextSize()");
-    ASSERT(f.getNum("sz") == 4.0, "getTextSize() should return 4 after setTextSize(4)");
+    f.exec("gfx.setTextSize(4); sz = gfx.getTextSize()");
+    ASSERT(f.getNum("sz") == 4.0, "gfx.getTextSize() should return 4 after gfx.setTextSize(4)");
 }
 
 // ============================================================
@@ -173,9 +173,9 @@ static void test_setTextSize_roundtrip() {
 static void test_setFont_roundtrip() {
     printf("--- setFont / getFont roundtrip ---\n");
     TextFixture f;
-    f.exec("setFont('default8'); f1 = getFont(); setFont('default'); f2 = getFont()");
-    ASSERT(f.getStr("f1") == "default8", "getFont() should return 'default8'");
-    ASSERT(f.getStr("f2") == "default",  "getFont() should return 'default' after switching back");
+    f.exec("gfx.setFont('default8'); f1 = gfx.getFont(); gfx.setFont('default'); f2 = gfx.getFont()");
+    ASSERT(f.getStr("f1") == "default8", "gfx.getFont() should return 'default8'");
+    ASSERT(f.getStr("f2") == "default",  "gfx.getFont() should return 'default' after switching back");
 }
 
 // ============================================================
@@ -184,8 +184,8 @@ static void test_setFont_roundtrip() {
 static void test_setFont_unknown_keeps_current() {
     printf("--- setFont unknown name keeps current ---\n");
     TextFixture f;
-    f.exec("setFont('default8'); setFont('nonexistent'); f = getFont()");
-    ASSERT(f.getStr("f") == "default8", "setFont('nonexistent') should keep 'default8'");
+    f.exec("gfx.setFont('default8'); gfx.setFont('nonexistent'); f = gfx.getFont()");
+    ASSERT(f.getStr("f") == "default8", "gfx.setFont('nonexistent') should keep 'default8'");
 }
 
 // ============================================================
@@ -195,7 +195,7 @@ static void test_text_newline() {
     printf("--- text() with newline ---\n");
     TextFixture f;
     // Draw two lines: "A\nB" at (0,0). Second line starts at y=8 for default font.
-    f.exec("setColor(7); text('A\\nB', 0, 0)");
+    f.exec("gfx.setColor(7); gfx.text('A\\nB', 0, 0)");
     ASSERT(f.hasNonZeroPixel(0, 0, 6, 8), "first line 'A' should have pixels in row 0..7");
     ASSERT(f.hasNonZeroPixel(0, 8, 6, 8), "second line 'B' should have pixels in row 8..15");
 }
@@ -208,7 +208,7 @@ static void test_textWrapped_wraps() {
     TextFixture f;
     // "AAA BBB" with maxWidth=24 (4 chars fit: 4*6=24). "AAA " = 4 chars = 24 px.
     // "BBB" won't fit on the same line, so it wraps.
-    f.exec("setColor(7); textWrapped('AAA BBB', 0, 0, 24)");
+    f.exec("gfx.setColor(7); gfx.textWrapped('AAA BBB', 0, 0, 24)");
     ASSERT(f.hasNonZeroPixel(0, 0, 24, 8), "first line 'AAA ' should have pixels");
     ASSERT(f.hasNonZeroPixel(0, 8, 24, 8), "wrapped line 'BBB' should have pixels on row 8+");
 }
@@ -220,7 +220,7 @@ static void test_textWrapped_no_wrap_if_fits() {
     printf("--- textWrapped() no wrap when text fits ---\n");
     TextFixture f;
     // "Hi" = 2*6 = 12 px, maxWidth = 60: fits on one line
-    f.exec("setColor(7); textWrapped('Hi', 0, 0, 60)");
+    f.exec("gfx.setColor(7); gfx.textWrapped('Hi', 0, 0, 60)");
     ASSERT(f.hasNonZeroPixel(0, 0, 12, 8), "text should render on first line");
     ASSERT(f.regionIsBlank(0, 8, 60, 8),   "no second line when text fits");
 }
@@ -231,7 +231,7 @@ static void test_textWrapped_no_wrap_if_fits() {
 static void test_getTextWidth_default8() {
     printf("--- getTextWidth with default8 font ---\n");
     TextFixture f;
-    f.exec("setFont('default8'); w = getTextWidth('A')");
+    f.exec("gfx.setFont('default8'); w = gfx.getTextWidth('A')");
     // defaultFont8pt7b 'A' glyph xAdvance = 5 (from glyph table at index 0x41-0x20)
     ASSERT(f.getNum("w") == 5.0, "getTextWidth('A') should be 5 for default8 font");
 }
@@ -242,7 +242,7 @@ static void test_getTextWidth_default8() {
 static void test_text_size2_larger() {
     printf("--- text() at size 2 produces larger output ---\n");
     TextFixture f;
-    f.exec("setColor(7); setTextSize(2); text('A', 0, 0)");
+    f.exec("gfx.setColor(7); gfx.setTextSize(2); gfx.text('A', 0, 0)");
     // Size 2: glyph spans 12x16 pixels (6*2 x 8*2)
     ASSERT(f.hasNonZeroPixel(0, 0, 12, 16), "size 2 'A' should have pixels in 12x16 region");
     // The region beyond the scaled glyph should be blank
@@ -255,11 +255,11 @@ static void test_text_size2_larger() {
 static void test_text_state_reset_on_reload() {
     printf("--- text state resets on registerAll reload ---\n");
     TextFixture f;
-    f.exec("setTextSize(4); setFont('default8')");
+    f.exec("gfx.setTextSize(4); gfx.setFont('default8')");
     ASSERT(f.getNum("") == 0.0 || true, ""); // dummy; real checks below
     // Simulate reload
     f.bindings.registerAll();
-    f.exec("sz = getTextSize(); fn = getFont()");
+    f.exec("sz = gfx.getTextSize(); fn = gfx.getFont()");
     ASSERT(f.getNum("sz") == 1.0,       "textSize should reset to 1 after registerAll()");
     ASSERT(f.getStr("fn") == "default", "font should reset to 'default' after registerAll()");
 }

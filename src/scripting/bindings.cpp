@@ -488,98 +488,76 @@ void LuaBindings::registerAll() {
     lua_pushlightuserdata(L, &m_eventBus);
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_event_bus");
 
-    // Canvas functions
-    engine->registerFunction("getWidth", lua_getWidth);
-    engine->registerFunction("getHeight", lua_getHeight);
-    engine->registerFunction("clear", lua_clear);
+    // === gfx.* namespace table ===
+    lua_newtable(L);
 
-    // Drawing state functions (love2d.graphics style)
-    engine->registerFunction("setColor", lua_setColor);
-    engine->registerFunction("getColor", lua_getColor);
-    engine->registerFunction("setLineWidth", lua_setLineWidth);
-    engine->registerFunction("getLineWidth", lua_getLineWidth);
+    // Canvas
+    lua_pushcfunction(L, lua_getWidth);       lua_setfield(L, -2, "getWidth");
+    lua_pushcfunction(L, lua_getHeight);      lua_setfield(L, -2, "getHeight");
+    lua_pushcfunction(L, lua_clear);          lua_setfield(L, -2, "clear");
 
-    // Drawing primitives
-    engine->registerFunction("point", lua_point);
-    engine->registerFunction("line", lua_line);
-    engine->registerFunction("rectangle", lua_rectangle);
-    engine->registerFunction("circle", lua_circle);
-    engine->registerFunction("triangle", lua_triangle);
+    // Drawing state
+    lua_pushcfunction(L, lua_setColor);       lua_setfield(L, -2, "setColor");
+    lua_pushcfunction(L, lua_getColor);       lua_setfield(L, -2, "getColor");
+    lua_pushcfunction(L, lua_setLineWidth);   lua_setfield(L, -2, "setLineWidth");
+    lua_pushcfunction(L, lua_getLineWidth);   lua_setfield(L, -2, "getLineWidth");
+
+    // Primitives
+    lua_pushcfunction(L, lua_point);          lua_setfield(L, -2, "point");
+    lua_pushcfunction(L, lua_line);           lua_setfield(L, -2, "line");
+    lua_pushcfunction(L, lua_rectangle);      lua_setfield(L, -2, "rectangle");
+    lua_pushcfunction(L, lua_circle);         lua_setfield(L, -2, "circle");
+    lua_pushcfunction(L, lua_triangle);       lua_setfield(L, -2, "triangle");
 
     // Pixel access
-    engine->registerFunction("setPixel", lua_setPixel);
-    engine->registerFunction("getPixel", lua_getPixel);
+    lua_pushcfunction(L, lua_setPixel);       lua_setfield(L, -2, "setPixel");
+    lua_pushcfunction(L, lua_getPixel);       lua_setfield(L, -2, "getPixel");
 
-    // Utility functions
-    engine->registerFunction("print", lua_print);
-
-    // High-performance optimized drawing functions
-    engine->registerFunction("fastFillRect", lua_fastFillRect);
-    engine->registerFunction("fastDrawLine", lua_fastDrawLine);
+    // Fast drawing
+    lua_pushcfunction(L, lua_fastFillRect);   lua_setfield(L, -2, "fastFillRect");
+    lua_pushcfunction(L, lua_fastDrawLine);   lua_setfield(L, -2, "fastDrawLine");
 
     // Palette
-    engine->registerFunction("setPaletteColor", lua_setPaletteColor);
-    engine->registerFunction("getPaletteColor", lua_getPaletteColor);
-    engine->registerFunction("loadPalette", lua_loadPalette);
-    engine->registerFunction("getPaletteSize", lua_getPaletteSize);
+    lua_pushcfunction(L, lua_setPaletteColor); lua_setfield(L, -2, "setPaletteColor");
+    lua_pushcfunction(L, lua_getPaletteColor); lua_setfield(L, -2, "getPaletteColor");
+    lua_pushcfunction(L, lua_loadPalette);     lua_setfield(L, -2, "loadPalette");
+    lua_pushcfunction(L, lua_getPaletteSize);  lua_setfield(L, -2, "getPaletteSize");
 
-    // Input polling (INP-05)
-    engine->registerFunction("isButtonHeld",        lua_isButtonHeld);
-    engine->registerFunction("isButtonJustPressed",  lua_isButtonJustPressed);
-    engine->registerFunction("isButtonJustReleased", lua_isButtonJustReleased);
-    engine->registerFunction("getAxis",              lua_getAxis);
+    // Sprites
+    lua_pushcfunction(L, lua_newSprite);      lua_setfield(L, -2, "newSprite");
+    lua_pushcfunction(L, lua_freeSprite);     lua_setfield(L, -2, "freeSprite");
+    lua_pushcfunction(L, lua_drawSprite);     lua_setfield(L, -2, "drawSprite");
+    lua_pushcfunction(L, lua_updateSprite);   lua_setfield(L, -2, "updateSprite");
+    lua_pushcfunction(L, lua_setFrame);       lua_setfield(L, -2, "setFrame");
 
-    // Sprite pool (SPR-06)
-    engine->registerFunction("newSprite",    lua_newSprite);
-    engine->registerFunction("freeSprite",   lua_freeSprite);
-    engine->registerFunction("drawSprite",   lua_drawSprite);
-    engine->registerFunction("updateSprite", lua_updateSprite);
-    engine->registerFunction("setFrame",     lua_setFrame);
-
-    // Layer system (LAYER-06)
-    engine->registerFunction("setLayer",        lua_setLayer);
-    engine->registerFunction("getLayer",        lua_getLayer);
-    engine->registerFunction("clearLayer",      lua_clearLayer);
-    engine->registerFunction("getLayerCount",   lua_getLayerCount);
-    engine->registerFunction("setLayerVisible", lua_setLayerVisible);
-    engine->registerFunction("isLayerVisible",  lua_isLayerVisible);
+    // Layers
+    lua_pushcfunction(L, lua_setLayer);       lua_setfield(L, -2, "setLayer");
+    lua_pushcfunction(L, lua_getLayer);       lua_setfield(L, -2, "getLayer");
+    lua_pushcfunction(L, lua_clearLayer);     lua_setfield(L, -2, "clearLayer");
+    lua_pushcfunction(L, lua_getLayerCount);  lua_setfield(L, -2, "getLayerCount");
+    lua_pushcfunction(L, lua_setLayerVisible); lua_setfield(L, -2, "setLayerVisible");
+    lua_pushcfunction(L, lua_isLayerVisible); lua_setfield(L, -2, "isLayerVisible");
 
     // Text
-    engine->registerFunction("text",            lua_text);
-    engine->registerFunction("textWrapped",     lua_textWrapped);
-    engine->registerFunction("textCentered",    lua_textCentered);
-    engine->registerFunction("textAligned",     lua_textAligned);
-    engine->registerFunction("setTextSize",    lua_setTextSize);
-    engine->registerFunction("getTextSize",     lua_getTextSize);
-    engine->registerFunction("setFont",        lua_setFont);
-    engine->registerFunction("getFont",        lua_getFont);
-    engine->registerFunction("getTextWidth",    lua_getTextWidth);
-    engine->registerFunction("getTextHeight",  lua_getTextHeight);
+    lua_pushcfunction(L, lua_text);           lua_setfield(L, -2, "text");
+    lua_pushcfunction(L, lua_textWrapped);    lua_setfield(L, -2, "textWrapped");
+    lua_pushcfunction(L, lua_textCentered);   lua_setfield(L, -2, "textCentered");
+    lua_pushcfunction(L, lua_textAligned);    lua_setfield(L, -2, "textAligned");
+    lua_pushcfunction(L, lua_setTextSize);    lua_setfield(L, -2, "setTextSize");
+    lua_pushcfunction(L, lua_getTextSize);    lua_setfield(L, -2, "getTextSize");
+    lua_pushcfunction(L, lua_setFont);        lua_setfield(L, -2, "setFont");
+    lua_pushcfunction(L, lua_getFont);        lua_setfield(L, -2, "getFont");
+    lua_pushcfunction(L, lua_getTextWidth);   lua_setfield(L, -2, "getTextWidth");
+    lua_pushcfunction(L, lua_getTextHeight);  lua_setfield(L, -2, "getTextHeight");
 
-    // Pre-register built-in 8pt font so setFont("default8") works
-    registerFont("default8", &defaultFont8pt7b);
+    // Layer constants nested under gfx (Lua 1-indexed)
+    lua_pushinteger(L, 1); lua_setfield(L, -2, "LAYER_BG");
+    lua_pushinteger(L, 2); lua_setfield(L, -2, "LAYER_MID");
+    lua_pushinteger(L, 3); lua_setfield(L, -2, "LAYER_FG");
+    lua_pushinteger(L, 4); lua_setfield(L, -2, "LAYER_UI");
+    lua_pushinteger(L, 5); lua_setfield(L, -2, "LAYER_DEBUG");
 
-    // Layer global constants (Lua 1-indexed)
-    lua_pushinteger(L, 1); lua_setglobal(L, "LAYER_BG");
-    lua_pushinteger(L, 2); lua_setglobal(L, "LAYER_MID");
-    lua_pushinteger(L, 3); lua_setglobal(L, "LAYER_FG");
-    lua_pushinteger(L, 4); lua_setglobal(L, "LAYER_UI");
-    lua_pushinteger(L, 5); lua_setglobal(L, "LAYER_DEBUG");
-
-    // Built-in button constants — BTN.UP, BTN.DOWN, BTN.LEFT, etc.
-    // Indices match InputState button order: 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT, 4=A(Z), 5=B(X), 6=START
-    lua_newtable(L);
-    lua_pushinteger(L, 0); lua_setfield(L, -2, "UP");
-    lua_pushinteger(L, 1); lua_setfield(L, -2, "DOWN");
-    lua_pushinteger(L, 2); lua_setfield(L, -2, "LEFT");
-    lua_pushinteger(L, 3); lua_setfield(L, -2, "RIGHT");
-    lua_pushinteger(L, 4); lua_setfield(L, -2, "A");
-    lua_pushinteger(L, 5); lua_setfield(L, -2, "B");
-    lua_pushinteger(L, 6); lua_setfield(L, -2, "START");
-    lua_setglobal(L, "BTN");
-
-    // Built-in palette color constants — COLOR.BLACK, COLOR.RED, etc.
-    // Matches the default 16-color PICO-8-inspired palette (indices 0-15)
+    // COLOR table nested under gfx
     lua_newtable(L);
     lua_pushinteger(L, 0);  lua_setfield(L, -2, "BLACK");
     lua_pushinteger(L, 1);  lua_setfield(L, -2, "DARK_BLUE");
@@ -597,43 +575,27 @@ void LuaBindings::registerAll() {
     lua_pushinteger(L, 13); lua_setfield(L, -2, "INDIGO");
     lua_pushinteger(L, 14); lua_setfield(L, -2, "PINK");
     lua_pushinteger(L, 15); lua_setfield(L, -2, "TRANSPARENT");
-    lua_setglobal(L, "COLOR");
+    lua_setfield(L, -2, "COLOR");  // gfx.COLOR
 
-    // Create love2d.graphics-style table for familiarity
+    lua_setglobal(L, "gfx");
+
+    // === print() stays as bare global ===
+    engine->registerFunction("print", lua_print);
+
+    // Pre-register built-in 8pt font so setFont("default8") works
+    registerFont("default8", &defaultFont8pt7b);
+
+    // === BTN stays as bare global ===
+    // Indices match InputState button order: 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT, 4=A(Z), 5=B(X), 6=START
     lua_newtable(L);
-    lua_pushcfunction(L, lua_rectangle);
-    lua_setfield(L, -2, "draw");
-    lua_setglobal(L, "love");
-
-    // Create graphics subtable properly
-    lua_getglobal(L, "love");
-    if (lua_istable(L, -1)) {
-        lua_newtable(L);  // Create graphics table
-
-        // Add functions to graphics table
-        lua_pushcfunction(L, lua_setColor);
-        lua_setfield(L, -2, "setColor");
-        lua_pushcfunction(L, lua_getColor);
-        lua_setfield(L, -2, "getColor");
-        lua_pushcfunction(L, lua_setLineWidth);
-        lua_setfield(L, -2, "setLineWidth");
-        lua_pushcfunction(L, lua_getLineWidth);
-        lua_setfield(L, -2, "getLineWidth");
-        lua_pushcfunction(L, lua_point);
-        lua_setfield(L, -2, "point");
-        lua_pushcfunction(L, lua_line);
-        lua_setfield(L, -2, "line");
-        lua_pushcfunction(L, lua_rectangle);
-        lua_setfield(L, -2, "rectangle");
-        lua_pushcfunction(L, lua_circle);
-        lua_setfield(L, -2, "circle");
-        lua_pushcfunction(L, lua_clear);
-        lua_setfield(L, -2, "clear");
-
-        // Set graphics table as love.graphics
-        lua_setfield(L, -2, "graphics");
-    }
-    lua_pop(L, 1);
+    lua_pushinteger(L, 0); lua_setfield(L, -2, "UP");
+    lua_pushinteger(L, 1); lua_setfield(L, -2, "DOWN");
+    lua_pushinteger(L, 2); lua_setfield(L, -2, "LEFT");
+    lua_pushinteger(L, 3); lua_setfield(L, -2, "RIGHT");
+    lua_pushinteger(L, 4); lua_setfield(L, -2, "A");
+    lua_pushinteger(L, 5); lua_setfield(L, -2, "B");
+    lua_pushinteger(L, 6); lua_setfield(L, -2, "START");
+    lua_setglobal(L, "BTN");
 
     // Register engine.* global table (ENG-06: must be before any script loads)
     registerEngineTable();

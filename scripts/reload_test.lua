@@ -1,4 +1,4 @@
--- reload_test.lua — Hot-reload test script for enjin2
+-- reload_test.lua -- Hot-reload test script for enjin2
 -- Usage: ./build/bin/enjin2_sdl --script scripts/reload_test.lua
 -- Edit the parameters below, save, press F5 to see changes.
 
@@ -18,32 +18,32 @@ local RECT_H = 30 -- rectangle height           (1-128)
 -- ====================================================================
 
 function update(self, dt)
-	-- Nothing to update — this is a static scene.
+	-- Nothing to update -- this is a static scene.
 	-- Add animation here if you want to test reload mid-motion.
 end
 
 function draw(self)
 	-- Layer 1 (BG): solid fill
-	setLayer(LAYER_BG)
-	clear(BG_COLOR)
+	gfx.setLayer(gfx.LAYER_BG)
+	gfx.clear(BG_COLOR)
 
 	-- Layer 2 (MID): rectangle
-	setLayer(LAYER_MID)
-	setColor(RECT_COLOR)
-	rectangle("fill", RECT_X, RECT_Y, RECT_W, RECT_H)
+	gfx.setLayer(gfx.LAYER_MID)
+	gfx.setColor(RECT_COLOR)
+	gfx.rectangle("fill", RECT_X, RECT_Y, RECT_W, RECT_H)
 
 	-- Layer 3 (FG): circle
-	setLayer(LAYER_FG)
-	setColor(CIRCLE_COLOR)
-	circle("fill", CIRCLE_X, CIRCLE_Y, CIRCLE_RADIUS)
+	gfx.setLayer(gfx.LAYER_FG)
+	gfx.setColor(CIRCLE_COLOR)
+	gfx.circle("fill", CIRCLE_X, CIRCLE_Y, CIRCLE_RADIUS)
 
 	-- Layer 4 (UI): parameter readout as colored bar
-	setLayer(LAYER_UI)
-	setColor(7) -- white
-	rectangle("fill", 0, 0, 128, 8)
-	setColor(0) -- black dots showing reload worked
+	gfx.setLayer(gfx.LAYER_UI)
+	gfx.setColor(7) -- white
+	gfx.rectangle("fill", 0, 0, 128, 8)
+	gfx.setColor(0) -- black dots showing reload worked
 	for i = 0, CIRCLE_RADIUS / 3 do
-		point(2 + i * 3, 3)
+		gfx.point(2 + i * 3, 3)
 	end
 end
 

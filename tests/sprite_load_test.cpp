@@ -151,7 +151,7 @@ TEST_F(SpriteAssetLoaderTest, DrawLoadedSprite) {
     const char* script = R"(
         handle = engine.sprite.load("test_pikachu")
         if handle >= 0 then
-            drawSprite(handle, 10, 10)
+            gfx.drawSprite(handle, 10, 10)
         end
     )";
 
@@ -177,7 +177,7 @@ TEST_F(SpriteAssetLoaderTest, FreeAndReloadSprite) {
     lua_.execute("h1 = engine.sprite.load('test_pikachu')");
     
     // Free it
-    lua_.execute("freeSprite(h1)");
+    lua_.execute("gfx.freeSprite(h1)");
 
     // Load again, should reuse slot 0
     lua_.execute("h2 = engine.sprite.load('test_pikachu')");

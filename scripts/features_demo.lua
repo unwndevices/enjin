@@ -7,9 +7,7 @@
 -- Requires host to push: PIKACHU_DATA (lightuserdata), PIKACHU_W, PIKACHU_H
 -- Run with: ./sprite_sdl_test --lua scripts/features_demo.lua
 
--- ═══════════════════════════════════════════════════════
 -- Initialization
--- ═══════════════════════════════════════════════════════
 local sprite = -1
 local W, H = 0, 0
 
@@ -41,12 +39,10 @@ function init_sparkles()
     end
 end
 
--- ═══════════════════════════════════════════════════════
 -- UPDATE
--- ═══════════════════════════════════════════════════════
 function update(dt)
-    W = getWidth()
-    H = getHeight()
+    W = gfx.getWidth()
+    H = gfx.getHeight()
 
     -- Animate sprite through flip modes
     flip_timer = flip_timer + dt
@@ -63,7 +59,7 @@ function update(dt)
 
     -- Animate sprite
     if sprite >= 0 then
-        updateSprite(sprite, dt)
+        gfx.updateSprite(sprite, dt)
     end
 end
 
@@ -139,11 +135,9 @@ function update_sparkles(dt)
     end
 end
 
--- ═══════════════════════════════════════════════════════
 -- DRAW
--- ═══════════════════════════════════════════════════════
 function draw()
-    clear(0)
+    gfx.clear(0)
 
     -- Draw sparkle particles (RNG demo)
     draw_sparkles()
@@ -178,12 +172,12 @@ function draw_pikachu()
     elseif flip_mode == 5 then rot90 = true; flipH = true
     end
 
-    drawSprite(sprite, cx, cy, flipH, flipV, rot90)
+    gfx.drawSprite(sprite, cx, cy, flipH, flipV, rot90)
 end
 
 function draw_ball()
-    setColor(9) -- bright red
-    circle(math.floor(ball.x), math.floor(ball.y), ball.r)
+    gfx.setColor(9) -- bright red
+    gfx.circle(math.floor(ball.x), math.floor(ball.y), ball.r)
 end
 
 function draw_sparkles()
@@ -192,26 +186,26 @@ function draw_sparkles()
         if s.life > 0 then
             -- Fade: use brighter color when life is higher
             local frac = s.life / s.maxlife
-            setColor(s.color)
+            gfx.setColor(s.color)
             if frac > 0.5 then
                 -- Full sparkle: 3x3 cross
-                setPixel(math.floor(s.x), math.floor(s.y))
-                setPixel(math.floor(s.x) - 1, math.floor(s.y))
-                setPixel(math.floor(s.x) + 1, math.floor(s.y))
-                setPixel(math.floor(s.x), math.floor(s.y) - 1)
-                setPixel(math.floor(s.x), math.floor(s.y) + 1)
+                gfx.setPixel(math.floor(s.x), math.floor(s.y))
+                gfx.setPixel(math.floor(s.x) - 1, math.floor(s.y))
+                gfx.setPixel(math.floor(s.x) + 1, math.floor(s.y))
+                gfx.setPixel(math.floor(s.x), math.floor(s.y) - 1)
+                gfx.setPixel(math.floor(s.x), math.floor(s.y) + 1)
             else
                 -- Fading: single pixel
-                setPixel(math.floor(s.x), math.floor(s.y))
+                gfx.setPixel(math.floor(s.x), math.floor(s.y))
             end
         end
     end
 end
 
 function draw_labels()
-    setColor(7) -- white
+    gfx.setColor(7) -- white
     local label = flip_labels[flip_mode + 1] or "?"
-    text(label, 1, H - 18)
+    gfx.text(label, 1, H - 18)
 end
 
 function draw_palette_strip()
@@ -219,17 +213,15 @@ function draw_palette_strip()
     local strip_y = H - strip_h
     local cell_w = 8
     for i = 0, 14 do
-        setColor(i)
-        rectangle(i * cell_w, strip_y, cell_w, strip_h)
+        gfx.setColor(i)
+        gfx.rectangle(i * cell_w, strip_y, cell_w, strip_h)
     end
 end
 
--- ═══════════════════════════════════════════════════════
 -- Script load: create pikachu sprite
--- ═══════════════════════════════════════════════════════
 if PIKACHU_DATA then
-    sprite = newSprite(PIKACHU_DATA, PIKACHU_W, PIKACHU_H, 1, 1)
+    sprite = gfx.newSprite(PIKACHU_DATA, PIKACHU_W, PIKACHU_H, 1, 1)
     if sprite >= 0 then
-        setFrame(sprite, 0)
+        gfx.setFrame(sprite, 0)
     end
 end
