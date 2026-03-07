@@ -37,3 +37,21 @@ target_link_libraries(bench_ecs PRIVATE
     enjin2_graphics
     enjin2_ui
 )
+
+# bench_lua — LuaEngine headless benchmarks (BENCH-04)
+# Only available when Lua is enabled (enjin2_lua target must exist)
+# enjin2_lua transitively carries LUA_LIBRARIES — no explicit Lua link needed
+if(TARGET enjin2_lua)
+    add_executable(bench_lua bench_lua.cpp)
+    target_include_directories(bench_lua PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${LUA_INCLUDE_DIRS}
+    )
+    target_link_libraries(bench_lua PRIVATE
+        nanobench_vendor
+        enjin2_lua
+        enjin2_core
+        enjin2_graphics
+        enjin2_ui
+    )
+endif()
