@@ -18,3 +18,22 @@ target_link_libraries(bench_smoke PRIVATE
     enjin2_core
     enjin2_graphics
 )
+
+# bench_canvas — Canvas4/Canvas8/LayerCompositor pixel op benchmarks (BENCH-02)
+add_executable(bench_canvas bench_canvas.cpp)
+target_include_directories(bench_canvas PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(bench_canvas PRIVATE
+    nanobench_vendor
+    enjin2_core
+    enjin2_graphics
+)
+
+# bench_ecs — Object/Scene/Component ECS benchmarks (BENCH-03)
+add_executable(bench_ecs bench_ecs.cpp)
+target_include_directories(bench_ecs PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(bench_ecs PRIVATE
+    nanobench_vendor
+    enjin2_core
+    enjin2_graphics
+    enjin2_ui
+)
