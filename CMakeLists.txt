@@ -256,6 +256,16 @@ if(ENJIN2_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Benchmarks (desktop only — nanobench requires POSIX/Linux perf headers)
+option(ENJIN2_BUILD_BENCHMARKS "Build nanobench benchmark suite (desktop only)" OFF)
+
+if(ENJIN2_BUILD_BENCHMARKS)
+    if(EMSCRIPTEN OR ESP32)
+        message(FATAL_ERROR "ENJIN2_BUILD_BENCHMARKS is not supported on WASM or ESP32 targets")
+    endif()
+    add_subdirectory(benchmarks)
+endif()
+
 # WebAssembly build
 if(ENJIN2_BUILD_WASM)
     if(NOT EMSCRIPTEN)
