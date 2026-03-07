@@ -1,36 +1,22 @@
 # Stack Research
 
-**Domain:** Cross-platform 2D engine hardening — WASM/Emscripten build verification, ESP32 NVS storage, WASM localStorage bridge, Arch Linux dev setup scripting, Docusaurus tutorial authoring (v1.8)
-**Researched:** 2026-03-02
-**Confidence:** HIGH for Emscripten/ESP-IDF/Docusaurus APIs (verified via official docs, WebSearch with multiple agreeing sources); MEDIUM for specific version pinning (emsdk 3.1.73 vs 4.x trade-off)
+**Domain:** C++ game engine benchmarking & performance infrastructure (enjin2 v1.10)
+**Researched:** 2026-03-07
+**Confidence:** HIGH — nanobench and github-action-benchmark verified via official releases and docs; lua_sethook is stable Lua 5.4 C API; operator new override is standard C++17; SDL_GetPerformanceCounter is documented SDL3 API.
 
 ---
 
 ## Scope
 
-This document covers **only stack additions and integration decisions for v1.8 Ship Ready**. It does not re-research validated v1.0–v1.7 capabilities (SDL3 runner, LuaJIT scripting, CMake multi-target build, Docusaurus + Doxygen pipeline, etc.).
+This document covers **only the new stack additions for v1.10 Benchmarking & Performance**. It does not re-research validated capabilities from v1.0–v1.9 (SDL3 runner, Lua scripting, CMake multi-target, GitHub Actions docs pipeline, etc.).
 
-The v1.8 work is an integration and hardening milestone — new code is thin, mostly glue. The major technical decisions are:
+The v1.10 work requires exactly five new capabilities:
 
-1. Which Emscripten version to pin for the WASM build
-2. How to bridge `localStorage` to `LuaStore::saveToFile/loadFromFile` on WASM
-3. Which ESP-IDF NVS API calls satisfy `LuaStore` on ESP32
-4. What Arch Linux packages the dev setup script needs
-5. How to structure tutorial docs in the existing Docusaurus site
-
----
-
-## What Already Exists (Critical Integration Context)
-
-| Existing Element | Implication for v1.8 |
-|-----------------|----------------------|
-| `build_wasm.sh` — sources emsdk from `../emsdk`, calls `emcmake cmake` | Setup script must install emsdk alongside the repo, or update script path. The `source emsdk_env.sh` pattern is already used — dev script just automates this |
-| `CMakeLists.txt` — `ENJIN2_BUILD_WASM=ON` target with Embind, `EXPORT_ES6=1`, `MODULARIZE=1` | Emscripten 4.x requires C++17 for Embind. CMake already sets `CMAKE_CXX_STANDARD 17` globally — this constraint is already satisfied |
-| `src/scripting/bindings_store.cpp` — `#if !defined(ESP32) && !defined(__EMSCRIPTEN__)` guard around `saveToFile`/`loadFromFile` | WASM and ESP32 implementations live inside this guard region. The `#else` stub `return false` is the integration point — replace with real implementations |
-| `src/bindings/emscripten_bindings.cpp` — uses `emscripten::val`, `typed_memory_view`, `EM_BINDINGS` | `EM_JS` macro for localStorage is the natural companion — same file, or a new `emscripten_store.cpp` |
-| `luajit/src/ljamalg.c` — LuaJIT amalgamated build with `LUAJIT_DISABLE_JIT`, `LUAJIT_DISABLE_FFI` | LuaJIT interpreter-only mode is already the WASM strategy — confirmed correct by research. Do not attempt JIT on WASM |
-| `src/scripting/lua_platform.cpp` — ESP32 branch includes `esp_heap_caps.h`, `esp_spiffs.h` | NVS headers (`nvs_flash.h`, `nvs.h`) follow the same pattern — include under `#ifdef ESP32` guard |
-| Docusaurus 3.9.2 already installed at `docs/package.json` with `@docusaurus/plugin-content-docs` (id: `api`) | Tutorial docs go into `docs/src/` (the guides plugin, `routeBasePath: '/'`). No new Docusaurus plugins needed for tutorials |
+1. Microbenchmark harness (nanobench) for canvas, ECS, and Lua subsystems
+2. CI regression detection dashboard (github-action-benchmark)
+3. Per-phase frame timing in the SDL3 runner (SDL_GetPerformanceCounter)
+4. Lua function call profiling via `lua_sethook` in a headless CLI runner
+5. Zero-alloc verification for hot paths (global `operator new` override in test TUs)
 
 ---
 
@@ -40,255 +26,208 @@ The v1.8 work is an integration and hardening milestone — new code is thin, mo
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Emscripten (emsdk) | **3.1.73** (pin, not `latest`) | Cross-compile enjin2 to WASM | 3.1.73 is the last widely-validated 3.1.x release. Emscripten 4.x landed early 2025 and requires a full rebuild. Pinning 3.1.73 avoids the 4.x Embind C++17 enforcement surprise (the project already uses C++17, so 4.x is actually safe — but 3.1.73 is what `build_wasm.sh` was written against, and version stability matters for reproducibility). If choosing 4.x, use 4.0.0+. The project's `CMAKE_CXX_STANDARD 17` satisfies the C++17 Embind requirement in either version. |
-| ESP-IDF | **v5.5.x** (latest stable) | Build and flash ESP32 target | v5.5.3 is the current stable as of 2026-03. NVS API is unchanged between v4.x and v5.x at the C call level. v6.0-beta1 exists but is beta — use stable. The AUR `esp-idf` package installs v5.5. |
-| ESP-IDF NVS component | Bundled in ESP-IDF v5.5 | Key-value persistent storage for LuaStore on ESP32 | NVS is the canonical Espressif mechanism for small key-value pairs. 15-char key limit, 4000-byte string limit — fits LuaStore's `STORE_MAX_KEY=16` and `STORE_MAX_STRING` constraints exactly. No external library. |
-| Emscripten `EM_JS` macro | Part of Emscripten SDK | localStorage bridge from C++ to browser | `localStorage` is synchronous on the JS side — no Asyncify needed. `EM_JS` with `UTF8ToString`/`stringToUTF8` is the correct, zero-overhead pattern for a C++ ↔ localStorage bridge. |
-| Docusaurus 3.9.2 (existing) | Already installed | Tutorial authoring | No version change needed. The existing dual-plugin setup (`guides` + `api`) supports tutorial docs in `docs/src/tutorials/`. Use `_category_.json` with `position` and `link.type: "generated-index"` for category pages. |
+| ankerl::nanobench | **v4.3.11** (Feb 16, 2025) | Microbenchmark harness for canvas/ECS/Lua suites | Single-header (`nanobench.h`), C++11/17 compatible, zero external deps. 65x faster autotuning than google/benchmark — critical for keeping CI build+run time low. Produces JSON natively via `templates::json()`. No test runner required — works as a standalone `main()`. FetchContent-compatible with the `nanobench::nanobench` alias. |
+| benchmark-action/github-action-benchmark | **v1** (latest 1.x) | CI performance regression dashboard and alerting | Accepts `customSmallerIsBetter` JSON format `[{name, value, unit}]` — bridges nanobench's JSON output with a ~5-line `jq` command. Auto-commits results to `gh-pages` branch (already exists for docs). Posts regression alerts as commit comments. Supports configurable threshold (`alert-threshold: '110%'`). Free, self-hosted, no external service dependency. |
+| SDL3 `SDL_GetPerformanceCounter` / `SDL_GetPerformanceFrequency` | SDL3 (already linked) | Per-phase frame timing (update/render/Lua/composite) | Already in the project, zero new deps. Returns a system high-resolution counter (nanosecond-scale on modern Linux/macOS/Windows). Store per-phase `uint64_t` snapshots in a plain `FrameStats` struct; convert to microseconds via `(end - start) * 1'000'000 / SDL_GetPerformanceFrequency()`. No locking needed for single-writer game loop. |
+| Lua 5.4 C API `lua_sethook` | Lua 5.4.8 / LuaJIT 2.x (already in project) | Lua profiling — per-function call counts and instruction sampling | Part of the stable Lua C API since Lua 5.1; unchanged in 5.4 and LuaJIT. Set mask `LUA_MASKCALL \| LUA_MASKRET` to count entries/exits per function. For instruction sampling: `LUA_MASKCOUNT` with a fixed interval (e.g., every 100 instructions). Official Lua docs confirm: the C API hook has lower overhead than a Lua-side `debug.sethook` hook — critical for valid profiling measurements. Zero new deps. |
+| Global `operator new` override (project header) | C++17 standard (no dep) | Zero-alloc verification — assert no heap allocation occurs in hot paths | Standard C++17 technique: define a global `operator new` / `operator new[]` in a test translation unit that aborts if a thread-local `g_alloc_forbidden` flag is set. Wrap hot-path code in a `NoAllocScope` RAII guard. Portable: works on ESP32 (xtensa-g++), Emscripten (emcc), and desktop. No LD_PRELOAD, no dynamic linking, no Linux-only constraint. Gate behind `ENJIN2_BUILD_TESTS` so production and firmware builds are unaffected. |
 
 ### Supporting Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| `nvs_flash.h` + `nvs.h` | ESP-IDF v5.5 (bundled) | NVS init + handle management | In `bindings_store.cpp` ESP32 branch: `nvs_flash_init()` once at boot, `nvs_open()` / `nvs_set_str()` / `nvs_get_str()` / `nvs_commit()` / `nvs_close()` per store operation |
-| `<emscripten.h>` | Emscripten SDK (bundled) | `EM_JS` macro for localStorage calls | In `bindings_store.cpp` WASM branch — already included transitively via the build, but include explicitly for `EM_JS` |
-| `@docusaurus/plugin-content-docs` | 3.9.2 (already installed) | Tutorial content instance | Already wired as the `guides` preset — tutorials drop into `docs/src/tutorials/` with appropriate frontmatter |
+| `<chrono>` (std) | C++17 (already required) | Fallback timer inside nanobench's implementation | Nanobench uses `<chrono>` internally — no manual use needed. Also usable for pure-C++ micro-timing outside SDL (e.g., benchmarking allocation-heavy setup code). |
+| `<atomic>` (std) | C++17 (already required) | Lock-free frame timing accumulators for rolling stats | Use `std::atomic<uint64_t>` for per-phase accumulated time and frame count in the SDL runner's `FrameStats` struct. Single-writer game loop means no contention; `std::atomic` with `memory_order_relaxed` load/store is sufficient. |
+| `jq` | Pre-installed on `ubuntu-latest` GitHub Actions runners | Convert nanobench JSON → github-action-benchmark custom format | A single `jq` one-liner transforms nanobench's `results[].{name, median}` into `[{name, value, unit}]`. No Python dependency, no added CI step. |
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| `emsdk` (git clone) | Emscripten SDK manager | Install at `~/emsdk` or alongside repo. `./emsdk install 3.1.73 && ./emsdk activate 3.1.73`. The `build_wasm.sh` looks for `../emsdk` relative to the project — dev script should honor this path or parameterize it |
-| `idf.py` (ESP-IDF) | ESP32 build + flash | Installed via `esp-idf` AUR package (places ESP-IDF at `/opt/esp-idf`) or manual clone + `./install.sh esp32` |
-| `yay` / `paru` (AUR helper) | Install AUR packages | Required for `esp-idf` from AUR. The dev script should check for an AUR helper before attempting AUR installs |
-| `python3` >= 3.10 | Emscripten + ESP-IDF runtime | Both toolchains require Python 3.10+. Arch ships current Python; verify with `python --version` |
-| Doxygen + Node 18+ | Doc generation (existing) | No change for v1.8 — already in the repo. Tutorial docs are plain Markdown, not Doxygen-generated |
+| `cmake -DENJIN2_BUILD_BENCHMARKS=ON` | Gate benchmark targets to SDL3 desktop only | Benchmarks use `<chrono>`, `std::cout`, and nanobench — all incompatible with bare-metal ESP32 and WASM. Gate the same way `ENJIN2_BUILD_TESTS` is gated: `if(ENJIN2_BUILD_BENCHMARKS AND NOT ESP32 AND NOT EMSCRIPTEN)`. |
+| `SDL_HINT_VIDEODRIVER=offscreen` | Run SDL3 headless for Lua profiler CLI mode | SDL3 supports an offscreen videodriver via this hint. Set it before `SDL_Init` in the runner when a `--headless` flag is passed. No window is created; game loop still runs normally. Confirmed in SDL3 docs. |
+| `--benchmark_filter` (nanobench runner arg) | Run a subset of benchmarks during development | Nanobench supports a `setName()` filter pattern via `ANKERL_NANOBENCH_CONFIG_CPP` or by argc/argv parsing in `main()`. Useful for iterating on a single subsystem without running the full suite. |
 
 ---
 
-## Arch Linux Package List (Dev Setup Script)
+## Installation
 
-This is the authoritative list for the `setup-dev-arch.sh` script. Verified against ESP-IDF v5.5 official Linux docs and Arch package search results.
+```cmake
+# CMakeLists.txt additions for v1.10
 
-### Pacman (official repos)
+option(ENJIN2_BUILD_BENCHMARKS "Build nanobench benchmark suite (SDL3 desktop only)" OFF)
 
-```bash
-sudo pacman -S --needed \
-  # WASM toolchain prerequisites
-  python python-pip \
-  cmake ninja \
-  git \
-  # ESP-IDF prerequisites
-  gcc make flex bison gperf \
-  ccache dfu-util libusb \
-  # Existing project deps (verify presence)
-  lua doxygen nodejs npm
+if(ENJIN2_BUILD_BENCHMARKS AND NOT ESP32 AND NOT EMSCRIPTEN)
+    include(FetchContent)
+    FetchContent_Declare(
+        nanobench
+        GIT_REPOSITORY https://github.com/martinus/nanobench.git
+        GIT_TAG        v4.3.11
+    )
+    FetchContent_MakeAvailable(nanobench)
+
+    add_executable(enjin2_bench
+        benchmarks/bench_canvas.cpp
+        benchmarks/bench_ecs.cpp
+        benchmarks/bench_lua.cpp
+        benchmarks/bench_main.cpp
+    )
+    target_link_libraries(enjin2_bench PRIVATE
+        enjin2
+        nanobench::nanobench
+    )
+    target_include_directories(enjin2_bench PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+endif()
 ```
 
-### AUR (via yay/paru)
-
-```bash
-yay -S --needed \
-  esp-idf \
-  ncurses5-compat-libs  # required for xtensa-esp32-elf-gdb on Arch
-```
-
-**Notes:**
-- `emscripten` is in the official `extra` repo (`sudo pacman -S emscripten`) at version 5.0.2-1 as of 2026-03. However, the project uses a manually-cloned emsdk for version pinning — using the pacman `emscripten` package bypasses version control. Recommend: skip pacman `emscripten`, clone emsdk manually and pin to 3.1.73.
-- `esp-idf` AUR package places ESP-IDF at `/opt/esp-idf`. After install, run `/opt/esp-idf/install.sh esp32` and source `/opt/esp-idf/export.sh` in the shell.
-- The emsdk clone goes to `~/emsdk` or a project-adjacent path. The `build_wasm.sh` script expects `../emsdk` — the dev setup script should clone there or update the path variable.
-
----
-
-## API Patterns
-
-### WASM localStorage Bridge (`bindings_store.cpp` — WASM branch)
-
-The `localStorage` API is synchronous in the browser — no Asyncify or async bridge needed. Use `EM_JS` to call `localStorage.setItem`/`getItem` directly:
-
-```cpp
-// In bindings_store.cpp, inside #ifdef __EMSCRIPTEN__
-
-#include <emscripten.h>
-
-// Write a C string to localStorage under a key
-EM_JS(void, js_localStorage_setItem, (const char* key, const char* value), {
-    try {
-        localStorage.setItem(UTF8ToString(key), UTF8ToString(value));
-    } catch(e) {
-        // Storage quota exceeded or private browsing restriction
-        console.warn('[enjin2] localStorage.setItem failed:', e);
-    }
-});
-
-// Read a C string from localStorage — writes into caller-provided buffer
-EM_JS(int, js_localStorage_getItem, (const char* key, char* out, int maxLen), {
-    var val = localStorage.getItem(UTF8ToString(key));
-    if (val === null) return 0;
-    var encoded = intArrayFromString(val);
-    var len = Math.min(encoded.length, maxLen - 1);
-    writeArrayToMemory(encoded.slice(0, len), out);
-    HEAP8[out + len] = 0;  // null terminator
-    return len;
-});
-
-// LuaStore::saveToFile — serialize via existing JSON writer, push to localStorage
-bool LuaStore::saveToFile(const char* path) const {
-    // Reuse existing JSON serialization via in-memory buffer
-    // (write to a static char buffer, then push to localStorage)
-    static char jsonBuf[4096];  // size to fit max store content
-    // ... fill jsonBuf with JSON ...
-    js_localStorage_setItem(path, jsonBuf);
-    return true;
-}
-
-// LuaStore::loadFromFile — pull from localStorage, parse via existing JSON reader
-bool LuaStore::loadFromFile(const char* path) {
-    static char buf[4096];
-    int len = js_localStorage_getItem(path, buf, sizeof(buf));
-    if (len == 0) return false;
-    // ... parse buf via existing readJsonValue logic ...
-    return true;
-}
-```
-
-**Integration note:** The existing JSON serializer in `bindings_store.cpp` writes to `std::ofstream`. For WASM, the serializer must write to a `char[]` buffer instead, then pass it to `js_localStorage_setItem`. This means extracting the JSON writer into a `writeToBuffer(char* buf, int maxLen)` helper that works on both branches. The reader already parses `const char*` — WASM only needs to fill that buffer from localStorage.
-
-**Key limit:** `localStorage` strings have a per-item size limit of ~5 MB in modern browsers. The LuaStore max content (16 keys × max string values) is well under 4 KB — no risk of exceeding storage limits.
-
-### ESP32 NVS Storage (`bindings_store.cpp` — ESP32 branch)
-
-The NVS API sequence: `nvs_flash_init()` once at boot, then per-operation `nvs_open()` → read/write → `nvs_commit()` → `nvs_close()`.
-
-```cpp
-// In bindings_store.cpp, inside #ifdef ESP32
-
-#include "nvs_flash.h"
-#include "nvs.h"
-
-// NVS namespace for enjin2 store — max 15 chars
-static constexpr const char* NVS_NAMESPACE = "enjin2_store";
-
-// LuaStore::saveToFile — store all keys into NVS under the namespace
-// The 'path' parameter is repurposed as the NVS partition label (use nullptr for default "nvs")
-bool LuaStore::saveToFile(const char*) const {
-    nvs_handle_t h;
-    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &h);
-    if (err != ESP_OK) return false;
-
-    bool ok = true;
-    for (int i = 0; i < m_count; ++i) {
-        const StoreSlot& slot = m_entries[i];
-        // Serialize each slot as a compact string value
-        // Key must be <= 15 chars (NVS limit); STORE_MAX_KEY=16 — truncate to 15
-        char nvsKey[16];
-        strncpy(nvsKey, slot.key, 15);
-        nvsKey[15] = '\0';
-
-        // Store type tag + serialized value in one NVS string
-        char valueBuf[STORE_MAX_STRING + 8];  // type prefix + value
-        // ... encode slot into valueBuf ...
-        if (nvs_set_str(h, nvsKey, valueBuf) != ESP_OK) { ok = false; break; }
-    }
-
-    if (ok) nvs_commit(h);
-    nvs_close(h);
-    return ok;
-}
-
-// LuaStore::loadFromFile — iterate known keys OR use NVS iterator
-bool LuaStore::loadFromFile(const char*) {
-    nvs_flash_init();  // idempotent after first call (returns ESP_ERR_NVS_... which is safe to ignore here)
-    nvs_handle_t h;
-    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &h);
-    if (err != ESP_OK) return false;
-
-    // Use NVS iterator to enumerate all stored keys in the namespace
-    nvs_iterator_t it = nullptr;
-    err = nvs_entry_find("nvs", NVS_NAMESPACE, NVS_TYPE_STR, &it);
-    clear();
-    while (err == ESP_OK && it != nullptr) {
-        nvs_entry_info_t info;
-        nvs_entry_info(it, &info);
-        // Read value for this key
-        size_t needed = 0;
-        nvs_get_str(h, info.key, nullptr, &needed);
-        if (needed > 0 && needed < STORE_MAX_STRING + 8) {
-            char valueBuf[STORE_MAX_STRING + 8];
-            nvs_get_str(h, info.key, valueBuf, &needed);
-            // ... decode valueBuf back into StoreSlot ...
-        }
-        err = nvs_entry_next(&it);
-    }
-    if (it) nvs_release_iterator(it);
-    nvs_close(h);
-    return true;
-}
-```
-
-**NVS key constraint:** NVS keys are max 15 chars. `STORE_MAX_KEY` in `LuaStore` is 16 (15 chars + null). A 15-char NVS key exactly matches — the last character of a 15-char `STORE_MAX_KEY` value must be truncated. Solution: keep `STORE_MAX_KEY` at 16 in the store struct (it controls the in-memory char array), but truncate to 15 when writing to NVS. Document this.
-
-**Type encoding:** NVS stores strings only. Encode the slot type as a prefix byte in the value string: `"N1.5"` for Number 1.5, `"Shello"` for String "hello", `"B1"` for Bool true, `"T{...}"` for Table. This avoids per-type NVS key proliferation.
-
-**`nvs_flash_init()` placement:** For ESP32, this should be called once in `app_main` before the engine runs. In the enjin2 ESP32 host integration, add it to the platform init sequence. The `loadFromFile` stub can call it defensively (it is idempotent after success).
-
-**NVS iterator availability:** `nvs_entry_find` / `nvs_entry_next` / `nvs_release_iterator` are available since ESP-IDF 4.0. Confirmed present in v5.5.
-
-### Docusaurus Tutorial Structure
-
-The existing Docusaurus site has a guides plugin rooted at `docs/src/` with `routeBasePath: '/'`. Tutorial docs go in a `tutorials/` subdirectory:
-
-```
-docs/src/
-  tutorials/
-    _category_.json          ← category metadata
-    getting-started.md       ← intro page
-    arkanoid-demo.md         ← tutorial using arkanoid script
-    tamagotchi-demo.md       ← tutorial using tamagotchi script
-    platform-targets.md      ← how to build for SDL/WASM/ESP32
-```
-
-`_category_.json` pattern:
-```json
-{
-  "label": "Tutorials",
-  "position": 2,
-  "link": {
-    "type": "generated-index",
-    "description": "Step-by-step guides for building games with enjin2."
-  }
-}
-```
-
-Document frontmatter:
 ```yaml
----
-id: getting-started
-title: Getting Started
-sidebar_label: Getting Started
-sidebar_position: 1
-description: Set up enjin2 and run your first script in 5 minutes.
----
+# .github/workflows/bench.yml (new file — separate from docs.yml)
+
+name: Benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'benchmarks/**'
+      - '.github/workflows/bench.yml'
+  # NOTE: Do NOT run on pull_request — github-action-benchmark docs explicitly warn
+  # against this due to GITHUB_TOKEN secrets access limitations on fork PRs.
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SDL3 dev
+        run: sudo apt-get install -y libsdl3-dev
+
+      - name: Build benchmarks
+        run: |
+          cmake -B build-bench \
+            -DENJIN2_BUILD_BENCHMARKS=ON \
+            -DENJIN2_BUILD_LUA=ON \
+            -DENJIN2_BUILD_TESTS=OFF \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-bench --target enjin2_bench
+
+      - name: Run benchmarks (nanobench JSON output)
+        run: |
+          ./build-bench/enjin2_bench --out json > bench-raw.json
+
+      - name: Convert to github-action-benchmark format
+        run: |
+          jq '[.results[] | {name: .name, value: (.median * 1e9 | round), unit: "ns"}]' \
+             bench-raw.json > bench-results.json
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: customSmallerIsBetter
+          output-file-path: bench-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '110%'
+          comment-on-alert: true
+          fail-on-alert: true
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
 ```
 
-No new Docusaurus plugins are needed. The project already has `prism.additionalLanguages: ['cpp', 'cmake', 'bash']` — code blocks in tutorials can use all three languages.
+```cpp
+// include/enjin2/test/no_alloc_scope.hpp
+// Gate with ENJIN2_BUILD_TESTS — never compiled into production or firmware.
 
----
+#pragma once
+#include <cstdlib>   // std::abort
+#include <cstdio>    // std::fprintf
+#include <new>       // ::operator new replacement signatures
 
-## What NOT to Add
+#ifdef ENJIN2_BUILD_TESTS
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `pacman -S emscripten` (Arch official package) | Gives system Emscripten 5.0.2 — not version-pinned and differs from what `build_wasm.sh` expects | Clone emsdk manually, pin to 3.1.73. Dev script should `git clone https://github.com/emscripten-core/emsdk && ./emsdk install 3.1.73 && ./emsdk activate 3.1.73` |
-| Asyncify for localStorage | localStorage is synchronous — Asyncify adds significant binary size bloat (~1.5–2x) with zero benefit here | `EM_JS` with synchronous `localStorage.setItem`/`getItem` — clean, zero overhead |
-| IndexedDB for WASM storage | IndexedDB is asynchronous — would require Asyncify or JSPI, both of which complicate the build considerably | `localStorage` is synchronous, sufficient for LuaStore's small key-value payload (< 4 KB) |
-| JSPI (JS Promise Integration) | Still phase 4 in W3C spec, only in Chrome 137+ and Firefox 139+ — not universally supported | Stick with synchronous localStorage via `EM_JS` |
-| FAT filesystem for ESP32 NVS | FAT/LittleFS require flash partition configuration, significantly more setup | NVS is purpose-built for small key-value pairs, requires only `nvs_flash_init()` and partition table entry (default ESP-IDF project includes NVS partition by default) |
-| `esp-idf` v6.0-beta1 | Beta — API may change before stable release | v5.5.x is the current stable with 30-month support window |
-| Wasmoon / Fengari (Lua WASM runtimes) | Pre-compiled Lua environments, not the LuaJIT interpreter used by enjin2 | The existing `luajit/src/ljamalg.c` with `LUAJIT_DISABLE_JIT` + `LUAJIT_DISABLE_FFI` is the correct approach |
-| LuaJIT JIT compilation on WASM | LuaJIT's JIT uses architecture-specific assembly — cannot compile to WASM | Already handled: `LUAJIT_DISABLE_JIT` is in the CMakeLists.txt WASM branch |
-| Docusaurus plugins for tutorials | The existing `@docusaurus/plugin-content-docs` (guides instance) handles tutorials natively via `_category_.json` and `sidebar_position` frontmatter | No new plugins — add tutorial `.md` files to `docs/src/tutorials/` |
-| Separate NVS key per StoreSlot field | Would use `STORE_MAX_KEYS * N` NVS keys per store, hitting namespace limits | Serialize entire slot as a single prefixed string value — one NVS key per LuaStore key |
+namespace enjin2::test {
+
+inline thread_local bool g_alloc_forbidden = false;
+
+struct NoAllocScope {
+    NoAllocScope()  { g_alloc_forbidden = true;  }
+    ~NoAllocScope() { g_alloc_forbidden = false; }
+    NoAllocScope(const NoAllocScope&) = delete;
+    NoAllocScope& operator=(const NoAllocScope&) = delete;
+};
+
+} // namespace enjin2::test
+
+// Override global operator new in this translation unit.
+// Only ONE .cpp file in the test suite should define ENJIN2_DEFINE_NO_ALLOC_HOOK.
+#ifdef ENJIN2_DEFINE_NO_ALLOC_HOOK
+
+void* operator new(std::size_t sz) {
+    if (enjin2::test::g_alloc_forbidden) {
+        std::fprintf(stderr, "[ALLOC VIOLATION] operator new(%zu) called inside NoAllocScope\n", sz);
+        std::abort();
+    }
+    void* p = std::malloc(sz);
+    if (!p) throw std::bad_alloc{};
+    return p;
+}
+
+void* operator new[](std::size_t sz) {
+    if (enjin2::test::g_alloc_forbidden) {
+        std::fprintf(stderr, "[ALLOC VIOLATION] operator new[](%zu) called inside NoAllocScope\n", sz);
+        std::abort();
+    }
+    void* p = std::malloc(sz);
+    if (!p) throw std::bad_alloc{};
+    return p;
+}
+
+void operator delete(void* p) noexcept  { std::free(p); }
+void operator delete[](void* p) noexcept { std::free(p); }
+
+#endif // ENJIN2_DEFINE_NO_ALLOC_HOOK
+#endif // ENJIN2_BUILD_TESTS
+```
+
+```cpp
+// benchmarks/bench_main.cpp — minimal nanobench runner with JSON output
+
+#define ANKERL_NANOBENCH_IMPLEMENT
+#include <nanobench.h>
+
+// Defined in bench_canvas.cpp, bench_ecs.cpp, bench_lua.cpp
+void bench_canvas(ankerl::nanobench::Bench& b);
+void bench_ecs(ankerl::nanobench::Bench& b);
+void bench_lua(ankerl::nanobench::Bench& b);
+
+#include <fstream>
+#include <cstring>
+
+int main(int argc, char** argv) {
+    ankerl::nanobench::Bench b;
+    b.title("enjin2").warmup(10).minEpochIterations(100);
+
+    bench_canvas(b);
+    bench_ecs(b);
+    bench_lua(b);
+
+    // Output JSON if --out json is passed
+    for (int i = 1; i < argc - 1; ++i) {
+        if (std::strcmp(argv[i], "--out") == 0 &&
+            std::strcmp(argv[i+1], "json") == 0) {
+            b.render(ankerl::nanobench::templates::json(), std::cout);
+            return 0;
+        }
+    }
+    // Default: human-readable to stdout
+    return 0;
+}
+```
 
 ---
 
@@ -296,11 +235,60 @@ No new Docusaurus plugins are needed. The project already has `prism.additionalL
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Emscripten 3.1.73 (pinned) | Emscripten 4.x (latest) | If starting a new WASM project from scratch in 2026, prefer 4.x. For v1.8, pinning 3.1.73 first, then optionally bumping to 4.x in a separate phase de-risks the build verification work |
-| `EM_JS` for localStorage | `emscripten::val` (val.h) | `val.h` is more idiomatic for complex object interaction; `EM_JS` is simpler and more explicit for two-function read/write bridge |
-| NVS string serialization (type-prefixed) | One NVS key per slot field (e.g. `key_type`, `key_val`) | Multiple keys per slot adds complexity and hits NVS namespace key count limits faster. Single prefixed string is simpler |
-| `esp-idf` AUR package | Manual ESP-IDF clone + install | Manual clone gives more control over version and path. AUR package is convenient for a dev setup script targeting common Arch users |
-| `_category_.json` tutorial category | Manually maintaining `sidebars.js` entries | `_category_.json` is the modern Docusaurus 3 approach — auto-generated sidebars are simpler to maintain and scale |
+| ankerl::nanobench v4.3.11 | google/benchmark | If you need named fixtures, SetUp/TearDown lifecycle, multi-threaded benchmarks, or Google's perf regression CI tooling. google/benchmark pulls in Abseil and has significantly longer compile times — wrong for this project's lightweight CI goal. |
+| ankerl::nanobench | Catch2 `BENCHMARK` macro | If Catch2 were already in the project as the unit test framework. Adding Catch2 just for benchmarks is a larger footprint than nanobench alone, and Catch2's BENCHMARK output requires extra config to produce github-action-benchmark-compatible JSON. |
+| ankerl::nanobench | picobench | picobench is simpler but has no JSON output and no autotuning — requires manual iteration count tuning per benchmark, which becomes maintenance burden over time. |
+| benchmark-action/github-action-benchmark | bencherdev/bencher | Bencher is a full SaaS product with statistical thresholds and richer history. github-action-benchmark is self-hosted, zero cost, no account required, integrates with the existing `gh-pages` branch and GitHub Pages pipeline. |
+| Global `operator new` override (header) | LD_PRELOAD malloc interposition | LD_PRELOAD is Linux-only and requires dynamic linking. ESP32 is bare-metal (no dynamic loader). WASM has no LD_PRELOAD. The header override works at compile time on all three targets. |
+| `lua_sethook` C API hook | `debug.sethook` from Lua side | The official Lua PIL states: "for profiling with timing, it is better to use the C interface: the overhead of a Lua call for each hook is too high and usually invalidates any measure." The C API hook is invoked without creating a new Lua activation frame — lower overhead and more accurate. |
+| `SDL_GetPerformanceCounter` | `std::chrono::high_resolution_clock` | Both work on desktop. SDL3 is already linked in the runner; using SDL's counter avoids divergence from the existing delta-time calculation and is consistent with the platform timing model already in the codebase. |
+| `jq` one-liner in CI | Python script or nlohmann/json in C++ | Python adds a CI setup step. Adding nlohmann/json as a dep for a ~30-line conversion is unjustified. `jq` is pre-installed on `ubuntu-latest` runners and the transform is a single pipeline command. |
+
+---
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| google/benchmark | Pulls Abseil (~200 headers), enables exceptions, slow compile times. 65x slower autotuning than nanobench per nanobench's own comparison. | ankerl::nanobench v4.3.11 |
+| Valgrind massif / heaptrack | Requires Linux, 10–50x execution overhead, incompatible with ESP32 and WASM targets, too slow for CI. | Global `operator new` override — runs at full speed, works in CTest across all platforms. |
+| Tracy profiler | Excellent standalone tool, but requires a GUI client, a TCP server thread, and dynamic allocation for the ring buffer. Violates the zero-alloc constraint in hot paths. | `SDL_GetPerformanceCounter` per-phase timing + `FrameStats` accumulator struct. |
+| gperftools / tcmalloc | LD_PRELOAD only, Linux-only, requires dynamic linking. Same constraints as Valgrind. | Global `operator new` override. |
+| LuaJIT `-jp` profiler | LuaJIT is not available on the WASM build (no WASM backend); profiler is LuaJIT-specific. | `lua_sethook` C API — works with both Lua 5.4.8 (WASM) and LuaJIT (desktop/ESP32). |
+| PAPI hardware performance counters | Requires kernel `perf_event` permissions — not available on GitHub Actions hosted runners (unprivileged containers) or on ESP32. | nanobench's built-in perf-event support (gracefully degrades to `<chrono>` when unavailable — no CI breakage). |
+| Benchmarks on pull_request CI trigger | github-action-benchmark documentation explicitly warns against running the action on PRs due to `GITHUB_TOKEN` scope limitations and potential result corruption from fork-based PRs. | Run `bench.yml` on `push` to `main` only. |
+| Separate `gh-pages` branch for benchmarks | The project already uses `gh-pages` for the Docusaurus documentation site. Adding a second gh-pages branch would conflict. | Use `benchmark-data-dir-path: dev/bench` to write benchmark data into a subdirectory of the existing `gh-pages` branch. |
+
+---
+
+## Stack Patterns by Feature Area
+
+**Nanobench benchmark suite:**
+- One `bench_main.cpp` with `#define ANKERL_NANOBENCH_IMPLEMENT` and the `main()` function
+- Separate `bench_canvas.cpp`, `bench_ecs.cpp`, `bench_lua.cpp` — each defines a `void bench_X(ankerl::nanobench::Bench&)` function
+- `ANKERL_NANOBENCH_IMPLEMENT` must be defined in exactly one TU — put it in `bench_main.cpp` only
+- Pass `ankerl::nanobench::doNotOptimizeAway(result)` for every benchmark result to prevent dead-code elimination
+
+**Frame timing instrumentation:**
+- Add `FrameStats` struct to the SDL3 runner: `uint64_t update_ns, render_ns, lua_ns, composite_ns, total_ns`
+- Capture `SDL_GetPerformanceCounter()` before/after each phase; accumulate into a rolling `FrameStats`
+- Convert to microseconds: `val * 1'000'000 / SDL_GetPerformanceFrequency()`
+- Display on the debug canvas layer (already exists: `ENJIN_LAYER_COUNT=5`, layer 4 reserved for debug) when a `--show-timing` flag is active
+- Use `std::atomic<uint64_t>` only if timing data is read from a separate thread; single-threaded game loop can use plain `uint64_t`
+
+**Lua profiler (headless CLI runner mode):**
+- Add `--headless --lua-profile --frames N` flags to the SDL3 runner's `main()`
+- Set `SDL_SetHint(SDL_HINT_VIDEODRIVER, "offscreen")` before `SDL_Init` in headless mode
+- Install the hook before `executeScript()`: `lua_sethook(L, profile_hook, LUA_MASKCALL | LUA_MASKRET, 0)`
+- Hook maintains a `std::unordered_map<const void*, CallInfo>` (function pointer → call count + total ns)
+- After N frames, dump sorted call table to stdout as CSV: `function,calls,total_ns,avg_ns`
+- Remove the hook before shutdown: `lua_sethook(L, nullptr, 0, 0)`
+
+**Zero-alloc verification:**
+- One file: `tests/alloc_verify_test.cpp` — defines `ENJIN2_DEFINE_NO_ALLOC_HOOK` before including `no_alloc_scope.hpp`
+- Test wraps each hot-path call in `{ NoAllocScope guard; hot_path_call(); }`
+- If any allocation fires, the test aborts with a clear message: `[ALLOC VIOLATION] operator new(N) called inside NoAllocScope`
+- Add `alloc_verify_test` to CTest alongside existing test suite
 
 ---
 
@@ -308,38 +296,29 @@ No new Docusaurus plugins are needed. The project already has `prism.additionalL
 
 | Component | Version | Compatibility Notes |
 |-----------|---------|---------------------|
-| Emscripten 3.1.73 | emsdk 3.1.73 | Works with `CMAKE_CXX_STANDARD 17`. Embind in 3.1.x does not require C++17 (that became mandatory in 4.0.20). The project already uses C++17 so either version works — pinning 3.1.73 for stability |
-| Emscripten 4.0.x | emsdk 4.x | Requires C++17 for Embind (project already satisfies this). If upgrading to 4.x, add `--std=c++17` explicitly to emcc CFLAGS or rely on `CMAKE_CXX_STANDARD 17` being propagated |
-| ESP-IDF v5.5.x | NVS API | `nvs_entry_find` / `nvs_entry_next` / `nvs_release_iterator` available since v4.0. All API calls used are stable in v5.5. |
-| NVS key max length | ESP-IDF all versions | 15 characters maximum. `LuaStore::STORE_MAX_KEY = 16` (15 chars + null) — truncate to 15 when writing to NVS. |
-| `localStorage` key/value size | Browser standard | ~5 MB per item limit; LuaStore JSON payload < 4 KB. No risk of exceeding limit. |
-| Docusaurus 3.9.2 | Already installed | `_category_.json` with `position` and `link.type: "generated-index"` supported since Docusaurus 3.0. `sidebar_position` frontmatter unchanged. |
-| LuaJIT amalgam (`ljamalg.c`) | Emscripten 3.1.73 | `LUAJIT_DISABLE_JIT` + `LUAJIT_DISABLE_FFI` already set in CMakeLists.txt WASM branch. Amalgam build compiles as a single `.c` file passed to `emcc`. No compatibility issues. |
-| Python 3.10+ | Emscripten 3.x / 4.x minimum | Emscripten changed minimum Python from 3.8 to 3.10. Arch Linux ships current Python (3.13.x as of 2026) — no issue. |
-| Node.js 18.3+ | Emscripten 4.x minimum | Emscripten 4.x requires Node 18.3+. Arch ships current Node — no issue. The project already requires Node ≥ 18 for Docusaurus. |
+| nanobench v4.3.11 | C++17 (project standard) | Requires C++14 minimum; C++17 is fully supported. No conflicts with existing CMake targets. FetchContent alias `nanobench::nanobench` available since nanobench v4.x. |
+| nanobench v4.3.11 | CMake 3.16+ | Project already requires CMake 3.16; FetchContent available since CMake 3.11. No constraint added. |
+| nanobench v4.3.11 | Exceptions | nanobench's implementation includes `<stdexcept>` — requires exceptions enabled. The benchmark executable runs only on the SDL3 desktop target (exceptions available). The `ENJIN2_BUILD_BENCHMARKS` gate ensures it is never compiled for ESP32 or WASM. |
+| github-action-benchmark v1 | actions/checkout@v4, ubuntu-latest | Existing `docs.yml` uses the same runner and checkout version. Compatible. The `customSmallerIsBetter` tool accepts any JSON array, so future nanobench format changes only require updating the `jq` transform. |
+| Lua 5.4 `lua_sethook` | Lua 5.4.8 (WASM) and LuaJIT 2.x (desktop/ESP32) | `lua_sethook` is part of the stable Lua C API. The signature `void lua_sethook(lua_State *L, lua_Hook f, int mask, int count)` is identical in Lua 5.1 through 5.4 and LuaJIT. No compatibility concern. |
+| `operator new` override | C++17, all three targets | Compile-time override; no dynamic linking required. Verified standard-compliant by cppreference. Works with xtensa-esp32s3-elf-g++ (ESP32), emcc (WASM), and g++/clang++ (desktop). Gate behind `ENJIN2_BUILD_TESTS`. |
+| `SDL_GetPerformanceCounter` | SDL3 (already in project) | API unchanged from SDL2 to SDL3; same function signature. Already used by the existing delta-time calculation in the SDL3 runner — this is an extension of existing usage. |
 
 ---
 
 ## Sources
 
-- [Emscripten emsdk GitHub](https://github.com/emscripten-core/emsdk) — install procedure, `./emsdk install 3.1.73` pattern
-- [Emscripten Downloads — official docs](https://emscripten.org/docs/getting_started/downloads.html) — Python 3.10+ minimum, Node 18.3+ minimum
-- [Emscripten ChangeLog](https://github.com/emscripten-core/emscripten/blob/main/ChangeLog.md) — Embind C++17 requirement in 4.0.20, confirmed via OpenCV issue #28178
-- [Emscripten EM_JS + localStorage patterns — web.dev](https://web.dev/articles/emscripten-embedding-js-snippets) — `EM_JS` with `UTF8ToString`/`stringToUTF8` pattern, MEDIUM confidence (official Emscripten/Google source)
-- [Emscripten Filesystem API docs](https://emscripten.org/docs/api_reference/Filesystem-API.html) — localStorage vs IndexedDB trade-offs, synchronous vs async
-- [Synchronous LocalStorage filesystem gist](https://gist.github.com/makryl/96d87b23d7a7c3cc5bc1eee1021bb6ff) — community WASM localStorage bridge pattern, LOW confidence (single source, unverified)
-- [ESP-IDF NVS Flash API Reference — stable v5.5.3](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html) — `nvs_open`, `nvs_set_str`, `nvs_get_str`, `nvs_commit`, `nvs_entry_find`, key 15-char limit, HIGH confidence
-- [ESP-IDF Releases — GitHub](https://github.com/espressif/esp-idf/releases) — v5.5.x is current stable, v6.0-beta1 exists
-- [ESP-IDF Toolchain Setup Linux — stable](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/linux-macos-setup.html) — official Arch Linux pacman dependency list: `gcc git make flex bison gperf python cmake ninja ccache dfu-util libusb python-pip`
-- [Arch Linux emscripten package](https://archlinux.org/packages/extra/x86_64/emscripten/) — version 5.0.2-1 in `extra` repo; confirms pacman path exists but is not version-pinned
-- [AUR esp-idf package](https://aur.archlinux.org/packages/esp-idf) — installs ESP-IDF 5.5 to `/opt/esp-idf`
-- [AUR gcc-xtensa-esp32-elf-bin](https://aur.archlinux.org/packages/gcc-xtensa-esp32-elf-bin) — standalone Xtensa GCC (not needed with modern ESP-IDF which auto-downloads toolchain)
-- [ArchWiki ESP32](https://wiki.archlinux.org/title/ESP32) — ncurses5-compat-libs requirement for gdb on Arch
-- [ESP32 PSRAM static allocation — ESP-IDF docs](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/external-ram.html) — `EXT_RAM_BSS_ATTR` for 5-layer canvas on PSRAM-equipped ESP32
-- [Docusaurus sidebar autogenerated docs](https://docusaurus.io/docs/sidebar/autogenerated) — `_category_.json`, `sidebar_position` frontmatter, `link.type: "generated-index"`
-- Codebase direct analysis: `CMakeLists.txt`, `build_wasm.sh`, `src/scripting/bindings_store.cpp`, `src/bindings/emscripten_bindings.cpp`, `src/scripting/lua_platform.cpp`, `docs/package.json`, `docs/docusaurus.config.js`
+- https://github.com/martinus/nanobench/releases/tag/v4.3.11 — confirmed v4.3.11 released February 16, 2025 (HIGH confidence)
+- https://nanobench.ankerl.com/reference.html — confirmed `templates::json()`, `templates::csv()`, `templates::htmlBoxplot()` output formats; `render()` method signature (HIGH confidence)
+- https://nanobench.ankerl.com/tutorial.html — confirmed FetchContent `nanobench::nanobench` alias pattern; standalone `main()` without test framework; `ANKERL_NANOBENCH_IMPLEMENT` in one TU (HIGH confidence)
+- https://nanobench.ankerl.com/comparison.html — confirmed ~65x faster autotuning than google/benchmark (HIGH confidence)
+- https://github.com/benchmark-action/github-action-benchmark — confirmed v1 tag, `customSmallerIsBetter` JSON format `[{name, value, unit}]`, 110% default threshold, PR warning against fork PRs, `gh-pages-branch` and `benchmark-data-dir-path` inputs (HIGH confidence)
+- https://www.lua.org/pil/23.3.html — confirmed `lua_sethook` C API, `LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT` masks, C API preferred over Lua-side hook for profiling accuracy (HIGH confidence)
+- https://wiki.libsdl.org/SDL3/SDL_GetPerformanceCounter — SDL3 high-resolution counter, nanosecond resolution, `SDL_GetPerformanceFrequency()` conversion (HIGH confidence)
+- https://cppreference.com/w/cpp/memory/new/operator_new — global `operator new` replaceable allocation function — standard C++17 (HIGH confidence)
+- WebSearch: nanobench exception requirements — nanobench uses `<stdexcept>` internally; benchmark target is gated to desktop where exceptions are enabled. Confirmed via build integration research. (MEDIUM confidence — no official "no-exceptions mode" statement found in docs)
 
 ---
 
-*Stack research for: enjin2 v1.8 Ship Ready — cross-platform hardening*
-*Researched: 2026-03-02*
+*Stack research for: enjin2 v1.10 Benchmarking & Performance milestone*
+*Researched: 2026-03-07*

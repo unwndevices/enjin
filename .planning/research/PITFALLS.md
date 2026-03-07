@@ -1,263 +1,248 @@
 # Pitfalls Research
 
-**Domain:** Adding Emscripten/WASM build verification, ESP32 NVS storage, WASM localStorage bridge, Arch Linux dev setup scripts, coroutine-tween integration, camera dead zone, and Docusaurus tutorials to an existing zero-alloc 2D game engine with Lua scripting (enjin2 v1.8 Ship Ready)
-**Researched:** 2026-03-02
-**Confidence:** HIGH (direct codebase analysis of shipped v1.7 sources, Emscripten official docs, ESP-IDF official docs, community issue trackers, and first-principles reasoning from embedded + Lua VM design)
+**Domain:** Adding benchmarking infrastructure, CI regression detection, frame timing instrumentation, Lua profiling, and static allocation verification to enjin2 — a zero-alloc 2D embedded game engine
+**Researched:** 2026-03-07
+**Confidence:** HIGH (direct codebase analysis of enjin2 v1.9 sources, nanobench official docs, github-action-benchmark documentation, Lua 5.4 reference manual, ESP-IDF documentation, community post-mortems and issue trackers)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: emscripten_set_main_loop — Stack Objects Destroyed Before Loop Runs
+### Pitfall 1: nanobench Benchmarks Measure Allocations Caused by Object and LuaEngine Construction
 
 **What goes wrong:**
-Any object created on the stack in `main()` before `emscripten_set_main_loop()` is called will be destroyed when `simulate_infinite_loop = 0` and `main()` returns. The loop callback then holds dangling references to those destroyed objects. With `simulate_infinite_loop = 1`, Emscripten throws a longjmp-style exception to abort `main()` — code after the call never executes, silently skipping any cleanup or initialization intended to run post-call.
+enjin2's `Object` class uses `std::array<std::unique_ptr<Component>, 16>`. Constructing Objects or attaching Components inside a nanobench lambda causes heap allocation via `std::make_unique`, which invalidates any "zero-alloc" timing claim for the ECS benchmark. The benchmark measures allocator overhead, not ECS logic. Results will look slower than reality and will vary between runs based on allocator state. The same problem applies to `LuaEngine::initialize()`, which calls `new char[MEMORY_LIMIT]` on desktop and `heap_caps_malloc` on ESP32 — calling it inside a benchmark loop measures malloc, not Lua init.
 
 **Why it happens:**
-Native game engines own the loop. Emscripten inverts control: `emscripten_set_main_loop` registers a callback that the browser calls once per frame via `requestAnimationFrame`. This means `main()` must hand off all state to static or heap-allocated objects before registering the callback.
+Benchmark authors treat the `ankerl::nanobench::Bench::run()` lambda as a pure measurement zone and forget that the setup work (constructing objects, initializing Lua state) must be hoisted outside the lambda. For ECS benchmarks specifically, the natural coding pattern — "create an Object, attach components, call update" — puts all three steps inside the loop when only "call update" should be measured.
 
 **How to avoid:**
-- All engine state (`LuaScriptSystem`, canvas arrays, bindings) must be static or dynamically allocated — never stack-local in `main()`.
-- Use a static global `WasmRunner` struct that holds all state. Register the loop callback as a C function that calls into this struct.
-- Call `emscripten_set_main_loop(loopCallback, 0, 1)` with `fps=0` (uses `requestAnimationFrame`) and `simulate_infinite_loop=1` as the final statement in `main()`.
-- Never place initialization code after `emscripten_set_main_loop()` — it will not execute.
+- Hoist all construction out of the nanobench lambda. Construct Objects and initialize `LuaScriptSystem` in the benchmark fixture, before calling `bench.run()`.
+- For benchmarks that specifically test Object construction (a valid case), call `ankerl::nanobench::doNotOptimizeAway()` on the constructed object to prevent dead code elimination, and accept that the result includes allocation overhead — document this explicitly.
+- For bench_lua, call `LuaScriptSystem::initialize()` once per benchmark binary, not inside any `bench.run()` lambda.
+- Never call `lua_close(L)` and `lua_newstate()` inside a nanobench loop unless the benchmark is explicitly titled "Lua state init overhead."
 
 **Warning signs:**
-- Segfault or null-pointer access immediately on first frame render
-- Engine state appears reset every frame
-- Initialization log messages appear but no rendering occurs
+- ECS benchmark reports 200–1000ns for simple update loops (allocation overhead is ~50–200ns per `unique_ptr` on a cold allocator)
+- High variance (nanobench reports "severe outliers") in benchmarks that construct objects
+- bench_lua results show 5–50ms for "script call overhead" — indicates Lua state is being recreated per iteration
 
-**Phase to address:** Emscripten/WASM build verification phase (first phase touching WASM main loop)
+**Phase to address:** Phase 1: Native Benchmark Foundation — fixture design must be reviewed before any benchmark is written.
 
 ---
 
-### Pitfall 2: ASYNCIFY Code-Size Explosion — Do Not Use It for Coroutine Wait
+### Pitfall 2: Dead Code Elimination Silences the Entire Canvas Benchmark
 
 **What goes wrong:**
-ASYNCIFY rewrites the entire WASM binary to make synchronous code suspendable. Without `-O3`, an already-large binary becomes 3-5x larger. Even with optimization, ASYNCIFY adds ~50% binary overhead. More critically: ASYNCIFY instruments every function in the call graph unless `ASYNCIFY_IMPORTS` and `ASYNCIFY_REMOVE` are explicitly configured — meaning it will instrument Lua VM internals, the entire bindings layer, and every engine system.
-
-For enjin2's use case (coroutine `wait` implemented via `lua_yield`/`lua_resume` outside pcall scope), ASYNCIFY is not needed. The coroutine scheduler already yields at the C boundary correctly. Using ASYNCIFY as a shortcut for tween-await integration would cause binary bloat for no benefit.
+Canvas operations like `canvas.clear(0)` or `canvas.setPixel(x, y, c)` have no observable side effect if the canvas buffer is never read. GCC/Clang at `-O2` or `-O3` will eliminate the entire loop body, reporting 0ns or sub-1ns per iteration. The existing `comprehensive_benchmark.cpp` example does NOT use `doNotOptimizeAway` — it will produce entirely wrong results if compiled with optimization enabled.
 
 **Why it happens:**
-Developers see `emscripten_sleep()` described as "yield to the browser event loop" and assume it maps cleanly to `engine.async.wait()`. In reality, `emscripten_sleep` requires ASYNCIFY and pauses the entire WASM instance — not just the Lua coroutine. enjin2's coroutine scheduler uses `lua_resume` outside pcall, which is correct and does not need ASYNCIFY.
+The compiler sees: "this canvas is a local variable, nothing reads from it after the loop, and setPixel has no side effects visible to the caller." It is free to eliminate the operation entirely under the as-if rule. The existing benchmark measures the empty loop overhead of `std::chrono::high_resolution_clock::now()`, not canvas operations.
 
 **How to avoid:**
-- Do not add `-sASYNCIFY` to `emcmake cmake` flags.
-- The existing `tickCoroutines()` + `lua_resume` pattern works in WASM as-is: the WASM main loop callback (registered via `emscripten_set_main_loop`) calls `tickCoroutines(dt)` once per frame, which advances timers and resumes suspended coroutines via `lua_resume`. This is equivalent to the SDL runner.
-- If `engine.async.wait()` is called from inside the WASM main loop callback (not from inside a blocking `main()`), no ASYNCIFY is needed.
-- Verify by running the async demo script through the WASM build — coroutines should resume on schedule without ASYNCIFY.
+- After every canvas operation inside a nanobench lambda, call `ankerl::nanobench::doNotOptimizeAway(canvas.getBufferPtr())` or `ankerl::nanobench::doNotOptimizeAway(canvas)`.
+- Alternatively, read a pixel from the canvas after each operation and pass it to `doNotOptimizeAway`.
+- Build benchmarks with `-O2` (same as release) — never benchmark at `-O0`. Dead code elimination only matters when optimizations are on; using `-O0` produces false safety and unmeaningful numbers.
+- Verify by comparing `-O0` vs `-O2` numbers: if `-O2` is 100x faster than `-O0` on a simple setPixel loop, dead code elimination has occurred.
 
 **Warning signs:**
-- Build flags include `-sASYNCIFY` or `emscripten_sleep()` calls in the WASM host
-- WASM binary exceeds 2MB for what should be a ~500KB build
-- Build times increase 3-4x over the SDL build
+- Canvas benchmark reports single-digit nanoseconds per `clear()` — a 128x64 canvas clear should take ~1–5 µs at minimum
+- nanobench reports 0 or near-0 iterations per second
+- Removing the entire loop body from the lambda does not change the reported time
 
-**Phase to address:** WASM build verification phase
+**Phase to address:** Phase 1: Native Benchmark Foundation — `-O2` build and `doNotOptimizeAway` usage must be in the benchmark CMake target from day one.
 
 ---
 
-### Pitfall 3: ESP32 NVS Key Length Silently Truncates at 15 Characters
+### Pitfall 3: GitHub Actions Shared Runners Produce 5–15% Variance — 110% Threshold Will Cause False Positives
 
 **What goes wrong:**
-The NVS key name limit is exactly 15 ASCII characters. NVS does not return an error for keys longer than 15 characters — it silently truncates them. This means two keys like `"player_health_current"` and `"player_health_maximum"` both truncate to `"player_health_m"` and collide, causing one to silently overwrite the other.
-
-LuaStore uses keys up to `STORE_MAX_KEY` characters (check current constant). If this constant is larger than 15, any LuaStore key over 15 characters will collide in NVS storage while appearing distinct in the in-memory store.
+GitHub Actions `ubuntu-latest` shared runners exhibit 5–15% coefficient of variation on microbenchmarks due to noisy neighbors, CPU frequency scaling, and background OS activity. A 110% regression threshold (fail if result is more than 10% slower than baseline) will fire on nearly every PR that touches a file — not because code regressed, but because the runner was slightly busier. This produces alert fatigue: developers learn to ignore benchmark failures and the CI check becomes worthless.
 
 **Why it happens:**
-The NVS spec requires 15-character maximum. LuaStore's in-memory key storage has its own constant (likely larger). When the NVS backend serializes keys, it truncates without warning.
+Shared runners are VMs on shared physical hardware. The 2.66% average CoV measured in controlled studies represents ideal conditions; real-world conditions with background processes, garbage collection, and network activity push this to 5–15% regularly. Microbenchmarks measuring sub-microsecond operations amplify this noise multiplicatively.
 
 **How to avoid:**
-- Validate key length in the NVS backend adapter: `if (strlen(key) > 15) { ESP_LOGW(TAG, "NVS key truncated: %s", key); }` or return false immediately.
-- Keep a NVS-specific namespace constant: `static constexpr int NVS_MAX_KEY = 15;`
-- Document this limit in the Lua API: `engine.store.save("k", v)` — keys must be 15 characters or fewer on ESP32.
-- Consider key hashing for long keys if needed, but simpler: enforce the limit and fail loudly during development.
+- Use a 130–150% alert threshold with the `github-action-benchmark` action for initial deployment, only tightening after establishing a stable baseline over 50+ runs.
+- Run benchmark jobs with `runs-on: ubuntu-latest` and restrict to `push` on `main` only — do not run on PRs initially. PRs trigger too frequently and accumulate noise without historical context.
+- Treat the first 30–50 CI benchmark runs as calibration. Do not set `fail-on-alert: true` until the baseline is established.
+- For a sub-microsecond embedded engine, the most meaningful benchmark signal is tracking trends over time (week-over-week), not pass/fail on each PR.
+- Consider running benchmarks in a dedicated self-hosted runner pinned to a single CPU core (`taskset -c 0`) if accuracy becomes critical. This reduces variance to <2%.
 
 **Warning signs:**
-- Two distinct keys return the same value when loaded on ESP32 but different values on SDL3
-- Saving one key silently overwrites another on embedded target
-- `nvs_get_str` or `nvs_set_str` returns `ESP_ERR_NVS_NOT_FOUND` for a key that was just written
+- CI benchmark fails on PRs that only change documentation
+- Benchmark history shows results oscillating ±20% between identical commits
+- Developers begin adding `[skip ci]` to commit messages to avoid flaky benchmark failures
 
-**Phase to address:** ESP32 NVS LuaStore backend phase
+**Phase to address:** Phase 2: CI Regression Detection — threshold calibration must happen after the first 30+ baseline runs, not at workflow creation time.
 
 ---
 
-### Pitfall 4: NVS Namespace RAM Overhead — 22KB per 1MB Partition
+### Pitfall 4: lua_sethook with LUA_MASKCALL|LUA_MASKRET Measures Its Own Overhead, Not Script Performance
 
 **What goes wrong:**
-NVS consumes approximately 22 KB of RAM per 1 MB of NVS flash partition and 5.5 KB of RAM per 1,000 keys. On an ESP32 with 320 KB internal RAM and a 5-layer canvas stack already consuming substantial static memory, opening a large NVS namespace can cause `ESP_ERR_NO_MEM` at runtime even if flash space is plentiful.
+Every function call in Lua triggers the `LUA_MASKCALL` hook, and every return triggers `LUA_MASKRET`. If the hook function calls `esp_cpu_get_cycle_count()` or `std::chrono::high_resolution_clock::now()` to record timestamps, the overhead of the clock call is included in every measured function's time. For short Lua functions (1–5 instructions), the hook overhead can exceed the actual function execution time by 10–50x. The profiler then reports that every Lua function takes the same amount of time — specifically, the time to execute the hook body itself.
 
 **Why it happens:**
-NVS caches page metadata in heap. Opening a namespace involves loading page headers into RAM. The more pages in the NVS partition, the higher the RAM cost.
+Lua's debug hook is invoked at the C level for every call/return boundary. Each invocation requires a C→Lua context switch that is already ~48ns overhead on desktop. Adding a clock call (~10–50ns on x86, ~100–300ns on ESP32 via `esp_timer_get_time()`) means the minimum measurable function time is floor-limited by instrumentation cost. The community has documented this: "the overhead of a Lua call for each hook is too high and usually invalidates any timing measure."
 
 **How to avoid:**
-- Use the minimum viable NVS partition size: 12 KB (3 pages) is the official minimum; 24–32 KB is sufficient for game save data with small values.
-- Open the NVS namespace once at startup, keep the handle open for the session, and close it at shutdown. Do not open/close repeatedly per operation.
-- Use `ESP_ERROR_CHECK(nvs_flash_init())` and check for `ESP_ERR_NVS_NO_FREE_PAGES` or `ESP_ERR_NVS_NEW_VERSION_FOUND` — both require `nvs_flash_erase()` followed by `nvs_flash_init()` again.
-- Keep LuaStore key count small (≤16 keys matching `STORE_MAX_KEYS`) to avoid RAM growth.
+- Use `LUA_MASKCALL | LUA_MASKRET` only for call-count profiling (which call sites are hot), not for precise timing. Call counts are accurate regardless of hook overhead.
+- For timing-aware profiling, use `LUA_MASKCOUNT` with a count value of 100–1000 instructions to sample at lower frequency, reducing overhead by 100–1000x.
+- On the headless CLI profiler (`enjin_run --profile`), restrict timing to the top level: record `lua_resume` entry/exit time in C++, not per-function times inside Lua.
+- Use `lua_gc(L, LUA_GCCOUNT, 0)` before and after running a script to measure GC allocation delta — this is accurate and zero-overhead because it reads a counter, not a hook.
+- Explicitly document the profiler as "call-count accurate, timing approximate" to set correct expectations.
 
 **Warning signs:**
-- ESP32 boot fails with `heap_caps_malloc` errors after `nvs_flash_init()`
-- `esp_get_free_heap_size()` drops dramatically after store initialization
-- `nvs_open()` returns `ESP_ERR_NVS_NOT_ENOUGH_SPACE`
+- All Lua functions report nearly identical execution times regardless of their actual complexity
+- A 1-instruction Lua function reports the same time as a 100-instruction function
+- Profiler shows "update()" taking 10x longer than observed frame time suggests it should
 
-**Phase to address:** ESP32 NVS LuaStore backend phase
+**Phase to address:** Phase 4: Lua Profiling — profiler design must choose call-count vs. timing mode before any implementation begins.
 
 ---
 
-### Pitfall 5: WASM localStorage Bridge — Synchronous Writes Block Render Frame
+### Pitfall 5: FrameTimingInstrumentation Atomics Create False Cache Pressure on Single-Core ESP32
 
 **What goes wrong:**
-`localStorage.setItem()` in JavaScript is synchronous but relatively slow (10–100ms on cold writes for large strings). If the WASM-to-JS localStorage bridge calls `EM_ASM` or `emscripten_run_script` on every `engine.store.save()` call (auto-persist behavior), each save blocks the render frame. For LuaStore with auto-persist enabled (save-on-every-write), a script that calls `engine.store.save()` inside `update()` will drop frames every update cycle.
+The proposed `FrameTimingInstrumentation` struct uses `std::atomic` fields with cache-line alignment. On multi-core desktop this is correct and prevents false sharing. On ESP32-S3 (dual-core Xtensa, with the game loop running on a single core), `std::atomic` operations with `memory_order_seq_cst` are significantly more expensive than non-atomic reads/writes: they emit memory fence instructions on Xtensa even with no contention. For per-phase timing (update/render/Lua/composite measured every frame at 60fps), this adds 4 × (fence overhead) per frame.
+
+More critically: `alignas(64)` padding on ESP32 wastes 64 bytes per atomic field in static RAM. For a struct with 6 timing fields, that is 384 bytes of padding in a system where every byte of internal RAM counts.
 
 **Why it happens:**
-The SDL3 LuaStore backend auto-persists to file on save (matching the current `engine.store.save` → `saveToFile()` pattern in `bindings_store.cpp`). Porting this directly to WASM means calling `localStorage.setItem()` synchronously on every save call. Unlike file I/O on desktop (which is fast for small files), browser storage operations have non-trivial overhead and jitter.
+The instrumentation struct is designed for multi-threaded operation (reader on one core, writer on another). But enjin2's game loop runs on a single FreeRTOS task — there is no reader/writer concurrency in the core path on ESP32. The desktop implementation's alignment requirements don't translate meaningfully to an Xtensa embedded target.
 
 **How to avoid:**
-- In the WASM backend, do NOT auto-persist on every `engine.store.save()`. Mark the store dirty and only flush on `engine.store.flush()` or on page unload (`window.beforeunload`).
-- Implement `EM_JS` or `EM_ASM` flush function called only from `lua_engine_store_flush()` — not from `lua_engine_store_save()`.
-- Serialize the entire LuaStore to a single JSON string and call `localStorage.setItem("enjin2_store", json)` once per flush, not per key.
-- Register a `window.addEventListener("beforeunload", ...)` in the WASM JavaScript glue to call `module.flush()` when the user navigates away.
+- Use compile-time platform guards: `#ifdef ESP32` use plain `uint32_t` fields with volatile (sufficient for single-task single-core reads via serial/UART inspection), `#else` use the full `std::atomic<uint64_t>` with `alignas(64)` for desktop/WASM.
+- On ESP32, use `esp_cpu_get_cycle_count()` (single-cycle read, no fence) to record timestamps. Divide by CPU clock frequency for microseconds.
+- On desktop, `std::chrono::high_resolution_clock::now()` inside a `memory_order_relaxed` atomic store is sufficient.
+- Provide a simple API: `FrameTimer::begin(Phase::UPDATE)` / `FrameTimer::end(Phase::UPDATE)` — the implementation selects the platform path internally.
 
 **Warning signs:**
-- Frame time spikes from 16ms to 30–100ms whenever `engine.store.save()` is called in `update()`
-- `localStorage.setItem` appears in browser DevTools performance flame chart inside the render frame
-- Store data is inconsistent between page loads (partial writes due to mid-frame interruption)
+- Frame time reported by the instrumentation is consistently 10–20% higher than actual frame time observed by the host application
+- ESP32 static RAM usage increases unexpectedly after adding the timing struct
+- `esp_get_free_heap_size()` decreases proportionally to the number of atomic fields defined
 
-**Phase to address:** WASM localStorage bridge phase
+**Phase to address:** Phase 3: Frame Timing Instrumentation — platform-conditional implementation required from the start, not as a follow-up optimization.
 
 ---
 
-### Pitfall 6: localStorage Quota Exceeded — 5MB Browser Hard Limit
+### Pitfall 6: Custom lua_Alloc Hook Over-Counts Allocations Due to Lua VM Realloc Pattern
 
 **What goes wrong:**
-Browsers enforce a 5 MB per-origin localStorage quota. If a WASM game serializes the entire LuaStore as JSON (including embedded Lua table values, long strings, or repeated saves) the stored JSON can grow beyond the quota. `localStorage.setItem()` throws a `QuotaExceededError` DOMException in JavaScript, which, if not caught, bubbles up as an Emscripten exception and either crashes the WASM module or silently drops the save.
+Lua 5.4's VM uses a single `lua_Alloc` callback for all three operations: `malloc(nsize)` when `ptr == NULL`, `free(ptr)` when `nsize == 0`, and `realloc(ptr, nsize)` when both are non-null. A naive counting allocator that increments a counter whenever `nsize > 0` and `ptr == NULL` will miss the realloc path. More importantly, Lua's string interning, table resizing, and upvalue management all generate reallocs that look like `(ptr != NULL, nsize > 0)` — these are not new allocations but are counted as such by many hook implementations.
+
+The result: a hot path that makes zero net allocations (reallocates the same buffer repeatedly) is flagged as "allocating" and fails the CI zero-alloc check.
 
 **Why it happens:**
-LuaStore allows strings up to `STORE_MAX_STRING` bytes and tables up to `STORE_MAX_TABLE_ENTRIES` entries. A fully saturated store with maximum-length strings could easily exceed 5 KB, and while that is within quota, nested tables with long string values, or any future expansion of `STORE_MAX_KEYS`, pushes toward the limit. Additionally, if localStorage is shared with other data (e.g., Docusaurus PWA caching), the effective budget is smaller.
+The Lua VM aggressively reallocs its internal data structures. A table that grows from 4 to 8 slots calls the allocator with `(ptr, old_size, new_size)` — the C standard would call this `realloc`, but Lua routes it through the same hook. The allocation counter should track "net new allocation events" (new `ptr` returned for a unique memory region), not "any call with nsize > 0."
 
 **How to avoid:**
-- Wrap all `localStorage.setItem()` calls in a try/catch in the JavaScript glue:
-  ```javascript
-  try { localStorage.setItem(key, value); }
-  catch(e) { console.error("enjin2: localStorage quota exceeded", e); }
-  ```
-- Return a boolean from the JS flush function back to WASM via `EM_JS` so `engine.store.flush()` can return `false` on quota failure.
-- Keep LuaStore serialized JSON small: the 16-key / 64-char string limits make this naturally bounded (~2–3 KB max), well within quota.
-- Do not store binary data or base64-encoded images in LuaStore.
+- Count allocations correctly: increment only when `old_size == 0 && new_size > 0` (true malloc). Decrement when `new_size == 0` (true free). Ignore reallocs (`old_size > 0 && new_size > 0`).
+- Install the custom allocator at state creation time via `lua_newstate(countingAlloc, &counter)` — NOT via `lua_setallocf()` after state creation. Post-creation `lua_setallocf` risks mismatched allocator/deallocator for memory allocated during `luaL_newstate()`.
+- Run the allocation counter only over specific hot-path spans: call `counter.reset()` immediately before the measured operation and `counter.check()` immediately after. Do not measure the counter over an entire benchmark run, which includes GC activity.
+- Document expected Lua internal allocations (string interning, stack growth) that are acceptable vs. unexpected allocations in "hot paths" (script execution after load, update(), draw() callbacks).
 
 **Warning signs:**
-- `engine.store.flush()` returns false in WASM but true on SDL3
-- Browser console shows `QuotaExceededError`
-- Save data silently disappears between page refreshes
+- Allocation counter reports 50–200 allocations per frame even in a script that creates no tables or strings
+- "Zero alloc" CI check fails on commit that adds no user-level Lua code changes
+- Counter reports negative allocation count (decrement without prior increment) when GC collects previously allocated objects
 
-**Phase to address:** WASM localStorage bridge phase
+**Phase to address:** Phase 5: Static Allocation Verification — allocator hook design must be validated against a known-zero-alloc path before CI check is enabled.
 
 ---
 
-### Pitfall 7: Tween Await Integration — Resuming a Coroutine from a Tween Callback
+### Pitfall 7: Benchmark Binary Links Against Debug Build of enjin2 Core — Results Are Meaningless
 
 **What goes wrong:**
-`engine.tween.to()` accepts an optional `done_cb` callback. If a coroutine calls `engine.tween.to()` and then attempts to `engine.async.wait()` on the tween completing (rather than a timeout), there is no native mechanism to resume the coroutine from inside the tween `done_cb`. The done callback fires via `lua_pcall` from `tickTweens()`. If the callback tries to `coroutine.resume()` a suspended coroutine, this is a re-entrant coroutine resume inside `tickTweens()` — undefined behavior that can corrupt the coroutine pool.
+If the benchmark CMake target links against a debug build of `enjin2_core` (compiled without optimizations, with assertions enabled, with `-O0`), the measured performance is not representative of production behavior. Canvas pixel operations measured at `-O0` can be 5–20x slower than at `-O2` due to inlined operations not being inlined. The benchmark results stored in CI history will never be comparable to actual production performance, making regression detection moot.
 
 **Why it happens:**
-`tickTweens()` iterates `m_tweenPool` linearly and calls `done_cb` via `lua_pcall`. `tickCoroutines()` runs before `tickTweens()` in the SDL runner (confirmed: `tickCoroutines(dt)` precedes `tickTweens(dt)` in `sdl_main.cpp`). A done callback that calls `coroutine.resume()` on a slot in `m_coroutinePool` tries to resume a coroutine from inside the tween tick loop — outside the scheduler's designed resume path.
+CMake's default `CMAKE_BUILD_TYPE` is empty (not Release). If the benchmark CMake target is added without explicitly setting `CMAKE_BUILD_TYPE=Release`, the build system produces an unoptimized binary. The existing `examples/CMakeLists.txt` likely inherits the parent's build type — which may be Debug in local developer builds.
 
 **How to avoid:**
-- The tween-await pattern (`engine.tween.await(...)`) must not use re-entrant coroutine resume. Instead, implement it as a yield + polling approach:
-  - `engine.tween.await(target, props, duration, easing)` stores the tween ID and yields the current coroutine.
-  - On each `tickCoroutines()` frame, before checking wait time, check if the awaited tween slot is still active. If not, clear the wait and resume.
-- Alternatively: the `done_cb` sets a flag (e.g., into the coroutine's `waitRemaining` field set to 0) so the next `tickCoroutines()` naturally resumes it — without any re-entrant `coroutine.resume()` call.
-- Never call `coroutine.resume()` from inside a tween `done_cb` that fires from `tickTweens()`.
+- The benchmark CMake target must force `-O2` for all enjin2 targets it links against. Use a CMake preset or CI workflow flag: `cmake -B build -DCMAKE_BUILD_TYPE=Release`.
+- In `scripts/build-bench.sh`, always pass `-DCMAKE_BUILD_TYPE=Release` explicitly — never rely on the default.
+- Add a CMake check in the benchmark target: `if(NOT CMAKE_BUILD_TYPE STREQUAL "Release") message(WARNING "Benchmarks built without -O2 — results are not production-representative") endif()`.
+- For CI, the `.github/workflows/benchmarks.yml` must explicitly pass `--config Release` to the cmake build command.
 
 **Warning signs:**
-- Coroutine resumes twice in one frame (visible as double-stepping animation)
-- `lua_resume` returns `LUA_ERRRUN` with "cannot resume running coroutine"
-- Tween completes but coroutine never wakes up (if done_cb discards resume attempt silently)
+- Benchmark results are 5–20x slower than expected for simple operations (e.g., `canvas.clear()` takes >100µs instead of 1–5µs)
+- Results vary dramatically between developer machines with different CMake defaults
+- CI benchmark history shows a sudden 10x performance improvement after a commit that only "fixed build type" — indicating all prior results were at `-O0`
 
-**Phase to address:** Tween await QoL phase
+**Phase to address:** Phase 1: Native Benchmark Foundation — the build script must enforce Release mode before any baseline is recorded.
 
 ---
 
-### Pitfall 8: Camera Dead Zone Applied Before Lerp — Jitter at Zone Boundary
+### Pitfall 8: gh-pages Benchmark History Is Destroyed by Force-Push or Branch Recreation
 
 **What goes wrong:**
-A naively implemented camera dead zone checks whether the target is outside the dead zone rectangle and, if so, snaps the camera target to the zone edge and applies lerp from the current camera position. If the dead zone check is applied before the lerp step, the effective lerp target jumps discontinuously every frame the target moves in/out of the zone boundary. This produces a visible stutter — the camera oscillates between "dead zone engaged" (no movement) and "dead zone disengaged" (sudden lerp pull) at the boundary.
+`github-action-benchmark` accumulates results by committing JSON data to the `gh-pages` branch. If `gh-pages` is ever force-pushed (e.g., by the documentation deployment workflow, which deploys Docusaurus to the same branch), all benchmark history is lost. The existing `docs.yml` deploys Docusaurus to GitHub Pages — it uses `actions/upload-pages-artifact` and `actions/deploy-pages@v4`, which manages the deployment artifact separately from the branch. However, if anyone manually recreates `gh-pages` or a future workflow change adds `git push --force`, history is silently deleted.
 
 **Why it happens:**
-Developers treat the dead zone as a simple "if outside rect, follow; else stop" gate. But lerp follow requires a smooth target position — the dead zone should offset the lerp target (how much to pursue), not toggle the lerp on and off. When toggling, the camera position jumps one lerp-step's worth of distance every time the target crosses the boundary.
+The `github-action-benchmark` action and Docusaurus deployment share `gh-pages` as the GitHub Pages branch. `actions/deploy-pages@v4` uses a deployment artifact that replaces the entire Pages content on each deploy. This is not the same as force-pushing the branch, but it does overwrite the branch content. If benchmark data lives in `gh-pages/dev/bench/`, it will be wiped on the next Docusaurus deployment unless the benchmark workflow explicitly preserves the data directory or uses a separate storage mechanism.
 
 **How to avoid:**
-- Compute the dead zone delta first: `clamp(target.x - camera.x, -deadZoneHalfW, deadZoneHalfW)` gives the displacement within the zone. Subtract this from the target to get the "pull target."
-- Only begin lerp movement when the target is outside the dead zone. When inside, the "pull target" equals the current camera position — lerp has nothing to do.
-- The C_Camera `update()` with dead zone should look like:
-  ```
-  float dx = target.x - m_x;
-  float dy = target.y - m_y;
-  float pullX = dx - clamp(dx, -m_deadZoneW/2, m_deadZoneW/2);
-  float pullY = dy - clamp(dy, -m_deadZoneH/2, m_deadZoneH/2);
-  m_x += pullX * m_lerpSpeed * dt * 10.0f;
-  m_y += pullY * m_lerpSpeed * dt * 10.0f;
-  ```
-- Camera updates must run after object updates each frame (confirmed in SDL runner order).
+- Use the `external-data-json-path` option in `github-action-benchmark` instead of the gh-pages approach. This stores benchmark history in a JSON file that can live in a separate branch (e.g., `bench-data`) independent of the Pages deployment. The JSON file is committed to `bench-data`, and the dashboard is generated separately.
+- Alternatively: keep benchmark data in a `bench-results/` directory committed to `main` (small JSON files), and generate the dashboard as part of the Docusaurus build.
+- At minimum: document that `gh-pages` must NOT be recreated or force-pushed, and add branch protection to `gh-pages` disabling force-push.
+- Verify the separation works by running both the docs workflow and benchmark workflow on the same commit and confirming neither erases the other's data.
 
 **Warning signs:**
-- Camera jitters when target hovers at the dead zone boundary
-- Lerp speed feels inconsistent — fast when far, stuttery when near boundary
-- Dead zone appears asymmetric (easier to escape from one side than the other)
+- Benchmark dashboard shows only one data point (the most recent run) despite multiple runs
+- `gh-pages` branch commit history shows a single "Deploy" commit from the docs workflow that wiped all previous commits
+- `github-action-benchmark` action fails with "no previous data found" on every run
 
-**Phase to address:** Camera dead zone QoL phase
+**Phase to address:** Phase 2: CI Regression Detection — storage strategy must be chosen before the first benchmark run is recorded.
 
 ---
 
-### Pitfall 9: Arch Linux emsdk/ESP-IDF Setup Script Breaks on Python Version Drift
+### Pitfall 9: Headless enjin_run Profiler Stubs Platform APIs but Pulls In Lua Binding Globals That Depend on Real State
 
 **What goes wrong:**
-ESP-IDF's `install.sh` and emsdk's `emsdk install` script both assume a stable Python version. Arch Linux's rolling release model means `python` can advance to a minor or major version (e.g., 3.12 → 3.13 → 3.14) at any `pacman -Syu`. ESP-IDF's install script has a known history of breaking on Arch (GitHub issue #7809). Symptoms include: `pip` refusing to install into the system Python (PEP 668 "externally managed" error since Python 3.11), virtual environment creation failures, and `idf.py` import errors for specific Python packages compiled against older ABI.
-
-emsdk similarly creates a virtual environment and installs Python packages; if the system Python upgrades between installs, the venv's package hashes become invalid and `emsdk activate` fails silently.
+The headless CLI tool (`enjin_run --profile script.lua`) stubs all graphics/input/platform APIs as no-ops. However, enjin2's Lua bindings register engine global tables (`engine.scene`, `engine.input`, `engine.lua`, etc.) that hold pointers to real subsystem instances (`LuaScriptSystem*`, `InputState*`, `SceneStateMachine*`). If the headless runner creates a `LuaScriptSystem` but does not initialize the SDL runner or any scene, the bindings will register these globals with null pointers. Any Lua script that calls `engine.scene.find()`, `engine.input.isButtonHeld()`, or any subsystem API will dereference null inside the binding.
 
 **Why it happens:**
-Arch tracks Python releases aggressively and does not maintain compatibility shims. Both ESP-IDF and emsdk depend on specific Python packages (`pyserial`, `kconfiglib`, `cryptography`, etc.) that may not be binary-compatible with the new Python ABI until upstream releases new wheels.
+The bindings layer was designed with an implicit contract: by the time any Lua script runs, all pointers have been set via `registerAll()`. The headless runner breaks this contract by initializing Lua without a complete engine host. The existing null guards in input bindings (`if (!m_inputState) return 0`) catch some cases, but not all bindings have defensive null checks — particularly `engine.scene.*` and `engine.camera.*`.
 
 **How to avoid:**
-- Pin the emsdk version: use `emsdk install 3.1.XX` (a specific tagged version) rather than `latest`. Record the version in the setup script.
-- Use `python -m venv` explicitly for ESP-IDF: `python3 -m venv $IDF_PATH/.venv && source $IDF_PATH/.venv/bin/activate && pip install -r $IDF_PATH/requirements.txt`
-- Add a Python version check at the top of the setup script: `python3 --version | grep -E "3\.(11|12|13)"` — warn if outside tested range.
-- Do not use `sudo pip install` — always use a venv or `--user` installs.
-- For emsdk: prefer the AUR `emsdk` package or install into a project-local directory and source `emsdk_env.sh` rather than modifying system paths.
-- Add `set -e` to the setup script and explicit error messages for each step.
+- The headless runner must not call `registerAll()` from `LuaScriptSystem`. Instead, create a minimal stub host that satisfies the pointer contracts: a no-op `SceneStateMachine`, a zeroed `InputState`, and a no-op render canvas.
+- Alternatively: create a `HeadlessLuaRunner` class that calls `lua_engine.loadScriptFile()` directly without going through `LuaScriptSystem::registerAll()`, bypassing all engine-table registration. Scripts under profiling should only use engine.lua and engine.time; all other subsystems are out of scope for profiling.
+- Add null guard assertions to all engine table bindings that would be missing in headless mode, so failures are explicit errors rather than silent null dereferences.
+- The headless runner's test suite must include a script that exercises every `engine.*` subtable to verify graceful null handling.
 
 **Warning signs:**
-- `pip install` fails with "externally-managed-environment" error
-- `idf.py` fails to import `kconfiglib` or `pyparsing`
-- `emcc --version` hangs or prints "emsdk: command not found" after successful install
-- Setup script completes with exit code 0 but `emcc` and `idf.py` are not on PATH
+- Headless runner segfaults on any script that calls `engine.scene.*` or `engine.camera.*`
+- Profiler output shows correct call counts for pure Lua functions but crashes on binding-crossing calls
+- Scripts that work in SDL runner fail in `enjin_run` for no obvious reason
 
-**Phase to address:** Dev environment setup script phase
+**Phase to address:** Phase 4: Lua Profiling — headless runner architecture must define the binding stub contract before implementation.
 
 ---
 
-### Pitfall 10: ESP32 5-Layer Stack Exceeds Internal RAM Without PSRAM
+### Pitfall 10: esp_cpu_get_cycle_count() Wraps Every 17.9 Seconds at 240 MHz
 
 **What goes wrong:**
-enjin2 v1.7 ships with `ENJIN_LAYER_COUNT=5` (4 game layers + 1 debug layer). Each Canvas4 of 320×240 pixels at 4-bit (nibble) packing requires 320×240/2 = 38,400 bytes = ~37.5 KB per layer. Five layers = ~187.5 KB of canvas data. ESP32 has 320 KB internal RAM, with significant portions consumed by Lua VM state, Lua scripts, coroutine stacks, and system firmware overhead. A 5-layer stack may leave insufficient heap for Lua.
+The ESP32's `esp_cpu_get_cycle_count()` returns a `uint32_t` that wraps around every ~4.3 billion cycles. At 240 MHz, this is approximately 17.9 seconds. For frame timing (measuring a 16ms budget), this is safe — 16ms is far shorter than 17.9 seconds. However, if the frame timing code subtracts start from end without handling wrapping (`end - start` as unsigned arithmetic), it is technically correct for the normal case. But if an interrupt fires between start and end and consumes more than 17.9 seconds of execution time (impossible for a frame), the subtraction overflows.
+
+The real problem: if the timing values are stored as `uint64_t` atomics (to handle future long sessions), but `esp_cpu_get_cycle_count()` returns `uint32_t`, the counter silently resets on every wrap and the "cumulative frame count" metric becomes incorrect after 17.9 seconds.
 
 **Why it happens:**
-enjin2 uses static allocation for canvases, so the canvas array is allocated at program start before Lua is initialized. If static arrays are placed in BSS (internal RAM by default on ESP32), the 187.5 KB canvas block may coexist with Lua's ~50–80 KB minimum heap and other static allocations, leaving less than 32 KB free heap — too little for reliable Lua operation.
+Developers copy the desktop timing pattern (`uint64_t` nanosecond timestamps) to ESP32 without adapting it to the 32-bit cycle counter. The mismatch between a 32-bit hardware counter and a 64-bit storage type works until wrap-around produces a large "negative" cycle count that inflates the stored value.
 
 **How to avoid:**
-- Compile enjin2 with `ENJIN_LAYER_COUNT=2` or `ENJIN_LAYER_COUNT=3` for ESP32 targets by default (game layers only, no debug layer on embedded).
-- If 5 layers are needed, place canvas arrays in PSRAM using `DRAM_ATTR` + `heap_caps_malloc` at init, or declare canvas buffers with `__attribute__((section(".spiram")))` if the linker script supports it.
-- Add a compile-time static assert for ESP32 builds: `static_assert(ENJIN_LAYER_COUNT <= 3 || CONFIG_ESP32_SPIRAM_SUPPORT, "5-layer stack requires PSRAM on ESP32")`.
-- The `lua_platform.cpp` already handles ESP32 memory via `heap_caps_malloc` — extend this to canvas allocation or document the ESP32 layer count constraint explicitly.
+- On ESP32, use only per-frame delta measurements with `uint32_t`: `uint32_t delta = end_cycles - start_cycles`. Unsigned 32-bit subtraction handles wrapping correctly for intervals shorter than 17.9 seconds.
+- Accumulate frame counts as a frame counter (increment per frame), not as a total elapsed cycle count.
+- Convert cycles to microseconds at storage time: `uint32_t us = delta / (CPU_FREQ_MHZ)` where `CPU_FREQ_MHZ` is 240.
+- Never store absolute cycle counts — only deltas. Reset per-frame timing fields to 0 at the start of each frame.
 
 **Warning signs:**
-- ESP32 fails to boot with heap panic or stack overflow
-- Lua VM initialization returns null (`lua_newstate` fails)
-- `esp_get_free_heap_size()` is below 30 KB after canvas initialization
-- Build passes but device hangs on `lua_newstate()` call
+- Frame timing reports occasionally show impossibly large values (200ms+) that disappear on the next frame
+- Cumulative timing stats roll over to near-zero after approximately 17 seconds of runtime
+- Timing values look correct in short tests but drift after 30–60 seconds of operation
 
-**Phase to address:** ESP32 build verification phase
+**Phase to address:** Phase 3: Frame Timing Instrumentation — ESP32 platform path must use delta-only `uint32_t` timing from the start.
 
 ---
 
@@ -267,14 +252,14 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Auto-persist on every `store.save()` in WASM | Matches SDL3 behavior exactly | Drops frames; may hit localStorage quota on every update() call | Never for WASM — flush-only is correct |
-| Using `emscripten_run_script` for JS bridge | Simple to write | No type safety, no error propagation, slow; deprecation risk | Never — use `EM_JS` or `EM_ASM_INT` instead |
-| `ASYNCIFY` for coroutine wait in WASM | No scheduler changes needed | 50%+ binary bloat, slower WASM, instruments entire Lua VM | Never — the existing lua_resume pattern handles this correctly |
-| Opening NVS namespace on every store operation | Simpler implementation | RAM fragmentation, handle leak if not closed, slower per-op | Never — open once at init, close at shutdown |
-| Setup script installs to system Python (`sudo pip`) | Fewer venv steps | Breaks on every Arch Python update; violates PEP 668 | Never on Arch Linux rolling |
-| Using `emscripten_set_main_loop` with `fps=60` | Feels predictable | Bypasses vsync/rAF; causes tearing and energy waste | Never — use fps=0 (rAF) |
-| Hardcoding emsdk `latest` in setup script | Always installs newest | Breaks reproducibility; `latest` may be untested with Lua | Only acceptable for development; pin version for CI |
-| Dead zone implemented as on/off lerp toggle | Easy to understand | Jitter at zone boundary; non-deterministic camera position | Never for smooth follow; use offset-clamp pattern instead |
+| Benchmark at `-O0` (default CMake debug) | Easier to debug test failures | Results are 5–20x off from production; CI history is useless | Never — always benchmark at `-O2` |
+| Hoist nothing — construct Objects inside nanobench lambda | Simpler test code | Measures allocator, not ECS logic; inflated variance | Never for benchmarks that claim to measure ECS update performance |
+| Set 110% fail threshold immediately | Looks rigorous | 5–15% shared runner variance causes false positives, alert fatigue | Only after 50+ baseline runs on the same runner type |
+| Use `LUA_MASKCALL|LUA_MASKRET` for timing in hook | Simple one-hook solution | Overhead per hook call is larger than short Lua functions; timing is meaningless | Only for call-count profiling, never for timing |
+| Store benchmark history in `gh-pages` alongside Docusaurus | One branch for all GitHub Pages content | Docusaurus deployment overwrites benchmark data | Never if docs.yml uses deploy-pages artifact |
+| `std::atomic<uint64_t>` with `alignas(64)` everywhere including ESP32 | Same struct on all platforms | 384+ bytes wasted static RAM on ESP32; unnecessary fences on Xtensa | Never on ESP32 — use platform guard |
+| Call `lua_setallocf` after `luaL_newstate` to install counting allocator | Easy to add post-init | Mismatched allocator for memory allocated during state creation; risk of memory corruption | Never — use `lua_newstate` with custom allocator from the start |
+| Benchmark the existing `comprehensive_benchmark.cpp` examples with nanobench | Preserves existing test coverage | These benchmarks use `std::vector<BenchmarkResult>` (heap alloc) and don't use `doNotOptimizeAway` — they are incorrect | Never without rewriting them from scratch |
 
 ---
 
@@ -284,14 +269,13 @@ Common mistakes when connecting these new features to the existing system.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| WASM main loop | Calling `emscripten_set_main_loop` before engine is initialized | Initialize all state as static globals, then register the loop callback as the last statement in `main()` |
-| WASM LuaStore backend | Using the existing `saveToFile` stub (returns false) and treating it as correct behavior | Replace the stub with `EM_JS` bridge to `localStorage.setItem()` in a WASM-specific compilation unit |
-| ESP32 NVS backend | Using `nvs_set_str` for LuaStore's serialized JSON blob | LuaStore's JSON may exceed 4000-byte NVS string limit; use `nvs_set_blob` for the store payload |
-| Tween await | Yielding inside a `done_cb` via `coroutine.yield()` | Use a polling approach: yield the coroutine from `engine.async.wait`, check tween completion on each scheduler tick |
-| Camera dead zone + screen shake | Applying dead zone check after screen shake offset | Dead zone operates on target-to-camera delta in world space; screen shake is a render-time offset applied after camera update |
-| Arch setup script + emsdk | Sourcing `emsdk_env.sh` without checking if emsdk is initialized | Check `command -v emcc` before sourcing; print actionable error if not found |
-| ESP32 build + bindings split | Including `bindings_internal.hpp` from a new NVS-specific file | `bindings_internal.hpp` uses TU-local constexpr — safe, but verify it compiles cleanly in the ESP32 toolchain (Xtensa-specific warnings) |
-| Docusaurus C++ code blocks | Using `<` and `>` in angle-bracket template syntax in MDX | Escape as `&lt;` and `&gt;` in prose; in fenced code blocks (triple backtick), angle brackets are safe |
+| nanobench + enjin2_core | Linking bench binary against enjin2_core compiled as part of the default (possibly Debug) build | Create a dedicated `bench` CMake preset that builds all dependencies at `-O2`; the benchmark CMakeLists must be isolated from the test CMakeLists |
+| Lua allocator hook + existing LuaEngine | Installing counting allocator via `lua_setallocf` after `LuaEngine::initialize()` | The existing `LuaEngine` uses `luaL_newstate()` — replace with `lua_newstate(countingAlloc, &ctx)` when building in benchmark/verification mode; use a compile-time flag `ENJIN2_BENCH_ALLOC=ON` |
+| Frame timing + SDL runner | Adding timing calls inside the existing `sdl_main.cpp` frame loop at arbitrary points | The SDL runner already has a defined phase order (tickCamera → tickCoroutines → tickTweens); wrap each phase with `FrameTimer::begin/end` at that existing phase boundary, not inside the subsystem implementations |
+| github-action-benchmark + existing docs.yml | Both workflows deploy to GitHub Pages via `gh-pages` branch | Use `external-data-json-path` option to decouple benchmark history from Pages deployment; store JSON in a separate `bench-data` branch |
+| headless enjin_run + LuaScriptSystem | Calling `LuaScriptSystem::initialize()` and `registerAll()` from the CLI tool | `registerAll()` requires a live `SceneStateMachine*`, `InputState*`, and canvas — none of which exist in headless mode; create a `MinimalLuaHost` that provides only `engine.lua.*` and `engine.time.*` |
+| ESP32 frame timing + `esp_cpu_get_cycle_count()` | Storing cycle counts in `uint64_t` fields of the timing struct | Declare timing fields as `uint32_t` on ESP32; convert deltas to microseconds immediately; never accumulate absolute cycle counts |
+| nanobench JSON output + github-action-benchmark | nanobench's default JSON output format is not directly parseable by `github-action-benchmark` | Write a `scripts/convert-bench-json.sh` that transforms nanobench's output to the `github-action-benchmark` customSmallerIsBetter format before the action reads it |
 
 ---
 
@@ -301,12 +285,12 @@ Patterns that work at small scale but fail under real conditions.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| `localStorage.setItem` on every `engine.store.save()` | Frame time spikes 10–100ms each save call | Flush-only pattern: dirty flag + explicit `flush()` | First time `save()` is called from `update()` |
-| NVS `nvs_open`/`nvs_close` per operation | Each open costs ~1ms RAM load + flash read; noticeable lag | Open namespace handle once at boot; keep open | Immediately visible on ESP32 at any save frequency |
-| `emscripten_set_main_loop` with `fps=60` instead of `0` | Frame tearing, energy waste, vsync mismatch | Always use `fps=0` for rAF-synchronized rendering | Immediately |
-| 5-layer canvas stack in internal RAM on ESP32 | Boot failure or Lua heap exhaustion | Reduce layer count for ESP32; use PSRAM for canvas buffers | At boot, before any game code runs |
-| Coroutine wait implemented with ASYNCIFY `emscripten_sleep` | WASM binary 50%+ larger; all VM calls are slower | Use `tickCoroutines(dt)` polling loop, not ASYNCIFY | Build time; noticeable in browser load performance |
-| Dead zone toggling lerp on/off frame-by-frame | Camera jitter at zone boundary; visible oscillation | Use offset-clamp formula; lerp the pull delta, not a binary switch | When target velocity ≈ lerp speed at boundary |
+| Measuring allocations over full benchmark run, not per hot-path span | Counter reports hundreds of "allocations" per frame even in zero-alloc code (Lua GC background activity) | Reset counter immediately before and after each specific hot-path assertion | Immediately — first CI run will fail |
+| Hook-based Lua timing for short functions | All functions report same time (hook overhead floor) | Use hook for counts, time via `lua_resume` entry/exit in C++ | Always — hook overhead > short function execution time |
+| Not calling `lua_gc(L, LUA_GCSTOP, 0)` before Lua benchmark section | GC fires mid-benchmark, inflating measured time by 5–50ms | Stop GC before benchmark, run it once manually after | Random — GC fires non-deterministically |
+| 110% threshold without baseline stabilization | CI fails on every PR (false alarms) | Use 150% threshold initially; tighten to 120% after 50+ stable runs | Immediately on first real PR |
+| `alignas(64)` on ESP32 timing struct | 384+ bytes wasted internal RAM | Platform-conditional: `alignas(64)` on desktop, plain struct on ESP32 | At first ESP32 build with timing struct |
+| nanobench with default epoch/iteration settings measuring GPU-influenced operations | Results vary 3–5x between runs because compositor step varies with canvas state | Pre-fill canvas with deterministic content before each benchmark iteration | On benchmarks that test `LayerCompositor::composite()` |
 
 ---
 
@@ -314,15 +298,15 @@ Patterns that work at small scale but fail under real conditions.
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **WASM LuaStore:** `saveToFile` stub returns `false` — looks like "build passes" but store is silently dropped on every save. Verify by calling `engine.store.save("x", 1)` → reload page → `engine.store.load("x")` returns value.
-- [ ] **ESP32 NVS keys:** Keys under 15 characters pass. Add explicit test with a 16-character key to confirm truncation warning fires, not silent collision.
-- [ ] **WASM main loop:** Build succeeds, `.wasm` file generated, but running in browser shows blank canvas because state objects were stack-allocated in `main()`. Verify with a script that draws a colored rectangle and reloads — must persist across frame callbacks.
-- [ ] **Camera dead zone:** Feature appears to work but has jitter at boundary. Test by moving target at constant low velocity across the dead zone edge — camera should track smoothly, not oscillate.
-- [ ] **Tween await:** `engine.tween.await()` returns at end of tween but coroutine is resumed twice in one frame when done_cb and scheduler both trigger on same tick. Verify frame count matches expected tween duration exactly.
-- [ ] **Arch setup script:** Script exits 0 on first run. Verify idempotency: run twice — second run should skip already-installed steps or reinstall cleanly without conflict.
-- [ ] **ESP32 5-layer build:** Compiles without error. Verify `esp_get_free_heap_size()` after canvas init and Lua init leaves ≥ 40 KB free. Log this at boot.
-- [ ] **localStorage quota:** Single-key store flushes correctly. Test with maximum-capacity store (16 keys, max-length strings) — verify flush returns true and data survives reload.
-- [ ] **Docusaurus tutorials:** Renders in dev mode. Verify production build (`npm run build`) completes without MDX parse errors — angle brackets in prose, template syntax in code, and JSX-incompatible HTML are common build-time failures that don't appear in dev mode.
+- [ ] **Benchmark suite:** Compiles and runs locally. Verify that removing the `doNotOptimizeAway` call from a canvas benchmark changes the reported time by more than 2x — if it doesn't, dead code elimination is active.
+- [ ] **nanobench JSON output:** Benchmark binary produces `bench-results/*.json`. Verify the conversion script can parse it and produces valid github-action-benchmark format by running it locally before CI.
+- [ ] **CI regression detection:** Workflow file exists and runs. Verify it writes to a persistent store (not ephemeral artifact) by checking that the second run has access to the first run's results.
+- [ ] **Frame timing instrumentation:** SDL runner reports per-phase timing. Verify by adding an artificial 1ms sleep inside the update phase and confirming `updateTime_us` increases by ~1000µs.
+- [ ] **Lua profiler call counts:** Hook fires for every function. Verify against a known script: a script that calls one function 10 times must show exactly 10 in the call count output.
+- [ ] **Lua GC pressure tracking:** `lua_gc(L, LUA_GCCOUNT, 0)` returns bytes. Verify the before/after delta is zero for a script that creates no tables or strings in its update() function.
+- [ ] **Allocation verification:** Counter reports zero allocations for `canvas.clear()`, `canvas.setPixel()`, and the ECS update loop. Verify by checking these specific hot paths, not a full frame which includes GC.
+- [ ] **headless enjin_run:** CLI tool runs `script.lua` without segfault when the script calls `engine.lua.memory()` and `engine.time.delta()`. Verify with a script that calls every `engine.*` subtable — confirm graceful null handling, not segfault.
+- [ ] **ESP32 frame timing:** Cycle counter delta is in reasonable range. Verify that a known-duration operation (a tight loop of N iterations with measured latency) produces the expected microsecond reading when divided by CPU clock frequency.
 
 ---
 
@@ -332,14 +316,13 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| WASM state in stack-local `main()` | MEDIUM | Refactor engine state to static struct; no API changes needed; test in browser immediately |
-| ASYNCIFY bloat already added | LOW | Remove `-sASYNCIFY` flag; rebuild; verify coroutines still work via `tickCoroutines` path |
-| NVS key collision from truncation | HIGH | Existing saved data may be corrupted in flash; run `nvs_flash_erase()` + re-init; rename keys to ≤15 chars throughout LuaStore backend |
-| ESP32 heap exhaustion from 5 layers | MEDIUM | Reduce `ENJIN_LAYER_COUNT` to 3 in ESP32 CMake preset; rebuild; verify Lua boots |
-| localStorage quota error in production | LOW | Catch the DOMException in JS glue; return false to WASM; game handles gracefully if `flush()` return value is checked |
-| Tween-coroutine double-resume | MEDIUM | Remove re-entrant `coroutine.resume()` from `done_cb`; implement polling check in `tickCoroutines`; clear tween ID from slot on completion |
-| Camera dead zone jitter | LOW | Replace toggle pattern with offset-clamp formula; no API changes; unit-testable in isolation |
-| Arch setup script Python breakage | MEDIUM | Add `python3 -m venv` isolation; test in a fresh Arch Docker container; document tested Python version range |
+| Benchmark history wiped from gh-pages | HIGH | Restore from git reflog if within 30 days; otherwise accept loss and start fresh; implement external JSON storage going forward |
+| All baseline results recorded at `-O0` | HIGH | Delete all stored benchmark results; force new baseline with correct Release build; document the reset in the PR |
+| Counting allocator installed after state creation (mismatched) | MEDIUM | Switch to `lua_newstate` with custom allocator; this requires modifying `LuaPlatform::createState()` to accept an optional allocator hook; existing API is already compatible (it has `allocator` parameter) |
+| 110% threshold causing alert fatigue | LOW | Raise threshold to 150% temporarily; allow history to accumulate for 30+ runs; lower gradually; add comment in workflow explaining the calibration |
+| Hook-based timing producing useless results | LOW | Replace per-function timing with `LUA_MASKCOUNT` sampling; keep call-count profiling; add documentation explaining the limitation |
+| Dead code elimination invalidating benchmark | LOW | Add `doNotOptimizeAway` after every canvas operation; rebuild; verify results are now in expected range |
+| ESP32 cycle counter wrap corruption | MEDIUM | Replace `uint64_t` accumulation with per-frame `uint32_t` delta; existing wrap-safe unsigned subtraction handles this; test over 30-second runtime |
 
 ---
 
@@ -349,38 +332,41 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| `emscripten_set_main_loop` stack object destruction | WASM build verification | Script draws rect, page reload preserves behavior |
-| ASYNCIFY bloat | WASM build verification | Build flags reviewed; binary size baseline documented |
-| NVS key 15-char limit | ESP32 NVS storage phase | Test with 16-char key; confirm warning/rejection |
-| NVS namespace RAM overhead | ESP32 NVS storage phase | Log heap after `nvs_flash_init()`; must leave ≥40 KB |
-| localStorage frame-blocking | WASM localStorage bridge phase | Profile with browser DevTools; no spikes in `update()` |
-| localStorage quota exceeded | WASM localStorage bridge phase | Test with max-capacity store; flush returns bool correctly |
-| Tween-coroutine re-entrant resume | Tween await QoL phase | Coroutine wakes exactly once per tween; frame timing matches duration |
-| Camera dead zone jitter | Camera dead zone QoL phase | Target at constant velocity across boundary; smooth tracking |
-| Arch Python version breakage | Dev setup script phase | Run script on fresh Arch install; run twice for idempotency |
-| ESP32 5-layer heap exhaustion | ESP32 build verification phase | `esp_get_free_heap_size()` logged at boot; ≥40 KB after init |
+| Object construction inside nanobench lambda | Phase 1: Benchmark Foundation | ECS update benchmark reports <50ns per iteration for a 16-object scene |
+| Dead code elimination on canvas benchmark | Phase 1: Benchmark Foundation | canvas.clear() benchmark reports >1µs; removal of doNotOptimizeAway changes result by >2x |
+| Benchmark built at wrong optimization level | Phase 1: Benchmark Foundation | `build-bench.sh` passes `-DCMAKE_BUILD_TYPE=Release`; CMake warns if not Release |
+| nanobench JSON → github-action-benchmark format | Phase 1 → Phase 2 handoff | Conversion script runs locally and produces parseable output before CI workflow is created |
+| gh-pages history destruction | Phase 2: CI Regression Detection | Docs workflow and benchmark workflow run sequentially on same commit; benchmark data survives |
+| 110% threshold false positives | Phase 2: CI Regression Detection | Threshold set to 150% initially; calibration documented in workflow comment |
+| Frame timing atomic overhead on ESP32 | Phase 3: Frame Timing | ESP32 build uses platform-conditional `uint32_t volatile` fields, not `std::atomic<uint64_t>` |
+| esp_cpu_get_cycle_count() wrap | Phase 3: Frame Timing | 30-second runtime test shows stable timing values; no outlier spikes |
+| lua_sethook timing measures its own overhead | Phase 4: Lua Profiling | Call-count and timing are separate modes; profiler documentation states timing is approximate |
+| Headless runner null-dereferences on engine.* | Phase 4: Lua Profiling | Test script exercises all engine.* subtables without segfault; CI runs headless profiler as smoke test |
+| lua_Alloc realloc over-counting | Phase 5: Allocation Verification | Known-zero-alloc path (canvas.clear) reports 0 allocations; Lua string interning does not increment counter |
+| Counting allocator installed post-init | Phase 5: Allocation Verification | Allocation hook is provided at lua_newstate() via build flag, not installed after the fact |
 
 ---
 
 ## Sources
 
-- [Emscripten emscripten_set_main_loop documentation](https://emscripten.org/docs/api_reference/emscripten.h.html)
-- [Emscripten Runtime Environment — main loop design](https://emscripten.org/docs/porting/emscripten-runtime-environment.html)
-- [Emscripten Asyncify documentation](https://emscripten.org/docs/porting/asyncify.html)
-- [Emscripten File System API — MEMFS and IDBFS](https://emscripten.org/docs/api_reference/Filesystem-API.html)
-- [ESP-IDF NVS Flash API Reference (v5.5.3)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html)
-- [ESP-IDF External RAM (PSRAM) Guide](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/external-ram.html)
-- [ESP-IDF install.sh breakage on Arch Linux — GitHub Issue #7809](https://github.com/espressif/esp-idf/issues/7809)
-- [ArchWiki ESP32 page](https://wiki.archlinux.org/title/ESP32)
-- [Emscripten Asyncify + coroutines broken issue #8979](https://github.com/emscripten-core/emscripten/issues/8979)
-- [Emscripten set_main_loop multiple calls issue #2325](https://github.com/emscripten-core/emscripten/issues/2325)
-- [LocalStorage vs IndexedDB vs OPFS vs WASM-SQLite — RxDB 2025](https://rxdb.info/articles/localstorage-indexeddb-cookies-opfs-sqlite-wasm.html)
-- [Lua coroutine yield-across-C-boundary — lua-l archive](https://lua-l.lua.narkive.com/uMsdDdA3/attempt-to-yield-across-metamethod-c-call-boundary)
-- [Improved Lerp Smoothing — Game Developer Magazine](https://www.gamedeveloper.com/programming/improved-lerp-smoothing-)
-- [Docusaurus code blocks documentation](https://docusaurus.io/docs/markdown-features/code-blocks)
-- enjin2 v1.7 codebase: `src/scripting/bindings_store.cpp`, `bindings_async.cpp`, `bindings_tween.cpp`, `components/camera.cpp`, `platform/sdl/sdl_main.cpp`, `src/bindings/emscripten_bindings.cpp`
-- enjin2 PROJECT.md — Known tech debt and constraints
+- [nanobench documentation — Installation and Tutorial](https://nanobench.ankerl.com/tutorial.html)
+- [nanobench GitHub — martinus/nanobench](https://github.com/martinus/nanobench)
+- [github-action-benchmark — benchmark-action/github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark)
+- [Is GitHub Actions suitable for running benchmarks? — Quansight Labs](https://labs.quansight.org/blog/github-actions-benchmarks)
+- [Benchmarks in CI: Escaping the Cloud Chaos — CodSpeed](https://codspeed.io/blog/benchmarks-in-ci-without-noise)
+- [Detection of Performance Changes Using Nyrkiö on GitHub Actions — arXiv 2510.11310](https://arxiv.org/html/2510.11310)
+- [Lua 5.4 Reference Manual — debug.sethook / lua_sethook](https://pgl.yoyo.org/luai/i/lua_sethook)
+- [Programming in Lua 5.4 — Chapter 23: Debug Library](https://www.lua.org/pil/23.3.html)
+- [lua-users wiki: Pepperfish Profiler — hook overhead documented](http://lua-users.org/wiki/PepperfishProfiler)
+- [lua-users wiki: Memory Allocation — lua_Alloc protocol](http://lua-users.org/wiki/MemoryAllocation)
+- [lua-allocspy — siffiejoe/lua-allocspy (reference for correct allocation counting)](https://github.com/siffiejoe/lua-allocspy)
+- [bitsquid dev blog: Fixing memory issues in Lua](http://bitsquid.blogspot.com/2011/08/fixing-memory-issues-in-lua.html)
+- [ESP-IDF FreeRTOS Overview — esp_cpu_get_cycle_count()](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/freertos.html)
+- [ESP32 Forum: Very accurate hardware timer & FreeRTOS — cycle counter wrap discussion](https://esp32.com/viewtopic.php?t=10331)
+- [Cache Line Alignment in C++ — false sharing and atomic overhead](https://ryonaldteofilo.medium.com/cache-line-alignment-in-c-1aac85e4482f)
+- enjin2 v1.9 codebase: `src/scripting/lua_platform.cpp`, `src/scripting/lua_engine.cpp`, `include/enjin2/core/object.hpp`, `examples/comprehensive_benchmark.cpp`, `examples/memory_profiler.cpp`, `.github/workflows/docs.yml`
+- enjin2 PROJECT.md — Active requirements for v1.10, constraints, key decisions
 
 ---
-*Pitfalls research for: enjin2 v1.8 Ship Ready — Emscripten/WASM, ESP32 NVS, WASM localStorage, Arch dev scripts, coroutine-tween, camera dead zone, Docusaurus tutorials*
-*Researched: 2026-03-02*
+*Pitfalls research for: enjin2 v1.10 Benchmarking & Performance — adding nanobench suite, CI regression detection, frame timing, Lua profiling, and allocation verification*
+*Researched: 2026-03-07*

@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** enjin2 v1.8 Ship Ready
-**Domain:** Cross-platform 2D embedded game engine — WASM/ESP32 hardening, platform storage backends, developer tooling, tutorial documentation
-**Researched:** 2026-03-02
+**Project:** enjin2 v1.10 — Benchmarking & Performance Infrastructure
+**Domain:** C++ embedded game engine — measurement, profiling, and CI regression infrastructure
+**Researched:** 2026-03-07
 **Confidence:** HIGH
 
 ## Executive Summary
 
-enjin2 v1.8 is a hardening milestone, not a feature milestone. The engine's three-platform architecture (SDL3 desktop, WASM/Emscripten, ESP32) already exists at the v1.7 code level, but two of three platforms have unverified builds and stub-only storage implementations. The primary work is: (1) prove all three platforms compile and produce runnable artifacts, (2) replace `return false` storage stubs with real platform backends (localStorage on WASM, NVS flash on ESP32), (3) wire two v1.7 subsystems together that were built but not integrated (tween completion into coroutine scheduler), and (4) create onboarding tooling and documentation that makes the engine usable by someone other than its author.
+The v1.10 milestone is a measurement and infrastructure layer added on top of the existing enjin2 engine — no existing subsystems are restructured. The work decomposes cleanly into five independent concerns: a microbenchmark suite (nanobench), a CI regression pipeline (github-action-benchmark), per-phase frame timing instrumentation in the SDL3 runner, a Lua profiler and headless CLI runner, and zero-allocation verification for hot paths. All five are additive; they share the existing CMake library targets, Lua state, and SDL3 runner without modifying engine internals. Research confirms that the only viable tool choices for this specific codebase are nanobench (single-header, no Abseil, JSON output, FetchContent-compatible) and github-action-benchmark (self-hosted, gh-pages integration, customSmallerIsBetter JSON format); every major alternative was explicitly ruled out due to cross-platform constraints (ESP32, WASM, desktop) or CI complexity.
 
-The recommended approach follows a strict dependency order: build verification must come before platform-specific storage work, and the shared JSON serializer refactor must precede both storage backends. The WASM and ESP32 backends share the same serialization strategy — the entire LuaStore is serialized to a single JSON blob written to one storage key — which minimizes divergence and allows both platforms to reuse the existing `readJson*` parsing infrastructure. Emscripten 3.1.73 should be pinned for reproducibility (the project already satisfies the C++17 constraint required by 4.x). ESP-IDF v5.5.x (current stable) is the correct target. No new external libraries are needed for any feature in scope.
+The recommended build order is strictly dependency-driven: CMake foundation first (ENJIN2_BUILD_BENCHMARKS option, vendor/nanobench.h), then benchmark binaries and frame timing in parallel, then CI pipeline and Lua profiler/headless runner, and finally allocation verification which wraps the finished benchmark binaries. Documentation can be written in parallel with all phases. The architecture keeps all instrumentation code outside the engine libraries — profiler hooks via `LuaEngine::getState()`, timing via header-only structs, and allocation verification via compile-gated `operator new` overrides — so ESP32 and WASM production builds are completely unaffected.
 
-The top risks are platform-specific and well-understood: WASM build gaps introduced by v1.7 features that have never been compiled under Emscripten; ESP32 heap exhaustion if the 5-layer canvas stack is allocated in internal RAM without PSRAM; NVS key collisions from silent 15-character truncation; and re-entrant coroutine resume if tween-await is implemented naively via `done_cb`. All of these have clear, established mitigations. No risk requires architectural rethinking — the existing platform-guard pattern (`#if !defined(ESP32) && !defined(__EMSCRIPTEN__)`) is the correct integration structure.
+The highest-risk areas are the CI regression threshold (GitHub shared runners exhibit 5-15% variance, making the default 110% threshold immediately counterproductive), the gh-pages storage conflict between the existing Docusaurus deployment and benchmark history, and the headless CLI runner's need for null-safe Lua binding stubs when engine subsystems are absent. These risks are well-understood and preventable if addressed at phase start rather than retrofit. Research overall is high confidence: all five new tools are verified against official documentation and the codebase was directly inspected for all integration points.
 
 ---
 
@@ -19,175 +19,164 @@ The top risks are platform-specific and well-understood: WASM build gaps introdu
 
 ### Recommended Stack
 
-v1.8 requires no new framework dependencies. All stack additions are toolchain configuration and standard platform APIs that ship with the existing build environments. The Emscripten `EM_JS` macro (bundled with emsdk) is the correct bridge for WASM localStorage — it is synchronous, zero-overhead, and avoids the ASYNCIFY bloat trap. The ESP-IDF NVS component (bundled with ESP-IDF v5.5) satisfies the LuaStore KV model exactly within its constraints. Docusaurus 3.9.2 is already installed and requires only content files and a one-line prism config change to support Lua syntax highlighting in tutorials.
+The v1.10 stack adds exactly five new capabilities on top of the existing C++17/CMake/SDL3/Lua 5.4 foundation. All additions are zero-new-service-dependency: nanobench is a single header vendored to `vendor/nanobench.h`; github-action-benchmark is a GitHub Action with no external account; `lua_sethook` and `SDL_GetPerformanceCounter` are already-linked APIs; and the `operator new` override is standard C++17. The CMake addition is a single `ENJIN2_BUILD_BENCHMARKS` option guarded to `NOT ESP32 AND NOT EMSCRIPTEN`, mirroring the existing `ENJIN2_BUILD_TESTS` pattern exactly.
 
 **Core technologies:**
-- **Emscripten emsdk 3.1.73 (pinned):** WASM cross-compilation — pin for reproducibility; project already uses C++17 so 4.x is also safe, but 3.1.73 matches what `build_wasm.sh` was written against
-- **ESP-IDF v5.5.x (current stable):** ESP32 build and flash — NVS API is unchanged from v4.x to v5.x at the call level; v6.0-beta1 exists but should not be used
-- **EM_JS macro (Emscripten bundled):** localStorage bridge from C++ — synchronous, no Asyncify, matches LuaStore's synchronous `saveToFile` signature
-- **nvs_flash.h + nvs.h (ESP-IDF bundled):** ESP32 persistent KV storage — 15-char key limit fits LuaStore's constraint; 4000-byte string limit vastly exceeds worst-case JSON payload
-- **Docusaurus 3.9.2 (already installed):** Tutorial authoring — add `'lua'` to prism `additionalLanguages` and create `docs/src/tutorials/` directory; no new plugins
+- **ankerl::nanobench v4.3.11**: microbenchmark harness — single-header, C++17, native JSON output via `templates::json()`, 65x faster autotuning than google/benchmark; zero new link dependencies
+- **benchmark-action/github-action-benchmark v1**: CI regression dashboard — accepts `customSmallerIsBetter` JSON, auto-commits to gh-pages, configurable threshold, no external service; bridged from nanobench JSON via a single `jq` one-liner
+- **`SDL_GetPerformanceCounter` / `SDL_GetPerformanceFrequency`**: per-phase frame timing — already in project, nanosecond-scale resolution, extends existing delta-time calculation
+- **Lua 5.4 C API `lua_sethook`**: Lua profiling — stable across Lua 5.1-5.4 and LuaJIT, `LUA_MASKCALL | LUA_MASKRET` for call counts, lower overhead than Lua-side `debug.sethook`
+- **Global `operator new` override (project header)**: zero-alloc verification — C++17 standard technique, portable across ESP32/WASM/desktop, gated behind `ENJIN2_BUILD_TESTS`
 
-**What NOT to add:**
-- `pacman -S emscripten` — gives system Emscripten 5.0.2 (not version-pinned); use manually-cloned emsdk pinned to 3.1.73
-- `-sASYNCIFY` — 50%+ binary bloat for zero benefit; the existing `tickCoroutines(dt)` + `lua_resume` pattern is correct on WASM as-is
-- IndexedDB / IDBFS — asynchronous; conflicts with synchronous `saveToFile` signature; localStorage is sufficient for 16-key LuaStore
-- ESP-IDF v6.0-beta1 — use stable v5.5.x
-- Separate NVS key per LuaStore slot — NVS key enumeration is diagnostic-only; serialize as a single JSON blob
+**Critical version/behavior requirements:**
+- nanobench v4.3.11 requires exceptions enabled — benchmark binary is gated to desktop (SDL3) target only where exceptions are available
+- Do NOT use `pull_request` CI trigger for github-action-benchmark — run on `push` to `main` only (documented limitation of the action for fork PRs)
 
 ### Expected Features
 
-All features are P1 for "ship ready" status, with two additional P2 QoL items. The dependency chain is clear: build verification gates storage backends; dev setup script enables build verification; the shared JSON serializer refactor gates both storage backends. Full details in `.planning/research/FEATURES.md`.
+The milestone brief and domain research are fully aligned. Every feature is P1 (must-have for v1.10) with no scope ambiguity.
 
 **Must have (table stakes):**
-- **Dev environment setup script** — Arch Linux; onboarding gate before any platform verification can happen
-- **WASM build verified** — all v1.7 features compile under `__EMSCRIPTEN__`; produces `.js` + `.wasm`
-- **ESP32 build verified** — all v1.7 features compile under ESP-IDF; PSRAM constraint for 5-layer stack documented or resolved
-- **WASM localStorage bridge** — `LuaStore::saveToFile`/`loadFromFile` implemented for `__EMSCRIPTEN__` via `EM_JS`; flush-only pattern to avoid frame blocking
-- **ESP32 NVS storage** — `LuaStore::saveToFile`/`loadFromFile` implemented for `ESP32` via single JSON blob in NVS; `nvs_commit()` on write
-- **Tech debt: m_followTargetProxy** — 2-line fix clearing dangling camera follow reference on scene transitions and hot reload
-- **Tech debt: PERSIST standalone gap** — emit `lua_warning()` when `engine.scene.persist()` called without SceneStateMachine context
-- **Tween-await integration** — `engine.tween.await()` inside a coroutine suspends until tween completes; polling implementation, not re-entrant resume
-- **Docusaurus Getting Started guide** (updated) — remove stale Canvas8 reference; match v1.7 SDL3 runner API
-- **Docusaurus tutorials** — "Your First Script" (tamagotchi walkthrough) and "Async Coroutines" (engine.async + engine.tween.await)
+- nanobench vendored as `vendor/nanobench.h` — enables all benchmark binaries; establishes measured performance vs. guessed
+- `bench_canvas`, `bench_ecs`, `bench_lua` executables — with JSON output to `bench-results/`; each covers the critical hot path of its subsystem
+- `scripts/build-bench.sh` — one-command developer workflow, mirrors existing `build.sh` pattern
+- CI workflow `.github/workflows/benchmarks.yml` — regression detection triggered on `push` to `main`, 110% threshold (after baseline calibration; see pitfall 3)
+- gh-pages dashboard — benchmark history visualization; populated by CI on first `main` push
 
-**Should have (competitive):**
-- **wait_frames helper** — `engine.async.wait_frames(n)` as a Lua-level wrapper over `engine.async.wait(0)`; no new C bindings
-- **Camera dead zone** — `engine.camera.setDeadZone(w, h)`; offset-clamp formula, not toggle pattern
-- **Build helper scripts** — `build.sh --target [sdl3|wasm|esp32]` thin wrappers
+**Should have (differentiators specific to enjin2):**
+- `FrameTimingInstrumentation` struct with `updateTime_us`, `renderTime_us`, `luaTime_us`, `compositeTime_us` — answers "where is my 16ms frame budget going?" which no existing enjin2 tool can answer
+- Lua profiler via `lua_sethook` — per-function call counts and approximate self-time; zero overhead when disabled; accurate enough to identify hot bindings
+- Headless CLI runner `enjin_run --profile --frames N script.lua` — CI script validation without SDL3 window; primary Lua profiling workflow
+- Static allocation verification — proves enjin2's core zero-alloc claim with CI evidence, not assertion
+- `docs/PERFORMANCE.md` — without documentation, the benchmark infrastructure is opaque to contributors
 
-**Defer (v2+):**
-- WASM OPFS/IndexedDB storage (localStorage is sufficient for 16-key LuaStore)
-- ESP32 hot reload via SPIFFS
-- Interactive WASM demo in docs (lives in DROP project, not docs site)
-- API doc inline examples (extract from tutorials after they are stable)
+**Defer (v1.x or later):**
+- WASM-specific frame timing (Emscripten performance APIs) — adds CI complexity
+- ESP32-specific frame timing in FreeRTOS game loop — requires hardware or QEMU in CI
+- Lua profiler SDL3 overlay panel — `enjin_run` CLI is sufficient for v1.10
+- Per-scene benchmark mode — extends enjin_run; useful for game-level profiling
+- Tracy Profiler — conflicts with zero-threading model; future multi-threaded rendering only
+- LuaJIT on desktop — only if WASM/ESP32 parity is dropped
 
 ### Architecture Approach
 
-The architecture change for v1.8 is concentrated entirely in `src/scripting/bindings_store.cpp`. The existing `#if !defined(ESP32) && !defined(__EMSCRIPTEN__)` platform guard already provides the correct dispatch structure — v1.8 fills in the two stub `#else` branches. A prerequisite refactor extracts a `writeStoreToBuffer(char* out, size_t cap)` helper from the existing `std::ofstream`-based `saveToFile`, enabling both WASM and ESP32 backends to share the same JSON serializer. No new subsystems, no new headers, no API surface changes. The rest of the work is build infrastructure (scripts), documentation (Docusaurus tutorials), and isolated feature additions (camera dead zone, tween-await) that touch well-defined, contained modules.
+All v1.10 work is strictly additive to enjin2's layered architecture. The existing `enjin2_core` → `enjin2_graphics` → `enjin2_ui` → `enjin2_lua` → `enjin2_sdl` dependency chain is unchanged. Four new top-level additions are introduced: a `benchmarks/` directory (CMake targets linking `enjin2_lua` but not SDL3), a `tools/enjin_run` executable (same linkage), a `src/perf/` header-only directory (`FrameTimingInstrumentation`, `alloc_counter`), and a CI workflow. The only modification to existing code is inserting six timing capture points into `sdl_main.cpp`'s game loop, wrapped at existing phase boundaries.
 
 **Major components:**
-1. **`bindings_store.cpp` platform dispatch** — existing guard structure; add `#elif __EMSCRIPTEN__` and `#elif ESP32` branches with real implementations; extract `writeStoreToBuffer` shared helper
-2. **WASM host / `emscripten_bindings.cpp`** — verify all v1.7 features compile under Emscripten; fix any missing preprocessor guards from v1.7 additions
-3. **ESP32 host** — verify 5-layer canvas stack fits available RAM; wire `nvs_flash_init()` into platform init before LuaBindings construction
-4. **Build infrastructure** — `scripts/setup-dev.sh` (new), `scripts/build-wasm.sh` (refactored from root `build_wasm.sh` with path detection), `scripts/build-sdl.sh` and `build-esp32.sh` (new)
-5. **Docusaurus tutorials** — `docs/src/tutorials/` directory with `_category_.json`, tutorial pages, and `'lua'` added to prism config; `docs/sidebars.js` updated with tutorials category
-6. **`bindings_tween.cpp` + coroutine scheduler** — tween-await via yield + polling (coroutine sets awaited tween ID; `tickCoroutines()` checks completion each tick)
-7. **`components/camera.cpp`** — dead zone using offset-clamp formula; `m_deadZoneW`/`m_deadZoneH` fields
+1. `benchmarks/bench_canvas, bench_ecs, bench_lua` — independent nanobench suites, each a standalone `main()`, produce JSON output; no SDL3 dependency
+2. `src/perf/frame_timing.hpp` — `FrameTimingInstrumentation` struct with `std::atomic` fields; written from the game loop, read by overlay and `enjin_run`; header-only, zero external deps
+3. `tools/enjin_run.cpp` — headless Lua runner; stubs `input_platform_poll`, no SDL3; attaches `lua_sethook` profiler when `--profile` flag passed; links only `enjin2_lua`
+4. `src/perf/alloc_counter.hpp` — `AllocGuard` RAII + `operator new`/`delete` override behind `ENJIN2_ALLOC_INTERCEPT` define; integrated into bench binaries for CI hot-path verification
+5. `.github/workflows/benchmarks.yml` — builds bench binaries, runs them, converts JSON via `jq`, stores in gh-pages; completely separate from existing `docs.yml`
+
+**Key architectural boundary:** The profiler attaches to `LuaEngine::getState()` (already public) from outside the engine — `LuaEngine` is not modified. This is the correct pattern: instrumentation stays in the tool layer, not the engine library.
 
 ### Critical Pitfalls
 
-1. **`emscripten_set_main_loop` destroys stack objects** — engine state allocated on the stack in `main()` is destroyed when the loop takes control. All engine state must be static or heap-allocated before registering the loop callback. Use `fps=0` (requestAnimationFrame). Never place initialization code after the call.
+Research identified 10 pitfalls; these 5 are critical enough to block the milestone if not addressed at phase start:
 
-2. **ASYNCIFY bloat — do not use it** — the existing `tickCoroutines(dt)` + `lua_resume` scheduler pattern works correctly in WASM without ASYNCIFY. Adding `-sASYNCIFY` would instrument the entire Lua VM and inflate the binary 50%+. Never use `emscripten_sleep()` as a coroutine wait mechanism.
+1. **Dead code elimination silences the entire canvas benchmark** — GCC/Clang at `-O2` eliminates pure write operations with no observable reads. Prevention: call `ankerl::nanobench::doNotOptimizeAway(canvas)` after every benchmark lambda body; build at `-O2` from day one. Signal: `canvas.clear(128x64)` reporting <1µs is a DCE indicator.
 
-3. **ESP32 NVS key silent truncation at 15 characters** — NVS silently truncates keys longer than 15 characters, causing undetected collisions. Validate and reject keys longer than 15 chars in the NVS backend. Document the constraint at the Lua API level.
+2. **Object/LuaEngine construction inside nanobench lambda measures allocator, not ECS** — `std::make_unique` inside a benchmark loop inflates variance and measures allocator overhead. Prevention: hoist all construction out of `bench.run()` lambdas; only the update/call path goes inside the loop. `LuaEngine::initialize()` must also be called once per binary, never inside a benchmark.
 
-4. **ESP32 5-layer canvas stack exhausts internal RAM** — 5 layers at 320x240 4-bit = ~187 KB static allocation. With Lua VM overhead, this can exhaust the 320 KB internal RAM without PSRAM. Default to `ENJIN_LAYER_COUNT=3` for ESP32 targets unless PSRAM is confirmed. Add a compile-time `static_assert`.
+3. **110% CI threshold produces immediate false positives on shared runners** — GitHub Actions shared runners exhibit 5-15% coefficient of variation. A 110% threshold fires on nearly every PR. Prevention: start at 150% threshold; set `fail-on-alert: false` until 30-50 baseline runs accumulate; tighten to 120% after stable baseline. Do not enable `failOnAlert: true` on initial deployment.
 
-5. **localStorage write blocks render frames** — calling `localStorage.setItem()` on every `engine.store.save()` causes 10-100ms frame spikes. Use flush-only pattern: dirty flag + explicit `flush()` + `window.beforeunload` handler. Never persist on every individual key write.
+4. **Docusaurus `docs.yml` force-push destroys benchmark history on gh-pages** — `actions/deploy-pages` replaces gh-pages content, wiping benchmark data stored in `dev/bench/`. Prevention: use `external-data-json-path` to store benchmark history in a separate `bench-data` branch, completely decoupled from Pages deployment. Verify both workflows survive a sequential run before recording any baseline.
 
-6. **Re-entrant coroutine resume from tween `done_cb`** — calling `coroutine.resume()` from inside `tickTweens()` is undefined behavior that can corrupt the coroutine pool. Implement tween-await as yield + polling: the coroutine yields with a tween ID stored; `tickCoroutines()` checks if that tween is still active each frame without any re-entrant resume.
+5. **Headless `enjin_run` null-dereferences Lua bindings that expect live engine subsystems** — `registerAll()` sets pointers to `SceneStateMachine*`, `InputState*`, and canvas; in headless mode these don't exist. Prevention: create a `MinimalLuaHost` that satisfies pointer contracts with no-op instances before calling any binding registration. Add null guards to all `engine.*` subtable bindings. Test with a script that exercises every `engine.*` subtable before shipping.
+
+Additional notable pitfalls:
+- `lua_sethook` hook overhead (48ns C-to-Lua + clock cost) exceeds short Lua function execution time — use the hook for call counts only, not timing; time via `lua_resume` entry/exit in C++
+- `lua_Alloc` realloc path (`old_size > 0 && new_size > 0`) is not a new allocation — count only `old_size == 0 && new_size > 0` to avoid false CI failures
+- `FrameTimingInstrumentation` with `std::atomic<uint64_t>` and `alignas(64)` on ESP32 wastes 384+ bytes of static RAM and emits unnecessary Xtensa memory fences — use platform-conditional `uint32_t volatile` on ESP32
+- `esp_cpu_get_cycle_count()` wraps every 17.9 seconds at 240 MHz — store only per-frame deltas as `uint32_t`, never accumulate absolute cycle counts
+- Benchmark built at default CMake (Debug, `-O0`) produces 5-20x inflated results — `build-bench.sh` must always pass `-DCMAKE_BUILD_TYPE=Release` explicitly
 
 ---
 
 ## Implications for Roadmap
 
-Based on combined research, the dependency graph enforces a clear phase sequence. Build verification is the critical path — nothing platform-specific can be written or tested until the respective platform builds succeed. The serializer refactor is a small prerequisite that unlocks both storage backends in parallel.
+The build order is strictly dictated by what must exist before what can be written, as established in the architecture dependency graph. Groups 1-2 are the critical path; Groups 3-7 are parallelizable after Group 2.
 
-### Phase 1: Environment and Build Verification
+### Phase 1: CMake Foundation + Vendor
 
-**Rationale:** The dev setup script and build verification are the mandatory foundation. Nothing else in this milestone is testable until all three platforms compile. Build verification and the setup script are independent of each other and can be worked in parallel, but both must complete before Phase 2.
+**Rationale:** CMake option and directory structure must exist before any benchmark, tool, or CI target can be written. This is a pure unblocking step with no code to measure.
+**Delivers:** `ENJIN2_BUILD_BENCHMARKS` CMake option; `vendor/nanobench.h`; stub `benchmarks/CMakeLists.txt`; stub `tools/CMakeLists.txt`; root `CMakeLists.txt` additions; `.gitignore` update for `bench-results/`; `build-bench.sh` scaffold with hardcoded `-DCMAKE_BUILD_TYPE=Release`
+**Addresses:** All P1 features depend on this
+**Avoids:** Pitfall 7 (wrong build type) — CMake warning for non-Release builds added here; shell script enforces Release mode before any baseline can be recorded
+**Research flag:** Standard patterns — no phase research needed. CMake option structure is identical to `ENJIN2_BUILD_TESTS`; nanobench FetchContent is documented in the official nanobench tutorial.
 
-**Delivers:** Working Arch Linux dev setup script (idempotent, pinned versions, venv isolation); confirmed WASM build (`.js` + `.wasm` output); confirmed ESP32 build (IDF firmware); PSRAM layer count decision documented in code.
+### Phase 2: Native Benchmark Suite
 
-**Addresses:** Dev environment setup script, WASM build verification, ESP32 build verification (all P1 table stakes)
+**Rationale:** `bench_canvas`, `bench_ecs`, `bench_lua` are the core deliverable of the milestone and the prerequisite for CI (Phase 5) and allocation verification (Phase 6). DCE and fixture-design pitfalls must be solved here before any results are stored as baselines.
+**Delivers:** Three working benchmark executables producing JSON output; `bench-results/` populated locally; `scripts/build-bench.sh` complete; `scripts/convert-bench-json.sh`
+**Addresses:** nanobench integration, bench_canvas, bench_ecs, bench_lua, JSON output, build-bench.sh (all P1 table stakes)
+**Avoids:** Pitfall 1 (object construction inside lambda), Pitfall 2 (DCE on canvas ops), Pitfall 7 (wrong build type) — `doNotOptimizeAway` and hoisted fixtures enforced; benchmarks verified at `-O2` vs `-O0`
+**Research flag:** Standard patterns for `bench_canvas` and `bench_ecs`. `bench_lua` requires headless Lua initialization without SDL3 — verify which headers transitively pull in SDL3 before writing benchmark logic; the `enjin_run` stub pattern from architecture research is the template.
 
-**Avoids:** Pitfall 1 (emscripten_set_main_loop stack objects — caught during WASM verification), Pitfall 2 (ASYNCIFY temptation — explicitly excluded at this phase), Pitfall 4 (ESP32 5-layer heap exhaustion — resolved here with PSRAM/layer count decision), Pitfall 9 (Arch Python version drift — setup script uses pinned emsdk version and venv isolation)
+### Phase 3: Frame Timing Instrumentation
 
-**Research flag:** MEDIUM — actual WASM build status is LOW confidence (PROJECT.md flags "Full Emscripten toolchain build not verified"). Expect to find and fix unknown preprocessor guard gaps introduced by v1.7 features. Budget time for discovery, not just execution. Also note: existing `build_wasm.sh` hardcodes `../emsdk` path; setup script installs to `$HOME/emsdk` — path detection logic must be resolved here.
+**Rationale:** Self-contained; only depends on Phase 1 CMake foundation. Can be developed in parallel with Phase 2. Modifies only `sdl_main.cpp` and adds one new header.
+**Delivers:** `src/perf/frame_timing.hpp` (`FrameTimingInstrumentation` struct); six timing capture points in `sdl_main.cpp`; debug overlay display when `--show-timing` flag active
+**Addresses:** Frame timing instrumentation (P1 differentiator)
+**Avoids:** Pitfall 5 (atomic overhead on ESP32) — platform-conditional `uint32_t volatile` vs `std::atomic<uint64_t>`; Pitfall 10 (cycle counter wrap) — ESP32 path uses delta-only `uint32_t` storage from the start
+**Research flag:** Standard patterns for SDL3 path. ESP32 FreeRTOS game loop integration with `esp_cpu_get_cycle_count()` needs validation against the actual game loop structure if ESP32 frame timing is in scope for v1.10 (currently P2).
 
-### Phase 2: JSON Serializer Refactor
+### Phase 4: Lua Profiler + Headless CLI Runner
 
-**Rationale:** Both storage backends need to write LuaStore to a `char[]` buffer rather than `std::ofstream`. Extracting `writeStoreToBuffer()` from the existing `saveToFile` is a prerequisite for both platforms. Isolating this as its own phase keeps the change reviewable and confirms the shared serialization foundation is correct before both backends build on it.
+**Rationale:** `enjin_run` is the prerequisite for Lua profiling (profiler attaches via CLI flag) and for CI script smoke tests. Phase 2 (`bench_lua`) informs the stub linkage needed. Build the headless runner first as a bare executable, then attach the profiler incrementally.
+**Delivers:** `tools/enjin_run.cpp` executable with `--frames N`, `--profile`, `--output json|text`; `input_platform_poll` stub; `lua_sethook` profiler hook with per-function call counts and approximate self-time; sorted output table
+**Addresses:** Headless CLI runner, Lua profiler (both P1 differentiators)
+**Avoids:** Pitfall 4 (hook timing measures its own overhead) — profiler documented as call-count accurate, timing approximate; `LUA_MASKCOUNT` sampling used for lower-overhead timing; Pitfall 9 (null dereferences on engine bindings) — `MinimalLuaHost` with null-safe stub pointers required before any script is run
+**Research flag:** Needs research. The null-binding-safety contract for headless mode is not established in existing code. Every `engine.*` subtable pointer registration in `LuaScriptSystem::registerAll()` must be enumerated and checked for null guards before implementation. A segfault in `enjin_run` on any real script is a milestone blocker. Recommend `/gsd:research-phase` before Phase 4 implementation begins.
 
-**Delivers:** `writeStoreToBuffer(char* out, size_t cap)` helper extracted and verified on the SDL3 target; existing SDL3 JSON I/O behavior unchanged; `readJson*` parsing functions confirmed reusable as-is for both load paths.
+### Phase 5: CI Regression Pipeline
 
-**Addresses:** Internal architecture prerequisite for Phases 3 and 4
+**Rationale:** CI depends on working binaries (Phase 2) and working conversion scripts. The gh-pages storage strategy must be resolved before the first baseline run is recorded — benchmark history cannot be recovered once overwritten by a Docusaurus deploy.
+**Delivers:** `.github/workflows/benchmarks.yml`; github-action-benchmark integration; `bench-data` branch (separate from gh-pages/Docusaurus); gh-pages dashboard; baseline seeded on first merge to `main`
+**Addresses:** CI workflow, regression detection, gh-pages dashboard (all P1 table stakes)
+**Avoids:** Pitfall 3 (110% threshold false positives) — start at 150% threshold, `fail-on-alert: false`, calibrate over 30-50 runs; Pitfall 8 (gh-pages history destruction) — use `external-data-json-path` to decouple benchmark data from Docusaurus deployment
+**Research flag:** Needs research. The exact github-action-benchmark `external-data-json-path` configuration with a coexisting `actions/deploy-pages` workflow needs a verified playbook. No concrete working example was found during research for this specific setup. Recommend `/gsd:research-phase` or a proof-of-concept run before recording any baseline — this is the single highest-risk integration in the milestone.
 
-**Avoids:** Divergent serializers on WASM and ESP32; the single-blob NVS approach eliminates the NVS key enumeration limitation documented in ARCHITECTURE.md
+### Phase 6: Static Allocation Verification
 
-**Research flag:** SKIP — well-understood internal refactor; full code examples in ARCHITECTURE.md.
+**Rationale:** Wraps the finished benchmark binaries from Phase 2. The allocation intercept is integrated into bench_canvas hot-path sections and verified via a CI step.
+**Delivers:** `src/perf/alloc_counter.hpp` (`AllocGuard` + `operator new`/`delete` override behind `ENJIN2_ALLOC_INTERCEPT`); hot-path verification integrated into `bench_canvas.cpp`; CI step added to `benchmarks.yml` to fail on non-zero exit
+**Addresses:** Static allocation verification (P1 differentiator — proves enjin2's core zero-alloc claim with CI evidence)
+**Avoids:** Pitfall 6 (lua_Alloc realloc over-counting) — count only `old_size == 0 && new_size > 0`; allocator hook provided at `lua_newstate()` time, not via post-init `lua_setallocf`; counter scoped to specific hot-path spans only, not full frame
+**Research flag:** Standard C++17 patterns for the `operator new` override — well-documented on cppreference. Lua allocator hook counting semantics need verification against a known-zero-alloc path (e.g., `canvas.clear()`) before the CI check is enabled to confirm no false positives.
 
-### Phase 3: Platform Storage Backends (WASM + ESP32)
+### Phase 7: Documentation
 
-**Rationale:** Both backends are independent of each other and both depend on Phase 2. WASM localStorage and ESP32 NVS can be implemented in parallel. They share the single-JSON-blob strategy, so they are reviewed together even if developed independently.
+**Rationale:** Can be written in parallel with all phases. Content is determined by the plan, not the implementation. Ship together with Phase 6 as the milestone completion marker. Final numbers from Phases 2-5 fill in the per-platform frame budget section.
+**Delivers:** `docs/PERFORMANCE.md` — quick-start commands, subsystem performance guide, adding-benchmarks guide, per-platform frame budget reference with measured numbers
+**Addresses:** PERFORMANCE.md (P1 table stake — without docs, the benchmark infra is opaque to contributors)
+**Research flag:** No research needed. Content is derived directly from implemented phases.
 
-**Delivers:** `engine.store.save/flush/load` working correctly on WASM (localStorage persistence across page reload) and on ESP32 (NVS persistence across power cycles).
-
-**Uses:** EM_JS macro (Emscripten), `nvs_flash.h`/`nvs.h` (ESP-IDF), `writeStoreToBuffer` from Phase 2
-
-**Implements:** `#elif defined(__EMSCRIPTEN__)` and `#elif defined(ESP32)` branches in `bindings_store.cpp`
-
-**Avoids:** Pitfall 3 (NVS key 15-char truncation — explicit validation and warn/reject), Pitfall 4b (NVS RAM overhead — open namespace handle once at init, not per operation), Pitfall 5 (localStorage frame blocking — flush-only pattern with `window.beforeunload`), Pitfall 6 (localStorage quota — try/catch in EM_JS glue, return bool to WASM caller)
-
-**Research flag:** SKIP — both EM_JS localStorage and NVS API patterns are HIGH confidence with official documentation and complete code examples in STACK.md and ARCHITECTURE.md.
-
-### Phase 4: Tech Debt Cleanup
-
-**Rationale:** `m_followTargetProxy` and the PERSIST standalone gap are contained correctness issues that do not depend on platform work and do not block other features. After builds are green, these should be addressed as a focused cleanup pass before adding new QoL behavior.
-
-**Delivers:** Camera follow proxy cleared on scene transition and hot reload (latent state corruption eliminated). `engine.scene.persist()` emits `lua_warning()` in standalone mode (honest behavior replaces silent no-op).
-
-**Addresses:** Both tech debt items from PROJECT.md; both are P1 for correctness.
-
-**Avoids:** Latent null dereference on scene transitions; misleading silent behavior in standalone scripts that use persist without SceneStateMachine.
-
-**Research flag:** SKIP — both are 2-line fixes at well-identified call sites documented in FEATURES.md.
-
-### Phase 5: QoL Features (Tween-Await, wait_frames, Camera Dead Zone)
-
-**Rationale:** These three features are independent of each other and of the platform work. They can be worked together in one phase. Tween-await should be implemented first (highest value, highest risk); camera dead zone last (most precise implementation required for correct boundary behavior).
-
-**Delivers:** `engine.tween.await()` for sequential animation without callback nesting; `engine.async.wait_frames(n)` Lua helper (no new C bindings); `engine.camera.setDeadZone(w, h)` with smooth offset-clamp boundary tracking.
-
-**Implements:** Tween-await via polling (coroutine stores tween ID; `tickCoroutines()` checks completion — no re-entrant `lua_resume` from `done_cb`); `wait_frames` as Lua-level loop over `engine.async.wait(0)`; dead zone in `components/camera.cpp` using offset-clamp formula
-
-**Avoids:** Pitfall 7 (tween-coroutine re-entrant resume — explicitly use polling), Pitfall 8 (camera dead zone boundary jitter — offset-clamp, not toggle pattern)
-
-**Research flag:** SKIP for wait_frames (pure Lua helper, HIGH confidence). MEDIUM for tween-await — the polling implementation requires an integration test confirming the coroutine wakes exactly once per tween at the correct frame boundary. The re-entrant resume trap is a real failure mode documented in PITFALLS.md.
-
-### Phase 6: Documentation and Build Tooling
-
-**Rationale:** Documentation and build helper scripts have no engine dependencies — they can begin in parallel with Phases 2-4 and finalize here. Tutorials are placed last to accurately reflect the final v1.8 API (including tween-await and camera dead zone from Phase 5) rather than documenting work-in-progress.
-
-**Delivers:** Updated `getting-started.md` (v1.7 SDL3 runner API, no stale Canvas8 references); "Your First Script" tutorial (tamagotchi walkthrough); "Async Coroutines" tutorial (engine.async + engine.tween.await); `build.sh` target wrappers; `'lua'` added to Docusaurus prism config.
-
-**Addresses:** All documentation features; build helper scripts (P1 and P2 respectively from FEATURES.md).
-
-**Avoids:** MDX build-time failures from angle brackets in prose (fenced code blocks only); Docusaurus dev-only success masking production build errors — always verify with `npm run build`
-
-**Research flag:** SKIP — Docusaurus structure is HIGH confidence; tutorial directory pattern and sidebar wiring are explicit in ARCHITECTURE.md; Arch package list is verified in STACK.md.
+---
 
 ### Phase Ordering Rationale
 
-- **Build verification is the critical path blocker.** Nothing platform-specific can be implemented or tested until the build is clean. This is the single most impactful ordering decision in the milestone.
-- **Serializer refactor is a small prerequisite that benefits from isolation.** Keeping it separate from the storage backend implementations makes each phase reviewable and reduces risk of mixing a refactor with new behavior.
-- **WASM and ESP32 storage are independent** of each other once they share the Phase 2 serializer, enabling parallel work if needed.
-- **Tech debt before QoL** — fixes correctness issues in existing behavior before adding new behavior.
-- **Documentation finalizes after QoL features complete** to ensure tutorials reflect the actual shipped v1.8 API.
+- **Phase 1 must be first** — CMake structure blocks all other phases; zero dependencies.
+- **Phases 2, 3, and 4 can be parallelized** after Phase 1 lands. Within Phase 4, build the bare `enjin_run` runner before attaching the profiler.
+- **Phase 5 (CI) must follow Phase 2** — the CI workflow has no value without benchmark binaries producing valid JSON. The gh-pages storage decision must be made before Phase 5 starts, not retrofitted after.
+- **Phase 6 (Alloc verification) must follow Phase 2** — the verifier wraps existing benchmark binaries; it cannot be built standalone.
+- **Phase 7 (Docs) is terminal** — no downstream dependencies; write against the plan, update with measured numbers from Phases 2-5.
+- The architecture's seven dependency groups map directly to these seven phases. Dependency arrows from ARCHITECTURE.md are respected exactly.
 
 ### Research Flags
 
-Phases needing closer attention during planning or execution:
-- **Phase 1 (WASM build):** LOW confidence on current WASM build status — PROJECT.md explicitly flags the Emscripten toolchain build as unverified. Expect undocumented compile errors from v1.7 additions (coroutines, tweens, persistent objects, UI, store, camera). Budget time for iterative fix cycles. The emsdk path mismatch between `build_wasm.sh` (`../emsdk`) and `setup-dev.sh` (`$HOME/emsdk`) must also be resolved here.
-- **Phase 5 (tween-await):** The polling implementation requires a clear integration test to confirm the coroutine wakes exactly once per tween at the correct frame. The re-entrant resume trap from `done_cb` is a real failure mode with documented corruption consequences.
+Phases needing `/gsd:research-phase` during planning:
 
-Phases with well-documented patterns (can proceed without additional research):
-- **Phase 2 (serializer refactor):** Internal refactor with complete code example in ARCHITECTURE.md.
-- **Phase 3 (storage backends):** Both EM_JS localStorage and NVS API are HIGH confidence with official documentation and code examples in STACK.md and ARCHITECTURE.md.
-- **Phase 4 (tech debt):** 2-line fixes at identified call sites.
-- **Phase 6 (docs/tooling):** Docusaurus structure and Arch package list are fully specified.
+- **Phase 4 (Lua Profiler + Headless Runner):** The null-binding-safety contract for headless mode is not mapped in existing code. Need to enumerate every `engine.*` subtable pointer registration in `LuaScriptSystem::registerAll()` and confirm which bindings have null guards. A segfault in `enjin_run` on any real script is a milestone blocker.
+- **Phase 5 (CI Regression Pipeline):** The `external-data-json-path` configuration for github-action-benchmark alongside a coexisting `actions/deploy-pages` workflow needs a verified playbook. If storage is set up incorrectly, the first Docusaurus deploy after a benchmark run destroys all history. Recovery is painful and history is unrecoverable from prior runs.
+
+Phases with well-documented, standard patterns (skip research-phase):
+- **Phase 1:** CMake option patterns are identical to `ENJIN2_BUILD_TESTS`; nanobench FetchContent is documented in the official nanobench tutorial.
+- **Phase 2:** nanobench benchmark writing is thoroughly documented; `doNotOptimizeAway` and fixture hoisting are covered in the official tutorial; bench_canvas and bench_ecs follow standard fixture-based patterns.
+- **Phase 3:** `SDL_GetPerformanceCounter` is already used in the codebase; `FrameTimingInstrumentation` is a trivial header-only struct.
+- **Phase 6:** Global `operator new` override is standard C++17 documented on cppreference.
+- **Phase 7:** No technical uncertainty; pure documentation.
 
 ---
 
@@ -195,46 +184,60 @@ Phases with well-documented patterns (can proceed without additional research):
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Emscripten/ESP-IDF/Docusaurus APIs verified against official docs. Version pinning rationale is solid. The emsdk 3.1.73 vs 4.x choice is a conservative stability decision — both are technically correct given the project's C++17 baseline. |
-| Features | HIGH | All features confirmed against live codebase. Dependency graph is precise and verified by reading actual source files. No speculative features — every item maps to a confirmed integration point. |
-| Architecture | HIGH | Integration points confirmed by reading `bindings_store.cpp`, `CMakeLists.txt`, `emscripten_bindings.cpp`, `build_wasm.sh`, `docusaurus.config.js`, and `sidebars.js`. The EM_ASM bridge and NVS single-blob patterns are fully specified with code examples. |
-| Pitfalls | HIGH | Pitfalls derived from official docs (Emscripten, ESP-IDF), direct codebase analysis, and community issue trackers. All 10 pitfalls are specific, actionable, and cross-referenced to phases with concrete prevention strategies. |
+| Stack | HIGH | nanobench v4.3.11 verified via official release and docs; github-action-benchmark v1 verified via official repo; `lua_sethook` is stable Lua C API unchanged since 5.1; `SDL_GetPerformanceCounter` is documented SDL3 API already used in codebase; `operator new` override is standard C++17. One sub-point at MEDIUM: nanobench exception requirement has no official "no-exceptions mode" documentation — mitigated by gating benchmark target to SDL3 desktop only. |
+| Features | HIGH | Milestone brief is explicit and unambiguous; existing codebase directly inspected for all integration points; feature set matches established domain conventions for game engine benchmarking milestones. All anti-features documented with specific rationale for exclusion. |
+| Architecture | HIGH | Full codebase read with all integration points traced from source files. `LuaEngine::getState()` public accessor confirmed; `input_platform_poll` stub pattern confirmed from three existing platform definitions; `stb_image.h` vendor pattern confirmed. Two sub-areas at MEDIUM: 64-bit atomic support on Xtensa ESP32 (may need libatomic — mitigated by recommending `uint32_t`); `SDL_GetTicks64()` millisecond resolution may be insufficient for sub-ms phases (mitigated by fallback to `std::chrono`). |
+| Pitfalls | HIGH | 10 pitfalls documented with prevention strategies and recovery costs; sources include official documentation (Lua PIL, nanobench docs, github-action-benchmark docs, ESP-IDF docs), published CI benchmark studies (5-15% CoV figure is from peer-reviewed research), and direct codebase analysis. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **WASM build current state:** The actual compile error count and nature of v1.7 Emscripten gaps is unknown until `build_wasm.sh` is run. Phase 1 must be treated as an investigation phase, not pure execution. The deliverable includes finding and fixing all gaps, not just confirming a clean build.
+- **nanobench no-exceptions mode:** No official documentation found. The benchmark target is gated to SDL3 desktop (exceptions enabled), so this is only a concern if a future target adds a no-exceptions constraint. Handle by documenting in CMakeLists.txt that `ENJIN2_BUILD_BENCHMARKS` requires exceptions and adding a `target_compile_options` check.
 
-- **ESP32 PSRAM availability:** Whether the target hardware has PSRAM determines `ENJIN_LAYER_COUNT` for ESP32. This is a hardware-specific decision that cannot be confirmed in advance. Phase 1 must produce an explicit documented determination: 3-layer if no PSRAM, 5-layer if PSRAM confirmed.
+- **`SDL_GetTicks64()` sub-millisecond resolution:** SDL_GetTicks64 returns milliseconds; sub-phases (compositeTime, renderTime on a fast machine) may be sub-millisecond. Handle during Phase 3 implementation by measuring a known-duration sleep and confirming resolution is adequate; swap to `std::chrono::steady_clock` if not.
 
-- **NVS string vs blob for JSON payload:** ARCHITECTURE.md recommends `nvs_set_str` for the single JSON blob but mentions `nvs_set_blob` as the fallback if the payload exceeds the 4000-byte NVS string limit. At Phase 3 implementation time, measure the worst-case serialized LuaStore size to confirm which NVS API is appropriate.
+- **`std::atomic<uint64_t>` on Xtensa ESP32:** Some Xtensa toolchain versions require `-latomic` for 64-bit atomic operations. Handle during Phase 3 by using `uint32_t` atomics on ESP32 (already recommended in pitfalls research) and testing on the actual ESP32-S3 toolchain.
 
-- **emsdk path assumption in `build_wasm.sh`:** The existing script expects `../emsdk`; the dev setup script installs to `$HOME/emsdk`. The build script must add path detection logic (check `$EMSDK` env var, fall back to `../emsdk`, fail with actionable error) before Phase 1 verification produces a reproducible clean result.
+- **`external-data-json-path` + Docusaurus deploy coexistence:** No concrete playbook was found for running both on the same repository. Handle by creating a proof-of-concept workflow run before recording any benchmark baseline (Phase 5 prerequisite).
+
+- **`bench_lua` SDL3 transitive linkage:** Lua bindings import graphics and input subsystem headers. The exact set of headers that pull in SDL3 transitively must be verified before `bench_lua` can link cleanly against `enjin2_lua` without SDL3. Handle at Phase 2 start by attempting a minimal link and adding stubs as needed.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [ESP-IDF NVS Flash API Reference v5.5.3](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html) — key/namespace limits, API surface, commit requirement
-- [Emscripten Interacting with code docs](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html) — EM_JS, EM_ASM, UTF8ToString patterns
-- [Emscripten Runtime Environment docs](https://emscripten.org/docs/porting/emscripten-runtime-environment.html) — main loop design, emscripten_set_main_loop behavior
-- [Emscripten Asyncify documentation](https://emscripten.org/docs/porting/asyncify.html) — why to avoid it for this use case
-- [Docusaurus Autogenerated Sidebar docs](https://docusaurus.io/docs/next/sidebar/autogenerated) — `_category_.json`, `sidebar_position` front matter
-- [ESP-IDF Toolchain Setup Linux (stable)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/linux-macos-setup.html) — Arch Linux pacman package list
-- Codebase: `src/scripting/bindings_store.cpp`, `bindings_async.cpp`, `bindings_tween.cpp`, `components/camera.cpp`, `CMakeLists.txt`, `build_wasm.sh`, `docs/docusaurus.config.js`, `docs/sidebars.js`, `.planning/PROJECT.md`
+
+- `https://github.com/martinus/nanobench/releases/tag/v4.3.11` — v4.3.11 release date and changelog
+- `https://nanobench.ankerl.com/reference.html` — `templates::json()`, `render()`, `doNotOptimizeAway()` API signatures
+- `https://nanobench.ankerl.com/tutorial.html` — FetchContent alias, `ANKERL_NANOBENCH_IMPLEMENT` single-TU rule, standalone main pattern
+- `https://nanobench.ankerl.com/comparison.html` — 65x faster autotuning vs google/benchmark
+- `https://github.com/benchmark-action/github-action-benchmark` — `customSmallerIsBetter` format, `external-data-json-path`, PR fork security warning, `alertThreshold` behavior
+- `https://www.lua.org/pil/23.3.html` — `lua_sethook` hook overhead, C API vs Lua-side hook accuracy comparison
+- `https://www.lua.org/manual/5.4/` — `lua_Alloc` malloc/realloc/free protocol; `lua_sethook` mask constants; `lua_Debug` fields
+- `https://wiki.libsdl.org/SDL3/SDL_GetPerformanceCounter` — SDL3 counter resolution, conversion formula
+- `https://cppreference.com/w/cpp/memory/new/operator_new` — global `operator new` replaceable allocation function, standard compliance
+- `https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/freertos.html` — `esp_cpu_get_cycle_count()` return type, wrap behavior at 240 MHz
+- `/home/unwn/git/enjin/` — v1.9 codebase, direct inspection: `CMakeLists.txt`, `src/platform/sdl/sdl_main.cpp`, `include/enjin2/scripting/lua_engine.hpp`, `include/enjin2/scripting/bindings.hpp`, `include/enjin2/graphics/layer_compositor.hpp`, `include/enjin2/core/memory.hpp`, `tests/CMakeLists.txt`, `examples/CMakeLists.txt`, `vendor/`
+- `/home/unwn/git/enjin/project/benchmarking-milestone.md` — milestone brief; phase-by-phase requirements
 
 ### Secondary (MEDIUM confidence)
-- [AUR esp-idf package](https://aur.archlinux.org/packages/esp-idf) — Arch Linux install path, placement at `/opt/esp-idf`
-- [ArchWiki ESP32](https://wiki.archlinux.org/title/ESP32) — `ncurses5-compat-libs` requirement for precompiled gdb on Arch
-- [Emscripten GitHub issue #15491](https://github.com/emscripten-core/emscripten/issues/15491) — IDBFS CMake linker flag warning; why localStorage avoids the issue
-- [LocalStorage vs IndexedDB vs OPFS — RxDB 2025](https://rxdb.info/articles/localstorage-indexeddb-cookies-opfs-sqlite-wasm.html) — storage API trade-offs for synchronous use cases
-- [ESP-IDF install.sh breakage on Arch Linux — GitHub Issue #7809](https://github.com/espressif/esp-idf/issues/7809) — Python version drift on rolling Arch; venv isolation pattern
+
+- `https://labs.quansight.org/blog/github-actions-benchmarks` — GitHub Actions shared runner variance (5-15% CoV measurement)
+- `https://codspeed.io/blog/benchmarks-in-ci-without-noise` — CI benchmark noise patterns, threshold calibration guidance
+- `https://arxiv.org/html/2510.11310` — statistical detection of benchmark performance changes in CI
+- `http://lua-users.org/wiki/PepperfishProfiler` — hook overhead documentation for `lua_sethook`
+- `http://lua-users.org/wiki/MemoryAllocation` — `lua_Alloc` realloc counting pitfall
+- `https://github.com/siffiejoe/lua-allocspy` — reference implementation for correct `lua_Alloc` allocation counting
+- `https://github.com/abeimler/ecs_benchmark` — ECS benchmarking patterns and fixture design
 
 ### Tertiary (LOW confidence)
-- [Synchronous localStorage WASM gist](https://gist.github.com/makryl/96d87b23d7a7c3cc5bc1eee1021bb6ff) — community WASM localStorage bridge pattern; single source, cross-validated against official EM_JS docs
+
+- `https://esp32.com/viewtopic.php?t=10331` — cycle counter wrap discussion (promoted to MEDIUM for the wrap-at-17.9s behavior, confirmed via ESP-IDF docs)
+- WebSearch: nanobench exception requirements — no official "no-exceptions mode" statement found; inferred from `<stdexcept>` usage in nanobench source
 
 ---
-*Research completed: 2026-03-02*
+
+*Research completed: 2026-03-07*
 *Ready for roadmap: yes*
