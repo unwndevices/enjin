@@ -8,16 +8,23 @@ enjin2 is a lightweight, statically-allocated 2D graphics engine for embedded de
 
 enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation.
 
+## Current Milestone: v1.10 Benchmarking & Performance
+
+**Goal:** Build comprehensive benchmarking infrastructure, CI regression detection, runtime instrumentation, and allocation verification for enjin2.
+
+**Target features:**
+- Native benchmark suite (nanobench) for canvas, ECS, and Lua subsystems
+- CI regression detection with GitHub Actions and auto-generated dashboard
+- Frame timing instrumentation with per-phase breakdown (update/render/Lua/composite)
+- Lua profiling via lua_sethook with headless CLI runner
+- Static allocation verification proving zero-alloc guarantee in hot paths
+- Performance documentation covering all subsystems
+
 ## Current State
 
 **Shipped: v1.9 Tech Debt Resolved (2026-03-03)**
-- `const T* getComponent() const` overload added — `hasComponent<T>() const` is now well-formed C++ (DEBT-01)
-- `setLuaProxy()` debug-build warning for double-registration (DEBT-02)
-- EventBus `m_L=nullptr` window documented at `emit()` with hot-reload ordering invariant (DEBT-03)
-- `getPaletteRGB` snapshot semantics documented at WASM binding site (DEBT-04)
-- WASM `setInputState()`+`updateFrame()` free functions — closes cross-platform input wiring gap (DEBT-05)
-- ESP32 example upgraded to jitter-free FreeRTOS `vTaskDelayUntil` per-frame game loop (DEBT-05)
-- 1 phase, 2 plans, 12 files changed
+- All tech debt resolved (DEBT-01 through DEBT-05)
+- 10 milestones, 59 phases, 121 plans delivered
 
 **Previously shipped: v1.0-v1.8** — See MILESTONES.md for full details
 
@@ -134,6 +141,13 @@ enjin2 renders pixel graphics efficiently across embedded and web platforms with
 - ✓ Lua syntax highlighting enabled in Docusaurus (prism additionalLanguages) — v1.8 (Phase 58, DOC-04)
 
 ### Active
+
+- [ ] Native benchmark suite with nanobench (canvas, ECS, Lua)
+- [ ] CI regression detection with 110% threshold
+- [ ] Frame timing instrumentation (lock-free atomics, per-phase)
+- [ ] Lua profiling (lua_sethook, memory tracking, headless CLI)
+- [ ] Static allocation verification for hot paths
+- [ ] Performance documentation
 
 ### Out of Scope
 
@@ -273,4 +287,4 @@ enjin2 is deployable on all 3 targets with a complete dev toolchain, persistent 
 | ESP32 example stays on LuaEngine (not migrated to LuaScriptSystem) | Example purpose is wiring pattern; migration documented in commented setInput call | — Pending |
 
 ---
-*Last updated: 2026-03-03 after v1.9 milestone*
+*Last updated: 2026-03-07 after v1.10 milestone start*
