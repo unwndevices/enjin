@@ -125,7 +125,9 @@ Plans:
   2. Each binary writes a valid JSON file into `bench-results/` covering its named subsystem operations (pixel ops/fill/rect/circle/composite for canvas; object create/attach/update at multiple counts for ECS; engine init/script load/binding call/GC pressure for Lua)
   3. Results are not invalidated by dead code elimination --- canvas benchmark reports non-trivially short timings consistent with actual pixel writes at -O2
   4. All three binaries link and run without SDL3 being present or initialized
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 61-01-PLAN.md -- Create bench_canvas, bench_ecs, bench_lua binaries with CMake targets and build-bench.sh script
 
 ### Phase 62: Frame Timing Instrumentation
 **Goal**: Developers can see where frame time is spent (update/render/Lua/composite) with sub-millisecond resolution in the SDL3 runner
@@ -199,7 +201,7 @@ Plans:
 | 53-58. Ship Ready | v1.8 | 13/13 | Complete | 2026-03-03 |
 | 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
-| 61. Native Benchmark Suite | v1.10 | 0/? | Not started | - |
+| 61. Native Benchmark Suite | v1.10 | 0/1 | Not started | - |
 | 62. Frame Timing Instrumentation | v1.10 | 0/? | Not started | - |
 | 63. Lua Profiler & Headless Runner | v1.10 | 0/? | Not started | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
