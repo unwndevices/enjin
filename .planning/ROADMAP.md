@@ -93,7 +93,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 
 ### v1.10 Benchmarking & Performance (Phases 60-66)
 
-- [ ] **Phase 60: CMake Foundation & Vendor** - ENJIN2_BUILD_BENCHMARKS option, nanobench single-header, directory scaffolding
+- [x] **Phase 60: CMake Foundation & Vendor** - ENJIN2_BUILD_BENCHMARKS option, nanobench single-header, directory scaffolding (completed 2026-03-07)
 - [ ] **Phase 61: Native Benchmark Suite** - bench_canvas, bench_ecs, bench_lua executables with JSON output and build-bench.sh
 - [ ] **Phase 62: Frame Timing Instrumentation** - FrameTimingInstrumentation struct, SDL3 runner integration, debug overlay
 - [ ] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host
@@ -112,9 +112,9 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
   2. `vendor/nanobench.h` exists at the expected path and a trivial include compiles cleanly
   3. `cmake -DENJIN2_BUILD_BENCHMARKS=OFF ..` (or default) produces no benchmark targets and does not touch ESP32 or WASM targets
   4. `bench-results/` is listed in `.gitignore` so generated JSON is never committed
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 60-01-PLAN.md -- Vendor nanobench, create benchmarks/ scaffold, patch root CMakeLists.txt
+- [x] 60-01-PLAN.md -- Vendor nanobench, create benchmarks/ scaffold, patch root CMakeLists.txt
 
 ### Phase 61: Native Benchmark Suite
 **Goal**: Developers can run a single command to benchmark canvas ops, ECS throughput, and Lua binding overhead and get JSON results locally
@@ -198,7 +198,7 @@ Plans:
 | 43-52. Developer Experience | v1.7 | 19/19 | Complete | 2026-03-02 |
 | 53-58. Ship Ready | v1.8 | 13/13 | Complete | 2026-03-03 |
 | 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
-| 60. CMake Foundation & Vendor | v1.10 | 0/1 | Not started | - |
+| 60. CMake Foundation & Vendor | v1.10 | 1/1 | Complete | 2026-03-07 |
 | 61. Native Benchmark Suite | v1.10 | 0/? | Not started | - |
 | 62. Frame Timing Instrumentation | v1.10 | 0/? | Not started | - |
 | 63. Lua Profiler & Headless Runner | v1.10 | 0/? | Not started | - |

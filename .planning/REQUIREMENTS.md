@@ -7,7 +7,7 @@
 
 ### Benchmark Suite
 
-- [ ] **BENCH-01**: nanobench vendored as single header in vendor/ with CMake ENJIN2_BUILD_BENCHMARKS option
+- [x] **BENCH-01**: nanobench vendored as single header in vendor/ with CMake ENJIN2_BUILD_BENCHMARKS option
 - [ ] **BENCH-02**: bench_canvas binary benchmarks Canvas4/Canvas8 pixel ops, fill, rect, circle, sprite blit, multi-layer composite
 - [ ] **BENCH-03**: bench_ecs binary benchmarks Object creation, component attach/detach, scene::update() at 1/8/16/32/48 objects, event dispatch
 - [ ] **BENCH-04**: bench_lua binary benchmarks Lua engine init, script load, per-module binding call overhead, ObjectProxy round-trip, GC pressure
@@ -73,7 +73,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BENCH-01 | Phase 60 | Pending |
+| BENCH-01 | Phase 60 | Complete |
 | BENCH-02 | Phase 61 | Pending |
 | BENCH-03 | Phase 61 | Pending |
 | BENCH-04 | Phase 61 | Pending |

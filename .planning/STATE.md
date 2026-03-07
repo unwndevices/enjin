@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
-status: roadmap_ready
-last_updated: "2026-03-07T00:00:00.000Z"
+status: in_progress
+last_updated: "2026-03-07T21:24:20Z"
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.10 Benchmarking & Performance — Phase 60 ready to plan
+**Current focus:** v1.10 Benchmarking & Performance — Phase 60 complete, Phase 61 (Lua benchmark) next
 
 ## Current Position
 
 Phase: 60 of 66 (CMake Foundation & Vendor)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-07 — Roadmap created for v1.10 (Phases 60-66, 26 requirements)
+Plan: 1 of 1 (60-01 complete)
+Status: Phase 60 complete — ready for Phase 61
+Last activity: 2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs
 
-Progress: [░░░░░░░░░░] 0% (v1.10)
+Progress: [█░░░░░░░░░] 14% (v1.10)
 
 ## Performance Metrics
 
@@ -46,6 +46,9 @@ Recent decisions affecting current work:
 - Research: Store benchmark history on separate `bench-data` branch — NOT gh-pages — to prevent Docusaurus deploy-pages from wiping history
 - Research: Phase 63 (Lua profiler + headless runner) needs null-safe MinimalLuaHost before any script runs; enumerate all `engine.*` pointer registrations first
 - Research: Phase 64 (CI pipeline) needs proof-of-concept `external-data-json-path` + deploy-pages coexistence before recording any baseline
+- 60-01: nanobench_vendor is INTERFACE target (not STATIC) — single headers need no compilation at library level
+- 60-01: bench_smoke links only enjin2_core + enjin2_graphics; enjin2_lua excluded — Lua benchmark infrastructure owned by Phase 61
+- 60-01: FATAL_ERROR guard on EMSCRIPTEN OR ESP32 chosen over silent skip to prevent silent misconfiguration
 
 ### Pending Todos
 
@@ -70,5 +73,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Roadmap created for v1.10 — 7 phases (60-66), 26 requirements mapped
+Stopped at: Completed 60-01-PLAN.md — nanobench vendored, benchmark CMake infrastructure in place
 Resume file: None
