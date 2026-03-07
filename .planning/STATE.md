@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
-stopped_at: Completed 60-01-PLAN.md — nanobench vendored, benchmark CMake infrastructure in place
-last_updated: "2026-03-07T21:29:12.906Z"
+stopped_at: Completed 61-01-PLAN.md — three benchmark binaries and build-bench.sh created and verified
+last_updated: "2026-03-07T21:50:13.006Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
   percent: 14
 ---
 
@@ -52,6 +52,9 @@ Recent decisions affecting current work:
 - 60-01: nanobench_vendor is INTERFACE target (not STATIC) — single headers need no compilation at library level
 - 60-01: bench_smoke links only enjin2_core + enjin2_graphics; enjin2_lua excluded — Lua benchmark infrastructure owned by Phase 61
 - 60-01: FATAL_ERROR guard on EMSCRIPTEN OR ESP32 chosen over silent skip to prevent silent misconfiguration
+- [Phase 61-01]: blit() requires same-size canvas dimensions — Canvas4<W,H>.blit(const Canvas4<W,H>&,...) — sprite changed to Canvas4<128,128>
+- [Phase 61-01]: if(TARGET enjin2_lua) guard chosen over if(ENJIN2_BUILD_LUA) in benchmarks/CMakeLists.txt — target existence is the definitive check
+- [Phase 61-01]: build-bench.sh uses separate build-bench/ directory; ENJIN2_BUILD_LUA=ON added to ensure bench_lua always built
 
 ### Pending Todos
 
@@ -68,6 +71,7 @@ None.
 |---|-------------|------|--------|-----------|
 | 8 | move to lua 5.4 and check all impacted areas | 2026-03-04 | 876beb8 | [8-move-to-lua-5-4-and-check-all-impacted-a](./quick/8-move-to-lua-5-4-and-check-all-impacted-a/) |
 | 9 | update examples arduino to lua54 lib + idf CMakeLists | 2026-03-04 | 0ea4d52 | [9-update-examples-arduino-to-lua54-lib-idf](./quick/9-update-examples-arduino-to-lua54-lib-idf/) |
+| Phase 61-native-benchmark-suite P01 | 3 | 3 tasks | 6 files |
 
 ### Technical Debt (carried forward)
 
@@ -75,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07
-Stopped at: Completed 60-01-PLAN.md — nanobench vendored, benchmark CMake infrastructure in place
+Last session: 2026-03-07T21:50:13.005Z
+Stopped at: Completed 61-01-PLAN.md — three benchmark binaries and build-bench.sh created and verified
 Resume file: None

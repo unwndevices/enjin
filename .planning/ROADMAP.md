@@ -94,7 +94,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 ### v1.10 Benchmarking & Performance (Phases 60-66)
 
 - [x] **Phase 60: CMake Foundation & Vendor** - ENJIN2_BUILD_BENCHMARKS option, nanobench single-header, directory scaffolding (completed 2026-03-07)
-- [ ] **Phase 61: Native Benchmark Suite** - bench_canvas, bench_ecs, bench_lua executables with JSON output and build-bench.sh
+- [x] **Phase 61: Native Benchmark Suite** - bench_canvas, bench_ecs, bench_lua executables with JSON output and build-bench.sh (completed 2026-03-07)
 - [ ] **Phase 62: Frame Timing Instrumentation** - FrameTimingInstrumentation struct, SDL3 runner integration, debug overlay
 - [ ] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host
 - [ ] **Phase 64: CI Regression Pipeline** - GitHub Actions workflow, github-action-benchmark dashboard, gh-pages storage
@@ -125,7 +125,7 @@ Plans:
   2. Each binary writes a valid JSON file into `bench-results/` covering its named subsystem operations (pixel ops/fill/rect/circle/composite for canvas; object create/attach/update at multiple counts for ECS; engine init/script load/binding call/GC pressure for Lua)
   3. Results are not invalidated by dead code elimination --- canvas benchmark reports non-trivially short timings consistent with actual pixel writes at -O2
   4. All three binaries link and run without SDL3 being present or initialized
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 61-01-PLAN.md -- Create bench_canvas, bench_ecs, bench_lua binaries with CMake targets and build-bench.sh script
 
@@ -201,7 +201,7 @@ Plans:
 | 53-58. Ship Ready | v1.8 | 13/13 | Complete | 2026-03-03 |
 | 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
-| 61. Native Benchmark Suite | v1.10 | 0/1 | Not started | - |
+| 61. Native Benchmark Suite | 1/1 | Complete   | 2026-03-07 | - |
 | 62. Frame Timing Instrumentation | v1.10 | 0/? | Not started | - |
 | 63. Lua Profiler & Headless Runner | v1.10 | 0/? | Not started | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |

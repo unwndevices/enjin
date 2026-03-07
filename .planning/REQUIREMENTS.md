@@ -8,11 +8,11 @@
 ### Benchmark Suite
 
 - [x] **BENCH-01**: nanobench vendored as single header in vendor/ with CMake ENJIN2_BUILD_BENCHMARKS option
-- [ ] **BENCH-02**: bench_canvas binary benchmarks Canvas4/Canvas8 pixel ops, fill, rect, circle, sprite blit, multi-layer composite
-- [ ] **BENCH-03**: bench_ecs binary benchmarks Object creation, component attach/detach, scene::update() at 1/8/16/32/48 objects, event dispatch
-- [ ] **BENCH-04**: bench_lua binary benchmarks Lua engine init, script load, per-module binding call overhead, ObjectProxy round-trip, GC pressure
-- [ ] **BENCH-05**: All benchmark binaries produce JSON output to bench-results/ directory
-- [ ] **BENCH-06**: scripts/build-bench.sh builds and runs all benchmarks in one command
+- [x] **BENCH-02**: bench_canvas binary benchmarks Canvas4/Canvas8 pixel ops, fill, rect, circle, sprite blit, multi-layer composite
+- [x] **BENCH-03**: bench_ecs binary benchmarks Object creation, component attach/detach, scene::update() at 1/8/16/32/48 objects, event dispatch
+- [x] **BENCH-04**: bench_lua binary benchmarks Lua engine init, script load, per-module binding call overhead, ObjectProxy round-trip, GC pressure
+- [x] **BENCH-05**: All benchmark binaries produce JSON output to bench-results/ directory
+- [x] **BENCH-06**: scripts/build-bench.sh builds and runs all benchmarks in one command
 
 ### CI Pipeline
 
@@ -74,11 +74,11 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BENCH-01 | Phase 60 | Complete |
-| BENCH-02 | Phase 61 | Pending |
-| BENCH-03 | Phase 61 | Pending |
-| BENCH-04 | Phase 61 | Pending |
-| BENCH-05 | Phase 61 | Pending |
-| BENCH-06 | Phase 61 | Pending |
+| BENCH-02 | Phase 61 | Complete |
+| BENCH-03 | Phase 61 | Complete |
+| BENCH-04 | Phase 61 | Complete |
+| BENCH-05 | Phase 61 | Complete |
+| BENCH-06 | Phase 61 | Complete |
 | CI-01 | Phase 64 | Pending |
 | CI-02 | Phase 64 | Pending |
 | CI-03 | Phase 64 | Pending |
