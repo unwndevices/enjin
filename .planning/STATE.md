@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
-status: defining_requirements
+status: roadmap_ready
 last_updated: "2026-03-07T00:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,14 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
-**Current focus:** v1.10 Benchmarking & Performance — Defining requirements
+**Current focus:** v1.10 Benchmarking & Performance — Phase 60 ready to plan
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-07 — Milestone v1.10 started
+Phase: 60 of 66 (CMake Foundation & Vendor)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-03-07 — Roadmap created for v1.10 (Phases 60-66, 26 requirements)
+
+Progress: [░░░░░░░░░░] 0% (v1.10)
 
 ## Performance Metrics
 
@@ -39,13 +41,20 @@ Last activity: 2026-03-07 — Milestone v1.10 started
 
 All decisions logged in PROJECT.md Key Decisions table.
 
+Recent decisions affecting current work:
+- Research: Start CI regression threshold at 150% (not 110%) due to shared runner variance; tighten after 30-50 baseline runs
+- Research: Store benchmark history on separate `bench-data` branch — NOT gh-pages — to prevent Docusaurus deploy-pages from wiping history
+- Research: Phase 63 (Lua profiler + headless runner) needs null-safe MinimalLuaHost before any script runs; enumerate all `engine.*` pointer registrations first
+- Research: Phase 64 (CI pipeline) needs proof-of-concept `external-data-json-path` + deploy-pages coexistence before recording any baseline
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-None.
+- Phase 63: null-binding safety contract for headless enjin_run not yet mapped — enumerate all engine.* subtable pointer registrations before implementation (segfault risk)
+- Phase 64: gh-pages storage strategy (external-data-json-path coexistence with docs.yml) needs verified playbook before first baseline is recorded
 
 ### Quick Tasks Completed
 
@@ -61,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Starting milestone v1.10 Benchmarking & Performance
+Stopped at: Roadmap created for v1.10 — 7 phases (60-66), 26 requirements mapped
 Resume file: None

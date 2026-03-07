@@ -73,38 +73,38 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BENCH-01 | — | Pending |
-| BENCH-02 | — | Pending |
-| BENCH-03 | — | Pending |
-| BENCH-04 | — | Pending |
-| BENCH-05 | — | Pending |
-| BENCH-06 | — | Pending |
-| CI-01 | — | Pending |
-| CI-02 | — | Pending |
-| CI-03 | — | Pending |
-| CI-04 | — | Pending |
-| CI-05 | — | Pending |
-| FRAME-01 | — | Pending |
-| FRAME-02 | — | Pending |
-| FRAME-03 | — | Pending |
-| PROF-01 | — | Pending |
-| PROF-02 | — | Pending |
-| PROF-03 | — | Pending |
-| PROF-04 | — | Pending |
-| PROF-05 | — | Pending |
-| PROF-06 | — | Pending |
-| ALLOC-01 | — | Pending |
-| ALLOC-02 | — | Pending |
-| ALLOC-03 | — | Pending |
-| DOC-01 | — | Pending |
-| DOC-02 | — | Pending |
-| DOC-03 | — | Pending |
+| BENCH-01 | Phase 60 | Pending |
+| BENCH-02 | Phase 61 | Pending |
+| BENCH-03 | Phase 61 | Pending |
+| BENCH-04 | Phase 61 | Pending |
+| BENCH-05 | Phase 61 | Pending |
+| BENCH-06 | Phase 61 | Pending |
+| CI-01 | Phase 64 | Pending |
+| CI-02 | Phase 64 | Pending |
+| CI-03 | Phase 64 | Pending |
+| CI-04 | Phase 64 | Pending |
+| CI-05 | Phase 64 | Pending |
+| FRAME-01 | Phase 62 | Pending |
+| FRAME-02 | Phase 62 | Pending |
+| FRAME-03 | Phase 62 | Pending |
+| PROF-01 | Phase 63 | Pending |
+| PROF-02 | Phase 63 | Pending |
+| PROF-03 | Phase 63 | Pending |
+| PROF-04 | Phase 63 | Pending |
+| PROF-05 | Phase 63 | Pending |
+| PROF-06 | Phase 63 | Pending |
+| ALLOC-01 | Phase 65 | Pending |
+| ALLOC-02 | Phase 65 | Pending |
+| ALLOC-03 | Phase 65 | Pending |
+| DOC-01 | Phase 66 | Pending |
+| DOC-02 | Phase 66 | Pending |
+| DOC-03 | Phase 66 | Pending |
 
 **Coverage:**
 - v1.10 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-07*
-*Last updated: 2026-03-07 after initial definition*
+*Last updated: 2026-03-07 after roadmap creation (Phases 60-66)*
