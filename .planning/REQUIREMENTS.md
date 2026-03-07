@@ -1,0 +1,110 @@
+# Requirements: enjin2 v1.10 Benchmarking & Performance
+
+**Defined:** 2026-03-07
+**Core Value:** enjin2 renders pixel graphics efficiently across embedded and web platforms with zero dynamic allocation
+
+## v1.10 Requirements
+
+### Benchmark Suite
+
+- [ ] **BENCH-01**: nanobench vendored as single header in vendor/ with CMake ENJIN2_BUILD_BENCHMARKS option
+- [ ] **BENCH-02**: bench_canvas binary benchmarks Canvas4/Canvas8 pixel ops, fill, rect, circle, sprite blit, multi-layer composite
+- [ ] **BENCH-03**: bench_ecs binary benchmarks Object creation, component attach/detach, scene::update() at 1/8/16/32/48 objects, event dispatch
+- [ ] **BENCH-04**: bench_lua binary benchmarks Lua engine init, script load, per-module binding call overhead, ObjectProxy round-trip, GC pressure
+- [ ] **BENCH-05**: All benchmark binaries produce JSON output to bench-results/ directory
+- [ ] **BENCH-06**: scripts/build-bench.sh builds and runs all benchmarks in one command
+
+### CI Pipeline
+
+- [ ] **CI-01**: GitHub Actions workflow (.github/workflows/benchmarks.yml) triggers on push to main and PRs touching src/** or include/**
+- [ ] **CI-02**: JSON conversion script combines benchmark results into github-action-benchmark customSmallerIsBetter format
+- [ ] **CI-03**: Benchmark history stored on gh-pages branch (isolated from Docusaurus deployment)
+- [ ] **CI-04**: Performance dashboard auto-generated on gh-pages from benchmark history
+- [ ] **CI-05**: Regression threshold with fail-on-alert for PRs
+
+### Frame Timing
+
+- [ ] **FRAME-01**: FrameTimingInstrumentation struct with lock-free uint32_t atomics tracking updateTime_us, renderTime_us, luaTime_us, compositeTime_us
+- [ ] **FRAME-02**: Per-phase timing instrumented into SDL3 runner game loop
+- [ ] **FRAME-03**: Frame budget usage exposed via debug overlay or polling API
+
+### Lua Profiling
+
+- [ ] **PROF-01**: C-level profiler via lua_sethook (LUA_MASKCALL | LUA_MASKRET) with per-function call counts
+- [ ] **PROF-02**: Memory tracking via lua_gc with per-frame GC pressure ring buffer
+- [ ] **PROF-03**: Zero overhead when profiler disabled (lua_sethook(L, NULL, 0, 0))
+- [ ] **PROF-04**: Headless CLI runner (enjin_run) with --profile --frames N script.lua
+- [ ] **PROF-05**: enjin_run produces JSON and text table output formats
+- [ ] **PROF-06**: enjin_run stubs all platform APIs (gfx, input) as no-ops
+
+### Allocation Verification
+
+- [ ] **ALLOC-01**: Custom allocator wrapper counts malloc/free calls during benchmarked hot-path sections
+- [ ] **ALLOC-02**: CI check runs benchmarks under allocation counter and fails if any hot-path allocation detected
+- [ ] **ALLOC-03**: Canvas operations, Component updates, and Lua binding calls verified allocation-free
+
+### Documentation
+
+- [ ] **DOC-01**: docs/PERFORMANCE.md covers all 5 subsystems with how-to-first structure
+- [ ] **DOC-02**: Quick start with scripts/build-bench.sh one-liner and adding-new-benchmarks guide
+- [ ] **DOC-03**: Per-platform frame budget reference (ESP32 vs WASM vs SDL3)
+
+## Future Requirements
+
+### Platform-Specific Instrumentation
+
+- **PLAT-01**: WASM frame timing via Emscripten performance APIs
+- **PLAT-02**: ESP32 frame timing via esp_timer_get_time() in FreeRTOS game loop
+- **PLAT-03**: Lua profiler SDL3 overlay panel with live data visualization
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Google Benchmark | nanobench is lighter, faster compile, proven JSON path, matches tomodachi pattern |
+| Tracy Profiler | Requires background thread + network; violates zero-alloc/zero-threading model |
+| LuaJIT benchmarking | Not available on WASM or ESP32; measures different runtime than what ships |
+| Valgrind/ASan for alloc verification | Cannot distinguish hot-path vs cold-path allocations |
+| Lua-level debug.sethook profiler | Hook overhead invalidates measurements (PIL 23.3) |
+| Benchmark on WASM/ESP32 targets in CI | Requires Emscripten/ESP-IDF toolchain in CI; native desktop is reproducible |
+| Runtime Lua toggle for timing | Lua binding overhead pollutes measurement; compile-time gate is correct |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| BENCH-01 | — | Pending |
+| BENCH-02 | — | Pending |
+| BENCH-03 | — | Pending |
+| BENCH-04 | — | Pending |
+| BENCH-05 | — | Pending |
+| BENCH-06 | — | Pending |
+| CI-01 | — | Pending |
+| CI-02 | — | Pending |
+| CI-03 | — | Pending |
+| CI-04 | — | Pending |
+| CI-05 | — | Pending |
+| FRAME-01 | — | Pending |
+| FRAME-02 | — | Pending |
+| FRAME-03 | — | Pending |
+| PROF-01 | — | Pending |
+| PROF-02 | — | Pending |
+| PROF-03 | — | Pending |
+| PROF-04 | — | Pending |
+| PROF-05 | — | Pending |
+| PROF-06 | — | Pending |
+| ALLOC-01 | — | Pending |
+| ALLOC-02 | — | Pending |
+| ALLOC-03 | — | Pending |
+| DOC-01 | — | Pending |
+| DOC-02 | — | Pending |
+| DOC-03 | — | Pending |
+
+**Coverage:**
+- v1.10 requirements: 26 total
+- Mapped to phases: 0
+- Unmapped: 26
+
+---
+*Requirements defined: 2026-03-07*
+*Last updated: 2026-03-07 after initial definition*
