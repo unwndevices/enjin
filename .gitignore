@@ -69,3 +69,6 @@ compile_commands.json
 
 # Benchmark JSON output (never commit machine-specific timing data)
 bench-results/
+
+# Benchmark build directory (separate from dev build to avoid cache contamination)
+/build-bench/
