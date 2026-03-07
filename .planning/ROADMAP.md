@@ -73,21 +73,21 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 </details>
 
 <details>
-<summary>✅ v1.8 Ship Ready (Phases 53-58) — SHIPPED 2026-03-03</summary>
+<summary>v1.8 Ship Ready (Phases 53-58) --- SHIPPED 2026-03-03</summary>
 
-- [x] Phase 53: Environment and Build Verification (3/3 plans) — completed 2026-03-02
-- [x] Phase 54: JSON Serializer Refactor (1/1 plan) — completed 2026-03-02
-- [x] Phase 55: Platform Storage Backends (2/2 plans) — completed 2026-03-02
-- [x] Phase 56: Tech Debt Cleanup (1/1 plan) — completed 2026-03-02
-- [x] Phase 57: QoL Features (3/3 plans) — completed 2026-03-02
-- [x] Phase 58: Documentation and Build Tooling (3/3 plans) — completed 2026-03-02
+- [x] Phase 53: Environment and Build Verification (3/3 plans) --- completed 2026-03-02
+- [x] Phase 54: JSON Serializer Refactor (1/1 plan) --- completed 2026-03-02
+- [x] Phase 55: Platform Storage Backends (2/2 plans) --- completed 2026-03-02
+- [x] Phase 56: Tech Debt Cleanup (1/1 plan) --- completed 2026-03-02
+- [x] Phase 57: QoL Features (3/3 plans) --- completed 2026-03-02
+- [x] Phase 58: Documentation and Build Tooling (3/3 plans) --- completed 2026-03-02
 
 </details>
 
 <details>
-<summary>✅ v1.9 Tech Debt Resolved (Phase 59) — SHIPPED 2026-03-03</summary>
+<summary>v1.9 Tech Debt Resolved (Phase 59) --- SHIPPED 2026-03-03</summary>
 
-- [x] Phase 59: Tech Debt and Known Issues (2/2 plans) — completed 2026-03-03
+- [x] Phase 59: Tech Debt and Known Issues (2/2 plans) --- completed 2026-03-03
 
 </details>
 
@@ -112,7 +112,9 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
   2. `vendor/nanobench.h` exists at the expected path and a trivial include compiles cleanly
   3. `cmake -DENJIN2_BUILD_BENCHMARKS=OFF ..` (or default) produces no benchmark targets and does not touch ESP32 or WASM targets
   4. `bench-results/` is listed in `.gitignore` so generated JSON is never committed
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 60-01-PLAN.md -- Vendor nanobench, create benchmarks/ scaffold, patch root CMakeLists.txt
 
 ### Phase 61: Native Benchmark Suite
 **Goal**: Developers can run a single command to benchmark canvas ops, ECS throughput, and Lua binding overhead and get JSON results locally
@@ -121,7 +123,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 **Success Criteria** (what must be TRUE):
   1. `scripts/build-bench.sh` executes without error and three binaries (`bench_canvas`, `bench_ecs`, `bench_lua`) appear in the build directory
   2. Each binary writes a valid JSON file into `bench-results/` covering its named subsystem operations (pixel ops/fill/rect/circle/composite for canvas; object create/attach/update at multiple counts for ECS; engine init/script load/binding call/GC pressure for Lua)
-  3. Results are not invalidated by dead code elimination — canvas benchmark reports non-trivially short timings consistent with actual pixel writes at -O2
+  3. Results are not invalidated by dead code elimination --- canvas benchmark reports non-trivially short timings consistent with actual pixel writes at -O2
   4. All three binaries link and run without SDL3 being present or initialized
 **Plans**: TBD
 
@@ -132,7 +134,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 **Success Criteria** (what must be TRUE):
   1. Running the SDL3 runner with `--show-timing` displays a per-phase breakdown (updateTime_us, renderTime_us, luaTime_us, compositeTime_us) on screen each frame
   2. A polling API exists so host code can read the four timing fields without the overlay (e.g., `FrameTimingInstrumentation::get()`)
-  3. Disabling the overlay at compile time or runtime incurs zero overhead — no atomics written, no counters incremented when instrumentation is off
+  3. Disabling the overlay at compile time or runtime incurs zero overhead --- no atomics written, no counters incremented when instrumentation is off
   4. WASM and ESP32 builds compile cleanly with the new header present (even if full instrumentation is not wired on those platforms)
 **Plans**: TBD
 
@@ -145,7 +147,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
   2. `enjin_run --profile --frames 100 script.lua` prints a sorted table of per-function call counts to stdout
   3. `enjin_run --profile --output json --frames 100 script.lua` writes a JSON file of profiling results
   4. A script that exercises every `engine.*` subtable (scene, input, time, lua, log) runs without null-dereference crash in headless mode
-  5. Running `enjin_run` without `--profile` incurs zero hook overhead — `lua_sethook(L, NULL, 0, 0)` is confirmed in that path
+  5. Running `enjin_run` without `--profile` incurs zero hook overhead --- `lua_sethook(L, NULL, 0, 0)` is confirmed in that path
 **Plans**: TBD
 
 ### Phase 64: CI Regression Pipeline
@@ -179,6 +181,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
   2. The quick-start section has a `scripts/build-bench.sh` one-liner that a developer can copy-paste and run successfully on a fresh checkout
   3. A "Adding New Benchmarks" section walks through the steps to add a new nanobench case and have it appear in CI results
   4. Per-platform frame budget numbers for ESP32, WASM, and SDL3 are documented with actual measured values from Phase 62 results
+
 **Plans**: TBD
 
 ## Progress
@@ -195,7 +198,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 | 43-52. Developer Experience | v1.7 | 19/19 | Complete | 2026-03-02 |
 | 53-58. Ship Ready | v1.8 | 13/13 | Complete | 2026-03-03 |
 | 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
-| 60. CMake Foundation & Vendor | v1.10 | 0/? | Not started | - |
+| 60. CMake Foundation & Vendor | v1.10 | 0/1 | Not started | - |
 | 61. Native Benchmark Suite | v1.10 | 0/? | Not started | - |
 | 62. Frame Timing Instrumentation | v1.10 | 0/? | Not started | - |
 | 63. Lua Profiler & Headless Runner | v1.10 | 0/? | Not started | - |
