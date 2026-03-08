@@ -110,6 +110,15 @@ target_include_directories(persistent_object_test PRIVATE ${CMAKE_CURRENT_SOURCE
 target_link_libraries(persistent_object_test PRIVATE enjin2)
 add_test(NAME persistent_object_test COMMAND persistent_object_test)
 
+# Frame timing instrumentation unit test (FRAME-01, FRAME-02, FRAME-03)
+add_executable(frame_timing_test frame_timing_test.cpp)
+target_include_directories(frame_timing_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(frame_timing_test PRIVATE enjin2_core)
+target_compile_definitions(frame_timing_test PRIVATE ENJIN2_FRAME_TIMING=1)
+add_test(NAME frame_timing_test COMMAND frame_timing_test)
+
 # Layer binding unit test (Lua layer API: setLayer, getLayer, clearLayer, etc.)
 if(ENJIN2_BUILD_LUA)
     add_executable(layer_binding_test
