@@ -163,7 +163,8 @@ if(ENJIN2_BUILD_LUA)
         find_package(Lua QUIET)
 
         # Provide clear error if Lua was requested but not found
-        if(NOT Lua_FOUND AND ENJIN2_BUILD_LUA)
+        # FindLua sets LUA_FOUND (all-caps); Lua_FOUND is the modern alias — check both
+        if(NOT LUA_FOUND AND NOT Lua_FOUND AND ENJIN2_BUILD_LUA)
             message(FATAL_ERROR
                 "Lua was requested (ENJIN2_BUILD_LUA=ON) but could not be found.\n"
                 "Install Lua from https://lua.org/ or set ENJIN2_BUILD_LUA=OFF to build without Lua support.\n"
@@ -172,6 +173,9 @@ if(ENJIN2_BUILD_LUA)
                 "  macOS: brew install lua\n"
             )
         endif()
+
+        # FindLua sets LUA_INCLUDE_DIR (singular); normalise to LUA_INCLUDE_DIRS used below
+        set(LUA_INCLUDE_DIRS ${LUA_INCLUDE_DIR})
     endif()
     
     add_library(enjin2_lua STATIC)
