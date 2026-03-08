@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
-stopped_at: Completed 64-02-PLAN.md — CI pipeline fully verified, bench-data has first baseline, ObjectProxy GC UAF fixed
-last_updated: "2026-03-08T10:16:38.657Z"
+stopped_at: Completed 65-01-PLAN.md — AllocGuard + bench_alloc proves zero-alloc hot paths in CI
+last_updated: "2026-03-08T12:11:34.851Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 6
+  total_plans: 9
+  completed_plans: 9
   percent: 14
 ---
 
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - [Phase 64]: bench-data orphan branch pushed with single empty root commit; main branch simultaneously pushed with 45 pending commits including benchmarks.yml; first CI run requires manual workflow_dispatch
 - [Phase 64]: FindLua sets LUA_INCLUDE_DIR singular — always normalise to LUA_INCLUDE_DIRS after find_package(Lua) in desktop else branch
 - [Phase 64]: ObjectProxy __gc metamethod required — without it, Lua GC frees proxy userdata while Object::m_luaProxy still holds raw pointer causing heap-use-after-free in Object::~Object()
+- [Phase 65]: Operator new override in bench_alloc.cpp TU (not header) to avoid ODR violations; g_alloc_count reset after setup; Lua binding tested via lua_rawgeti not executeString; all six delete forms overridden for C++14 sized deallocation
 
 ### Pending Todos
 
@@ -96,6 +97,7 @@ None.
 | Phase 64 P01 | 2 | 2 tasks | 2 files |
 | Phase 64 P02 | 98 | 1 tasks | 0 files |
 | Phase 64-ci-regression-pipeline P02 | 2h | 2 tasks | 2 files |
+| Phase 65-allocation-verification P01 | 2min | 2 tasks | 5 files |
 
 ### Technical Debt (carried forward)
 
@@ -103,6 +105,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T10:12:40.956Z
-Stopped at: Completed 64-02-PLAN.md — CI pipeline fully verified, bench-data has first baseline, ObjectProxy GC UAF fixed
+Last session: 2026-03-08T12:11:34.849Z
+Stopped at: Completed 65-01-PLAN.md — AllocGuard + bench_alloc proves zero-alloc hot paths in CI
 Resume file: None

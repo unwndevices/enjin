@@ -39,9 +39,9 @@
 
 ### Allocation Verification
 
-- [ ] **ALLOC-01**: Custom allocator wrapper counts malloc/free calls during benchmarked hot-path sections
-- [ ] **ALLOC-02**: CI check runs benchmarks under allocation counter and fails if any hot-path allocation detected
-- [ ] **ALLOC-03**: Canvas operations, Component updates, and Lua binding calls verified allocation-free
+- [x] **ALLOC-01**: Custom allocator wrapper counts malloc/free calls during benchmarked hot-path sections
+- [x] **ALLOC-02**: CI check runs benchmarks under allocation counter and fails if any hot-path allocation detected
+- [x] **ALLOC-03**: Canvas operations, Component updates, and Lua binding calls verified allocation-free
 
 ### Documentation
 
@@ -93,9 +93,9 @@
 | PROF-04 | Phase 63 | Complete |
 | PROF-05 | Phase 63 | Complete |
 | PROF-06 | Phase 63 | Complete |
-| ALLOC-01 | Phase 65 | Pending |
-| ALLOC-02 | Phase 65 | Pending |
-| ALLOC-03 | Phase 65 | Pending |
+| ALLOC-01 | Phase 65 | Complete |
+| ALLOC-02 | Phase 65 | Complete |
+| ALLOC-03 | Phase 65 | Complete |
 | DOC-01 | Phase 66 | Pending |
 | DOC-02 | Phase 66 | Pending |
 | DOC-03 | Phase 66 | Pending |

@@ -98,7 +98,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 - [x] **Phase 62: Frame Timing Instrumentation** - FrameTimingInstrumentation struct, SDL3 runner integration, debug overlay (completed 2026-03-08)
 - [x] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host (completed 2026-03-08)
 - [x] **Phase 64: CI Regression Pipeline** - GitHub Actions workflow, github-action-benchmark dashboard, gh-pages storage (completed 2026-03-08)
-- [ ] **Phase 65: Allocation Verification** - AllocGuard RAII, operator new override, CI hot-path zero-alloc enforcement
+- [x] **Phase 65: Allocation Verification** - AllocGuard RAII, operator new override, CI hot-path zero-alloc enforcement (completed 2026-03-08)
 - [ ] **Phase 66: Performance Documentation** - docs/PERFORMANCE.md covering all subsystems with measured numbers
 
 ## Phase Details
@@ -181,7 +181,7 @@ Plans:
   1. `AllocGuard` RAII wraps a hot-path benchmark section and the benchmark binary exits non-zero if any `operator new` call fires inside that scope
   2. The CI workflow step running allocation verification fails the job when a hot-path allocation is detected, and passes when none occur
   3. Canvas pixel ops, `Canvas4::clear()`, component `update()` dispatch, and Lua binding calls to `engine.*` all pass the zero-alloc check in CI
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 65-01-PLAN.md -- AllocGuard header, bench_alloc binary, build-bench.sh + CI integration
 
@@ -216,5 +216,5 @@ Plans:
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
 | 63. Lua Profiler & Headless Runner | 2/2 | Complete    | 2026-03-08 | - |
 | 64. CI Regression Pipeline | 2/2 | Complete    | 2026-03-08 | - |
-| 65. Allocation Verification | v1.10 | 0/1 | Not started | - |
+| 65. Allocation Verification | 1/1 | Complete   | 2026-03-08 | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |
