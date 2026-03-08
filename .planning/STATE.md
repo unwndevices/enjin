@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
-stopped_at: Completed 64-02-PLAN.md — bench-data orphan branch created on remote, main pushed; awaiting human-verify of first CI run via workflow_dispatch
-last_updated: "2026-03-08T08:18:02.667Z"
+stopped_at: Completed 64-02-PLAN.md — CI pipeline fully verified, bench-data has first baseline, ObjectProxy GC UAF fixed
+last_updated: "2026-03-08T10:12:40.958Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
@@ -70,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase 64]: cancel-in-progress: false — interrupted auto-push leaves bench-data in partial state
 - [Phase 64]: workflow_dispatch trigger added — initial commits may not touch src/** or include/**, manual seed run needed
 - [Phase 64]: bench-data orphan branch pushed with single empty root commit; main branch simultaneously pushed with 45 pending commits including benchmarks.yml; first CI run requires manual workflow_dispatch
+- [Phase 64]: FindLua sets LUA_INCLUDE_DIR singular — always normalise to LUA_INCLUDE_DIRS after find_package(Lua) in desktop else branch
+- [Phase 64]: ObjectProxy __gc metamethod required — without it, Lua GC frees proxy userdata while Object::m_luaProxy still holds raw pointer causing heap-use-after-free in Object::~Object()
 
 ### Pending Todos
 
@@ -93,6 +95,7 @@ None.
 | Phase 63-lua-profiler-headless-runner P02 | 2min | 2 tasks | 2 files |
 | Phase 64 P01 | 2 | 2 tasks | 2 files |
 | Phase 64 P02 | 98 | 1 tasks | 0 files |
+| Phase 64-ci-regression-pipeline P02 | 2h | 2 tasks | 2 files |
 
 ### Technical Debt (carried forward)
 
@@ -100,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T08:18:02.666Z
-Stopped at: Completed 64-02-PLAN.md — bench-data orphan branch created on remote, main pushed; awaiting human-verify of first CI run via workflow_dispatch
+Last session: 2026-03-08T10:12:40.956Z
+Stopped at: Completed 64-02-PLAN.md — CI pipeline fully verified, bench-data has first baseline, ObjectProxy GC UAF fixed
 Resume file: None
