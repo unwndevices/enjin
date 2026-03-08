@@ -13,6 +13,7 @@ Full documentation is available at: https://unwndevices.github.io/enjin/
 - [Getting Started](https://unwndevices.github.io/enjin/getting-started) - Quick setup guide
 - [API Reference](https://unwndevices.github.io/enjin/api) - Complete API documentation
 - [Architecture](https://unwndevices.github.io/enjin/architecture) - Design overview
+- [Performance](docs/PERFORMANCE.md) - Benchmarking, profiling, and performance guide
 
 ## Installation
 
