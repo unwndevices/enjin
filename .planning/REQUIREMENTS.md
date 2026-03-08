@@ -45,9 +45,9 @@
 
 ### Documentation
 
-- [ ] **DOC-01**: docs/PERFORMANCE.md covers all 5 subsystems with how-to-first structure
-- [ ] **DOC-02**: Quick start with scripts/build-bench.sh one-liner and adding-new-benchmarks guide
-- [ ] **DOC-03**: Per-platform frame budget reference (ESP32 vs WASM vs SDL3)
+- [x] **DOC-01**: docs/PERFORMANCE.md covers all 5 subsystems with how-to-first structure
+- [x] **DOC-02**: Quick start with scripts/build-bench.sh one-liner and adding-new-benchmarks guide
+- [x] **DOC-03**: Per-platform frame budget reference (ESP32 vs WASM vs SDL3)
 
 ## Future Requirements
 
@@ -96,9 +96,9 @@
 | ALLOC-01 | Phase 65 | Complete |
 | ALLOC-02 | Phase 65 | Complete |
 | ALLOC-03 | Phase 65 | Complete |
-| DOC-01 | Phase 66 | Pending |
-| DOC-02 | Phase 66 | Pending |
-| DOC-03 | Phase 66 | Pending |
+| DOC-01 | Phase 66 | Complete |
+| DOC-02 | Phase 66 | Complete |
+| DOC-03 | Phase 66 | Complete |
 
 **Coverage:**
 - v1.10 requirements: 26 total

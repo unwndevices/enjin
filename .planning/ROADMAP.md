@@ -99,7 +99,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 - [x] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host (completed 2026-03-08)
 - [x] **Phase 64: CI Regression Pipeline** - GitHub Actions workflow, github-action-benchmark dashboard, gh-pages storage (completed 2026-03-08)
 - [x] **Phase 65: Allocation Verification** - AllocGuard RAII, operator new override, CI hot-path zero-alloc enforcement (completed 2026-03-08)
-- [ ] **Phase 66: Performance Documentation** - docs/PERFORMANCE.md covering all subsystems with measured numbers
+- [x] **Phase 66: Performance Documentation** - docs/PERFORMANCE.md covering all subsystems with measured numbers (completed 2026-03-08)
 
 ## Phase Details
 
@@ -195,7 +195,7 @@ Plans:
   3. A "Adding New Benchmarks" section walks through the steps to add a new nanobench case and have it appear in CI results
   4. Per-platform frame budget numbers for ESP32, WASM, and SDL3 are documented with actual measured values from Phase 62 results
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 66-01-PLAN.md -- Write docs/PERFORMANCE.md covering all 5 subsystems + README link
 
@@ -219,4 +219,4 @@ Plans:
 | 63. Lua Profiler & Headless Runner | 2/2 | Complete    | 2026-03-08 | - |
 | 64. CI Regression Pipeline | 2/2 | Complete    | 2026-03-08 | - |
 | 65. Allocation Verification | 1/1 | Complete    | 2026-03-08 | - |
-| 66. Performance Documentation | v1.10 | 0/1 | Not started | - |
+| 66. Performance Documentation | 1/1 | Complete   | 2026-03-08 | - |
