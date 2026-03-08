@@ -95,7 +95,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 
 - [x] **Phase 60: CMake Foundation & Vendor** - ENJIN2_BUILD_BENCHMARKS option, nanobench single-header, directory scaffolding (completed 2026-03-07)
 - [x] **Phase 61: Native Benchmark Suite** - bench_canvas, bench_ecs, bench_lua executables with JSON output and build-bench.sh (completed 2026-03-07)
-- [ ] **Phase 62: Frame Timing Instrumentation** - FrameTimingInstrumentation struct, SDL3 runner integration, debug overlay
+- [x] **Phase 62: Frame Timing Instrumentation** - FrameTimingInstrumentation struct, SDL3 runner integration, debug overlay (completed 2026-03-08)
 - [ ] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host
 - [ ] **Phase 64: CI Regression Pipeline** - GitHub Actions workflow, github-action-benchmark dashboard, gh-pages storage
 - [ ] **Phase 65: Allocation Verification** - AllocGuard RAII, operator new override, CI hot-path zero-alloc enforcement
@@ -139,7 +139,7 @@ Plans:
   2. A polling API exists so host code can read the four timing fields without the overlay (e.g., `FrameTimingInstrumentation::get()`)
   3. Disabling the overlay at compile time or runtime incurs zero overhead --- no atomics written, no counters incremented when instrumentation is off
   4. WASM and ESP32 builds compile cleanly with the new header present (even if full instrumentation is not wired on those platforms)
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 62-01-PLAN.md -- FrameTimingInstrumentation header + unit test + SDL3 runner instrumentation + --show-timing overlay
 
@@ -205,7 +205,7 @@ Plans:
 | 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
-| 62. Frame Timing Instrumentation | v1.10 | 0/1 | Not started | - |
+| 62. Frame Timing Instrumentation | 1/1 | Complete   | 2026-03-08 | - |
 | 63. Lua Profiler & Headless Runner | v1.10 | 0/? | Not started | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |

@@ -24,9 +24,9 @@
 
 ### Frame Timing
 
-- [ ] **FRAME-01**: FrameTimingInstrumentation struct with lock-free uint32_t atomics tracking updateTime_us, renderTime_us, luaTime_us, compositeTime_us
-- [ ] **FRAME-02**: Per-phase timing instrumented into SDL3 runner game loop
-- [ ] **FRAME-03**: Frame budget usage exposed via debug overlay or polling API
+- [x] **FRAME-01**: FrameTimingInstrumentation struct with lock-free uint32_t atomics tracking updateTime_us, renderTime_us, luaTime_us, compositeTime_us
+- [x] **FRAME-02**: Per-phase timing instrumented into SDL3 runner game loop
+- [x] **FRAME-03**: Frame budget usage exposed via debug overlay or polling API
 
 ### Lua Profiling
 
@@ -84,9 +84,9 @@
 | CI-03 | Phase 64 | Pending |
 | CI-04 | Phase 64 | Pending |
 | CI-05 | Phase 64 | Pending |
-| FRAME-01 | Phase 62 | Pending |
-| FRAME-02 | Phase 62 | Pending |
-| FRAME-03 | Phase 62 | Pending |
+| FRAME-01 | Phase 62 | Complete |
+| FRAME-02 | Phase 62 | Complete |
+| FRAME-03 | Phase 62 | Complete |
 | PROF-01 | Phase 63 | Pending |
 | PROF-02 | Phase 63 | Pending |
 | PROF-03 | Phase 63 | Pending |

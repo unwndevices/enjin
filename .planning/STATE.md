@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
-stopped_at: Completed 61-02-PLAN.md — ObjectProxy round-trip and LuaEventBus dispatch benchmarks added, BENCH-03 and BENCH-04 gaps closed
-last_updated: "2026-03-08T01:09:32.820Z"
+stopped_at: Completed 62-01-PLAN.md — FrameTimingInstrumentation header, SDL3 measurement sites, and --show-timing overlay implemented
+last_updated: "2026-03-08T01:41:39.891Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 4
   percent: 14
 ---
 
@@ -57,6 +57,8 @@ Recent decisions affecting current work:
 - [Phase 61-01]: build-bench.sh uses separate build-bench/ directory; ENJIN2_BUILD_LUA=ON added to ensure bench_lua always built
 - [Phase 61-02]: setActiveScene(nullptr) cleanup placed before GC benchmark to prevent dangling Lua registry pointer after BenchScene destructor
 - [Phase 61-02]: Event subscription placed outside timed lambda via executeString — only emit() is measured as the hot path
+- [Phase 62-01]: #include <atomic> placed outside namespace enjin2 to avoid nesting std namespace inside enjin2 (GCC 15 error)
+- [Phase 62-01]: ENJIN2_FRAME_TIMING=1 injected only to enjin2_sdl target — WASM and ESP32 targets use the zero-overhead plain uint32_t stub
 
 ### Pending Todos
 
@@ -75,6 +77,7 @@ None.
 | 9 | update examples arduino to lua54 lib + idf CMakeLists | 2026-03-04 | 0ea4d52 | [9-update-examples-arduino-to-lua54-lib-idf](./quick/9-update-examples-arduino-to-lua54-lib-idf/) |
 | Phase 61-native-benchmark-suite P01 | 3 | 3 tasks | 6 files |
 | Phase 61 P02 | 2min | 1 tasks | 1 files |
+| Phase 62-frame-timing-instrumentation P01 | 5min | 2 tasks | 5 files |
 
 ### Technical Debt (carried forward)
 
@@ -82,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T01:05:55.186Z
-Stopped at: Completed 61-02-PLAN.md — ObjectProxy round-trip and LuaEventBus dispatch benchmarks added, BENCH-03 and BENCH-04 gaps closed
+Last session: 2026-03-08T01:41:39.889Z
+Stopped at: Completed 62-01-PLAN.md — FrameTimingInstrumentation header, SDL3 measurement sites, and --show-timing overlay implemented
 Resume file: None
