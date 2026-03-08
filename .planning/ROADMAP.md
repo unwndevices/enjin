@@ -216,5 +216,5 @@ Plans:
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
 | 63. Lua Profiler & Headless Runner | 2/2 | Complete    | 2026-03-08 | - |
 | 64. CI Regression Pipeline | 2/2 | Complete    | 2026-03-08 | - |
-| 65. Allocation Verification | 1/1 | Complete   | 2026-03-08 | - |
+| 65. Allocation Verification | 1/1 | Complete    | 2026-03-08 | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |

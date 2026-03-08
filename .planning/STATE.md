@@ -4,7 +4,7 @@ milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
 stopped_at: Completed 65-01-PLAN.md — AllocGuard + bench_alloc proves zero-alloc hot paths in CI
-last_updated: "2026-03-08T12:11:34.851Z"
+last_updated: "2026-03-08T12:15:33.387Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
