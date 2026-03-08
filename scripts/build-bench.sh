@@ -22,8 +22,8 @@ cmake -DENJIN2_BUILD_BENCHMARKS=ON \
       -B "${BUILD_DIR}" \
       "${PROJECT_ROOT}"
 
-# Build all three benchmark targets
-cmake --build "${BUILD_DIR}" --target bench_canvas bench_ecs bench_lua -- -j"$(nproc)"
+# Build all benchmark targets including allocation verification
+cmake --build "${BUILD_DIR}" --target bench_canvas bench_ecs bench_lua bench_alloc -- -j"$(nproc)"
 
 # Ensure output directory exists (binaries also call mkdir but this guarantees it)
 mkdir -p "${PROJECT_ROOT}/bench-results"
@@ -42,6 +42,10 @@ echo "--- running bench_ecs ---"
 echo ""
 echo "--- running bench_lua ---"
 "${BUILD_DIR}/benchmarks/bench_lua"
+
+echo ""
+echo "--- running bench_alloc (allocation verification) ---"
+"${BUILD_DIR}/benchmarks/bench_alloc"
 
 echo ""
 echo "=== results written to bench-results/ ==="

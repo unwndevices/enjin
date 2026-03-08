@@ -34,6 +34,9 @@ jobs:
       - name: Build and run benchmarks
         run: bash scripts/build-bench.sh
 
+      - name: Allocation verification
+        run: ./build-bench/benchmarks/bench_alloc
+
       - name: Convert to customSmallerIsBetter format
         run: python3 scripts/convert-bench.py
 
