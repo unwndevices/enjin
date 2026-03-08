@@ -4,7 +4,7 @@ milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
 stopped_at: Completed 63-02-PLAN.md — enjin_run headless runner binary with --profile/--frames/--output json, null-safe wiring, GC pressure tracking (PROF-04/05/06)
-last_updated: "2026-03-08T07:48:46.598Z"
+last_updated: "2026-03-08T07:52:24.904Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7

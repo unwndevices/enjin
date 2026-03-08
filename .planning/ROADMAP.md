@@ -209,7 +209,7 @@ Plans:
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
-| 63. Lua Profiler & Headless Runner | 2/2 | Complete   | 2026-03-08 | - |
+| 63. Lua Profiler & Headless Runner | 2/2 | Complete    | 2026-03-08 | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |
