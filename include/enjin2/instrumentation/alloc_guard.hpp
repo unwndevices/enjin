@@ -25,10 +25,10 @@
  *   }  // exits non-zero if clear() allocated
  */
 
+#ifdef ENJIN2_ALLOC_VERIFICATION
+
 #include <cstdio>
 #include <cstdlib>
-
-#ifdef ENJIN2_ALLOC_VERIFICATION
 
 // Thread-local allocation counter — defined in bench_alloc.cpp
 extern thread_local int  g_alloc_guard_depth;
@@ -90,8 +90,8 @@ namespace enjin2 {
  */
 class AllocGuard {
 public:
-    explicit AllocGuard(const char*) {}
-    ~AllocGuard() {}
+    explicit AllocGuard(const char* /*label*/) {}
+    ~AllocGuard() = default;
 
     AllocGuard(const AllocGuard&)            = delete;
     AllocGuard& operator=(const AllocGuard&) = delete;
