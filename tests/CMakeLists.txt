@@ -584,6 +584,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME ui_binding_test COMMAND ui_binding_test)
+
+    # Lua profiler test (Phase 63: PROF-01, PROF-02, PROF-03, PROF-06)
+    add_executable(lua_profiler_test
+        lua_profiler_test.cpp
+    )
+    target_include_directories(lua_profiler_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(lua_profiler_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME lua_profiler_test COMMAND lua_profiler_test)
 endif()
 
 # SDL3 sprite visual test (pikachu with palette colors)
