@@ -1,0 +1,67 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'include/**'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'include/**'
+  workflow_dispatch:
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: false  # do NOT cancel — bench-data push must complete
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed for auto-push to bench-data branch
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y liblua5.4-dev
+
+      - name: Build and run benchmarks
+        run: bash scripts/build-bench.sh
+
+      - name: Convert to customSmallerIsBetter format
+        run: python3 scripts/convert-bench.py
+
+      - name: Store benchmark result
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: enjin2 Benchmarks
+          tool: customSmallerIsBetter
+          output-file-path: bench-results/bench-combined.json
+          gh-pages-branch: bench-data
+          benchmark-data-dir-path: dev/bench
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          comment-always: false
+
+      - name: Check for regression (PR only)
+        if: github.event_name == 'pull_request'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: enjin2 Benchmarks
+          tool: customSmallerIsBetter
+          output-file-path: bench-results/bench-combined.json
+          gh-pages-branch: bench-data
+          benchmark-data-dir-path: dev/bench
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          save-data-file: false
+          alert-threshold: '150%'
+          fail-on-alert: true
+          comment-on-alert: true
