@@ -3,8 +3,15 @@
 
 #include <enjin2/scripting/lua_engine.hpp>
 #include <enjin2/scripting/bindings.hpp>
+#include <enjin2/core/scene.hpp>
 #include <fstream>
 #include <sys/stat.h>
+
+// Minimal concrete scene for ObjectProxy round-trip benchmark — no SDL, no canvas required
+class BenchScene : public enjin2::Scene {
+public:
+    BenchScene() : enjin2::Scene(99) {}
+};
 
 int main() {
     ankerl::nanobench::Bench bench;
@@ -47,6 +54,37 @@ int main() {
             auto result = eng.executeString("local v = math.clamp(0.5, 0, 1)");
             ankerl::nanobench::doNotOptimizeAway(result.success);
         });
+
+        // ObjectProxy round-trip benchmark (BENCH-04 gap closure):
+        // Wire a real Scene with a named Object into LuaBindings so engine.scene.find works.
+        // NOTE: setActiveScene clears event bus handlers, coroutines, tweens, camera follow.
+        // The event dispatch benchmark subscribes AFTER this call.
+        BenchScene benchScene;
+        benchScene.activate();
+        auto* benchObj = benchScene.addObject<enjin2::Object>();
+        benchObj->setName("bench_target");
+        bindings.setActiveScene(&benchScene);
+
+        // Measures: Lua engine.scene.find -> C++ findByName -> lua_newuserdata(ObjectProxy) ->
+        // metatable attach -> setLuaProxy -> Lua p.name -> __index -> Object::getName() -> string
+        bench.run("lua proxy: find+field round-trip", [&] {
+            auto result = eng.executeString("local p = engine.scene.find('bench_target'); local n = p.name");
+            ankerl::nanobench::doNotOptimizeAway(result.success);
+        });
+
+        // Event dispatch benchmark (BENCH-03 gap closure):
+        // Subscribe a Lua no-op handler AFTER setActiveScene (which cleared prior handlers).
+        // Measures: Lua engine.event.emit -> C++ LuaEventBus::emit -> channel lookup ->
+        // snapshot refs -> lua_rawgeti + lua_pcall for callback -> return
+        eng.executeString("engine.event.on('bench_evt', function() end)");
+        bench.run("lua event: emit dispatch", [&] {
+            auto result = eng.executeString("engine.event.emit('bench_evt')");
+            ankerl::nanobench::doNotOptimizeAway(result.success);
+        });
+
+        // Detach scene cleanly before BenchScene destructor runs — prevents dangling pointer
+        // in the Lua registry after the local BenchScene goes out of scope.
+        bindings.setActiveScene(nullptr);
 
         // GC pressure: full Lua garbage collection cycle
         bench.run("lua GC: full collect", [&] {
