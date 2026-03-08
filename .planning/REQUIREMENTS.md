@@ -30,12 +30,12 @@
 
 ### Lua Profiling
 
-- [ ] **PROF-01**: C-level profiler via lua_sethook (LUA_MASKCALL | LUA_MASKRET) with per-function call counts
-- [ ] **PROF-02**: Memory tracking via lua_gc with per-frame GC pressure ring buffer
-- [ ] **PROF-03**: Zero overhead when profiler disabled (lua_sethook(L, NULL, 0, 0))
+- [x] **PROF-01**: C-level profiler via lua_sethook (LUA_MASKCALL | LUA_MASKRET) with per-function call counts
+- [x] **PROF-02**: Memory tracking via lua_gc with per-frame GC pressure ring buffer
+- [x] **PROF-03**: Zero overhead when profiler disabled (lua_sethook(L, NULL, 0, 0))
 - [ ] **PROF-04**: Headless CLI runner (enjin_run) with --profile --frames N script.lua
 - [ ] **PROF-05**: enjin_run produces JSON and text table output formats
-- [ ] **PROF-06**: enjin_run stubs all platform APIs (gfx, input) as no-ops
+- [x] **PROF-06**: enjin_run stubs all platform APIs (gfx, input) as no-ops
 
 ### Allocation Verification
 
@@ -87,12 +87,12 @@
 | FRAME-01 | Phase 62 | Complete |
 | FRAME-02 | Phase 62 | Complete |
 | FRAME-03 | Phase 62 | Complete |
-| PROF-01 | Phase 63 | Pending |
-| PROF-02 | Phase 63 | Pending |
-| PROF-03 | Phase 63 | Pending |
+| PROF-01 | Phase 63 | Complete |
+| PROF-02 | Phase 63 | Complete |
+| PROF-03 | Phase 63 | Complete |
 | PROF-04 | Phase 63 | Pending |
 | PROF-05 | Phase 63 | Pending |
-| PROF-06 | Phase 63 | Pending |
+| PROF-06 | Phase 63 | Complete |
 | ALLOC-01 | Phase 65 | Pending |
 | ALLOC-02 | Phase 65 | Pending |
 | ALLOC-03 | Phase 65 | Pending |

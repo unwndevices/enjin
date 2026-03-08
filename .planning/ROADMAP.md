@@ -153,7 +153,7 @@ Plans:
   3. `enjin_run --profile --output json --frames 100 script.lua` writes a JSON file of profiling results
   4. A script that exercises every `engine.*` subtable (scene, input, time, lua, log) runs without null-dereference crash in headless mode
   5. Running `enjin_run` without `--profile` incurs zero hook overhead --- `lua_sethook(L, NULL, 0, 0)` is confirmed in that path
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 63-01-PLAN.md -- LuaProfiler header-only singleton + unit test suite (hook install/uninstall, call counts, zero-overhead, null-safety)
 - [ ] 63-02-PLAN.md -- Headless CLI runner (enjin_run) with CMake target, frame loop, profiler wiring, JSON/text output
@@ -209,7 +209,7 @@ Plans:
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
-| 63. Lua Profiler & Headless Runner | v1.10 | 0/2 | Not started | - |
+| 63. Lua Profiler & Headless Runner | 1/2 | In Progress|  | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |

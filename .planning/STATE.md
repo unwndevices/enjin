@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
-stopped_at: Completed 62-01-PLAN.md — FrameTimingInstrumentation header, SDL3 measurement sites, and --show-timing overlay implemented
-last_updated: "2026-03-08T01:44:28.066Z"
+stopped_at: Completed 63-01-PLAN.md — LuaProfiler header-only singleton and lua_profiler_test with 6 unit tests (PROF-01/02/03/06)
+last_updated: "2026-03-08T07:43:52.847Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
   percent: 14
 ---
 
@@ -59,6 +59,9 @@ Recent decisions affecting current work:
 - [Phase 61-02]: Event subscription placed outside timed lambda via executeString — only emit() is measured as the hot path
 - [Phase 62-01]: #include <atomic> placed outside namespace enjin2 to avoid nesting std namespace inside enjin2 (GCC 15 error)
 - [Phase 62-01]: ENJIN2_FRAME_TIMING=1 injected only to enjin2_sdl target — WASM and ESP32 targets use the zero-overhead plain uint32_t stub
+- [Phase 63-01]: lua_profiler.hpp includes lua_platform.hpp (not raw lua.h) for cross-platform Lua include guard
+- [Phase 63-01]: hookCallback checks active flag AFTER lua_getinfo+lua_topointer to avoid Lua stack imbalance on early return
+- [Phase 63-01]: null_safety test uses static LayerCompositor<128,128> + LuaCanvas wrappers — zero heap allocation matching headless runner pattern
 
 ### Pending Todos
 
@@ -78,6 +81,7 @@ None.
 | Phase 61-native-benchmark-suite P01 | 3 | 3 tasks | 6 files |
 | Phase 61 P02 | 2min | 1 tasks | 1 files |
 | Phase 62-frame-timing-instrumentation P01 | 5min | 2 tasks | 5 files |
+| Phase 63-lua-profiler-headless-runner P01 | 2 | 2 tasks | 3 files |
 
 ### Technical Debt (carried forward)
 
@@ -85,6 +89,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T01:41:39.889Z
-Stopped at: Completed 62-01-PLAN.md — FrameTimingInstrumentation header, SDL3 measurement sites, and --show-timing overlay implemented
+Last session: 2026-03-08T07:43:52.845Z
+Stopped at: Completed 63-01-PLAN.md — LuaProfiler header-only singleton and lua_profiler_test with 6 unit tests (PROF-01/02/03/06)
 Resume file: None
