@@ -55,3 +55,23 @@ if(TARGET enjin2_lua)
         enjin2_ui
     )
 endif()
+
+# bench_alloc — zero-allocation verification for hot-path operations (ALLOC-01, ALLOC-02, ALLOC-03)
+# Exits non-zero if any operator new fires inside an AllocGuard scope.
+if(TARGET enjin2_lua)
+    add_executable(bench_alloc bench_alloc.cpp)
+    target_include_directories(bench_alloc PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${LUA_INCLUDE_DIRS}
+    )
+    target_link_libraries(bench_alloc PRIVATE
+        nanobench_vendor
+        enjin2_core
+        enjin2_graphics
+        enjin2_ui
+        enjin2_lua
+    )
+    target_compile_definitions(bench_alloc PRIVATE
+        ENJIN2_ALLOC_VERIFICATION=1
+    )
+endif()
