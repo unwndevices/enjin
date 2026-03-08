@@ -4,7 +4,7 @@ milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
 stopped_at: Completed 61-02-PLAN.md — ObjectProxy round-trip and LuaEventBus dispatch benchmarks added, BENCH-03 and BENCH-04 gaps closed
-last_updated: "2026-03-08T01:05:55.187Z"
+last_updated: "2026-03-08T01:09:32.820Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7

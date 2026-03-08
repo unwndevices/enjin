@@ -202,7 +202,7 @@ Plans:
 | 53-58. Ship Ready | v1.8 | 13/13 | Complete | 2026-03-03 |
 | 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
-| 61. Native Benchmark Suite | 2/2 | Complete   | 2026-03-08 | - |
+| 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
 | 62. Frame Timing Instrumentation | v1.10 | 0/? | Not started | - |
 | 63. Lua Profiler & Headless Runner | v1.10 | 0/? | Not started | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
