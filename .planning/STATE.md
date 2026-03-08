@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
-stopped_at: Completed 63-02-PLAN.md — enjin_run headless runner binary with --profile/--frames/--output json, null-safe wiring, GC pressure tracking (PROF-04/05/06)
-last_updated: "2026-03-08T07:52:24.904Z"
+stopped_at: Completed 64-01-PLAN.md — nanobench converter (27 benchmarks) + GitHub Actions CI workflow with bench-data branch, 150% PR threshold
+last_updated: "2026-03-08T08:14:58.227Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 14
 ---
 
@@ -65,6 +65,10 @@ Recent decisions affecting current work:
 - [Phase 63-02]: setInput() NOT called in headless runner — currentInput remains nullptr; all engine.input.* bindings null-guard safely
 - [Phase 63-02]: ENJIN2_BUILD_HEADLESS FATAL_ERROR on EMSCRIPTEN or ESP32 — same guard pattern as ENJIN2_BUILD_BENCHMARKS
 - [Phase 63-02]: No ENJIN2_FRAME_TIMING define for enjin_run — headless runner does not use frame timing atomics
+- [Phase 64]: bench-data orphan branch (not gh-pages) — docs.yml uses actions/deploy-pages which would wipe benchmark history
+- [Phase 64]: alert-threshold: 150% on PR regression check — shared runner variance; tighten after 30-50 baseline runs
+- [Phase 64]: cancel-in-progress: false — interrupted auto-push leaves bench-data in partial state
+- [Phase 64]: workflow_dispatch trigger added — initial commits may not touch src/** or include/**, manual seed run needed
 
 ### Pending Todos
 
@@ -86,6 +90,7 @@ None.
 | Phase 62-frame-timing-instrumentation P01 | 5min | 2 tasks | 5 files |
 | Phase 63-lua-profiler-headless-runner P01 | 2 | 2 tasks | 3 files |
 | Phase 63-lua-profiler-headless-runner P02 | 2min | 2 tasks | 2 files |
+| Phase 64 P01 | 2 | 2 tasks | 2 files |
 
 ### Technical Debt (carried forward)
 
@@ -93,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T07:48:46.596Z
-Stopped at: Completed 63-02-PLAN.md — enjin_run headless runner binary with --profile/--frames/--output json, null-safe wiring, GC pressure tracking (PROF-04/05/06)
+Last session: 2026-03-08T08:14:58.224Z
+Stopped at: Completed 64-01-PLAN.md — nanobench converter (27 benchmarks) + GitHub Actions CI workflow with bench-data branch, 150% PR threshold
 Resume file: None

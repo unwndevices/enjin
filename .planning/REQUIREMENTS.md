@@ -16,11 +16,11 @@
 
 ### CI Pipeline
 
-- [ ] **CI-01**: GitHub Actions workflow (.github/workflows/benchmarks.yml) triggers on push to main and PRs touching src/** or include/**
-- [ ] **CI-02**: JSON conversion script combines benchmark results into github-action-benchmark customSmallerIsBetter format
-- [ ] **CI-03**: Benchmark history stored on gh-pages branch (isolated from Docusaurus deployment)
-- [ ] **CI-04**: Performance dashboard auto-generated on gh-pages from benchmark history
-- [ ] **CI-05**: Regression threshold with fail-on-alert for PRs
+- [x] **CI-01**: GitHub Actions workflow (.github/workflows/benchmarks.yml) triggers on push to main and PRs touching src/** or include/**
+- [x] **CI-02**: JSON conversion script combines benchmark results into github-action-benchmark customSmallerIsBetter format
+- [x] **CI-03**: Benchmark history stored on gh-pages branch (isolated from Docusaurus deployment)
+- [x] **CI-04**: Performance dashboard auto-generated on gh-pages from benchmark history
+- [x] **CI-05**: Regression threshold with fail-on-alert for PRs
 
 ### Frame Timing
 
@@ -79,11 +79,11 @@
 | BENCH-04 | Phase 61 | Complete |
 | BENCH-05 | Phase 61 | Complete |
 | BENCH-06 | Phase 61 | Complete |
-| CI-01 | Phase 64 | Pending |
-| CI-02 | Phase 64 | Pending |
-| CI-03 | Phase 64 | Pending |
-| CI-04 | Phase 64 | Pending |
-| CI-05 | Phase 64 | Pending |
+| CI-01 | Phase 64 | Complete |
+| CI-02 | Phase 64 | Complete |
+| CI-03 | Phase 64 | Complete |
+| CI-04 | Phase 64 | Complete |
+| CI-05 | Phase 64 | Complete |
 | FRAME-01 | Phase 62 | Complete |
 | FRAME-02 | Phase 62 | Complete |
 | FRAME-03 | Phase 62 | Complete |
