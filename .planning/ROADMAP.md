@@ -128,7 +128,7 @@ Plans:
 **Plans:** 2/2 plans complete
 Plans:
 - [x] 61-01-PLAN.md -- Create bench_canvas, bench_ecs, bench_lua binaries with CMake targets and build-bench.sh script
-- [ ] 61-02-PLAN.md -- Gap closure: add ObjectProxy round-trip and LuaEventBus dispatch benchmarks to bench_lua
+- [x] 61-02-PLAN.md -- Gap closure: add ObjectProxy round-trip and LuaEventBus dispatch benchmarks to bench_lua
 
 ### Phase 62: Frame Timing Instrumentation
 **Goal**: Developers can see where frame time is spent (update/render/Lua/composite) with sub-millisecond resolution in the SDL3 runner
@@ -139,7 +139,9 @@ Plans:
   2. A polling API exists so host code can read the four timing fields without the overlay (e.g., `FrameTimingInstrumentation::get()`)
   3. Disabling the overlay at compile time or runtime incurs zero overhead --- no atomics written, no counters incremented when instrumentation is off
   4. WASM and ESP32 builds compile cleanly with the new header present (even if full instrumentation is not wired on those platforms)
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 62-01-PLAN.md -- FrameTimingInstrumentation header + unit test + SDL3 runner instrumentation + --show-timing overlay
 
 ### Phase 63: Lua Profiler & Headless Runner
 **Goal**: Developers can profile any Lua script's function-level call counts and GC pressure from the command line without needing a display or SDL3 window
@@ -203,7 +205,7 @@ Plans:
 | 59. Tech Debt | v1.9 | 2/2 | Complete | 2026-03-03 |
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
-| 62. Frame Timing Instrumentation | v1.10 | 0/? | Not started | - |
+| 62. Frame Timing Instrumentation | v1.10 | 0/1 | Not started | - |
 | 63. Lua Profiler & Headless Runner | v1.10 | 0/? | Not started | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |
