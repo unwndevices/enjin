@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
-stopped_at: Completed 63-01-PLAN.md — LuaProfiler header-only singleton and lua_profiler_test with 6 unit tests (PROF-01/02/03/06)
-last_updated: "2026-03-08T07:43:52.847Z"
+stopped_at: Completed 63-02-PLAN.md — enjin_run headless runner binary with --profile/--frames/--output json, null-safe wiring, GC pressure tracking (PROF-04/05/06)
+last_updated: "2026-03-08T07:48:46.598Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 14
 ---
 
@@ -62,6 +62,9 @@ Recent decisions affecting current work:
 - [Phase 63-01]: lua_profiler.hpp includes lua_platform.hpp (not raw lua.h) for cross-platform Lua include guard
 - [Phase 63-01]: hookCallback checks active flag AFTER lua_getinfo+lua_topointer to avoid Lua stack imbalance on early return
 - [Phase 63-01]: null_safety test uses static LayerCompositor<128,128> + LuaCanvas wrappers — zero heap allocation matching headless runner pattern
+- [Phase 63-02]: setInput() NOT called in headless runner — currentInput remains nullptr; all engine.input.* bindings null-guard safely
+- [Phase 63-02]: ENJIN2_BUILD_HEADLESS FATAL_ERROR on EMSCRIPTEN or ESP32 — same guard pattern as ENJIN2_BUILD_BENCHMARKS
+- [Phase 63-02]: No ENJIN2_FRAME_TIMING define for enjin_run — headless runner does not use frame timing atomics
 
 ### Pending Todos
 
@@ -82,6 +85,7 @@ None.
 | Phase 61 P02 | 2min | 1 tasks | 1 files |
 | Phase 62-frame-timing-instrumentation P01 | 5min | 2 tasks | 5 files |
 | Phase 63-lua-profiler-headless-runner P01 | 2 | 2 tasks | 3 files |
+| Phase 63-lua-profiler-headless-runner P02 | 2min | 2 tasks | 2 files |
 
 ### Technical Debt (carried forward)
 
@@ -89,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T07:43:52.845Z
-Stopped at: Completed 63-01-PLAN.md — LuaProfiler header-only singleton and lua_profiler_test with 6 unit tests (PROF-01/02/03/06)
+Last session: 2026-03-08T07:48:46.596Z
+Stopped at: Completed 63-02-PLAN.md — enjin_run headless runner binary with --profile/--frames/--output json, null-safe wiring, GC pressure tracking (PROF-04/05/06)
 Resume file: None

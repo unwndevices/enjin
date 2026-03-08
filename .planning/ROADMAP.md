@@ -96,7 +96,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 - [x] **Phase 60: CMake Foundation & Vendor** - ENJIN2_BUILD_BENCHMARKS option, nanobench single-header, directory scaffolding (completed 2026-03-07)
 - [x] **Phase 61: Native Benchmark Suite** - bench_canvas, bench_ecs, bench_lua executables with JSON output and build-bench.sh (completed 2026-03-07)
 - [x] **Phase 62: Frame Timing Instrumentation** - FrameTimingInstrumentation struct, SDL3 runner integration, debug overlay (completed 2026-03-08)
-- [ ] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host
+- [x] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host (completed 2026-03-08)
 - [ ] **Phase 64: CI Regression Pipeline** - GitHub Actions workflow, github-action-benchmark dashboard, gh-pages storage
 - [ ] **Phase 65: Allocation Verification** - AllocGuard RAII, operator new override, CI hot-path zero-alloc enforcement
 - [ ] **Phase 66: Performance Documentation** - docs/PERFORMANCE.md covering all subsystems with measured numbers
@@ -153,7 +153,7 @@ Plans:
   3. `enjin_run --profile --output json --frames 100 script.lua` writes a JSON file of profiling results
   4. A script that exercises every `engine.*` subtable (scene, input, time, lua, log) runs without null-dereference crash in headless mode
   5. Running `enjin_run` without `--profile` incurs zero hook overhead --- `lua_sethook(L, NULL, 0, 0)` is confirmed in that path
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 63-01-PLAN.md -- LuaProfiler header-only singleton + unit test suite (hook install/uninstall, call counts, zero-overhead, null-safety)
 - [ ] 63-02-PLAN.md -- Headless CLI runner (enjin_run) with CMake target, frame loop, profiler wiring, JSON/text output
@@ -209,7 +209,7 @@ Plans:
 | 60. CMake Foundation & Vendor | v1.10 | Complete    | 2026-03-07 | 2026-03-07 |
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
-| 63. Lua Profiler & Headless Runner | 1/2 | In Progress|  | - |
+| 63. Lua Profiler & Headless Runner | 2/2 | Complete   | 2026-03-08 | - |
 | 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |
