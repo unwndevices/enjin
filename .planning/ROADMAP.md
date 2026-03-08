@@ -213,6 +213,6 @@ Plans:
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
 | 63. Lua Profiler & Headless Runner | 2/2 | Complete    | 2026-03-08 | - |
-| 64. CI Regression Pipeline | 2/2 | Complete   | 2026-03-08 | - |
+| 64. CI Regression Pipeline | 2/2 | Complete    | 2026-03-08 | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |
