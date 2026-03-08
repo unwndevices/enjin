@@ -619,6 +619,21 @@ static int lua_objproxy_newindex_impl(lua_State* L) {
     return 0;
 }
 
+// __gc metamethod for ObjectProxy.
+// Called by Lua GC when the proxy userdata is about to be freed.
+// Clears Object::m_luaProxy so the C++ Object destructor does not write
+// into freed Lua memory (heap-use-after-free, caught by ASAN).
+static int lua_objproxy_gc_impl(lua_State* L) {
+    enjin2::ObjectProxy* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_testudata(L, 1, OBJECT_PROXY_METATABLE));
+    if (proxy && proxy->valid && proxy->object) {
+        // Clear the back-pointer so Object::~Object() does not try to
+        // write to this proxy's memory after it has been freed by the GC.
+        proxy->object->setLuaProxy(nullptr);
+    }
+    return 0;
+}
+
 void LuaBindings::registerObjectProxyMetatable() {
     lua_State* L = engine->getState();
     if (!L) return;
@@ -628,6 +643,10 @@ void LuaBindings::registerObjectProxyMetatable() {
         lua_setfield(L, -2, "__index");
         lua_pushcfunction(L, lua_objproxy_newindex_impl);
         lua_setfield(L, -2, "__newindex");
+        // __gc: clear Object::m_luaProxy back-pointer when Lua frees this proxy.
+        // Prevents heap-use-after-free in Object::~Object() (PROXY-GC-01).
+        lua_pushcfunction(L, lua_objproxy_gc_impl);
+        lua_setfield(L, -2, "__gc");
     }
     lua_pop(L, 1);  // always pop — both new and existing cases leave table on stack
 }
