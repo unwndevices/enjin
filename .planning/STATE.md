@@ -4,7 +4,7 @@ milestone: v1.10
 milestone_name: Benchmarking & Performance
 status: completed
 stopped_at: Completed 62-01-PLAN.md — FrameTimingInstrumentation header, SDL3 measurement sites, and --show-timing overlay implemented
-last_updated: "2026-03-08T01:41:39.891Z"
+last_updated: "2026-03-08T01:44:28.066Z"
 last_activity: "2026-03-07 — Plan 60-01 complete: nanobench vendored, bench_smoke builds and runs"
 progress:
   total_phases: 7
