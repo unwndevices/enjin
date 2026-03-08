@@ -368,6 +368,7 @@ if(ENJIN2_BUILD_SDL)
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
         ENJIN2_CANVAS_WIDTH=${ENJIN2_CANVAS_WIDTH}
         ENJIN2_CANVAS_HEIGHT=${ENJIN2_CANVAS_HEIGHT}
+        ENJIN2_FRAME_TIMING=1
     )
     target_compile_options(enjin2_sdl PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Woverride>)
 endif()

@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -8,6 +9,7 @@
 #include <enjin2/graphics/layer_compositor.hpp>
 #include <enjin2/graphics/palette.hpp>
 #include <enjin2/input/input_state.hpp>
+#include <enjin2/instrumentation/frame_timing.hpp>
 
 #ifdef ENJIN2_BUILD_LUA
 #include <enjin2/scripting/bindings.hpp>
@@ -163,6 +165,16 @@ int main(int argc, char* argv[]) {
     // max_dt = 4-frame ceiling for delta-time clamping
     const float max_dt   = 4.0f / static_cast<float>(fps);
 
+    // --- Parse --show-timing ---
+#ifdef ENJIN2_FRAME_TIMING
+    bool show_timing = false;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--show-timing") == 0) {
+            show_timing = true;
+        }
+    }
+#endif
+
     // --- SDL init ---
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
@@ -195,6 +207,10 @@ int main(int argc, char* argv[]) {
 
     // MUST be set immediately after creation — SDL3 defaults to bilinear
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+
+#ifdef ENJIN2_FRAME_TIMING
+    const Uint64 perf_freq = SDL_GetPerformanceFrequency();
+#endif
 
     // Integer 4x scale via render scale (SDL_SetRenderLogicalPresentation has
     // a known SDL3 bug #11335 that ignores scale mode)
@@ -276,6 +292,9 @@ int main(int argc, char* argv[]) {
         g_compositor.clearAll();
 
         // --- Lua per-frame calls ---
+#if defined(ENJIN2_FRAME_TIMING) && defined(ENJIN2_BUILD_LUA)
+        Uint64 t_lua_start = SDL_GetPerformanceCounter();
+#endif
 #ifdef ENJIN2_BUILD_LUA
         if (lua_ok) {
             g_lua.getBindings().setInput(&g_input);  // wire current-frame input AFTER poll
@@ -320,6 +339,9 @@ int main(int argc, char* argv[]) {
                 }
             }
             {
+#ifdef ENJIN2_FRAME_TIMING
+                Uint64 t_upd_start = SDL_GetPerformanceCounter();
+#endif
                 lua_State* lua_L = g_lua.getEngine().getState();
                 lua_getglobal(lua_L, "update");
                 if (lua_isfunction(lua_L, -1)) {
@@ -340,6 +362,12 @@ int main(int argc, char* argv[]) {
                 g_lua.getBindings().tickCoroutines(dt);
                 // Tick tween scheduler (Phase 50: TWEEN-01..TWEEN-03)
                 g_lua.getBindings().tickTweens(dt);
+#ifdef ENJIN2_FRAME_TIMING
+                Uint64 t_upd_end = SDL_GetPerformanceCounter();
+                enjin2::FrameTimingInstrumentation::get().updateTime_us.store(
+                    static_cast<uint32_t>((t_upd_end - t_upd_start) * 1000000u / perf_freq),
+                    std::memory_order_relaxed);
+#endif
             }
             if (lua_ok) {
                 lua_State* lua_L = g_lua.getEngine().getState();
@@ -358,19 +386,68 @@ int main(int argc, char* argv[]) {
             }
         }
 #endif
+#if defined(ENJIN2_FRAME_TIMING) && defined(ENJIN2_BUILD_LUA)
+        Uint64 t_lua_end = SDL_GetPerformanceCounter();
+        enjin2::FrameTimingInstrumentation::get().luaTime_us.store(
+            static_cast<uint32_t>((t_lua_end - t_lua_start) * 1000000u / perf_freq),
+            std::memory_order_relaxed);
+#endif
+
+        // --- Frame timing overlay (drawn to debug layer before composite) ---
+#ifdef ENJIN2_FRAME_TIMING
+        if (show_timing) {
+#ifdef ENJIN2_BUILD_LUA
+            enjin2::LuaCanvas* dbg = g_lua.getBindings().getDebugCanvas();
+            if (dbg) {
+                auto& ft = enjin2::FrameTimingInstrumentation::get();
+                char buf[48];
+                snprintf(buf, sizeof(buf), "lua  %4u us",
+                         ft.luaTime_us.load(std::memory_order_relaxed));
+                dbg->drawText(buf, 1, 1, 8, 1, nullptr);
+                snprintf(buf, sizeof(buf), "upd  %4u us",
+                         ft.updateTime_us.load(std::memory_order_relaxed));
+                dbg->drawText(buf, 1, 10, 8, 1, nullptr);
+                snprintf(buf, sizeof(buf), "comp %4u us",
+                         ft.compositeTime_us.load(std::memory_order_relaxed));
+                dbg->drawText(buf, 1, 19, 8, 1, nullptr);
+                snprintf(buf, sizeof(buf), "rdr  %4u us",
+                         ft.renderTime_us.load(std::memory_order_relaxed));
+                dbg->drawText(buf, 1, 28, 8, 1, nullptr);
+            }
+#endif
+        }
+#endif
 
         // --- Composite layers -> output ---
+#ifdef ENJIN2_FRAME_TIMING
+        Uint64 t_comp_start = SDL_GetPerformanceCounter();
+#endif
         g_compositor.composite();
 
         // --- Render ---
         expand_canvas_to_rgb();
+#ifdef ENJIN2_FRAME_TIMING
+        Uint64 t_comp_end = SDL_GetPerformanceCounter();
+        enjin2::FrameTimingInstrumentation::get().compositeTime_us.store(
+            static_cast<uint32_t>((t_comp_end - t_comp_start) * 1000000u / perf_freq),
+            std::memory_order_relaxed);
+#endif
 
         // Upload RGB24 staging buffer; pitch = CANVAS_W * 3 (3 bytes/pixel, not 4)
+#ifdef ENJIN2_FRAME_TIMING
+        Uint64 t_rdr_start = SDL_GetPerformanceCounter();
+#endif
         SDL_UpdateTexture(texture, nullptr, g_rgb_staging, CANVAS_W * 3);
 
         SDL_RenderClear(renderer);
         SDL_RenderTexture(renderer, texture, nullptr, nullptr);
         SDL_RenderPresent(renderer);
+#ifdef ENJIN2_FRAME_TIMING
+        Uint64 t_rdr_end = SDL_GetPerformanceCounter();
+        enjin2::FrameTimingInstrumentation::get().renderTime_us.store(
+            static_cast<uint32_t>((t_rdr_end - t_rdr_start) * 1000000u / perf_freq),
+            std::memory_order_relaxed);
+#endif
 
         // --- Frame pacing ---
         Uint64 elapsed_ms = SDL_GetTicks() - frame_start;
