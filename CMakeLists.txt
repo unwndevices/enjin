@@ -372,3 +372,34 @@ if(ENJIN2_BUILD_SDL)
     )
     target_compile_options(enjin2_sdl PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Woverride>)
 endif()
+
+# Headless Lua runner for profiling (PROF-04..PROF-06)
+option(ENJIN2_BUILD_HEADLESS "Build headless Lua profiling runner (enjin_run)" OFF)
+
+if(ENJIN2_BUILD_HEADLESS)
+    if(EMSCRIPTEN OR ESP32)
+        message(FATAL_ERROR "ENJIN2_BUILD_HEADLESS is not supported on WASM or ESP32 targets")
+    endif()
+    if(NOT TARGET enjin2_lua)
+        message(FATAL_ERROR "ENJIN2_BUILD_HEADLESS requires ENJIN2_BUILD_LUA=ON")
+    endif()
+    add_executable(enjin_run
+        src/platform/headless/headless_main.cpp
+    )
+    target_include_directories(enjin_run PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${LUA_INCLUDE_DIRS}
+    )
+    target_link_libraries(enjin_run PRIVATE
+        enjin2_core
+        enjin2_graphics
+        enjin2_ui
+        enjin2_input
+        enjin2_lua
+    )
+    target_compile_definitions(enjin_run PRIVATE
+        ENJIN2_BUILD_LUA=1
+        ENJIN2_CANVAS_WIDTH=${ENJIN2_CANVAS_WIDTH}
+        ENJIN2_CANVAS_HEIGHT=${ENJIN2_CANVAS_HEIGHT}
+    )
+endif()
