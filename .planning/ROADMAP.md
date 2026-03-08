@@ -97,7 +97,7 @@ Phases 43-52 complete. See milestones/v1.7-ROADMAP.md for full detail.
 - [x] **Phase 61: Native Benchmark Suite** - bench_canvas, bench_ecs, bench_lua executables with JSON output and build-bench.sh (completed 2026-03-07)
 - [x] **Phase 62: Frame Timing Instrumentation** - FrameTimingInstrumentation struct, SDL3 runner integration, debug overlay (completed 2026-03-08)
 - [x] **Phase 63: Lua Profiler & Headless Runner** - enjin_run CLI, lua_sethook profiler, JSON/text output, null-safe stub host (completed 2026-03-08)
-- [ ] **Phase 64: CI Regression Pipeline** - GitHub Actions workflow, github-action-benchmark dashboard, gh-pages storage
+- [x] **Phase 64: CI Regression Pipeline** - GitHub Actions workflow, github-action-benchmark dashboard, gh-pages storage (completed 2026-03-08)
 - [ ] **Phase 65: Allocation Verification** - AllocGuard RAII, operator new override, CI hot-path zero-alloc enforcement
 - [ ] **Phase 66: Performance Documentation** - docs/PERFORMANCE.md covering all subsystems with measured numbers
 
@@ -168,7 +168,7 @@ Plans:
   3. The gh-pages performance dashboard URL is accessible and shows at least one data point after the first successful workflow run
   4. A PR that introduces a benchmark result exceeding the regression threshold triggers an alert visible in the GitHub Actions log
   5. The JSON conversion script produces valid `customSmallerIsBetter` format accepted by github-action-benchmark without manual intervention
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 64-01-PLAN.md -- Conversion script (convert-bench.py) and GitHub Actions workflow (benchmarks.yml)
 - [ ] 64-02-PLAN.md -- Create bench-data orphan branch and verify CI pipeline end-to-end
@@ -213,6 +213,6 @@ Plans:
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
 | 63. Lua Profiler & Headless Runner | 2/2 | Complete    | 2026-03-08 | - |
-| 64. CI Regression Pipeline | 1/2 | In Progress|  | - |
+| 64. CI Regression Pipeline | 2/2 | Complete   | 2026-03-08 | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |
