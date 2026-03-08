@@ -168,7 +168,10 @@ Plans:
   3. The gh-pages performance dashboard URL is accessible and shows at least one data point after the first successful workflow run
   4. A PR that introduces a benchmark result exceeding the regression threshold triggers an alert visible in the GitHub Actions log
   5. The JSON conversion script produces valid `customSmallerIsBetter` format accepted by github-action-benchmark without manual intervention
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 64-01-PLAN.md -- Conversion script (convert-bench.py) and GitHub Actions workflow (benchmarks.yml)
+- [ ] 64-02-PLAN.md -- Create bench-data orphan branch and verify CI pipeline end-to-end
 
 ### Phase 65: Allocation Verification
 **Goal**: CI proves with instrumented evidence that canvas operations, component updates, and Lua binding calls in hot paths perform zero heap allocations
@@ -210,6 +213,6 @@ Plans:
 | 61. Native Benchmark Suite | 2/2 | Complete    | 2026-03-08 | - |
 | 62. Frame Timing Instrumentation | 1/1 | Complete    | 2026-03-08 | - |
 | 63. Lua Profiler & Headless Runner | 2/2 | Complete    | 2026-03-08 | - |
-| 64. CI Regression Pipeline | v1.10 | 0/? | Not started | - |
+| 64. CI Regression Pipeline | v1.10 | 0/2 | Not started | - |
 | 65. Allocation Verification | v1.10 | 0/? | Not started | - |
 | 66. Performance Documentation | v1.10 | 0/? | Not started | - |
