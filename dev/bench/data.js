@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772976058812,
+  "lastUpdate": 1773673695584,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -555,6 +555,192 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3776.5,
             "range": "± 0.53%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "55bd794d93585ecb1711688202714588bf180239",
+          "message": "refactor: migrate bare graphics globals to gfx.* namespace table\n\n- Replace engine->registerFunction() calls with lua_newtable + lua_setfield pattern\n- Nest LAYER_BG/MID/FG/UI/DEBUG and COLOR under gfx.*\n- Remove love.graphics prototype (dead code)\n- Remove input polling globals (isButtonHeld, isButtonJustPressed, etc.)\n- Keep BTN and print() as bare globals\n- Update all test inline Lua strings (~50 occurrences across 8 files)\n- Update all demo scripts (~160 occurrences across 10 files)\n- Add test_bare_globals_removed() verifying clean break (API-04)\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+          "timestamp": "2026-03-16T16:04:53+01:00",
+          "tree_id": "8ff2000c95442862265e285e159f32a37432241d",
+          "url": "https://github.com/unwndevices/enjin/commit/55bd794d93585ecb1711688202714588bf180239"
+        },
+        "date": 1773673694462,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 19,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 62,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 35,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 214.5,
+            "range": "± 0.7%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 69180,
+            "range": "± 3.37%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 18,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 692,
+            "range": "± 0.14%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 5 layers",
+            "value": 4485.5,
+            "range": "± 0.08%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 242.5,
+            "range": "± 1.89%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 689.5,
+            "range": "± 2.33%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1307.5,
+            "range": "± 1.61%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2377,
+            "range": "± 1.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3544,
+            "range": "± 1.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 77,
+            "range": "± 1.28%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 85,
+            "range": "± 1.16%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 23,
+            "range": "± 4.17%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 62,
+            "range": "± 1.59%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 106,
+            "range": "± 0.94%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 191,
+            "range": "± 0.53%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 277.5,
+            "range": "± 0.18%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 50128,
+            "range": "± 3.18%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 942,
+            "range": "± 2.12%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1767,
+            "range": "± 4.0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2731.5,
+            "range": "± 1.96%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2486.5,
+            "range": "± 5.87%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1509.5,
+            "range": "± 2.74%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 2889.7669,
+            "range": "± 1.0%",
             "unit": "ns/op"
           }
         ]
