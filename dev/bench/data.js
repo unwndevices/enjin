@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773673695584,
+  "lastUpdate": 1783875457447,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -741,6 +741,192 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 2889.7669,
             "range": "± 1.0%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "918e2bb9488785d1fb6ffa74211463dc128a1735",
+          "message": "feat: upstream Eisei step-0 delta batch (getTextWidth, SCREEN_CENTER, warning hygiene, srcFilter)\n\nPorts the vendored-only engine deltas from unwndevices/unwn into upstream\nenjin, as the step-0 batch for the Eisei→enjin migration (unwn#118, ADR-0003).\n\n- GFX-font-aware getTextWidth(): sum glyph xAdvance and trim the trailing\n  space on the last glyph so custom-font text measures its visual extent\n  instead of the post-cursor position (fixes C_List mis-centering).\n- SCREEN_CENTER_X/Y constants (new include/enjin2/screen.hpp); polar.hpp\n  default arg and C_Drawable::abs_center now reference them.\n- Warning hygiene: rename PackedPixel4 ctor param byte->raw (-Wshadow) and\n  cast uint16_t loop indices to int16_t in the texture add/subtract blends\n  (-Wsign-conversion) so consuming ESP32 TUs stop re-spraying warnings.\n- library.json srcFilter: switch to an allowlist (-<*> +<effects/postfx.cpp>)\n  so consumers no longer pull the SDL/headless duplicate-main() hazard;\n  PlatformIO has no consumer-side per-dep override, so the fix lands here once.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+          "timestamp": "2026-07-12T18:56:28+02:00",
+          "tree_id": "847bf3df2da2c1d6f9af3e9ef6650f6a9193b817",
+          "url": "https://github.com/unwndevices/enjin/commit/918e2bb9488785d1fb6ffa74211463dc128a1735"
+        },
+        "date": 1783875456549,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 130,
+            "range": "± 0.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 40,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 220.5,
+            "range": "± 0.23%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 71793.5,
+            "range": "± 0.04%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 993.0114,
+            "range": "± 0.4%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 5 layers",
+            "value": 4408,
+            "range": "± 0.23%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 291,
+            "range": "± 0.34%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 796.5,
+            "range": "± 0.69%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1463,
+            "range": "± 0.69%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2765,
+            "range": "± 0.73%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3988,
+            "range": "± 0.28%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 90,
+            "range": "± 1.1%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 90,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 211,
+            "range": "± 0.48%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 311,
+            "range": "± 0.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 66003,
+            "range": "± 3.1%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 972,
+            "range": "± 2.06%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1698,
+            "range": "± 2.71%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2620,
+            "range": "± 1.95%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2550,
+            "range": "± 3.21%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1517.5,
+            "range": "± 2.97%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3677,
+            "range": "± 0.57%",
             "unit": "ns/op"
           }
         ]
