@@ -3,7 +3,6 @@
 #include "../component.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
-#include "../theme.hpp"
 #include "../../core/types.hpp"
 #include "../../graphics/canvas.hpp"
 #include "../../graphics/primitives.hpp"
@@ -117,10 +116,8 @@ public:
      * @brief Construct against the world it draws and the canvas it draws to
      * @param world World holding the label entities (borrowed, not owned)
      * @param canvas Target Pixel4 canvas (borrowed, not owned)
-     * @param theme Palette/metrics to style with (defaults to the dark theme)
      */
-    LabelSystem(TWorld* world, TCanvas* canvas, Theme theme = kDefaultTheme)
-        : world_(world), canvas_(canvas), theme_(theme) {}
+    LabelSystem(TWorld* world, TCanvas* canvas) : world_(world), canvas_(canvas) {}
 
     /**
      * @brief Draw every label entity
@@ -205,7 +202,6 @@ private:
 
     TWorld* world_;
     TCanvas* canvas_;
-    Theme theme_;
     TextRenderer<Pixel4> text_;
 };
 
