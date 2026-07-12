@@ -6,10 +6,10 @@ sidebar_label: C_Sprite
 
 # C_Sprite
 
-Sprite component for bitmap rendering (matches original Enjin C_Sprite). 
+Sprite component with SpriteSheet and frame animation. 
 
 
-Component wrapper around the Sprite class, providing ECS integration for bitmap image rendering with frame animation support. 
+Wraps a SpriteSheet and drives frame animation automatically via lateUpdate(). Supports Once, Loop, and PingPong animation modes.Transparency: palette index 15 is always skipped at blit time (compile-time constant). 
 
 ---
 
@@ -21,81 +21,73 @@ Component wrapper around the Sprite class, providing ECS integration for bitmap 
 
 ### ` C_Sprite(Object *owner, uint8_t width, uint8_t height)`
 
-Construct a new Sprite component. 
-
-ownerThe object that owns this component widthWidth of the sprite in pixels heightHeight of the sprite in pixels 
+ownerThe object that owns this component widthDrawable width (passed to C_Drawable for sort/anchor math) heightDrawable height 
 
 ---
 
-### `void Load(const uint8_t *texture, uint8_t width, uint8_t height)`
+### `void setSheet(const SpriteSheet &sheet)`
 
-Load texture data into the sprite. 
-
-texturePointer to texture bitmap data widthWidth in pixels heightHeight in pixels 
+Replace the sprite sheet. Resets frame to 0 and animation state. sheetNew sprite sheet to use 
 
 ---
 
-### `void LoadFrame(const uint8_t *texture, uint8_t frameId)`
+### `void setFPS(float fps)`
 
-Load a specific frame from texture data. 
-
-texturePointer to texture bitmap data frameIdFrame index to load 
+Set frames-per-second playback rate. Must be &gt; 0. fpsPlayback rate 
 
 ---
 
-### `void LoadFrame(uint8_t frameId)`
+### `void setMode(AnimMode mode)`
 
-Load a specific frame (texture already set). 
-
-frameIdFrame index to load 
+Set animation loop mode. modeLoop mode 
 
 ---
 
-### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
+### `void setFrame(uint8_t index)`
 
-Draw the sprite to canvas (overrides C_Drawable). 
+Directly set the current frame. Clamped to valid range [0, frameCount-1]. indexFrame index to set 
 
-canvasThe canvas to draw to 
+---
+
+### `uint8_t getFrame() const`
+
+Get the current frame index. Current frame index 
+
+---
+
+### `bool isDone() const`
+
+True when Once mode animation has completed (frozen on last frame). true if animation is done 
+
+---
+
+### `virtual void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
+
+Draw the current frame to canvas at the component's position. 
+
+Uses GetOffsetPosition() from C_Drawable for position plumbing. Skips draw if not visible or sheet has no data. canvasTarget 4-bit canvas to draw on 
+
+---
+
+### `virtual void lateUpdate(float dt) override`
+
+Advance animation by dt seconds. 
+
+Uses delta-time accumulator: accumulator += dt, advance when &gt;= frame_duration. Subtracts frame duration rather than zeroing to preserve carry-over. dtDelta-time in seconds since last frame 
 
 ---
 
 ### `virtual bool continueToDraw() const override const`
 
-Check if should continue drawing (matches original Enjin). 
+Check if this drawable should continue to be drawn. 
 
-True if object is not queued for removal 
-
----
-
-### `virtual void lateUpdate(uint16_t deltaTime) override`
-
-Late update method for animation (matches original Enjin). 
-
-deltaTimeTime delta in milliseconds 
+True if should continue drawing, false otherwise 
 
 ---
 
-### `void setMatte(uint8_t matte)`
+## Private Methods
 
-Set the matte (transparent) color. 
-
-matteMatte color value 
-
----
-
-### `Sprite & getSprite()`
-
-Get the underlying sprite object. 
-
-Reference to the sprite 
-
----
-
-### `const Sprite & getSprite() const`
-
-Get the underlying sprite object (const). 
-
-Const reference to the sprite 
+### `void advanceFrame()`
 
 ---
 

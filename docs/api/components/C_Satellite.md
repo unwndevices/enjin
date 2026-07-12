@@ -27,27 +27,19 @@ ownerOwner object planetPlanet to orbit (can be nullptr) radiusOrbit radius star
 
 ---
 
-### `virtual void update(uint16_t deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update satellite position and animation. 
 
-deltaTimeTime elapsed since last update in milliseconds 
+dtTime elapsed since last update in seconds 
 
 ---
 
-### `void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
+### `virtual void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
 
 Draw satellite to 4-bit canvas. 
 
 canvasTarget 4-bit canvas 
-
----
-
-### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
-
-Draw satellite to 8-bit canvas. 
-
-canvasTarget 8-bit canvas 
 
 ---
 

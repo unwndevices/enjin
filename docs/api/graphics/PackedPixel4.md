@@ -25,11 +25,11 @@ Default constructor initializes both pixels to 0.
 
 ---
 
-### ` PackedPixel4(uint8_t byte)`
+### ` PackedPixel4(uint8_t raw)`
 
 Constructor from raw byte data. 
 
-byteRaw byte containing packed pixel data 
+rawRaw byte containing packed pixel data 
 
 ---
 

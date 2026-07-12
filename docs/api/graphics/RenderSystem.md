@@ -28,11 +28,11 @@ targetCanvasCanvas to render to
 
 ---
 
-### `virtual void update(float deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update rendering. 
 
-deltaTimeTime since last update 
+dtTime since last update in seconds 
 
 ---
 

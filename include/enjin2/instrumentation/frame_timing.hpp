@@ -67,11 +67,13 @@ private:
  * platforms where ENJIN2_FRAME_TIMING is omitted (WASM, ESP32).
  */
 struct FrameTimingInstrumentation {
-    uint32_t updateTime_us{0};
-    uint32_t renderTime_us{0};
-    uint32_t luaTime_us{0};
-    uint32_t compositeTime_us{0};
+    uint32_t updateTime_us{0};     ///< Lua update() + tick helpers (microseconds)
+    uint32_t renderTime_us{0};     ///< SDL texture upload + RenderPresent (microseconds)
+    uint32_t luaTime_us{0};        ///< Entire Lua section including update + draw (microseconds)
+    uint32_t compositeTime_us{0};  ///< Layer composite + RGB expand (microseconds)
 
+    /// @brief Meyer's singleton — returns the same instance on every call.
+    /// @return The single stub instance.
     static FrameTimingInstrumentation& get() {
         static FrameTimingInstrumentation instance;
         return instance;

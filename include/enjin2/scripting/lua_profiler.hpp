@@ -39,8 +39,8 @@ namespace enjin2 {
  * Thread safety: not thread-safe — call from Lua hook only (single-threaded Lua state).
  */
 struct LuaProfiler {
-    static constexpr int MAX_FUNCTIONS = 256;
-    static constexpr int MAX_NAME_LEN  = 64;
+    static constexpr int MAX_FUNCTIONS = 256;  ///< Maximum number of distinct tracked functions
+    static constexpr int MAX_NAME_LEN  = 64;   ///< Maximum stored length for name/source strings
 
     /**
      * @brief Per-function profiling entry.
@@ -55,12 +55,13 @@ struct LuaProfiler {
         uint32_t    callCount{0};           ///< Accumulated call count for this function
     };
 
-    FuncEntry entries[MAX_FUNCTIONS]{};
-    int       entryCount{0};
-    bool      active{false};
+    FuncEntry entries[MAX_FUNCTIONS]{};  ///< Fixed-size table of profiled functions
+    int       entryCount{0};             ///< Number of entries currently in use
+    bool      active{false};             ///< True while the profiling hook is installed
 
     /**
      * @brief Meyer's singleton — returns the single LuaProfiler instance.
+     * @return The single LuaProfiler instance.
      */
     static LuaProfiler& get() {
         static LuaProfiler s_instance;

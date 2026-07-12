@@ -49,11 +49,11 @@ Use this for initialization that depends on other components or objects being fu
 
 ---
 
-### `virtual void update(uint16_t deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update is called once per frame. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 

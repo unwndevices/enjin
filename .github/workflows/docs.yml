@@ -64,6 +64,8 @@ jobs:
           echo "Doxygen warnings: $COUNT (threshold: $THRESHOLD)"
           if [ "$COUNT" -gt "$THRESHOLD" ]; then
             echo "::error::Doxygen warning count ($COUNT) exceeds threshold ($THRESHOLD)"
+            echo "--- Full warning log ---"
+            cat "$WARNING_FILE"
             echo "## Doxygen Warning Summary" >> $GITHUB_STEP_SUMMARY
             echo "Warning count: **$COUNT** (threshold: $THRESHOLD)" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY

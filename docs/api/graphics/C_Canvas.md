@@ -19,7 +19,7 @@ A drawable component that wraps an internal canvas for custom graphics operation
 
 ## Public Methods
 
-### ` C_Canvas(Object *owner, uint8_t width, uint8_t height)`
+### ` C_Canvas(Object *owner, uint16_t width, uint16_t height)`
 
 Constructor. 
 
@@ -49,27 +49,27 @@ Use this for initialization that depends on other components or objects being fu
 
 ---
 
-### `virtual void update(uint16_t deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update is called once per frame. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
-### `virtual void lateUpdate(uint16_t deltaTime) override`
+### `virtual void lateUpdate(float dt) override`
 
 LateUpdate is called after all Update calls. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
-### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
+### `virtual void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
 
 Pure virtual draw method - must be implemented by derived classes. 
 
-canvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8) 
+canvasThe 4-bit canvas targeting ICanvas&lt;Pixel4&gt;
 
 ---
 
@@ -105,7 +105,7 @@ colorFill color (0-15)
 
 ---
 
-### `uint8_t getWidth() const`
+### `uint16_t getWidth() const`
 
 Get canvas width. 
 
@@ -113,7 +113,7 @@ Width in pixels
 
 ---
 
-### `uint8_t getHeight() const`
+### `uint16_t getHeight() const`
 
 Get canvas height. 
 
@@ -139,7 +139,7 @@ Current matte color
 
 ## Private Methods
 
-### `void createCanvas(uint8_t width, uint8_t height)`
+### `void createCanvas(uint16_t width, uint16_t height)`
 
 Create internal canvas of specified size. 
 
@@ -147,9 +147,9 @@ widthCanvas width heightCanvas height
 
 ---
 
-### `void applyBlendMode(ICanvas&lt; uint8_t &gt; &target_canvas)`
+### `void applyBlendMode(ICanvas&lt; Pixel4 &gt; &target_canvas)`
 
-Apply blend mode when drawing to target canvas. 
+Apply blend mode when drawing to target canvas (deferred — ENG-01). 
 
 target_canvasTarget canvas to draw to 
 

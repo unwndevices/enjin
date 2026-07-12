@@ -65,11 +65,11 @@ modeLoop mode to set
 
 ---
 
-### `void update(uint16_t deltaTime)`
+### `void update(float dt)`
 
 Update animation by time delta. 
 
-deltaTimeTime elapsed since last update in milliseconds 
+dtTime elapsed since last update in seconds 
 
 ---
 
@@ -89,19 +89,19 @@ Current animation state
 
 ---
 
-### `uint16_t getCurrentTime() const`
+### `float getCurrentTime() const`
 
 Get current time. 
 
-Current playback time in milliseconds 
+Current playback time in seconds 
 
 ---
 
-### `uint16_t getDuration() const`
+### `float getDuration() const`
 
 Get animation duration. 
 
-Total duration in milliseconds 
+Total duration in seconds 
 
 ---
 
@@ -145,7 +145,7 @@ Handle reaching loop boundary.
 
 ---
 
-### `T evaluateAtTime(uint16_t time) const`
+### `T evaluateAtTime(float time) const`
 
 Evaluate animation value at specific time. 
 
@@ -159,7 +159,7 @@ Get value from keyframe (specialized for each keyframe type).
 
 ---
 
-### `T interpolateBetween(const KeyframeType &from, const KeyframeType &to, uint16_t time) const`
+### `T interpolateBetween(const KeyframeType &from, const KeyframeType &to, float time) const`
 
 Interpolate between two keyframes. 
 

@@ -20,49 +20,65 @@ Fast integer math utilities namespace.
 
 ### `uint16_t isqrt(uint32_t n)`
 
-Fast integer square root using Newton's method. 
+Integer square root via Newton's method. 
 
-nNon-negative integer to compute square root of Integer square root of n 
+nValue to take the square root of Floored integer square root 
 
 ---
 
 ### `constexpr T abs(T value)`
 
-Fast absolute value for signed types. 
+Absolute value. 
 
-TSigned numeric type valueValue to get absolute value of Absolute value of input 
+valueInput value Non-negative absolute value 
 
 ---
 
 ### `constexpr T clamp(T value, T min_val, T max_val)`
 
-Clamp value to specified range. 
+Clamp value to [min_val, max_val]. 
 
-TNumeric type valueValue to clamp min_valMinimum allowed value max_valMaximum allowed value Clamped value within [min_val, max_val] 
+valueValue to clamp min_valLower bound max_valUpper bound Clamped value 
 
 ---
 
 ### `constexpr T lerp(T a, T b, float t)`
 
-Linear interpolation between two values. 
+Linear interpolation between a and b. 
 
-TNumeric type aStart value (when t=0) bEnd value (when t=1) tInterpolation factor (0-1) Interpolated value between a and b 
+aStart value bEnd value tInterpolation factor (0.0 = a, 1.0 = b) Interpolated value 
 
 ---
 
 ### `constexpr T map(T value, T in_min, T in_max, T out_min, T out_max)`
 
-Map value from one range to another. 
+Re-map a value from one range to another. 
 
-TNumeric type valueInput value to map in_minMinimum of input range in_maxMaximum of input range out_minMinimum of output range out_maxMaximum of output range Value mapped from input range to output range 
+valueInput value in_minInput range lower bound in_maxInput range upper bound out_minOutput range lower bound out_maxOutput range upper bound Value mapped to output range 
+
+---
+
+### `constexpr T sign(T value)`
+
+Returns -1, 0, or 1 depending on the sign of value. 
+
+valueInput value Sign of the value 
+
+---
+
+### `float smoothstep(float edge0, float edge1, float x)`
+
+Hermite smoothstep (clamped, order-3). 
+
+edge0Lower edge edge1Upper edge xInput value Smooth interpolation result in [0, 1] 
 
 ---
 
 ### `uint16_t distance(int16_t x1, int16_t y1, int16_t x2, int16_t y2)`
 
-Calculate Euclidean distance between two points. 
+Integer Euclidean distance between two points. 
 
-x1X coordinate of first point y1Y coordinate of first point x2X coordinate of second point y2Y coordinate of second point Euclidean distance between points 
+x1First point X y1First point Y x2Second point X y2Second point Y Distance (integer square root) 
 
 ---
 

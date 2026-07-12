@@ -27,7 +27,7 @@ ownerThe object that owns this component drawFuncOptional draw function to execu
 
 ---
 
-### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
+### `virtual void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
 
 Draw using the stored draw function. 
 

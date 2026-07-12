@@ -19,7 +19,7 @@ Provides functions for converting between polar and cartesian coordinates, usefu
 
 ## Functions
 
-### `Point RadialToCartesian(float phase, uint8_t radius, Point center=Point(63, 63))`
+### `Point RadialToCartesian(float phase, uint8_t radius, Point center=Point(SCREEN_CENTER_X, SCREEN_CENTER_Y))`
 
 Convert radial coordinates to cartesian coordinates (matches original Enjin). 
 

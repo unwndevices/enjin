@@ -45,10 +45,10 @@ public:
      * Objects are injected into scene ObjectCollections as non-owning externals.
      */
     struct PersistentObjectRegistry {
-        static constexpr int MAX_PERSISTENT = 4;
+        static constexpr int MAX_PERSISTENT = 4;  ///< Maximum number of persistent objects
 
-        std::unique_ptr<Object> objects[MAX_PERSISTENT];
-        bool pendingRemoval[MAX_PERSISTENT]{};
+        std::unique_ptr<Object> objects[MAX_PERSISTENT];  ///< Owned persistent objects (nullptr = free slot)
+        bool pendingRemoval[MAX_PERSISTENT]{};            ///< Slots flagged for removal at the next transition
 
         /**
          * @brief Add an object to the registry

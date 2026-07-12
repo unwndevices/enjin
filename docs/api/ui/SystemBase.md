@@ -25,11 +25,11 @@ Virtual destructor.
 
 ---
 
-### `void update(float deltaTime)=0`
+### `void update(float dt)=0`
 
 Update system with delta time. 
 
-deltaTimeTime since last update in seconds 
+dtTime since last update in seconds 
 
 ---
 

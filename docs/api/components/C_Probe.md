@@ -27,27 +27,19 @@ ownerOwner object typeProbe visual type sizeProbe size
 
 ---
 
-### `virtual void update(uint16_t deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update probe movement and animation. 
 
-deltaTimeTime elapsed since last update in milliseconds 
+dtTime elapsed since last update in seconds 
 
 ---
 
-### `void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
+### `virtual void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
 
 Draw probe to 4-bit canvas. 
 
 canvasTarget 4-bit canvas 
-
----
-
-### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
-
-Draw probe to 8-bit canvas. 
-
-canvasTarget 8-bit canvas 
 
 ---
 
@@ -109,7 +101,7 @@ radiusScan beam radius speedScan rotation speed
 
 ## Private Methods
 
-### `void updateMovement(float deltaTime)`
+### `void updateMovement(float dt)`
 
 Update movement based on pattern. 
 

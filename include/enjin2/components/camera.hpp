@@ -136,8 +136,10 @@ public:
     void setCanvasSize(uint16_t w, uint16_t h) { m_canvasW = w; m_canvasH = h; }
 
     /// @brief Get canvas width
+    /// @return Canvas width in pixels
     uint16_t getCanvasWidth()  const { return m_canvasW; }
     /// @brief Get canvas height
+    /// @return Canvas height in pixels
     uint16_t getCanvasHeight() const { return m_canvasH; }
 
 private:
