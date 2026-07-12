@@ -720,6 +720,30 @@ namespace enjin2
         {
             if (!text)
                 return 0;
+            if (gfx_font)
+            {
+                // Use glyph xAdvance for custom fonts, trim trailing space on last char
+                uint16_t advance = 0;
+                uint8_t first = gfx_font->first, last = gfx_font->last;
+                GFXglyph *lastGlyph = nullptr;
+                unsigned char c;
+                const char *p = text;
+                while ((c = *p++))
+                {
+                    if (c >= first && c <= last)
+                    {
+                        lastGlyph = &gfx_font->glyph[c - first];
+                        advance += lastGlyph->xAdvance * textsize_x;
+                    }
+                }
+                if (lastGlyph)
+                {
+                    int16_t lastVisual = (int8_t)lastGlyph->xOffset + lastGlyph->width;
+                    if (lastVisual < (int16_t)lastGlyph->xAdvance)
+                        advance -= (lastGlyph->xAdvance - lastVisual) * textsize_x;
+                }
+                return (int16_t)advance;
+            }
             return strlen(text) * 6 * textsize_x;
         }
 
@@ -1102,10 +1126,10 @@ namespace enjin2
             {
                 for (uint16_t x = 0; x < WIDTH; x++)
                 {
-                    uint8_t base = getPixel(x, y);
+                    uint8_t base = getPixel(static_cast<int16_t>(x), static_cast<int16_t>(y));
                     uint8_t overlay = texture[y * WIDTH + x];
                     uint8_t result = std::min(255, static_cast<int>(base) + static_cast<int>(overlay));
-                    setPixel(x, y, result);
+                    setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), result);
                 }
             }
         }
@@ -1142,10 +1166,10 @@ namespace enjin2
             {
                 for (uint16_t x = 0; x < WIDTH; x++)
                 {
-                    uint8_t base = getPixel(x, y);
+                    uint8_t base = getPixel(static_cast<int16_t>(x), static_cast<int16_t>(y));
                     uint8_t overlay = texture[y * WIDTH + x];
                     uint8_t result = std::max(0, static_cast<int>(base) - static_cast<int>(overlay));
-                    setPixel(x, y, result);
+                    setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), result);
                 }
             }
         }

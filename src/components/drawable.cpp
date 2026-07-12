@@ -1,10 +1,11 @@
 #include "../../include/enjin2/components/drawable.hpp"
 #include "../../include/enjin2/core/object.hpp"
+#include "../../include/enjin2/screen.hpp"
 
 namespace enjin2 {
 
 // Static member definition (matches original Enjin abs_center)
-Point C_Drawable::abs_center(63, 63);
+Point C_Drawable::abs_center(SCREEN_CENTER_X, SCREEN_CENTER_Y);
 
 C_Drawable::C_Drawable(Object* owner, uint8_t width, uint8_t height)
     : Component(owner)

@@ -9,6 +9,7 @@
 #define ENJIN2_UTILS_POLAR_HPP
 
 #include "../core/types.hpp"
+#include "../screen.hpp"
 #include <cstdint>
 
 namespace enjin2 {
@@ -33,7 +34,7 @@ namespace Polar {
  * @param center Center point for conversion (default is 63,63 for 128x128 displays)
  * @return Cartesian coordinates as Point
  */
-Point RadialToCartesian(float phase, uint8_t radius, Point center = Point(63, 63));
+Point RadialToCartesian(float phase, uint8_t radius, Point center = Point(SCREEN_CENTER_X, SCREEN_CENTER_Y));
 
 /**
  * @brief Convert cartesian coordinates to polar coordinates

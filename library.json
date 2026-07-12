@@ -21,12 +21,8 @@
   "platforms": "*",
   "build": {
     "srcFilter": [
-      "+<*>",
-      "-<bindings/emscripten_bindings.cpp>",
-      "-<components/lua_script.cpp>",
-      "-<scripting/>",
-      "-<ui/widget.cpp>",
-      "-<ui/layout.cpp>"
+      "-<*>",
+      "+<effects/postfx.cpp>"
     ]
   }
 }

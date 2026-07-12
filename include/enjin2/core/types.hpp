@@ -288,9 +288,9 @@ public:
     
     /**
      * @brief Constructor from raw byte data
-     * @param byte Raw byte containing packed pixel data
+     * @param raw Raw byte containing packed pixel data
      */
-    PackedPixel4(uint8_t byte) : data(byte) {}
+    PackedPixel4(uint8_t raw) : data(raw) {}
     
     /**
      * @brief Get the low nibble pixel (bits 0-3)
