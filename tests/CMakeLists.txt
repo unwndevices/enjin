@@ -23,6 +23,26 @@ target_link_libraries(ui_ecs_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_ecs_test COMMAND ui_ecs_test)
 
+# Easing util unit test (Phase 3a, #121: upstreamed ui animation curves)
+add_executable(ui_easing_test
+    ui_easing_test.cpp
+)
+target_include_directories(ui_easing_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME ui_easing_test COMMAND ui_easing_test)
+
+# List widget unit test (Phase 3a, #121: C_List -> data-only ListComponent + ListSystem)
+add_executable(ui_list_test
+    ui_list_test.cpp
+)
+target_include_directories(ui_list_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_list_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_list_test COMMAND ui_list_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp
