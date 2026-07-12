@@ -23,6 +23,92 @@ target_link_libraries(ui_ecs_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_ecs_test COMMAND ui_ecs_test)
 
+# Easing util unit test (Phase 3a, #121: upstreamed ui animation curves)
+add_executable(ui_easing_test
+    ui_easing_test.cpp
+)
+target_include_directories(ui_easing_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME ui_easing_test COMMAND ui_easing_test)
+
+# Keyframe animator unit test (Phase 3a, #121: C_*Animator -> AnimatorComponent<T> + AnimatorSystem)
+add_executable(ui_animator_test
+    ui_animator_test.cpp
+)
+target_include_directories(ui_animator_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_animator_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_animator_test COMMAND ui_animator_test)
+
+# List widget unit test (Phase 3a, #121: C_List -> data-only ListComponent + ListSystem)
+add_executable(ui_list_test
+    ui_list_test.cpp
+)
+target_include_directories(ui_list_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_list_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_list_test COMMAND ui_list_test)
+
+# Rounded-rect primitives test (Phase 3a, #121: drawRoundRect/fillRoundRect on Primitives<TPixel>)
+add_executable(primitives_roundrect_test
+    primitives_roundrect_test.cpp
+)
+target_include_directories(primitives_roundrect_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(primitives_roundrect_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME primitives_roundrect_test COMMAND primitives_roundrect_test)
+
+# Label widget unit test (Phase 3a, #121: C_Label -> data-only LabelComponent + LabelSystem)
+add_executable(ui_label_test
+    ui_label_test.cpp
+)
+target_include_directories(ui_label_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_label_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_label_test COMMAND ui_label_test)
+
+# Icon widget unit test (Phase 3a, #121: C_Sprite Icon -> data-only IconComponent + IconSystem)
+add_executable(ui_icon_test
+    ui_icon_test.cpp
+)
+target_include_directories(ui_icon_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_icon_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_icon_test COMMAND ui_icon_test)
+
+# Gauge widget unit test (Phase 3a, #121: C_FillUpGauge -> data-only GaugeComponent + GaugeSystem)
+add_executable(ui_gauge_test
+    ui_gauge_test.cpp
+)
+target_include_directories(ui_gauge_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_gauge_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_gauge_test COMMAND ui_gauge_test)
+
+# Overlay + PopUp widget test (Phase 3a, #121: OverlayBg/PopUpUI -> data-only components + systems)
+add_executable(ui_overlay_popup_test
+    ui_overlay_popup_test.cpp
+)
+target_include_directories(ui_overlay_popup_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_overlay_popup_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_overlay_popup_test COMMAND ui_overlay_popup_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp
