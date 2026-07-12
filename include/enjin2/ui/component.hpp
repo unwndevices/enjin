@@ -128,124 +128,113 @@ struct Entity {
 };
 
 /**
- * @brief Component storage using static memory pools
- * @tparam T Component type
- * @tparam CAPACITY Maximum number of components
- * 
- * Efficient storage for components with O(1) allocation/deallocation.
- * Uses packed arrays for cache-friendly iteration.
+ * @brief Packed component storage backed by a sparse set
+ * @tparam T Component type (must be default-constructible and move-assignable)
+ * @tparam CAPACITY Maximum number of live components *and* the entity-id space
+ *
+ * Data lives in a real, per-instance member array (@ref components_) rather than
+ * a shared function-local static, so distinct storages never alias. Lookup is a
+ * classic sparse set: @ref sparse_ maps an entity's id directly to its compact
+ * slot (O(1), no hashing), and removal swaps the last element into the freed slot
+ * to keep the packed array contiguous for cache-friendly iteration.
+ *
+ * The entity id is used as a direct index into @ref sparse_, so ids must satisfy
+ * `id < CAPACITY`; @ref World sizes its EntityManager to the same CAPACITY to
+ * guarantee this. Out-of-range ids are rejected rather than silently wrapped.
  */
 template<typename T, size_t CAPACITY>
 class ComponentStorage {
 private:
-    StaticPool<T, CAPACITY> pool;           ///< Object pool for components
-    Entity entities[CAPACITY];              ///< Entity handles for each component
-    uint32_t sparseToCompact[CAPACITY];     ///< Sparse to compact index mapping
-    uint32_t compactToSparse[CAPACITY];     ///< Compact to sparse index mapping
-    size_t compactCount;                    ///< Number of active components
-    
+    static constexpr uint32_t kInvalid = UINT32_MAX; ///< "no slot" sentinel
+
+    T components_[CAPACITY];        ///< Packed component data (compact-indexed)
+    Entity entities_[CAPACITY];     ///< Entity owning each compact slot
+    uint32_t sparse_[CAPACITY];     ///< entity.id -> compact index (kInvalid = absent)
+    size_t compactCount_;           ///< Number of active components
+
+    /// @brief True if a live component for @p entity sits at @p idx.
+    bool matches(uint32_t idx, Entity entity) const {
+        return idx != kInvalid && idx < compactCount_ && entities_[idx] == entity;
+    }
+
 public:
     /**
      * @brief Constructor initializes empty storage
      */
-    ComponentStorage() : compactCount(0) {
+    ComponentStorage() : compactCount_(0) {
         for (size_t i = 0; i < CAPACITY; ++i) {
-            sparseToCompact[i] = UINT32_MAX;
-            compactToSparse[i] = UINT32_MAX;
+            sparse_[i] = kInvalid;
         }
     }
-    
+
     /**
-     * @brief Add component for entity
-     * @param entity Entity to add component to
-     * @param args Constructor arguments for component
-     * @return Pointer to created component, nullptr if pool full
+     * @brief Add (or replace) the component for an entity
+     * @param entity Entity to attach the component to (id must be < CAPACITY)
+     * @param args Constructor arguments forwarded to T
+     * @return Pointer to the stored component, or nullptr if id is out of range
+     *         or the storage is full
      */
     template<typename... Args>
     T* addComponent(Entity entity, Args&&... args) {
-        if (compactCount >= CAPACITY) return nullptr;
-        
-        // Set up sparse/compact mapping
-        uint32_t sparseIndex = entity.id % CAPACITY;
-        uint32_t compactIndex = compactCount++;
-        
-        sparseToCompact[sparseIndex] = compactIndex;
-        compactToSparse[compactIndex] = sparseIndex;
-        entities[compactIndex] = entity;
-        
-        // For simplified implementation, store components in order
-        // In practice, this would use the pool allocator properly
-        static T componentArray[CAPACITY];
-        T* component = &componentArray[compactIndex];
-        
-        // Construct component in-place
-        new (component) T(std::forward<Args>(args)...);
-        
-        return component;
+        if (entity.id >= CAPACITY) return nullptr;
+
+        // Replace in place if this entity already has the component.
+        uint32_t existing = sparse_[entity.id];
+        if (matches(existing, entity)) {
+            components_[existing] = T(std::forward<Args>(args)...);
+            return &components_[existing];
+        }
+
+        if (compactCount_ >= CAPACITY) return nullptr;
+
+        uint32_t compactIndex = static_cast<uint32_t>(compactCount_++);
+        sparse_[entity.id] = compactIndex;
+        entities_[compactIndex] = entity;
+        components_[compactIndex] = T(std::forward<Args>(args)...);
+        return &components_[compactIndex];
     }
-    
+
     /**
-     * @brief Get component for entity
-     * @param entity Entity to get component for
-     * @return Pointer to component, nullptr if not found
+     * @brief Get the component for an entity
+     * @param entity Entity to look up
+     * @return Pointer to the component, or nullptr if absent / stale / out of range
      */
-    T* getComponent(Entity entity) const {
-        uint32_t sparseIndex = entity.id % CAPACITY;
-        uint32_t compactIndex = sparseToCompact[sparseIndex];
-        
-        if (compactIndex == UINT32_MAX || compactIndex >= compactCount) {
-            return nullptr;
-        }
-        
-        if (entities[compactIndex] != entity) {
-            return nullptr;
-        }
-        
-        // Access component from static array
-        static T componentArray[CAPACITY];
-        return &componentArray[compactIndex];
+    T* getComponent(Entity entity) {
+        if (entity.id >= CAPACITY) return nullptr;
+        uint32_t idx = sparse_[entity.id];
+        return matches(idx, entity) ? &components_[idx] : nullptr;
     }
-    
+
+    /// @brief Const overload of @ref getComponent.
+    const T* getComponent(Entity entity) const {
+        if (entity.id >= CAPACITY) return nullptr;
+        uint32_t idx = sparse_[entity.id];
+        return matches(idx, entity) ? &components_[idx] : nullptr;
+    }
+
     /**
-     * @brief Remove component for entity
-     * @param entity Entity to remove component from
-     * @return true if component was removed
+     * @brief Remove the component for an entity
+     * @param entity Entity to detach the component from
+     * @return true if a component was removed
      */
     bool removeComponent(Entity entity) {
-        uint32_t sparseIndex = entity.id % CAPACITY;
-        uint32_t compactIndex = sparseToCompact[sparseIndex];
-        
-        if (compactIndex == UINT32_MAX || compactIndex >= compactCount) {
-            return false;
+        if (entity.id >= CAPACITY) return false;
+        uint32_t idx = sparse_[entity.id];
+        if (!matches(idx, entity)) return false;
+
+        // Swap the last packed element into the freed slot to stay contiguous.
+        uint32_t last = static_cast<uint32_t>(compactCount_ - 1);
+        if (idx != last) {
+            components_[idx] = std::move(components_[last]);
+            entities_[idx] = entities_[last];
+            sparse_[entities_[idx].id] = idx; // repoint the moved entity
         }
-        
-        if (entities[compactIndex] != entity) {
-            return false;
-        }
-        
-        // Get component and deallocate
-        T* component = getComponent(entity);
-        if (component) {
-            pool.deallocate(component);
-        }
-        
-        // Swap with last element for packed array
-        uint32_t lastIndex = compactCount - 1;
-        if (compactIndex != lastIndex) {
-            entities[compactIndex] = entities[lastIndex];
-            uint32_t movedSparseIndex = compactToSparse[lastIndex];
-            sparseToCompact[movedSparseIndex] = compactIndex;
-            compactToSparse[compactIndex] = movedSparseIndex;
-        }
-        
-        // Clear removed entry
-        sparseToCompact[sparseIndex] = UINT32_MAX;
-        compactToSparse[lastIndex] = UINT32_MAX;
-        compactCount--;
-        
+
+        sparse_[entity.id] = kInvalid;
+        compactCount_--;
         return true;
     }
-    
+
     /**
      * @brief Check if entity has component
      * @param entity Entity to check
@@ -254,66 +243,96 @@ public:
     bool hasComponent(Entity entity) const {
         return getComponent(entity) != nullptr;
     }
-    
+
     /**
      * @brief Get number of active components
      * @return Component count
      */
-    size_t size() const { return compactCount; }
-    
+    size_t size() const { return compactCount_; }
+
     /**
      * @brief Check if storage is empty
      * @return true if no components
      */
-    bool empty() const { return compactCount == 0; }
-    
+    bool empty() const { return compactCount_ == 0; }
+
     /**
-     * @brief Iterator for efficient component iteration
+     * @brief Entity owning the component at a packed index (unchecked)
+     * @param i Packed index in [0, size())
+     * @return Entity handle stored at that slot
+     */
+    Entity entityAt(size_t i) const { return entities_[i]; }
+
+    /**
+     * @brief Pointer to the contiguous packed entity array
+     * @return Base of the [0, size()) entity span (for queries); never null
+     */
+    const Entity* entityData() const { return entities_; }
+
+    /**
+     * @brief Component at a packed index (unchecked)
+     * @param i Packed index in [0, size())
+     * @return Reference to the mutable component at that slot
+     */
+    T& componentAt(size_t i) { return components_[i]; }
+
+    /**
+     * @brief Component at a packed index (unchecked, const overload)
+     * @param i Packed index in [0, size())
+     * @return Const reference to the component at that slot
+     */
+    const T& componentAt(size_t i) const { return components_[i]; }
+
+    /**
+     * @brief Iterator over the packed component range
+     *
+     * Dereferences to `{Entity, T*}`, exposing mutable component data directly
+     * from the packed array (no per-step sparse lookup).
      */
     class Iterator {
     private:
-        const ComponentStorage* storage;
-        size_t index;
-        
+        ComponentStorage* storage_;
+        size_t index_;
+
     public:
         /**
          * @brief Construct iterator at position
          * @param s Storage to iterate
-         * @param i Starting index
+         * @param i Starting packed index
          */
-        Iterator(const ComponentStorage* s, size_t i) : storage(s), index(i) {}
+        Iterator(ComponentStorage* s, size_t i) : storage_(s), index_(i) {}
 
         /**
          * @brief Dereference iterator
-         * @return Pair of entity and component pointer
+         * @return Pair of entity and mutable component pointer
          */
         std::pair<Entity, T*> operator*() const {
-            return {storage->entities[index],
-                    storage->getComponent(storage->entities[index])};
+            return {storage_->entities_[index_], &storage_->components_[index_]};
         }
 
         /// @brief Advance iterator
         /// @return Reference to this iterator
-        Iterator& operator++() { ++index; return *this; }
+        Iterator& operator++() { ++index_; return *this; }
+
         /**
          * @brief Inequality comparison
          * @param other Iterator to compare with
          * @return true if iterators differ
          */
-        bool operator!=(const Iterator& other) const { return index != other.index; }
+        bool operator!=(const Iterator& other) const { return index_ != other.index_; }
     };
-    
+
     /**
      * @brief Get iterator to beginning
      * @return Iterator to first component
      */
-    Iterator begin() const { return Iterator(this, 0); }
+    Iterator begin() { return Iterator(this, 0); }
 
     /**
-     * @brief Get iterator to end
+     * @brief Get iterator past the last component
      * @return Iterator past last component
      */
-    Iterator end() const { return Iterator(this, compactCount); }
+    Iterator end() { return Iterator(this, compactCount_); }
 };
 
 } // namespace enjin2

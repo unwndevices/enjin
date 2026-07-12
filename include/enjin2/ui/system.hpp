@@ -89,46 +89,76 @@ public:
  * Manages entity lifecycle and component associations.
  * Uses generation counters to prevent accessing destroyed entities.
  */
+template<size_t MAX_ENTITIES = 4096>
 class EntityManager {
 private:
-    static constexpr size_t MAX_ENTITIES = 4096;
-    
     uint8_t generations[MAX_ENTITIES];  ///< Generation counters for each entity slot
-    size_t freeList[MAX_ENTITIES];      ///< Free entity slot indices  
+    size_t freeList[MAX_ENTITIES];      ///< Free entity slot indices
     size_t freeCount;                   ///< Number of free slots
     size_t entityCount;                 ///< Total active entities
-    
+
 public:
+    /// @brief Maximum number of entity slots (the entity-id space).
+    static constexpr size_t kMaxEntities = MAX_ENTITIES;
+
     /**
      * @brief Constructor initializes entity manager
      */
-    EntityManager();
-    
+    EntityManager() : freeCount(MAX_ENTITIES), entityCount(0) {
+        // Generation counters start at 1 (0 is reserved for the invalid entity).
+        for (size_t i = 0; i < MAX_ENTITIES; ++i) {
+            generations[i] = 1;
+            freeList[i] = i;
+        }
+    }
+
     /**
      * @brief Create new entity
      * @return Entity handle, invalid if no slots available
      */
-    Entity createEntity();
-    
+    Entity createEntity() {
+        if (freeCount == 0) {
+            return Entity(); // Invalid entity
+        }
+        size_t index = freeList[--freeCount];
+        entityCount++;
+        return Entity(static_cast<uint32_t>(index), generations[index]);
+    }
+
     /**
      * @brief Destroy entity and free its slot
      * @param entity Entity to destroy
      */
-    void destroyEntity(Entity entity);
-    
+    void destroyEntity(Entity entity) {
+        if (!isValid(entity)) return;
+        size_t index = entity.id;
+
+        // Bump the generation so existing handles to this slot become stale.
+        generations[index]++;
+        if (generations[index] == 0) {
+            generations[index] = 1; // Skip 0 (invalid)
+        }
+
+        freeList[freeCount++] = index;
+        entityCount--;
+    }
+
     /**
      * @brief Check if entity is valid
      * @param entity Entity to validate
      * @return true if entity is valid
      */
-    bool isValid(Entity entity) const;
-    
+    bool isValid(Entity entity) const {
+        if (entity.id >= MAX_ENTITIES) return false;
+        return generations[entity.id] == entity.generation;
+    }
+
     /**
      * @brief Get total number of active entities
      * @return Entity count
      */
     size_t getEntityCount() const { return entityCount; }
-    
+
     /**
      * @brief Get maximum entity capacity
      * @return Maximum entities
@@ -274,85 +304,104 @@ private:
 };
 
 /**
- * @brief Query builder for component-based entity selection
- * @tparam Components... Component types to query for
- * 
- * Provides efficient iteration over entities with specific component combinations.
+ * @brief Lazily filtered view over a span of entities
+ * @tparam Components... Component types this query represents (documentation only)
+ *
+ * A query scans a contiguous span of candidate entities (typically the packed
+ * entity list of the smallest component's storage) and yields only those that
+ * satisfy a predicate — usually "has every queried component". The predicate is
+ * supplied by @ref World::query, which knows how to test component membership.
+ *
+ * Iteration is O(span) with the predicate evaluated once per candidate; nothing
+ * is materialised, so a query is cheap to construct and safe to range-for over.
  */
 template<typename... Components>
 class ComponentQuery {
 private:
-    std::function<bool(Entity)> filter; ///< Entity filter function
-    
+    const Entity* entities_;             ///< Candidate span (borrowed, not owned)
+    size_t count_;                       ///< Number of candidates in the span
+    std::function<bool(Entity)> filter_; ///< Predicate an entity must satisfy
+
 public:
     /**
-     * @brief Constructor with entity filter
-     * @param entityFilter Function to test if entity matches query
+     * @brief Construct a query over an entity span
+     * @param entities Pointer to the first candidate entity (may be null if count is 0)
+     * @param count Number of candidate entities
+     * @param filter Predicate returning true for entities that match the query
      */
-    ComponentQuery(std::function<bool(Entity)> entityFilter) 
-        : filter(entityFilter) {}
-    
+    ComponentQuery(const Entity* entities, size_t count, std::function<bool(Entity)> filter)
+        : entities_(entities), count_(count), filter_(std::move(filter)) {}
+
     /**
-     * @brief Iterator for query results
+     * @brief Forward iterator that skips non-matching entities
      */
     class Iterator {
     private:
-        std::function<bool(Entity)> filter;
-        Entity currentEntity;
-        size_t entityIndex;
-        
+        const Entity* entities_;                 ///< Candidate span
+        size_t count_;                           ///< Span length
+        const std::function<bool(Entity)>* filter_; ///< Predicate (borrowed from the query)
+        size_t index_;                           ///< Current position in the span
+
+        /**
+         * @brief Advance @ref index_ to the next matching entity (or to the end)
+         *
+         * Scans forward from the current position, skipping entities the predicate
+         * rejects, and stops on the first match or when the span is exhausted.
+         */
+        void findNext() {
+            while (index_ < count_ && !(*filter_)(entities_[index_])) {
+                ++index_;
+            }
+        }
+
     public:
         /**
-         * @brief Construct iterator with filter and starting position
-         * @param f Entity filter function
-         * @param start Starting entity
-         * @param index Starting entity index
+         * @brief Construct iterator at a position and settle on the next match
+         * @param entities Candidate span
+         * @param count Span length
+         * @param filter Predicate (borrowed; must outlive the iterator)
+         * @param index Starting index into the span
          */
-        Iterator(std::function<bool(Entity)> f, Entity start, size_t index)
-            : filter(f), currentEntity(start), entityIndex(index) {
+        Iterator(const Entity* entities, size_t count,
+                 const std::function<bool(Entity)>* filter, size_t index)
+            : entities_(entities), count_(count), filter_(filter), index_(index) {
             findNext();
         }
 
-        /// @brief Dereference to get current entity
+        /// @brief Dereference to the current matching entity
         /// @return Current entity
-        Entity operator*() const { return currentEntity; }
+        Entity operator*() const { return entities_[index_]; }
 
-        /// @brief Advance to next matching entity
+        /// @brief Advance to the next matching entity
         /// @return Reference to this iterator
         Iterator& operator++() {
-            entityIndex++;
+            ++index_;
             findNext();
             return *this;
         }
-        
+
         /// @brief Inequality comparison
         /// @param other Iterator to compare with
         /// @return True if iterators are at different positions
         bool operator!=(const Iterator& other) const {
-            return entityIndex != other.entityIndex;
-        }
-        
-    private:
-        void findNext() {
-            // This would need integration with EntityManager
-            // Implementation depends on how entities are stored
+            return index_ != other.index_;
         }
     };
-    
+
     /**
-     * @brief Get iterator to beginning of query results
-     * @return Iterator to first matching entity
+     * @brief Get iterator to the first matching entity
+     * @return Iterator to first match
      */
     Iterator begin() const {
-        return Iterator(filter, Entity(), 0);
+        return Iterator(entities_, count_, &filter_, 0);
     }
-    
+
     /**
-     * @brief Get iterator to end of query results
+     * @brief Get past-the-end iterator
      * @return Past-the-end iterator
      */
     Iterator end() const {
-        return Iterator(filter, Entity(), SIZE_MAX);
+        return Iterator(entities_, count_, &filter_, count_);
     }
 };
 

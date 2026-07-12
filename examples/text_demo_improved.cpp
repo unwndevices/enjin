@@ -9,11 +9,10 @@
 #define PROGMEM
 #endif
 
-// Make our types available globally for the font header
-using enjin2::GFXglyph;
-using enjin2::GFXfont;
+// GFXglyph / GFXfont are global types (graphics/gfxfont.h, pulled in via
+// text_renderer.hpp), which is exactly what the font header below expects.
 
-// Include the font - it will use our GFXfont/GFXglyph definitions
+// Include the font - it will use the global GFXfont/GFXglyph definitions
 #include "../Libs/Adafruit-GFX-Library/Fonts/awkward.h"
 
 using namespace enjin2;
