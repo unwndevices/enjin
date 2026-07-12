@@ -12,7 +12,7 @@ namespace enjin2 {
  * Layer 0 = backmost (background), layer N-1 = frontmost (top).
  *
  * Platform values:
- *   - ESP32-S3 (PSRAM): 4 layers (see #ifdef ESP32 block below)
+ *   - ESP32-S3 (PSRAM): 4 layers (see the `ifdef ESP32` block below)
  *   - SDL3 / WASM:      5 layers (4 user + 1 debug via engine.debug.*)
  */
 #ifdef ESP32

@@ -57,11 +57,11 @@ Called when the scene is no longer active.
 
 ---
 
-### `void update(uint16_t deltaTime)`
+### `void update(float dt)`
 
 Update the scene. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
@@ -105,6 +105,22 @@ TComponent type Pointer to object or nullptr if not found
 
 ---
 
+### `Object * findByName(const char *name)`
+
+Find first object with the given name. 
+
+nameName to search for (string literal, case-sensitive) Pointer to matching Object or nullptr if not found 
+
+---
+
+### `size_t findAllWithTag(const char *tag, Object **results, size_t maxResults)`
+
+Find all objects carrying the given tag. 
+
+tagTag to search for (string literal, case-sensitive) resultsCaller-provided array to write matching Object pointers into maxResultsMaximum number of results to write Number of objects written into results 
+
+---
+
 ### `uint32_t getId() const`
 
 Get scene ID. 
@@ -126,6 +142,20 @@ True if scene is active
 Check if scene is initialized. 
 
 True if scene is initialized 
+
+---
+
+### `void setStateMachine(SceneStateMachine *ssm)`
+
+Inject non-owning SSM back-pointer. 
+
+ssmOwning SceneStateMachine (called before activate()) 
+
+---
+
+### `void resetInitialized()`
+
+Reset initialized guard to allow re-initialization (used for self-transitions). 
 
 ---
 
@@ -211,11 +241,11 @@ Use this to clean up scene-specific resources.
 
 ---
 
-### `virtual void onUpdate(uint16_t deltaTime)`
+### `virtual void onUpdate(float dt)`
 
 Called every frame (override in derived classes). 
 
-deltaTimeTime since last frame in milliseconds
+dtTime since last frame in seconds
 Use this for scene-specific update logic that should happen before object updates. 
 
 ---

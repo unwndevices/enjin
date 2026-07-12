@@ -28,9 +28,17 @@ ownerThe object that owns this component
 
 ---
 
-### `virtual  ~Component()=default`
+### `virtual  ~Component()`
 
-Virtual destructor. 
+Virtual destructor — invalidates associated ComponentProxy before component is freed. Sets m_luaProxy-&gt;valid = false so stale Lua proxy access raises a Lua error. 
+
+---
+
+### `void setLuaProxy(ComponentProxy *proxy)`
+
+Register a Lua-side ComponentProxy for destructor invalidation. Called by lua_proxy_get_component_impl when allocating a ComponentProxy userdata. 
+
+proxyNon-owning pointer to the Lua userdata struct; may be nullptr to clear. 
 
 ---
 
@@ -74,19 +82,19 @@ Use this for initialization that depends on other components or objects being fu
 
 ---
 
-### `virtual void update(uint16_t deltaTime)`
+### `virtual void update(float dt)`
 
 Update is called once per frame. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
-### `virtual void lateUpdate(uint16_t deltaTime)`
+### `virtual void lateUpdate(float dt)`
 
 LateUpdate is called after all Update calls. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
@@ -115,6 +123,16 @@ Component type identifier
 Get static component type ID. 
 
 Component type identifier 
+
+---
+
+## Protected Methods
+
+### `void assertRequires()`
+
+Assert that a sibling component of type T exists on the same Object. 
+
+In debug builds (NDEBUG not defined): calls assert(false) with a message naming the requirement. The call stack identifies the failing component. No abort on missing dep when the dep IS present (no-op).In release builds (NDEBUG defined): logs once via printf and disables this component. No process abort — safe for ESP32.Call from awake() to declare component dependencies loudly.Naming note: assertRequires&lt;T&gt;() chosen over requires&lt;T&gt;() — 'requires' is a C++20 keyword and causes a compile error (Phase 26 decision).TRequired component type (must derive from Component) 
 
 ---
 

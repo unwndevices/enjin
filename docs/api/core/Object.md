@@ -25,9 +25,9 @@ Constructor.
 
 ---
 
-### `virtual  ~Object()=default`
+### `virtual  ~Object()`
 
-Virtual destructor. 
+Destructor — invalidates associated ObjectProxy before Object is freed. Sets m_luaProxy-&gt;valid = false so stale Lua proxy access raises a Lua error. 
 
 ---
 
@@ -47,19 +47,19 @@ Use this for initialization that depends on other objects being fully set up.
 
 ---
 
-### `virtual void update(uint16_t deltaTime)`
+### `virtual void update(float dt)`
 
 Update is called once per frame. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
-### `virtual void lateUpdate(uint16_t deltaTime)`
+### `virtual void lateUpdate(float dt)`
 
 LateUpdate is called after all Update calls. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
@@ -87,6 +87,22 @@ TComponent type Pointer to component or nullptr if not found
 
 ---
 
+### `const T * getComponent() const`
+
+Get a component of specified type (const overload — called by hasComponent() const and read-only contexts). 
+
+TComponent type Const pointer to component or nullptr if not found 
+
+---
+
+### `size_t getComponents(T **out, size_t maxOut) const`
+
+Get all components of specified type. 
+
+TComponent type (must derive from Component) outCaller-provided array to write matching component pointers into maxOutMaximum number of results to write Number of components written into out 
+
+---
+
 ### `bool hasComponent() const`
 
 Check if object has a component of specified type. 
@@ -111,30 +127,6 @@ Position component pointer or nullptr
 
 ---
 
-### `const C_Drawable *const * getDrawables() const`
-
-Get all drawable components. 
-
-Array of drawable component pointers 
-
----
-
-### `size_t getDrawableCount() const`
-
-Get number of drawable components. 
-
-Number of drawable components 
-
----
-
-### `C_Drawable * getDrawable(size_t index) const`
-
-Get drawable component by index. 
-
-indexIndex of drawable component Pointer to drawable component or nullptr if invalid index 
-
----
-
 ### `bool isActive() const`
 
 Check if object is active. 
@@ -151,11 +143,65 @@ isActiveNew active state
 
 ---
 
+### `void setLuaProxy(ObjectProxy *proxy)`
+
+Register the Lua ObjectProxy associated with this Object. Called by engine.scene.find() when it wraps this Object in an ObjectProxy userdata. The destructor will set proxy-&gt;valid = false when the Object is freed. Only one proxy should be active per Object at a time — the last call overwrites any previous registration. 
+
+proxyNon-owning pointer to the ObjectProxy userdata; nullptr to clear. 
+
+---
+
 ### `size_t getComponentCount() const`
 
 Get total number of components. 
 
 Component count 
+
+---
+
+### `void setName(const char *n)`
+
+Set object name (stores pointer — caller owns lifetime). 
+
+nNull-terminated name string or nullptr to clear 
+
+---
+
+### `const char * getName() const`
+
+Get object name. 
+
+Pointer to name string or nullptr if not set 
+
+---
+
+### `bool addTag(const char *tag)`
+
+Add a tag to this object (up to MAX_TAGS = 8). 
+
+tagNull-terminated tag string (caller owns lifetime) true if tag was added, false if tag array is full 
+
+---
+
+### `bool hasTag(const char *tag) const`
+
+Check if this object has a given tag. 
+
+tagTag string to look for true if tag is present 
+
+---
+
+### `void clearTags()`
+
+Clear all tags from this object. 
+
+---
+
+### `size_t getTagCount() const`
+
+Get current number of tags. 
+
+Tag count 
 
 ---
 

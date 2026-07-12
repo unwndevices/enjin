@@ -90,6 +90,7 @@ namespace enjin2 {
  */
 class AllocGuard {
 public:
+    /// @brief No-op constructor — the label is ignored in the disabled path.
     explicit AllocGuard(const char* /*label*/) {}
     ~AllocGuard() = default;
 

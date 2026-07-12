@@ -39,67 +39,67 @@ Component start - set up animation connections.
 
 ---
 
-### `virtual void update(uint16_t deltaTime) override`
+### `virtual void update(float dt) override`
 
 Component update - update all active tracks. 
 
-deltaTimeTime elapsed since last update in milliseconds 
+dtTime elapsed since last update in seconds 
 
 ---
 
-### `bool addPositionKeyframe(uint16_t time, Point position, EaseType easing=EaseType::LINEAR)`
+### `bool addPositionKeyframe(float time, Point position, EaseType easing=EaseType::LINEAR)`
 
 Add position keyframe. 
 
-timeTime in milliseconds positionPosition at keyframe easingEasing function to next keyframe True if keyframe was added 
+timeTime in seconds positionPosition at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
-### `bool addScaleKeyframe(uint16_t time, float scale, EaseType easing=EaseType::LINEAR)`
+### `bool addScaleKeyframe(float time, float scale, EaseType easing=EaseType::LINEAR)`
 
 Add scale keyframe. 
 
-timeTime in milliseconds scaleScale factor at keyframe easingEasing function to next keyframe True if keyframe was added 
+timeTime in seconds scaleScale factor at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
-### `bool addRotationKeyframe(uint16_t time, float rotation, EaseType easing=EaseType::LINEAR)`
+### `bool addRotationKeyframe(float time, float rotation, EaseType easing=EaseType::LINEAR)`
 
 Add rotation keyframe. 
 
-timeTime in milliseconds rotationRotation in radians at keyframe easingEasing function to next keyframe True if keyframe was added 
+timeTime in seconds rotationRotation in radians at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
-### `bool addColorKeyframe(uint16_t time, Pixel4 color, EaseType easing=EaseType::LINEAR)`
+### `bool addColorKeyframe(float time, Pixel4 color, EaseType easing=EaseType::LINEAR)`
 
 Add color keyframe. 
 
-timeTime in milliseconds colorColor at keyframe easingEasing function to next keyframe True if keyframe was added 
+timeTime in seconds colorColor at keyframe easingEasing function to next keyframe True if keyframe was added 
 
 ---
 
-### `bool createOrbitAnimation(Point center, float radius, uint16_t duration, float startAngle=0.0f, bool clockwise=true)`
+### `bool createOrbitAnimation(Point center, float radius, float duration, float startAngle=0.0f, bool clockwise=true)`
 
 Create orbital animation around a center point. 
 
-centerCenter of orbit radiusOrbit radius durationAnimation duration in milliseconds startAngleStarting angle in radians clockwiseTrue for clockwise rotation True if animation was created 
+centerCenter of orbit radiusOrbit radius durationAnimation duration in seconds startAngleStarting angle in radians clockwiseTrue for clockwise rotation True if animation was created 
 
 ---
 
-### `bool createPulseAnimation(float minScale, float maxScale, uint16_t duration)`
+### `bool createPulseAnimation(float minScale, float maxScale, float duration)`
 
 Create pulsing scale animation. 
 
-minScaleMinimum scale factor maxScaleMaximum scale factor durationPulse duration in milliseconds True if animation was created 
+minScaleMinimum scale factor maxScaleMaximum scale factor durationPulse duration in seconds True if animation was created 
 
 ---
 
-### `bool createFadeAnimation(Pixel4 fromColor, Pixel4 toColor, uint16_t duration, bool pingPong=false)`
+### `bool createFadeAnimation(Pixel4 fromColor, Pixel4 toColor, float duration, bool pingPong=false)`
 
 Create color fade animation. 
 
-fromColorStarting color toColorEnding color durationAnimation duration in milliseconds pingPongTrue to fade back and forth True if animation was created 
+fromColorStarting color toColorEnding color durationAnimation duration in seconds pingPongTrue to fade back and forth True if animation was created 
 
 ---
 

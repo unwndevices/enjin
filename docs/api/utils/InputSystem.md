@@ -25,11 +25,11 @@ Constructor initializes input state.
 
 ---
 
-### `virtual void update(float deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update input processing. 
 
-deltaTimeTime since last update 
+dtTime since last update in seconds 
 
 ---
 

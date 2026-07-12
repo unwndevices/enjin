@@ -19,7 +19,7 @@ A component that draws tickmarks around a circular arc, useful for creating dial
 
 ## Public Methods
 
-### ` Tickmarks(Object *owner, Vector2 centerPoint, int16_t startAngle, int16_t stopAngle, uint8_t tickSpacing, uint8_t tickLength, uint8_t arcRadius)`
+### ` Tickmarks(Object *owner, Vec2 centerPoint, int16_t startAngle, int16_t stopAngle, uint8_t tickSpacing, uint8_t tickLength, uint8_t arcRadius)`
 
 Construct a new Tickmarks component. 
 
@@ -33,11 +33,11 @@ Initialize the tickmarks.
 
 ---
 
-### `void onUpdate(float deltaTime) override`
+### `void onUpdate(float dt) override`
 
 Update the tickmarks state. 
 
-deltaTimeTime elapsed since last update in seconds 
+dtTime elapsed since last update in seconds 
 
 ---
 
@@ -65,7 +65,7 @@ Current value
 
 ---
 
-### `void setCenter(Vector2 newCenter)`
+### `void setCenter(Vec2 newCenter)`
 
 Set the center point of the tickmarks. 
 

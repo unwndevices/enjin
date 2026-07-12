@@ -35,6 +35,14 @@ WCanvas width HCanvas height canvas8-bit canvas pointer
 
 ---
 
+### ` LuaCanvas(ICanvas&lt; Pixel4 &gt; *canvas)`
+
+Constructor for abstract 4-bit canvas interface Used when only an ICanvas&lt;Pixel4&gt;& is available (e.g., C_Drawable::draw()). Width and height are read from the interface at construction time. 
+
+canvasAbstract 4-bit canvas pointer (non-owning) 
+
+---
+
 ### `uint16_t getWidth() const`
 
 Get canvas width. 
@@ -136,6 +144,38 @@ x1First vertex X y1First vertex Y x2Second vertex X y2Second vertex Y x3Third ve
 Fill triangle. 
 
 x1First vertex X y1First vertex Y x2Second vertex X y2Second vertex Y x3Third vertex X y3Third vertex Y colorFill color 
+
+---
+
+### `void drawText(const char *str, int16_t x, int16_t y, uint8_t color, uint8_t size, const GFXfont *font)`
+
+Draw text at position using given color, size, and font. 
+
+strNull-terminated string to draw xX coordinate yY coordinate colorText color (0-15 for 4-bit, 0-255 for 8-bit) sizeSize multiplier (1=normal, 2=double, etc.) fontGFXfont pointer (nullptr = built-in 5x7) 
+
+---
+
+### `void drawTextWrapped(const char *str, int16_t x, int16_t y, uint16_t maxWidth, uint8_t color, uint8_t size, const GFXfont *font)`
+
+Draw text with word wrapping within maxWidth. 
+
+strNull-terminated string to draw xX coordinate yY coordinate maxWidthMaximum width in pixels before wrapping colorText color sizeSize multiplier fontGFXfont pointer (nullptr = built-in 5x7) 
+
+---
+
+### `uint16_t measureTextWidth(const char *str, uint8_t size, const GFXfont *font)`
+
+Measure width of string in pixels with given size and font. 
+
+strNull-terminated string to measure sizeSize multiplier fontGFXfont pointer (nullptr = built-in 5x7) Width in pixels 
+
+---
+
+### `uint8_t measureTextHeight(uint8_t size, const GFXfont *font)`
+
+Measure character height in pixels with given size and font. 
+
+sizeSize multiplier fontGFXfont pointer (nullptr = built-in 5x7) Height in pixels 
 
 ---
 

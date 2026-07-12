@@ -27,27 +27,19 @@ ownerOwner object planetRadiusPlanet radius in pixels colorPlanet core color
 
 ---
 
-### `virtual void update(uint16_t deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update planet animations. 
 
-deltaTimeTime elapsed since last update in milliseconds 
+dtTime elapsed since last update in seconds 
 
 ---
 
-### `void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
+### `virtual void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
 
 Draw planet to 4-bit canvas. 
 
 canvasTarget 4-bit canvas 
-
----
-
-### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
-
-Draw planet to 8-bit canvas. 
-
-canvasTarget 8-bit canvas 
 
 ---
 

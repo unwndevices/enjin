@@ -25,19 +25,19 @@ Constructor.
 
 ---
 
-### `void update(uint16_t deltaTime)`
+### `void update(float dt)`
 
 Update effect animations. 
 
-deltaTimeTime since last update in milliseconds 
+dtTime since last update in seconds 
 
 ---
 
-### `uint32_t getTime() const`
+### `float getTime() const`
 
 Get current animation time for time-based effects. 
 
-Current time in milliseconds 
+Current time in seconds 
 
 ---
 

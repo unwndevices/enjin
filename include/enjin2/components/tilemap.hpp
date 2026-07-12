@@ -19,8 +19,8 @@ namespace enjin2 {
  */
 class C_Tilemap : public C_Drawable {
 public:
-    static constexpr uint8_t MAX_MAP_W = 64;
-    static constexpr uint8_t MAX_MAP_H = 64;
+    static constexpr uint8_t MAX_MAP_W = 64;  ///< Maximum tile grid width, in tiles
+    static constexpr uint8_t MAX_MAP_H = 64;  ///< Maximum tile grid height, in tiles
 
     /**
      * @brief Constructor.

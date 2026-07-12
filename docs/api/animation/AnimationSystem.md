@@ -19,11 +19,11 @@ Updates all entities with AnimationComponent, handling timing, looping, and ping
 
 ## Public Methods
 
-### `virtual void update(float deltaTime) override`
+### `virtual void update(float dt) override`
 
 Update all animations. 
 
-deltaTimeTime since last update in seconds 
+dtTime since last update in seconds 
 
 ---
 
@@ -37,11 +37,11 @@ Priority value
 
 ## Private Methods
 
-### `void updateAnimation(AnimationComponent &animation, float deltaTime)`
+### `void updateAnimation(AnimationComponent &animation, float dt)`
 
 Update individual animation component. 
 
-animationAnimation to update deltaTimeDelta time 
+animationAnimation to update dtDelta time in seconds 
 
 ---
 

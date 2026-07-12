@@ -47,19 +47,27 @@ sceneIdScene identifier to remove True if scene was removed
 
 ---
 
-### `bool changeScene(uint32_t sceneId, TransitionType transition=TransitionType::IMMEDIATE, uint16_t duration=0)`
+### `bool changeScene(uint32_t sceneId, TransitionType transition=TransitionType::IMMEDIATE, float duration=0.0f)`
 
 Change to a different scene. 
 
-sceneIdTarget scene identifier transitionTransition type to use durationTransition duration in milliseconds (0 = use default) True if transition started successfully 
+sceneIdTarget scene identifier transitionTransition type to use durationTransition duration in seconds (0 = use default) True if transition started successfully 
 
 ---
 
-### `void update(uint16_t deltaTime)`
+### `void switchTo(uint32_t sceneId)`
+
+Request a deferred scene transition (safe to call from onUpdate()). 
+
+Unlike changeScene(), switchTo() queues the transition for execution AFTER the current scene's update() returns, preventing re-entrant corruption. Calling switchTo(currentId) triggers a full reset: onDeactivate, onCreate, onActivate.Last-wins: multiple switchTo() calls in the same frame overwrite each other. Re-entrancy from onDeactivate(): safely queued for the next frame.sceneIdTarget scene identifier (must already be registered via addScene) 
+
+---
+
+### `void update(float dt)`
 
 Update the state machine. 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
@@ -119,6 +127,30 @@ callbackFunction called with (from_scene, to_scene) Signal connection handle
 
 ---
 
+### `bool persistObject(Object *obj)`
+
+Extract an object from the current scene and register it as persistent. 
+
+The object survives all subsequent scene transitions. It is immediately re-injected as a non-owning external into the current scene's ObjectCollection, so it continues to participate in update/lateUpdate/findByName/forEach during the current scene and all subsequent scenes. If the object is already persistent, returns true (silent no-op — no duplicate slot consumed).objRaw pointer to an owned object in the current scene true if now persistent, false if object not in current scene or registry full 
+
+---
+
+### `void unpersistObject(Object *obj)`
+
+Schedule a persistent object for destruction on the next scene transition. 
+
+The object remains alive until applyDeferredTransition() calls flushPendingRemovals(). Its proxy will be invalidated at that point.objRaw pointer of the persistent object to remove 
+
+---
+
+### `Object * findPersistentByName(const char *name) const`
+
+Find a persistent object by name (skips pending-removal objects). 
+
+nameName to search for Pointer to matching Object or nullptr 
+
+---
+
 ### `SignalConnection&lt; TransitionType &gt; connectOnTransitionStart(std::function&lt; void(TransitionType)&gt; callback)`
 
 Connect to transition start event. 
@@ -143,11 +175,19 @@ Start a transition.
 
 ---
 
-### `void updateTransition(uint16_t deltaTime)`
+### `void applyDeferredTransition(uint32_t targetId)`
+
+Apply a deferred transition queued by switchTo(). 
+
+Called from update() after currentScene-&gt;update() returns. Self-transitions trigger a full reset cycle: deactivate -&gt; resetInitialized -&gt; activate. Cross-scene transitions are equivalent to an immediate changeScene().targetIdScene ID to transition to 
+
+---
+
+### `void updateTransition(float dt)`
 
 Update transition state. 
 
-deltaTimeTime since last frame 
+dtTime since last frame in seconds 
 
 ---
 

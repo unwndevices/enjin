@@ -9,7 +9,7 @@ sidebar_label: C_LuaScript
 Platform-agnostic script-driven UI component. 
 
 
-A drawable component that executes scripts for custom UI rendering. Uses platform-specific interpreters (full Lua on desktop, minimal on ESP32). Perfect for prototyping UI elements, data visualization, and custom effects. 
+A drawable component that executes Lua scripts for custom UI rendering. Uses LuaScriptSystem for script execution and LuaCanvas for drawing. A ScriptProxy userdata is stored in the Lua registry and passed as the first argument to update(self, dt) and draw(self). 
 
 ---
 
@@ -21,23 +21,15 @@ A drawable component that executes scripts for custom UI rendering. Uses platfor
 
 ### ` C_LuaScript(Object *owner, uint16_t width, uint16_t height)`
 
-Constructor with automatic interpreter selection. 
+Constructor with automatic Lua interpreter selection. 
 
 ownerOwner object widthComponent width heightComponent height 
 
 ---
 
-### ` C_LuaScript(Object *owner, uint16_t width, uint16_t height, ScriptFactory::InterpreterType interpreterType)`
-
-Constructor with specific interpreter type. 
-
-ownerOwner object widthComponent width heightComponent height interpreterTypeSpecific interpreter to use 
-
----
-
 ### ` ~C_LuaScript()`
 
-Destructor. 
+Destructor — invalidates ScriptProxy before closing Lua state. 
 
 ---
 
@@ -87,7 +79,7 @@ True if script has errors
 
 ---
 
-### `const std::string & getErrorMessage() const`
+### `const char * getErrorMessage() const`
 
 Get last error message. 
 
@@ -95,11 +87,27 @@ Error message string
 
 ---
 
+### `void setErrorPolicy(ScriptErrorPolicy policy)`
+
+Set the error handling policy for this script. 
+
+policyDisable (default), Log, or Panic 
+
+---
+
+### `ScriptErrorPolicy getErrorPolicy() const`
+
+Get the current error handling policy. 
+
+Current ScriptErrorPolicy
+
+---
+
 ### `void setScriptVar(const std::string &name, double value)`
 
-Set script variable (expose game state to script). 
+Set script number variable (expose game state to script). 
 
-nameVariable name valueVariable value 
+nameVariable name valueNumeric value 
 
 ---
 
@@ -121,7 +129,7 @@ nameVariable name valueBoolean value
 
 ### `double getScriptNumber(const std::string &name, double defaultValue=0.0)`
 
-Get script variable. 
+Get script number variable. 
 
 nameVariable name defaultValueDefault value if not found Variable value 
 
@@ -145,57 +153,25 @@ nameVariable name defaultValueDefault value if not found Boolean value
 
 ### `bool callScriptFunction(const std::string &functionName)`
 
-Call custom script function. 
+Call custom script function by name. 
 
 functionNameFunction name to call True if call was successful 
 
 ---
 
-### `virtual void update(uint16_t deltaTime) override`
+### `virtual void update(float dt) override`
 
-Update component (calls script update function). 
+Update component (calls Lua update(self, dt)). 
 
-deltaTimeTime since last update 
+dtTime since last update in seconds 
 
 ---
 
-### `void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
+### `virtual void draw(ICanvas&lt; Pixel4 &gt; &canvas) override`
 
-Draw component using 4-bit canvas. 
+Draw component using 4-bit canvas (calls Lua draw(self)). 
 
 canvas4-bit canvas to draw on 
-
----
-
-### `virtual void draw(ICanvas&lt; uint8_t &gt; &canvas) override`
-
-Draw component using 8-bit canvas. 
-
-canvas8-bit canvas to draw on 
-
----
-
-### `IScriptInterpreter * getInterpreter()`
-
-Get script interpreter for advanced operations. 
-
-Script interpreter reference 
-
----
-
-### `IScriptGraphics * getGraphics()`
-
-Get graphics interface. 
-
-Graphics interface reference 
-
----
-
-### `const char * getInterpreterType() const`
-
-Get interpreter type name. 
-
-Type name string 
 
 ---
 
@@ -207,19 +183,35 @@ Number of draw calls since creation
 
 ---
 
+### `void setInput(InputState *input)`
+
+Inject InputState for this frame (delegates to scriptSystem-&gt;getBindings().setInput()) Used by tests and host code to provide input state before calling update(). 
+
+inputPointer to current frame's InputState; may be nullptr to clear 
+
+---
+
+### `LuaScriptSystem & getScriptSystem()`
+
+Get the script system (for testing and host integration). 
+
+Reference to the LuaScriptSystem
+
+---
+
 ## Private Methods
 
-### `bool initializeInterpreter(ScriptFactory::InterpreterType interpreterType)`
+### `bool initializeScriptSystem()`
 
-Initialize script interpreter and graphics. 
+Initialize LuaScriptSystem and expose component dimensions. 
 
-interpreterTypeType of interpreter to create True if initialization successful 
+True if initialization successful 
 
 ---
 
 ### `bool executeScript(const std::string &code)`
 
-Execute script with error handling. 
+Execute script code with error handling. 
 
 codeScript code to execute True if execution successful 
 
@@ -227,25 +219,49 @@ codeScript code to execute True if execution successful
 
 ### `bool callScriptFunctionSafe(const std::string &functionName)`
 
-Call script function with error handling. 
+Call a script lifecycle function with error handling (no proxy argument). 
 
 functionNameFunction name True if call successful 
 
 ---
 
+### `bool callWithProxy(const char *funcName, float dt, bool passDt)`
+
+Push stored ScriptProxy userdata as first arg, then call Lua function via pcall. 
+
+funcNameLua global function name ("init", "update", "draw") dtDelta time in seconds — only pushed if passDt is true passDtWhether to push dt as second argument (true for update, false for init/draw) true if function was found and called without error, false otherwise 
+
+---
+
+### `bool callWithProxyAndBtn(const char *funcName, int btn)`
+
+Push stored ScriptProxy userdata as first arg, push btn integer as second arg, call Lua function. Used for on_button_pressed(self, btn) / on_button_released(self, btn) callbacks. Optional callback: if the function is not defined in the script, returns false silently. Error handling follows ScriptErrorPolicy (identical to callWithProxy). 
+
+funcNameLua global function name btnButton index (0-15) true if function was found and called without Lua error, false otherwise 
+
+---
+
+### `void dispatchInputCallbacks(const InputState &input)`
+
+Fire on_button_pressed / on_button_released callbacks for all button edges this frame. Called at the top of update() before callWithProxy(UPDATE_FUNCTION, ...) — satisfies INPUT-03. Skips dispatch if hasScript is false, scriptError is true, or scriptSystem is null. 
+
+inputCurrent frame's InputState (buttons / prev_buttons already set) 
+
+---
+
 ### `void setupLuaCanvas(CanvasType &canvas)`
 
-Setup Lua canvas for current drawing context. 
+Setup LuaCanvas wrapper for the current draw canvas. 
 
 canvasCanvas to wrap 
 
 ---
 
-### `void handleScriptError(const ScriptResult &result)`
+### `void handleScriptError(const LuaResult &result)`
 
-Handle script error. 
+Handle script error — sets scriptError flag and records message. 
 
-resultScript execution result 
+resultLuaResult from a failed execute or load call 
 
 ---
 

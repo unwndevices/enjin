@@ -33,11 +33,11 @@ Virtual destructor.
 
 ---
 
-### `void draw(ICanvas&lt; uint8_t &gt; &canvas)=0`
+### `void draw(ICanvas&lt; Pixel4 &gt; &canvas)=0`
 
 Pure virtual draw method - must be implemented by derived classes. 
 
-canvasThe 8-bit canvas to draw to (matches original Enjin GFXcanvas8) 
+canvasThe 4-bit canvas targeting ICanvas&lt;Pixel4&gt;
 
 ---
 
@@ -49,19 +49,19 @@ True if should continue drawing, false otherwise
 
 ---
 
-### `void SetSortOrder(int order)`
+### `void SetBufferIndex(uint8_t idx)`
 
-Set the sort order for drawing priority. 
+Set the layer buffer index (0 = background, N-1 = foreground). 
 
-orderSort order value 
+idxBuffer index value 
 
 ---
 
-### `int GetSortOrder() const`
+### `uint8_t GetBufferIndex() const`
 
-Get the sort order. 
+Get the layer buffer index. 
 
-Current sort order 
+Current buffer index 
 
 ---
 
@@ -78,22 +78,6 @@ modeBlend mode to use
 Get the blend mode. 
 
 Current blend mode 
-
----
-
-### `void SetDrawLayer(DrawLayer drawLayer)`
-
-Set the draw layer. 
-
-drawLayerDraw layer to assign 
-
----
-
-### `DrawLayer GetDrawLayer() const`
-
-Get the draw layer. 
-
-Current draw layer 
 
 ---
 
@@ -190,6 +174,30 @@ Height in pixels
 Determine if this drawable should be drawn before another drawable. 
 
 otherThe other drawable to compare against True if this should be drawn before other, false otherwise 
+
+---
+
+### `void setScreenSpace(bool ss)`
+
+Set screen-space mode. 
+
+Screen-space drawables (e.g. HUD, UI overlays) skip the camera offset applied by Scene::renderObjects() and always render at their world position.ssTrue to enable screen-space mode, false for world-space (default) 
+
+---
+
+### `bool isScreenSpace() const`
+
+Check if this drawable is in screen-space mode. 
+
+True if screen-space (ignores camera offset) 
+
+---
+
+### `virtual void drawWithOffset(ICanvas&lt; Pixel4 &gt; &canvas, Point offset)`
+
+Draw with camera offset applied. 
+
+Called by Scene::renderObjects() instead of draw() when a camera is active. Screen-space drawables (m_screenSpace==true) call draw() without any offset. World-space drawables temporarily shift anchor_offset by the camera offset, call draw(), then restore anchor_offset.Sign convention: offset = camera.getScreenOffset() = -(camera_pos + shake). Adding offset to anchor_offset moves the drawable left/up by camera_pos, producing the correct screen position: world_pos - camera_pos.canvasTarget 4-bit canvas offsetCamera screen offset (negative of camera world position) 
 
 ---
 

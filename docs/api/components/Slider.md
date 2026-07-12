@@ -33,11 +33,11 @@ Initialize the slider.
 
 ---
 
-### `void onUpdate(float deltaTime) override`
+### `void onUpdate(float dt) override`
 
 Update the slider state. 
 
-deltaTimeTime elapsed since last update in seconds 
+dtTime elapsed since last update in seconds 
 
 ---
 

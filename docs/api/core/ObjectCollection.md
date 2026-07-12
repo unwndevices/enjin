@@ -47,19 +47,19 @@ Calls start() on all objects in the collection.
 
 ---
 
-### `void update(uint16_t deltaTime)`
+### `void update(float dt)`
 
-Update all objects in the collection. 
+Update all objects in the collection (owned + externals). 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
-### `void lateUpdate(uint16_t deltaTime)`
+### `void lateUpdate(float dt)`
 
-Late update all objects in the collection. 
+Late update all objects in the collection (owned + externals). 
 
-deltaTimeTime since last frame in milliseconds 
+dtTime since last frame in seconds 
 
 ---
 
@@ -73,9 +73,33 @@ TObject type (must derive from Object) ArgsConstructor argument types argsConstr
 
 ### `bool removeObject(Object *object)`
 
-Remove an object from the collection. 
+Remove an object from the collection (destroys the object). 
 
-objectObject to remove True if object was removed 
+objectObject to remove True if object was removed DESTRUCTIVE — do NOT use for persistence; use extractObject() instead 
+
+---
+
+### `std::unique_ptr&lt; Object &gt; extractObject(Object *object)`
+
+Extract an object from the collection without destroying it. 
+
+Removes the object from the owned array and returns unique_ptr ownership to the caller. The object is NOT destroyed. Use this before calling PersistentObjectRegistry::add() to transfer ownership without invalidating any associated Lua proxy.objectRaw pointer to the object to extract unique_ptr owning the object, or nullptr if not found 
+
+---
+
+### `void injectExternal(Object *obj)`
+
+Inject a non-owning external (persistent) object pointer. 
+
+Adds the object to m_external[] so it participates in update/lateUpdate/ findByName/forEach iterations alongside owned objects. Does NOT transfer ownership. Ownership remains with PersistentObjectRegistry.objNon-owning pointer to inject (nullptr-safe, silently ignored) 
+
+---
+
+### `void clearExternal()`
+
+Clear all external (persistent) object injection slots. 
+
+Zeros all m_external[] pointers and resets m_externalCount to 0. Must be called before a scene transition clears the scene, so the registry retains sole ownership of persistent objects. 
 
 ---
 
@@ -105,15 +129,31 @@ TComponent type Pointer to object or nullptr if not found
 
 ### `void forEach(std::function&lt; void(Object *)&gt; func)`
 
-Apply function to all objects. 
+Apply function to all objects (owned + externals). 
 
 funcFunction to apply (takes Object* parameter) 
 
 ---
 
+### `Object * findByName(const char *name)`
+
+Find object by name (searches owned then externals). 
+
+nameName to search for (nullptr returns nullptr immediately) Pointer to first matching Object or nullptr if not found 
+
+---
+
+### `size_t findAllWithTag(const char *tag, Object **results, size_t maxResults)`
+
+Find all objects with a given tag (owned + externals). 
+
+tagTag to search for resultsCaller-provided buffer to receive Object pointers maxResultsMaximum number of results to write into buffer Number of matching objects written into buffer 
+
+---
+
 ### `void forEachActive(std::function&lt; void(Object *)&gt; func)`
 
-Apply function to all active objects. 
+Apply function to all active objects (owned + externals). 
 
 funcFunction to apply (takes Object* parameter) 
 

@@ -50,11 +50,11 @@ TSystem type Pointer to system, nullptr if not found
 
 ---
 
-### `void update(float deltaTime)`
+### `void update(float dt)`
 
 Update all systems in priority order. 
 
-deltaTimeTime since last update 
+dtTime since last update in seconds 
 
 ---
 
