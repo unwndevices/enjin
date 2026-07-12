@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1783900144805,
+  "lastUpdate": 1783900247844,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -1299,6 +1299,192 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3697,
             "range": "± 0.82%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "58692249+unwndevices@users.noreply.github.com",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "83e470c83b1823203646ebeaa8721881163b6ee9",
+          "message": "feat(ui): Phase 3a — upstream the live widgets + animators as data-only ECS (#121) (#4)\n\n* feat(ui): upstream List widget + Easing util as data-only ECS (#121)\n\nPhase 3a of the Eisei->enjin migration: begin rewriting the generic live\nwidgets as data-only Component<T> + SystemBase drawing to ICanvas<Pixel4>\nvia TextRenderer<Pixel4>, per ADR-0004 and the migration spec's split rule.\nNot a port of the Canvas8 member API.\n\nThis first pass lands the shared substrate and the flagship widget:\n\n- ui/easing.hpp: normalized easing curves upstreamed from Libs/enjin/utils\n  (namespace enjin2, EasingFunction pointer type). The animation substrate the\n  deferred animators and widget transitions will draw on.\n- ui/widgets/list.hpp: C_List rewritten as a data-only ListComponent\n  (pre-stringified items; the getString<T> projection moves to the scene/host\n  edge) + ListSystem<TWorld,TCanvas>. Presentation-only: no InputState; the\n  host drives selection, the system draws. Themed via theme.hpp.\n- tests: ui_easing_test (curve endpoints/shape/pointer type) and ui_list_test\n  (selection clamping, marquee advance, render path on Canvas4). Both green.\n\nDeferred to later Phase 3a passes: Label, Icon, Gauge, OverlayBg, PopUp, and\nthe keyframe animators. Two highlight-bar fidelity gaps (square vs rounded\nrect; glyph-bearing vertical offset) are noted in-code for Gate-2 visual parity.\n\nSplit rule (#110): Slider, Tooltip, ButtonDial, Dither, Noise and DrawingHelpers\nare dead in shipping scenes and will be dropped, not rewritten.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\n\n* feat(ui): upstream Label/Icon/Gauge/Overlay/PopUp + animators as data-only ECS (#121)\n\nContinues Phase 3a of the Eisei->enjin migration: the remaining live widgets are\nrewritten as data-only Component<T> + a System<TWorld,TCanvas> drawing to\nICanvas<Pixel4> via TextRenderer/Primitives, themed via theme.hpp, per ADR-0004\nand the migration spec's split rule. Presentation-only throughout — items arrive\npre-formatted and the host drives; the systems only advance time and draw.\n\nShared substrate:\n- graphics/primitives.hpp: drawRoundRect/fillRoundRect (+ draw/fillCircleHelper)\n  on Primitives<TPixel>/ICanvas, the co-design point flagged in list.hpp. list.hpp\n  now fills its selected-row bar with the rounded helper (radius 2, matching\n  C_List) instead of the square stopgap.\n- ui/animator.hpp: C_PositionAnimator / C_ParameterAnimator<T> / C_KeyframeAnimator\n  collapse into one generic AnimatorComponent<T> (keyframe timeline + clock, pure\n  value() seam over easing.hpp) driven by an AnimatorSystem that only ticks time;\n  applying the value stays host-side. lerpValue handles scalars and Vec2.\n\nWidgets:\n- widgets/label.hpp: C_Label -> LabelComponent (+ pure measurer-injected wrapText\n  seam) + LabelSystem; centered multi-line text with an optional rounded bg panel\n  and tail.\n- widgets/icon.hpp: C_Sprite Icon -> IconComponent (borrowed grayscale bitmap,\n  matte-16 transparency, pure sampleAt/isOpaqueAt) + IconSystem blit.\n- widgets/gauge.hpp: C_FillUpGauge -> GaugeComponent (value clamp + fillRegion/\n  levelLineY seams) + GaugeSystem; dithered fill clipped analytically to the rim,\n  dropping the old offscreen mask canvas.\n- widgets/overlay.hpp: OverlayBg's Sub-blend dim -> OverlayComponent (pure dim())\n  + OverlaySystem; the gradient sprite is now an ordinary IconComponent host-side.\n- widgets/popup.hpp: PopUpUI -> PopUpComponent (two lines, primitive-drawn icons,\n  pure auto-hide advance() seam) + PopUpSystem; PositionComponent marks the card\n  center.\n\nTests: primitives_roundrect + ui_animator/label/icon/gauge/overlay_popup, all\npinning the pure seams first, then a Canvas4 render pass. Full ui suite green\n(18/18); the pre-existing scene_render/shadow_mode C_Camera link failures are\nuntouched and excluded. Vertical text/bar alignment stays a by-eye Gate-2 pass\n(getTextBounds carries no glyph bearing), noted in-code.\n\nSplit rule (#110): Slider, Tooltip, ButtonDial, Dither, Noise and DrawingHelpers\nremain dropped, not rewritten.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\n\n* refactor(ui): drop dead theme_ member from LabelSystem (#121)\n\nLabelSystem stored a Theme member and took it as a ctor param but never\nread it — labels style per-instance from LabelComponent::color/background,\nexactly like IconSystem (which takes only world+canvas). Code review\nflagged the unused member/param as a Middle Man / Refused Bequest.\n\nRemove the member, the ctor param, and the now-unused theme.hpp include.\nNo caller passed a theme (tests construct LabelSystem(&world, &canvas)),\nso the two-arg form is unchanged in practice. ui suite still 9/9 green.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 4.8 <noreply@anthropic.com>",
+          "timestamp": "2026-07-13T01:50:14+02:00",
+          "tree_id": "1e99a43f2b0f6849bd79ce819fec5b3dfc71f481",
+          "url": "https://github.com/unwndevices/enjin/commit/83e470c83b1823203646ebeaa8721881163b6ee9"
+        },
+        "date": 1783900246798,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 20,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 60,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 140,
+            "range": "± 0.71%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 37651.5,
+            "range": "± 0.23%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 20,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 500,
+            "range": "± 0.2%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 5 layers",
+            "value": 2954,
+            "range": "± 0.03%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 150,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 441,
+            "range": "± 0.23%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 821,
+            "range": "± 1.2%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 1573,
+            "range": "± 0.57%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 2312.3317,
+            "range": "± 0.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 50,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 50,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 20,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 40,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 70,
+            "range": "± 1.41%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 120,
+            "range": "± 0.83%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 180,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 27291,
+            "range": "± 1.86%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 515.5,
+            "range": "± 4.99%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1012,
+            "range": "± 1.84%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 1522.5,
+            "range": "± 2.01%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 1372,
+            "range": "± 3.0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 821,
+            "range": "± 2.5%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 2013,
+            "range": "± 0.49%",
             "unit": "ns/op"
           }
         ]
