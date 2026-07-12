@@ -12,6 +12,17 @@ target_link_libraries(input_test PRIVATE
 )
 add_test(NAME input_test COMMAND input_test)
 
+# UI ECS unit test (Phase 2, #120: ComponentStorage / EntityManager / World / systems)
+add_executable(ui_ecs_test
+    ui_ecs_test.cpp
+)
+target_include_directories(ui_ecs_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_ecs_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_ecs_test COMMAND ui_ecs_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp

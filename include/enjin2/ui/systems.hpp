@@ -2,36 +2,44 @@
 
 #include "system.hpp"
 #include "components.hpp"
+#include "world.hpp"
 #include "../graphics/canvas.hpp"
 #include "../graphics/primitives.hpp"
 #include <algorithm>
+#include <vector>
 
 namespace enjin2 {
 
 /**
  * @brief Animation system for updating time-based animations
- * 
- * Updates all entities with AnimationComponent, handling timing,
- * looping, and ping-pong behavior.
+ * @tparam TWorld World type providing the AnimationComponent storage
+ *
+ * Advances every playing AnimationComponent in the world, handling looping and
+ * ping-pong behaviour.
  */
-class AnimationSystem : public System<AnimationSystem> {
+template<typename TWorld>
+class AnimationSystem : public System<AnimationSystem<TWorld>> {
 public:
+    /**
+     * @brief Construct against the world whose animations it drives
+     * @param world World to update (borrowed, not owned)
+     */
+    explicit AnimationSystem(TWorld* world) : world_(world) {}
+
     /**
      * @brief Update all animations
      * @param dt Time since last update in seconds
      */
     void update(float dt) override {
-        // In a real implementation, this would iterate over all entities
-        // with AnimationComponent using the component storage system
-        
-        // Pseudo-code for the iteration:
-        // for (auto [entity, animation] : animationStorage) {
-        //     if (animation->playing) {
-        //         updateAnimation(*animation, deltaTime);
-        //     }
-        // }
+        if (!world_) return;
+        for (auto [entity, animation] : world_->template components<AnimationComponent>()) {
+            (void)entity;
+            if (animation->playing) {
+                updateAnimation(*animation, dt);
+            }
+        }
     }
-    
+
     /**
      * @brief Get system priority (animations should run early)
      * @return Priority value
@@ -39,6 +47,8 @@ public:
     int getPriority() const override { return 10; }
 
 private:
+    TWorld* world_; ///< World whose animations are updated
+
     /**
      * @brief Update individual animation component
      * @param animation Animation to update
@@ -48,7 +58,7 @@ private:
         if (!animation.playing) return;
 
         animation.currentTime += dt * animation.speed;
-        
+
         if (animation.currentTime >= animation.duration) {
             if (animation.looping) {
                 if (animation.pingPong) {
@@ -74,57 +84,64 @@ private:
 
 /**
  * @brief Input system for handling user interaction
- * 
- * Processes input events and updates InputComponent states.
- * Handles hit testing against entity bounds.
+ * @tparam TWorld World type providing Input/Position/Size storages
+ *
+ * Hit-tests the current pointer against every entity that has an InputComponent,
+ * PositionComponent and SizeComponent, driving hover/press state through the
+ * component's own event hooks.
  */
-class InputSystem : public System<InputSystem> {
+template<typename TWorld>
+class InputSystem : public System<InputSystem<TWorld>> {
 private:
+    TWorld* world_;      ///< World whose input state is updated
     Point mousePos;      ///< Current mouse position
     bool mousePressed;   ///< Mouse button state
     bool mouseClicked;   ///< Mouse clicked this frame
-    
+
 public:
     /**
-     * @brief Constructor initializes input state
+     * @brief Construct against the world it processes input for
+     * @param world World to update (borrowed, not owned)
      */
-    InputSystem() : mousePos(), mousePressed(false), mouseClicked(false) {}
-    
+    explicit InputSystem(TWorld* world)
+        : world_(world), mousePos(), mousePressed(false), mouseClicked(false) {}
+
     /**
      * @brief Update input processing
      * @param dt Time since last update in seconds
      */
     void update(float dt) override {
-        // Reset transient states
+        (void)dt;
+        if (!world_) return;
+
+        for (Entity e : world_->template query<InputComponent, PositionComponent, SizeComponent>()) {
+            auto* input = world_->template get<InputComponent>(e);
+            auto* pos = world_->template get<PositionComponent>(e);
+            auto* size = world_->template get<SizeComponent>(e);
+            if (!input || !pos || !size) continue;
+
+            Rect bounds(pos->position.x, pos->position.y, size->size.width, size->size.height);
+            bool inside = bounds.contains(mousePos.x, mousePos.y);
+
+            // Drive hover transitions through the component's hooks (which respect
+            // the enabled flag), rather than poking `hovered` directly.
+            if (inside && !input->hovered) {
+                input->onHoverEnter();
+            } else if (!inside && input->hovered) {
+                input->onHoverExit();
+            }
+
+            if (input->hovered && mouseClicked) {
+                input->onPress(mousePos);
+            }
+
+            input->resetTransientState();
+        }
+
+        // The click is consumed once it has been dispatched to hovered entities.
         mouseClicked = false;
-        
-        // In a real implementation, this would:
-        // 1. Iterate over all entities with InputComponent + PositionComponent + SizeComponent
-        // 2. Perform hit testing against entity bounds
-        // 3. Update hover/focus states
-        // 4. Generate input events
-        
-        // Pseudo-code:
-        // for (auto [entity, input, pos, size] : query<InputComponent, PositionComponent, SizeComponent>()) {
-        //     Rect bounds(pos->position.x, pos->position.y, size->size.width, size->size.height);
-        //     bool wasHovered = input->hovered;
-        //     
-        //     input->hovered = bounds.contains(mousePos.x, mousePos.y);
-        //     
-        //     if (input->hovered && !wasHovered) {
-        //         input->onHoverEnter();
-        //     } else if (!input->hovered && wasHovered) {
-        //         input->onHoverExit();
-        //     }
-        //     
-        //     if (input->hovered && mouseClicked) {
-        //         input->onPress(mousePos);
-        //     }
-        //     
-        //     input->resetTransientState();
-        // }
     }
-    
+
     /**
      * @brief Handle mouse move event
      * @param pos New mouse position
@@ -132,7 +149,7 @@ public:
     void onMouseMove(Point pos) {
         mousePos = pos;
     }
-    
+
     /**
      * @brief Handle mouse button press
      * @param pos Mouse position
@@ -142,7 +159,7 @@ public:
         mousePressed = true;
         mouseClicked = true;
     }
-    
+
     /**
      * @brief Handle mouse button release
      * @param pos Mouse position
@@ -151,7 +168,7 @@ public:
         mousePos = pos;
         mousePressed = false;
     }
-    
+
     /**
      * @brief Get system priority (input should run first)
      * @return Priority value
@@ -161,59 +178,65 @@ public:
 
 /**
  * @brief Rendering system for drawing entities to canvas
+ * @tparam TWorld World type providing the render/shape/position/size storages
  * @tparam TCanvas Canvas type for rendering
- * 
- * Renders all visible entities with RenderComponent to the target canvas.
- * Handles z-ordering and shape rendering.
+ *
+ * Renders all visible entities that have a RenderComponent to the target canvas,
+ * in ascending z-order.
+ *
+ * @note TWorld must compose PositionComponent, SizeComponent, RenderComponent and
+ *       ShapeComponent — the renderer looks all four up by type. TCanvas must be a
+ *       Pixel4 canvas, since RenderComponent stores a Pixel4 color.
  */
-template<typename TCanvas>
-class RenderSystem : public System<RenderSystem<TCanvas>> {
+template<typename TWorld, typename TCanvas>
+class RenderSystem : public System<RenderSystem<TWorld, TCanvas>> {
 private:
-    TCanvas* canvas;                     ///< Target canvas for rendering
+    TWorld* world_;                     ///< World whose entities are rendered
+    TCanvas* canvas;                    ///< Target canvas for rendering
     std::vector<Entity> sortedEntities; ///< Entities sorted by z-order
-    
+
 public:
     /**
-     * @brief Constructor with target canvas
-     * @param targetCanvas Canvas to render to
+     * @brief Construct with the world to render and the target canvas
+     * @param world World to render (borrowed, not owned)
+     * @param targetCanvas Canvas to render to (borrowed, not owned)
      */
-    RenderSystem(TCanvas* targetCanvas) : canvas(targetCanvas) {}
-    
+    RenderSystem(TWorld* world, TCanvas* targetCanvas)
+        : world_(world), canvas(targetCanvas) {}
+
     /**
      * @brief Update rendering
      * @param dt Time since last update in seconds
      */
     void update(float dt) override {
-        if (!canvas) return;
-        
+        (void)dt;
+        if (!canvas || !world_) return;
+
         // Clear canvas
         canvas->clear(Colors::BLACK);
-        
-        // In a real implementation:
-        // 1. Collect all renderable entities
-        // 2. Sort by z-order
-        // 3. Render each entity based on its components
-        
-        // Pseudo-code:
-        // sortedEntities.clear();
-        // for (auto [entity, render] : query<RenderComponent>()) {
-        //     if (render->shouldRender()) {
-        //         sortedEntities.push_back(entity);
-        //     }
-        // }
-        // 
-        // std::sort(sortedEntities.begin(), sortedEntities.end(),
-        //           [this](Entity a, Entity b) {
-        //               auto renderA = getComponent<RenderComponent>(a);
-        //               auto renderB = getComponent<RenderComponent>(b);
-        //               return renderA->zOrder < renderB->zOrder;
-        //           });
-        // 
-        // for (Entity entity : sortedEntities) {
-        //     renderEntity(entity);
-        // }
+
+        // Collect renderable entities.
+        sortedEntities.clear();
+        for (Entity e : world_->template query<RenderComponent>()) {
+            auto* render = world_->template get<RenderComponent>(e);
+            if (render && render->shouldRender()) {
+                sortedEntities.push_back(e);
+            }
+        }
+
+        // Sort back-to-front by z-order.
+        std::sort(sortedEntities.begin(), sortedEntities.end(),
+                  [this](Entity a, Entity b) {
+                      auto* renderA = world_->template get<RenderComponent>(a);
+                      auto* renderB = world_->template get<RenderComponent>(b);
+                      return renderA->zOrder < renderB->zOrder;
+                  });
+
+        for (Entity entity : sortedEntities) {
+            renderEntity(entity);
+        }
     }
-    
+
     /**
      * @brief Get system priority (rendering should run last)
      * @return Priority value
@@ -226,21 +249,20 @@ private:
      * @param entity Entity to render
      */
     void renderEntity(Entity entity) {
-        // This would get components and render based on entity type
-        // auto pos = getComponent<PositionComponent>(entity);
-        // auto size = getComponent<SizeComponent>(entity);
-        // auto render = getComponent<RenderComponent>(entity);
-        // auto shape = getComponent<ShapeComponent>(entity);
-        // 
-        // if (!pos || !render) return;
-        // 
-        // if (shape) {
-        //     renderShape(*pos, size, *render, *shape);
-        // } else if (size) {
-        //     renderRectangle(*pos, *size, *render);
-        // }
+        auto* pos = world_->template get<PositionComponent>(entity);
+        auto* render = world_->template get<RenderComponent>(entity);
+        if (!pos || !render) return;
+
+        auto* size = world_->template get<SizeComponent>(entity);
+        auto* shape = world_->template get<ShapeComponent>(entity);
+
+        if (shape) {
+            renderShape(*pos, size, *render, *shape);
+        } else if (size) {
+            renderRectangle(*pos, *size, *render);
+        }
     }
-    
+
     /**
      * @brief Render shape component
      * @param pos Position component
@@ -250,33 +272,33 @@ private:
      */
     void renderShape(const PositionComponent& pos, const SizeComponent* size,
                     const RenderComponent& render, const ShapeComponent& shape) {
-        using Primitives = Primitives<typename TCanvas::PixelType>;
-        
+        using Prims = Primitives<typename TCanvas::PixelType>;
+
         switch (shape.type) {
             case ShapeComponent::RECTANGLE:
                 if (size) {
                     Rect rect(pos.position.x, pos.position.y, size->size.width, size->size.height);
                     if (shape.filled) {
-                        Primitives::fillRect(*canvas, rect, render.color);
+                        Prims::fillRect(*canvas, rect, render.color);
                     } else {
-                        Primitives::drawRect(*canvas, rect, render.color);
+                        Prims::drawRect(*canvas, rect, render.color);
                     }
                 }
                 break;
-                
+
             case ShapeComponent::CIRCLE:
                 if (shape.filled) {
-                    Primitives::fillCircle(*canvas, pos.position.x, pos.position.y,
-                                         shape.radius, render.color);
+                    Prims::fillCircle(*canvas, pos.position.x, pos.position.y,
+                                      shape.radius, render.color);
                 } else {
-                    Primitives::drawCircle(*canvas, pos.position.x, pos.position.y,
-                                         shape.radius, render.color);
+                    Prims::drawCircle(*canvas, pos.position.x, pos.position.y,
+                                      shape.radius, render.color);
                 }
                 break;
-                
+
             case ShapeComponent::TRIANGLE:
                 if (shape.filled) {
-                    Primitives::fillTriangle(*canvas,
+                    Prims::fillTriangle(*canvas,
                         pos.position.x + shape.p1.x,
                         pos.position.y + shape.p1.y,
                         pos.position.x + shape.p2.x,
@@ -285,7 +307,7 @@ private:
                         pos.position.y + shape.p3.y,
                         render.color);
                 } else {
-                    Primitives::drawTriangle(*canvas,
+                    Prims::drawTriangle(*canvas,
                         pos.position.x + shape.p1.x,
                         pos.position.y + shape.p1.y,
                         pos.position.x + shape.p2.x,
@@ -295,9 +317,9 @@ private:
                         render.color);
                 }
                 break;
-                
+
             case ShapeComponent::LINE:
-                Primitives::drawLine(*canvas,
+                Prims::drawLine(*canvas,
                     pos.position.x + shape.start.x,
                     pos.position.y + shape.start.y,
                     pos.position.x + shape.end.x,
@@ -306,7 +328,7 @@ private:
                 break;
         }
     }
-    
+
     /**
      * @brief Render simple rectangle
      * @param pos Position component
@@ -315,21 +337,11 @@ private:
      */
     void renderRectangle(const PositionComponent& pos, const SizeComponent& size,
                         const RenderComponent& render) {
-        using Primitives = Primitives<typename TCanvas::PixelType>;
-        
+        using Prims = Primitives<typename TCanvas::PixelType>;
+
         Rect rect(pos.position.x, pos.position.y, size.size.width, size.size.height);
-        Primitives::fillRect(*canvas, rect, render.color);
+        Prims::fillRect(*canvas, rect, render.color);
     }
 };
-
-/**
- * @brief Type alias for 4-bit render system
- */
-using RenderSystem4 = RenderSystem<Canvas4<128, 64>>;
-
-/**
- * @brief Type alias for 8-bit render system
- */
-using RenderSystem8 = RenderSystem<Canvas8<128, 64>>;
 
 } // namespace enjin2

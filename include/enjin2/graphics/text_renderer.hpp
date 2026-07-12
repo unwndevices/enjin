@@ -2,33 +2,14 @@
 #define ENJIN2_GRAPHICS_TEXT_RENDERER_HPP
 
 #include "canvas.hpp"
+#include "gfxfont.h"  // canonical GFXglyph/GFXfont definitions (Adafruit GFX layout)
 #include <string>
 #include <cstring>
 
 namespace enjin2 {
 
-/**
- * @brief Glyph structure for individual characters (Adafruit GFX compatible)
- */
-typedef struct {
-    uint16_t bitmapOffset;     ///< Pointer into GFXfont->bitmap
-    uint8_t width;             ///< Bitmap dimensions in pixels
-    uint8_t height;            ///< Bitmap dimensions in pixels
-    uint8_t xAdvance;          ///< Distance to advance cursor (x axis)
-    int8_t xOffset;            ///< X dist from cursor pos to UL corner
-    int8_t yOffset;            ///< Y dist from cursor pos to UL corner
-} GFXglyph;
-
-/**
- * @brief Font structure for GFX fonts (Adafruit GFX compatible)
- */
-typedef struct {
-    uint8_t *bitmap;           ///< Glyph bitmaps, concatenated
-    GFXglyph *glyph;           ///< Glyph array
-    uint16_t first;            ///< ASCII extents (first char)
-    uint16_t last;             ///< ASCII extents (last char)
-    uint8_t yAdvance;          ///< Newline distance (y axis)
-} GFXfont;
+// GFXglyph / GFXfont are defined once in graphics/gfxfont.h (global namespace,
+// matching the Adafruit GFX ABI) and used unqualified here via that include.
 
 // Standard ASCII 5x7 font (from Adafruit GFX)
 static const uint8_t default_font[] = {

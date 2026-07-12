@@ -105,6 +105,10 @@ add_library(enjin2_ui STATIC)
 target_sources(enjin2_ui PRIVATE
     src/components/drawable.cpp
     src/utils/polar.cpp
+    # UI ECS translation units (Phase 2, #120): static ID counters + EntityManager.
+    src/ui/component.cpp
+    src/ui/system.cpp
+    src/ui/theme.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_ui

@@ -352,7 +352,7 @@ void LuaCanvas::fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 void LuaCanvas::drawText(const char* str, int16_t x, int16_t y,
                          uint8_t color, uint8_t size, const ::GFXfont* font) {
     if (!str) return;
-    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    const GFXfont* gfxFont = font;
     if (is4Bit) {
         auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
         TextRenderer<Pixel4> tr;
@@ -374,7 +374,7 @@ void LuaCanvas::drawTextWrapped(const char* str, int16_t x, int16_t y,
                                uint16_t maxWidth, uint8_t color, uint8_t size,
                                const ::GFXfont* font) {
     if (!str) return;
-    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    const GFXfont* gfxFont = font;
     if (is4Bit) {
         auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
         TextRenderer<Pixel4> tr;
@@ -394,7 +394,7 @@ void LuaCanvas::drawTextWrapped(const char* str, int16_t x, int16_t y,
 
 uint16_t LuaCanvas::measureTextWidth(const char* str, uint8_t size, const ::GFXfont* font) {
     if (!str) return 0;
-    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    const GFXfont* gfxFont = font;
     if (is4Bit) {
         TextRenderer<Pixel4> tr;
         tr.setFont(gfxFont);
@@ -409,7 +409,7 @@ uint16_t LuaCanvas::measureTextWidth(const char* str, uint8_t size, const ::GFXf
 }
 
 uint8_t LuaCanvas::measureTextHeight(uint8_t size, const ::GFXfont* font) {
-    const auto* gfxFont = reinterpret_cast<const enjin2::GFXfont*>(font);
+    const GFXfont* gfxFont = font;
     if (is4Bit) {
         TextRenderer<Pixel4> tr;
         tr.setFont(gfxFont);
