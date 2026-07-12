@@ -317,20 +317,17 @@ private:
             }
 
             if (isSelected) {
-                // Parity notes vs C_List, both settled at Gate 2 (per-widget visual
-                // review in `preview`, not a pixel diff):
-                //   * C_List filled a *rounded* rect (radius 2); Primitives has no
-                //     fillRoundRect yet, so the bar is square here. The rounded-rect
-                //     helper is co-designed with Label/PopUp (which also need it) in a
-                //     later Phase 3a pass.
-                //   * C_List biased `top` by the glyph Y-bearing (`ty`); this engine's
-                //     TextRenderer::getTextBounds does not expose per-glyph bearing
-                //     (it returns the passed y), so bar/glyph vertical alignment is
-                //     tuned by eye at Gate 2 rather than reproduced numerically.
+                // Parity note vs C_List, settled at Gate 2 (per-widget visual review
+                // in `preview`, not a pixel diff): C_List biased `top` by the glyph
+                // Y-bearing (`ty`); this engine's TextRenderer::getTextBounds does not
+                // expose per-glyph bearing (it returns the passed y), so bar/glyph
+                // vertical alignment is tuned by eye at Gate 2, not reproduced
+                // numerically. The rounded bar matches C_List's radius-2 fill now that
+                // Primitives::fillRoundRect has been upstreamed (#121).
                 const int top = y - list.itemSpacing / 2 - 1;
                 Rect bar(originX, top, static_cast<uint16_t>(width),
                          static_cast<uint16_t>(itemHeight));
-                Primitives<Pixel4>::fillRect(*canvas_, bar, theme_.accent);
+                Primitives<Pixel4>::fillRoundRect(*canvas_, bar, 2, theme_.accent);
                 text_.setTextColor(theme_.accentText);
             } else {
                 text_.setTextColor(theme_.muted);
