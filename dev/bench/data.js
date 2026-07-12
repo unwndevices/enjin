@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1783876649001,
+  "lastUpdate": 1783900144805,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -1113,6 +1113,192 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3607.1174,
             "range": "± 0.59%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "58692249+unwndevices@users.noreply.github.com",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "182dbd1110eaa874f4174a3a97b9f9f39b817727",
+          "message": "feat(ui): make the upstream ui ECS real (#120) (#2)\n\nPhase 2 of the Eisei↔enjin migration (epic #117): the ui ECS shipped as\nscaffolding (#115) — broken storage, unimplemented query, pseudo-code systems,\nan empty theme, and two never-compiled translation units. Make it real.\n\nECS core\n- ComponentStorage: replace the aliasing function-local `static` backing array\n  with real per-instance packed member storage, and fix the sparse map to index\n  entities by id (was `% CAPACITY`, which collided). Now a correct O(1) sparse\n  set with swap-on-remove; distinct storages no longer share memory.\n- EntityManager: template on MAX_ENTITIES (default 4096, header-only) so a World\n  can size the entity-id space to its capacity; drop the out-of-line defs.\n- world.hpp: new lean, fixed-capacity World<CAPACITY, Components...> registry —\n  the connective tissue the systems were missing. Composes EntityManager + one\n  ComponentStorage per type; create/destroy/valid, add/get/has/remove, and a\n  query<First, Rest...>() that yields entities holding the whole set.\n- ComponentQuery::findNext(): implemented as a real filtered scan over an entity\n  span; World::query() drives it.\n\nSystems (were pseudo-code comments)\n- AnimationSystem / InputSystem / RenderSystem now carry real update() bodies,\n  templated on the World type so each feature context composes its own world.\n\ntheme.hpp: replace the empty placeholder with a constexpr Theme (palette +\nmetrics) and a default dark theme.\n\nHygiene\n- Dedupe GFXfont: drop text_renderer.hpp's duplicate enjin2::GFXfont typedefs and\n  use the canonical global gfxfont.h; simplify the now-identity casts in\n  bindings.cpp.\n- Dedupe ICanvas: delete the dead abstract/icanvas.hpp (included nowhere; the\n  live definition is graphics/canvas.hpp).\n\nBuild/test: wire src/ui/{component,system,theme}.cpp into enjin2_ui (they were\ncompiled into nothing) and add tests/ui_ecs_test.cpp (73 assertions: storage,\nentity manager, world, query, all three systems, theme).\n\nCo-authored-by: Claude Fable 5 <noreply@anthropic.com>",
+          "timestamp": "2026-07-13T01:48:17+02:00",
+          "tree_id": "dd609f2c425c2f02120cda0efce6100adba37781",
+          "url": "https://github.com/unwndevices/enjin/commit/182dbd1110eaa874f4174a3a97b9f9f39b817727"
+        },
+        "date": 1783900143600,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 40,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 221,
+            "range": "± 0.45%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 71674,
+            "range": "± 0.01%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 992,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 5 layers",
+            "value": 4279,
+            "range": "± 0.21%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 300,
+            "range": "± 0.33%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 801,
+            "range": "± 1.14%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1463,
+            "range": "± 0.69%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2725,
+            "range": "± 0.73%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3987.5,
+            "range": "± 0.49%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 85.5,
+            "range": "± 6.87%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 90,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 211,
+            "range": "± 0.48%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 311,
+            "range": "± 0.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 64456,
+            "range": "± 2.67%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 961,
+            "range": "± 4.16%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1673.5,
+            "range": "± 2.99%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2695,
+            "range": "± 2.03%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2559.5,
+            "range": "± 2.37%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1518,
+            "range": "± 1.99%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3697,
+            "range": "± 0.82%",
             "unit": "ns/op"
           }
         ]
