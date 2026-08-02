@@ -457,10 +457,35 @@ public:
      * @brief Get width of a string in pixels
      * @param str String to measure
      * @return Width in pixels
+     *
+     * GFX fonts sum glyph advances, then trim the last glyph's trailing
+     * bearing (advance past its ink) — Canvas8::getTextWidth byte-for-byte
+     * (sweep adjudication, unwn #168). Centering math tuned on the shipped
+     * UI depends on the trim. The built-in font stays 6 px per character.
      */
     uint16_t getTextWidth(const char* str) {
         if (!str) return 0;
-        
+
+        if (gfx_font) {
+            uint16_t advance = 0;
+            uint8_t first = gfx_font->first, last = gfx_font->last;
+            const GFXglyph* glyphs = (const GFXglyph*)gfx_font->glyph;
+            const GFXglyph* lastGlyph = nullptr;
+            unsigned char c;
+            while ((c = static_cast<unsigned char>(*str++))) {
+                if (c >= first && c <= last) {
+                    lastGlyph = &glyphs[c - first];
+                    advance += lastGlyph->xAdvance * text_size_x;
+                }
+            }
+            if (lastGlyph) {
+                int16_t lastVisual = (int8_t)lastGlyph->xOffset + lastGlyph->width;
+                if (lastVisual < (int16_t)lastGlyph->xAdvance)
+                    advance -= (lastGlyph->xAdvance - lastVisual) * text_size_x;
+            }
+            return advance;
+        }
+
         uint16_t width = 0;
         while (*str) {
             width += getCharWidth(*str++) * text_size_x;
@@ -472,24 +497,56 @@ public:
      * @brief Write a character at current cursor position
      * @param canvas Canvas to draw to
      * @param c Character to write
+     *
+     * The GFX-font path is Canvas8::write byte-for-byte (sweep adjudication,
+     * unwn #168): the wrap predicate tests the glyph's scaled ink edge
+     * (xOffset + width), not its advance; empty glyphs (space) advance the
+     * cursor but never trigger a wrap; '\r' is ignored; out-of-range
+     * characters do nothing at all. The built-in 5x7 path keeps its own
+     * advance-based wrap — it serves the engine's scripting API and has no
+     * BASE counterpart (waived sub-range, unwn #168).
      */
     void writeChar(ICanvas<TPixel>& canvas, unsigned char c) {
-        if (c == '\n') {
-            cursor_x = 0;
-            cursor_y += getCharHeight() * text_size_y;
-        } else if (c == '\r') {
-            cursor_x = 0;
+        if (gfx_font) {
+            if (c == '\n') {
+                cursor_x = 0;
+                cursor_y += (int16_t)text_size_y * gfx_font->yAdvance;
+            } else if (c != '\r') {
+                uint8_t first = gfx_font->first;
+                if ((c >= first) && (c <= gfx_font->last)) {
+                    const GFXglyph* glyph = (const GFXglyph*)gfx_font->glyph;
+                    const GFXglyph& g = glyph[c - first];
+                    if ((g.width > 0) && (g.height > 0)) {
+                        int16_t xo = g.xOffset;
+                        if (wrap_text &&
+                            ((cursor_x + text_size_x * (xo + g.width)) >
+                             (int16_t)canvas.getWidth())) {
+                            cursor_x = 0;
+                            cursor_y += (int16_t)text_size_y * gfx_font->yAdvance;
+                        }
+                        drawChar(canvas, cursor_x, cursor_y, c);
+                    }
+                    cursor_x += g.xAdvance * (int16_t)text_size_x;
+                }
+            }
         } else {
-            uint16_t char_width = getCharWidth(c) * text_size_x;
-            
-            // Check for line wrap
-            if (wrap_text && cursor_x + char_width > canvas.getWidth()) {
+            if (c == '\n') {
                 cursor_x = 0;
                 cursor_y += getCharHeight() * text_size_y;
+            } else if (c == '\r') {
+                cursor_x = 0;
+            } else {
+                uint16_t char_width = getCharWidth(c) * text_size_x;
+
+                // Check for line wrap
+                if (wrap_text && cursor_x + char_width > canvas.getWidth()) {
+                    cursor_x = 0;
+                    cursor_y += getCharHeight() * text_size_y;
+                }
+
+                drawChar(canvas, cursor_x, cursor_y, c);
+                cursor_x += char_width;
             }
-            
-            drawChar(canvas, cursor_x, cursor_y, c);
-            cursor_x += char_width;
         }
     }
 

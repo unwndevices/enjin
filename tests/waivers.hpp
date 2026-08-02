@@ -33,9 +33,12 @@
 // the ratified HEAD behavior?". The sweep skips a retired pair; the census
 // prints it every run, so shrinking coverage is permanently on the record.
 //
-// The table STARTS EMPTY: unwn #161's restores removed every known
+// The table started empty (unwn #161's restores removed every known
 // systematic divergence ahead of the bench, and #146/#147 landed as restores
-// of BASE behavior, seeding nothing.
+// of BASE behavior, seeding nothing). The first sweep's adjudication (M5,
+// unwn #168) fixed 13 of its 17 signatures in the graphics headers and
+// recorded the remaining four here: two Active glcd-only waivers and two
+// retirements.
 //
 // Pin hashes: run the bench with --hash to print the current per-header
 // hashes to copy into a new entry.
@@ -95,11 +98,70 @@ namespace parity
         const char *date;   // YYYY-MM-DD, provenance only (pins do the firing)
     };
 
+    // Covers the built-in 5x7 (glcd) font sub-range of a text pair: font
+    // fixture index 3 is the nullptr-font case on both sides.
+    inline bool coversGlcdFont(const Param *params, size_t count)
+    {
+        return paramValue(params, count, "font") == 3;
+    }
+
     // THE TABLE. Bump the array size when adding an entry — the explicit count
     // keeps the list visible *as a list* and every addition a one-hunk diff.
     // Evaluation is first-match-wins, so keep predicates non-overlapping per
     // pair: a stale earlier entry would otherwise shadow a fresh later one.
-    inline constexpr std::array<Waiver, 0> kWaivers{};
+    //
+    // M5 adjudication (unwn #168), first sweep run:
+    //
+    //   * text.drawChar / text.print, font == glcd (Active) — with no GFX
+    //     font, BASE's Canvas8 draws nothing (a bare `!gfx_font` guard);
+    //     HEAD's TextRenderer renders the built-in 5x7. The 5x7 fallback is
+    //     load-bearing engine API (the Lua text bindings and ui widget layer
+    //     document and test "nullptr = built-in 5x7"), and no Eisei call
+    //     site can reach it: Canvas8 defaults to defaultFont8pt7b and every
+    //     Eisei text path sets a font. Ruled an intended difference on the
+    //     unreachable sub-range; the GFX-font sub-ranges stay byte-exact.
+    //
+    //   * text.println (Retired) — BASE's println hardcodes an unscaled 8 px
+    //     line advance; every shipped font's yAdvance is larger, and BASE
+    //     Eisei has zero Canvas8::println call sites (verified at 941a9ab6),
+    //     so no shipped frame ever used it. HEAD's '\n' advance (yAdvance x
+    //     size) is ratified. Exit question: text.print's newline fixtures
+    //     ("\n", "A\nB", "AB\nCD\nEF") guard the ratified advance, byte-exact
+    //     against BASE's own write('\n') path.
+    //
+    //   * blit.canvasOpacity (Retired) — the transparency plane moved (#158
+    //     structural finding): BASE keyed transparency on an out-of-band
+    //     8-bit matte (widgets composited with matte=16, one past the 4-bit
+    //     range, so drawn black stayed opaque); a Pixel4 source has no
+    //     out-of-band value, and HEAD's blitCanvasOpacity keys on Pixel4(0).
+    //     Unfixable at 4 bpp — the sentinel cannot exist — and a sub-range
+    //     waiver would exceed the 50% census gate. Ratified as the migrated
+    //     design. Exit question: blit_semantics_test pins the ratified
+    //     contract (transparent skip, 8-bit fade, clipping). Consequence to
+    //     verify at C2 (unwn #170): content drawn at true black inside an
+    //     Opacity50/25-blended widget canvas now reads transparent.
+    inline constexpr std::array<Waiver, 4> kWaivers{{
+        {"text.drawChar", WaiverStatus::Active,
+         "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
+         "canvas.hpp", 0xf18aba15dd7867ccull,
+         "text_renderer.hpp", 0x3a0e008f0006aea7ull,
+         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
+        {"text.print", WaiverStatus::Active,
+         "font == 3 (glcd / no GFX font)", &coversGlcdFont, 1812,
+         "canvas.hpp", 0xf18aba15dd7867ccull,
+         "text_renderer.hpp", 0x3a0e008f0006aea7ull,
+         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
+        {"text.println", WaiverStatus::Retired,
+         "pair retired: HEAD '\\n' yAdvance ratified; no BASE call sites", nullptr, 0,
+         "canvas.hpp", 0xf18aba15dd7867ccull,
+         "text_renderer.hpp", 0x3a0e008f0006aea7ull,
+         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
+        {"blit.canvasOpacity", WaiverStatus::Retired,
+         "pair retired: 4-bit source cannot carry BASE's out-of-band matte", nullptr, 0,
+         "canvas.hpp", 0xf18aba15dd7867ccull,
+         "blit.hpp", 0xd94a04540dfb6c79ull,
+         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
+    }};
 
 } // namespace parity
 

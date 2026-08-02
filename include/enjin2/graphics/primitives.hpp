@@ -88,7 +88,7 @@ public:
     static void fillRect(ICanvas<TPixel>& canvas, const Rect& rect, TPixel color) {
         canvas.fill(rect, color);
     }
-    
+
     /**
      * @brief Draw circle outline using midpoint circle algorithm
      * @param canvas Target canvas
@@ -169,161 +169,77 @@ public:
     }
     
     /**
-     * @brief Draw one or more quarter-circle corners (rounded-rect helper)
-     * @param canvas Target canvas
-     * @param cx Corner-circle center X coordinate
-     * @param cy Corner-circle center Y coordinate
-     * @param radius Corner radius
-     * @param corners Adafruit-GFX corner bitmask (1=TL, 2=TR, 4=BR, 8=BL)
-     * @param color Outline color
-     *
-     * Midpoint arc walk, quadrant-gated by @p corners so @ref drawRoundRect can
-     * stroke exactly the four corners it needs. Mirrors the Adafruit GFX
-     * `drawCircleHelper` bit layout.
-     */
-    static void drawCircleHelper(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
-                                 int16_t radius, uint8_t corners, TPixel color) {
-        int16_t f = 1 - radius;
-        int16_t ddF_x = 1;
-        int16_t ddF_y = -2 * radius;
-        int16_t x = 0;
-        int16_t y = radius;
-
-        while (x < y) {
-            if (f >= 0) {
-                y--;
-                ddF_y += 2;
-                f += ddF_y;
-            }
-            x++;
-            ddF_x += 2;
-            f += ddF_x;
-
-            if (corners & 0x4) { // bottom-right
-                canvas.setPixel(cx + x, cy + y, color);
-                canvas.setPixel(cx + y, cy + x, color);
-            }
-            if (corners & 0x2) { // top-right
-                canvas.setPixel(cx + x, cy - y, color);
-                canvas.setPixel(cx + y, cy - x, color);
-            }
-            if (corners & 0x8) { // bottom-left
-                canvas.setPixel(cx - y, cy + x, color);
-                canvas.setPixel(cx - x, cy + y, color);
-            }
-            if (corners & 0x1) { // top-left
-                canvas.setPixel(cx - y, cy - x, color);
-                canvas.setPixel(cx - x, cy - y, color);
-            }
-        }
-    }
-
-    /**
-     * @brief Fill one or more quarter-circle corners (rounded-rect helper)
-     * @param canvas Target canvas
-     * @param cx Corner-circle center X coordinate
-     * @param cy Corner-circle center Y coordinate
-     * @param radius Corner radius
-     * @param corners Side bitmask: 1 selects the right half, 2 the left half
-     * @param delta Extra pixels added to each vertical span (bridges the two halves)
-     * @param color Fill color
-     *
-     * Scanline companion to @ref drawCircleHelper: emits vertical spans for the
-     * requested half-circle so @ref fillRoundRect can cap its side rectangles.
-     */
-    static void fillCircleHelper(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
-                                 int16_t radius, uint8_t corners, int16_t delta, TPixel color) {
-        int16_t f = 1 - radius;
-        int16_t ddF_x = 1;
-        int16_t ddF_y = -2 * radius;
-        int16_t x = 0;
-        int16_t y = radius;
-        int16_t px = x;
-        int16_t py = y;
-
-        delta++; // avoid a +1 inside the loop
-
-        while (x < y) {
-            if (f >= 0) {
-                y--;
-                ddF_y += 2;
-                f += ddF_y;
-            }
-            x++;
-            ddF_x += 2;
-            f += ddF_x;
-
-            if (x < (y + 1)) {
-                if (corners & 1) drawLine(canvas, cx + x, cy - y, cx + x, cy - y + 2 * y + delta - 1, color);
-                if (corners & 2) drawLine(canvas, cx - x, cy - y, cx - x, cy - y + 2 * y + delta - 1, color);
-            }
-            if (y != py) {
-                if (corners & 1) drawLine(canvas, cx + py, cy - px, cx + py, cy - px + 2 * px + delta - 1, color);
-                if (corners & 2) drawLine(canvas, cx - py, cy - px, cx - py, cy - px + 2 * px + delta - 1, color);
-                py = y;
-            }
-            px = x;
-        }
-    }
-
-    /**
      * @brief Draw a rounded-rectangle outline
      * @param canvas Target canvas
      * @param rect Rectangle bounds
-     * @param radius Corner radius (clamped to half the shorter side)
+     * @param radius Corner radius (no clamp — Canvas8 semantics, unwn #168)
      * @param color Outline color
      *
-     * Straight edges plus four quarter-circle corners. A zero radius degrades to
-     * @ref drawRect. Upstreamed alongside the Pixel4 widget layer (Label/PopUp/
-     * Gauge) so they no longer settle for a square bar (see list.hpp Gate-2 note).
+     * Straight edges plus four corner arcs rasterised by the annulus test
+     * `(r-1)^2 <= i^2+j^2 <= r^2` — the Canvas8 original, byte-for-byte
+     * (sweep adjudication, unwn #168). Deliberately no radius clamp and no
+     * zero-radius degrade: Canvas8 has neither, and every shipped popup and
+     * label box was rasterised by exactly this walk. Upstreamed alongside the
+     * Pixel4 widget layer (Label/PopUp/Gauge) so they no longer settle for a
+     * square bar (see list.hpp Gate-2 note).
      */
     static void drawRoundRect(ICanvas<TPixel>& canvas, const Rect& rect, int16_t radius, TPixel color) {
-        int16_t w = rect.width;
-        int16_t h = rect.height;
-        int16_t maxRadius = ((w < h) ? w : h) / 2;
-        if (radius > maxRadius) radius = maxRadius;
-        if (radius <= 0) { drawRect(canvas, rect, color); return; }
-
-        int16_t x = rect.x;
-        int16_t y = rect.y;
+        const int16_t x = rect.x;
+        const int16_t y = rect.y;
+        const int16_t w = static_cast<int16_t>(rect.width);
+        const int16_t h = static_cast<int16_t>(rect.height);
         // Straight edges.
-        drawLine(canvas, x + radius, y, x + w - radius - 1, y, color);             // top
+        drawLine(canvas, x + radius, y, x + w - radius - 1, y, color);                 // top
         drawLine(canvas, x + radius, y + h - 1, x + w - radius - 1, y + h - 1, color); // bottom
-        drawLine(canvas, x, y + radius, x, y + h - radius - 1, color);             // left
+        drawLine(canvas, x, y + radius, x, y + h - radius - 1, color);                 // left
         drawLine(canvas, x + w - 1, y + radius, x + w - 1, y + h - radius - 1, color); // right
-        // Corners.
-        drawCircleHelper(canvas, x + radius, y + radius, radius, 0x1, color);
-        drawCircleHelper(canvas, x + w - radius - 1, y + radius, radius, 0x2, color);
-        drawCircleHelper(canvas, x + w - radius - 1, y + h - radius - 1, radius, 0x4, color);
-        drawCircleHelper(canvas, x + radius, y + h - radius - 1, radius, 0x8, color);
+        // Corner arcs.
+        for (int16_t i = 0; i <= radius; i++) {
+            for (int16_t j = 0; j <= radius; j++) {
+                if (i * i + j * j <= radius * radius &&
+                    i * i + j * j >= (radius - 1) * (radius - 1)) {
+                    canvas.setPixel(x + radius - i, y + radius - j, color);                 // top-left
+                    canvas.setPixel(x + w - radius - 1 + i, y + radius - j, color);         // top-right
+                    canvas.setPixel(x + radius - i, y + h - radius - 1 + j, color);         // bottom-left
+                    canvas.setPixel(x + w - radius - 1 + i, y + h - radius - 1 + j, color); // bottom-right
+                }
+            }
+        }
     }
 
     /**
      * @brief Fill a rounded rectangle
      * @param canvas Target canvas
      * @param rect Rectangle bounds
-     * @param radius Corner radius (clamped to half the shorter side)
+     * @param radius Corner radius (no clamp — Canvas8 semantics, unwn #168)
      * @param color Fill color
      *
-     * A full-height center band flanked by two corner-capped side bands. A zero
-     * radius degrades to @ref fillRect.
+     * A full-height center band, two side bands, and quarter-disc corners
+     * from the distance test `i^2+j^2 <= r^2` — the Canvas8 original,
+     * byte-for-byte (sweep adjudication, unwn #168). No radius clamp, no
+     * zero-radius degrade; negative extents still paint the corner discs,
+     * exactly as shipped.
      */
     static void fillRoundRect(ICanvas<TPixel>& canvas, const Rect& rect, int16_t radius, TPixel color) {
-        int16_t w = rect.width;
-        int16_t h = rect.height;
-        int16_t maxRadius = ((w < h) ? w : h) / 2;
-        if (radius > maxRadius) radius = maxRadius;
-        if (radius <= 0) { fillRect(canvas, rect, color); return; }
-
-        int16_t x = rect.x;
-        int16_t y = rect.y;
-        // Center band spans the full height between the rounded sides.
-        fillRect(canvas, Rect(x + radius, y, static_cast<uint16_t>(w - 2 * radius),
-                              static_cast<uint16_t>(h)), color);
-        // Side bands, capped by half-circles that bridge across via `delta`.
-        int16_t inner = h - 2 * radius - 1;
-        fillCircleHelper(canvas, x + w - radius - 1, y + radius, radius, 1, inner, color);
-        fillCircleHelper(canvas, x + radius, y + radius, radius, 2, inner, color);
+        const int16_t x = rect.x;
+        const int16_t y = rect.y;
+        const int16_t w = static_cast<int16_t>(rect.width);
+        const int16_t h = static_cast<int16_t>(rect.height);
+        // Bands (Canvas8::fillRect loop shape: a non-positive extent is a no-op).
+        fillBand(canvas, x + radius, y, w - 2 * radius, h, color);              // center
+        fillBand(canvas, x, y + radius, radius, h - 2 * radius, color);         // left edge
+        fillBand(canvas, x + w - radius, y + radius, radius, h - 2 * radius, color); // right edge
+        // Corner discs.
+        for (int16_t i = 0; i <= radius; i++) {
+            for (int16_t j = 0; j <= radius; j++) {
+                if (i * i + j * j <= radius * radius) {
+                    canvas.setPixel(x + radius - i, y + radius - j, color);                 // top-left
+                    canvas.setPixel(x + w - radius - 1 + i, y + radius - j, color);         // top-right
+                    canvas.setPixel(x + radius - i, y + h - radius - 1 + j, color);         // bottom-left
+                    canvas.setPixel(x + w - radius - 1 + i, y + h - radius - 1 + j, color); // bottom-right
+                }
+            }
+        }
     }
 
     /**
@@ -357,30 +273,27 @@ public:
      */
     static void fillTriangle(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
                             int16_t x1, int16_t y1, int16_t x2, int16_t y2, TPixel color) {
-        // Sort vertices by y-coordinate
+        // Canvas8's single scanline walk, byte-for-byte (sweep adjudication,
+        // unwn #168). One loop over the full y extent with a mid-vertex edge
+        // switch — its degenerate collapse (collinear vertices give a point,
+        // not a span) is the shipped behavior the earlier two-loop version
+        // diverged from.
         if (y0 > y1) { std::swap(x0, x1); std::swap(y0, y1); }
         if (y1 > y2) { std::swap(x1, x2); std::swap(y1, y2); }
         if (y0 > y1) { std::swap(x0, x1); std::swap(y0, y1); }
-        
-        // Avoid division by zero
-        int16_t dy02 = y2 - y0;
-        int16_t dy01 = y1 - y0;
-        int16_t dy12 = y2 - y1;
-        
-        // Fill upper half
-        for (int16_t y = y0; y <= y1; ++y) {
-            int16_t xa = (dy02 != 0) ? x0 + (x2 - x0) * (y - y0) / dy02 : x0;
-            int16_t xb = (dy01 != 0) ? x0 + (x1 - x0) * (y - y0) / dy01 : x0;
+
+        for (int16_t y = y0; y <= y2; y++) {
+            int16_t xa;
+            if (y <= y1) {
+                xa = (y1 - y0 != 0) ? x0 + (x1 - x0) * (y - y0) / (y1 - y0) : x0;
+            } else {
+                xa = (y2 - y1 != 0) ? x1 + (x2 - x1) * (y - y1) / (y2 - y1) : x1;
+            }
+            int16_t xb = (y2 - y0 != 0) ? x0 + (x2 - x0) * (y - y0) / (y2 - y0) : x0;
             if (xa > xb) std::swap(xa, xb);
-            drawLine(canvas, xa, y, xb, y, color);
-        }
-        
-        // Fill lower half
-        for (int16_t y = y1; y <= y2; ++y) {
-            int16_t xa = (dy02 != 0) ? x0 + (x2 - x0) * (y - y0) / dy02 : x0;
-            int16_t xb = (dy12 != 0) ? x1 + (x2 - x1) * (y - y1) / dy12 : x1;
-            if (xa > xb) std::swap(xa, xb);
-            drawLine(canvas, xa, y, xb, y, color);
+            for (int16_t x = xa; x <= xb; x++) {
+                canvas.setPixel(x, y, color);
+            }
         }
     }
     
@@ -487,6 +400,30 @@ public:
             size_t next = (i + 1) % vertex_count;
             drawLine(canvas, vertices[i].x, vertices[i].y,
                     vertices[next].x, vertices[next].y, color);
+        }
+    }
+private:
+    /**
+     * @brief Fill a signed-extent rectangle (rounded-rect band helper)
+     * @param canvas Target canvas
+     * @param x Top-left X coordinate
+     * @param y Top-left Y coordinate
+     * @param w Width in pixels (non-positive = no-op)
+     * @param h Height in pixels (non-positive = no-op)
+     * @param color Fill color
+     *
+     * Canvas8::fillRect's exact loop shape, kept separate from @ref fillRect
+     * because Rect's unsigned extents can't express the negative widths
+     * @ref fillRoundRect's band arithmetic produces.
+     */
+    static void fillBand(ICanvas<TPixel>& canvas, int16_t x, int16_t y,
+                         int16_t w, int16_t h, TPixel color) {
+        for (int16_t py = y; py < y + h && py < static_cast<int16_t>(canvas.getHeight()); py++) {
+            for (int16_t px = x; px < x + w && px < static_cast<int16_t>(canvas.getWidth()); px++) {
+                if (px >= 0 && py >= 0) {
+                    canvas.setPixel(px, py, color);
+                }
+            }
         }
     }
 };

@@ -1,8 +1,8 @@
 // Waiver machinery unit test (M3, unwn #166; design § 8 / unwn #159).
 //
-// The visual parity bench's REAL waiver table (tests/waivers.hpp) starts —
-// and should stay — empty, so the machinery that makes waiving harder than
-// fixing is proven here against synthetic tables instead: the mandatory
+// The visual parity bench's REAL waiver table (tests/waivers.hpp) holds only
+// what adjudication put there (M5, unwn #168), so the machinery that makes
+// waiving harder than fixing is proven here against synthetic tables: the
 // sub-range predicate, the enforced expected-diff bound, the implementation
 // pin's staleness trigger, retirement, signature clustering, and the > 50%
 // census hard gate. This test IS registered with ctest: it checks the
@@ -53,19 +53,36 @@ static Waiver makeWaiver(uint64_t baseHash, uint64_t headHash)
 }
 
 // ============================================================
-// a. The real table starts empty
+// a. The real table holds only well-formed, adjudicated entries
 // ============================================================
-static void test_real_table_empty()
+// The table started empty (#161: the restores removed every known
+// divergence) and was first populated by the M5 adjudication (unwn #168).
+// Every entry must carry its adjudication ticket; Active entries must also
+// carry a real sub-range predicate and pins that are still fresh — a stale
+// pin here means the table was left behind by a graphics-header change.
+static void test_real_table_wellformed()
 {
     printf("--- Real table ---\n");
-    ASSERT(kWaivers.empty(),
-           "tests/waivers.hpp table starts EMPTY (#161: restores removed every known divergence)");
+    for (const Waiver &w : kWaivers)
+    {
+        ASSERT(w.ticket != nullptr && w.ticket[0] != '\0',
+               "real-table entry carries its adjudication ticket");
+        if (w.status == WaiverStatus::Active)
+        {
+            ASSERT(w.covers != nullptr,
+                   "Active real-table entry has a sub-range predicate");
+            ASSERT(pinHash(w.base_pin_file) == w.base_pin_hash,
+                   "Active real-table entry's BASE pin is fresh");
+            ASSERT(pinHash(w.head_pin_file) == w.head_pin_hash,
+                   "Active real-table entry's HEAD pin is fresh");
+        }
+    }
 
     const Param p[] = {{"r", 3}};
     WaiverHit hit = evaluateWaiver(kWaivers.data(), kWaivers.size(),
                                    "guard.fillCircle", p, 1, 5);
     ASSERT(hit.verdict == WaiverVerdict::NotCovered,
-           "empty table waives nothing");
+           "real table waives nothing outside its adjudicated pairs");
 }
 
 // ============================================================
@@ -250,7 +267,7 @@ int main()
 {
     printf("waiver_machinery_test — bench waiver/census machinery (unwn #166, design § 8)\n\n");
 
-    test_real_table_empty();
+    test_real_table_wellformed();
     test_predicate_and_bound();
     test_stale_pin();
     test_settle_case();
