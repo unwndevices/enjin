@@ -198,11 +198,14 @@ private:
 
     // Centre the string's ink box in a kLineBoxW x kLineBoxH box whose centre
     // sits at (cx, centerY) — C_Label's `(box - ink) / 2` then `- bearing`.
+    // Measured at the canvas's wrap boundary so the bounds walk agrees with
+    // drawString's wrap (#161: measurement and draw must not diverge).
     void drawCentered(const std::string& s, int16_t cx, int16_t centerY) {
         if (s.empty()) return;
         int16_t x1, y1;
         uint16_t w, h;
-        text_.getTextBounds(s.c_str(), 0, 0, &x1, &y1, &w, &h);
+        text_.getTextBounds(s.c_str(), 0, 0, &x1, &y1, &w, &h,
+                            canvas_->getWidth());
         const int x = (cx - kLineBoxW / 2) + (kLineBoxW - static_cast<int>(w)) / 2;
         const int y = (centerY - kLineBoxH / 2) + (kLineBoxH - static_cast<int>(h)) / 2;
         text_.drawString(*canvas_, static_cast<int16_t>(x - x1),

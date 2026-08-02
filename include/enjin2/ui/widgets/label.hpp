@@ -166,8 +166,11 @@ private:
         std::vector<LineInk> ink(lines.size());
         int totalHeight = 0;
         for (size_t i = 0; i < lines.size(); ++i) {
+            // Measured at the canvas's wrap boundary so the bounds walk agrees
+            // with drawString's wrap (#161) — a no-op for lines wrapText already
+            // fit to the box, but a single over-long word measures as drawn.
             text_.getTextBounds(lines[i].c_str(), 0, 0, &ink[i].x1, &ink[i].y1,
-                                &ink[i].w, &ink[i].h);
+                                &ink[i].w, &ink[i].h, canvas_->getWidth());
             totalHeight += static_cast<int>(ink[i].h);
         }
         if (!lines.empty())
