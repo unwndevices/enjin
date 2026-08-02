@@ -133,21 +133,43 @@ target_link_libraries(canvas4_odd_width_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME canvas4_odd_width_test COMMAND canvas4_odd_width_test)
 
-# Visual parity bench (unwn M1 #164, epic #163): one-binary call-path
-# differential harness — BASE (Canvas8 member algorithms) vs HEAD
-# (Primitives/TextRenderer) vs HEAD @4bpp, byte-exact memcmp on the masked
-# (& 0x0F) / unpacked comparison planes. Deliberately NOT registered with
-# add_test: the design (Visual-Parity-Bench-Design § 11) makes this a
-# locally-run instrument, not a CI check, and its Tier 2 regression guards
-# are required-red until the M2 restore commits land.
+# Visual parity bench (unwn M1 #164 / M3 #166, epic #163): one-binary
+# call-path differential harness — BASE (Canvas8 member algorithms) vs HEAD
+# (Primitives/TextRenderer/blit) vs HEAD @4bpp, byte-exact memcmp on the
+# masked (& 0x0F) / unpacked comparison planes. M3 runs the full #158 pair
+# sweep (~60k cases) with the tests/waivers.hpp machinery and the --png
+# review path. Deliberately NOT registered with add_test: the design
+# (Visual-Parity-Bench-Design § 11) makes this a locally-run instrument,
+# not a CI check, and its first M3 runs are expected red (findings for
+# adjudication on the execution epic).
 add_executable(visual_parity_bench
     visual_parity_bench.cpp
 )
 target_include_directories(visual_parity_bench PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
 )
+target_compile_definitions(visual_parity_bench PRIVATE
+    ENJIN_GRAPHICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../include/enjin2/graphics")
 target_link_libraries(visual_parity_bench PRIVATE
     enjin2_core enjin2_graphics)
+
+# Waiver machinery test (M3 #166): proves the bench's waiver/census machinery
+# (sub-range predicate, enforced bound, implementation-pin staleness,
+# retirement, signature clustering, >50%-waived gate) against synthetic
+# tables, so the real table can stay empty. Unlike the bench itself this IS
+# a CI check — it tests the instrument, not the pairs.
+add_executable(waiver_machinery_test
+    waiver_machinery_test.cpp
+)
+target_include_directories(waiver_machinery_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_compile_definitions(waiver_machinery_test PRIVATE
+    ENJIN_GRAPHICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../include/enjin2/graphics")
+target_link_libraries(waiver_machinery_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME waiver_machinery_test COMMAND waiver_machinery_test)
 
 # Image comparison test for shadow mode verification
 add_executable(image_comparison_test
