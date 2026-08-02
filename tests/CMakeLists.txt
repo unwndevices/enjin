@@ -121,6 +121,22 @@ target_link_libraries(palette_test PRIVATE
 )
 add_test(NAME palette_test COMMAND palette_test)
 
+# Visual parity bench (unwn M1 #164, epic #163): one-binary call-path
+# differential harness — BASE (Canvas8 member algorithms) vs HEAD
+# (Primitives/TextRenderer) vs HEAD @4bpp, byte-exact memcmp on the masked
+# (& 0x0F) / unpacked comparison planes. Deliberately NOT registered with
+# add_test: the design (Visual-Parity-Bench-Design § 11) makes this a
+# locally-run instrument, not a CI check, and its Tier 2 regression guards
+# are required-red until the M2 restore commits land.
+add_executable(visual_parity_bench
+    visual_parity_bench.cpp
+)
+target_include_directories(visual_parity_bench PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(visual_parity_bench PRIVATE
+    enjin2_core enjin2_graphics)
+
 # Image comparison test for shadow mode verification
 add_executable(image_comparison_test
     image_comparison.cpp

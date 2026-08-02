@@ -381,6 +381,14 @@ namespace enjin2
      * @brief 8-bit canvas with per-pixel byte storage
      * @tparam WIDTH Canvas width in pixels
      * @tparam HEIGHT Canvas height in pixels
+     *
+     * @note Bench-only. The visual-parity bench (tests/visual_parity_bench.cpp)
+     * is this class's sole consumer: it serves as the bench's BASE reference,
+     * carrying the pre-migration drawing algorithms (midpoint-octant circle
+     * fill/draw, Adafruit ink-box getTextBounds/charBounds) that HEAD callers
+     * migrated away from. Do not clean up, modernise, or delete these members —
+     * changing them silently rebaselines the bench. See the locked
+     * Visual-Parity-Bench-Design document (unwn repo), section 1.
      */
     template <uint16_t WIDTH, uint16_t HEIGHT>
     class Canvas8 : public ICanvas<uint8_t>
