@@ -104,8 +104,14 @@ namespace enjin2
 
     /**
      * @brief 4-bit canvas with packed pixel storage
-     * @tparam WIDTH Canvas width in pixels (must be even)
+     * @tparam WIDTH Canvas width in pixels
      * @tparam HEIGHT Canvas height in pixels
+     *
+     * Rows are stored at a padded byte stride of ROW_BYTES = (WIDTH + 1) / 2,
+     * so odd widths are supported: each row starts on a fresh byte and an odd
+     * row's final high nibble is padding (written by clear(), never addressed
+     * by pixel access). For even widths the layout is identical to the old
+     * flat packing.
      */
     template <uint16_t WIDTH, uint16_t HEIGHT>
     class Canvas4 : public ICanvas<Pixel4>
@@ -115,14 +121,13 @@ namespace enjin2
         using PixelType = Pixel4;
 
     private:
-        static_assert(WIDTH % 2 == 0, "Width must be even for packed 4-bit storage");
-
-        static constexpr size_t BUFFER_SIZE = (WIDTH * HEIGHT) / 2;
+        static constexpr size_t ROW_BYTES = (WIDTH + 1) / 2;
+        static constexpr size_t BUFFER_SIZE = ROW_BYTES * HEIGHT;
         PackedPixel4 buffer[BUFFER_SIZE];
 
         size_t getIndex(int16_t x, int16_t y) const
         {
-            return (y * WIDTH + x) / 2;
+            return y * ROW_BYTES + x / 2;
         }
 
         bool isLowPixel(int16_t x) const
@@ -381,6 +386,14 @@ namespace enjin2
      * @brief 8-bit canvas with per-pixel byte storage
      * @tparam WIDTH Canvas width in pixels
      * @tparam HEIGHT Canvas height in pixels
+     *
+     * @note Bench-only. The visual-parity bench (tests/visual_parity_bench.cpp)
+     * is this class's sole consumer: it serves as the bench's BASE reference,
+     * carrying the pre-migration drawing algorithms (midpoint-octant circle
+     * fill/draw, Adafruit ink-box getTextBounds/charBounds) that HEAD callers
+     * migrated away from. Do not clean up, modernise, or delete these members —
+     * changing them silently rebaselines the bench. See the locked
+     * Visual-Parity-Bench-Design document (unwn repo), section 1.
      */
     template <uint16_t WIDTH, uint16_t HEIGHT>
     class Canvas8 : public ICanvas<uint8_t>

@@ -156,15 +156,25 @@ private:
         };
         std::vector<std::string> lines = LabelComponent::wrapText(label.text, width, measure);
 
-        // Row height from actual font metrics (ascender/descender sample).
-        int16_t tx, ty;
-        uint16_t tw, th;
-        text_.getTextBounds("Ag", 0, 0, &tx, &ty, &tw, &th);
-        const int lineHeight = static_cast<int>(th);
-        const int lineCount = static_cast<int>(lines.size());
-        const int totalHeight = lineCount > 0
-            ? lineCount * lineHeight + (lineCount - 1) * LabelComponent::kLineSpacing
-            : 0;
+        // C_Label's block metrics (BASE @941a9ab6): each line contributes its
+        // own ink height — getTextBounds reports ink extents again (unwn #161
+        // restore), so no line-height probe or eye-tuned offset is needed.
+        struct LineInk {
+            int16_t x1, y1;
+            uint16_t w, h;
+        };
+        std::vector<LineInk> ink(lines.size());
+        int totalHeight = 0;
+        for (size_t i = 0; i < lines.size(); ++i) {
+            // Measured at the canvas's wrap boundary so the bounds walk agrees
+            // with drawString's wrap (#161) — a no-op for lines wrapText already
+            // fit to the box, but a single over-long word measures as drawn.
+            text_.getTextBounds(lines[i].c_str(), 0, 0, &ink[i].x1, &ink[i].y1,
+                                &ink[i].w, &ink[i].h, canvas_->getWidth());
+            totalHeight += static_cast<int>(ink[i].h);
+        }
+        if (!lines.empty())
+            totalHeight += (static_cast<int>(lines.size()) - 1) * LabelComponent::kLineSpacing;
 
         // Background panel + optional tail, drawn under the text.
         if (label.background.value != 0) {
@@ -185,18 +195,20 @@ private:
 
         text_.setTextColor(label.color);
 
-        // Center the text block vertically within the box, then each line within
-        // the width. getTextBounds returns the passed y (no glyph bearing), so the
-        // baseline offset is tuned by eye at Gate 2, matching list.hpp.
+        // Center the text block vertically within the box, then each line's ink
+        // within the width, subtracting the ink bearings (`- x1`, `- y1`) to
+        // convert box position to cursor/baseline — C_Label's formula, exact
+        // again now that the bearings are real (unwn #161 restore).
         int cursorY = originY + (boxHeight - totalHeight) / 2;
         if (cursorY < originY) cursorY = originY;
-        for (const std::string& line : lines) {
-            const int w = static_cast<int>(text_.getTextWidth(line.c_str()));
-            int x = originX + (width - w) / 2;
+        for (size_t i = 0; i < lines.size(); ++i) {
+            int x = originX + (width - static_cast<int>(ink[i].w)) / 2;
             if (x < originX) x = originX;
-            text_.drawString(*canvas_, static_cast<int16_t>(x), static_cast<int16_t>(cursorY),
-                             line.c_str());
-            cursorY += lineHeight + LabelComponent::kLineSpacing;
+            text_.drawString(*canvas_,
+                             static_cast<int16_t>(x - ink[i].x1),
+                             static_cast<int16_t>(cursorY - ink[i].y1),
+                             lines[i].c_str());
+            cursorY += static_cast<int>(ink[i].h) + LabelComponent::kLineSpacing;
         }
     }
 

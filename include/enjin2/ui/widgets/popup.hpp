@@ -188,17 +188,32 @@ private:
         text_.setFont(popup.font);
         text_.setTextSize(popup.fontSize);
         text_.setTextColor(popup.textColor);
-        // Two lines stacked below the card center. Vertical placement is by-eye at
-        // Gate 2 (getTextBounds carries no glyph bearing), matching the list/label.
-        drawCentered(popup.line1, cx, cy + 2);
-        drawCentered(popup.line2, cx, cy + 18);
+        // BASE PopUpUI (@941a9ab6) hosted each line in a centre-anchored
+        // 100x16 C_Label box, line 1 on the card centre and line 2 16 px
+        // below; reproduced here via the same ink-box centring now that
+        // getTextBounds carries the glyph bearings again (unwn #161 restore).
+        drawCentered(popup.line1, cx, cy);
+        drawCentered(popup.line2, cx, cy + kLineBoxH);
     }
 
-    void drawCentered(const std::string& s, int16_t cx, int16_t y) {
+    // Centre the string's ink box in a kLineBoxW x kLineBoxH box whose centre
+    // sits at (cx, centerY) — C_Label's `(box - ink) / 2` then `- bearing`.
+    // Measured at the canvas's wrap boundary so the bounds walk agrees with
+    // drawString's wrap (#161: measurement and draw must not diverge).
+    void drawCentered(const std::string& s, int16_t cx, int16_t centerY) {
         if (s.empty()) return;
-        const int w = static_cast<int>(text_.getTextWidth(s.c_str()));
-        text_.drawString(*canvas_, static_cast<int16_t>(cx - w / 2), y, s.c_str());
+        int16_t x1, y1;
+        uint16_t w, h;
+        text_.getTextBounds(s.c_str(), 0, 0, &x1, &y1, &w, &h,
+                            canvas_->getWidth());
+        const int x = (cx - kLineBoxW / 2) + (kLineBoxW - static_cast<int>(w)) / 2;
+        const int y = (centerY - kLineBoxH / 2) + (kLineBoxH - static_cast<int>(h)) / 2;
+        text_.drawString(*canvas_, static_cast<int16_t>(x - x1),
+                         static_cast<int16_t>(y - y1), s.c_str());
     }
+
+    static constexpr int kLineBoxW = 100;
+    static constexpr int kLineBoxH = 16;
 
     TWorld* world_;
     TCanvas* canvas_;

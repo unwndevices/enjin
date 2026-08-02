@@ -98,14 +98,14 @@ public:
     /**
      * @brief Construct a new TextRenderer
      */
-    TextRenderer() 
+    TextRenderer()
         : gfx_font(nullptr)
         , text_color(15)
         , bg_color(0)
         , transparent_bg(true)
         , text_size_x(1)
         , text_size_y(1)
-        , wrap_text(false)
+        , wrap_text(true)
         , cursor_x(0)
         , cursor_y(0)
     {}
@@ -335,21 +335,122 @@ public:
     }
 
     /**
-     * @brief Get text bounds for a string
+     * @brief Get text bounds for a string (Adafruit ink box)
      * @param str String to measure
-     * @param x X position
-     * @param y Y position
-     * @param x1 Output: left bound
-     * @param y1 Output: top bound
-     * @param w Output: width
-     * @param h Output: height
+     * @param x X position (cursor start / baseline for GFX fonts)
+     * @param y Y position (cursor start / baseline for GFX fonts)
+     * @param x1 Output: minimum X of the rendered ink (includes glyph bearing)
+     * @param y1 Output: minimum Y of the rendered ink (negative of the ascent
+     *           relative to the baseline for GFX fonts)
+     * @param w Output: ink width
+     * @param h Output: ink height
+     * @param wrap_width Wrap boundary consulted when wrapping is enabled;
+     *        0 (the default) measures single-line. Pass the target canvas
+     *        width to reproduce the wrapped extents a Canvas-resident
+     *        measurement would report — the renderer holds no canvas at
+     *        measurement time, so the boundary must come from the caller.
+     *
+     * Restored pre-migration semantics (unwn #161): the true ink bounding box
+     * via the Adafruit charBounds walk, not the advance-width / yAdvance box.
+     * Centering math of the form `pos - w / 2 - x1` / `pos - h / 2 - y1`
+     * depends on these bearings.
      */
     void getTextBounds(const char* str, int16_t x, int16_t y,
-                      int16_t* x1, int16_t* y1, uint16_t* w, uint16_t* h) {
-        *x1 = x;
+                      int16_t* x1, int16_t* y1, uint16_t* w, uint16_t* h,
+                      uint16_t wrap_width = 0) {
+        if (!str || !x1 || !y1 || !w || !h) return;
+
+        int16_t minx = 0x7FFF, miny = 0x7FFF, maxx = -1, maxy = -1;
+
+        *x1 = x; // Initial position is value passed in
         *y1 = y;
-        *w = getTextWidth(str);
-        *h = getCharHeight() * text_size_y;
+        *w = *h = 0; // Initial size is zero
+
+        while (*str) {
+            charBounds(static_cast<unsigned char>(*str++), &x, &y,
+                       &minx, &miny, &maxx, &maxy, wrap_width);
+        }
+
+        if (maxx >= minx) {
+            *x1 = minx;
+            *w = static_cast<uint16_t>(maxx - minx + 1);
+        }
+        if (maxy >= miny) {
+            *y1 = miny;
+            *h = static_cast<uint16_t>(maxy - miny + 1);
+        }
+    }
+
+    /**
+     * @brief Helper to determine character bounds (Adafruit_GFX compatible)
+     * @param c Character to measure
+     * @param x Current X cursor position (updated)
+     * @param y Current Y cursor position (updated)
+     * @param minx Minimum X bound (updated)
+     * @param miny Minimum Y bound (updated)
+     * @param maxx Maximum X bound (updated)
+     * @param maxy Maximum Y bound (updated)
+     * @param wrap_width Wrap boundary (0 = no wrapping during measurement)
+     */
+    void charBounds(unsigned char c, int16_t* x, int16_t* y,
+                    int16_t* minx, int16_t* miny, int16_t* maxx, int16_t* maxy,
+                    uint16_t wrap_width = 0) {
+        if (gfx_font) {
+            if (c == '\n') {
+                *x = 0; // Reset x to zero, advance y by one line
+                *y += text_size_y * gfx_font->yAdvance;
+            } else if (c != '\r') { // Not a carriage return; is normal char
+                uint8_t first = gfx_font->first,
+                        last = gfx_font->last;
+                if ((c >= first) && (c <= last)) { // Char present in this font?
+                    const GFXglyph* glyph = (const GFXglyph*)gfx_font->glyph;
+                    const GFXglyph& g = glyph[c - first];
+                    uint8_t gw = g.width,
+                            gh = g.height,
+                            xa = g.xAdvance;
+                    int8_t xo = g.xOffset,
+                           yo = g.yOffset;
+                    if (wrap_text && wrap_width &&
+                        ((*x + (((int16_t)xo + gw) * text_size_x)) > (int16_t)wrap_width)) {
+                        *x = 0; // Reset x to zero, advance y by one line
+                        *y += text_size_y * gfx_font->yAdvance;
+                    }
+                    int16_t tsx = (int16_t)text_size_x, tsy = (int16_t)text_size_y,
+                            x1 = *x + xo * tsx, y1 = *y + yo * tsy, x2 = x1 + gw * tsx - 1,
+                            y2 = y1 + gh * tsy - 1;
+                    if (x1 < *minx)
+                        *minx = x1;
+                    if (y1 < *miny)
+                        *miny = y1;
+                    if (x2 > *maxx)
+                        *maxx = x2;
+                    if (y2 > *maxy)
+                        *maxy = y2;
+                    *x += xa * tsx;
+                }
+            }
+        } else {
+            // Default font (built-in)
+            if (c == '\n') {
+                *x = 0;                // Reset x to zero,
+                *y += text_size_y * 8; // advance y one line
+            } else if (c != '\r') {
+                if (wrap_text && wrap_width && ((*x + text_size_x * 6) > (int16_t)wrap_width)) {
+                    *x = 0;                // Reset x to zero,
+                    *y += text_size_y * 8; // advance y one line
+                }
+                int16_t x1 = *x, y1 = *y, x2 = x1 + text_size_x * 6 - 1, y2 = y1 + text_size_y * 8 - 1;
+                if (x1 < *minx)
+                    *minx = x1;
+                if (y1 < *miny)
+                    *miny = y1;
+                if (x2 > *maxx)
+                    *maxx = x2;
+                if (y2 > *maxy)
+                    *maxy = y2;
+                *x += text_size_x * 6; // Advance x one char
+            }
+        }
     }
 
     /**

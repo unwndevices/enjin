@@ -273,7 +273,9 @@ private:
             static_cast<int>(text_.getTextWidth(list.currentSelection().c_str()));
         list.advanceMarquee(dtMs, selectedWidth, maxTextWidth);
 
-        // Row height from actual font metrics (ascender/descender sample).
+        // Row height from the "Ag" ink box (ascender/descender sample) — BASE
+        // C_List's own probe, meaningful again now that getTextBounds returns
+        // ink extents rather than yAdvance (unwn #161 restore).
         int16_t tx, ty;
         uint16_t tw, th;
         text_.getTextBounds("Ag", 0, 0, &tx, &ty, &tw, &th);
@@ -317,14 +319,11 @@ private:
             }
 
             if (isSelected) {
-                // Parity note vs C_List, settled at Gate 2 (per-widget visual review
-                // in `preview`, not a pixel diff): C_List biased `top` by the glyph
-                // Y-bearing (`ty`); this engine's TextRenderer::getTextBounds does not
-                // expose per-glyph bearing (it returns the passed y), so bar/glyph
-                // vertical alignment is tuned by eye at Gate 2, not reproduced
-                // numerically. The rounded bar matches C_List's radius-2 fill now that
-                // Primitives::fillRoundRect has been upstreamed (#121).
-                const int top = y - list.itemSpacing / 2 - 1;
+                // C_List's bar placement (BASE @941a9ab6): the bar tops out at the
+                // glyph ascent — `ty` is the "Ag" probe's Y-bearing, negative for
+                // GFX fonts — now that getTextBounds reports the ink box again
+                // (unwn #161 restore; the Gate-2 eye-tuned offset is gone).
+                const int top = y + static_cast<int>(ty) - list.itemSpacing / 2 - 1;
                 Rect bar(originX, top, static_cast<uint16_t>(width),
                          static_cast<uint16_t>(itemHeight));
                 Primitives<Pixel4>::fillRoundRect(*canvas_, bar, 2, theme_.accent);
