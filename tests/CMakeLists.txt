@@ -171,6 +171,20 @@ target_link_libraries(waiver_machinery_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME waiver_machinery_test COMMAND waiver_machinery_test)
 
+# blitCanvasOpacity contract (M5 #168): the retired blit.canvasOpacity pair's
+# replacement guard — BASE's out-of-band matte cannot exist in a Pixel4
+# source, so the ratified HEAD contract (transparent skip, absolute fade,
+# clipping) is pinned here instead of by the bench.
+add_executable(blit_semantics_test
+    blit_semantics_test.cpp
+)
+target_include_directories(blit_semantics_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(blit_semantics_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME blit_semantics_test COMMAND blit_semantics_test)
+
 # Image comparison test for shadow mode verification
 add_executable(image_comparison_test
     image_comparison.cpp
