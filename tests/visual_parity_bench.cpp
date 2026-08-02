@@ -50,7 +50,7 @@
 //
 // Exit codes: 0 all pairs byte-exact (or bounded-waived) · 1 failure
 // signatures present · 2 harness selfcheck failure · 3 waiver census gate
-// (a pair > 50% waived).
+// (a pair > 50% waived) · 4 usage error.
 //
 // Deliberately NOT registered with add_test (§ 11): the bench is a local
 // instrument, and its first M3 runs are EXPECTED red — the #158 derivation
@@ -196,6 +196,10 @@ namespace
                          "Canvas8::drawPixel", "Canvas4::setPixel"});
         if (!bench.cur->retired)
         {
+            // Canvas8::drawPixel is a verbatim one-line alias of setPixel, so
+            // the exhaustive position pass lives in substrate.setPixel
+            // (#158's ~17,100-case row); this pair pins the alias itself on
+            // the diagonal plus the out-of-bounds boundary.
             std::vector<std::pair<int16_t, int16_t>> pts;
             for (int16_t t = 0; t < W; ++t)
                 pts.push_back({t, t});
@@ -227,8 +231,11 @@ namespace
                          "Canvas8::getPixel", "Canvas4::getPixel"});
         if (!bench.cur->retired)
         {
-            // Written value must read back identically through both
-            // substrates, including out-of-bounds reads (both sides define 0).
+            // A written gradient must read back identically through both
+            // substrates at EVERY (x,y), including the out-of-bounds ring
+            // (both sides define 0 there). Canvas8::getPixel is both the
+            // BASE call and the HEAD-@8bpp form, so A == B by construction
+            // and any divergence here is the depth axis (Canvas4 packing).
             Canvases &cv = canvases();
             cv.a->clear(0);
             cv.c->clear(Pixel4(0));
@@ -239,7 +246,7 @@ namespace
                     cv.a->setPixel(x, y, v);
                     cv.c->setPixel(x, y, Pixel4(v));
                 }
-            for (int16_t y = -2; y <= H + 1; y += (y == 20 ? 87 : 1)) // edges + two interior bands
+            for (int16_t y = -2; y <= H + 1; ++y)
                 for (int16_t x = -2; x <= W + 1; ++x)
                 {
                     const uint8_t a = cv.a->getPixel(x, y) & 0x0F;
@@ -410,26 +417,50 @@ namespace
     const int16_t kRRWH[] = {4, 8, 63, 127};
     const int16_t kRRRad[] = {0, 1, 2, 3, 4, 8, 16, 31, 63};
 
+    // Mandatory edge set for the round-rect pairs, on top of the base grid
+    // (#158: fully off-canvas, partial clip, zero/negative extent).
+    struct RREdgeCase
+    {
+        int16_t x, y, w, h, r;
+    };
+    const RREdgeCase kRREdgeCases[] = {
+        {-5, -5, 4, 4, 2},     {-5, -5, 63, 63, 8},  // partial clip, top-left
+        {125, 125, 8, 8, 2},   {125, 63, 63, 63, 8}, // partial clip, right/bottom
+        {-5, 63, 63, 8, 4},    {63, -5, 8, 63, 4},   // partial clip, one edge
+        {-140, -140, 63, 63, 8}, {200, 200, 63, 63, 8}, // fully off-canvas
+        {10, 10, 0, 0, 0},     {10, 10, 0, 8, 2},    // zero extent
+        {10, 10, 8, 0, 2},     {10, 10, -1, 8, 2},   // negative extent
+        {10, 10, 8, -1, 2},    {10, 10, -1, -1, 0}};
+
+    template <typename Fn>
+    void forEachRoundRectCase(Fn &&run)
+    {
+        for (int16_t x : kRRXY)
+            for (int16_t y : kRRXY)
+                for (int16_t w : kRRWH)
+                    for (int16_t h : kRRWH)
+                        for (int16_t r : kRRRad)
+                            run(x, y, w, h, r);
+        for (const RREdgeCase &e : kRREdgeCases)
+            run(e.x, e.y, e.w, e.h, e.r);
+    }
+
     void sweepFillRoundRect()
     {
         bench.beginPair({"geom.fillRoundRect", "TIER1",
                          "Canvas8::fillRoundRect", "Primitives<Pixel4>::fillRoundRect"});
         if (!bench.cur->retired)
         {
-            for (int16_t x : kRRXY)
-                for (int16_t y : kRRXY)
-                    for (int16_t w : kRRWH)
-                        for (int16_t h : kRRWH)
-                            for (int16_t r : kRRRad)
-                            {
-                                const Rect rect(x, y, static_cast<uint16_t>(w),
-                                                static_cast<uint16_t>(h));
-                                runPixelCase(bench,
-                                             {{"x", x}, {"y", y}, {"w", w}, {"h", h}, {"r", r}},
-                                             [=](Base8 &c) { c.fillRoundRect(x, y, w, h, r, 15); },
-                                             [=](Base8 &c) { Primitives<uint8_t>::fillRoundRect(c, rect, r, 15); },
-                                             [=](Head4 &c) { Primitives<Pixel4>::fillRoundRect(c, rect, r, Pixel4(15)); });
-                            }
+            forEachRoundRectCase([](int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)
+            {
+                const Rect rect(x, y, static_cast<uint16_t>(w),
+                                static_cast<uint16_t>(h));
+                runPixelCase(bench,
+                             {{"x", x}, {"y", y}, {"w", w}, {"h", h}, {"r", r}},
+                             [=](Base8 &c) { c.fillRoundRect(x, y, w, h, r, 15); },
+                             [=](Base8 &c) { Primitives<uint8_t>::fillRoundRect(c, rect, r, 15); },
+                             [=](Head4 &c) { Primitives<Pixel4>::fillRoundRect(c, rect, r, Pixel4(15)); });
+            });
         }
         endPair();
     }
@@ -440,20 +471,16 @@ namespace
                          "Canvas8::drawRoundRect", "Primitives<Pixel4>::drawRoundRect"});
         if (!bench.cur->retired)
         {
-            for (int16_t x : kRRXY)
-                for (int16_t y : kRRXY)
-                    for (int16_t w : kRRWH)
-                        for (int16_t h : kRRWH)
-                            for (int16_t r : kRRRad)
-                            {
-                                const Rect rect(x, y, static_cast<uint16_t>(w),
-                                                static_cast<uint16_t>(h));
-                                runPixelCase(bench,
-                                             {{"x", x}, {"y", y}, {"w", w}, {"h", h}, {"r", r}},
-                                             [=](Base8 &c) { c.drawRoundRect(x, y, w, h, r, 15); },
-                                             [=](Base8 &c) { Primitives<uint8_t>::drawRoundRect(c, rect, r, 15); },
-                                             [=](Head4 &c) { Primitives<Pixel4>::drawRoundRect(c, rect, r, Pixel4(15)); });
-                            }
+            forEachRoundRectCase([](int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)
+            {
+                const Rect rect(x, y, static_cast<uint16_t>(w),
+                                static_cast<uint16_t>(h));
+                runPixelCase(bench,
+                             {{"x", x}, {"y", y}, {"w", w}, {"h", h}, {"r", r}},
+                             [=](Base8 &c) { c.drawRoundRect(x, y, w, h, r, 15); },
+                             [=](Base8 &c) { Primitives<uint8_t>::drawRoundRect(c, rect, r, 15); },
+                             [=](Head4 &c) { Primitives<Pixel4>::drawRoundRect(c, rect, r, Pixel4(15)); });
+            });
         }
         endPair();
     }
@@ -555,6 +582,16 @@ namespace
                          "Primitives<uint8_t>::drawArc", "Primitives<Pixel4>::drawArc"});
         if (!bench.cur->retired)
         {
+            auto runArc = [](int16_t cx, int16_t cy, int16_t r, int start, int sweep)
+            {
+                const float a0 = static_cast<float>(start) * static_cast<float>(M_PI) / 180.0f;
+                const float a1 = static_cast<float>(start + sweep) * static_cast<float>(M_PI) / 180.0f;
+                runPixelCase(bench,
+                             {{"cx", cx}, {"cy", cy}, {"r", r}, {"start", start}, {"sweep", sweep}},
+                             [=](Base8 &c) { Primitives<uint8_t>::drawArc(c, cx, cy, r, a0, a1, 15); },
+                             [=](Base8 &c) { Primitives<uint8_t>::drawArc(c, cx, cy, r, a0, a1, 15); },
+                             [=](Head4 &c) { Primitives<Pixel4>::drawArc(c, cx, cy, r, a0, a1, Pixel4(15)); });
+            };
             const std::pair<int16_t, int16_t> centers[] = {
                 {63, 63}, {20, 20}, {120, 63}, {63, 0}};
             const int16_t radii[] = {5, 30, 62};
@@ -562,15 +599,20 @@ namespace
                 for (int16_t r : radii)
                     for (int start = 0; start < 360; start += 10)
                         for (int sweep = 10; sweep <= 360; sweep += 10)
-                        {
-                            const float a0 = static_cast<float>(start) * static_cast<float>(M_PI) / 180.0f;
-                            const float a1 = static_cast<float>(start + sweep) * static_cast<float>(M_PI) / 180.0f;
-                            runPixelCase(bench,
-                                         {{"cx", cx}, {"cy", cy}, {"r", r}, {"start", start}, {"sweep", sweep}},
-                                         [=](Base8 &c) { Primitives<uint8_t>::drawArc(c, cx, cy, r, a0, a1, 15); },
-                                         [=](Base8 &c) { Primitives<uint8_t>::drawArc(c, cx, cy, r, a0, a1, 15); },
-                                         [=](Head4 &c) { Primitives<Pixel4>::drawArc(c, cx, cy, r, a0, a1, Pixel4(15)); });
-                        }
+                            runArc(cx, cy, r, start, sweep);
+            // Mandatory edge set: r = 0/1 (step = 1/r degenerates) and
+            // fully/partially off-canvas centers.
+            const std::pair<int16_t, int16_t> edgeCenters[] = {
+                {63, 63}, {140, 80}, {-10, -10}};
+            for (auto [cx, cy] : edgeCenters)
+                for (int16_t r : {0, 1})
+                    for (int start : {0, 90})
+                        for (int sweep : {90, 360})
+                            runArc(cx, cy, r, start, sweep);
+            for (auto [cx, cy] : {std::pair<int16_t, int16_t>{140, 80}, {-10, -10}})
+                for (int start : {0, 180})
+                    for (int sweep : {180, 360})
+                        runArc(cx, cy, 62, start, sweep);
         }
         endPair();
     }
@@ -1082,40 +1124,53 @@ namespace
         if (!bench.cur->retired)
         {
             const int16_t x = 4, y = 60;
+            auto runPrint = [x, y](int fi, int size, const char *str,
+                                   std::vector<Param> params)
+            {
+                const GFXfont *font = kFonts[fi].font;
+                const auto sz = static_cast<uint8_t>(size);
+                runPixelCase(bench, params,
+                             [=](Base8 &cv)
+                             {
+                                 cv.setFont(font);
+                                 cv.setTextSize(sz);
+                                 cv.setTextColor(15);
+                                 cv.setCursor(x, y);
+                                 cv.print(str);
+                             },
+                             [=](Base8 &cv)
+                             {
+                                 TextRenderer<uint8_t> tr;
+                                 tr.setFont(font);
+                                 tr.setTextSize(sz);
+                                 tr.setTextColor(15);
+                                 tr.drawString(cv, x, y, str);
+                             },
+                             [=](Head4 &cv)
+                             {
+                                 TextRenderer<Pixel4> tr;
+                                 tr.setFont(font);
+                                 tr.setTextSize(sz);
+                                 tr.setTextColor(Pixel4(15));
+                                 tr.drawString(cv, x, y, str);
+                             });
+            };
             for (int fi = 0; fi < 4; ++fi)
                 for (int size = 1; size <= 2; ++size)
+                {
                     for (size_t si = 0; si < std::size(kStrings); ++si)
+                        runPrint(fi, size, kStrings[si],
+                                 {{"font", fi}, {"size", size}, {"string", static_cast<int32_t>(si)}});
+                    // Every printable glyph as a one-char string (#158: the
+                    // 95-glyph sweep belongs to the rendering pairs, not
+                    // just drawChar — print's cursor/wrap path sees it too).
+                    for (int ch = 32; ch <= 126; ++ch)
                     {
-                        const GFXfont *font = kFonts[fi].font;
-                        const char *str = kStrings[si];
-                        const auto sz = static_cast<uint8_t>(size);
-                        runPixelCase(bench,
-                                     {{"font", fi}, {"size", size}, {"string", static_cast<int32_t>(si)}},
-                                     [=](Base8 &cv)
-                                     {
-                                         cv.setFont(font);
-                                         cv.setTextSize(sz);
-                                         cv.setTextColor(15);
-                                         cv.setCursor(x, y);
-                                         cv.print(str);
-                                     },
-                                     [=](Base8 &cv)
-                                     {
-                                         TextRenderer<uint8_t> tr;
-                                         tr.setFont(font);
-                                         tr.setTextSize(sz);
-                                         tr.setTextColor(15);
-                                         tr.drawString(cv, x, y, str);
-                                     },
-                                     [=](Head4 &cv)
-                                     {
-                                         TextRenderer<Pixel4> tr;
-                                         tr.setFont(font);
-                                         tr.setTextSize(sz);
-                                         tr.setTextColor(Pixel4(15));
-                                         tr.drawString(cv, x, y, str);
-                                     });
+                        const char one[2] = {static_cast<char>(ch), '\0'};
+                        runPrint(fi, size, one,
+                                 {{"font", fi}, {"size", size}, {"glyph", ch}});
                     }
+                }
         }
         endPair();
     }
@@ -1182,38 +1237,48 @@ namespace
                          "Canvas8::getTextWidth", "TextRenderer<Pixel4>::getTextWidth"});
         if (!bench.cur->retired)
         {
+            auto runWidth = [](int fi, int size, const char *str,
+                               std::vector<Param> params)
+            {
+                const GFXfont *font = kFonts[fi].font;
+                const auto sz = static_cast<uint8_t>(size);
+
+                Base8 &c8 = *canvases().a; // font/size state carrier only
+                c8.setFont(font);
+                c8.setTextSize(sz);
+                const int32_t a = c8.getTextWidth(str);
+                c8.setFont(&defaultFont8pt7b); // restore the canvas defaults
+                c8.setTextSize(1);
+
+                TextRenderer<uint8_t> trB;
+                trB.setFont(font);
+                trB.setTextSize(sz);
+                const int32_t b = trB.getTextWidth(str);
+
+                TextRenderer<Pixel4> trC;
+                trC.setFont(font);
+                trC.setTextSize(sz);
+                const int32_t c = trC.getTextWidth(str);
+
+                char detail[128];
+                snprintf(detail, sizeof(detail),
+                         "width BASE=%d HEAD=%d (\"%.24s\")", a, c, str);
+                runMetricCase(bench, params, a == b, b == c, a == c,
+                              static_cast<size_t>(std::abs(a - c)), detail);
+            };
             for (int fi = 0; fi < 4; ++fi)
                 for (int size = 1; size <= 2; ++size)
+                {
                     for (size_t si = 0; si < std::size(kStrings); ++si)
+                        runWidth(fi, size, kStrings[si],
+                                 {{"font", fi}, {"size", size}, {"string", static_cast<int32_t>(si)}});
+                    for (int ch = 32; ch <= 126; ++ch)
                     {
-                        const GFXfont *font = kFonts[fi].font;
-                        const char *str = kStrings[si];
-                        const auto sz = static_cast<uint8_t>(size);
-
-                        Base8 &c8 = *canvases().a; // font/size state carrier only
-                        c8.setFont(font);
-                        c8.setTextSize(sz);
-                        const int32_t a = c8.getTextWidth(str);
-                        c8.setFont(&defaultFont8pt7b); // restore default state
-
-                        TextRenderer<uint8_t> trB;
-                        trB.setFont(font);
-                        trB.setTextSize(sz);
-                        const int32_t b = trB.getTextWidth(str);
-
-                        TextRenderer<Pixel4> trC;
-                        trC.setFont(font);
-                        trC.setTextSize(sz);
-                        const int32_t c = trC.getTextWidth(str);
-
-                        char detail[128];
-                        snprintf(detail, sizeof(detail),
-                                 "width BASE=%d HEAD=%d (str %zu)", a, c, si);
-                        runMetricCase(bench,
-                                      {{"font", fi}, {"size", size}, {"string", static_cast<int32_t>(si)}},
-                                      a == b, b == c, a == c,
-                                      static_cast<size_t>(std::abs(a - c)), detail);
+                        const char one[2] = {static_cast<char>(ch), '\0'};
+                        runWidth(fi, size, one,
+                                 {{"font", fi}, {"size", size}, {"glyph", ch}});
                     }
+                }
         }
         endPair();
     }
@@ -1247,7 +1312,8 @@ namespace
                         c8.setFont(font);
                         c8.setTextSize(sz);
                         c8.getTextBounds(str, x, y, &a.x1, &a.y1, &a.w, &a.h);
-                        c8.setFont(&defaultFont8pt7b);
+                        c8.setFont(&defaultFont8pt7b); // restore the canvas defaults
+                        c8.setTextSize(1);
 
                         TextRenderer<uint8_t> trB;
                         trB.setFont(font);
@@ -1291,7 +1357,7 @@ int main(int argc, char **argv)
         else
         {
             fprintf(stderr, "usage: visual_parity_bench [--png DIR] [--hash]\n");
-            return 2;
+            return 4;
         }
     }
 

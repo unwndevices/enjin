@@ -33,10 +33,12 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -212,6 +214,10 @@ namespace parity
         size_t boundExceeded = 0;
         size_t stalePin = 0;
         bool retired = false;
+        // Every value each parameter axis was swept over (pass or fail) —
+        // the reference the #158 signature discriminator compares failing
+        // value sets against.
+        std::map<std::string, std::set<int32_t>> sweptValues;
     };
 
     // Axis mask bits. Compositing pairs have no HEAD-@8bpp form (the blit
@@ -256,6 +262,12 @@ namespace parity
         size_t maxDiff = 0; // largest per-case diff magnitude in the cluster
         // Failing range per parameter axis (min..max over failing cases).
         std::map<std::string, std::pair<int32_t, int32_t>> paramRange;
+        // Distinct failing values per parameter axis, compared against the
+        // pair's swept values to compute the #158 discriminating axis: the
+        // first parameter along which results diverge (i.e. whose failing
+        // value set is a proper subset of what was swept).
+        std::map<std::string, std::set<int32_t>> failingValues;
+        std::vector<std::string> paramOrder; // declaration order of the first repro
         // Repro planes for the PNG review path (empty for metric pairs).
         std::vector<uint8_t> planeA, planeC;
     };
@@ -302,6 +314,8 @@ namespace parity
             {
                 s.firstParams = params;
                 s.firstDetail = detail;
+                for (const Param &p : params)
+                    s.paramOrder.push_back(p.name);
                 if (planeA && planeC)
                 {
                     s.planeA.assign(planeA, planeA + PLANE);
@@ -310,6 +324,7 @@ namespace parity
             }
             for (const Param &p : params)
             {
+                s.failingValues[p.name].insert(p.value);
                 auto it = s.paramRange.find(p.name);
                 if (it == s.paramRange.end())
                     s.paramRange[p.name] = {p.value, p.value};
@@ -330,6 +345,8 @@ namespace parity
                         const uint8_t *planeA, const uint8_t *planeC)
         {
             cur->cases++;
+            for (const Param &p : params)
+                cur->sweptValues[p.name].insert(p.value);
             if (equal)
                 return;
             WaiverHit hit = evaluateWaiver(waivers, waiverCount, cur->info.id,
@@ -509,6 +526,36 @@ namespace parity
         printf("[%-11s] %-22s %6zu cases  %s\n", p.info.tier, p.info.id, p.cases, status);
     }
 
+    // The #158 discriminating axis: the first parameter (in the repro's
+    // declaration order) whose failing value set is a PROPER subset of the
+    // values the pair swept it over — i.e. the axis along which results
+    // diverge. Empty when every swept value of every axis fails (the
+    // divergence is systematic across the whole sweep).
+    inline std::string discriminatingAxis(const Bench &bench, const Signature &s)
+    {
+        const PairStats *pair = nullptr;
+        for (const auto &p : bench.pairs)
+            if (s.pairId == p.info.id)
+                pair = &p;
+        if (!pair)
+            return "";
+        for (const std::string &name : s.paramOrder)
+        {
+            auto fail = s.failingValues.find(name);
+            auto swept = pair->sweptValues.find(name);
+            if (fail == s.failingValues.end() || swept == pair->sweptValues.end())
+                continue;
+            if (fail->second.size() < swept->second.size())
+            {
+                char buf[96];
+                snprintf(buf, sizeof(buf), "%s (%zu of %zu swept values fail)",
+                         name.c_str(), fail->second.size(), swept->second.size());
+                return buf;
+            }
+        }
+        return "";
+    }
+
     inline void printSignatures(const Bench &bench)
     {
         if (bench.signatures.empty())
@@ -525,6 +572,9 @@ namespace parity
         {
             printf("\n  #%-2d %s — %s\n", ++i, s.pairId.c_str(), axisLabel(s.axisMask));
             printf("      cases: %zu   max diff: %zu\n", s.cases, s.maxDiff);
+            const std::string axis = discriminatingAxis(bench, s);
+            printf("      diverges along: %s\n",
+                   axis.empty() ? "(entire sweep — systematic)" : axis.c_str());
             printf("      repro: %s\n", paramString(s.firstParams).c_str());
             printf("      first: %s\n", s.firstDetail.c_str());
             if (!s.paramRange.empty())
@@ -543,6 +593,27 @@ namespace parity
         }
     }
 
+    // Age of a waiver in days from its YYYY-MM-DD date field. Printed for
+    // humans at natural checkpoints only — nothing fires on age (the
+    // implementation pin fires on actual risk, #159).
+    inline std::string waiverAge(const char *date)
+    {
+        int y = 0, m = 0, d = 0;
+        if (!date || sscanf(date, "%d-%d-%d", &y, &m, &d) != 3)
+            return "unknown";
+        std::tm tm{};
+        tm.tm_year = y - 1900;
+        tm.tm_mon = m - 1;
+        tm.tm_mday = d;
+        const time_t then = mktime(&tm);
+        if (then == static_cast<time_t>(-1))
+            return "unknown";
+        const double days = difftime(time(nullptr), then) / 86400.0;
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.0f days", days < 0 ? 0.0 : days);
+        return buf;
+    }
+
     inline void printCensus(const Bench &bench)
     {
         printf("\nwaiver census (design § 8):\n");
@@ -554,15 +625,21 @@ namespace parity
         {
             size_t active = 0, retired = 0;
             for (size_t i = 0; i < bench.waiverCount; ++i)
-                (bench.waivers[i].status == WaiverStatus::Active ? active : retired)++;
+            {
+                if (bench.waivers[i].status == WaiverStatus::Active)
+                    active++;
+                else
+                    retired++;
+            }
             printf("  %zu active, %zu retired\n", active, retired);
             for (size_t i = 0; i < bench.waiverCount; ++i)
             {
                 const Waiver &w = bench.waivers[i];
-                printf("  - %-22s %s  [%s]  ticket %s  by %s on %s\n", w.pair_id,
+                printf("  - %-22s %s  [%s]  ticket %s  by %s on %s (age %s)\n",
+                       w.pair_id,
                        w.status == WaiverStatus::Active ? "ACTIVE " : "RETIRED",
                        w.subrange ? w.subrange : "(whole pair)",
-                       w.ticket, w.author, w.date);
+                       w.ticket, w.author, w.date, waiverAge(w.date).c_str());
             }
         }
         for (const auto &p : bench.pairs)

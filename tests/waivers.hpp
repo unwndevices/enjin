@@ -43,6 +43,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 namespace parity
 {
@@ -60,7 +61,7 @@ namespace parity
                               int32_t fallback = INT32_MIN)
     {
         for (size_t i = 0; i < count; ++i)
-            if (params[i].name == name || 0 == __builtin_strcmp(params[i].name, name))
+            if (strcmp(params[i].name, name) == 0)
                 return params[i].value;
         return fallback;
     }
@@ -96,6 +97,8 @@ namespace parity
 
     // THE TABLE. Bump the array size when adding an entry — the explicit count
     // keeps the list visible *as a list* and every addition a one-hunk diff.
+    // Evaluation is first-match-wins, so keep predicates non-overlapping per
+    // pair: a stale earlier entry would otherwise shadow a fresh later one.
     inline constexpr std::array<Waiver, 0> kWaivers{};
 
 } // namespace parity

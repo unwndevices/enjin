@@ -10,11 +10,17 @@
 // phone stays a human command (the bench prints the `tailscale file cp`
 // line, it does not run it).
 
+// STATIC keeps the stb implementation internal to this TU:
+// src/graphics/canvas.cpp already emits the extern "C" stbi_write_* symbols
+// inside enjin2_graphics, and a second external definition here would collide
+// the moment the linker pulls both objects.
+#define STB_IMAGE_WRITE_STATIC
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
 #include "bench_support.hpp"
 
+#include <cctype>
 #include <string>
 #include <vector>
 
