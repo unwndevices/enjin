@@ -121,6 +121,18 @@ target_link_libraries(palette_test PRIVATE
 )
 add_test(NAME palette_test COMMAND palette_test)
 
+# Odd-width Canvas4 (unwn #155/#165): padded row stride ROW_BYTES=(WIDTH+1)/2 —
+# geometry, row-aliasing, fast-path parity, even-width layout stability.
+add_executable(canvas4_odd_width_test
+    canvas4_odd_width_test.cpp
+)
+target_include_directories(canvas4_odd_width_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(canvas4_odd_width_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME canvas4_odd_width_test COMMAND canvas4_odd_width_test)
+
 # Visual parity bench (unwn M1 #164, epic #163): one-binary call-path
 # differential harness — BASE (Canvas8 member algorithms) vs HEAD
 # (Primitives/TextRenderer) vs HEAD @4bpp, byte-exact memcmp on the masked
