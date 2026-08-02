@@ -90,56 +90,80 @@ public:
     }
     
     /**
-     * @brief Draw circle outline using midpoint algorithm
+     * @brief Draw circle outline using midpoint circle algorithm
      * @param canvas Target canvas
      * @param cx Center X coordinate
      * @param cy Center Y coordinate
      * @param radius Circle radius
      * @param color Outline color
+     *
+     * The exact pre-migration Canvas8::drawCircle octant walk (unwn #161
+     * restore): Eisei's UI shipped against these pixels, and the bench's
+     * circle guard pins this body against re-divergence.
      */
     static void drawCircle(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
                           int16_t radius, TPixel color) {
-        int16_t x = 0;
-        int16_t y = radius;
-        int16_t d = 1 - radius;
-        
-        while (x <= y) {
-            // 8-way symmetry
+        int16_t x = radius;
+        int16_t y = 0;
+        int16_t radiusError = 1 - x;
+
+        while (x >= y) {
             canvas.setPixel(cx + x, cy + y, color);
-            canvas.setPixel(cx - x, cy + y, color);
-            canvas.setPixel(cx + x, cy - y, color);
-            canvas.setPixel(cx - x, cy - y, color);
             canvas.setPixel(cx + y, cy + x, color);
             canvas.setPixel(cx - y, cy + x, color);
-            canvas.setPixel(cx + y, cy - x, color);
+            canvas.setPixel(cx - x, cy + y, color);
+            canvas.setPixel(cx - x, cy - y, color);
             canvas.setPixel(cx - y, cy - x, color);
-            
-            if (d < 0) {
-                d += 2 * x + 3;
+            canvas.setPixel(cx + y, cy - x, color);
+            canvas.setPixel(cx + x, cy - y, color);
+
+            y++;
+            if (radiusError < 0) {
+                radiusError += 2 * y + 1;
             } else {
-                d += 2 * (x - y) + 5;
-                y--;
+                x--;
+                radiusError += 2 * (y - x + 1);
             }
-            x++;
         }
     }
-    
+
     /**
-     * @brief Fill circle using scanline algorithm
+     * @brief Fill circle using midpoint circle algorithm
      * @param canvas Target canvas
      * @param cx Center X coordinate
      * @param cy Center Y coordinate
      * @param radius Circle radius
      * @param color Fill color
+     *
+     * The exact pre-migration Canvas8::fillCircle midpoint-octant fill (unwn
+     * #161 restore). It over-fills relative to the Euclidean disc (e.g. r=2
+     * lights (±2,±1)) — that fatter disc is what Eisei shipped and what the
+     * bench's circle guard pins. Keep in sync with drawCircle: Eisei draws
+     * disc and outline at the same radius and they must agree.
      */
     static void fillCircle(ICanvas<TPixel>& canvas, int16_t cx, int16_t cy,
                           int16_t radius, TPixel color) {
-        for (int16_t y = -radius; y <= radius; ++y) {
-            int32_t y_sq = y * y;
-            int32_t radius_sq = radius * radius;
-            if (y_sq <= radius_sq) {
-                int16_t x_extent = static_cast<int16_t>(std::sqrt(radius_sq - y_sq));
-                drawLine(canvas, cx - x_extent, cy + y, cx + x_extent, cy + y, color);
+        int16_t x = radius;
+        int16_t y = 0;
+        int16_t radiusError = 1 - x;
+
+        while (x >= y) {
+            // Draw horizontal lines for each octant
+            for (int16_t i = cx - x; i <= cx + x; i++) {
+                canvas.setPixel(i, cy + y, color);
+                canvas.setPixel(i, cy - y, color);
+            }
+            for (int16_t i = cx - y; i <= cx + y; i++) {
+                canvas.setPixel(i, cy + x, color);
+                canvas.setPixel(i, cy - x, color);
+            }
+
+            y++;
+            if (radiusError < 0) {
+                radiusError += 2 * y + 1;
+            } else {
+                x--;
+                radiusError += 2 * (y - x + 1);
             }
         }
     }
