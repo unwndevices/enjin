@@ -2,7 +2,7 @@
 //
 // The visual parity bench's REAL waiver table (tests/waivers.hpp) holds only
 // what adjudication put there (M5, unwn #168), so the machinery that makes
-// waiving harder than fixing is proven here against synthetic tables: the mandatory
+// waiving harder than fixing is proven here against synthetic tables: the
 // sub-range predicate, the enforced expected-diff bound, the implementation
 // pin's staleness trigger, retirement, signature clustering, and the > 50%
 // census hard gate. This test IS registered with ctest: it checks the
