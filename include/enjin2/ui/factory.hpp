@@ -16,8 +16,9 @@
  *
  *  - @ref addComponentByName — attach a default-constructed component to an
  *    entity from its scene-file name ("label", "gauge", …). The scene loader
- *    lands entities through this; the editor palette enumerates the same set
- *    via @ref forEachComponentName.
+ *    resolves the same reflected names (with the typed context it needs to
+ *    populate fields in one pass); the editor palette enumerates the set via
+ *    @ref forEachComponentName.
  *  - @ref callWidgetVerb — invoke compiled widget behavior by name
  *    ("moveUp", "setItems", …), the `call` action of the ratified behavior
  *    schema. Verbs are the C++/data boundary for *imperative* widget state:
@@ -87,7 +88,10 @@ inline bool callVerbOn(ListComponent& c, const char* verb, const JsonValue& args
     if (std::strcmp(verb, "moveDown") == 0) { c.moveDown(); return true; }
     if (std::strcmp(verb, "setItems") == 0) { c.updateItems(stringList(args, 0)); return true; }
     if (std::strcmp(verb, "setSelection") == 0) {
-        c.setCurrentSelection(static_cast<int>(numberAt(args, 0)));
+        // Ratified interpreter spec (scene_vm.py): an out-of-range selection
+        // is a no-op, not a clamp — the cursor keeps its position.
+        const int idx = static_cast<int>(numberAt(args, 0, -1.0));
+        if (idx >= 0 && idx < c.itemCount()) c.setCurrentSelection(idx);
         return true;
     }
     return false;

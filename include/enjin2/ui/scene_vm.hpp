@@ -158,17 +158,21 @@ public:
         SceneEffects effects;
         timeMs_ += dtMs;
 
-        // Snapshot names: an onExpire may arm, re-arm or cancel timers.
-        std::vector<std::string> due;
-        for (auto& t : timers_) {
-            t.second -= dtMs;
-            if (t.second <= 0.0) due.push_back(t.first);
-        }
-        for (const std::string& name : due) {
-            // An earlier onExpire may have cancelled (index -1) or re-armed
-            // (remaining back above zero) this one — either way it no longer fires.
+        // Per the interpreter spec: walk a snapshot of the armed names in arm
+        // order, decrementing lazily — so an earlier onExpire that (re)starts
+        // a not-yet-visited timer leaves it aged by this tick's dt, and one
+        // that cancels it removes it entirely (a skip here; the Python spec
+        // never exercises that case). Timers armed mid-walk aren't in the
+        // snapshot and first age next tick.
+        std::vector<std::string> armed;
+        armed.reserve(timers_.size());
+        for (const auto& t : timers_) armed.push_back(t.first);
+        for (const std::string& name : armed) {
             const int idx = timerIndex(name);
-            if (idx < 0 || timers_[static_cast<size_t>(idx)].second > 0.0) continue;
+            if (idx < 0) continue; // cancelled by an earlier onExpire
+            double& remaining = timers_[static_cast<size_t>(idx)].second;
+            remaining -= dtMs;
+            if (remaining > 0.0) continue;
             const JsonValue* spec = doc_ ? doc_->timers.find(name.c_str()) : nullptr;
             const bool repeat = spec && spec->find("repeat") && spec->find("repeat")->truthy();
             if (repeat) {
@@ -208,7 +212,12 @@ public:
                     detail::easingByName(easingOf(track))(static_cast<float>(t)));
                 JsonValue v;
                 v.type = JsonValue::Type::Number;
-                v.number = from->number + (to->number - from->number) * eased;
+                // round(value, 2) per the interpreter spec — quantizing also
+                // keeps sub-cent libm easing differences out of the fields the
+                // CI-parity goldens (#184) will compare across native/WASM.
+                v.number = std::round(
+                               (from->number + (to->number - from->number) * eased) * 100.0) /
+                           100.0;
                 setPath(target->str, v);
                 if (t < 1.0) done = false;
             }
@@ -224,12 +233,9 @@ public:
 
     /// @brief Resolve `name` (state var) or `entity.prop`; Null when absent.
     JsonValue lookup(const std::string& path) const {
-        const size_t dot = path.find('.');
-        if (dot != std::string::npos) {
-            Entity e;
-            if (findEntity(path.substr(0, dot), e))
-                return getEntityProp(e, path.substr(dot + 1));
-        }
+        Entity e;
+        std::string prop;
+        if (splitEntityPath(path, e, prop)) return getEntityProp(e, prop);
         if (const JsonValue* v = vars_.find(path.c_str())) return *v;
         return JsonValue{};
     }
@@ -276,6 +282,15 @@ private:
             }
         }
         return false;
+    }
+
+    /// @brief `entity.prop` → (entity, prop). False for bare names / unknown ids.
+    bool splitEntityPath(const std::string& path, Entity& e, std::string& prop) const {
+        const size_t dot = path.find('.');
+        if (dot == std::string::npos) return false;
+        if (!findEntity(path.substr(0, dot), e)) return false;
+        prop = path.substr(dot + 1);
+        return true;
     }
 
     JsonValue getEntityProp(Entity e, const std::string& prop) const {
@@ -331,13 +346,11 @@ private:
     }
 
     void setPath(const std::string& path, const JsonValue& value) {
-        const size_t dot = path.find('.');
-        if (dot != std::string::npos) {
-            Entity e;
-            if (findEntity(path.substr(0, dot), e)) {
-                setEntityProp(e, path.substr(dot + 1), value);
-                return;
-            }
+        Entity e;
+        std::string prop;
+        if (splitEntityPath(path, e, prop)) {
+            setEntityProp(e, prop, value);
+            return;
         }
         detail::objectSet(vars_, path, value);
     }
@@ -514,14 +527,13 @@ private:
             setPath(set->array[0].str, resolve(set->array[1], payload));
         } else if (const JsonValue* call = action.find("call")) {
             if (call->type != JsonValue::Type::String) return;
-            const size_t dot = call->str.find('.');
-            if (dot == std::string::npos) return;
             Entity e;
-            if (!findEntity(call->str.substr(0, dot), e)) return;
+            std::string verb;
+            if (!splitEntityPath(call->str, e, verb)) return;
             JsonValue args;
             args.type = JsonValue::Type::Array;
             if (const JsonValue* a = action.find("args")) args = resolve(*a, payload);
-            callWidgetVerb(*world_, e, call->str.c_str() + dot + 1, args);
+            callWidgetVerb(*world_, e, verb.c_str(), args);
         } else if (const JsonValue* host = action.find("host")) {
             if (host->type != JsonValue::Type::String) return;
             SceneEffect fx;

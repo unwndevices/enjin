@@ -89,6 +89,9 @@ static void test_list_verbs() {
            "verbs: setSelection handled");
     ASSERT(world.get<ListComponent>(e)->currentSelectionIndex() == 2,
            "verbs: setSelection jumped the cursor");
+    callWidgetVerb(world, e, "setSelection", parseArgs("[99]"));
+    ASSERT(world.get<ListComponent>(e)->currentSelectionIndex() == 2,
+           "verbs: out-of-range setSelection is a no-op (spec), not a clamp");
 
     ASSERT(callWidgetVerb(world, e, "setItems", parseArgs("[[\"X\", \"Y\"]]")),
            "verbs: setItems handled");
