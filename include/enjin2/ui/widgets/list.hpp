@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../component.hpp"
+#include "../reflect.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
 #include "../theme.hpp"
@@ -207,6 +208,23 @@ private:
     float scrollFrom_ = 0.0f;
     int scrollFramesLeft_ = 0;
 };
+
+/// @brief Serializable properties of @ref ListComponent (see reflect.hpp).
+/// `items` precedes the `selectedIndex` prop: setCurrentSelection clamps
+/// against the current item count. Marquee/scroll runtime state stays transient.
+#define ENJIN2_LIST_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(items)                                  \
+    FIELD(textAlign)                              \
+    FIELD(font)                                   \
+    FIELD(fontSize)                               \
+    FIELD(itemSpacing)                            \
+    FIELD(selectionOffset)                        \
+    FIELD(marqueeStartDelay)                      \
+    FIELD(marqueeSpeed)                           \
+    FIELD(marqueeEndDelay)                        \
+    PROP(selectedIndex, int, currentSelectionIndex, setCurrentSelection)
+
+ENJIN2_REFLECT_COMPONENT(ListComponent, 9, "list", ENJIN2_LIST_COMPONENT_FIELDS)
 
 /**
  * @brief Draws every ListComponent entity to a Pixel4 canvas

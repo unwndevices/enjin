@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../component.hpp"
+#include "../reflect.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
 #include "../../core/types.hpp"
@@ -76,6 +77,18 @@ struct IconComponent : public Component<IconComponent> {
      */
     bool isOpaqueAt(int x, int y) const { return sampleAt(x, y) != matte; }
 };
+
+/// @brief Serializable properties of @ref IconComponent (see reflect.hpp).
+/// The bitmap serializes as an AssetRegistry name reference (assets are
+/// reference-only); width/height travel as plain fields beside it.
+#define ENJIN2_ICON_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(bitmap)                                 \
+    FIELD(width)                                  \
+    FIELD(height)                                 \
+    FIELD(matte)                                  \
+    FIELD(visible)
+
+ENJIN2_REFLECT_COMPONENT(IconComponent, 5, "icon", ENJIN2_ICON_COMPONENT_FIELDS)
 
 /**
  * @brief Blits every IconComponent entity to a Pixel4 canvas

@@ -109,6 +109,28 @@ target_link_libraries(ui_overlay_popup_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_overlay_popup_test COMMAND ui_overlay_popup_test)
 
+# Reflection layer test (unwn #182, M1: G1 stable IDs/names + G2 field-list reflection)
+add_executable(ui_reflect_test
+    ui_reflect_test.cpp
+)
+target_include_directories(ui_reflect_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_reflect_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_reflect_test COMMAND ui_reflect_test)
+
+# M1 exit criterion (unwn #182): dump scene as JSON -> reload -> identical frame
+add_executable(ui_scene_roundtrip_test
+    ui_scene_roundtrip_test.cpp
+)
+target_include_directories(ui_scene_roundtrip_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_scene_roundtrip_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_scene_roundtrip_test COMMAND ui_scene_roundtrip_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp

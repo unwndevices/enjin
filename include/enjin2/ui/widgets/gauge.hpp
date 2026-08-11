@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../component.hpp"
+#include "../reflect.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
 #include "../theme.hpp"
@@ -123,6 +124,16 @@ struct GaugeComponent : public Component<GaugeComponent> {
 private:
     float value_ = 0.0f;
 };
+
+/// @brief Serializable properties of @ref GaugeComponent (see reflect.hpp).
+/// `mode` precedes the `value` prop: setValue clamps against the current mode.
+#define ENJIN2_GAUGE_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(diameter)                                \
+    FIELD(rimColor)                                \
+    FIELD(mode)                                    \
+    PROP(value, float, value, setValue)
+
+ENJIN2_REFLECT_COMPONENT(GaugeComponent, 6, "gauge", ENJIN2_GAUGE_COMPONENT_FIELDS)
 
 /**
  * @brief Draws every GaugeComponent entity to a Pixel4 canvas

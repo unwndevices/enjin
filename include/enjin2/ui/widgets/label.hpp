@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../component.hpp"
+#include "../reflect.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
 #include "../../core/types.hpp"
@@ -99,6 +100,17 @@ struct LabelComponent : public Component<LabelComponent> {
         return lines;
     }
 };
+
+/// @brief Serializable properties of @ref LabelComponent (see reflect.hpp).
+#define ENJIN2_LABEL_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(text)                                    \
+    FIELD(font)                                    \
+    FIELD(fontSize)                                \
+    FIELD(color)                                   \
+    FIELD(background)                              \
+    FIELD(pointer)
+
+ENJIN2_REFLECT_COMPONENT(LabelComponent, 4, "label", ENJIN2_LABEL_COMPONENT_FIELDS)
 
 /**
  * @brief Draws every LabelComponent entity to a Pixel4 canvas

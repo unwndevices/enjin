@@ -9,6 +9,12 @@
 
 namespace enjin2 {
 
+/// @brief Value-free type marker handed to @ref World::forEachComponentType visitors.
+template<typename T>
+struct TypeTag {
+    using type = T;
+};
+
 /**
  * @brief Minimal fixed-capacity ECS registry for the ui module
  * @tparam CAPACITY Entity-id space and per-component storage capacity
@@ -58,6 +64,17 @@ private:
 public:
     /// @brief Entity-id space and per-storage capacity.
     static constexpr size_t kCapacity = CAPACITY;
+
+    /**
+     * @brief Invoke @p f with a @ref TypeTag for every component type this world composes
+     *
+     * The pack is otherwise unnamable from outside; serializers walk it to
+     * discover which component types a world can hold (unwn #182).
+     */
+    template<typename F>
+    static constexpr void forEachComponentType(F&& f) {
+        (f(TypeTag<Components>{}), ...);
+    }
 
     /**
      * @brief Create a new entity

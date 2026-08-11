@@ -1,5 +1,6 @@
 #pragma once
 
+#include "reflect.hpp"
 #include "../core/types.hpp"
 #include <cstdint>
 
@@ -49,6 +50,22 @@ struct Theme {
         };
     }
 };
+
+/// @brief Serializable properties of @ref Theme (see reflect.hpp).
+/// Not an ECS component — a scene file carries at most one theme at the root.
+#define ENJIN2_THEME_FIELDS(FIELD, PROP) \
+    FIELD(background)                    \
+    FIELD(surface)                       \
+    FIELD(foreground)                    \
+    FIELD(muted)                         \
+    FIELD(accent)                        \
+    FIELD(accentText)                    \
+    FIELD(padding)                       \
+    FIELD(spacing)                       \
+    FIELD(itemHeight)                    \
+    FIELD(border)
+
+ENJIN2_REFLECT_COMPONENT(Theme, 3, "theme", ENJIN2_THEME_FIELDS)
 
 /// @brief Process-wide default theme (dark, 4-bit).
 inline constexpr Theme kDefaultTheme = Theme::dark();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "component.hpp"
+#include "reflect.hpp"
 #include "../core/types.hpp"
 #include "../graphics/canvas.hpp"
 #include <cstdint>
@@ -38,7 +39,29 @@ struct PositionComponent : public Component<PositionComponent> {
         position.x += offset.x;
         position.y += offset.y;
     }
+
+    /// @brief Current position (reflection getter).
+    Point getPosition() const { return position; }
+
+    /**
+     * @brief Teleport to @p pos, collapsing the movement delta
+     *
+     * Unlike @ref moveTo this also sets @ref lastPos, restoring the
+     * constructed-at state — the scene loader lands entities with this.
+     */
+    void place(Point pos) {
+        position = pos;
+        lastPos = pos;
+    }
 };
+
+/// @brief Serializable properties of @ref PositionComponent (see reflect.hpp).
+/// `lastPos` is runtime delta-tracking state and stays transient; loading
+/// places the entity, it does not replay its movement.
+#define ENJIN2_POSITION_COMPONENT_FIELDS(FIELD, PROP) \
+    PROP(position, Point, getPosition, place)
+
+ENJIN2_REFLECT_COMPONENT(PositionComponent, 1, "position", ENJIN2_POSITION_COMPONENT_FIELDS)
 
 /**
  * @brief Size component for 2D spatial dimensions
@@ -74,6 +97,14 @@ struct SizeComponent : public Component<SizeComponent> {
         return static_cast<uint32_t>(size.width) * size.height;
     }
 };
+
+/// @brief Serializable properties of @ref SizeComponent (see reflect.hpp).
+#define ENJIN2_SIZE_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(size)                                   \
+    FIELD(minSize)                                \
+    FIELD(maxSize)
+
+ENJIN2_REFLECT_COMPONENT(SizeComponent, 2, "size", ENJIN2_SIZE_COMPONENT_FIELDS)
 
 /**
  * @brief Visual rendering component for drawable entities

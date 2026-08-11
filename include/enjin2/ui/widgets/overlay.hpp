@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../component.hpp"
+#include "../reflect.hpp"
 #include "../system.hpp"
 #include "../../core/types.hpp"
 #include "../../graphics/canvas.hpp"
@@ -51,6 +52,13 @@ struct OverlayComponent : public Component<OverlayComponent> {
         return (v > opacity) ? static_cast<uint8_t>(v - opacity) : 0;
     }
 };
+
+/// @brief Serializable properties of @ref OverlayComponent (see reflect.hpp).
+#define ENJIN2_OVERLAY_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(opacity)                                   \
+    FIELD(visible)
+
+ENJIN2_REFLECT_COMPONENT(OverlayComponent, 7, "overlay", ENJIN2_OVERLAY_COMPONENT_FIELDS)
 
 /**
  * @brief Dims the whole canvas for every visible OverlayComponent

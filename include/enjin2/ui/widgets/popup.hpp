@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../component.hpp"
+#include "../reflect.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
 #include "../theme.hpp"
@@ -103,6 +104,23 @@ struct PopUpComponent : public Component<PopUpComponent> {
         elapsedMs = static_cast<uint16_t>(std::min<uint32_t>(next, 0xFFFF));
     }
 };
+
+/// @brief Serializable properties of @ref PopUpComponent (see reflect.hpp).
+/// `elapsedMs` is runtime countdown state and stays transient — a loaded scene
+/// starts its auto-hide clock from zero.
+#define ENJIN2_POPUP_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(line1)                                   \
+    FIELD(line2)                                   \
+    FIELD(icon)                                    \
+    FIELD(font)                                    \
+    FIELD(fontSize)                                \
+    FIELD(radius)                                  \
+    FIELD(rimColor)                                \
+    FIELD(textColor)                               \
+    FIELD(visible)                                 \
+    FIELD(autoHideMs)
+
+ENJIN2_REFLECT_COMPONENT(PopUpComponent, 8, "popup", ENJIN2_POPUP_COMPONENT_FIELDS)
 
 /**
  * @brief Ticks and draws every PopUpComponent entity to a Pixel4 canvas
