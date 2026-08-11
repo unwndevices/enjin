@@ -15,6 +15,7 @@
 
 #include "../graphics/canvas.hpp"
 #include "scene_json.hpp"
+#include "scene_stream.hpp"
 #include "schema_json.hpp"
 #include "scene_vm.hpp"
 #include "systems.hpp"
@@ -28,6 +29,7 @@
 #include "world.hpp"
 
 #include <cstdio>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -55,31 +57,23 @@ public:
     /// Load a scene document from JSON text and start it: `scene.activate` is
     /// dispatched here, so a loaded scene is a running scene.
     bool loadText(const std::string& text) {
-        // Tear down any previous scene before its world is destroyed — the
-        // rig's systems and the VM hold raw pointers into it. A failed load
-        // leaves the player inactive, never half-swapped.
-        vm_.reset();
-        rig_.reset();
-        world_ = std::make_unique<World>();
-        doc_ = SceneDoc{};
-        theme_ = kDefaultTheme;
-        themePresent_ = false;
-        if (!readSceneDocJson(text, doc_, *world_, assets_, &theme_, &themePresent_)) {
-            fprintf(stderr, "[scene] malformed scene document\n");
-            world_.reset();
-            return false;
-        }
-        rig_ = std::make_unique<Rig>(*world_, canvas_, theme_);
-        vm_ = std::make_unique<SceneVM<World>>(&doc_, world_.get(), &assets_);
-        // Canonical form of the *authored* document, captured before
-        // scene.activate below mutates the world (state sets, enter
-        // animations) — saveText() must never leak runtime state into a file.
-        savedText_ = writeSceneDocJson(doc_, *world_, assets_,
-                                       themePresent_ ? &theme_ : nullptr);
-        fprintf(stderr, "[scene] loaded scene '%s' (%zu entities)\n",
-                doc_.scene.c_str(), world_->entityCount());
-        dispatch("scene.activate", "");
-        return true;
+        return loadWith(
+            [&](SceneDoc& doc, World& world, Theme* theme, bool* themePresent) {
+                return readSceneDocJson(text, doc, world, assets_, theme, themePresent);
+            },
+            /*captureSaveText=*/true);
+    }
+
+    /// Stream-load a scene document (the firmware/M5 path): same activation
+    /// contract as loadText, but the document text is never resident and no
+    /// canonical-save snapshot is captured — saveText() returns "" for a
+    /// stream-loaded scene (firmware never saves).
+    bool loadStream(SceneStreamSource& src) {
+        return loadWith(
+            [&](SceneDoc& doc, World& world, Theme* theme, bool* themePresent) {
+                return readSceneDocStream(src, doc, world, assets_, theme, themePresent);
+            },
+            /*captureSaveText=*/false);
     }
 
     /// The loaded document in canonical scene JSON (the round-trip writer's
@@ -97,6 +91,12 @@ public:
     /// across loads — safe to fetch once, before any load.
     std::string schemaText() const { return writeSchemaJson<World>(assets_); }
 
+    /// Optional host-effect sink. The preview/editor tracks read effects off
+    /// stderr; a hosting firmware registers a handler instead (e.g. to honor
+    /// `ui.exitScene`). Effects are logged either way.
+    using EffectHandler = std::function<void(const SceneEffect&)>;
+    void setEffectHandler(EffectHandler handler) { effectHandler_ = std::move(handler); }
+
     /// Dispatch one event into the tables; payload is inline JSON ("" = none).
     void dispatch(const std::string& event, const std::string& payloadText) {
         if (!vm_) return;
@@ -108,12 +108,14 @@ public:
         logEffects(vm_->dispatch(event, hasPayload ? &payload : nullptr));
     }
 
-    /// One frame: advance behavior by the fixed frame period, then render.
-    void stepFrame() {
+    /// One frame: advance behavior by @p dtMs (the fixed frame period by
+    /// default — parity drivers must not pass anything else), then render.
+    /// Firmware runs its own frame clock and passes the real delta.
+    void stepFrame(int dtMs = kFrameMs) {
         if (!vm_) return;
-        logEffects(vm_->tick(static_cast<double>(kFrameMs)));
+        logEffects(vm_->tick(static_cast<double>(dtMs)));
         canvas_.clear(Pixel4(0));
-        const float dt = kFrameMs / 1000.0f;
+        const float dt = dtMs / 1000.0f;
         rig_->overlaySys.update(dt);
         rig_->labelSys.update(dt);
         rig_->iconSys.update(dt);
@@ -138,6 +140,39 @@ private:
               gaugeSys(&w, &c), popupSys(&w, &c) {}
     };
 
+    // Shared load path: tear down any previous scene before its world is
+    // destroyed — the rig's systems and the VM hold raw pointers into it. A
+    // failed load leaves the player inactive, never half-swapped.
+    template<typename Loader>
+    bool loadWith(Loader&& loadDoc, bool captureSaveText) {
+        vm_.reset();
+        rig_.reset();
+        world_ = std::make_unique<World>();
+        doc_ = SceneDoc{};
+        theme_ = kDefaultTheme;
+        themePresent_ = false;
+        savedText_.clear();
+        if (!loadDoc(doc_, *world_, &theme_, &themePresent_)) {
+            fprintf(stderr, "[scene] malformed scene document\n");
+            world_.reset();
+            return false;
+        }
+        rig_ = std::make_unique<Rig>(*world_, canvas_, theme_);
+        vm_ = std::make_unique<SceneVM<World>>(&doc_, world_.get(), &assets_);
+        // Canonical form of the *authored* document, captured before
+        // scene.activate below mutates the world (state sets, enter
+        // animations) — saveText() must never leak runtime state into a file.
+        // The streaming path skips the snapshot: no document text is resident
+        // and the firmware consumer never saves.
+        if (captureSaveText)
+            savedText_ = writeSceneDocJson(doc_, *world_, assets_,
+                                           themePresent_ ? &theme_ : nullptr);
+        fprintf(stderr, "[scene] loaded scene '%s' (%zu entities)\n",
+                doc_.scene.c_str(), world_->entityCount());
+        dispatch("scene.activate", "");
+        return true;
+    }
+
     void logEffects(const SceneEffects& effects) {
         for (const SceneEffect& fx : effects) {
             if (fx.kind == SceneEffect::Kind::SceneSwitch) {
@@ -147,10 +182,12 @@ private:
                 writeJson(w, fx.args);
                 fprintf(stderr, "[scene] host -> %s %s\n", fx.name.c_str(), w.str().c_str());
             }
+            if (effectHandler_) effectHandler_(fx);
         }
     }
 
     SceneDoc doc_;
+    EffectHandler effectHandler_;
     std::unique_ptr<World> world_;
     AssetRegistry assets_;
     Theme theme_ = kDefaultTheme;

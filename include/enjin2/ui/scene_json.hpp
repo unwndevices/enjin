@@ -338,29 +338,36 @@ std::string writeSceneJson(const TWorld& world, const AssetRegistry& assets,
  * compose — or reflection doesn't cover — are skipped, as are unknown fields
  * inside a component (the tolerant-reader contract from day one).
  */
+/// @brief Create one entity from an `entities` array element (tolerant).
+/// Shared by the DOM loader below and the streaming loader
+/// (scene_stream.hpp), which holds only one element's subtree at a time.
+template<typename TWorld>
+void readEntityJson(const JsonValue& entityObj, TWorld& world, const AssetRegistry& assets) {
+    if (entityObj.type != JsonValue::Type::Object) return;
+    const JsonValue* comps = entityObj.find("components");
+    if (!comps || comps->type != JsonValue::Type::Object) return;
+
+    const Entity e = world.create();
+    for (const auto& kv : comps->object) {
+        TWorld::forEachComponentType([&](auto tag) {
+            using C = typename decltype(tag)::type;
+            if constexpr (IsReflected<C>::value) {
+                if (kv.first == ComponentTraits<C>::kName) {
+                    if (C* c = world.template add<C>(e))
+                        readComponentJson(kv.second, *c, assets);
+                }
+            }
+        });
+    }
+}
+
 template<typename TWorld>
 void readEntitiesJson(const JsonValue& root, TWorld& world, const AssetRegistry& assets) {
     const JsonValue* entities = root.find("entities");
     if (!entities || entities->type != JsonValue::Type::Array) return;
 
-    for (const JsonValue& entityObj : entities->array) {
-        if (entityObj.type != JsonValue::Type::Object) continue;
-        const JsonValue* comps = entityObj.find("components");
-        if (!comps || comps->type != JsonValue::Type::Object) continue;
-
-        const Entity e = world.create();
-        for (const auto& kv : comps->object) {
-            TWorld::forEachComponentType([&](auto tag) {
-                using C = typename decltype(tag)::type;
-                if constexpr (IsReflected<C>::value) {
-                    if (kv.first == ComponentTraits<C>::kName) {
-                        if (C* c = world.template add<C>(e))
-                            readComponentJson(kv.second, *c, assets);
-                    }
-                }
-            });
-        }
-    }
+    for (const JsonValue& entityObj : entities->array)
+        readEntityJson(entityObj, world, assets);
 }
 
 template<typename TWorld>
