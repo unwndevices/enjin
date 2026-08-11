@@ -453,6 +453,10 @@ std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
 
 /**
  * @brief Load a full scene document into @p doc + an (empty) world
+ * @param themePresentOut Set to whether the document authored a `theme`
+ *        section — a saver must pass the theme back only in that case, or a
+ *        default theme would be injected into every themeless document and
+ *        the dump → reload → dump fixed point would break
  * @return false only on malformed JSON; tolerant of everything well-formed
  *
  * The reader is tolerant across the whole document: unknown root keys,
@@ -462,7 +466,8 @@ std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
  */
 template<typename TWorld>
 bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
-                      const AssetRegistry& assets, Theme* themeOut = nullptr) {
+                      const AssetRegistry& assets, Theme* themeOut = nullptr,
+                      bool* themePresentOut = nullptr) {
     JsonValue root;
     if (!parseJson(text, root) || root.type != JsonValue::Type::Object) return false;
 
@@ -475,10 +480,9 @@ bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
     if (const JsonValue* v = root.find("animations")) doc.animations = *v;
     if (const JsonValue* v = root.find("on")) doc.on = *v;
 
-    if (themeOut) {
-        if (const JsonValue* themeObj = root.find(ComponentTraits<Theme>::kName))
-            readComponentJson(*themeObj, *themeOut, assets);
-    }
+    const JsonValue* themeObj = root.find(ComponentTraits<Theme>::kName);
+    if (themePresentOut) *themePresentOut = themeObj != nullptr;
+    if (themeOut && themeObj) readComponentJson(*themeObj, *themeOut, assets);
 
     readEntitiesJson(root, world, assets);
     return true;

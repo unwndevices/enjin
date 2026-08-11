@@ -175,6 +175,17 @@ target_link_libraries(scene_player_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME scene_player_test COMMAND scene_player_test)
 
+# Editor write surface (unwn #186, M3b): schema export + canonical save
+add_executable(ui_schema_json_test
+    ui_schema_json_test.cpp
+)
+target_include_directories(ui_schema_json_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_schema_json_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_schema_json_test COMMAND ui_schema_json_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp

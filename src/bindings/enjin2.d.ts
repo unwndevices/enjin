@@ -106,6 +106,14 @@ export interface Enjin2Module extends EmscriptenModule {
   /** Load a scene document (JSON text); dispatches scene.activate on success. */
   loadScene(jsonText: string): boolean;
   sceneActive(): boolean;
+  // Editor write surface (M3b, unwn #186).
+  /** Canonical scene JSON of the loaded document (the round-trip writer);
+   *  "" when no scene is loaded. The authored theme section survives only
+   *  if the document had one. */
+  saveScene(): string;
+  /** Reflected component schema (palette/inspector metadata) + compiled-in
+   *  theme/font/bitmap enumeration. Constant across loads. */
+  getSceneSchema(): string;
   /** Dispatch an event into the scene's tables; payloadJson "" = no payload. */
   sceneDispatch(event: string, payloadJson: string): void;
   /** Advance behavior by one fixed 16 ms frame, then render. */

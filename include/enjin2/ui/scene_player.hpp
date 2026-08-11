@@ -15,6 +15,7 @@
 
 #include "../graphics/canvas.hpp"
 #include "scene_json.hpp"
+#include "schema_json.hpp"
 #include "scene_vm.hpp"
 #include "systems.hpp"
 #include "theme.hpp"
@@ -62,18 +63,39 @@ public:
         world_ = std::make_unique<World>();
         doc_ = SceneDoc{};
         theme_ = kDefaultTheme;
-        if (!readSceneDocJson(text, doc_, *world_, assets_, &theme_)) {
+        themePresent_ = false;
+        if (!readSceneDocJson(text, doc_, *world_, assets_, &theme_, &themePresent_)) {
             fprintf(stderr, "[scene] malformed scene document\n");
             world_.reset();
             return false;
         }
         rig_ = std::make_unique<Rig>(*world_, canvas_, theme_);
         vm_ = std::make_unique<SceneVM<World>>(&doc_, world_.get(), &assets_);
+        // Canonical form of the *authored* document, captured before
+        // scene.activate below mutates the world (state sets, enter
+        // animations) — saveText() must never leak runtime state into a file.
+        savedText_ = writeSceneDocJson(doc_, *world_, assets_,
+                                       themePresent_ ? &theme_ : nullptr);
         fprintf(stderr, "[scene] loaded scene '%s' (%zu entities)\n",
                 doc_.scene.c_str(), world_->entityCount());
         dispatch("scene.activate", "");
         return true;
     }
+
+    /// The loaded document in canonical scene JSON (the round-trip writer's
+    /// fixed point), snapshotted at load before scene.activate runs — the
+    /// authored scene, never runtime state. A theme section survives only
+    /// when the document authored one. "" when no scene is loaded.
+    const std::string& saveText() const {
+        static const std::string kEmpty;
+        return vm_ ? savedText_ : kEmpty;
+    }
+
+    /// The reflected component schema for this player's world (unwn #186):
+    /// palette + inspector metadata from the same field lists that drive
+    /// save/load, plus this player's compiled-in asset enumeration. Constant
+    /// across loads — safe to fetch once, before any load.
+    std::string schemaText() const { return writeSchemaJson<World>(assets_); }
 
     /// Dispatch one event into the tables; payload is inline JSON ("" = none).
     void dispatch(const std::string& event, const std::string& payloadText) {
@@ -132,6 +154,8 @@ private:
     std::unique_ptr<World> world_;
     AssetRegistry assets_;
     Theme theme_ = kDefaultTheme;
+    bool themePresent_ = false;
+    std::string savedText_;
     std::unique_ptr<Rig> rig_;
     std::unique_ptr<SceneVM<World>> vm_;
     Canvas canvas_;

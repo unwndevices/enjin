@@ -170,6 +170,12 @@ bool sceneLoad(std::string jsonText) { return g_scenePlayer.loadText(jsonText); 
 
 bool sceneActive() { return g_scenePlayer.active(); }
 
+// -- Editor write surface (M3b, unwn #186) --
+
+std::string sceneSave() { return g_scenePlayer.saveText(); }
+
+std::string sceneSchema() { return g_scenePlayer.schemaText(); }
+
 void sceneDispatch(std::string event, std::string payloadJson) {
     g_scenePlayer.dispatch(event, payloadJson);
 }
@@ -214,6 +220,8 @@ EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
 
     function("loadScene", &sceneLoad);
     function("sceneActive", &sceneActive);
+    function("saveScene", &sceneSave);
+    function("getSceneSchema", &sceneSchema);
     function("sceneDispatch", &sceneDispatch);
     function("sceneTick", &sceneTick);
     function("getSceneFramebuffer", &sceneGetFramebuffer);
