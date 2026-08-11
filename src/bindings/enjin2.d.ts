@@ -101,6 +101,20 @@ export interface Enjin2Module extends EmscriptenModule {
   getFramebuffer(): Uint8Array;
   injectInput(buttons: number, ax0: number, ay0: number): void;
 
+  // Scene-file surface (M2, unwn #184): versioned scene JSON (ADR-0005) run
+  // by the shared enjin2::ScenePlayer rig on the 127x127 authoring canvas.
+  /** Load a scene document (JSON text); dispatches scene.activate on success. */
+  loadScene(jsonText: string): boolean;
+  sceneActive(): boolean;
+  /** Dispatch an event into the scene's tables; payloadJson "" = no payload. */
+  sceneDispatch(event: string, payloadJson: string): void;
+  /** Advance behavior by one fixed 16 ms frame, then render. */
+  sceneTick(): void;
+  /** Live view of the PACKED 127x127 Canvas4 buffer (8128 bytes, 2 px/byte,
+   *  64-byte row stride) — byte-for-byte the native golden .bin payload.
+   *  Copy it if you need a stable snapshot. */
+  getSceneFramebuffer(): Uint8Array;
+
   // Palette
   getPaletteRGB(): Uint8Array;
   setPaletteColor(index: number, r: number, g: number, b: number): void;

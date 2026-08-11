@@ -164,6 +164,17 @@ target_link_libraries(ui_scene_doc_roundtrip_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_scene_doc_roundtrip_test COMMAND ui_scene_doc_roundtrip_test)
 
+# Shared scene-playback rig (unwn #184, M2 exit): native/WASM parity by construction
+add_executable(scene_player_test
+    scene_player_test.cpp
+)
+target_include_directories(scene_player_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(scene_player_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME scene_player_test COMMAND scene_player_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp

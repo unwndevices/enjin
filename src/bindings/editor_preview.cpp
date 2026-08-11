@@ -5,6 +5,7 @@
 #include "../../include/enjin2/graphics/primitives.hpp"
 #include "../../include/enjin2/input/input_state.hpp"
 #include "../../include/enjin2/ui/components.hpp"
+#include "../../include/enjin2/ui/scene_player.hpp"
 #include "../../include/enjin2/ui/widgets/gauge.hpp"
 #include "../../include/enjin2/ui/widgets/label.hpp"
 #include "../../include/enjin2/ui/world.hpp"
@@ -41,8 +42,20 @@ using namespace enjin2;
  *
  * Everything here is Lua-free by design — this surface is what a
  * `-DENJIN2_BUILD_LUA=OFF` WASM build exports (plus the palette/canvas-size
- * helpers from emscripten_bindings.cpp). loadScene() joins this surface at M2
- * once the serialization milestones (M1/M2) exist.
+ * helpers from emscripten_bindings.cpp).
+ *
+ * M2 (unwn #184) adds the scene-file surface on top, backed by the shared
+ * enjin2::ScenePlayer rig — the same header eisei_preview compiles natively,
+ * so the CI parity goldens compare the toolchains, never two wirings:
+ *
+ *   loadScene(jsonText)             -> bool   (versioned scene JSON, ADR-0005;
+ *                                              dispatches scene.activate)
+ *   sceneActive()                   -> bool
+ *   sceneDispatch(name, jsonText)   -> void   (event into the tables, "" = no payload)
+ *   sceneTick()                     -> void   (advance + render one fixed 16 ms frame)
+ *   getSceneFramebuffer()           -> Uint8Array view, the PACKED 127x127
+ *                                     Canvas4 buffer (8128 bytes) — byte-for-byte
+ *                                     the native golden .bin payload
  */
 
 namespace {
@@ -149,6 +162,28 @@ void previewInjectInput(int buttons, float ax0, float ay0) {
     g_input.axes[1] = std::clamp(ay0, -1.0f, 1.0f);
 }
 
+// -- Scene-file surface (M2, unwn #184) --
+
+ScenePlayer g_scenePlayer;
+
+bool sceneLoad(std::string jsonText) { return g_scenePlayer.loadText(jsonText); }
+
+bool sceneActive() { return g_scenePlayer.active(); }
+
+void sceneDispatch(std::string event, std::string payloadJson) {
+    g_scenePlayer.dispatch(event, payloadJson);
+}
+
+void sceneTick() { g_scenePlayer.stepFrame(); }
+
+val sceneGetFramebuffer() {
+    // Live view straight over the packed canvas buffer — the same bytes
+    // writeGoldenRaw() captures natively. The caller copies before storing.
+    ScenePlayer::Canvas* cv = g_scenePlayer.canvas();
+    return val(typed_memory_view(cv->getBufferSize(),
+                                 reinterpret_cast<uint8_t*>(cv->getBuffer())));
+}
+
 } // namespace
 
 EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
@@ -156,4 +191,10 @@ EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
     function("tick", &previewTick);
     function("getFramebuffer", &previewGetFramebuffer);
     function("injectInput", &previewInjectInput);
+
+    function("loadScene", &sceneLoad);
+    function("sceneActive", &sceneActive);
+    function("sceneDispatch", &sceneDispatch);
+    function("sceneTick", &sceneTick);
+    function("getSceneFramebuffer", &sceneGetFramebuffer);
 }
