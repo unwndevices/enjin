@@ -131,6 +131,39 @@ target_link_libraries(ui_scene_roundtrip_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_scene_roundtrip_test COMMAND ui_scene_roundtrip_test)
 
+# G3 name factory (unwn #183, M2): components + widget verbs by string name
+add_executable(ui_factory_test
+    ui_factory_test.cpp
+)
+target_include_directories(ui_factory_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_factory_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_factory_test COMMAND ui_factory_test)
+
+# SceneVM interpreter (unwn #183, M2): ratified scene_vm.py semantics in C++
+add_executable(ui_scene_vm_test
+    ui_scene_vm_test.cpp
+)
+target_include_directories(ui_scene_vm_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_scene_vm_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_scene_vm_test COMMAND ui_scene_vm_test)
+
+# M2 loader/writer exit test (unwn #183): wholesale fixed point + behavior parity
+add_executable(ui_scene_doc_roundtrip_test
+    ui_scene_doc_roundtrip_test.cpp
+)
+target_include_directories(ui_scene_doc_roundtrip_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_scene_doc_roundtrip_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_scene_doc_roundtrip_test COMMAND ui_scene_doc_roundtrip_test)
+
 # Palette unit test
 add_executable(palette_test
     palette_test.cpp

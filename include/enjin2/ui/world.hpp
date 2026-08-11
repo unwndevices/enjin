@@ -5,6 +5,7 @@
 #include <tuple>
 #include <cstddef>
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 namespace enjin2 {
@@ -64,6 +65,12 @@ private:
 public:
     /// @brief Entity-id space and per-storage capacity.
     static constexpr size_t kCapacity = CAPACITY;
+
+    /// @brief Whether this world's component set includes @p T (compile-time).
+    template<typename T>
+    static constexpr bool composes() {
+        return (std::is_same_v<T, Components> || ...);
+    }
 
     /**
      * @brief Invoke @p f with a @ref TypeTag for every component type this world composes

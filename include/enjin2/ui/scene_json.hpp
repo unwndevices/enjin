@@ -7,6 +7,7 @@
 #include "world.hpp"
 #include "../core/types.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <type_traits>
@@ -14,13 +15,16 @@
 
 /**
  * @file scene_json.hpp
- * @brief Scene ⇄ JSON serialization over the reflection layer (unwn #182, M1)
+ * @brief Scene ⇄ JSON serialization over the reflection layer (unwn #182 M1, #183 M2)
  *
  * A scene file is versioned data (ADR-0005): a `version` field, an optional
  * root `theme`, and an `entities` array whose components are **name-keyed** by
  * their @ref ComponentTraits identity. Save and load are both driven by the
  * per-component field lists — one declaration per component, no parallel
- * schema to drift.
+ * schema to drift. The document level (@ref SceneDoc) adds the ratified
+ * behavior model: scene name, initial state vars, timers, animation tracks
+ * and event→action tables, carried as DOM subtrees the @ref SceneVM
+ * interprets directly.
  *
  * The reader is tolerant from day one: unknown component names, unknown
  * fields, and wrong-typed values are skipped (defaults stand); the `version`
@@ -77,6 +81,8 @@ void writeFieldValue(JsonWriter& w, const T& v, const AssetRegistry& assets) {
         w.beginArray();
         for (const std::string& s : v) w.value(s);
         w.endArray();
+    } else if constexpr (std::is_same_v<T, JsonValue>) {
+        writeJson(w, v);
     } else if constexpr (std::is_same_v<T, const GFXfont*>) {
         const char* name = v ? assets.fontName(v) : nullptr;
         if (name) w.value(name);
@@ -106,10 +112,12 @@ bool readFieldValue(const JsonValue& jv, T& out, const AssetRegistry& assets) {
         out = static_cast<T>(static_cast<std::underlying_type_t<T>>(jv.number));
     } else if constexpr (std::is_integral_v<T>) {
         if (jv.type != JsonValue::Type::Number) return false;
-        out = static_cast<T>(static_cast<int64_t>(jv.number));
+        // Round, don't truncate: animation tracks write eased fractional
+        // values into integer fields (file-authored values are exact either way).
+        out = static_cast<T>(std::llround(jv.number));
     } else if constexpr (std::is_same_v<T, Pixel4>) {
         if (jv.type != JsonValue::Type::Number) return false;
-        out = Pixel4(static_cast<uint8_t>(static_cast<int64_t>(jv.number)));
+        out = Pixel4(static_cast<uint8_t>(std::llround(jv.number)));
     } else if constexpr (std::is_same_v<T, Point>) {
         if (jv.type != JsonValue::Type::Object) return false;
         const JsonValue* x = jv.find("x");
@@ -131,6 +139,8 @@ bool readFieldValue(const JsonValue& jv, T& out, const AssetRegistry& assets) {
         out.clear();
         for (const JsonValue& item : jv.array)
             if (item.type == JsonValue::Type::String) out.push_back(item.str);
+    } else if constexpr (std::is_same_v<T, JsonValue>) {
+        out = jv; // opaque subtree (slot bag, bindings): carried verbatim
     } else if constexpr (std::is_same_v<T, const GFXfont*>) {
         if (jv.type == JsonValue::Type::Null) out = nullptr;
         else if (jv.type == JsonValue::Type::String) out = assets.findFont(jv.str.c_str());
@@ -143,6 +153,80 @@ bool readFieldValue(const JsonValue& jv, T& out, const AssetRegistry& assets) {
         static_assert(sizeof(T) == 0, "unserializable reflected field type");
     }
     return true;
+}
+
+/**
+ * @brief Convert one reflected field value to a DOM node
+ *
+ * The DOM twin of @ref writeFieldValue — same value mapping, but into a
+ * JsonValue instead of writer output. The SceneVM reads entity properties
+ * through this (guards, bindings, `@entity.prop` references).
+ */
+template<typename T>
+JsonValue fieldToJson(const T& v, const AssetRegistry& assets) {
+    JsonValue out;
+    if constexpr (std::is_same_v<T, bool>) {
+        out.type = JsonValue::Type::Bool;
+        out.boolean = v;
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        out.type = JsonValue::Type::String;
+        out.str = v;
+    } else if constexpr (std::is_same_v<T, float>) {
+        out.type = JsonValue::Type::Number;
+        out.number = static_cast<double>(v);
+    } else if constexpr (std::is_enum_v<T>) {
+        out.type = JsonValue::Type::Number;
+        out.number = static_cast<double>(static_cast<std::underlying_type_t<T>>(v));
+    } else if constexpr (std::is_integral_v<T>) {
+        out.type = JsonValue::Type::Number;
+        out.number = static_cast<double>(v);
+    } else if constexpr (std::is_same_v<T, Pixel4>) {
+        out.type = JsonValue::Type::Number;
+        out.number = static_cast<double>(v.value);
+    } else if constexpr (std::is_same_v<T, Point>) {
+        out.type = JsonValue::Type::Object;
+        JsonValue x, y;
+        x.type = JsonValue::Type::Number;
+        x.number = v.x;
+        y.type = JsonValue::Type::Number;
+        y.number = v.y;
+        out.object.emplace_back("x", x);
+        out.object.emplace_back("y", y);
+    } else if constexpr (std::is_same_v<T, Size>) {
+        out.type = JsonValue::Type::Object;
+        JsonValue width, height;
+        width.type = JsonValue::Type::Number;
+        width.number = v.width;
+        height.type = JsonValue::Type::Number;
+        height.number = v.height;
+        out.object.emplace_back("width", width);
+        out.object.emplace_back("height", height);
+    } else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
+        out.type = JsonValue::Type::Array;
+        for (const std::string& s : v) {
+            JsonValue item;
+            item.type = JsonValue::Type::String;
+            item.str = s;
+            out.array.push_back(item);
+        }
+    } else if constexpr (std::is_same_v<T, JsonValue>) {
+        out = v;
+    } else if constexpr (std::is_same_v<T, const GFXfont*>) {
+        const char* name = v ? assets.fontName(v) : nullptr;
+        if (name) {
+            out.type = JsonValue::Type::String;
+            out.str = name;
+        }
+    } else if constexpr (std::is_same_v<T, const uint8_t*>) {
+        const char* name = v ? assets.bitmapName(v) : nullptr;
+        if (name) {
+            out.type = JsonValue::Type::String;
+            out.str = name;
+        }
+    } else {
+        static_assert(sizeof(T) == 0, "unserializable reflected field type");
+    }
+    return out;
 }
 
 } // namespace detail
@@ -192,8 +276,7 @@ void readComponentJson(const JsonValue& obj, T& c, const AssetRegistry& assets) 
  * Component types the world composes but reflection doesn't cover are skipped.
  */
 template<typename TWorld>
-std::string writeSceneJson(const TWorld& world, const AssetRegistry& assets,
-                           const Theme* theme = nullptr) {
+void writeEntitiesJson(JsonWriter& w, const TWorld& world, const AssetRegistry& assets) {
     // Union of every storage's entities, deduped, in first-appearance order.
     std::vector<Entity> live;
     TWorld::forEachComponentType([&](auto tag) {
@@ -209,14 +292,6 @@ std::string writeSceneJson(const TWorld& world, const AssetRegistry& assets,
         }
     });
 
-    JsonWriter w;
-    w.beginObject();
-    w.key("version");
-    w.value(kSceneJsonVersion);
-    if (theme) {
-        w.key(ComponentTraits<Theme>::kName);
-        writeComponentJson(w, *theme, assets);
-    }
     w.key("entities");
     w.beginArray();
     for (const Entity e : live) {
@@ -236,6 +311,20 @@ std::string writeSceneJson(const TWorld& world, const AssetRegistry& assets,
         w.endObject();
     }
     w.endArray();
+}
+
+template<typename TWorld>
+std::string writeSceneJson(const TWorld& world, const AssetRegistry& assets,
+                           const Theme* theme = nullptr) {
+    JsonWriter w;
+    w.beginObject();
+    w.key("version");
+    w.value(kSceneJsonVersion);
+    if (theme) {
+        w.key(ComponentTraits<Theme>::kName);
+        writeComponentJson(w, *theme, assets);
+    }
+    writeEntitiesJson(w, world, assets);
     w.endObject();
     return w.str();
 }
@@ -250,18 +339,9 @@ std::string writeSceneJson(const TWorld& world, const AssetRegistry& assets,
  * inside a component (the tolerant-reader contract from day one).
  */
 template<typename TWorld>
-bool readSceneJson(const std::string& text, TWorld& world, const AssetRegistry& assets,
-                   Theme* themeOut = nullptr) {
-    JsonValue root;
-    if (!parseJson(text, root) || root.type != JsonValue::Type::Object) return false;
-
-    if (themeOut) {
-        if (const JsonValue* themeObj = root.find(ComponentTraits<Theme>::kName))
-            readComponentJson(*themeObj, *themeOut, assets);
-    }
-
+void readEntitiesJson(const JsonValue& root, TWorld& world, const AssetRegistry& assets) {
     const JsonValue* entities = root.find("entities");
-    if (!entities || entities->type != JsonValue::Type::Array) return true;
+    if (!entities || entities->type != JsonValue::Type::Array) return;
 
     for (const JsonValue& entityObj : entities->array) {
         if (entityObj.type != JsonValue::Type::Object) continue;
@@ -281,6 +361,126 @@ bool readSceneJson(const std::string& text, TWorld& world, const AssetRegistry& 
             });
         }
     }
+}
+
+template<typename TWorld>
+bool readSceneJson(const std::string& text, TWorld& world, const AssetRegistry& assets,
+                   Theme* themeOut = nullptr) {
+    JsonValue root;
+    if (!parseJson(text, root) || root.type != JsonValue::Type::Object) return false;
+
+    if (themeOut) {
+        if (const JsonValue* themeObj = root.find(ComponentTraits<Theme>::kName))
+            readComponentJson(*themeObj, *themeOut, assets);
+    }
+
+    readEntitiesJson(root, world, assets);
+    return true;
+}
+
+// ----- Document-level (ratified schema, unwn #183) -----------------------------
+
+/**
+ * @brief The behavior half of a scene document (ADR-0005: behavior as data)
+ *
+ * Everything in a scene file that is not the entity/component tree: the scene
+ * name, the initial state-variable bag, timers, animation tracks, and the
+ * event→action tables. These sections are **static scene data** — the SceneVM
+ * copies what it mutates (state vars, timer arms) into its own runtime, so a
+ * loaded document writes back out exactly as it came in regardless of what
+ * the scene did at runtime.
+ *
+ * The sections stay as parsed DOM subtrees on purpose: the interpreter walks
+ * them directly (mirroring the ratified `scene_vm.py` spec, which interprets
+ * the document dict), the writer re-emits them verbatim, and unknown keys
+ * inside them survive a round trip — the tolerant-reader contract extends to
+ * behavior. The ESP32 loader (M5) will compile these into compact structs via
+ * a streaming parse instead; this DOM form is desktop/WASM only.
+ */
+struct SceneDoc {
+    int64_t version = kSceneJsonVersion; ///< As read; writers emit kSceneJsonVersion
+    std::string scene;                   ///< Scene name ("" = unnamed)
+    JsonValue state;                     ///< Initial state vars (object) or Null
+    JsonValue timers;                    ///< name → {ms, repeat?, onExpire: rules} or Null
+    JsonValue animations;                ///< name → {tracks: [...]} or Null
+    JsonValue on;                        ///< event → rules (object) or Null
+};
+
+/**
+ * @brief Dump a full scene document: behavior sections + entity tree
+ *
+ * Section order is fixed (version · scene · theme · state · entities ·
+ * timers · animations · on); absent sections are omitted, so
+ * dump → reload → dump is a byte-exact fixed point. Entity/component state is
+ * written from the world (the editor's save path mutates components), while
+ * behavior sections come from @p doc verbatim.
+ */
+template<typename TWorld>
+std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
+                              const AssetRegistry& assets, const Theme* theme = nullptr) {
+    JsonWriter w;
+    w.beginObject();
+    w.key("version");
+    w.value(kSceneJsonVersion);
+    if (!doc.scene.empty()) {
+        w.key("scene");
+        w.value(doc.scene);
+    }
+    if (theme) {
+        w.key(ComponentTraits<Theme>::kName);
+        writeComponentJson(w, *theme, assets);
+    }
+    if (doc.state.type != JsonValue::Type::Null) {
+        w.key("state");
+        writeJson(w, doc.state);
+    }
+    writeEntitiesJson(w, world, assets);
+    if (doc.timers.type != JsonValue::Type::Null) {
+        w.key("timers");
+        writeJson(w, doc.timers);
+    }
+    if (doc.animations.type != JsonValue::Type::Null) {
+        w.key("animations");
+        writeJson(w, doc.animations);
+    }
+    if (doc.on.type != JsonValue::Type::Null) {
+        w.key("on");
+        writeJson(w, doc.on);
+    }
+    w.endObject();
+    return w.str();
+}
+
+/**
+ * @brief Load a full scene document into @p doc + an (empty) world
+ * @return false only on malformed JSON; tolerant of everything well-formed
+ *
+ * The reader is tolerant across the whole document: unknown root keys,
+ * component names, fields and action verbs are skipped or carried opaquely;
+ * missing sections leave their SceneDoc member Null. The `version` field is
+ * read and kept, not enforced.
+ */
+template<typename TWorld>
+bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
+                      const AssetRegistry& assets, Theme* themeOut = nullptr) {
+    JsonValue root;
+    if (!parseJson(text, root) || root.type != JsonValue::Type::Object) return false;
+
+    if (const JsonValue* v = root.find("version"))
+        if (v->type == JsonValue::Type::Number) doc.version = static_cast<int64_t>(v->number);
+    if (const JsonValue* v = root.find("scene"))
+        if (v->type == JsonValue::Type::String) doc.scene = v->str;
+    if (const JsonValue* v = root.find("state")) doc.state = *v;
+    if (const JsonValue* v = root.find("timers")) doc.timers = *v;
+    if (const JsonValue* v = root.find("animations")) doc.animations = *v;
+    if (const JsonValue* v = root.find("on")) doc.on = *v;
+
+    if (themeOut) {
+        if (const JsonValue* themeObj = root.find(ComponentTraits<Theme>::kName))
+            readComponentJson(*themeObj, *themeOut, assets);
+    }
+
+    readEntitiesJson(root, world, assets);
     return true;
 }
 

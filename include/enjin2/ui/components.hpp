@@ -5,6 +5,7 @@
 #include "../core/types.hpp"
 #include "../graphics/canvas.hpp"
 #include <cstdint>
+#include <string>
 
 namespace enjin2 {
 
@@ -105,6 +106,27 @@ struct SizeComponent : public Component<SizeComponent> {
     FIELD(maxSize)
 
 ENJIN2_REFLECT_COMPONENT(SizeComponent, 2, "size", ENJIN2_SIZE_COMPONENT_FIELDS)
+
+/**
+ * @brief Stable string identity for scene-file entities (unwn #183, M2)
+ *
+ * Behavior data (bindings, event→action tables, animation tracks) addresses
+ * entities by this id — `presetList.selectedIndex` — never by the runtime
+ * Entity handle, which is allocator-order and must not leak into files. An
+ * entity without an IdComponent is anonymous: serializable, but unreachable
+ * from behavior.
+ */
+struct IdComponent : public Component<IdComponent> {
+    std::string id; ///< Scene-unique name, as written in the file
+
+    IdComponent(std::string id_ = {}) : id(std::move(id_)) {}
+};
+
+/// @brief Serializable properties of @ref IdComponent (see reflect.hpp).
+#define ENJIN2_ID_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(id)
+
+ENJIN2_REFLECT_COMPONENT(IdComponent, 10, "id", ENJIN2_ID_COMPONENT_FIELDS)
 
 /**
  * @brief Visual rendering component for drawable entities

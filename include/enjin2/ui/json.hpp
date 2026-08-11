@@ -184,7 +184,63 @@ struct JsonValue {
             if (kv.first == k) return &kv.second;
         return nullptr;
     }
+
+    /// @brief Truthiness for guard atoms: null/false/0/""/[]/{} are false.
+    bool truthy() const {
+        switch (type) {
+            case Type::Null:   return false;
+            case Type::Bool:   return boolean;
+            case Type::Number: return number != 0.0;
+            case Type::String: return !str.empty();
+            case Type::Object: return !object.empty();
+            case Type::Array:  return !array.empty();
+        }
+        return false;
+    }
 };
+
+/**
+ * @brief Re-emit a parsed DOM subtree through a writer
+ *
+ * Canonical number form: integral values in int64 range emit as integers,
+ * everything else through the writer's `%.9g` float path — so parse → emit is
+ * a fixed point for any document this writer produced (behavior subtrees ride
+ * through save/load verbatim).
+ */
+inline void writeJson(JsonWriter& w, const JsonValue& v) {
+    switch (v.type) {
+        case JsonValue::Type::Null:
+            w.null();
+            break;
+        case JsonValue::Type::Bool:
+            w.value(v.boolean);
+            break;
+        case JsonValue::Type::Number: {
+            const double d = v.number;
+            const bool integral = std::nearbyint(d) == d && std::isfinite(d) &&
+                                  d >= -9223372036854775808.0 && d < 9223372036854775808.0;
+            if (integral) w.value(static_cast<int64_t>(d));
+            else w.value(static_cast<float>(d));
+            break;
+        }
+        case JsonValue::Type::String:
+            w.value(v.str);
+            break;
+        case JsonValue::Type::Object:
+            w.beginObject();
+            for (const auto& kv : v.object) {
+                w.key(kv.first.c_str());
+                writeJson(w, kv.second);
+            }
+            w.endObject();
+            break;
+        case JsonValue::Type::Array:
+            w.beginArray();
+            for (const JsonValue& item : v.array) writeJson(w, item);
+            w.endArray();
+            break;
+    }
+}
 
 namespace detail {
 
