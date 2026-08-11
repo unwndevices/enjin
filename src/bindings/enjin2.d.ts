@@ -92,6 +92,15 @@ export interface Enjin2Module extends EmscriptenModule {
   drawLinesBatch(canvas: Canvas4, lines: number[]): void;
   fillRectsBatch(canvas: Canvas4, rects: number[]): void;
 
+  // Scene-editor preview surface (editor_preview.cpp, Lua-free).
+  // Call order per frame: injectInput() -> tick() -> getFramebuffer().
+  init(): boolean;
+  tick(dtSeconds: number): number;
+  /** Live view into WASM memory (one 4-bit value 0-15 per pixel, row-major);
+   *  copy it if you need a stable snapshot. */
+  getFramebuffer(): Uint8Array;
+  injectInput(buttons: number, ax0: number, ay0: number): void;
+
   // Palette
   getPaletteRGB(): Uint8Array;
   setPaletteColor(index: number, r: number, g: number, b: number): void;

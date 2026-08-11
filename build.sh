@@ -3,6 +3,7 @@ set -euo pipefail
 
 TARGET="sdl3"
 CLEAN=false
+LUA=ON
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Argument parsing
@@ -10,7 +11,8 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --target) TARGET="$2"; shift 2 ;;
         --clean)  CLEAN=true; shift ;;
-        *) echo "Error: Unknown flag: $1"; echo "Usage: build.sh [--target sdl3|wasm|esp32] [--clean]"; exit 1 ;;
+        --no-lua) LUA=OFF; shift ;;
+        *) echo "Error: Unknown flag: $1"; echo "Usage: build.sh [--target sdl3|wasm|esp32] [--clean] [--no-lua]"; exit 1 ;;
     esac
 done
 
@@ -77,7 +79,7 @@ build_wasm() {
     cd "$OUT"
     emcmake cmake \
         -DENJIN2_BUILD_WASM=ON \
-        -DENJIN2_BUILD_LUA=ON \
+        -DENJIN2_BUILD_LUA="$LUA" \
         -DENJIN2_BUILD_TESTS=OFF \
         -DENJIN2_BUILD_EXAMPLES=OFF \
         -DCMAKE_BUILD_TYPE=Release \

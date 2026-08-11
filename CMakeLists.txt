@@ -284,6 +284,7 @@ if(ENJIN2_BUILD_WASM)
     add_executable(enjin2_wasm)
     target_sources(enjin2_wasm PRIVATE
         src/bindings/emscripten_bindings.cpp
+        src/bindings/editor_preview.cpp
         # EM_JS symbols in static libraries are dropped by wasm-ld (no other
         # symbol in the object file is referenced). Compile directly into the
         # executable so the linker sees the __em_js_* metadata.
