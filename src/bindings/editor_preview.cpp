@@ -184,6 +184,26 @@ val sceneGetFramebuffer() {
                                  reinterpret_cast<uint8_t*>(cv->getBuffer())));
 }
 
+int sceneCanvasWidth() { return ScenePlayer::Canvas::kWidth; }
+int sceneCanvasHeight() { return ScenePlayer::Canvas::kHeight; }
+
+val sceneGetFramebufferUnpacked() {
+    // Display accessor (unwn #185): one byte per pixel, row-major — the same
+    // shape as the M0 getFramebuffer(), so the editor's blit path never learns
+    // the Canvas4 nibble layout. The packed getSceneFramebuffer() stays the
+    // parity-harness surface.
+    constexpr int w = ScenePlayer::Canvas::kWidth;
+    constexpr int h = ScenePlayer::Canvas::kHeight;
+    static uint8_t data[w * h];
+    ScenePlayer::Canvas* cv = g_scenePlayer.canvas();
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            data[y * w + x] = cv->getPixel(x, y).value;
+        }
+    }
+    return val(typed_memory_view(static_cast<size_t>(w) * h, data));
+}
+
 } // namespace
 
 EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
@@ -197,4 +217,7 @@ EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
     function("sceneDispatch", &sceneDispatch);
     function("sceneTick", &sceneTick);
     function("getSceneFramebuffer", &sceneGetFramebuffer);
+    function("getSceneFramebufferUnpacked", &sceneGetFramebufferUnpacked);
+    function("getSceneCanvasWidth", &sceneCanvasWidth);
+    function("getSceneCanvasHeight", &sceneCanvasHeight);
 }

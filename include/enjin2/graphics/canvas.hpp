@@ -120,6 +120,10 @@ namespace enjin2
         /// @brief Pixel type used by this canvas
         using PixelType = Pixel4;
 
+        /// @brief Compile-time dimensions (template parameters re-exposed)
+        static constexpr uint16_t kWidth = WIDTH;
+        static constexpr uint16_t kHeight = HEIGHT;
+
     private:
         static constexpr size_t ROW_BYTES = (WIDTH + 1) / 2;
         static constexpr size_t BUFFER_SIZE = ROW_BYTES * HEIGHT;

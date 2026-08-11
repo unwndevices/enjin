@@ -114,6 +114,12 @@ export interface Enjin2Module extends EmscriptenModule {
    *  64-byte row stride) — byte-for-byte the native golden .bin payload.
    *  Copy it if you need a stable snapshot. */
   getSceneFramebuffer(): Uint8Array;
+  /** Display accessor (unwn #185): live view, one 4-bit value (0-15) per
+   *  pixel, row-major 127x127 — same shape as getFramebuffer(). Copy it if
+   *  you need a stable snapshot. */
+  getSceneFramebufferUnpacked(): Uint8Array;
+  getSceneCanvasWidth(): number;
+  getSceneCanvasHeight(): number;
 
   // Palette
   getPaletteRGB(): Uint8Array;
