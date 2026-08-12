@@ -87,6 +87,17 @@ target_link_libraries(ui_icon_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_icon_test COMMAND ui_icon_test)
 
+# Sprite widget unit test (unwn #205: animated SpriteComponent + SpriteSystem)
+add_executable(ui_sprite_test
+    ui_sprite_test.cpp
+)
+target_include_directories(ui_sprite_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_sprite_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_sprite_test COMMAND ui_sprite_test)
+
 # Gauge widget unit test (Phase 3a, #121: C_FillUpGauge -> data-only GaugeComponent + GaugeSystem)
 add_executable(ui_gauge_test
     ui_gauge_test.cpp

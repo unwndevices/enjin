@@ -28,6 +28,7 @@
 #include "widgets/list.hpp"
 #include "widgets/overlay.hpp"
 #include "widgets/popup.hpp"
+#include "widgets/sprite.hpp"
 #include "world.hpp"
 
 #include <cstdio>
@@ -49,7 +50,7 @@ public:
     // is a one-integer edit here.
     static constexpr size_t kEntityCapacity = 32;
     using World = enjin2::World<kEntityCapacity, IdComponent, PositionComponent, SizeComponent,
-                                LabelComponent, IconComponent, GaugeComponent,
+                                LabelComponent, IconComponent, SpriteComponent, GaugeComponent,
                                 OverlayComponent, PopUpComponent, ListComponent,
                                 SlotComponent, BindingsComponent>;
     // The ratified authoring surface: the firmware's 127x127 logical region,
@@ -153,6 +154,7 @@ public:
         rig_->overlaySys.update(dt);
         rig_->labelSys.update(dt);
         rig_->iconSys.update(dt);
+        rig_->spriteSys.update(dt);
         rig_->listSys.update(dt);
         rig_->gaugeSys.update(dt);
         rig_->popupSys.update(dt);
@@ -165,13 +167,14 @@ private:
         OverlaySystem<World, Canvas> overlaySys;
         LabelSystem<World, Canvas> labelSys;
         IconSystem<World, Canvas> iconSys;
+        SpriteSystem<World, Canvas> spriteSys;
         ListSystem<World, Canvas> listSys;
         GaugeSystem<World, Canvas> gaugeSys;
         PopUpSystem<World, Canvas> popupSys;
 
         Rig(World& w, Canvas& c, const Theme& theme)
-            : overlaySys(&w, &c), labelSys(&w, &c), iconSys(&w, &c), listSys(&w, &c, theme),
-              gaugeSys(&w, &c), popupSys(&w, &c) {}
+            : overlaySys(&w, &c), labelSys(&w, &c), iconSys(&w, &c), spriteSys(&w, &c),
+              listSys(&w, &c, theme), gaugeSys(&w, &c), popupSys(&w, &c) {}
     };
 
     // Shared load path: tear down any previous scene before its world is

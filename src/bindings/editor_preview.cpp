@@ -1,6 +1,7 @@
 #include <emscripten/bind.h>
 
 #include "../../include/enjin2/graphics/canvas.hpp"
+#include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/palette.hpp"
 #include "../../include/enjin2/graphics/primitives.hpp"
 #include "../../include/enjin2/input/input_state.hpp"
@@ -174,7 +175,19 @@ void previewInjectInput(int buttons, float ax0, float ay0) {
 
 ScenePlayer g_scenePlayer;
 
+// The Lua-free WASM build never runs the Lua binding path that registers the
+// compiled-in "default8" font (bindings.cpp:586), so register it directly on the
+// player's asset registry here (unwn #205). This populates schema.fonts for the
+// editor's font picker and lets a label resolve a real font instead of the
+// null-font fallback. Idempotent: registerFont refuses a duplicate name, and the
+// borrowed font survives a scene reload (only owned bitmaps clear on teardown),
+// so calling this before schema export and before every load is harmless.
+void ensureCompiledInAssets() {
+    g_scenePlayer.assets().registerFont("default8", &defaultFont8pt7b);
+}
+
 bool sceneLoad(std::string jsonText) {
+    ensureCompiledInAssets();
 #ifdef ENJIN2_HAS_PARAM_REGISTRY
     // Install the shared `param.` resolver before the load builds the VM
     // (setParamResolver applies to the next load): bound `param.` properties
@@ -192,6 +205,7 @@ bool sceneActive() { return g_scenePlayer.active(); }
 std::string sceneSave() { return g_scenePlayer.saveText(); }
 
 std::string sceneSchema() {
+    ensureCompiledInAssets();
 #ifdef ENJIN2_HAS_PARAM_REGISTRY
     return g_scenePlayer.schemaText(&unwn::param::writeParamRegistrySchema);
 #else

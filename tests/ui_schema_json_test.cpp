@@ -42,13 +42,13 @@ static void test_schema_lists_components_with_kinds_and_defaults() {
 
     const JsonValue* components = root.find("components");
     ASSERT(components && components->type == JsonValue::Type::Array &&
-               components->array.size() == 11,
-           "schema: all 11 reflected world components present");
+               components->array.size() == 12,
+           "schema: all 12 reflected world components present");
 
     // Pack order, matching forEachComponentName (ui_factory_test pins the set).
-    const char* expected[] = {"id",      "position", "size", "label", "icon", "gauge",
-                              "overlay", "popup",    "list", "slot",  "bindings"};
-    bool orderOk = components->array.size() == 11;
+    const char* expected[] = {"id",     "position", "size",    "label", "icon",  "sprite",
+                              "gauge",  "overlay",  "popup",   "list",  "slot",  "bindings"};
+    bool orderOk = components->array.size() == 12;
     for (size_t i = 0; orderOk && i < components->array.size(); ++i) {
         const JsonValue* name = components->array[i].find("name");
         orderOk = name && name->str == expected[i];
