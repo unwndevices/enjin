@@ -198,6 +198,30 @@ target_link_libraries(palette_test PRIVATE
 )
 add_test(NAME palette_test COMMAND palette_test)
 
+# .njn v2 codec (unwn #204): 4-bit nibble packing + index-15 transparency for
+# the content-addressed asset store. Header-only, no engine link needed.
+add_executable(njn_v2_test
+    njn_v2_test.cpp
+)
+target_include_directories(njn_v2_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME njn_v2_test COMMAND njn_v2_test)
+
+# Asset manifest + woken AssetRegistry (unwn #204): manifest round-trip (DOM +
+# streaming), owned/borrowed registry entries, and player load-at-activate /
+# free-at-teardown against an injected byte source.
+add_executable(ui_asset_manifest_test
+    ui_asset_manifest_test.cpp
+)
+target_include_directories(ui_asset_manifest_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_asset_manifest_test PRIVATE
+    enjin2
+)
+add_test(NAME ui_asset_manifest_test COMMAND ui_asset_manifest_test)
+
 # Odd-width Canvas4 (unwn #155/#165): padded row stride ROW_BYTES=(WIDTH+1)/2 —
 # geometry, row-aliasing, fast-path parity, even-width layout stability.
 add_executable(canvas4_odd_width_test

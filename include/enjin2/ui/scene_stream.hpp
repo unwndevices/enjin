@@ -358,7 +358,8 @@ private:
 template<typename TWorld>
 bool readSceneDocStream(SceneStreamSource& src, SceneDoc& doc, TWorld& world,
                         const AssetRegistry& assets, Theme* themeOut = nullptr,
-                        bool* themePresentOut = nullptr) {
+                        bool* themePresentOut = nullptr,
+                        const ManifestReadyFn& onManifestReady = {}) {
     detail::StreamJsonParser p(src);
 
     bool themePresent = false;
@@ -369,7 +370,8 @@ bool readSceneDocStream(SceneStreamSource& src, SceneDoc& doc, TWorld& world,
     p.skipWs();
 
     bool seenVersion = false, seenScene = false, seenState = false, seenTimers = false,
-         seenAnimations = false, seenOn = false, seenTheme = false, seenEntities = false;
+         seenAnimations = false, seenOn = false, seenTheme = false, seenEntities = false,
+         seenManifest = false;
 
     bool rootOpen = p.peekc() != '}';
     if (!rootOpen) p.getc(); // empty root object: straight to the trailing check
@@ -400,6 +402,10 @@ bool readSceneDocStream(SceneStreamSource& src, SceneDoc& doc, TWorld& world,
             JsonValue v;
             if (!p.parseValue(v, 0)) return false;
             if (v.type == JsonValue::Type::String) doc.scene = v.str;
+        } else if (key == "manifest" && claim(seenManifest)) {
+            // The writer emits `manifest` before `entities`, so assets are known
+            // before entity bitmap-name references resolve (unwn #204).
+            if (!p.parseValue(doc.manifest, 0)) return false;
         } else if (key == "state" && claim(seenState)) {
             if (!p.parseValue(doc.state, 0)) return false;
         } else if (key == "timers" && claim(seenTimers)) {
@@ -414,6 +420,10 @@ bool readSceneDocStream(SceneStreamSource& src, SceneDoc& doc, TWorld& world,
             if (!p.parseValue(v, 0)) return false;
             if (themeOut) readComponentJson(v, *themeOut, assets);
         } else if (key == "entities" && claim(seenEntities) && p.peekc() == '[') {
+            // Register manifest assets before the first entity resolves its
+            // bitmap-name references (unwn #204). The writer emits `manifest`
+            // ahead of `entities`, so doc.manifest is populated by now.
+            if (onManifestReady) onManifestReady();
             // The streaming heart: one entity subtree in memory at a time.
             p.getc();
             p.skipWs();

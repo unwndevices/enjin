@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -412,9 +413,16 @@ bool readSceneJson(const std::string& text, TWorld& world, const AssetRegistry& 
  * behavior. The ESP32 loader (M5) will compile these into compact structs via
  * a streaming parse instead; this DOM form is desktop/WASM only.
  */
+/// Invoked by the document readers once the manifest section is parsed and
+/// *before* any entity is deserialized (unwn #204). The player uses it to
+/// register owned assets into the registry, so an icon's `bitmap` name resolves
+/// during entity parse — icon bitmap pointers are resolved once, not per frame.
+using ManifestReadyFn = std::function<void()>;
+
 struct SceneDoc {
     int64_t version = kSceneJsonVersion; ///< As read; writers emit kSceneJsonVersion
     std::string scene;                   ///< Scene name ("" = unnamed)
+    JsonValue manifest;                  ///< Content-addressed asset manifest (array) or Null
     JsonValue state;                     ///< Initial state vars (object) or Null
     JsonValue timers;                    ///< name → {ms, repeat?, onExpire: rules} or Null
     JsonValue animations;                ///< name → {tracks: [...]} or Null
@@ -440,6 +448,12 @@ std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
     if (!doc.scene.empty()) {
         w.key("scene");
         w.value(doc.scene);
+    }
+    // Emitted before entities so a streaming loader registers assets before
+    // entities resolve their bitmap-name references (unwn #204).
+    if (doc.manifest.type != JsonValue::Type::Null) {
+        w.key("manifest");
+        writeJson(w, doc.manifest);
     }
     if (theme) {
         w.key(ComponentTraits<Theme>::kName);
@@ -482,7 +496,8 @@ std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
 template<typename TWorld>
 bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
                       const AssetRegistry& assets, Theme* themeOut = nullptr,
-                      bool* themePresentOut = nullptr) {
+                      bool* themePresentOut = nullptr,
+                      const ManifestReadyFn& onManifestReady = {}) {
     JsonValue root;
     if (!parseJson(text, root) || root.type != JsonValue::Type::Object) return false;
 
@@ -493,6 +508,7 @@ bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
     if (doc.version < kSceneMinReadVersion) return false;
     if (const JsonValue* v = root.find("scene"))
         if (v->type == JsonValue::Type::String) doc.scene = v->str;
+    if (const JsonValue* v = root.find("manifest")) doc.manifest = *v;
     if (const JsonValue* v = root.find("state")) doc.state = *v;
     if (const JsonValue* v = root.find("timers")) doc.timers = *v;
     if (const JsonValue* v = root.find("animations")) doc.animations = *v;
@@ -502,6 +518,9 @@ bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
     if (themePresentOut) *themePresentOut = themeObj != nullptr;
     if (themeOut && themeObj) readComponentJson(*themeObj, *themeOut, assets);
 
+    // Register manifest assets before entities so icon bitmap-name references
+    // resolve during deserialization (unwn #204).
+    if (onManifestReady) onManifestReady();
     readEntitiesJson(root, world, assets);
     return true;
 }

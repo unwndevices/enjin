@@ -14,6 +14,8 @@
 #pragma once
 
 #include "../graphics/canvas.hpp"
+#include "../graphics/sprite_asset.hpp"
+#include "asset_manifest.hpp"
 #include "scene_json.hpp"
 #include "scene_stream.hpp"
 #include "schema_json.hpp"
@@ -39,7 +41,14 @@ class ScenePlayer {
 public:
     // One wide world for editor-authored scenes (spec: G5 stays deferred via a
     // single World reserved for them) — every reflected component type.
-    using World = enjin2::World<16, IdComponent, PositionComponent, SizeComponent,
+    //
+    // Entity capacity (unwn #204, spec §Widget set §4): raised 16 → 32. Once
+    // `shape` is a placeable widget each rect/line/frame/divider is its own
+    // entity, so decorative-heavy scenes cross 16 fast. 32 is provisional — the
+    // final N is gated on the #199 hardware free-heap measurement; changing it
+    // is a one-integer edit here.
+    static constexpr size_t kEntityCapacity = 32;
+    using World = enjin2::World<kEntityCapacity, IdComponent, PositionComponent, SizeComponent,
                                 LabelComponent, IconComponent, GaugeComponent,
                                 OverlayComponent, PopUpComponent, ListComponent,
                                 SlotComponent, BindingsComponent>;
@@ -54,12 +63,26 @@ public:
     bool active() const { return vm_ != nullptr; }
     Canvas* canvas() { return &canvas_; }
 
+    /// The loaded scene's world (nullptr when no scene is active) — read-only
+    /// access for inspection and tests.
+    const World* world() const { return world_.get(); }
+
+    /// Install the content-addressed asset byte source (unwn #204). The source
+    /// must outlive the player. With no source the player loads no owned
+    /// assets; icons then resolve only against compiled-in bitmaps, as before.
+    void setAssetSource(AssetSource* source) { assetSource_ = source; }
+
+    /// The player's asset registry — owned scene assets plus any compiled-in
+    /// bitmaps/fonts a host registers before load.
+    AssetRegistry& assets() { return assets_; }
+
     /// Load a scene document from JSON text and start it: `scene.activate` is
     /// dispatched here, so a loaded scene is a running scene.
     bool loadText(const std::string& text) {
         return loadWith(
             [&](SceneDoc& doc, World& world, Theme* theme, bool* themePresent) {
-                return readSceneDocJson(text, doc, world, assets_, theme, themePresent);
+                return readSceneDocJson(text, doc, world, assets_, theme, themePresent,
+                                        [this] { loadManifestAssets(); });
             },
             /*captureSaveText=*/true);
     }
@@ -71,7 +94,8 @@ public:
     bool loadStream(SceneStreamSource& src) {
         return loadWith(
             [&](SceneDoc& doc, World& world, Theme* theme, bool* themePresent) {
-                return readSceneDocStream(src, doc, world, assets_, theme, themePresent);
+                return readSceneDocStream(src, doc, world, assets_, theme, themePresent,
+                                          [this] { loadManifestAssets(); });
             },
             /*captureSaveText=*/false);
     }
@@ -157,6 +181,9 @@ private:
     bool loadWith(Loader&& loadDoc, bool captureSaveText) {
         vm_.reset();
         rig_.reset();
+        // Free the previous scene's owned assets — this is the only teardown
+        // site, symmetric with loadManifestAssets() below (unwn #204).
+        assets_.clearOwned();
         world_ = std::make_unique<World>();
         doc_ = SceneDoc{};
         theme_ = kDefaultTheme;
@@ -192,6 +219,32 @@ private:
         return true;
     }
 
+    // Read the scene's asset manifest and register each resident asset as an
+    // owned bitmap under its content hash. Missing assets and non-v2/malformed
+    // bytes are skipped (the icon then resolves to nothing, as before a load).
+    // Palette index 15 (the .njn v2 transparent marker) is remapped to the icon
+    // blit-skip sentinel, unifying the three transparency notions on one rule.
+    void loadManifestAssets() {
+        if (!assetSource_ || doc_.manifest.type != JsonValue::Type::Array) return;
+        const std::vector<AssetManifestEntry> entries = parseAssetManifest(doc_.manifest);
+        std::vector<uint8_t> bytes;
+        for (const AssetManifestEntry& e : entries) {
+            bytes.clear();
+            if (!assetSource_->read(e.hash, bytes)) continue;
+            NjnHeader h{};
+            if (!parseNjnHeader(bytes.data(), bytes.size(), h)) continue;
+            if (h.version != NJN_VERSION_V2) continue;
+            const uint32_t px = njnPixelCount(h);
+            std::vector<uint8_t> pixels(px);
+            njnUnpackNibbles(bytes.data() + sizeof(NjnHeader), px, pixels.data());
+            for (uint8_t& p : pixels)
+                if (njnIsTransparent(p)) p = IconComponent::kTransparent;
+            const uint16_t w = e.w ? e.w : static_cast<uint16_t>(h.cellW * h.cols);
+            const uint16_t hgt = e.h ? e.h : static_cast<uint16_t>(h.cellH * h.rows);
+            assets_.registerOwnedBitmap(e.hash.c_str(), pixels.data(), pixels.size(), w, hgt);
+        }
+    }
+
     void logEffects(const SceneEffects& effects) {
         for (const SceneEffect& fx : effects) {
             if (fx.kind == SceneEffect::Kind::SceneSwitch) {
@@ -210,6 +263,7 @@ private:
     EffectHandler effectHandler_;
     std::unique_ptr<World> world_;
     AssetRegistry assets_;
+    AssetSource* assetSource_ = nullptr; ///< Content-addressed byte source (borrowed)
     Theme theme_ = kDefaultTheme;
     bool themePresent_ = false;
     std::string savedText_;
