@@ -14,6 +14,7 @@
 // Gated on the enjin2_wasm target's -I on the parent repo's Libs/unwnlib; a
 // standalone enjin checkout builds without it (schema section simply absent).
 #ifdef ENJIN2_HAS_PARAM_REGISTRY
+#include <ParamBinding.hpp>
 #include <ParamSchema.hpp>
 #endif
 
@@ -173,7 +174,16 @@ void previewInjectInput(int buttons, float ax0, float ay0) {
 
 ScenePlayer g_scenePlayer;
 
-bool sceneLoad(std::string jsonText) { return g_scenePlayer.loadText(jsonText); }
+bool sceneLoad(std::string jsonText) {
+#ifdef ENJIN2_HAS_PARAM_REGISTRY
+    // Install the shared `param.` resolver before the load builds the VM
+    // (setParamResolver applies to the next load): bound `param.` properties
+    // then resolve their live-value cells + descriptor formatter exactly as
+    // firmware does, so the editor preview is byte-identical (unwn #203).
+    g_scenePlayer.setParamResolver(&unwn::param::resolveParamBinding);
+#endif
+    return g_scenePlayer.loadText(jsonText);
+}
 
 bool sceneActive() { return g_scenePlayer.active(); }
 
@@ -192,6 +202,31 @@ std::string sceneSchema() {
 void sceneDispatch(std::string event, std::string payloadJson) {
     g_scenePlayer.dispatch(event, payloadJson);
 }
+
+#ifdef ENJIN2_HAS_PARAM_REGISTRY
+// -- Live param surface (unwn #203) --
+//
+// The binding inspector pushes synthetic/last-known values into the shared
+// live-value cells (g_paramValues) at authoring cadence; the next sceneTick
+// resolves bound `param.` properties against them. resolveParam mirrors that
+// same shared helper so the chip/stage preview reads a formatted value
+// byte-identical to firmware, without a JS-side formatter reimplementation.
+
+// Write one live-value cell. Unknown id ⇒ false (no-op), the tolerant miss.
+bool setParamValue(std::string id, float value) {
+    const int idx = unwn::param::findParam(id.c_str());
+    if (idx < 0) return false;
+    unwn::param::g_paramValues[static_cast<std::size_t>(idx)] = value;
+    return true;
+}
+
+// Resolve+format a param id through the shared resolver. Empty format ⇒ the
+// descriptor's default formatter; unknown id ⇒ "" (Null resolves to no string).
+std::string resolveParam(std::string id, std::string format) {
+    const enjin2::JsonValue v = unwn::param::resolveParamBinding(id, format);
+    return v.type == enjin2::JsonValue::Type::String ? v.str : std::string();
+}
+#endif
 
 void sceneTick() { g_scenePlayer.stepFrame(); }
 
@@ -241,4 +276,9 @@ EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
     function("getSceneFramebufferUnpacked", &sceneGetFramebufferUnpacked);
     function("getSceneCanvasWidth", &sceneCanvasWidth);
     function("getSceneCanvasHeight", &sceneCanvasHeight);
+
+#ifdef ENJIN2_HAS_PARAM_REGISTRY
+    function("setParamValue", &setParamValue);
+    function("resolveParam", &resolveParam);
+#endif
 }
