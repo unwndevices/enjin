@@ -250,6 +250,98 @@ static void test_progress_binding_and_scene_switch() {
     ASSERT(sawSwitch, "sceneSwitch: back tap emits the switch effect");
 }
 
+// A stub `param.` resolver: echoes the key (and format, when given) so a test
+// can prove exactly what the VM handed the app — key stripped of `param.`, plus
+// the binding's format override. Mirrors the app resolver's String return.
+static JsonValue stubParamResolver(const std::string& key, const std::string& format) {
+    JsonValue v;
+    v.type = JsonValue::Type::String;
+    v.str = format.empty() ? key : (key + "/" + format);
+    return v;
+}
+
+// A one-label scene: `label.text` bound to a `param.` source in each form.
+static const char* const kParamBindScene = R"json({
+  "version": 2,
+  "scene": "param_bind",
+  "entities": [
+    { "components": {
+        "id": { "id": "readout" },
+        "label": { "text": "init" },
+        "bindings": { "bindings": { "text": %BIND% } } } }
+  ]
+})json";
+
+static std::string paramBindDoc(const char* bindJson) {
+    std::string s = kParamBindScene;
+    s.replace(s.find("%BIND%"), 6, bindJson);
+    return s;
+}
+
+static void test_param_source_third_lookup() {
+    // lookup() gains the `param.` source: with a resolver installed it reads the
+    // live cell (here the stub), without one it stays tolerant (Null).
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(paramBindDoc(R"("param.daisy.key")"), doc, world, assets);
+
+    VM bare(&doc, &world, &assets); // no resolver
+    ASSERT(bare.lookup("param.daisy.key").type == JsonValue::Type::Null,
+           "param: unset resolver reads Null (tolerant)");
+
+    VM vm(&doc, &world, &assets, &stubParamResolver);
+    ASSERT(vm.lookup("param.daisy.key").str == "daisy.key",
+           "param: lookup strips the prefix and resolves through the source");
+    ASSERT(vm.lookup("param.no.such").str == "no.such",
+           "param: an unknown key still routes to the resolver (its miss to make)");
+}
+
+static void test_param_binding_shapes() {
+    // Bare string form: `{ "text": "param.daisy.key" }` — no format override.
+    {
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(paramBindDoc(R"("param.daisy.key")"), doc, world, assets);
+        VM vm(&doc, &world, &assets, &stubParamResolver);
+        ASSERT(vm.lookup("readout.text").str == "daisy.key",
+               "binding: bare-string param source applied to the label");
+    }
+    // Object form with a format override: `{ "from": ..., "format": ... }`.
+    {
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(paramBindDoc(R"({"from":"param.daisy.key","format":"note_cents"})"),
+                         doc, world, assets);
+        VM vm(&doc, &world, &assets, &stubParamResolver);
+        ASSERT(vm.lookup("readout.text").str == "daisy.key/note_cents",
+               "binding: {from, format} passes the override to the resolver");
+    }
+    // Object form without a format: equivalent to the bare string.
+    {
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(paramBindDoc(R"({"from":"param.daisy.key"})"), doc, world, assets);
+        VM vm(&doc, &world, &assets, &stubParamResolver);
+        ASSERT(vm.lookup("readout.text").str == "daisy.key",
+               "binding: {from} with no format is the bare-string shorthand");
+    }
+    // A non-param `from` in object form still resolves through the normal path
+    // (state var / entity.prop); the resolver is untouched.
+    {
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(paramBindDoc(R"({"from":"readout.text"})"), doc, world, assets);
+        VM vm(&doc, &world, &assets, &stubParamResolver);
+        ASSERT(vm.lookup("readout.text").str == "init",
+               "binding: object form over a non-param source uses the value lookup");
+    }
+}
+
 static void test_tolerance() {
     SceneDoc doc;
     SceneVmWorld world;
@@ -272,6 +364,8 @@ int main() {
     test_hard_case_4_load_ok_and_reactivation_reset();
     test_hard_case_5_deactivate_mid_flight();
     test_progress_binding_and_scene_switch();
+    test_param_source_third_lookup();
+    test_param_binding_shapes();
     test_tolerance();
 
     printf("\n%d passed, %d failed\n", passes, failures);

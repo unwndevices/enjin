@@ -393,6 +393,9 @@ bool readSceneDocStream(SceneStreamSource& src, SceneDoc& doc, TWorld& world,
             JsonValue v;
             if (!p.parseValue(v, 0)) return false;
             if (v.type == JsonValue::Type::Number) doc.version = static_cast<int64_t>(v.number);
+            // v2 clean break (unwn #202): reject a pre-v2 document as soon as its
+            // version is seen — before more of the stream is applied to the world.
+            if (doc.version < kSceneMinReadVersion) return false;
         } else if (key == "scene" && claim(seenScene)) {
             JsonValue v;
             if (!p.parseValue(v, 0)) return false;

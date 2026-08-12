@@ -25,7 +25,7 @@ using SceneVmWorld =
                   enjin2::SlotComponent, enjin2::BindingsComponent>;
 
 static const char* const kDatumManagerScene = R"json({
-  "version": 1,
+  "version": 2,
   "scene": "datum_manager",
   "state": {
     "isLoading": false,

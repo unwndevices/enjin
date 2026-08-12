@@ -113,12 +113,30 @@ static void test_malformed_load_leaves_inactive() {
     ASSERT(!p.active(), "malformed: failed reload deactivates, never half-swaps");
 }
 
+// The v2 clean break (unwn #202): a document with an explicit pre-v2 version is
+// rejected outright — no migration — and the player stays inactive, exactly as
+// for malformed JSON. A v2 document with the same body loads.
+static void test_pre_v2_version_is_rejected() {
+    ScenePlayer p;
+    ASSERT(!p.loadText(R"({"version":1,"scene":"old","entities":[]})"),
+           "version: a v1 document is rejected");
+    ASSERT(!p.active(), "version: player inactive after a rejected v1 load");
+
+    ASSERT(!p.loadText(R"({"version":0,"scene":"older","entities":[]})"),
+           "version: version 0 is rejected too");
+
+    ASSERT(p.loadText(R"({"version":2,"scene":"new","entities":[]})"),
+           "version: the same body at v2 loads");
+    ASSERT(p.active(), "version: player active after the v2 load");
+}
+
 int main() {
     test_load_activates_and_renders();
     test_dispatch_reaches_the_frame();
     test_two_players_render_identical_bytes();
     test_reload_replaces_the_scene();
     test_malformed_load_leaves_inactive();
+    test_pre_v2_version_is_rejected();
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
 }

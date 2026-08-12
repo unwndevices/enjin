@@ -37,7 +37,8 @@ static void test_schema_lists_components_with_kinds_and_defaults() {
            "schema: parses as a JSON object");
 
     const JsonValue* version = root.find("version");
-    ASSERT(version && version->number == 1.0, "schema: carries the scene format version");
+    ASSERT(version && version->number == static_cast<double>(kSceneJsonVersion),
+           "schema: carries the scene format version");
 
     const JsonValue* components = root.find("components");
     ASSERT(components && components->type == JsonValue::Type::Array &&
@@ -132,12 +133,12 @@ static void test_save_reproduces_the_writer_fixed_point() {
 
 static void test_theme_presence_is_tracked_not_defaulted() {
     ScenePlayer p;
-    ASSERT(p.loadText(R"({"version":1,"scene":"plain","entities":[]})"),
+    ASSERT(p.loadText(R"({"version":2,"scene":"plain","entities":[]})"),
            "theme: themeless document loads");
     ASSERT(p.saveText().find("\"theme\"") == std::string::npos,
            "theme: a themeless document stays themeless on save");
 
-    ASSERT(p.loadText(R"({"version":1,"scene":"tinted","theme":{"padding":9},"entities":[]})"),
+    ASSERT(p.loadText(R"({"version":2,"scene":"tinted","theme":{"padding":9},"entities":[]})"),
            "theme: themed document loads");
     const std::string out = p.saveText();
     ASSERT(out.find("\"theme\"") != std::string::npos &&

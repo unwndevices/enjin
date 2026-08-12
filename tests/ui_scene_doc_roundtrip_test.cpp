@@ -177,9 +177,53 @@ static void test_reloaded_scene_behaves_identically() {
     ASSERT(vmA.lookup("statusLabel.text").str.empty(), "parity: dismiss timer ran");
 }
 
+// A binding value round-trips verbatim in either v2 form: a bare string stays a
+// bare string, a {from, format?} object stays an object — the writer never
+// canonicalizes one into the other (unwn #202). The bindings subtree is opaque
+// JsonValue, so this is dump -> reload -> dump byte-exact, both shapes at once.
+static void test_binding_shapes_round_trip() {
+    static const char* const kBindScene = R"json({
+      "version": 2,
+      "scene": "bind_forms",
+      "entities": [
+        { "components": {
+            "id": { "id": "a" },
+            "label": { "text": "" },
+            "bindings": { "bindings": { "text": "myVar" } } } },
+        { "components": {
+            "id": { "id": "b" },
+            "label": { "text": "" },
+            "bindings": { "bindings": {
+                "text": { "from": "param.daisy.key", "format": "note_cents" } } } } }
+      ]
+    })json";
+
+    SceneDoc docA;
+    SceneVmWorld worldA;
+    AssetRegistry assets;
+    ASSERT(readSceneDocJson(kBindScene, docA, worldA, assets), "roundtrip: bind-forms scene loads");
+    const std::string dumpA = writeSceneDocJson(docA, worldA, assets);
+
+    SceneDoc docB;
+    SceneVmWorld worldB;
+    ASSERT(readSceneDocJson(dumpA, docB, worldB, assets), "roundtrip: bind-forms dump reloads");
+    const std::string dumpB = writeSceneDocJson(docB, worldB, assets);
+    ASSERT(dumpA == dumpB, "roundtrip: both binding shapes are a dump fixed point");
+
+    // The shapes are literally preserved: the bare string is not wrapped, the
+    // object form (with its format override) is not flattened.
+    ASSERT(dumpB.find(R"("text": "myVar")") != std::string::npos ||
+               dumpB.find(R"("text":"myVar")") != std::string::npos,
+           "roundtrip: bare-string binding stays a bare string");
+    ASSERT(dumpB.find(R"("from")") != std::string::npos &&
+               dumpB.find(R"("note_cents")") != std::string::npos,
+           "roundtrip: {from, format} object binding stays an object");
+}
+
 int main() {
     test_wholesale_fixed_point();
     test_reloaded_scene_behaves_identically();
+    test_binding_shapes_round_trip();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

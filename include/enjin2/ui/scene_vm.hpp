@@ -8,6 +8,7 @@
 #include "slot.hpp"
 #include "world.hpp"
 #include <cstring>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -57,6 +58,23 @@ struct SceneEffect {
 };
 
 using SceneEffects = std::vector<SceneEffect>;
+
+/**
+ * @brief App-supplied resolver for the `param.` binding namespace (unwn #202).
+ *
+ * The engine stays ignorant of the concrete ParamRegistry + formatter catalog
+ * (which live app-side, in unwnlib): given the key *after* the `param.` prefix
+ * (e.g. `daisy.key`) and the binding's optional `format` override ("" = none),
+ * the resolver reads the live-value cell and returns its formatted display
+ * value — a String @ref JsonValue — or Null for an unknown key (the tolerant
+ * miss: the bound property keeps its default). The effective formatter is the
+ * app's business: `binding.format ?? descriptor.format ?? raw`.
+ *
+ * Same app-agnostic-hook shape as the schema `extraSections` callback (#201):
+ * the engine only knows a resolver *may* be installed. Unset ⇒ `param.` reads
+ * Null everywhere (guards, `@`-refs and bindings alike stay tolerant).
+ */
+using ParamResolver = std::function<JsonValue(const std::string& key, const std::string& format)>;
 
 namespace detail {
 
@@ -125,8 +143,10 @@ public:
      * entities by IdComponent id, and applies bindings once so bound
      * properties are consistent before the first event.
      */
-    SceneVM(const SceneDoc* doc, TWorld* world, const AssetRegistry* assets)
-        : doc_(doc), world_(world), assets_(assets) {
+    SceneVM(const SceneDoc* doc, TWorld* world, const AssetRegistry* assets,
+            ParamResolver paramResolver = {})
+        : doc_(doc), world_(world), assets_(assets),
+          paramResolver_(std::move(paramResolver)) {
         if (doc_ && doc_->state.type == JsonValue::Type::Object) vars_ = doc_->state;
         else vars_.type = JsonValue::Type::Object;
         if constexpr (TWorld::template composes<IdComponent>()) {
@@ -231,8 +251,14 @@ public:
 
     // ---- inspection (tests, editor state pane) ----------------------------
 
-    /// @brief Resolve `name` (state var) or `entity.prop`; Null when absent.
+    /// @brief Resolve a path to a value; Null when absent.
+    ///
+    /// Three sources, in order: the `param.` namespace (a live-value cell via the
+    /// installed @ref ParamResolver, formatted with the descriptor's default —
+    /// bindings pass an override through applyBindings, unwn #202), then an
+    /// `entity.prop` reflected field, then a bare state var.
     JsonValue lookup(const std::string& path) const {
+        if (isParamPath(path)) return resolveParam(path.substr(kParamPrefixLen), std::string());
         Entity e;
         std::string prop;
         if (splitEntityPath(path, e, prop)) return getEntityProp(e, prop);
@@ -260,6 +286,7 @@ private:
     const SceneDoc* doc_;
     TWorld* world_;
     const AssetRegistry* assets_;
+    ParamResolver paramResolver_;                           ///< `param.` source (unwn #202); may be unset
     JsonValue vars_;                                        ///< Runtime state vars (object)
     std::vector<std::pair<std::string, Entity>> entities_;  ///< id → entity, file order
     std::vector<std::pair<std::string, double>> timers_;    ///< name → remaining ms, arm order
@@ -272,6 +299,44 @@ private:
         for (size_t i = 0; i < timers_.size(); ++i)
             if (timers_[i].first == name) return static_cast<int>(i);
         return -1;
+    }
+
+    // ---- the `param.` binding source (unwn #202) ---------------------------
+
+    static constexpr char kParamPrefix[] = "param.";
+    static constexpr size_t kParamPrefixLen = sizeof(kParamPrefix) - 1;
+
+    /// @brief Whether @p path addresses the `param.` namespace.
+    static bool isParamPath(const std::string& path) {
+        return path.compare(0, kParamPrefixLen, kParamPrefix) == 0;
+    }
+
+    /// @brief Resolve `param.<key>` through the installed resolver (Null if none),
+    /// applying the effective @p format override the app maps to a formatter.
+    JsonValue resolveParam(const std::string& key, const std::string& format) const {
+        if (paramResolver_) return paramResolver_(key, format);
+        return JsonValue{};
+    }
+
+    /// @brief Read a binding value in either form (unwn #202): a bare string is
+    /// `{from: "<string>"}` shorthand; an object supplies `from` (required
+    /// string) and an optional `format`. False for a malformed binding (skipped,
+    /// the tolerant-reader contract extends to bindings).
+    static bool bindingSource(const JsonValue& v, std::string& from, std::string& format) {
+        format.clear();
+        if (v.type == JsonValue::Type::String) {
+            from = v.str;
+            return true;
+        }
+        if (v.type == JsonValue::Type::Object) {
+            const JsonValue* f = v.find("from");
+            if (!f || f->type != JsonValue::Type::String) return false;
+            from = f->str;
+            const JsonValue* fmt = v.find("format");
+            if (fmt && fmt->type == JsonValue::Type::String) format = fmt->str;
+            return true;
+        }
+        return false;
     }
 
     bool findEntity(const std::string& id, Entity& out) const {
@@ -446,14 +511,20 @@ private:
                 const BindingsComponent* b = world_->template get<BindingsComponent>(e);
                 if (!b || b->bindings.type != JsonValue::Type::Object) continue;
                 for (const auto& kv : b->bindings.object) {
-                    if (kv.second.type != JsonValue::Type::String) continue;
+                    std::string from, format;
+                    if (!bindingSource(kv.second, from, format)) continue;
                     if (kv.first == "visible") {
+                        // A condition, not a value — the guard grammar, no formatter.
                         JsonValue v;
                         v.type = JsonValue::Type::Bool;
-                        v.boolean = evalCond(kv.second.str);
+                        v.boolean = evalCond(from);
                         setEntityProp(e, kv.first, v);
+                    } else if (isParamPath(from)) {
+                        // Live param: the resolver formats at resolve time, honoring
+                        // the binding's `format` override (unwn #202).
+                        setEntityProp(e, kv.first, resolveParam(from.substr(kParamPrefixLen), format));
                     } else {
-                        setEntityProp(e, kv.first, lookup(kv.second.str));
+                        setEntityProp(e, kv.first, lookup(from));
                     }
                 }
             }

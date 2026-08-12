@@ -96,6 +96,11 @@ public:
         return writeSchemaJson<World>(assets_, extraSections);
     }
 
+    /// Install the app's `param.` binding resolver (unwn #202). Bindings from
+    /// the `param.` namespace resolve their live-value cells through this; unset
+    /// ⇒ those bindings read Null (tolerant). Applies to the next load.
+    void setParamResolver(ParamResolver resolver) { paramResolver_ = std::move(resolver); }
+
     /// Optional host-effect sink. The preview/editor tracks read effects off
     /// stderr; a hosting firmware registers a handler instead (e.g. to honor
     /// `ui.exitScene`). Effects are logged either way.
@@ -158,12 +163,21 @@ private:
         themePresent_ = false;
         savedText_.clear();
         if (!loadDoc(doc_, *world_, &theme_, &themePresent_)) {
-            fprintf(stderr, "[scene] malformed scene document\n");
+            // A pre-v2 version is rejected distinctly from a parse failure; the
+            // reader sets doc_.version before it returns (unwn #202).
+            if (doc_.version < kSceneMinReadVersion)
+                fprintf(stderr,
+                        "[scene] unsupported scene version %lld (need >= %lld); "
+                        "v1 scenes are not migrated\n",
+                        static_cast<long long>(doc_.version),
+                        static_cast<long long>(kSceneMinReadVersion));
+            else
+                fprintf(stderr, "[scene] malformed scene document\n");
             world_.reset();
             return false;
         }
         rig_ = std::make_unique<Rig>(*world_, canvas_, theme_);
-        vm_ = std::make_unique<SceneVM<World>>(&doc_, world_.get(), &assets_);
+        vm_ = std::make_unique<SceneVM<World>>(&doc_, world_.get(), &assets_, paramResolver_);
         // Canonical form of the *authored* document, captured before
         // scene.activate below mutates the world (state sets, enter
         // animations) — saveText() must never leak runtime state into a file.
@@ -192,6 +206,7 @@ private:
     }
 
     SceneDoc doc_;
+    ParamResolver paramResolver_;
     EffectHandler effectHandler_;
     std::unique_ptr<World> world_;
     AssetRegistry assets_;

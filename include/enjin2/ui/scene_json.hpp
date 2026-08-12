@@ -39,7 +39,15 @@
 namespace enjin2 {
 
 /// @brief Scene file format version written by writeSceneJson.
-inline constexpr int64_t kSceneJsonVersion = 1;
+///
+/// v2 (unwn #202) is a clean break: the `{from, format?}` binding shape and the
+/// `param.` live-value source landed with no v1 migration path. Readers reject
+/// anything below @ref kSceneMinReadVersion.
+inline constexpr int64_t kSceneJsonVersion = 2;
+
+/// @brief Lowest scene version the document readers accept (unwn #202). An
+/// explicit `version` below this fails the load — pre-v2 scenes are not migrated.
+inline constexpr int64_t kSceneMinReadVersion = 2;
 
 namespace detail {
 
@@ -480,6 +488,9 @@ bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
 
     if (const JsonValue* v = root.find("version"))
         if (v->type == JsonValue::Type::Number) doc.version = static_cast<int64_t>(v->number);
+    // v2 clean break: an explicit pre-v2 version is rejected, no migration
+    // (unwn #202). doc.version is set first so the caller can report it.
+    if (doc.version < kSceneMinReadVersion) return false;
     if (const JsonValue* v = root.find("scene"))
         if (v->type == JsonValue::Type::String) doc.scene = v->str;
     if (const JsonValue* v = root.find("state")) doc.state = *v;

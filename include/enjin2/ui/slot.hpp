@@ -53,13 +53,17 @@ ENJIN2_REFLECT_COMPONENT(SlotComponent, 11, "slot", ENJIN2_SLOT_COMPONENT_FIELDS
 /**
  * @brief Declarative property bindings for one entity
  *
- * A JSON object mapping property name → expression. `visible` binds through
- * the guard grammar (a condition); every other property binds as a value
- * lookup (state var or `entity.prop`). Bindings are scene data, not runtime
- * state — they serialize with the entity and are applied by the SceneVM.
+ * A JSON object mapping property name → binding. Each binding value is either a
+ * bare string (the `from` expression) or an object `{from, format?}` (v2, unwn
+ * #202) — the object form carries a `format` override for a `param.` source.
+ * `visible` binds through the guard grammar (a condition); every other property
+ * binds as a value lookup: a state var, an `entity.prop`, or a `param.<id>`
+ * live value (formatted at resolve time). Bindings are scene data, not runtime
+ * state — they serialize with the entity, verbatim, and are applied by the
+ * SceneVM.
  */
 struct BindingsComponent : public Component<BindingsComponent> {
-    JsonValue bindings; ///< JSON object: property name → expression string
+    JsonValue bindings; ///< JSON object: property name → string | {from, format?}
 
     BindingsComponent() { bindings.type = JsonValue::Type::Object; }
 };
