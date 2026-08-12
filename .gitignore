@@ -50,6 +50,7 @@ docs/.docusaurus/
 docs/node_modules/
 /build
 /build/
+/build-tests/
 /build_wasm
 /node_modules
 
