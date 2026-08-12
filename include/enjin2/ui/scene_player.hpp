@@ -89,7 +89,12 @@ public:
     /// palette + inspector metadata from the same field lists that drive
     /// save/load, plus this player's compiled-in asset enumeration. Constant
     /// across loads — safe to fetch once, before any load.
-    std::string schemaText() const { return writeSchemaJson<World>(assets_); }
+    ///
+    /// @p extraSections optionally appends app-owned top-level schema (e.g. the
+    /// ParamRegistry `params`/`formatters` sections, unwn #201).
+    std::string schemaText(void (*extraSections)(JsonWriter&) = nullptr) const {
+        return writeSchemaJson<World>(assets_, extraSections);
+    }
 
     /// Optional host-effect sink. The preview/editor tracks read effects off
     /// stderr; a hosting firmware registers a handler instead (e.g. to honor

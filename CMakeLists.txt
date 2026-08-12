@@ -290,6 +290,18 @@ if(ENJIN2_BUILD_WASM)
         # executable so the linker sees the __em_js_* metadata.
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:src/scripting/wasm_storage.cpp>
     )
+    # editor_preview pulls in the app's ParamRegistry schema (unwn #201) from the
+    # parent repo's Libs/unwnlib, which also needs enjin's own headers on the path
+    # for <enjin2/ui/json.hpp>. Guarded so a standalone enjin checkout (no parent
+    # Libs/) still configures — the schema section is simply absent there.
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../Libs/unwnlib/ParamSchema.hpp")
+        target_include_directories(enjin2_wasm PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../Libs/unwnlib"
+        )
+        target_compile_definitions(enjin2_wasm PRIVATE ENJIN2_HAS_PARAM_REGISTRY=1)
+    endif()
+
     # Lua include dirs are propagated via enjin2_lua -> LUA_INCLUDE_DIRS (PUBLIC on lua54_wasm or luajit_embedded)
     target_compile_definitions(enjin2_wasm PRIVATE
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>

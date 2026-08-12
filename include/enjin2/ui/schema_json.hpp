@@ -94,9 +94,15 @@ void writeComponentSchema(JsonWriter& w, const C& instance, const AssetRegistry&
  *
  * Components appear in pack order — the same order forEachComponentName
  * enumerates and the scene writer emits.
+ *
+ * @p extraSections is an optional app-supplied hook, invoked with the schema
+ * object still open, to append extra top-level sections (e.g. the app's
+ * ParamRegistry `params`/`formatters`, unwn #201). The engine stays
+ * app-agnostic — it only knows there may be an extra-sections writer.
  */
 template<typename TWorld>
-std::string writeSchemaJson(const AssetRegistry& assets) {
+std::string writeSchemaJson(const AssetRegistry& assets,
+                            void (*extraSections)(JsonWriter&) = nullptr) {
     JsonWriter w;
     w.beginObject();
     w.key("version");
@@ -128,6 +134,8 @@ std::string writeSchemaJson(const AssetRegistry& assets) {
     w.beginArray();
     for (size_t i = 0; i < assets.bitmapCount(); ++i) w.value(assets.bitmapAt(i).name);
     w.endArray();
+
+    if (extraSections) extraSections(w);
 
     w.endObject();
     return w.str();

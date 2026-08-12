@@ -10,6 +10,13 @@
 #include "../../include/enjin2/ui/widgets/label.hpp"
 #include "../../include/enjin2/ui/world.hpp"
 
+// App-owned schema: the ParamRegistry `params`/`formatters` sections (unwn #201).
+// Gated on the enjin2_wasm target's -I on the parent repo's Libs/unwnlib; a
+// standalone enjin checkout builds without it (schema section simply absent).
+#ifdef ENJIN2_HAS_PARAM_REGISTRY
+#include <ParamSchema.hpp>
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -174,7 +181,13 @@ bool sceneActive() { return g_scenePlayer.active(); }
 
 std::string sceneSave() { return g_scenePlayer.saveText(); }
 
-std::string sceneSchema() { return g_scenePlayer.schemaText(); }
+std::string sceneSchema() {
+#ifdef ENJIN2_HAS_PARAM_REGISTRY
+    return g_scenePlayer.schemaText(&unwn::param::writeParamRegistrySchema);
+#else
+    return g_scenePlayer.schemaText();
+#endif
+}
 
 void sceneDispatch(std::string event, std::string payloadJson) {
     g_scenePlayer.dispatch(event, payloadJson);
