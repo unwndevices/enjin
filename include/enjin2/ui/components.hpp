@@ -295,97 +295,11 @@ struct InputComponent : public Component<InputComponent> {
     }
 };
 
-/**
- * @brief Shape rendering component for geometric primitives
- */
-struct ShapeComponent : public Component<ShapeComponent> {
-    /// @brief Shape type enumeration
-    enum ShapeType {
-        RECTANGLE,   ///< Rectangle shape
-        CIRCLE,      ///< Circle shape
-        TRIANGLE,    ///< Triangle shape
-        LINE         ///< Line shape
-    } type;          ///< Current shape type
-
-    bool filled;         ///< Whether shape is filled or outline
-    uint8_t thickness;   ///< Line thickness for outlines
-
-    uint16_t radius;     ///< Circle radius
-    Point p1;            ///< First vertex (triangles)
-    Point p2;            ///< Second vertex (triangles)
-    Point p3;            ///< Third vertex (triangles)
-    Point start;         ///< Start point (lines)
-    Point end;           ///< End point (lines)
-    
-    /**
-     * @brief Create rectangle shape
-     * @param fill Whether to fill the rectangle
-     * @param thick Line thickness
-     * @return Configured ShapeComponent
-     */
-    static ShapeComponent rectangle(bool fill = true, uint8_t thick = 1) {
-        ShapeComponent comp;
-        comp.type = RECTANGLE;
-        comp.filled = fill;
-        comp.thickness = thick;
-        return comp;
-    }
-    
-    /**
-     * @brief Create circle shape
-     * @param radius Circle radius
-     * @param fill Whether to fill the circle
-     * @param thick Line thickness
-     * @return Configured ShapeComponent
-     */
-    static ShapeComponent circle(uint16_t radius, bool fill = true, uint8_t thick = 1) {
-        ShapeComponent comp;
-        comp.type = CIRCLE;
-        comp.filled = fill;
-        comp.thickness = thick;
-        comp.radius = radius;
-        return comp;
-    }
-    
-    /**
-     * @brief Create triangle shape
-     * @param pt1 First vertex
-     * @param pt2 Second vertex
-     * @param pt3 Third vertex
-     * @param fill Whether to fill the triangle
-     * @param thick Line thickness
-     * @return Configured ShapeComponent
-     */
-    static ShapeComponent triangle(Point pt1, Point pt2, Point pt3, bool fill = true, uint8_t thick = 1) {
-        ShapeComponent comp;
-        comp.type = TRIANGLE;
-        comp.filled = fill;
-        comp.thickness = thick;
-        comp.p1 = pt1;
-        comp.p2 = pt2;
-        comp.p3 = pt3;
-        return comp;
-    }
-    
-    /**
-     * @brief Create line shape
-     * @param startPt Start point
-     * @param endPt End point
-     * @param thick Line thickness
-     * @return Configured ShapeComponent
-     */
-    static ShapeComponent line(Point startPt, Point endPt, uint8_t thick = 1) {
-        ShapeComponent comp;
-        comp.type = LINE;
-        comp.filled = false;
-        comp.thickness = thick;
-        comp.start = startPt;
-        comp.end = endPt;
-        return comp;
-    }
-
-public:
-    ShapeComponent() : type(RECTANGLE), filled(true), thickness(1), radius(0) {}
-};
+// The former immediate-mode ShapeComponent (rectangle/circle/triangle/line
+// primitives coupled to RenderComponent + RenderSystem) was retired when its
+// role was promoted to the reflected `shape` widget — a placeable, serializable
+// Position+Size primitive in the ui-ECS widget pack (unwn #206, see
+// widgets/shape.hpp). RenderSystem now draws each RenderComponent as a filled
+// rectangle over its Size box.
 
 } // namespace enjin2

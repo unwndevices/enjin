@@ -160,7 +160,7 @@ static void test_entity_manager() {
 // ---------------------------------------------------------------------------
 
 using TestWorld = World<64, PositionComponent, SizeComponent, RenderComponent,
-                        InputComponent, AnimationComponent, ShapeComponent>;
+                        InputComponent, AnimationComponent>;
 
 static void test_world_add_get_remove() {
     TestWorld world;

@@ -29,7 +29,6 @@ private:
     ComponentStorage<RenderComponent, 256> renderables;
     ComponentStorage<AnimationComponent, 128> animations;
     ComponentStorage<InputComponent, 64> inputs;
-    ComponentStorage<ShapeComponent, 256> shapes;
     
     // Systems
     SystemManager<8> systemManager;
@@ -75,8 +74,7 @@ public:
         positions.addComponent(entity, pos);
         sizes.addComponent(entity, size);
         renderables.addComponent(entity, Colors::WHITE, Colors::BLACK, 255, true, 0);
-        shapes.addComponent(entity, ShapeComponent::rectangle(true, 1));
-        
+
         return entity;
     }
     
@@ -91,9 +89,12 @@ public:
         if (!entity.isValid()) return entity;
         
         positions.addComponent(entity, pos);
+        // Retired shape primitives (unwn #206): the demo renders a filled box
+        // over the entity's Size, so give the "circle" a square Size box.
+        sizes.addComponent(entity, Size(static_cast<uint16_t>(radius * 2),
+                                        static_cast<uint16_t>(radius * 2)));
         renderables.addComponent(entity, Colors::LIGHT_GRAY, Colors::BLACK, 255, true, 1);
-        shapes.addComponent(entity, ShapeComponent::circle(radius, true, 1));
-        
+
         // Add animation that loops every 2 seconds
         auto* anim = animations.addComponent(entity, 2.0f, true, false, 1.0f);
         if (anim) {
@@ -116,7 +117,6 @@ public:
         positions.addComponent(entity, pos);
         sizes.addComponent(entity, size);
         renderables.addComponent(entity, Colors::GRAY, Colors::DARK_GRAY, 255, true, 2);
-        shapes.addComponent(entity, ShapeComponent::rectangle(true, 1));
         inputs.addComponent(entity, true);
         
         return entity;
@@ -158,11 +158,10 @@ public:
         std::cout << "Renderables: " << renderables.size() << "/256\n";
         std::cout << "Animations: " << animations.size() << "/128\n";
         std::cout << "Inputs: " << inputs.size() << "/64\n";
-        std::cout << "Shapes: " << shapes.size() << "/256\n";
-        
+
         // Calculate total memory usage
         size_t totalMemory = sizeof(positions) + sizeof(sizes) + sizeof(renderables) +
-                           sizeof(animations) + sizeof(inputs) + sizeof(shapes) +
+                           sizeof(animations) + sizeof(inputs) +
                            sizeof(entityManager) + sizeof(systemManager) + sizeof(canvas);
         
         std::cout << "Total static memory: " << totalMemory << " bytes\n";
@@ -234,11 +233,7 @@ private:
             if (!pos) continue;
             
             auto* size = sizes.getComponent(entity);
-            auto* shape = shapes.getComponent(entity);
-            
-            if (shape) {
-                renderShape(*pos, size, *render, *shape);
-            } else if (size) {
+            if (size) {
                 // Render simple rectangle
                 Rect rect(pos->position.x, pos->position.y, size->size.width, size->size.height);
                 Primitives4::fillRect(canvas, rect, render->color);
@@ -246,66 +241,6 @@ private:
                 // Render single pixel
                 canvas.setPixel(pos->position.x, pos->position.y, render->color);
             }
-        }
-    }
-    
-    /**
-     * @brief Render entity with shape component
-     */
-    void renderShape(const PositionComponent& pos, const SizeComponent* size,
-                    const RenderComponent& render, const ShapeComponent& shape) {
-        switch (shape.type) {
-            case ShapeComponent::RECTANGLE:
-                if (size) {
-                    Rect rect(pos.position.x, pos.position.y, size->size.width, size->size.height);
-                    if (shape.filled) {
-                        Primitives4::fillRect(canvas, rect, render.color);
-                    } else {
-                        Primitives4::drawRect(canvas, rect, render.color);
-                    }
-                }
-                break;
-                
-            case ShapeComponent::CIRCLE:
-                if (shape.filled) {
-                    Primitives4::fillCircle(canvas, pos.position.x, pos.position.y,
-                                          shape.radius, render.color);
-                } else {
-                    Primitives4::drawCircle(canvas, pos.position.x, pos.position.y,
-                                          shape.radius, render.color);
-                }
-                break;
-                
-            case ShapeComponent::TRIANGLE:
-                if (shape.filled) {
-                    Primitives4::fillTriangle(canvas,
-                        pos.position.x + shape.p1.x,
-                        pos.position.y + shape.p1.y,
-                        pos.position.x + shape.p2.x,
-                        pos.position.y + shape.p2.y,
-                        pos.position.x + shape.p3.x,
-                        pos.position.y + shape.p3.y,
-                        render.color);
-                } else {
-                    Primitives4::drawTriangle(canvas,
-                        pos.position.x + shape.p1.x,
-                        pos.position.y + shape.p1.y,
-                        pos.position.x + shape.p2.x,
-                        pos.position.y + shape.p2.y,
-                        pos.position.x + shape.p3.x,
-                        pos.position.y + shape.p3.y,
-                        render.color);
-                }
-                break;
-                
-            case ShapeComponent::LINE:
-                Primitives4::drawLine(canvas,
-                    pos.position.x + shape.start.x,
-                    pos.position.y + shape.start.y,
-                    pos.position.x + shape.end.x,
-                    pos.position.y + shape.end.y,
-                    render.color);
-                break;
         }
     }
 };

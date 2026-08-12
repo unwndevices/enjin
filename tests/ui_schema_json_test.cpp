@@ -42,13 +42,14 @@ static void test_schema_lists_components_with_kinds_and_defaults() {
 
     const JsonValue* components = root.find("components");
     ASSERT(components && components->type == JsonValue::Type::Array &&
-               components->array.size() == 12,
-           "schema: all 12 reflected world components present");
+               components->array.size() == 14,
+           "schema: all 14 reflected world components present");
 
     // Pack order, matching forEachComponentName (ui_factory_test pins the set).
-    const char* expected[] = {"id",     "position", "size",    "label", "icon",  "sprite",
-                              "gauge",  "overlay",  "popup",   "list",  "slot",  "bindings"};
-    bool orderOk = components->array.size() == 12;
+    const char* expected[] = {"id",    "position", "size",    "label",   "icon",
+                              "sprite", "gauge",   "shape",   "bar",     "overlay",
+                              "popup",  "list",    "slot",    "bindings"};
+    bool orderOk = components->array.size() == 14;
     for (size_t i = 0; orderOk && i < components->array.size(); ++i) {
         const JsonValue* name = components->array[i].find("name");
         orderOk = name && name->str == expected[i];
@@ -81,6 +82,22 @@ static void test_schema_lists_components_with_kinds_and_defaults() {
     ASSERT(mode && mode->find("kind")->str == "enum" && value &&
                value->find("kind")->str == "float",
            "schema: gauge mode=enum precedes value=float (field-list order)");
+
+    // Shape (unwn #206): a type enum + a bool + a Pixel4 color, all reflected.
+    const JsonValue* shapeType = field("shape", "type");
+    const JsonValue* shapeFilled = field("shape", "filled");
+    const JsonValue* shapeColor = field("shape", "color");
+    ASSERT(shapeType && shapeType->find("kind")->str == "enum" && shapeFilled &&
+               shapeFilled->find("kind")->str == "bool" && shapeColor &&
+               shapeColor->find("kind")->str == "color",
+           "schema: shape reflects type=enum, filled=bool, color=color");
+
+    // Bar (unwn #206): a bindable value (float) beside its orientation enum.
+    const JsonValue* barValue = field("bar", "value");
+    const JsonValue* barOrient = field("bar", "orientation");
+    ASSERT(barValue && barValue->find("kind")->str == "float" && barOrient &&
+               barOrient->find("kind")->str == "enum",
+           "schema: bar reflects value=float (bindable) and orientation=enum");
 
     const JsonValue* pos = field("position", "position");
     ASSERT(pos && pos->find("kind")->str == "point" &&

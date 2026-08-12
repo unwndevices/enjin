@@ -182,11 +182,13 @@ public:
  * @tparam TCanvas Canvas type for rendering
  *
  * Renders all visible entities that have a RenderComponent to the target canvas,
- * in ascending z-order.
+ * in ascending z-order. Each renderable is drawn as a filled rectangle over its
+ * Size box; geometric primitives now live in the reflected `shape` widget
+ * (unwn #206), not this immediate-mode path.
  *
- * @note TWorld must compose PositionComponent, SizeComponent, RenderComponent and
- *       ShapeComponent — the renderer looks all four up by type. TCanvas must be a
- *       Pixel4 canvas, since RenderComponent stores a Pixel4 color.
+ * @note TWorld must compose PositionComponent, SizeComponent and RenderComponent
+ *       — the renderer looks all three up by type. TCanvas must be a Pixel4
+ *       canvas, since RenderComponent stores a Pixel4 color.
  */
 template<typename TWorld, typename TCanvas>
 class RenderSystem : public System<RenderSystem<TWorld, TCanvas>> {
@@ -254,78 +256,8 @@ private:
         if (!pos || !render) return;
 
         auto* size = world_->template get<SizeComponent>(entity);
-        auto* shape = world_->template get<ShapeComponent>(entity);
-
-        if (shape) {
-            renderShape(*pos, size, *render, *shape);
-        } else if (size) {
+        if (size) {
             renderRectangle(*pos, *size, *render);
-        }
-    }
-
-    /**
-     * @brief Render shape component
-     * @param pos Position component
-     * @param size Size component (may be null)
-     * @param render Render component
-     * @param shape Shape component
-     */
-    void renderShape(const PositionComponent& pos, const SizeComponent* size,
-                    const RenderComponent& render, const ShapeComponent& shape) {
-        using Prims = Primitives<typename TCanvas::PixelType>;
-
-        switch (shape.type) {
-            case ShapeComponent::RECTANGLE:
-                if (size) {
-                    Rect rect(pos.position.x, pos.position.y, size->size.width, size->size.height);
-                    if (shape.filled) {
-                        Prims::fillRect(*canvas, rect, render.color);
-                    } else {
-                        Prims::drawRect(*canvas, rect, render.color);
-                    }
-                }
-                break;
-
-            case ShapeComponent::CIRCLE:
-                if (shape.filled) {
-                    Prims::fillCircle(*canvas, pos.position.x, pos.position.y,
-                                      shape.radius, render.color);
-                } else {
-                    Prims::drawCircle(*canvas, pos.position.x, pos.position.y,
-                                      shape.radius, render.color);
-                }
-                break;
-
-            case ShapeComponent::TRIANGLE:
-                if (shape.filled) {
-                    Prims::fillTriangle(*canvas,
-                        pos.position.x + shape.p1.x,
-                        pos.position.y + shape.p1.y,
-                        pos.position.x + shape.p2.x,
-                        pos.position.y + shape.p2.y,
-                        pos.position.x + shape.p3.x,
-                        pos.position.y + shape.p3.y,
-                        render.color);
-                } else {
-                    Prims::drawTriangle(*canvas,
-                        pos.position.x + shape.p1.x,
-                        pos.position.y + shape.p1.y,
-                        pos.position.x + shape.p2.x,
-                        pos.position.y + shape.p2.y,
-                        pos.position.x + shape.p3.x,
-                        pos.position.y + shape.p3.y,
-                        render.color);
-                }
-                break;
-
-            case ShapeComponent::LINE:
-                Prims::drawLine(*canvas,
-                    pos.position.x + shape.start.x,
-                    pos.position.y + shape.start.y,
-                    pos.position.x + shape.end.x,
-                    pos.position.y + shape.end.y,
-                    render.color);
-                break;
         }
     }
 

@@ -22,12 +22,14 @@
 #include "scene_vm.hpp"
 #include "systems.hpp"
 #include "theme.hpp"
+#include "widgets/bar.hpp"
 #include "widgets/gauge.hpp"
 #include "widgets/icon.hpp"
 #include "widgets/label.hpp"
 #include "widgets/list.hpp"
 #include "widgets/overlay.hpp"
 #include "widgets/popup.hpp"
+#include "widgets/shape.hpp"
 #include "widgets/sprite.hpp"
 #include "world.hpp"
 
@@ -43,16 +45,16 @@ public:
     // One wide world for editor-authored scenes (spec: G5 stays deferred via a
     // single World reserved for them) — every reflected component type.
     //
-    // Entity capacity (unwn #204, spec §Widget set §4): raised 16 → 32. Once
-    // `shape` is a placeable widget each rect/line/frame/divider is its own
+    // Entity capacity (unwn #204, spec §Widget set §4): raised 16 → 32. Now that
+    // `shape` is a placeable widget (unwn #206) each rect/line/frame is its own
     // entity, so decorative-heavy scenes cross 16 fast. 32 is provisional — the
     // final N is gated on the #199 hardware free-heap measurement; changing it
     // is a one-integer edit here.
     static constexpr size_t kEntityCapacity = 32;
     using World = enjin2::World<kEntityCapacity, IdComponent, PositionComponent, SizeComponent,
                                 LabelComponent, IconComponent, SpriteComponent, GaugeComponent,
-                                OverlayComponent, PopUpComponent, ListComponent,
-                                SlotComponent, BindingsComponent>;
+                                ShapeComponent, BarComponent, OverlayComponent, PopUpComponent,
+                                ListComponent, SlotComponent, BindingsComponent>;
     // The ratified authoring surface: the firmware's 127x127 logical region,
     // packed rows at (127+1)/2 = 64 bytes — the exact bytes the goldens hold.
     using Canvas = Canvas4<127, 127>;
@@ -152,29 +154,36 @@ public:
         canvas_.clear(Pixel4(0));
         const float dt = dtMs / 1000.0f;
         rig_->overlaySys.update(dt);
+        rig_->shapeSys.update(dt);
         rig_->labelSys.update(dt);
         rig_->iconSys.update(dt);
         rig_->spriteSys.update(dt);
         rig_->listSys.update(dt);
         rig_->gaugeSys.update(dt);
+        rig_->barSys.update(dt);
         rig_->popupSys.update(dt);
     }
 
 private:
-    // Widget systems in ascending priority order (overlay 800 < label/icon/
-    // list 900 < gauge 950 < popup 1000) — the same rig as the engine tests.
+    // Widget systems in ascending priority order (overlay 800 < shape 850 <
+    // label/icon/list 900 < gauge 950 < bar 955 < popup 1000) — the same rig as the
+    // engine tests. Shapes draw as decorative backdrop beneath content; bars
+    // draw with the gauges as level indicators above it.
     struct Rig {
         OverlaySystem<World, Canvas> overlaySys;
+        ShapeSystem<World, Canvas> shapeSys;
         LabelSystem<World, Canvas> labelSys;
         IconSystem<World, Canvas> iconSys;
         SpriteSystem<World, Canvas> spriteSys;
         ListSystem<World, Canvas> listSys;
         GaugeSystem<World, Canvas> gaugeSys;
+        BarSystem<World, Canvas> barSys;
         PopUpSystem<World, Canvas> popupSys;
 
         Rig(World& w, Canvas& c, const Theme& theme)
-            : overlaySys(&w, &c), labelSys(&w, &c), iconSys(&w, &c), spriteSys(&w, &c),
-              listSys(&w, &c, theme), gaugeSys(&w, &c), popupSys(&w, &c) {}
+            : overlaySys(&w, &c), shapeSys(&w, &c), labelSys(&w, &c), iconSys(&w, &c),
+              spriteSys(&w, &c), listSys(&w, &c, theme), gaugeSys(&w, &c), barSys(&w, &c),
+              popupSys(&w, &c) {}
     };
 
     // Shared load path: tear down any previous scene before its world is
