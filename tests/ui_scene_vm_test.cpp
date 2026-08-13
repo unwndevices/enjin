@@ -412,20 +412,114 @@ static void test_value_chain_reserved_slots() {
            "value-chain: empty map/ease slots pass the raw value through unchanged");
 }
 
-static void test_condition_form_dispatch() {
-    // A binding carrying `op` is the condition form — the `op` discriminant routes
-    // it to the P1 seam (P5 fills operators/targets). Until then it's a tolerant
-    // no-op: the property keeps its authored default. Proves dispatch steered away
-    // from the value chain (which would otherwise have written `greeting`).
+// Resolve the condition binding @p bind over kFormScene and read back the
+// (string) target `readout.text`. The scene's state var `level` = 3 is the
+// numeric source under comparison.
+static std::string condText(const char* bind) {
     SceneDoc doc;
     SceneVmWorld world;
     AssetRegistry assets;
-    readSceneDocJson(
-        formBindDoc(R"({"from":"greeting","op":">","threshold":5,"then":"HI","else":"LO"})"), doc,
-        world, assets);
+    readSceneDocJson(formBindDoc(bind), doc, world, assets);
     VM vm(&doc, &world, &assets);
-    ASSERT(vm.lookup("readout.text").str == "init",
-           "condition-form: op discriminant routes to the seam (P1 no-op, keeps default)");
+    return vm.lookup("readout.text").str;
+}
+
+static void test_condition_form_dispatch() {
+    // A binding carrying `op` is the condition form (unwn #213): a numeric
+    // comparison of the resolved `from` (state var `level` = 3) against the
+    // literal threshold selects the then/else literal, written to the target.
+    // Proves dispatch steered into the comparison (not the value chain, which
+    // would have written the source verbatim).
+    ASSERT(condText(R"({"from":"level","op":">","threshold":2,"then":"HI","else":"LO"})") == "HI",
+           "condition: 3 > 2 selects the then literal");
+    ASSERT(condText(R"({"from":"level","op":">","threshold":5,"then":"HI","else":"LO"})") == "LO",
+           "condition: 3 > 5 false selects the else literal");
+}
+
+static void test_condition_operators() {
+    // The full operator set `> >= < <= == !=`, each a numeric comparison of
+    // level (3) against a literal threshold; T on the true side, F on the false.
+    ASSERT(condText(R"({"from":"level","op":">","threshold":2,"then":"T","else":"F"})") == "T",
+           "condition op >");
+    ASSERT(condText(R"({"from":"level","op":">=","threshold":3,"then":"T","else":"F"})") == "T",
+           "condition op >= (boundary equal)");
+    ASSERT(condText(R"({"from":"level","op":"<","threshold":5,"then":"T","else":"F"})") == "T",
+           "condition op <");
+    ASSERT(condText(R"({"from":"level","op":"<=","threshold":3,"then":"T","else":"F"})") == "T",
+           "condition op <= (boundary equal)");
+    ASSERT(condText(R"({"from":"level","op":"==","threshold":3,"then":"T","else":"F"})") == "T",
+           "condition op ==");
+    ASSERT(condText(R"({"from":"level","op":"!=","threshold":4,"then":"T","else":"F"})") == "T",
+           "condition op !=");
+    // Each operator's false side too, so a bug that always returns true is caught.
+    ASSERT(condText(R"({"from":"level","op":">","threshold":3,"then":"T","else":"F"})") == "F",
+           "condition op > false side");
+    ASSERT(condText(R"({"from":"level","op":"<","threshold":3,"then":"T","else":"F"})") == "F",
+           "condition op < false side");
+    ASSERT(condText(R"({"from":"level","op":"==","threshold":4,"then":"T","else":"F"})") == "F",
+           "condition op == false side");
+    ASSERT(condText(R"({"from":"level","op":"!=","threshold":3,"then":"T","else":"F"})") == "F",
+           "condition op != false side");
+}
+
+static void test_condition_else_omitted() {
+    // `else` omitted → the false branch resolves to the property's authored static
+    // value (the synthesized Bool false is a wrong-kind literal on a string field
+    // and is rejected, keeping the default). The then branch still writes.
+    ASSERT(condText(R"({"from":"level","op":">","threshold":5,"then":"HI"})") == "init",
+           "condition: else omitted keeps the authored default on a false condition");
+    ASSERT(condText(R"({"from":"level","op":">","threshold":2,"then":"HI"})") == "HI",
+           "condition: then still writes on a true condition when else omitted");
+}
+
+static void test_condition_unresolvable_from() {
+    // An unresolvable `from` (unknown var) is a tolerant miss: keep the default.
+    ASSERT(condText(R"({"from":"nosuchvar","op":">","threshold":2,"then":"HI","else":"LO"})") ==
+               "init",
+           "condition: unresolvable from keeps the authored default (tolerant miss)");
+}
+
+// A bool target (overlay.visible) driven by a condition form, for the bool
+// branch defaults + truthy-fallback cases (unwn #213). `level` = 3.
+static const char* const kCondBoolScene = R"json({
+  "version": 2,
+  "scene": "condbool",
+  "state": { "level": 3 },
+  "entities": [
+    { "components": {
+        "id": { "id": "ov" },
+        "overlay": { "opacity": 5, "visible": false },
+        "bindings": { "bindings": { "visible": %BIND% } } } }
+  ]
+})json";
+
+static bool condVisible(const char* bind) {
+    std::string s = kCondBoolScene;
+    s.replace(s.find("%BIND%"), 6, bind);
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(s, doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    return vm.lookup("ov.visible").truthy();
+}
+
+static void test_condition_bool_target_defaults() {
+    // On a bool target the absent then/else branches default to true/false, so a
+    // bare comparison drives visibility with no literals authored.
+    ASSERT(condVisible(R"({"from":"level","op":">","threshold":2})") == true,
+           "condition: bool target defaults the then branch to true");
+    ASSERT(condVisible(R"({"from":"level","op":">","threshold":5})") == false,
+           "condition: bool target defaults the else branch to false");
+    // Explicit bool literals are honored (else fires on the false condition).
+    ASSERT(condVisible(R"({"from":"level","op":">","threshold":5,"then":false,"else":true})") ==
+               true,
+           "condition: an explicit bool else literal is written");
+    // op present but threshold absent → the plain truthy test of `from`
+    // (level = 3 is truthy). The bare-string `visible: var` shorthand itself
+    // rides the value chain — see test_visible_fork_retired.
+    ASSERT(condVisible(R"({"from":"level","op":">"})") == true,
+           "condition: op with no threshold falls back to the truthy test of from");
 }
 
 // A scene whose `visible` is bound to a bool var on a real reflected bool field,
@@ -736,6 +830,10 @@ int main() {
     test_param_binding_shapes();
     test_value_chain_reserved_slots();
     test_condition_form_dispatch();
+    test_condition_operators();
+    test_condition_else_omitted();
+    test_condition_unresolvable_from();
+    test_condition_bool_target_defaults();
     test_visible_fork_retired();
     test_binding_tolerant_miss();
     test_easing_state_transient();

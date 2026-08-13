@@ -786,14 +786,76 @@ private:
         }
     }
 
-    /// @brief Condition form `{from, op, threshold, then?, else?}` (unwn #213).
-    /// P1 establishes the dispatch seam + field reservation; P5 fills the operator
-    /// set (`> >= < <= == !=`) and then/else targets. Until then a condition
-    /// binding is a tolerant no-op — the property keeps its authored default,
-    /// never a crash. (`from`/`op`/`threshold` are intentionally not yet read.)
-    void applyConditionBinding(Entity /*e*/, const std::string& /*prop*/,
-                               const JsonValue& /*binding*/) {
-        // P5: read from/op/threshold, compare, write the then/else literal.
+    /// @brief Condition form `{from, op, threshold, then?, else?}` (unwn #213, P5).
+    /// A single numeric comparison of the resolved `from` against a literal
+    /// `threshold` selects one of two literal branches, each of the target
+    /// property's own kind (no nesting, no format/ease/map). `op` ∈
+    /// `> >= < <= == !=`. The chosen literal is passed verbatim through
+    /// @ref setEntityProp, so @ref detail::readFieldValue coerces it to the
+    /// target field's C++ type (and strictly rejects a wrong-kind literal, which
+    /// then keeps the authored default — the uniform tolerant-miss).
+    ///
+    /// Fallbacks (spec #213): an absent branch synthesizes a Bool — `then`→true,
+    /// `else`→false — so a **bool** target defaults its branches and a non-bool
+    /// target simply keeps its authored default (the wrong-kind literal is
+    /// rejected). `else` omitted with a false condition therefore writes nothing
+    /// on any non-bool target. With `op`/`threshold` absent the condition is the
+    /// plain truthy test of `from` (the `visible: someVar` shorthand). An
+    /// unresolvable `from` (unknown var / param key) is a no-op: keep the default.
+    void applyConditionBinding(Entity e, const std::string& prop, const JsonValue& binding) {
+        const JsonValue* fromV = binding.find("from");
+        if (!fromV || fromV->type != JsonValue::Type::String) return; // malformed → miss
+
+        // Resolve `from` exactly as the value chain does: a `param.` source
+        // resolve-raws to its Number; anything else is a lookup. A miss (unknown
+        // key / var) keeps the authored default.
+        JsonValue resolved;
+        if (isParamPath(fromV->str)) {
+            const JsonValue raw = resolveParamRaw(fromV->str.substr(kParamPrefixLen));
+            if (raw.type == JsonValue::Type::Null) return; // unknown key → keep default
+            resolved.type = JsonValue::Type::Number;
+            resolved.number = paramNumber(raw);
+        } else {
+            resolved = lookup(fromV->str);
+            if (resolved.type == JsonValue::Type::Null) return; // unknown source → keep default
+        }
+
+        const JsonValue* opV = binding.find("op");
+        const JsonValue* thV = binding.find("threshold");
+
+        // A genuine comparison when both `op` and a numeric `threshold` are
+        // present; otherwise the truthy test of `from`.
+        bool cond;
+        if (opV && opV->type == JsonValue::Type::String && thV &&
+            thV->type == JsonValue::Type::Number) {
+            if (resolved.type != JsonValue::Type::Number) return; // non-numeric compare → miss
+            const double v = resolved.number;
+            const double t = thV->number;
+            const std::string& op = opV->str;
+            if (op == ">") cond = v > t;
+            else if (op == ">=") cond = v >= t;
+            else if (op == "<") cond = v < t;
+            else if (op == "<=") cond = v <= t;
+            else if (op == "==") cond = v == t;
+            else if (op == "!=") cond = v != t;
+            else return; // unknown operator → tolerant miss
+        } else {
+            cond = resolved.truthy();
+        }
+
+        // Select the branch literal; an absent branch defaults to a Bool of the
+        // condition (then→true / else→false). setEntityProp coerces it to the
+        // target kind and rejects a mismatch, so a non-bool target with an absent
+        // branch keeps its authored default.
+        const JsonValue* branch = binding.find(cond ? "then" : "else");
+        if (branch) {
+            setEntityProp(e, prop, *branch);
+        } else {
+            JsonValue b;
+            b.type = JsonValue::Type::Bool;
+            b.boolean = cond;
+            setEntityProp(e, prop, b);
+        }
     }
 
     /// @brief Seed the transient `(entity, property)` easing anchor from the first
