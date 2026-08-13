@@ -6,6 +6,7 @@
 #include "json.hpp"
 #include "scene_json.hpp"
 #include "slot.hpp"
+#include "widgets/sprite.hpp" // SpriteComponent::frameCount for the map value->frame slot (#220)
 #include "world.hpp"
 #include <cstring>
 #include <functional>
@@ -317,18 +318,26 @@ private:
     std::vector<std::pair<std::string, double>> anims_;     ///< name → elapsed ms, play order
     double timeMs_ = 0.0;
 
-    /// @brief Transient tween anchor for a bound property (unwn #214/#218, P4).
+    /// @brief Transient tween anchor for a bound property (unwn #214/#218/#221, P4).
     ///
     /// The bound-value easing (P4) tweens on change from the *last resolved*
     /// value; this side table holds that anchor, keyed by `(entity, property)`,
     /// seeded from the first resolved numeric value. Runtime-only — lives beside
     /// @ref timers_ / @ref anims_, **never** serialized (a save reflects the
-    /// world, not the VM), so a reload always yields a fresh scene. P1 seeds it;
-    /// P4 reads/updates it when it fills the `ease` slot.
+    /// world, not the VM), so a reload always yields a fresh scene.
+    ///
+    /// `value` is the current eased output (also the P1 seed); a tween-on-change
+    /// glides `from → target` over `startMs .. startMs+ms` on the VM clock
+    /// (@ref timeMs_), re-anchoring `from` to the current `value` whenever
+    /// `target` moves. Time-based off the dt fed to @ref tick, so the two hosts
+    /// (16 ms / 33 ms) share one trajectory.
     struct EasingAnchor {
         Entity entity;
         std::string prop;
-        double value;
+        double value;   ///< current eased output
+        double from;    ///< tween start value
+        double target;  ///< tween destination (last resolved raw)
+        double startMs; ///< timeMs_ at the last (re-)anchor
     };
     std::vector<EasingAnchor> easingState_;
 
@@ -344,6 +353,11 @@ private:
 
     static constexpr char kParamPrefix[] = "param.";
     static constexpr size_t kParamPrefixLen = sizeof(kParamPrefix) - 1;
+
+    /// @brief Default ease duration (ms) — the shorthand curve form and an
+    /// `{curve}` with no `ms` both seed it (unwn #221). Must match the editor's
+    /// `DEFAULT_EASE_MS` so a shorthand round-trips identically across the seam.
+    static constexpr double kDefaultEaseMs = 200.0;
 
     /// @brief Whether @p path addresses the `param.` namespace.
     static bool isParamPath(const std::string& path) {
@@ -603,38 +617,173 @@ private:
             applyValueChain(e, prop, binding);
     }
 
-    /// @brief Value chain: `raw → ease → map → format` (hard order). P1 reserves
-    /// the `ease` (P4) and `map` (P3) slots — empty, they pass the raw value
-    /// straight through — and keeps the `format` terminal (P5) that today only
-    /// the `param.` source uses. Any miss (malformed binding, unknown `from`) is
-    /// a no-op: the property keeps its authored default.
+    /// @brief Value chain: `raw → ease → map → format` (hard order, unwn #218).
+    /// The `ease` slot (P4, #221) tweens the raw number on change; the `map` slot
+    /// (P3, #220) quantizes it to a sprite frame; the `format` terminal (P5)
+    /// renders a display String — the path the pre-#218 `param.` source took.
+    /// Empty slots pass the raw value straight through. Any miss at any stage
+    /// (malformed binding, unknown `from`, no sprite for `map`) is a no-op: the
+    /// property keeps its authored default.
+    ///
+    /// The `ease`/`map` transforms are numeric, so they engage only when the
+    /// resolved value is a Number; a bool/enum/string source (a state var) passes
+    /// through un-transformed. Adding an `ease` or `map` slot also opts the
+    /// terminal into a **numeric** write — a bare `param.` binding with neither
+    /// slot still formats to a String, byte-identically to before.
     void applyValueChain(Entity e, const std::string& prop, const JsonValue& binding) {
         std::string from, format;
         if (!bindingSource(binding, from, format)) return; // malformed → tolerant miss
 
-        if (isParamPath(from)) {
-            // `param.` source: resolve-raw carries the Number (+ its min/max
-            // domain, reserved for P3/P4); the empty ease/map slots pass it
-            // through; the format terminal renders the display String — the exact
-            // byte-for-byte output of the pre-#218 resolveParamBinding.
-            const std::string key = from.substr(kParamPrefixLen);
-            const JsonValue raw = resolveParamRaw(key);
-            if (raw.type == JsonValue::Type::Null) return; // unknown key → keep default
-            const double number = paramNumber(raw);
-            seedEasingState(e, prop, number); // P4 tween anchor (transient)
+        std::string curve;
+        double easeMs = kDefaultEaseMs;
+        const bool hasEase = parseEaseSlot(binding, curve, easeMs);
+        const bool toFrame = parseMapToFrame(binding);
+
+        double number;
+        double lo = 0.0, hi = 0.0;
+        bool isParam;
+        std::string key;
+        {
+            JsonValue raw;
+            if (isParamPath(from)) {
+                key = from.substr(kParamPrefixLen);
+                raw = resolveParamRaw(key);
+                if (raw.type == JsonValue::Type::Null) return; // unknown key → keep default
+                isParam = true;
+                number = paramNumber(raw);
+                paramDomain(raw, lo, hi); // the map slot's normalization domain
+            } else {
+                raw = lookup(from);
+                if (raw.type == JsonValue::Type::Null) return; // unknown source → keep default
+                if (raw.type != JsonValue::Type::Number) {
+                    // Non-numeric source: ease/map don't apply; pass the value through.
+                    setEntityProp(e, prop, raw);
+                    return;
+                }
+                isParam = false;
+                number = raw.number;
+            }
+        }
+
+        // ease slot: tween on change (transient anchor); else just seed it (P1 seam).
+        double value = number;
+        if (hasEase) value = applyEase(e, prop, curve, easeMs, number);
+        else seedEasingState(e, prop, number);
+
+        // map slot: quantize the (eased) value to a sprite frame index.
+        if (toFrame) {
+            int frame = 0;
+            if (!applyFrameMap(e, lo, hi, value, frame)) return; // no sprite → keep default
             JsonValue out;
-            out.type = JsonValue::Type::String;
-            out.str = formatParam(key, format, number);
+            out.type = JsonValue::Type::Number;
+            out.number = static_cast<double>(frame);
             setEntityProp(e, prop, out);
             return;
         }
 
-        // Non-param source: a state var / entity.prop value. Empty ease/map/format
-        // slots ⇒ the raw value passes straight through unchanged.
-        const JsonValue raw = lookup(from);
-        if (raw.type == JsonValue::Type::Null) return; // unknown source → keep default
-        if (raw.type == JsonValue::Type::Number) seedEasingState(e, prop, raw.number);
-        setEntityProp(e, prop, raw);
+        // format terminal: a bare `param.` binding (no ease/map) renders the
+        // display String exactly as pre-#218; an eased/mapped or non-param value
+        // writes the raw Number.
+        JsonValue out;
+        if (isParam && !hasEase) {
+            out.type = JsonValue::Type::String;
+            out.str = formatParam(key, format, number);
+        } else {
+            out.type = JsonValue::Type::Number;
+            out.number = value;
+        }
+        setEntityProp(e, prop, out);
+    }
+
+    /// @brief The `{min,max}` normalization domain out of a resolve-raw object
+    /// (unwn #220): the map slot needs it to place the value in `[0,1]`. Missing
+    /// fields default to `[0,0]` (a degenerate domain → the map yields frame 0).
+    static void paramDomain(const JsonValue& raw, double& lo, double& hi) {
+        const JsonValue* mn = raw.find("min");
+        const JsonValue* mx = raw.find("max");
+        lo = mn && mn->type == JsonValue::Type::Number ? mn->number : 0.0;
+        hi = mx && mx->type == JsonValue::Type::Number ? mx->number : 0.0;
+    }
+
+    /// @brief Parse the `ease` slot (unwn #221): a shorthand curve string
+    /// (`"inOutCubic"` → `{curve, ms:200}`) or an explicit `{curve, ms}`. Returns
+    /// false when absent. `ms` defaults to 200; an unknown @p curve resolves to
+    /// Linear later (in @ref detail::easingByName), so it is carried verbatim.
+    static bool parseEaseSlot(const JsonValue& binding, std::string& curve, double& ms) {
+        curve.clear();
+        ms = kDefaultEaseMs;
+        if (binding.type != JsonValue::Type::Object) return false;
+        const JsonValue* e = binding.find("ease");
+        if (!e) return false;
+        if (e->type == JsonValue::Type::String) {
+            curve = e->str;
+            return true;
+        }
+        if (e->type == JsonValue::Type::Object) {
+            const JsonValue* c = e->find("curve");
+            if (c && c->type == JsonValue::Type::String) curve = c->str;
+            const JsonValue* m = e->find("ms");
+            if (m && m->type == JsonValue::Type::Number) ms = m->number;
+            return true;
+        }
+        return false;
+    }
+
+    /// @brief Whether the binding carries `map:{to:"frame"}` (unwn #220) — the one
+    /// target the value→frame slot fills. No general remap; any other shape misses.
+    static bool parseMapToFrame(const JsonValue& binding) {
+        if (binding.type != JsonValue::Type::Object) return false;
+        const JsonValue* m = binding.find("map");
+        if (!m || m->type != JsonValue::Type::Object) return false;
+        const JsonValue* to = m->find("to");
+        return to && to->type == JsonValue::Type::String && to->str == "frame";
+    }
+
+    /// @brief Ease slot transform (unwn #221): tween the resolved @p target over
+    /// @p ms on the VM clock (@ref timeMs_), re-anchoring `from` to the current
+    /// eased value whenever the target moves — so a mid-tween change glides on
+    /// with no snap, and a first appearance seeds the target (no tween-from-zero).
+    /// Rounded to 2dp, matching the animation tracks for native↔WASM golden parity.
+    double applyEase(Entity e, const std::string& prop, const std::string& curve, double ms,
+                     double target) {
+        EasingAnchor* a = seedEasingState(e, prop, target);
+        if (a->target != target) { // target moved → re-anchor from the current value
+            a->from = a->value;
+            a->target = target;
+            a->startMs = timeMs_;
+        }
+        const double t = ms > 0.0 ? std::min(1.0, (timeMs_ - a->startMs) / ms) : 1.0;
+        const double eased =
+            static_cast<double>(detail::easingByName(curve)(static_cast<float>(t)));
+        a->value = std::round((a->from + (a->target - a->from) * eased) * 100.0) / 100.0;
+        return a->value;
+    }
+
+    /// @brief Map slot transform (unwn #220): quantize @p value in domain
+    /// `[lo,hi]` to a frame index off the bound sprite's live frameCount().
+    /// `t=(v-lo)/(hi-lo)`, `frame=clamp(round(t·(N-1)),0,N-1)` — v=lo→0, v=hi→N-1.
+    /// N is read here, never authored, so a sheet re-import needs no binding edit.
+    /// Returns false (tolerant miss → keep default) when the entity carries no
+    /// SpriteComponent or an empty sheet.
+    bool applyFrameMap(Entity e, double lo, double hi, double value, int& frame) const {
+        if constexpr (TWorld::template composes<SpriteComponent>()) {
+            const SpriteComponent* s = world_->template get<SpriteComponent>(e);
+            if (!s || s->frameCount() == 0) return false;
+            const int n = static_cast<int>(s->frameCount());
+            const double t = hi > lo ? (value - lo) / (hi - lo) : 0.0;
+            int f = static_cast<int>(std::lround(t * (n - 1)));
+            if (f < 0) f = 0;
+            if (f > n - 1) f = n - 1;
+            frame = f;
+            return true;
+        } else {
+            (void)e;
+            (void)lo;
+            (void)hi;
+            (void)value;
+            (void)frame;
+            return false;
+        }
     }
 
     /// @brief Condition form `{from, op, threshold, then?, else?}` (unwn #213).
@@ -649,11 +798,13 @@ private:
 
     /// @brief Seed the transient `(entity, property)` easing anchor from the first
     /// resolved value (unwn #218). Idempotent: only the *first* resolution seeds;
-    /// P4 re-anchors on change. Never serialized — a VM-local side table.
-    void seedEasingState(Entity e, const std::string& prop, double value) {
-        for (const EasingAnchor& a : easingState_)
-            if (a.entity == e && a.prop == prop) return;
-        easingState_.push_back(EasingAnchor{e, prop, value});
+    /// @ref applyEase re-anchors on change. Never serialized — a VM-local side
+    /// table. Returns the anchor so a caller can read/step it.
+    EasingAnchor* seedEasingState(Entity e, const std::string& prop, double value) {
+        for (EasingAnchor& a : easingState_)
+            if (a.entity == e && a.prop == prop) return &a;
+        easingState_.push_back(EasingAnchor{e, prop, value, value, value, timeMs_});
+        return &easingState_.back();
     }
 
     void setTimer(const std::string& name, double ms) {

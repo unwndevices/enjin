@@ -17,9 +17,11 @@
 // slot property bags, and animation tracks landing on real reflected fields.
 #include <enjin2/ui/scene_json.hpp>
 #include <enjin2/ui/scene_vm.hpp>
+#include <enjin2/ui/widgets/sprite.hpp>
 
 #include "scene_fixture.h"
 
+#include <cmath>
 #include <cstdio>
 #include <string>
 
@@ -500,6 +502,228 @@ static void test_easing_state_transient() {
            "easing: the transient side table never leaks into the serialized document");
 }
 
+// ---- value-chain transforms: ease (#221) + map value->frame (#220) ----------
+//
+// A single controllable `param.` cell {number, min, max}: a test moves the
+// source between ticks and watches the ease tween / frame-map track it.
+static double g_paramNumber = 0.0;
+static double g_paramMin = 0.0;
+static double g_paramMax = 100.0;
+static JsonValue rampParamRaw(const std::string&) {
+    auto num = [](double d) {
+        JsonValue v;
+        v.type = JsonValue::Type::Number;
+        v.number = d;
+        return v;
+    };
+    JsonValue out;
+    out.type = JsonValue::Type::Object;
+    out.object.emplace_back("number", num(g_paramNumber));
+    out.object.emplace_back("min", num(g_paramMin));
+    out.object.emplace_back("max", num(g_paramMax));
+    return out;
+}
+
+static bool near2(double a, double b) { return std::fabs(a - b) < 0.02; }
+
+// A one-overlay scene: `dimmer.opacity` (an un-clamped numeric field) bound to
+// the ramp param through the substituted value-chain form — the ease slot's
+// numeric target. (Gauge `value` clamps to its mode range, so it can't observe
+// a wide tween; opacity carries 0..255 straight through.)
+static const char* const kEaseScene = R"json({
+  "version": 2,
+  "scene": "ease",
+  "entities": [
+    { "components": {
+        "id": { "id": "dimmer" },
+        "overlay": { "opacity": 0, "visible": true },
+        "bindings": { "bindings": { "opacity": %BIND% } } } }
+  ]
+})json";
+
+static std::string easeDoc(const char* bindJson) {
+    std::string s = kEaseScene;
+    s.replace(s.find("%BIND%"), 6, bindJson);
+    return s;
+}
+
+static void test_ease_tween_time_based() {
+    // A bound numeric value glides to its new target over the curve instead of
+    // snapping, timed off the dtMs fed to tick() (unwn #221). First appearance
+    // seeds the resolved value (no tween-from-zero); a target change re-anchors
+    // from the current eased value with the full duration again.
+    g_paramNumber = 0.0;
+    g_paramMin = 0.0;
+    g_paramMax = 100.0;
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(easeDoc(R"({"from":"param.x","ease":{"curve":"linear","ms":200}})"), doc, world,
+                     assets);
+    VM vm(&doc, &world, &assets, &rampParamRaw, &stubParamFormat);
+
+    ASSERT(near2(vm.lookup("dimmer.opacity").number, 0.0),
+           "ease: first appearance seeds the resolved value (no tween from zero)");
+
+    g_paramNumber = 100.0;
+    vm.tick(100.0); // re-anchor tick: elapsed resets to 0 -> holds the from value
+    ASSERT(near2(vm.lookup("dimmer.opacity").number, 0.0),
+           "ease: a target change re-anchors from the current eased value (no snap)");
+    vm.tick(100.0); // 100/200 ms elapsed -> t=0.5 -> linear 50
+    ASSERT(near2(vm.lookup("dimmer.opacity").number, 50.0),
+           "ease: linear tween is halfway at t=0.5 (time-based off dtMs)");
+    vm.tick(100.0); // 200/200 ms -> t=1 -> 100
+    ASSERT(near2(vm.lookup("dimmer.opacity").number, 100.0),
+           "ease: tween completes at t=1 and lands on the target");
+    vm.tick(1000.0); // past the end: clamped, stays put
+    ASSERT(near2(vm.lookup("dimmer.opacity").number, 100.0),
+           "ease: elapsed clamps at t=1 (no overshoot)");
+}
+
+static void test_ease_parse_forms() {
+    // Shorthand `ease:"linear"` defaults ms:200; an unknown curve falls back to
+    // Linear. Both reach the same trajectory as the explicit linear object.
+    g_paramNumber = 0.0;
+    g_paramMin = 0.0;
+    g_paramMax = 100.0;
+    { // shorthand string, default 200 ms
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(easeDoc(R"({"from":"param.x","ease":"linear"})"), doc, world, assets);
+        VM vm(&doc, &world, &assets, &rampParamRaw, &stubParamFormat);
+        g_paramNumber = 100.0;
+        vm.tick(100.0); // re-anchor
+        vm.tick(100.0); // 100/200 -> 50
+        ASSERT(near2(vm.lookup("dimmer.opacity").number, 50.0),
+               "ease: shorthand string parses and defaults ms:200");
+    }
+    { // unknown curve -> Linear fallback (same halfway value)
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        g_paramNumber = 0.0;
+        readSceneDocJson(easeDoc(R"({"from":"param.x","ease":{"curve":"bogus","ms":200}})"), doc,
+                         world, assets);
+        VM vm(&doc, &world, &assets, &rampParamRaw, &stubParamFormat);
+        g_paramNumber = 100.0;
+        vm.tick(100.0);
+        vm.tick(100.0);
+        ASSERT(near2(vm.lookup("dimmer.opacity").number, 50.0),
+               "ease: unknown curve falls back to Linear");
+    }
+}
+
+static void test_ease_numeric_only() {
+    // A non-numeric resolved value (a string state var) passes through un-eased:
+    // easing is numeric-only (unwn #221, tolerant-miss for bool/enum/string).
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(formBindDoc(R"({"from":"greeting","ease":"linear"})"), doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    ASSERT(vm.lookup("readout.text").str == "hello",
+           "ease: a string source passes through un-eased (numeric-only)");
+}
+
+// ---- map value->frame (#220): a sprite `frame` bound to a live param ---------
+using SpriteVmWorld = World<8, IdComponent, SpriteComponent, OverlayComponent, BindingsComponent>;
+using SpriteVM = SceneVM<SpriteVmWorld>;
+
+// A tiny opaque sheet plane; frameCount() is cols*rows, independent of content.
+static const uint8_t kMapSheet[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+static SpriteComponent* addBoundSprite(SpriteVmWorld& world, uint16_t cols, uint16_t rows,
+                                       const char* bindJson) {
+    Entity e = world.create();
+    world.add<IdComponent>(e, "spr");
+    SpriteComponent* s = world.add<SpriteComponent>(e);
+    s->load(kMapSheet, 1, 1, cols, rows);
+    s->fps = -1.0f; // externally driven (bindable frame)
+    BindingsComponent* b = world.add<BindingsComponent>(e);
+    b->bindings = parse(bindJson);
+    return s;
+}
+
+static void test_map_value_to_frame() {
+    // `map:{to:"frame"}` quantizes the raw value to a frame index off the bound
+    // sprite's frameCount(): v=min -> 0, v=max -> N-1, round-to-nearest between.
+    g_paramMin = 0.0;
+    g_paramMax = 100.0;
+    g_paramNumber = 0.0;
+    SpriteVmWorld world;
+    AssetRegistry assets;
+    SpriteComponent* s =
+        addBoundSprite(world, 4, 1, R"({"frame":{"from":"param.x","map":{"to":"frame"}}})"); // N=4
+    SpriteVM vm(nullptr, &world, &assets, &rampParamRaw, &stubParamFormat);
+    ASSERT(s->frame == 0, "map: v=min quantizes to frame 0");
+    g_paramNumber = 100.0;
+    vm.tick(16.0);
+    ASSERT(s->frame == 3, "map: v=max quantizes to frame N-1");
+    g_paramNumber = 50.0;
+    vm.tick(16.0); // t=0.5 -> round(0.5*3)=round(1.5)=2
+    ASSERT(s->frame == 2, "map: midpoint rounds to nearest frame");
+}
+
+static void test_map_frame_count_read_at_tick() {
+    // N is read at tick time from the live SpriteComponent, never authored — a
+    // sheet re-import with a different frame count needs no binding edit.
+    g_paramMin = 0.0;
+    g_paramMax = 100.0;
+    g_paramNumber = 100.0;
+    SpriteVmWorld world;
+    AssetRegistry assets;
+    SpriteComponent* s =
+        addBoundSprite(world, 4, 1, R"({"frame":{"from":"param.x","map":{"to":"frame"}}})"); // N=4
+    SpriteVM vm(nullptr, &world, &assets, &rampParamRaw, &stubParamFormat);
+    ASSERT(s->frame == 3, "map: v=max on the 4-frame sheet is frame 3");
+    s->load(kMapSheet, 1, 1, 8, 1); // re-import: N is now 8
+    vm.tick(16.0);
+    ASSERT(s->frame == 7, "map: N re-read at tick — a sheet swap needs no binding edit");
+}
+
+static void test_map_misuse_no_sprite() {
+    // `to:"frame"` on an entity with no SpriteComponent is a silent no-op: the
+    // whole binding misses, so the target property keeps its authored default.
+    g_paramMin = 0.0;
+    g_paramMax = 100.0;
+    g_paramNumber = 100.0;
+    SpriteVmWorld world;
+    AssetRegistry assets;
+    Entity e = world.create();
+    world.add<IdComponent>(e, "ov");
+    OverlayComponent* ov = world.add<OverlayComponent>(e);
+    ov->opacity = 5;
+    BindingsComponent* b = world.add<BindingsComponent>(e);
+    b->bindings = parse(R"({"opacity":{"from":"param.x","map":{"to":"frame"}}})");
+    SpriteVM vm(nullptr, &world, &assets, &rampParamRaw, &stubParamFormat);
+    ASSERT(ov->opacity == 5,
+           "map: to:frame with no SpriteComponent is a silent no-op (keeps default)");
+}
+
+static void test_ease_feeds_map() {
+    // Order raw -> ease -> map: easing runs on the continuous value and its
+    // output feeds the frame quantize, so a value->frame sprite steps smoothly
+    // through the sheet instead of snapping straight to the end (unwn #221 AC).
+    g_paramMin = 0.0;
+    g_paramMax = 100.0;
+    g_paramNumber = 0.0;
+    SpriteVmWorld world;
+    AssetRegistry assets;
+    SpriteComponent* s = addBoundSprite(
+        world, 5, 1,
+        R"({"frame":{"from":"param.x","ease":{"curve":"linear","ms":200},"map":{"to":"frame"}}})"); // N=5
+    SpriteVM vm(nullptr, &world, &assets, &rampParamRaw, &stubParamFormat);
+    ASSERT(s->frame == 0, "ease->map: seeded at frame 0");
+    g_paramNumber = 100.0;
+    vm.tick(100.0); // re-anchor: eased still 0 -> frame 0 (not snapped to N-1)
+    ASSERT(s->frame == 0, "ease->map: re-anchor tick holds frame 0, no snap to the end");
+    vm.tick(100.0); // eased 50 -> t=0.5 -> round(0.5*4)=2
+    ASSERT(s->frame == 2, "ease->map: a half-eased value quantizes to a mid frame");
+    vm.tick(100.0); // eased 100 -> frame 4
+    ASSERT(s->frame == 4, "ease->map: the completed tween reaches the last frame");
+}
+
 int main() {
     test_activation_and_list_retry();
     test_hard_case_1_debounce_latch();
@@ -515,6 +739,13 @@ int main() {
     test_visible_fork_retired();
     test_binding_tolerant_miss();
     test_easing_state_transient();
+    test_ease_tween_time_based();
+    test_ease_parse_forms();
+    test_ease_numeric_only();
+    test_map_value_to_frame();
+    test_map_frame_count_read_at_tick();
+    test_map_misuse_no_sprite();
+    test_ease_feeds_map();
     test_tolerance();
 
     printf("\n%d passed, %d failed\n", passes, failures);
