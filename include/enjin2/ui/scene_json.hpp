@@ -427,6 +427,15 @@ struct SceneDoc {
     JsonValue timers;                    ///< name → {ms, repeat?, onExpire: rules} or Null
     JsonValue animations;                ///< name → {tracks: [...]} or Null
     JsonValue on;                        ///< event → rules (object) or Null
+    /// @brief Unknown root keys, carried verbatim through save/load.
+    ///
+    /// The tolerant-reader contract extended to the document root (see the
+    /// class comment): any root key the engine does not itself interpret is
+    /// collected here as an Object member (first-seen order) and re-emitted
+    /// verbatim by @ref writeSceneDocJson, so an editor-only section — e.g. the
+    /// scene editor's `prototypeParams` (unwn #219) — survives the C++
+    /// canonical writer instead of being silently dropped. Object or Null.
+    JsonValue extra;
 };
 
 /**
@@ -476,6 +485,15 @@ std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
         w.key("on");
         writeJson(w, doc.on);
     }
+    // Open-record passthrough (unwn #219): unknown root keys re-emitted verbatim
+    // after the known sections, in first-seen order — dump → reload → dump stays
+    // a fixed point since the reader re-collects them in the same order.
+    if (doc.extra.type == JsonValue::Type::Object) {
+        for (const auto& kv : doc.extra.object) {
+            w.key(kv.first.c_str());
+            writeJson(w, kv.second);
+        }
+    }
     w.endObject();
     return w.str();
 }
@@ -517,6 +535,20 @@ bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
     const JsonValue* themeObj = root.find(ComponentTraits<Theme>::kName);
     if (themePresentOut) *themePresentOut = themeObj != nullptr;
     if (themeOut && themeObj) readComponentJson(*themeObj, *themeOut, assets);
+
+    // Open-record passthrough: any root key the engine does not interpret is
+    // carried opaquely so it survives dump → reload → dump verbatim (the
+    // tolerant-reader contract, extended to the root). Editor-only sections
+    // like `prototypeParams` (unwn #219) ride through here.
+    for (const auto& kv : root.object) {
+        const std::string& k = kv.first;
+        if (k == "version" || k == "scene" || k == "manifest" ||
+            k == ComponentTraits<Theme>::kName || k == "state" ||
+            k == "entities" || k == "timers" || k == "animations" || k == "on")
+            continue;
+        doc.extra.type = JsonValue::Type::Object;
+        doc.extra.object.emplace_back(k, kv.second);
+    }
 
     // Register manifest assets before entities so icon bitmap-name references
     // resolve during deserialization (unwn #204).

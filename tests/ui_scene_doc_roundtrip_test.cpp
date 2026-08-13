@@ -220,10 +220,61 @@ static void test_binding_shapes_round_trip() {
            "roundtrip: {from, format} object binding stays an object");
 }
 
+// An unknown root key the engine does not interpret — the scene editor's
+// editor-only `prototypeParams` section (unwn #219) — is carried opaquely
+// through the C++ canonical writer instead of being dropped, so a param a user
+// authored survives a file Save. Collected into SceneDoc::extra, re-emitted
+// verbatim; dump -> reload -> dump byte-exact. A document with no unknown keys
+// is unaffected.
+static void test_unknown_root_key_passthrough() {
+    static const char* const kProtoScene = R"json({
+      "version": 2,
+      "scene": "proto_carry",
+      "prototypeParams": [
+        { "id": "proto.speed", "name": "Speed", "type": "float",
+          "min": 0, "max": 1, "unit": "", "precision": 2, "format": "percent" }
+      ],
+      "entities": [
+        { "components": { "id": { "id": "a" }, "label": { "text": "" } } }
+      ]
+    })json";
+
+    SceneDoc docA;
+    SceneVmWorld worldA;
+    AssetRegistry assets;
+    ASSERT(readSceneDocJson(kProtoScene, docA, worldA, assets), "passthrough: proto scene loads");
+    ASSERT(docA.extra.type == JsonValue::Type::Object &&
+               docA.extra.find("prototypeParams") != nullptr,
+           "passthrough: unknown root key collected into SceneDoc::extra");
+
+    const std::string dumpA = writeSceneDocJson(docA, worldA, assets);
+    ASSERT(dumpA.find("prototypeParams") != std::string::npos,
+           "passthrough: unknown root key re-emitted by the canonical writer");
+    ASSERT(dumpA.find("proto.speed") != std::string::npos,
+           "passthrough: the section value rides through verbatim");
+
+    SceneDoc docB;
+    SceneVmWorld worldB;
+    ASSERT(readSceneDocJson(dumpA, docB, worldB, assets), "passthrough: dump reloads");
+    const std::string dumpB = writeSceneDocJson(docB, worldB, assets);
+    ASSERT(dumpA == dumpB, "passthrough: unknown-key dump is a fixed point");
+
+    static const char* const kPlainScene = R"json({
+      "version": 2, "scene": "plain",
+      "entities": [ { "components": { "id": { "id": "a" } } } ]
+    })json";
+    SceneDoc docC;
+    SceneVmWorld worldC;
+    ASSERT(readSceneDocJson(kPlainScene, docC, worldC, assets), "passthrough: plain scene loads");
+    ASSERT(docC.extra.type == JsonValue::Type::Null,
+           "passthrough: no unknown keys -> extra stays Null");
+}
+
 int main() {
     test_wholesale_fixed_point();
     test_reloaded_scene_behaves_identically();
     test_binding_shapes_round_trip();
+    test_unknown_root_key_passthrough();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
