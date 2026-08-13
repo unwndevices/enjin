@@ -250,15 +250,35 @@ static void test_progress_binding_and_scene_switch() {
     ASSERT(sawSwitch, "sceneSwitch: back tap emits the switch effect");
 }
 
-// A stub `param.` resolver: echoes the key (and format, when given) so a test
-// can prove exactly what the VM handed the app — key stripped of `param.`, plus
-// the binding's format override. Mirrors the app resolver's String return.
-static JsonValue stubParamResolver(const std::string& key, const std::string& format) {
-    JsonValue v;
-    v.type = JsonValue::Type::String;
-    v.str = format.empty() ? key : (key + "/" + format);
-    return v;
+// Stub `param.` seam (unwn #218), split like the real app resolver:
+//   - resolve-raw echoes a {number,min,max} for *every* key (the stub owns no
+//     table), so the format terminal always runs and the format echo is testable.
+//   - the formatter echoes the key (and format override, when given) so a test
+//     can prove exactly what the VM handed the app at the terminal.
+static JsonValue stubParamRaw(const std::string& /*key*/) {
+    JsonValue out;
+    out.type = JsonValue::Type::Object;
+    JsonValue n;
+    n.type = JsonValue::Type::Number;
+    n.number = 0.0;
+    JsonValue lo;
+    lo.type = JsonValue::Type::Number;
+    lo.number = 0.0;
+    JsonValue hi;
+    hi.type = JsonValue::Type::Number;
+    hi.number = 1.0;
+    out.object.emplace_back("number", n);
+    out.object.emplace_back("min", lo);
+    out.object.emplace_back("max", hi);
+    return out;
 }
+static std::string stubParamFormat(const std::string& key, const std::string& format, double) {
+    return format.empty() ? key : (key + "/" + format);
+}
+
+// A resolve-raw that misses every key (Null) — the real app's tolerant miss for
+// an unknown `param.` id. The format terminal must never run behind it.
+static JsonValue missParamRaw(const std::string&) { return JsonValue{}; }
 
 // A one-label scene: `label.text` bound to a `param.` source in each form.
 static const char* const kParamBindScene = R"json({
@@ -290,7 +310,7 @@ static void test_param_source_third_lookup() {
     ASSERT(bare.lookup("param.daisy.key").type == JsonValue::Type::Null,
            "param: unset resolver reads Null (tolerant)");
 
-    VM vm(&doc, &world, &assets, &stubParamResolver);
+    VM vm(&doc, &world, &assets, &stubParamRaw, &stubParamFormat);
     ASSERT(vm.lookup("param.daisy.key").str == "daisy.key",
            "param: lookup strips the prefix and resolves through the source");
     ASSERT(vm.lookup("param.no.such").str == "no.such",
@@ -304,7 +324,7 @@ static void test_param_binding_shapes() {
         SceneVmWorld world;
         AssetRegistry assets;
         readSceneDocJson(paramBindDoc(R"("param.daisy.key")"), doc, world, assets);
-        VM vm(&doc, &world, &assets, &stubParamResolver);
+        VM vm(&doc, &world, &assets, &stubParamRaw, &stubParamFormat);
         ASSERT(vm.lookup("readout.text").str == "daisy.key",
                "binding: bare-string param source applied to the label");
     }
@@ -315,7 +335,7 @@ static void test_param_binding_shapes() {
         AssetRegistry assets;
         readSceneDocJson(paramBindDoc(R"({"from":"param.daisy.key","format":"note_cents"})"),
                          doc, world, assets);
-        VM vm(&doc, &world, &assets, &stubParamResolver);
+        VM vm(&doc, &world, &assets, &stubParamRaw, &stubParamFormat);
         ASSERT(vm.lookup("readout.text").str == "daisy.key/note_cents",
                "binding: {from, format} passes the override to the resolver");
     }
@@ -325,7 +345,7 @@ static void test_param_binding_shapes() {
         SceneVmWorld world;
         AssetRegistry assets;
         readSceneDocJson(paramBindDoc(R"({"from":"param.daisy.key"})"), doc, world, assets);
-        VM vm(&doc, &world, &assets, &stubParamResolver);
+        VM vm(&doc, &world, &assets, &stubParamRaw, &stubParamFormat);
         ASSERT(vm.lookup("readout.text").str == "daisy.key",
                "binding: {from} with no format is the bare-string shorthand");
     }
@@ -336,7 +356,7 @@ static void test_param_binding_shapes() {
         SceneVmWorld world;
         AssetRegistry assets;
         readSceneDocJson(paramBindDoc(R"({"from":"readout.text"})"), doc, world, assets);
-        VM vm(&doc, &world, &assets, &stubParamResolver);
+        VM vm(&doc, &world, &assets, &stubParamRaw, &stubParamFormat);
         ASSERT(vm.lookup("readout.text").str == "init",
                "binding: object form over a non-param source uses the value lookup");
     }
@@ -356,6 +376,130 @@ static void test_tolerance() {
     ASSERT(!vm.lookup("").truthy(), "tolerant: empty guard atom is falsy");
 }
 
+// A one-label scene with state vars, for value-chain / condition-form /
+// tolerant-miss dispatch tests (unwn #218). `text` binds to the substituted form.
+static const char* const kFormScene = R"json({
+  "version": 2,
+  "scene": "form_bind",
+  "state": { "greeting": "hello", "level": 3 },
+  "entities": [
+    { "components": {
+        "id": { "id": "readout" },
+        "label": { "text": "init" },
+        "bindings": { "bindings": { "text": %BIND% } } } }
+  ]
+})json";
+
+static std::string formBindDoc(const char* bindJson) {
+    std::string s = kFormScene;
+    s.replace(s.find("%BIND%"), 6, bindJson);
+    return s;
+}
+
+static void test_value_chain_reserved_slots() {
+    // A value-chain object may carry the reserved `map`/`ease`/`format` slots
+    // (P3/P4/P5 fill their internals). Empty here, they pass the raw value
+    // straight through — the binding still resolves like a bare source.
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(formBindDoc(R"({"from":"greeting","map":{"to":"frame"},"ease":"inOutCubic"})"),
+                     doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    ASSERT(vm.lookup("readout.text").str == "hello",
+           "value-chain: empty map/ease slots pass the raw value through unchanged");
+}
+
+static void test_condition_form_dispatch() {
+    // A binding carrying `op` is the condition form — the `op` discriminant routes
+    // it to the P1 seam (P5 fills operators/targets). Until then it's a tolerant
+    // no-op: the property keeps its authored default. Proves dispatch steered away
+    // from the value chain (which would otherwise have written `greeting`).
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(
+        formBindDoc(R"({"from":"greeting","op":">","threshold":5,"then":"HI","else":"LO"})"), doc,
+        world, assets);
+    VM vm(&doc, &world, &assets);
+    ASSERT(vm.lookup("readout.text").str == "init",
+           "condition-form: op discriminant routes to the seam (P1 no-op, keeps default)");
+}
+
+// A scene whose `visible` is bound to a bool var on a real reflected bool field,
+// proving the hardcoded `visible` property-name fork retired into an ordinary
+// value-chain bool prop (unwn #218).
+static const char* const kVisibleScene = R"json({
+  "version": 2,
+  "scene": "vis",
+  "state": { "shown": true },
+  "entities": [
+    { "components": {
+        "id": { "id": "ov" },
+        "overlay": { "opacity": 5, "visible": false },
+        "bindings": { "bindings": { "visible": "shown" } } } }
+  ]
+})json";
+
+static void test_visible_fork_retired() {
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(kVisibleScene, doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    ASSERT(vm.lookup("ov.visible").truthy(),
+           "visible: bare shorthand still drives an ordinary bool prop (name-fork retired)");
+}
+
+static void test_binding_tolerant_miss() {
+    // Uniform tolerant-miss across the value chain: any miss keeps the default.
+    { // unknown source var
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(formBindDoc(R"("nosuchvar")"), doc, world, assets);
+        VM vm(&doc, &world, &assets);
+        ASSERT(vm.lookup("readout.text").str == "init",
+               "tolerant: unknown value-chain source keeps the authored default");
+    }
+    { // malformed object: no `from`
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(formBindDoc(R"({"format":"note_cents"})"), doc, world, assets);
+        VM vm(&doc, &world, &assets);
+        ASSERT(vm.lookup("readout.text").str == "init",
+               "tolerant: malformed value-chain binding (no from) is skipped");
+    }
+    { // param resolve-raw miss → the format terminal never runs, default kept
+        SceneDoc doc;
+        SceneVmWorld world;
+        AssetRegistry assets;
+        readSceneDocJson(formBindDoc(R"("param.no.such")"), doc, world, assets);
+        VM vm(&doc, &world, &assets, &missParamRaw, &stubParamFormat);
+        ASSERT(vm.lookup("readout.text").str == "init",
+               "tolerant: param resolve-raw miss keeps the default (never formats)");
+    }
+}
+
+static void test_easing_state_transient() {
+    // A numeric value-chain binding seeds a transient (entity,property) easing
+    // anchor (unwn #218 seam; P4 tweens off it). The side table is VM-local — a
+    // save reflects the world, never the anchors — so the doc round-trips
+    // byte-identically before and after the VM seeds it.
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(kDatumManagerScene, doc, world, assets);
+    const std::string authored = writeSceneDocJson(doc, world, assets);
+    VM vm(&doc, &world, &assets); // ctor applies bindings once → seeds anchors
+    ASSERT(vm.easingStateCount() >= 1,
+           "easing: a numeric value-chain binding seeds a transient anchor");
+    const std::string afterSeed = writeSceneDocJson(doc, world, assets);
+    ASSERT(afterSeed == authored,
+           "easing: the transient side table never leaks into the serialized document");
+}
+
 int main() {
     test_activation_and_list_retry();
     test_hard_case_1_debounce_latch();
@@ -366,6 +510,11 @@ int main() {
     test_progress_binding_and_scene_switch();
     test_param_source_third_lookup();
     test_param_binding_shapes();
+    test_value_chain_reserved_slots();
+    test_condition_form_dispatch();
+    test_visible_fork_retired();
+    test_binding_tolerant_miss();
+    test_easing_state_transient();
     test_tolerance();
 
     printf("\n%d passed, %d failed\n", passes, failures);

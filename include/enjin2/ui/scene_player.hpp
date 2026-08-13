@@ -123,10 +123,16 @@ public:
         return writeSchemaJson<World>(assets_, extraSections);
     }
 
-    /// Install the app's `param.` binding resolver (unwn #202). Bindings from
-    /// the `param.` namespace resolve their live-value cells through this; unset
-    /// ⇒ those bindings read Null (tolerant). Applies to the next load.
+    /// Install the app's `param.` *resolve-raw* (unwn #202/#218). Bindings from
+    /// the `param.` namespace resolve their live-value cells to `{number,min,max}`
+    /// through this; unset ⇒ those bindings read Null (tolerant). Applies to the
+    /// next load. Pair it with @ref setParamFormatter for the display terminal.
     void setParamResolver(ParamResolver resolver) { paramResolver_ = std::move(resolver); }
+
+    /// Install the app's `param.` *formatter* — the value chain's format terminal
+    /// (unwn #218). Renders a resolved raw number to its display String for a
+    /// textual target; unset ⇒ the terminal yields "". Applies to the next load.
+    void setParamFormatter(ParamFormatter formatter) { paramFormatter_ = std::move(formatter); }
 
     /// Optional host-effect sink. The preview/editor tracks read effects off
     /// stderr; a hosting firmware registers a handler instead (e.g. to honor
@@ -216,7 +222,8 @@ private:
             return false;
         }
         rig_ = std::make_unique<Rig>(*world_, canvas_, theme_);
-        vm_ = std::make_unique<SceneVM<World>>(&doc_, world_.get(), &assets_, paramResolver_);
+        vm_ = std::make_unique<SceneVM<World>>(&doc_, world_.get(), &assets_, paramResolver_,
+                                               paramFormatter_);
         // Canonical form of the *authored* document, captured before
         // scene.activate below mutates the world (state sets, enter
         // animations) — saveText() must never leak runtime state into a file.
@@ -272,6 +279,7 @@ private:
 
     SceneDoc doc_;
     ParamResolver paramResolver_;
+    ParamFormatter paramFormatter_;
     EffectHandler effectHandler_;
     std::unique_ptr<World> world_;
     AssetRegistry assets_;

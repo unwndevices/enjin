@@ -189,11 +189,12 @@ void ensureCompiledInAssets() {
 bool sceneLoad(std::string jsonText) {
     ensureCompiledInAssets();
 #ifdef ENJIN2_HAS_PARAM_REGISTRY
-    // Install the shared `param.` resolver before the load builds the VM
-    // (setParamResolver applies to the next load): bound `param.` properties
-    // then resolve their live-value cells + descriptor formatter exactly as
-    // firmware does, so the editor preview is byte-identical (unwn #203).
-    g_scenePlayer.setParamResolver(&unwn::param::resolveParamBinding);
+    // Install the shared `param.` resolve-raw + format terminal before the load
+    // builds the VM (both apply to the next load): bound `param.` properties then
+    // resolve their live-value cells + descriptor formatter exactly as firmware
+    // does, so the editor preview is byte-identical (unwn #203, split #218).
+    g_scenePlayer.setParamResolver(&unwn::param::resolveParamRaw);
+    g_scenePlayer.setParamFormatter(&unwn::param::formatParamValue);
 #endif
     return g_scenePlayer.loadText(jsonText);
 }

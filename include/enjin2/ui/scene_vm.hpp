@@ -60,21 +60,39 @@ struct SceneEffect {
 using SceneEffects = std::vector<SceneEffect>;
 
 /**
- * @brief App-supplied resolver for the `param.` binding namespace (unwn #202).
+ * @brief App-supplied *resolve-raw* for the `param.` namespace (unwn #202, #218).
  *
  * The engine stays ignorant of the concrete ParamRegistry + formatter catalog
  * (which live app-side, in unwnlib): given the key *after* the `param.` prefix
- * (e.g. `daisy.key`) and the binding's optional `format` override ("" = none),
- * the resolver reads the live-value cell and returns its formatted display
- * value — a String @ref JsonValue — or Null for an unknown key (the tolerant
- * miss: the bound property keeps its default). The effective formatter is the
- * app's business: `binding.format ?? descriptor.format ?? raw`.
+ * (e.g. `daisy.key`), the resolver reads the live-value cell and returns the
+ * **raw value plus its normalization domain** — a `{number, min, max}` object
+ * @ref JsonValue — or Null for an unknown key (the tolerant miss: the bound
+ * property keeps its default). The engine owns the pipeline (`raw → ease → map
+ * → format`); the app stays schema owner of the number and its domain.
+ *
+ * Split from the pre-#218 single `resolveParamBinding` (which returned a
+ * pre-formatted String): resolve-raw yields the domain the value chain needs
+ * (P3 value→frame, P4 easing), and @ref ParamFormatter renders the terminal
+ * string separately.
  *
  * Same app-agnostic-hook shape as the schema `extraSections` callback (#201):
  * the engine only knows a resolver *may* be installed. Unset ⇒ `param.` reads
  * Null everywhere (guards, `@`-refs and bindings alike stay tolerant).
  */
-using ParamResolver = std::function<JsonValue(const std::string& key, const std::string& format)>;
+using ParamResolver = std::function<JsonValue(const std::string& key)>;
+
+/**
+ * @brief App-supplied *formatter* — the value chain's terminal stage (unwn #218).
+ *
+ * Invoked only at the `format` terminal, for a textual target: given the key
+ * (after `param.`), the binding's optional `format` override ("" = the
+ * descriptor default) and the raw @p number the pipeline carried end-to-end,
+ * returns the display String. The effective formatter is the app's business:
+ * `binding.format ?? descriptor.format ?? raw`. Unset ⇒ the format terminal
+ * yields "" (an empty display), matching the tolerant miss.
+ */
+using ParamFormatter =
+    std::function<std::string(const std::string& key, const std::string& format, double number)>;
 
 namespace detail {
 
@@ -144,9 +162,10 @@ public:
      * properties are consistent before the first event.
      */
     SceneVM(const SceneDoc* doc, TWorld* world, const AssetRegistry* assets,
-            ParamResolver paramResolver = {})
+            ParamResolver paramResolver = {}, ParamFormatter paramFormatter = {})
         : doc_(doc), world_(world), assets_(assets),
-          paramResolver_(std::move(paramResolver)) {
+          paramResolver_(std::move(paramResolver)),
+          paramFormatter_(std::move(paramFormatter)) {
         if (doc_ && doc_->state.type == JsonValue::Type::Object) vars_ = doc_->state;
         else vars_.type = JsonValue::Type::Object;
         if constexpr (TWorld::template composes<IdComponent>()) {
@@ -258,7 +277,8 @@ public:
     /// bindings pass an override through applyBindings, unwn #202), then an
     /// `entity.prop` reflected field, then a bare state var.
     JsonValue lookup(const std::string& path) const {
-        if (isParamPath(path)) return resolveParam(path.substr(kParamPrefixLen), std::string());
+        if (isParamPath(path))
+            return resolveParamFormatted(path.substr(kParamPrefixLen), std::string());
         Entity e;
         std::string prop;
         if (splitEntityPath(path, e, prop)) return getEntityProp(e, prop);
@@ -282,16 +302,35 @@ public:
     /// @brief Virtual time accumulated by tick(), in ms.
     double timeMs() const { return timeMs_; }
 
+    /// @brief Count of seeded transient easing anchors (unwn #218 seam; tests).
+    size_t easingStateCount() const { return easingState_.size(); }
+
 private:
     const SceneDoc* doc_;
     TWorld* world_;
     const AssetRegistry* assets_;
-    ParamResolver paramResolver_;                           ///< `param.` source (unwn #202); may be unset
+    ParamResolver paramResolver_;                           ///< `param.` resolve-raw (unwn #202/#218); may be unset
+    ParamFormatter paramFormatter_;                         ///< format terminal (unwn #218); may be unset
     JsonValue vars_;                                        ///< Runtime state vars (object)
     std::vector<std::pair<std::string, Entity>> entities_;  ///< id → entity, file order
     std::vector<std::pair<std::string, double>> timers_;    ///< name → remaining ms, arm order
     std::vector<std::pair<std::string, double>> anims_;     ///< name → elapsed ms, play order
     double timeMs_ = 0.0;
+
+    /// @brief Transient tween anchor for a bound property (unwn #214/#218, P4).
+    ///
+    /// The bound-value easing (P4) tweens on change from the *last resolved*
+    /// value; this side table holds that anchor, keyed by `(entity, property)`,
+    /// seeded from the first resolved numeric value. Runtime-only — lives beside
+    /// @ref timers_ / @ref anims_, **never** serialized (a save reflects the
+    /// world, not the VM), so a reload always yields a fresh scene. P1 seeds it;
+    /// P4 reads/updates it when it fills the `ease` slot.
+    struct EasingAnchor {
+        Entity entity;
+        std::string prop;
+        double value;
+    };
+    std::vector<EasingAnchor> easingState_;
 
     // ---- entity property access (the reflection seam) ----------------------
 
@@ -311,17 +350,47 @@ private:
         return path.compare(0, kParamPrefixLen, kParamPrefix) == 0;
     }
 
-    /// @brief Resolve `param.<key>` through the installed resolver (Null if none),
-    /// applying the effective @p format override the app maps to a formatter.
-    JsonValue resolveParam(const std::string& key, const std::string& format) const {
-        if (paramResolver_) return paramResolver_(key, format);
+    /// @brief Resolve-raw `param.<key>` → `{number, min, max}` (Null if unset /
+    /// unknown key — the tolerant miss). The value chain's first stage; carries
+    /// the raw Number end-to-end plus the normalization domain P3/P4 consume.
+    JsonValue resolveParamRaw(const std::string& key) const {
+        if (paramResolver_) return paramResolver_(key);
         return JsonValue{};
     }
 
-    /// @brief Read a binding value in either form (unwn #202): a bare string is
-    /// `{from: "<string>"}` shorthand; an object supplies `from` (required
-    /// string) and an optional `format`. False for a malformed binding (skipped,
-    /// the tolerant-reader contract extends to bindings).
+    /// @brief The raw `number` field out of a resolve-raw `{number,min,max}`.
+    static double paramNumber(const JsonValue& raw) {
+        const JsonValue* n = raw.find("number");
+        return n && n->type == JsonValue::Type::Number ? n->number : 0.0;
+    }
+
+    /// @brief The format terminal: render `param.<key>`'s raw @p number to its
+    /// display String via the injected formatter (empty if unset).
+    std::string formatParam(const std::string& key, const std::string& format,
+                            double number) const {
+        if (paramFormatter_) return paramFormatter_(key, format, number);
+        return std::string();
+    }
+
+    /// @brief Compose resolve-raw + format into the pre-#218 formatted value: a
+    /// String @ref JsonValue for a known key, Null for the tolerant miss. Used by
+    /// @ref lookup so guards / `@`-refs read a param exactly as before the split.
+    JsonValue resolveParamFormatted(const std::string& key, const std::string& format) const {
+        const JsonValue raw = resolveParamRaw(key);
+        if (raw.type == JsonValue::Type::Null) return JsonValue{};
+        JsonValue out;
+        out.type = JsonValue::Type::String;
+        out.str = formatParam(key, format, paramNumber(raw));
+        return out;
+    }
+
+    /// @brief Read a **value-chain** binding's source (unwn #202/#218): a bare
+    /// string is `{from: "<string>"}` shorthand; an object supplies `from`
+    /// (required string) plus the reserved `map` / `ease` / `format` slots
+    /// (P3/P4/P5) — only `format` is read here, `map`/`ease` are reserved and
+    /// pass the raw value straight through until their leaf tickets fill them.
+    /// False for a malformed binding (skipped, the tolerant-reader contract
+    /// extends to bindings). The condition form (`op` present) never reaches here.
     static bool bindingSource(const JsonValue& v, std::string& from, std::string& format) {
         format.clear();
         if (v.type == JsonValue::Type::String) {
@@ -510,25 +579,81 @@ private:
                 const Entity e = storage.entityAt(i);
                 const BindingsComponent* b = world_->template get<BindingsComponent>(e);
                 if (!b || b->bindings.type != JsonValue::Type::Object) continue;
-                for (const auto& kv : b->bindings.object) {
-                    std::string from, format;
-                    if (!bindingSource(kv.second, from, format)) continue;
-                    if (kv.first == "visible") {
-                        // A condition, not a value — the guard grammar, no formatter.
-                        JsonValue v;
-                        v.type = JsonValue::Type::Bool;
-                        v.boolean = evalCond(from);
-                        setEntityProp(e, kv.first, v);
-                    } else if (isParamPath(from)) {
-                        // Live param: the resolver formats at resolve time, honoring
-                        // the binding's `format` override (unwn #202).
-                        setEntityProp(e, kv.first, resolveParam(from.substr(kParamPrefixLen), format));
-                    } else {
-                        setEntityProp(e, kv.first, lookup(from));
-                    }
-                }
+                for (const auto& kv : b->bindings.object) applyBinding(e, kv.first, kv.second);
             }
         }
+    }
+
+    /// @brief One binding on one property, dispatched on the `op` discriminant
+    /// (unwn #218). An object carrying `op` is the **condition form**
+    /// `{from, op, threshold, then?, else?}` (unwn #213, P5); everything else —
+    /// a bare string or `{from, map?, ease?, format?}` — is the **value chain**
+    /// (unwn #212/#214, P3/P4). The two are mutually exclusive. Uniform
+    /// tolerant-miss: a miss at any stage leaves the property at its default.
+    ///
+    /// The pre-#218 hardcoded `visible` property-name fork retired here: `visible`
+    /// is now an ordinary bool value-chain target (a bare `visible: someVar`
+    /// passes the resolved bool straight through), and a genuine single comparison
+    /// is written as the condition form. Compound `&&`/`||`/`!` guards stay in the
+    /// behavior-rule `if` grammar (@ref evalCond), untouched by bindings.
+    void applyBinding(Entity e, const std::string& prop, const JsonValue& binding) {
+        if (binding.type == JsonValue::Type::Object && binding.find("op"))
+            applyConditionBinding(e, prop, binding);
+        else
+            applyValueChain(e, prop, binding);
+    }
+
+    /// @brief Value chain: `raw → ease → map → format` (hard order). P1 reserves
+    /// the `ease` (P4) and `map` (P3) slots — empty, they pass the raw value
+    /// straight through — and keeps the `format` terminal (P5) that today only
+    /// the `param.` source uses. Any miss (malformed binding, unknown `from`) is
+    /// a no-op: the property keeps its authored default.
+    void applyValueChain(Entity e, const std::string& prop, const JsonValue& binding) {
+        std::string from, format;
+        if (!bindingSource(binding, from, format)) return; // malformed → tolerant miss
+
+        if (isParamPath(from)) {
+            // `param.` source: resolve-raw carries the Number (+ its min/max
+            // domain, reserved for P3/P4); the empty ease/map slots pass it
+            // through; the format terminal renders the display String — the exact
+            // byte-for-byte output of the pre-#218 resolveParamBinding.
+            const std::string key = from.substr(kParamPrefixLen);
+            const JsonValue raw = resolveParamRaw(key);
+            if (raw.type == JsonValue::Type::Null) return; // unknown key → keep default
+            const double number = paramNumber(raw);
+            seedEasingState(e, prop, number); // P4 tween anchor (transient)
+            JsonValue out;
+            out.type = JsonValue::Type::String;
+            out.str = formatParam(key, format, number);
+            setEntityProp(e, prop, out);
+            return;
+        }
+
+        // Non-param source: a state var / entity.prop value. Empty ease/map/format
+        // slots ⇒ the raw value passes straight through unchanged.
+        const JsonValue raw = lookup(from);
+        if (raw.type == JsonValue::Type::Null) return; // unknown source → keep default
+        if (raw.type == JsonValue::Type::Number) seedEasingState(e, prop, raw.number);
+        setEntityProp(e, prop, raw);
+    }
+
+    /// @brief Condition form `{from, op, threshold, then?, else?}` (unwn #213).
+    /// P1 establishes the dispatch seam + field reservation; P5 fills the operator
+    /// set (`> >= < <= == !=`) and then/else targets. Until then a condition
+    /// binding is a tolerant no-op — the property keeps its authored default,
+    /// never a crash. (`from`/`op`/`threshold` are intentionally not yet read.)
+    void applyConditionBinding(Entity /*e*/, const std::string& /*prop*/,
+                               const JsonValue& /*binding*/) {
+        // P5: read from/op/threshold, compare, write the then/else literal.
+    }
+
+    /// @brief Seed the transient `(entity, property)` easing anchor from the first
+    /// resolved value (unwn #218). Idempotent: only the *first* resolution seeds;
+    /// P4 re-anchors on change. Never serialized — a VM-local side table.
+    void seedEasingState(Entity e, const std::string& prop, double value) {
+        for (const EasingAnchor& a : easingState_)
+            if (a.entity == e && a.prop == prop) return;
+        easingState_.push_back(EasingAnchor{e, prop, value});
     }
 
     void setTimer(const std::string& name, double ms) {
