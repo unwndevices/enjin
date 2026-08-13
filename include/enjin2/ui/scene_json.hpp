@@ -438,6 +438,21 @@ struct SceneDoc {
     JsonValue extra;
 };
 
+/// @brief Whether @p key is a root section this document format interprets
+/// itself — i.e. one @ref writeSceneDocJson emits explicitly.
+///
+/// The single source of truth for the @ref SceneDoc::extra open-record
+/// passthrough: the reader excludes these keys from `extra`, and the writer
+/// skips them when re-emitting it. Sharing one predicate means a known section
+/// can never end up both interpreted and carried opaquely (a duplicate key),
+/// even if the struct/reader/writer sets ever drift.
+inline bool isKnownRootKey(const std::string& key) {
+    return key == "version" || key == "scene" || key == "manifest" ||
+           key == ComponentTraits<Theme>::kName || key == "state" ||
+           key == "entities" || key == "timers" || key == "animations" ||
+           key == "on";
+}
+
 /**
  * @brief Dump a full scene document: behavior sections + entity tree
  *
@@ -490,6 +505,7 @@ std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
     // a fixed point since the reader re-collects them in the same order.
     if (doc.extra.type == JsonValue::Type::Object) {
         for (const auto& kv : doc.extra.object) {
+            if (isKnownRootKey(kv.first)) continue; // never duplicate a known section
             w.key(kv.first.c_str());
             writeJson(w, kv.second);
         }
@@ -541,13 +557,9 @@ bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
     // tolerant-reader contract, extended to the root). Editor-only sections
     // like `prototypeParams` (unwn #219) ride through here.
     for (const auto& kv : root.object) {
-        const std::string& k = kv.first;
-        if (k == "version" || k == "scene" || k == "manifest" ||
-            k == ComponentTraits<Theme>::kName || k == "state" ||
-            k == "entities" || k == "timers" || k == "animations" || k == "on")
-            continue;
+        if (isKnownRootKey(kv.first)) continue;
         doc.extra.type = JsonValue::Type::Object;
-        doc.extra.object.emplace_back(k, kv.second);
+        doc.extra.object.emplace_back(kv.first, kv.second);
     }
 
     // Register manifest assets before entities so icon bitmap-name references
