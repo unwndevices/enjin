@@ -157,6 +157,33 @@ public:
     void stepFrame(int dtMs = kFrameMs) {
         if (!vm_) return;
         logEffects(vm_->tick(static_cast<double>(dtMs)));
+        renderInto(dtMs);
+    }
+
+    /// Re-render the current scene state *without advancing time* (unwn #226
+    /// follow-up): applies bindings at the current clock (`tick(0)` reflects a
+    /// just-changed var/param, but leaves `timeMs_`, timers and eased tweens
+    /// untouched) and repaints with a zero widget-animation delta. The editor's
+    /// paused preview calls this to show an input's effect without stepping the
+    /// scene forward — a "frozen" repaint.
+    void renderFrame() {
+        if (!vm_) return;
+        logEffects(vm_->tick(0.0));
+        renderInto(0);
+    }
+
+    /// Set a runtime scene variable (unwn #227): the editor's swept-variable
+    /// preview drive forwards here each frame before @ref stepFrame, so the
+    /// sweep wins over the last behavior write. No-op when no scene is loaded.
+    void setVar(const std::string& name, double value) {
+        if (vm_) vm_->setVar(name, value);
+    }
+
+private:
+    /// Clear the canvas and run every widget system with animation delta
+    /// @p dtMs (0 = repaint current state without advancing sprite/overlay
+    /// animation). Shared by @ref stepFrame and @ref renderFrame.
+    void renderInto(int dtMs) {
         canvas_.clear(Pixel4(0));
         const float dt = dtMs / 1000.0f;
         rig_->overlaySys.update(dt);
@@ -170,14 +197,6 @@ public:
         rig_->popupSys.update(dt);
     }
 
-    /// Set a runtime scene variable (unwn #227): the editor's swept-variable
-    /// preview drive forwards here each frame before @ref stepFrame, so the
-    /// sweep wins over the last behavior write. No-op when no scene is loaded.
-    void setVar(const std::string& name, double value) {
-        if (vm_) vm_->setVar(name, value);
-    }
-
-private:
     // Widget systems in ascending priority order (overlay 800 < shape 850 <
     // label/icon/list 900 < gauge 950 < bar 955 < popup 1000) — the same rig as the
     // engine tests. Shapes draw as decorative backdrop beneath content; bars

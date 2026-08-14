@@ -80,6 +80,32 @@ static void test_dispatch_reaches_the_frame() {
            "dispatch: list arrival changes the rendered frame");
 }
 
+// renderFrame() (unwn #226 follow-up) repaints the current scene state without
+// advancing time: the editor's paused preview reflects an input without
+// stepping the enter animation forward. Byte-identical to the last stepFrame,
+// and stable across repeats, where a real stepFrame moves the animation on.
+static void test_render_frame_repaints_without_advancing() {
+    ScenePlayer p;
+    p.loadText(kDatumManagerScene);
+    for (int i = 0; i < 4; ++i) p.stepFrame(); // mid enter-animation (64ms)
+
+    ScenePlayer::Canvas frozen = *p.canvas();
+    p.renderFrame();
+    ASSERT(memcmp(frozen.getBuffer(), p.canvas()->getBuffer(),
+                  p.canvas()->getBufferSize()) == 0,
+           "render: repaints the current frame byte-identically (no advance)");
+    p.renderFrame();
+    p.renderFrame();
+    ASSERT(memcmp(frozen.getBuffer(), p.canvas()->getBuffer(),
+                  p.canvas()->getBufferSize()) == 0,
+           "render: repeated renders never step the animation forward");
+
+    for (int i = 0; i < 8; ++i) p.stepFrame(); // real time DOES advance it
+    ASSERT(memcmp(frozen.getBuffer(), p.canvas()->getBuffer(),
+                  p.canvas()->getBufferSize()) != 0,
+           "render: a real stepFrame advances where renderFrame did not");
+}
+
 static void test_two_players_render_identical_bytes() {
     ScenePlayer a, b;
     drive(a);
@@ -133,6 +159,7 @@ static void test_pre_v2_version_is_rejected() {
 int main() {
     test_load_activates_and_renders();
     test_dispatch_reaches_the_frame();
+    test_render_frame_repaints_without_advancing();
     test_two_players_render_identical_bytes();
     test_reload_replaces_the_scene();
     test_malformed_load_leaves_inactive();

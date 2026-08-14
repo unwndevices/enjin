@@ -254,6 +254,12 @@ std::string resolveParam(std::string id, std::string format) {
 
 void sceneTick() { g_scenePlayer.stepFrame(); }
 
+// Repaint the current scene state without advancing time (unwn #226 follow-up):
+// applies bindings + repaints so a paused preview reflects an input, but leaves
+// the VM clock, timers and eased tweens where they were. The editor primes this
+// on a paused input instead of sceneTick (which would step animations forward).
+void sceneRender() { g_scenePlayer.renderFrame(); }
+
 val sceneGetFramebuffer() {
     // Live view straight over the packed canvas buffer — the same bytes
     // writeGoldenRaw() captures natively. The caller copies before storing.
@@ -297,6 +303,7 @@ EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
     function("sceneDispatch", &sceneDispatch);
     function("setVar", &setVar);
     function("sceneTick", &sceneTick);
+    function("sceneRender", &sceneRender);
     function("getSceneFramebuffer", &sceneGetFramebuffer);
     function("getSceneFramebufferUnpacked", &sceneGetFramebufferUnpacked);
     function("getSceneCanvasWidth", &sceneCanvasWidth);

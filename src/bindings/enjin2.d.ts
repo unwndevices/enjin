@@ -118,6 +118,9 @@ export interface Enjin2Module extends EmscriptenModule {
   sceneDispatch(event: string, payloadJson: string): void;
   /** Advance behavior by one fixed 16 ms frame, then render. */
   sceneTick(): void;
+  /** Repaint the current scene state without advancing time (applies bindings
+   *  at the current clock; leaves timers/eased tweens untouched). */
+  sceneRender(): void;
   /** Live view of the PACKED 127x127 Canvas4 buffer (8128 bytes, 2 px/byte,
    *  64-byte row stride) — byte-for-byte the native golden .bin payload.
    *  Copy it if you need a stable snapshot. */
