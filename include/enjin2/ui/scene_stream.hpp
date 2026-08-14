@@ -369,7 +369,7 @@ bool readSceneDocStream(SceneStreamSource& src, SceneDoc& doc, TWorld& world,
     if (p.getc() != '{') return false;
     p.skipWs();
 
-    bool seenVersion = false, seenScene = false, seenState = false, seenTimers = false,
+    bool seenVersion = false, seenScene = false, seenVariables = false, seenTimers = false,
          seenAnimations = false, seenOn = false, seenTheme = false, seenEntities = false,
          seenManifest = false;
 
@@ -406,8 +406,8 @@ bool readSceneDocStream(SceneStreamSource& src, SceneDoc& doc, TWorld& world,
             // The writer emits `manifest` before `entities`, so assets are known
             // before entity bitmap-name references resolve (unwn #204).
             if (!p.parseValue(doc.manifest, 0)) return false;
-        } else if (key == "state" && claim(seenState)) {
-            if (!p.parseValue(doc.state, 0)) return false;
+        } else if (key == "variables" && claim(seenVariables)) {
+            if (!p.parseValue(doc.variables, 0)) return false;
         } else if (key == "timers" && claim(seenTimers)) {
             if (!p.parseValue(doc.timers, 0)) return false;
         } else if (key == "animations" && claim(seenAnimations)) {

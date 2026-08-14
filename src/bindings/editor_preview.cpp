@@ -218,6 +218,15 @@ void sceneDispatch(std::string event, std::string payloadJson) {
     g_scenePlayer.dispatch(event, payloadJson);
 }
 
+// -- Scene-variable drive (unwn #227) --
+//
+// The Variables editor pumps a swept variable's synthetic value into the VM's
+// runtime var bag each frame before sceneTick, so a `var.`-bound property lives
+// offline (the engine-native counterpart of setParamValue's device-param cell).
+void setVar(std::string name, float value) {
+    g_scenePlayer.setVar(name, static_cast<double>(value));
+}
+
 #ifdef ENJIN2_HAS_PARAM_REGISTRY
 // -- Live param surface (unwn #203) --
 //
@@ -286,6 +295,7 @@ EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
     function("saveScene", &sceneSave);
     function("getSceneSchema", &sceneSchema);
     function("sceneDispatch", &sceneDispatch);
+    function("setVar", &setVar);
     function("sceneTick", &sceneTick);
     function("getSceneFramebuffer", &sceneGetFramebuffer);
     function("getSceneFramebufferUnpacked", &sceneGetFramebufferUnpacked);

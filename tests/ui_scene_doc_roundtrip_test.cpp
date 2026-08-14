@@ -96,9 +96,9 @@ static void test_wholesale_fixed_point() {
     ASSERT(p.dumpA == dumpB, "doc: EXIT CRITERION - dump -> reload -> dump is byte-identical");
 
     ASSERT(p.docB.scene == "datum_manager", "doc: scene name survives");
-    ASSERT(p.docB.state.type == JsonValue::Type::Object &&
-               p.docB.state.find("previewInFlight") != nullptr,
-           "doc: state bag survives");
+    ASSERT(p.docB.variables.type == JsonValue::Type::Array &&
+               p.docB.variables.array.size() == 7,
+           "doc: variables array survives");
     ASSERT(p.docB.timers.find("previewDebounce") != nullptr, "doc: timers survive");
     ASSERT(p.docB.animations.find("enter") != nullptr, "doc: animation tracks survive");
     ASSERT(p.docB.on.find("host.listArrived") != nullptr, "doc: event tables survive");

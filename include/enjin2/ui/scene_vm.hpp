@@ -160,8 +160,10 @@ public:
     /**
      * @brief Bind a VM to a loaded document + world
      *
-     * Copies the document's initial state vars into VM runtime, indexes
-     * entities by IdComponent id, and applies bindings once so bound
+     * Seeds the VM's runtime var bag from the document's variables (unwn #227):
+     * each `{name, value}` in the `variables` array becomes a runtime var the
+     * behavior interpreter reads/writes and `var.<name>` bindings resolve. Then
+     * indexes entities by IdComponent id and applies bindings once so bound
      * properties are consistent before the first event.
      */
     SceneVM(const SceneDoc* doc, TWorld* world, const AssetRegistry* assets,
@@ -169,8 +171,15 @@ public:
         : doc_(doc), world_(world), assets_(assets),
           paramResolver_(std::move(paramResolver)),
           paramFormatter_(std::move(paramFormatter)) {
-        if (doc_ && doc_->state.type == JsonValue::Type::Object) vars_ = doc_->state;
-        else vars_.type = JsonValue::Type::Object;
+        vars_.type = JsonValue::Type::Object;
+        if (doc_ && doc_->variables.type == JsonValue::Type::Array) {
+            for (const JsonValue& v : doc_->variables.array) {
+                const JsonValue* name = v.find("name");
+                const JsonValue* value = v.find("value");
+                if (name && name->type == JsonValue::Type::String && value)
+                    vars_.object.emplace_back(name->str, *value);
+            }
+        }
         if constexpr (TWorld::template composes<IdComponent>()) {
             if (world_) {
                 const auto& ids = world_->template components<IdComponent>();
@@ -282,11 +291,29 @@ public:
     JsonValue lookup(const std::string& path) const {
         if (isParamPath(path))
             return resolveParamFormatted(path.substr(kParamPrefixLen), std::string());
+        // The `var.` namespace (unwn #227): an authored scene variable, resolved
+        // from the runtime var bag. Checked before the entity split because the
+        // prefixed name (`var.foo`) contains a dot but is not an `entity.prop`.
+        if (isVarPath(path)) {
+            const JsonValue* v = vars_.find(path.c_str() + kVarPrefixLen);
+            return v ? *v : JsonValue{};
+        }
         Entity e;
         std::string prop;
         if (splitEntityPath(path, e, prop)) return getEntityProp(e, prop);
         if (const JsonValue* v = vars_.find(path.c_str())) return *v;
         return JsonValue{};
+    }
+
+    /// @brief Set a runtime scene variable (unwn #227): the editor's swept-var
+    /// preview drive writes here each frame before @ref tick, so the sweep wins
+    /// over the last behavior write. On device nothing calls this — behavior
+    /// owns the runtime value.
+    void setVar(const std::string& name, double value) {
+        JsonValue v;
+        v.type = JsonValue::Type::Number;
+        v.number = value;
+        detail::objectSet(vars_, name, v);
     }
 
     /// @brief Milliseconds remaining on an armed timer; < 0 when not armed.
@@ -355,6 +382,15 @@ private:
 
     static constexpr char kParamPrefix[] = "param.";
     static constexpr size_t kParamPrefixLen = sizeof(kParamPrefix) - 1;
+
+    /// @brief The `var.` scene-variable namespace prefix (unwn #227).
+    static constexpr char kVarPrefix[] = "var.";
+    static constexpr size_t kVarPrefixLen = sizeof(kVarPrefix) - 1;
+
+    /// @brief Whether @p path addresses the `var.` namespace.
+    static bool isVarPath(const std::string& path) {
+        return path.compare(0, kVarPrefixLen, kVarPrefix) == 0;
+    }
 
     /// @brief Default ease duration (ms) — the shorthand curve form and an
     /// `{curve}` with no `ms` both seed it (unwn #221). Must match the editor's

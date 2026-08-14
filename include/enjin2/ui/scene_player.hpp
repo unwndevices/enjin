@@ -170,6 +170,13 @@ public:
         rig_->popupSys.update(dt);
     }
 
+    /// Set a runtime scene variable (unwn #227): the editor's swept-variable
+    /// preview drive forwards here each frame before @ref stepFrame, so the
+    /// sweep wins over the last behavior write. No-op when no scene is loaded.
+    void setVar(const std::string& name, double value) {
+        if (vm_) vm_->setVar(name, value);
+    }
+
 private:
     // Widget systems in ascending priority order (overlay 800 < shape 850 <
     // label/icon/list 900 < gauge 950 < bar 955 < popup 1000) — the same rig as the

@@ -383,7 +383,10 @@ static void test_tolerance() {
 static const char* const kFormScene = R"json({
   "version": 2,
   "scene": "form_bind",
-  "state": { "greeting": "hello", "level": 3 },
+  "variables": [
+    { "name": "greeting", "type": "string", "value": "hello" },
+    { "name": "level", "type": "int", "value": 3 }
+  ],
   "entities": [
     { "components": {
         "id": { "id": "readout" },
@@ -422,6 +425,27 @@ static std::string condText(const char* bind) {
     readSceneDocJson(formBindDoc(bind), doc, world, assets);
     VM vm(&doc, &world, &assets);
     return vm.lookup("readout.text").str;
+}
+
+static void test_var_namespace_and_setvar() {
+    // The `var.` namespace (unwn #227): a `var.<name>` binding resolves the same
+    // authored variable a bare token does, and setVar drives it at runtime so the
+    // editor's swept-variable preview moves a bound property.
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(formBindDoc(R"({"from":"var.greeting"})"), doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    ASSERT(vm.lookup("readout.text").str == "hello",
+           "var.: a var.<name> binding resolves the seeded variable");
+    ASSERT(vm.lookup("var.level").number == 3,
+           "var.: lookup(\"var.level\") reads the runtime var bag");
+
+    // setVar overwrites the runtime value; re-applying bindings renders it.
+    vm.setVar("level", 7);
+    ASSERT(vm.lookup("var.level").number == 7, "var.: setVar overwrites the runtime value");
+    ASSERT(vm.lookup("level").number == 7,
+           "var.: a bare token still resolves the same bag (guard-atom shorthand)");
 }
 
 static void test_condition_form_dispatch() {
@@ -484,7 +508,7 @@ static void test_condition_unresolvable_from() {
 static const char* const kCondBoolScene = R"json({
   "version": 2,
   "scene": "condbool",
-  "state": { "level": 3 },
+  "variables": [ { "name": "level", "type": "int", "value": 3 } ],
   "entities": [
     { "components": {
         "id": { "id": "ov" },
@@ -528,7 +552,7 @@ static void test_condition_bool_target_defaults() {
 static const char* const kVisibleScene = R"json({
   "version": 2,
   "scene": "vis",
-  "state": { "shown": true },
+  "variables": [ { "name": "shown", "type": "bool", "value": true } ],
   "entities": [
     { "components": {
         "id": { "id": "ov" },
@@ -883,7 +907,7 @@ static void test_position_axis_binding() {
     // tolerant miss.
     const char* scene = R"json({
       "version": 2, "scene": "pos",
-      "state": { "px": 40 },
+      "variables": [ { "name": "px", "type": "int", "value": 40 } ],
       "entities": [ { "components": {
         "id": { "id": "mover" },
         "position": { "position": { "x": 5, "y": 9 } },
@@ -917,6 +941,7 @@ int main() {
     test_param_source_third_lookup();
     test_param_binding_shapes();
     test_value_chain_reserved_slots();
+    test_var_namespace_and_setvar();
     test_condition_form_dispatch();
     test_condition_operators();
     test_condition_else_omitted();

@@ -27,15 +27,15 @@ using SceneVmWorld =
 static const char* const kDatumManagerScene = R"json({
   "version": 2,
   "scene": "datum_manager",
-  "state": {
-    "isLoading": false,
-    "listReady": false,
-    "previewInFlight": false,
-    "showMiniPreview": false,
-    "showProgressBar": false,
-    "previewProgress": 0.0,
-    "currentSlot": 2
-  },
+  "variables": [
+    {"name": "isLoading", "type": "bool", "value": false},
+    {"name": "listReady", "type": "bool", "value": false},
+    {"name": "previewInFlight", "type": "bool", "value": false},
+    {"name": "showMiniPreview", "type": "bool", "value": false},
+    {"name": "showProgressBar", "type": "bool", "value": false},
+    {"name": "previewProgress", "type": "float", "value": 0.0},
+    {"name": "currentSlot", "type": "int", "value": 2}
+  ],
   "entities": [
     {
       "components": {

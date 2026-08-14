@@ -423,7 +423,7 @@ struct SceneDoc {
     int64_t version = kSceneJsonVersion; ///< As read; writers emit kSceneJsonVersion
     std::string scene;                   ///< Scene name ("" = unnamed)
     JsonValue manifest;                  ///< Content-addressed asset manifest (array) or Null
-    JsonValue state;                     ///< Initial state vars (object) or Null
+    JsonValue variables;                 ///< Authored scene variables (array) or Null (unwn #227)
     JsonValue timers;                    ///< name → {ms, repeat?, onExpire: rules} or Null
     JsonValue animations;                ///< name → {tracks: [...]} or Null
     JsonValue on;                        ///< event → rules (object) or Null
@@ -448,7 +448,7 @@ struct SceneDoc {
 /// even if the struct/reader/writer sets ever drift.
 inline bool isKnownRootKey(const std::string& key) {
     return key == "version" || key == "scene" || key == "manifest" ||
-           key == ComponentTraits<Theme>::kName || key == "state" ||
+           key == ComponentTraits<Theme>::kName || key == "variables" ||
            key == "entities" || key == "timers" || key == "animations" ||
            key == "on";
 }
@@ -456,7 +456,7 @@ inline bool isKnownRootKey(const std::string& key) {
 /**
  * @brief Dump a full scene document: behavior sections + entity tree
  *
- * Section order is fixed (version · scene · theme · state · entities ·
+ * Section order is fixed (version · scene · theme · variables · entities ·
  * timers · animations · on); absent sections are omitted, so
  * dump → reload → dump is a byte-exact fixed point. Entity/component state is
  * written from the world (the editor's save path mutates components), while
@@ -483,9 +483,9 @@ std::string writeSceneDocJson(const SceneDoc& doc, const TWorld& world,
         w.key(ComponentTraits<Theme>::kName);
         writeComponentJson(w, *theme, assets);
     }
-    if (doc.state.type != JsonValue::Type::Null) {
-        w.key("state");
-        writeJson(w, doc.state);
+    if (doc.variables.type != JsonValue::Type::Null) {
+        w.key("variables");
+        writeJson(w, doc.variables);
     }
     writeEntitiesJson(w, world, assets);
     if (doc.timers.type != JsonValue::Type::Null) {
@@ -543,7 +543,7 @@ bool readSceneDocJson(const std::string& text, SceneDoc& doc, TWorld& world,
     if (const JsonValue* v = root.find("scene"))
         if (v->type == JsonValue::Type::String) doc.scene = v->str;
     if (const JsonValue* v = root.find("manifest")) doc.manifest = *v;
-    if (const JsonValue* v = root.find("state")) doc.state = *v;
+    if (const JsonValue* v = root.find("variables")) doc.variables = *v;
     if (const JsonValue* v = root.find("timers")) doc.timers = *v;
     if (const JsonValue* v = root.find("animations")) doc.animations = *v;
     if (const JsonValue* v = root.find("on")) doc.on = *v;
