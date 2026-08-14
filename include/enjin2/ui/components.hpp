@@ -13,14 +13,34 @@ namespace enjin2 {
  * @brief Position component for 2D spatial positioning
  */
 struct PositionComponent : public Component<PositionComponent> {
-    Point position;   ///< Current position
+    Point position;   ///< Current position (the point the anchor is pinned to)
     Point lastPos;    ///< Previous position (for interpolation/delta calculations)
-    
+    Anchor anchor = Anchor::TOP_LEFT; ///< Which box point sits on @ref position
+    Point anchorOffset; ///< Manual nudge from the anchored origin (+x right, +y down)
+
     /**
      * @brief Constructor with initial position
      * @param pos Initial position
      */
     PositionComponent(Point pos = Point()) : position(pos), lastPos(pos) {}
+
+    /**
+     * @brief Top-left draw origin for a widget of extent @p box (pure)
+     * @param box The widget's bounding-box size
+     * @return Where the widget's top-left corner lands on the canvas
+     *
+     * Combines the anchor (which box point pins to @ref position) with the
+     * manual @ref anchorOffset nudge: `position - anchorPoint(anchor, box) +
+     * anchorOffset`. With the default @ref Anchor::TOP_LEFT and a zero offset
+     * this is just @ref position, so every existing widget keeps its top-left
+     * placement until a scene opts into an anchor. Positive offsets move the
+     * widget right/down, matching Eisei's `C_Drawable::AddOffset`.
+     */
+    Point renderOrigin(Size box) const {
+        const Point ap = anchorPoint(anchor, box);
+        return Point(static_cast<int16_t>(position.x - ap.x + anchorOffset.x),
+                     static_cast<int16_t>(position.y - ap.y + anchorOffset.y));
+    }
     
     /**
      * @brief Move to new position, storing old position
@@ -60,7 +80,9 @@ struct PositionComponent : public Component<PositionComponent> {
 /// `lastPos` is runtime delta-tracking state and stays transient; loading
 /// places the entity, it does not replay its movement.
 #define ENJIN2_POSITION_COMPONENT_FIELDS(FIELD, PROP) \
-    PROP(position, Point, getPosition, place)
+    PROP(position, Point, getPosition, place)         \
+    FIELD(anchor)                                     \
+    FIELD(anchorOffset)
 
 ENJIN2_REFLECT_COMPONENT(PositionComponent, 1, "position", ENJIN2_POSITION_COMPONENT_FIELDS)
 

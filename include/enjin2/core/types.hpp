@@ -190,6 +190,53 @@ struct Size {
 };
 
 /**
+ * @brief Nine-point placement anchor for a widget's bounding box
+ *
+ * Selects which point of a `width × height` box is pinned onto the entity's
+ * `position` — upstreamed from Eisei's `C_Drawable::Anchor` so the scene editor
+ * can place a widget by its center/edge instead of always its top-left corner.
+ *
+ * The integer values are the permanent wire encoding (they serialize as a plain
+ * enum int, like every other reflected enum): **append only, never reorder**.
+ * The layout is row-major (row = value / 3 top→bottom, col = value % 3
+ * left→right), which @ref anchorPoint relies on. `TOP_LEFT == 0` is the default,
+ * so a pre-anchor scene (or any component that omits the field) renders exactly
+ * as it did when position was always the top-left origin.
+ */
+enum class Anchor : uint8_t {
+    TOP_LEFT = 0,  ///< Box top-left pinned to position (legacy default)
+    TOP_CENTER,    ///< Box top-center pinned to position
+    TOP_RIGHT,     ///< Box top-right pinned to position
+    CENTER_LEFT,   ///< Box center-left pinned to position
+    CENTER,        ///< Box center pinned to position
+    CENTER_RIGHT,  ///< Box center-right pinned to position
+    BOTTOM_LEFT,   ///< Box bottom-left pinned to position
+    BOTTOM_CENTER, ///< Box bottom-center pinned to position
+    BOTTOM_RIGHT   ///< Box bottom-right pinned to position
+};
+
+/**
+ * @brief The in-box pixel an @ref Anchor pins onto `position` (pure)
+ * @param a Selected anchor
+ * @param box The widget's bounding-box extent
+ * @return Offset from the box's top-left to the anchored point
+ *
+ * A widget's draw origin (top-left) is therefore `position - anchorPoint(a, box)`
+ * (plus any manual nudge). Left/top columns map to 0, center to half the extent,
+ * right/bottom to the full extent — matching `C_Drawable::SetAnchorPoint`.
+ */
+inline Point anchorPoint(Anchor a, Size box) {
+    const int idx = static_cast<int>(a);
+    const int col = idx % 3; // 0 = left, 1 = center, 2 = right
+    const int row = idx / 3; // 0 = top,  1 = middle, 2 = bottom
+    const int16_t ax = col == 0 ? 0 : (col == 1 ? static_cast<int16_t>(box.width / 2)
+                                                : static_cast<int16_t>(box.width));
+    const int16_t ay = row == 0 ? 0 : (row == 1 ? static_cast<int16_t>(box.height / 2)
+                                                : static_cast<int16_t>(box.height));
+    return Point(ax, ay);
+}
+
+/**
  * @brief Rectangle defined by position and size
  */
 struct Rect {

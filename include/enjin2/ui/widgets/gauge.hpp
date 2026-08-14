@@ -184,8 +184,9 @@ private:
 
     void draw(const GaugeComponent& gauge, const PositionComponent& pos) {
         if (gauge.diameter == 0) return;
-        const int originX = pos.position.x;
-        const int originY = pos.position.y;
+        const Point origin = pos.renderOrigin(Size(gauge.diameter, gauge.diameter));
+        const int originX = origin.x;
+        const int originY = origin.y;
         const int r = gauge.diameter / 2;
         const int cx = originX + r;
         const int cy = originY + r;

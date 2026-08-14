@@ -109,7 +109,7 @@ public:
             auto* pos = world_->template get<PositionComponent>(e);
             auto* size = world_->template get<SizeComponent>(e);
             if (!shape || !pos || !size) continue;
-            draw(*shape, pos->position, size->size);
+            draw(*shape, pos->renderOrigin(size->size), size->size);
         }
     }
 

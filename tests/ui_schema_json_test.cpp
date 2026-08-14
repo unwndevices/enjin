@@ -104,6 +104,15 @@ static void test_schema_lists_components_with_kinds_and_defaults() {
                pos->find("default")->type == JsonValue::Type::Object,
            "schema: position is a point with an object default");
 
+    // The placement anchor reflects as its own `anchor` kind (a 3×3 pivot, not a
+    // free enum) with its offset riding as a plain point beside it.
+    const JsonValue* anchor = field("position", "anchor");
+    const JsonValue* anchorOffset = field("position", "anchorOffset");
+    ASSERT(anchor && anchor->find("kind")->str == "anchor" &&
+               anchor->find("default")->type == JsonValue::Type::Number &&
+               anchorOffset && anchorOffset->find("kind")->str == "point",
+           "schema: position reflects anchor (kind=anchor) + anchorOffset (point)");
+
     const JsonValue* props = field("slot", "props");
     ASSERT(props && props->find("kind")->str == "json",
            "schema: slot.props is the opaque json bag");

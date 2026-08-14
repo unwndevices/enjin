@@ -83,6 +83,64 @@ static void test_render_hidden_is_noop() {
     ASSERT(!anyInk, "icon: a hidden icon draws nothing");
 }
 
+// renderOrigin is the pure anchor math the blit rides on: the anchor picks
+// which point of the w×h box pins to `position`, then anchorOffset nudges it.
+static void test_render_origin_anchor_math() {
+    PositionComponent pos(Point(10, 10));
+    ASSERT(pos.renderOrigin(Size(4, 6)).x == 10 && pos.renderOrigin(Size(4, 6)).y == 10,
+           "anchor: default TOP_LEFT keeps the origin at position");
+
+    pos.anchor = Anchor::CENTER;
+    Point c = pos.renderOrigin(Size(4, 6));
+    ASSERT(c.x == 8 && c.y == 7, "anchor: CENTER shifts origin by -w/2,-h/2");
+
+    pos.anchor = Anchor::BOTTOM_RIGHT;
+    Point br = pos.renderOrigin(Size(4, 6));
+    ASSERT(br.x == 6 && br.y == 4, "anchor: BOTTOM_RIGHT shifts origin by -w,-h");
+
+    pos.anchor = Anchor::CENTER;
+    pos.anchorOffset = Point(3, -2);
+    Point n = pos.renderOrigin(Size(4, 6));
+    ASSERT(n.x == 11 && n.y == 5, "anchor: +x offset moves right, +y down (net over CENTER)");
+}
+
+// End-to-end: a centered icon blits about its position, not from its top-left.
+static void test_render_anchor_center_blit() {
+    IconWorld world;
+    Canvas4<16, 16> canvas;
+    IconSystem<IconWorld, Canvas4<16, 16>> system(&world, &canvas);
+
+    Entity e = world.create();
+    world.add<IconComponent>(e, kDot, 2, 2); // opaque pixel at local (0,0)
+    auto* pos = world.add<PositionComponent>(e, Point(8, 8));
+    pos->anchor = Anchor::CENTER; // box (2,2) → origin = (8-1, 8-1) = (7,7)
+
+    canvas.clear(Pixel4(2));
+    system.update(0.016f);
+
+    ASSERT(canvas.getPixel(7, 7) == 15, "anchor: CENTER blits the icon about its position");
+    ASSERT(canvas.getPixel(8, 8) == 2, "anchor: position itself is no longer the top-left");
+}
+
+// End-to-end: anchorOffset nudges the centered icon right/down.
+static void test_render_anchor_offset_blit() {
+    IconWorld world;
+    Canvas4<16, 16> canvas;
+    IconSystem<IconWorld, Canvas4<16, 16>> system(&world, &canvas);
+
+    Entity e = world.create();
+    world.add<IconComponent>(e, kDot, 2, 2);
+    auto* pos = world.add<PositionComponent>(e, Point(8, 8));
+    pos->anchor = Anchor::CENTER;
+    pos->anchorOffset = Point(3, 1); // origin = (7+3, 7+1) = (10, 8)
+
+    canvas.clear(Pixel4(2));
+    system.update(0.016f);
+
+    ASSERT(canvas.getPixel(10, 8) == 15, "anchor: +offset moves the blit right/down");
+    ASSERT(canvas.getPixel(7, 7) == 2, "anchor: the un-nudged center is now clear");
+}
+
 // A null-bitmap icon is a safe no-op rather than a crash.
 static void test_render_null_bitmap_is_safe() {
     IconWorld world;
@@ -106,6 +164,9 @@ static void test_render_null_bitmap_is_safe() {
 int main() {
     test_transparency_seam();
     test_render_blits_with_matte();
+    test_render_origin_anchor_math();
+    test_render_anchor_center_blit();
+    test_render_anchor_offset_blit();
     test_render_hidden_is_noop();
     test_render_null_bitmap_is_safe();
 

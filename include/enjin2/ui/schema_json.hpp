@@ -39,6 +39,11 @@ constexpr const char* schemaFieldKind() {
         return "string";
     } else if constexpr (std::is_same_v<T, float>) {
         return "float";
+    } else if constexpr (std::is_same_v<T, Anchor>) {
+        // A nine-point placement pivot, not a free enum: the editor renders it
+        // as a 3×3 grid, so it gets its own kind ahead of the generic enum path.
+        // The value still serializes as the enum int (see writeFieldValue).
+        return "anchor";
     } else if constexpr (std::is_enum_v<T>) {
         return "enum";
     } else if constexpr (std::is_integral_v<T>) {

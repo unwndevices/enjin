@@ -15,20 +15,10 @@ namespace enjin2 {
 class Component;
 class C_Position;
 
-/**
- * @brief Anchor point enumeration for positioning
- */
-enum class Anchor {
-    TOP_LEFT,      ///< Top-left corner
-    TOP_CENTER,    ///< Top center
-    TOP_RIGHT,     ///< Top-right corner
-    CENTER_LEFT,   ///< Center left
-    CENTER,        ///< Center
-    CENTER_RIGHT,  ///< Center right
-    BOTTOM_LEFT,   ///< Bottom-left corner
-    BOTTOM_CENTER, ///< Bottom center
-    BOTTOM_RIGHT   ///< Bottom-right corner
-};
+// `enum class Anchor` (the nine placement points) now lives in types.hpp — the
+// lightweight core header the reflected ui PositionComponent also depends on —
+// so the legacy Object/C_Position path and the ui-ECS scene VM share one
+// definition instead of colliding. Included above via "types.hpp".
 
 /**
  * @brief Object base class for game entities

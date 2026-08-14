@@ -158,8 +158,9 @@ private:
         text_.setFont(label.font);
         text_.setTextSize(label.fontSize);
 
-        const int originX = pos.position.x;
-        const int originY = pos.position.y;
+        const Point origin = pos.renderOrigin(size.size);
+        const int originX = origin.x;
+        const int originY = origin.y;
         const int width = size.size.width;
         const int boxHeight = size.size.height - label.pointer;
 

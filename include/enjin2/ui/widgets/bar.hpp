@@ -142,7 +142,12 @@ public:
             auto* bar = world_->template get<BarComponent>(e);
             auto* pos = world_->template get<PositionComponent>(e);
             if (!bar || !pos) continue;
-            draw(*bar, pos->position);
+            // The bar's bounding box is length along the fill axis, thickness
+            // across it — so a vertical bar swaps the two for the anchor.
+            const Size box = bar->orientation == BarOrientation::Horizontal
+                                 ? Size(bar->length, bar->thickness)
+                                 : Size(bar->thickness, bar->length);
+            draw(*bar, pos->renderOrigin(box));
         }
     }
 

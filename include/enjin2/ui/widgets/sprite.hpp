@@ -212,8 +212,9 @@ private:
 
     void draw(const SpriteComponent& s, const PositionComponent& pos) {
         if (!s.visible || !s.bitmap) return;
-        const int originX = pos.position.x;
-        const int originY = pos.position.y;
+        const Point origin = pos.renderOrigin(Size(s.width, s.height));
+        const int originX = origin.x;
+        const int originY = origin.y;
         for (int y = 0; y < s.height; ++y) {
             for (int x = 0; x < s.width; ++x) {
                 const uint8_t v = s.sampleAt(x, y);

@@ -130,8 +130,9 @@ public:
 private:
     void draw(const IconComponent& icon, const PositionComponent& pos) {
         if (!icon.visible || !icon.bitmap) return;
-        const int originX = pos.position.x;
-        const int originY = pos.position.y;
+        const Point origin = pos.renderOrigin(Size(icon.width, icon.height));
+        const int originX = origin.x;
+        const int originY = origin.y;
         for (int y = 0; y < icon.height; ++y) {
             for (int x = 0; x < icon.width; ++x) {
                 const uint8_t v = icon.sampleAt(x, y);
