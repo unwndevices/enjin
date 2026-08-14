@@ -818,6 +818,94 @@ static void test_ease_feeds_map() {
     ASSERT(s->frame == 4, "ease->map: the completed tween reaches the last frame");
 }
 
+// ---- cross-kind binding targets (unwn #232) --------------------------------
+//
+// The value-chain terminal picks String-vs-Number from the **destination field
+// kind**, not the source. Pre-#232 a bare `param.` source always wrote the
+// formatted String, which readFieldValue rejects for a numeric field, so the
+// property silently kept its authored default. Symmetrically, a numeric source
+// written to a string field was rejected.
+
+static void test_cross_kind_param_to_numeric() {
+    // Bare `param.` (no ease/map) → a numeric field (overlay.opacity): must land
+    // the raw Number, not the rejected format String.
+    g_paramNumber = 42.0;
+    g_paramMin = 0.0;
+    g_paramMax = 100.0;
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(easeDoc(R"({"from":"param.x"})"), doc, world, assets);
+    VM vm(&doc, &world, &assets, &rampParamRaw, &stubParamFormat);
+    ASSERT(near2(vm.lookup("dimmer.opacity").number, 42.0),
+           "cross-kind: bare param -> numeric field writes the raw Number (unwn #232)");
+}
+
+static void test_cross_kind_param_to_color() {
+    // The ticket's headline symptom: a param bound to a Label `color` (Pixel4).
+    g_paramNumber = 5.0;
+    g_paramMin = 0.0;
+    g_paramMax = 15.0;
+    const char* scene = R"json({
+      "version": 2, "scene": "color_bind",
+      "entities": [ { "components": {
+        "id": { "id": "swatch" },
+        "label": { "text": "x", "color": 1 },
+        "bindings": { "bindings": { "color": { "from": "param.x" } } } } } ]
+    })json";
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(scene, doc, world, assets);
+    VM vm(&doc, &world, &assets, &rampParamRaw, &stubParamFormat);
+    ASSERT(vm.lookup("swatch.color").number == 5.0,
+           "cross-kind: param -> Label color writes the palette index, not a String (unwn #232)");
+}
+
+static void test_cross_kind_num_to_text() {
+    // A numeric state var (level = 3) bound to a string field renders its %.9g
+    // display value instead of keeping the authored "init".
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(formBindDoc(R"({"from":"level"})"), doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    ASSERT(vm.lookup("readout.text").str == "3",
+           "cross-kind: numeric state var -> string field renders the value (unwn #232)");
+}
+
+// ---- position bindable per-axis (unwn #225) --------------------------------
+
+static void test_position_axis_binding() {
+    // position.x / .y are first-class bindable scalars. A value-chain binding to
+    // position.x writes only the x axis (y untouched); the dotted path resolves
+    // on the read side too, so a sibling entity could source it. A bad axis is a
+    // tolerant miss.
+    const char* scene = R"json({
+      "version": 2, "scene": "pos",
+      "state": { "px": 40 },
+      "entities": [ { "components": {
+        "id": { "id": "mover" },
+        "position": { "position": { "x": 5, "y": 9 } },
+        "bindings": { "bindings": { "position.x": { "from": "px" } } } } } ]
+    })json";
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(scene, doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    ASSERT(vm.lookup("mover.position.x").number == 40.0,
+           "position.x: a bound source writes the x axis (unwn #225)");
+    ASSERT(vm.lookup("mover.position.y").number == 9.0,
+           "position.x: the y axis is untouched by an x-only binding (unwn #225)");
+    const JsonValue whole = vm.lookup("mover.position");
+    const JsonValue* wx = whole.find("x");
+    ASSERT(wx && wx->type == JsonValue::Type::Number && wx->number == 40.0,
+           "position.x: the compound-field read reflects the per-axis write (unwn #225)");
+    ASSERT(vm.lookup("mover.position.z").type == JsonValue::Type::Null,
+           "position.x: an unknown axis reads Null (tolerant miss, unwn #225)");
+}
+
 int main() {
     test_activation_and_list_retry();
     test_hard_case_1_debounce_latch();
@@ -844,6 +932,10 @@ int main() {
     test_map_frame_count_read_at_tick();
     test_map_misuse_no_sprite();
     test_ease_feeds_map();
+    test_cross_kind_param_to_numeric();
+    test_cross_kind_param_to_color();
+    test_cross_kind_num_to_text();
+    test_position_axis_binding();
     test_tolerance();
 
     printf("\n%d passed, %d failed\n", passes, failures);

@@ -8,6 +8,8 @@
 #include "slot.hpp"
 #include "widgets/sprite.hpp" // SpriteComponent::frameCount for the map value->frame slot (#220)
 #include "world.hpp"
+#include <cmath>   // std::llround — compound-axis writes (#225)
+#include <cstdio>  // std::snprintf — numberToDisplay (#232)
 #include <cstring>
 #include <functional>
 #include <string>
@@ -386,6 +388,17 @@ private:
         return std::string();
     }
 
+    /// @brief Render a raw number to its display String for a textual target
+    /// that is *not* a `param.` source (unwn #232): a numeric state var /
+    /// `entity.prop` bound to a Label `text`. `%.9g` matches the JSON writer's
+    /// float formatting (json.hpp), so an integer prints "3" not "3.0" and the
+    /// result is byte-identical across native/WASM (golden parity).
+    static std::string numberToDisplay(double n) {
+        char buf[32];
+        std::snprintf(buf, sizeof(buf), "%.9g", n);
+        return std::string(buf);
+    }
+
     /// @brief Compose resolve-raw + format into the pre-#218 formatted value: a
     /// String @ref JsonValue for a known key, Null for the tolerant miss. Used by
     /// @ref lookup so guards / `@`-refs read a param exactly as before the split.
@@ -449,6 +462,14 @@ private:
                 return out; // slot props are the bag, not reflected fields
             }
         }
+        // A dotted `prop` addresses a sub-axis of a compound field (unwn #225):
+        // `position.x`/`.y` as first-class bindable scalars. `base` is the
+        // reflected field name, `axis` the component to read; a bare name leaves
+        // `axis` empty (whole field).
+        const size_t dot = prop.find('.');
+        const std::string base = dot == std::string::npos ? prop : prop.substr(0, dot);
+        const std::string axis = dot == std::string::npos ? std::string() : prop.substr(dot + 1);
+
         bool found = false;
         TWorld::forEachComponentType([&](auto tag) {
             using C = typename decltype(tag)::type;
@@ -456,9 +477,17 @@ private:
                 if (found) return;
                 if (const C* c = world_->template get<C>(e)) {
                     ComponentTraits<C>::visitFields(*c, [&](const char* name, auto acc) {
-                        if (!found && prop == name) {
+                        if (found || base != name) return;
+                        if (axis.empty()) {
                             out = detail::fieldToJson(acc.get(), *assets_);
                             found = true;
+                        } else {
+                            double n;
+                            if (compoundAxisRead(acc.get(), axis, n)) {
+                                out.type = JsonValue::Type::Number;
+                                out.number = n;
+                                found = true;
+                            }
                         }
                     });
                 }
@@ -474,6 +503,13 @@ private:
                 return;
             }
         }
+        // Dotted `prop` writes a sub-axis of a compound field (unwn #225): the
+        // value chain hands a numeric write, which we place into the Point axis.
+        // `base`/`axis` split as in getEntityProp.
+        const size_t dot = prop.find('.');
+        const std::string base = dot == std::string::npos ? prop : prop.substr(0, dot);
+        const std::string axis = dot == std::string::npos ? std::string() : prop.substr(dot + 1);
+
         bool done = false;
         TWorld::forEachComponentType([&](auto tag) {
             using C = typename decltype(tag)::type;
@@ -481,16 +517,48 @@ private:
                 if (done) return;
                 if (C* c = world_->template get<C>(e)) {
                     ComponentTraits<C>::visitFields(*c, [&](const char* name, auto acc) {
-                        if (!done && prop == name) {
-                            using ValueT = typename decltype(acc)::value_type;
-                            ValueT tmp = acc.get();
+                        if (done || base != name) return;
+                        using ValueT = typename decltype(acc)::value_type;
+                        ValueT tmp = acc.get();
+                        if (axis.empty()) {
                             if (detail::readFieldValue(value, tmp, *assets_)) acc.set(tmp);
                             done = true;
+                        } else if (value.type == JsonValue::Type::Number &&
+                                   compoundAxisWrite(tmp, axis, value.number)) {
+                            acc.set(tmp);
+                            done = true;
                         }
+                        // A dotted axis on a non-compound field (or a bad axis)
+                        // is a tolerant miss: leave `done` false, field unchanged.
                     });
                 }
             }
         });
+    }
+
+    /// @brief Read one axis of a compound reflected field (unwn #225). Point
+    /// exposes `x`/`y`; any other type or axis misses (returns false), so a
+    /// dotted binding on a scalar field is a tolerant no-op. Scoped to Point —
+    /// position is the only per-axis-bindable compound the editor offers.
+    template<typename T>
+    static bool compoundAxisRead(const T& v, const std::string& axis, double& out) {
+        if constexpr (std::is_same_v<T, Point>) {
+            if (axis == "x") { out = v.x; return true; }
+            if (axis == "y") { out = v.y; return true; }
+        }
+        return false;
+    }
+
+    /// @brief Write one axis of a compound reflected field (unwn #225), rounding
+    /// to the axis's integer type. Mirrors @ref compoundAxisRead; false on a
+    /// type/axis miss so the caller leaves the field untouched.
+    template<typename T>
+    static bool compoundAxisWrite(T& v, const std::string& axis, double n) {
+        if constexpr (std::is_same_v<T, Point>) {
+            if (axis == "x") { v.x = static_cast<int16_t>(std::llround(n)); return true; }
+            if (axis == "y") { v.y = static_cast<int16_t>(std::llround(n)); return true; }
+        }
+        return false;
     }
 
     void setPath(const std::string& path, const JsonValue& value) {
@@ -681,13 +749,21 @@ private:
             return;
         }
 
-        // format terminal: a bare `param.` binding (no ease/map) renders the
-        // display String exactly as pre-#218; an eased/mapped or non-param value
-        // writes the raw Number.
+        // format terminal: the **destination field kind** decides String vs
+        // Number (unwn #232) — not whether the source was a param. A textual
+        // target (Label `text`) formats to a display String (a `param.` source
+        // through the formatter, a numeric state var / entity.prop through its
+        // %.9g rendering); every numeric target (color/int/enum/float/gauge
+        // value) takes the raw Number, which the field accepts. Keying the
+        // decision on `isParam` instead wrote a String into numeric fields,
+        // which readFieldValue rejects → the property kept its authored default.
+        // An eased value already stays Number (formatting an in-flight tween
+        // into text is out of scope; preserves the pre-#232 eased behavior).
         JsonValue out;
-        if (isParam && !hasEase) {
+        const bool targetIsString = getEntityProp(e, prop).type == JsonValue::Type::String;
+        if (targetIsString && !hasEase) {
             out.type = JsonValue::Type::String;
-            out.str = formatParam(key, format, number);
+            out.str = isParam ? formatParam(key, format, number) : numberToDisplay(value);
         } else {
             out.type = JsonValue::Type::Number;
             out.number = value;
