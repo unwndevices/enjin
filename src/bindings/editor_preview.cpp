@@ -22,6 +22,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <map>
+#include <string>
+#include <vector>
 
 // Configurable canvas dimensions — set via CMake compile definitions,
 // fall back to 128x128 for standalone compilation.
@@ -175,6 +178,24 @@ void previewInjectInput(int buttons, float ax0, float ay0) {
 
 ScenePlayer g_scenePlayer;
 
+// Host-side asset rendering (unwn #242, ADR-0013): an in-memory content-addressed
+// byte source, the WASM editor's per-target `AssetSource` (the firmware's is
+// LittleFS, the native preview's is a local directory). The editor feeds authored
+// `.njn` bytes into `store` over the embind surface below; the player then decodes
+// them through the *same* loadManifestAssets path the device uses — no JS decoder —
+// so an authored asset renders in the preview byte-identically to hardware, with
+// no device round-trip.
+struct MemAssetSource : AssetSource {
+    std::map<std::string, std::vector<uint8_t>> store;
+    bool read(const std::string& hash, std::vector<uint8_t>& out) override {
+        auto it = store.find(hash);
+        if (it == store.end()) return false;
+        out = it->second;
+        return true;
+    }
+};
+MemAssetSource g_assetSource;
+
 // The Lua-free WASM build never runs the Lua binding path that registers the
 // compiled-in "default8" font (bindings.cpp:586), so register it directly on the
 // player's asset registry here (unwn #205). This populates schema.fonts for the
@@ -182,8 +203,26 @@ ScenePlayer g_scenePlayer;
 // null-font fallback. Idempotent: registerFont refuses a duplicate name, and the
 // borrowed font survives a scene reload (only owned bitmaps clear on teardown),
 // so calling this before schema export and before every load is harmless.
+//
+// It also (re)installs the in-memory asset source (unwn #242) — idempotent, the
+// player just stores the borrowed pointer — so manifest assets resolve at the
+// next scene.activate. Runs before every load, so the wiring can never be missed.
 void ensureCompiledInAssets() {
     g_scenePlayer.assets().registerFont("default8", &defaultFont8pt7b);
+    g_scenePlayer.setAssetSource(&g_assetSource);
+}
+
+// -- Host asset ingest (unwn #242) --
+//
+// The editor mirrors its in-memory authored-asset map into the source before each
+// load: assetClear() then one assetPut(hash, bytes) per referenced asset. The
+// store is content-addressed, so a lingering entry is never rendered wrong; the
+// clear just keeps it bounded. Bytes arrive as a JS Uint8Array (the exact `.njn`
+// payload the device push sends), copied verbatim into the store.
+void assetClear() { g_assetSource.store.clear(); }
+
+void assetPut(std::string hash, val bytes) {
+    g_assetSource.store[hash] = convertJSArrayToNumberVector<uint8_t>(bytes);
 }
 
 bool sceneLoad(std::string jsonText) {
@@ -298,6 +337,8 @@ EMSCRIPTEN_BINDINGS(enjin2_editor_preview) {
 
     function("loadScene", &sceneLoad);
     function("sceneActive", &sceneActive);
+    function("assetClear", &assetClear);
+    function("assetPut", &assetPut);
     function("saveScene", &sceneSave);
     function("getSceneSchema", &sceneSchema);
     function("sceneDispatch", &sceneDispatch);
