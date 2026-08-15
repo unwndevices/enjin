@@ -265,10 +265,11 @@ private:
     }
 
     // Read the scene's asset manifest and register each resident asset as an
-    // owned bitmap under its content hash. Missing assets and non-v2/malformed
-    // bytes are skipped (the icon then resolves to nothing, as before a load).
-    // Palette index 15 (the .njn v2 transparent marker) is remapped to the icon
-    // blit-skip sentinel, unifying the three transparency notions on one rule.
+    // owned bitmap under its content hash. Missing assets and v1/malformed bytes
+    // are skipped (the icon then resolves to nothing, as before a load). A v3
+    // 1-bit asset expands each lit bit to its header lit shade; v2 and v3 4-bit
+    // unpack nibbles. Palette index 15 (the .njn transparent marker) is remapped
+    // to the icon blit-skip sentinel, unifying the transparency notions on one rule.
     void loadManifestAssets() {
         if (!assetSource_ || doc_.manifest.type != JsonValue::Type::Array) return;
         const std::vector<AssetManifestEntry> entries = parseAssetManifest(doc_.manifest);
@@ -278,10 +279,14 @@ private:
             if (!assetSource_->read(e.hash, bytes)) continue;
             NjnHeader h{};
             if (!parseNjnHeader(bytes.data(), bytes.size(), h)) continue;
-            if (h.version != NJN_VERSION_V2) continue;
+            if (h.version != NJN_VERSION_V2 && h.version != NJN_VERSION_V3) continue;
             const uint32_t px = njnPixelCount(h);
             std::vector<uint8_t> pixels(px);
-            njnUnpackNibbles(bytes.data() + sizeof(NjnHeader), px, pixels.data());
+            if (njnBitDepth(h) == 1)
+                njnUnpack1bpp(bytes.data() + sizeof(NjnHeader), px, njnLitShade(h),
+                              pixels.data());
+            else
+                njnUnpackNibbles(bytes.data() + sizeof(NjnHeader), px, pixels.data());
             for (uint8_t& p : pixels)
                 if (njnIsTransparent(p)) p = IconComponent::kTransparent;
             const uint16_t w = e.w ? e.w : static_cast<uint16_t>(h.cellW * h.cols);

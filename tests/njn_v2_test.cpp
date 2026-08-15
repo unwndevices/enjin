@@ -136,6 +136,111 @@ static void test_header_validation() {
     ASSERT(!parseNjnHeader(bad, sizeof(bad), hb), "njn: bad magic rejected");
 }
 
+// --- v3 (unwn #241): per-asset bit depth ------------------------------------
+
+// 1-bit pack is one bit per pixel, LSB-first: transparent -> 0, any other -> 1.
+// {lit, transparent, lit, lit} => bits 1,0,1,1 => 0b1101 = 0x0D.
+static void test_v3_pack1_bit_order() {
+    const uint8_t idx[4] = {14, NJN_TRANSPARENT_INDEX, 7, 3};
+    uint8_t packed[1] = {0xFF};
+    size_t n = njnPack1bpp(idx, 4, packed);
+    ASSERT(n == 1, "njn v3: four 1-bit pixels pack into one byte");
+    ASSERT(packed[0] == 0x0D, "njn v3: LSB-first, transparent->0 else->1 (0x0D)");
+}
+
+// A lit bit expands to the chosen shade; a clear bit to transparent(15). Any
+// non-transparent source index becomes lit — the per-pixel shade is dropped.
+static void test_v3_unpack1_lit_shade() {
+    const uint8_t idx[8] = {3, 14, NJN_TRANSPARENT_INDEX, 0, 9, NJN_TRANSPARENT_INDEX, 1, 2};
+    uint8_t packed[1] = {0};
+    njnPack1bpp(idx, 8, packed);
+    uint8_t out[8] = {0};
+    njnUnpack1bpp(packed, 8, 10, out);
+    const uint8_t want[8] = {10, 10, 15, 10, 10, 15, 10, 10};
+    ASSERT(std::memcmp(out, want, 8) == 0, "njn v3: 1 -> litShade, 0 -> transparent");
+}
+
+// 1-bit needs ceil(n/8) bytes; padding bits in the final byte are ignored.
+static void test_v3_packed1_size_and_padding() {
+    ASSERT(njnPacked1ByteSize(1) == 1 && njnPacked1ByteSize(8) == 1 &&
+               njnPacked1ByteSize(9) == 2 && njnPacked1ByteSize(0) == 0,
+           "njn v3: 1-bit packed size is ceil(n/8)");
+    const uint8_t idx[3] = {14, NJN_TRANSPARENT_INDEX, 14}; // bits 1,0,1 -> 0x05
+    uint8_t packed[1] = {0};
+    njnPack1bpp(idx, 3, packed);
+    ASSERT(packed[0] == 0x05, "njn v3: trailing pad bits are zero");
+    uint8_t out[3] = {0};
+    njnUnpack1bpp(packed, 3, 14, out);
+    const uint8_t want[3] = {14, 15, 14};
+    ASSERT(std::memcmp(out, want, 3) == 0, "njn v3: odd 1-bit count round-trips");
+}
+
+// A full v3 1-bit file: encode -> parse -> unpack recovers the classification,
+// with bitDepth and litShade read back from the reserved byte's two nibbles.
+static void test_v3_onebit_file_roundtrip() {
+    uint8_t pixels[8] = {14, 15, 14, 14, 15, 15, 14, 15};
+    uint8_t file[8 + 1] = {0}; // header + ceil(8/8)=1 byte
+    size_t fileSize = njnEncodeV3(4, 2, 1, 1, pixels, 8, 1, 10, file, sizeof(file));
+    ASSERT(fileSize == 8 + 1, "njn v3: 8-pixel 1-bit file is header + 1 byte");
+
+    NjnHeader h{};
+    ASSERT(parseNjnHeader(file, fileSize, h), "njn v3: 1-bit header parses");
+    ASSERT(h.version == 3, "njn v3: version field is 3");
+    ASSERT(njnBitDepth(h) == 1, "njn v3: bitDepth read from reserved low nibble");
+    ASSERT(njnLitShade(h) == 10, "njn v3: litShade read from reserved high nibble");
+
+    uint8_t out[8] = {0};
+    njnUnpack1bpp(file + sizeof(NjnHeader), 8, njnLitShade(h), out);
+    const uint8_t want[8] = {10, 15, 10, 10, 15, 15, 10, 15};
+    ASSERT(std::memcmp(out, want, 8) == 0, "njn v3: 1-bit file round-trips to lit/transparent");
+}
+
+// bitDepth 4 at v3 is byte-for-byte the v2 nibble packing (only version + the
+// reserved byte differ), so the nibble decode path is shared.
+static void test_v3_fourbit_matches_v2_packing() {
+    uint8_t pixels[8] = {0, 1, 2, 3, 15, 14, 8, 15};
+    uint8_t v3[8 + 4] = {0};
+    size_t n3 = njnEncodeV3(4, 2, 1, 1, pixels, 8, 4, 0, v3, sizeof(v3));
+    uint8_t v2[8 + 4] = {0};
+    size_t n2 = njnEncodeV2(4, 2, 1, 1, pixels, 8, v2, sizeof(v2));
+    ASSERT(n3 == n2, "njn v3: 4-bit file is the same size as v2");
+    ASSERT(std::memcmp(v3 + 8, v2 + 8, 4) == 0, "njn v3: 4-bit pixel bytes match v2 packing");
+
+    NjnHeader h{};
+    ASSERT(parseNjnHeader(v3, n3, h) && njnBitDepth(h) == 4,
+           "njn v3: 4-bit header parses, bitDepth 4");
+    uint8_t out[8] = {0};
+    njnUnpackNibbles(v3 + sizeof(NjnHeader), 8, out);
+    ASSERT(std::memcmp(pixels, out, 8) == 0, "njn v3: 4-bit pixels round-trip via nibble path");
+}
+
+// v3 header validation: a bad bitDepth nibble is rejected; a 1-bit buffer too
+// short for its packed bits is rejected.
+static void test_v3_header_validation() {
+    // bitDepth 2 (neither 1 nor 4) in the reserved low nibble.
+    uint8_t badDepth[8 + 1] = {'N', 'J', 3, 4, 2, 1, 1, 0x02, 0};
+    NjnHeader hb{};
+    ASSERT(!parseNjnHeader(badDepth, sizeof(badDepth), hb),
+           "njn v3: bitDepth other than {1,4} rejected");
+
+    // 1-bit claiming 8 pixels (1 byte) but only the header present.
+    uint8_t truncated[8] = {'N', 'J', 3, 4, 2, 1, 1, 0x01};
+    NjnHeader ht{};
+    ASSERT(!parseNjnHeader(truncated, sizeof(truncated), ht),
+           "njn v3: 1-bit buffer too short for its bits is rejected");
+}
+
+// A 1-bit litShade of 15 is the transparent sentinel and must be refused — else
+// every lit pixel would decode to transparent (an invisible asset).
+static void test_v3_rejects_transparent_lit_shade() {
+    uint8_t pixels[2] = {14, 14};
+    uint8_t out[8 + 1] = {0};
+    size_t n = njnEncodeV3(2, 1, 1, 1, pixels, 2, 1, 15, out, sizeof(out));
+    ASSERT(n == 0, "njn v3: litShade 15 (transparent) is rejected");
+    size_t ok = njnEncodeV3(2, 1, 1, 1, pixels, 2, 1, 14, out, sizeof(out));
+    ASSERT(ok == 8 + 1, "njn v3: litShade 14 (ceiling) is accepted");
+}
+
 int main() {
     test_nibble_order_matches_canvas4();
     test_pack_unpack_roundtrip_all_indices();
@@ -144,6 +249,13 @@ int main() {
     test_static_bitmap_file_roundtrip();
     test_sheet_file_roundtrip();
     test_header_validation();
+    test_v3_pack1_bit_order();
+    test_v3_unpack1_lit_shade();
+    test_v3_packed1_size_and_padding();
+    test_v3_onebit_file_roundtrip();
+    test_v3_fourbit_matches_v2_packing();
+    test_v3_header_validation();
+    test_v3_rejects_transparent_lit_shade();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
