@@ -254,15 +254,20 @@ public:
      */
     void update(float dt) override {
         if (!world_ || !canvas_) return;
-        const float dtMs = dt * 1000.0f;
+        for (Entity e : world_->template query<ListComponent, PositionComponent, SizeComponent>())
+            drawEntity(e, dt);
+    }
 
-        for (Entity e : world_->template query<ListComponent, PositionComponent, SizeComponent>()) {
-            auto* list = world_->template get<ListComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            auto* size = world_->template get<SizeComponent>(e);
-            if (!list || !pos || !size) continue;
-            draw(*list, *pos, *size, dtMs);
-        }
+    /// @brief Advance + draw one list entity (the per-entity seam the scene
+    /// player's z-sorted pass drives, unwn #243). Visited once a frame, so the
+    /// marquee/smooth-scroll state still advances exactly once per @p dt.
+    void drawEntity(Entity e, float dt) {
+        if (!world_ || !canvas_) return;
+        auto* list = world_->template get<ListComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        auto* size = world_->template get<SizeComponent>(e);
+        if (!list || !pos || !size) return;
+        draw(*list, *pos, *size, dt * 1000.0f);
     }
 
     /// @brief Lists render on top of scene content but below overlays.

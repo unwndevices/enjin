@@ -147,14 +147,20 @@ public:
      */
     void update(float dt) override {
         if (!world_ || !canvas_) return;
-        const float dtMs = dt * 1000.0f;
-        for (Entity e : world_->template query<PopUpComponent, PositionComponent>()) {
-            auto* popup = world_->template get<PopUpComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            if (!popup || !pos) continue;
-            popup->advance(dtMs);
-            if (popup->isVisible()) draw(*popup, *pos);
-        }
+        for (Entity e : world_->template query<PopUpComponent, PositionComponent>())
+            drawEntity(e, dt);
+    }
+
+    /// @brief Advance the clock + draw one popup entity (the per-entity seam the
+    /// scene player's z-sorted pass drives, unwn #243). Visited once a frame, so
+    /// the auto-hide countdown still advances exactly once per @p dt.
+    void drawEntity(Entity e, float dt) {
+        if (!world_ || !canvas_) return;
+        auto* popup = world_->template get<PopUpComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        if (!popup || !pos) return;
+        popup->advance(dt * 1000.0f);
+        if (popup->isVisible()) draw(*popup, *pos);
     }
 
     /// @brief Popups are the topmost chrome.

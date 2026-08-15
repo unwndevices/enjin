@@ -42,14 +42,16 @@ static void test_schema_lists_components_with_kinds_and_defaults() {
 
     const JsonValue* components = root.find("components");
     ASSERT(components && components->type == JsonValue::Type::Array &&
-               components->array.size() == 14,
-           "schema: all 14 reflected world components present");
+               components->array.size() == 15,
+           "schema: all 15 reflected world components present");
 
     // Pack order, matching forEachComponentName (ui_factory_test pins the set).
+    // `z` is the additive per-entity draw-order component (unwn #243), appended
+    // to the world pack so it lands last.
     const char* expected[] = {"id",    "position", "size",    "label",   "icon",
                               "sprite", "gauge",   "shape",   "bar",     "overlay",
-                              "popup",  "list",    "slot",    "bindings"};
-    bool orderOk = components->array.size() == 14;
+                              "popup",  "list",    "slot",    "bindings", "z"};
+    bool orderOk = components->array.size() == 15;
     for (size_t i = 0; orderOk && i < components->array.size(); ++i) {
         const JsonValue* name = components->array[i].find("name");
         orderOk = name && name->str == expected[i];

@@ -21,7 +21,8 @@
  * aggregate). Allocated so far (append-only):
  *
  *   1 position · 2 size · 3 theme · 4 label · 5 icon · 6 gauge ·
- *   7 overlay · 8 popup · 9 list · 10 id · 11 slot · 12 bindings
+ *   7 overlay · 8 popup · 9 list · 10 id · 11 slot · 12 bindings ·
+ *   13 sprite · 14 shape · 15 bar · 16 z
  *
  * (The runtime counter in `Component<T>::getStaticComponentID()` is link-order
  * dependent and stays a process-local detail; persistent identity lives here.)

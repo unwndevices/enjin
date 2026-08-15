@@ -184,13 +184,20 @@ public:
      */
     void update(float dt) override {
         if (!world_ || !canvas_) return;
-        for (Entity e : world_->template query<SpriteComponent, PositionComponent>()) {
-            auto* sprite = world_->template get<SpriteComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            if (!sprite || !pos) continue;
-            animate(*sprite, dt);
-            draw(*sprite, *pos);
-        }
+        for (Entity e : world_->template query<SpriteComponent, PositionComponent>())
+            drawEntity(e, dt);
+    }
+
+    /// @brief Advance + blit one sprite entity (the per-entity seam the scene
+    /// player's z-sorted pass drives, unwn #243). Each sprite is visited once a
+    /// frame, so its animation still advances exactly once per @p dt.
+    void drawEntity(Entity e, float dt) {
+        if (!world_ || !canvas_) return;
+        auto* sprite = world_->template get<SpriteComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        if (!sprite || !pos) return;
+        animate(*sprite, dt);
+        draw(*sprite, *pos);
     }
 
     /// @brief Sprites render alongside icons/labels, above scene content.

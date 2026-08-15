@@ -33,10 +33,12 @@
 #include "widgets/sprite.hpp"
 #include "world.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace enjin2 {
 
@@ -54,7 +56,7 @@ public:
     using World = enjin2::World<kEntityCapacity, IdComponent, PositionComponent, SizeComponent,
                                 LabelComponent, IconComponent, SpriteComponent, GaugeComponent,
                                 ShapeComponent, BarComponent, OverlayComponent, PopUpComponent,
-                                ListComponent, SlotComponent, BindingsComponent>;
+                                ListComponent, SlotComponent, BindingsComponent, ZComponent>;
     // The ratified authoring surface: the firmware's 127x127 logical region,
     // packed rows at (127+1)/2 = 64 bytes — the exact bytes the goldens hold.
     using Canvas = Canvas4<127, 127>;
@@ -180,27 +182,86 @@ public:
     }
 
 private:
-    /// Clear the canvas and run every widget system with animation delta
-    /// @p dtMs (0 = repaint current state without advancing sprite/overlay
-    /// animation). Shared by @ref stepFrame and @ref renderFrame.
+    /// One widget system's entry in the merged z-sorted draw list (unwn #243).
+    enum class Layer : uint8_t {
+        Overlay, Shape, Label, Icon, Sprite, List, Gauge, Bar, Popup
+    };
+
+    /// A single entity to draw, tagged with its resolved draw order and the
+    /// widget system that draws it. Built fresh each frame from the world.
+    struct DrawItem {
+        int z;         ///< Resolved draw order (ZComponent, else system default)
+        Layer layer;   ///< Which widget system draws @ref entity
+        Entity entity; ///< The entity to draw
+    };
+
+    /// Clear the canvas and render one z-sorted pass across every widget system
+    /// with animation delta @p dtMs (0 = repaint current state without advancing
+    /// sprite/popup/list animation). Shared by @ref stepFrame and @ref renderFrame.
+    ///
+    /// Replaces the historical hardcoded nine-system sequence (unwn #243,
+    /// ADR-0014): each entity's draw order is its optional @ref ZComponent, or
+    /// — with none — its widget system's legacy priority. Entities are collected
+    /// in the legacy system sequence and stable-sorted by `z`, so a scene that
+    /// authors no `z` sorts into the exact historical order and renders
+    /// byte-identically. Authoring a `z` (e.g. lifting an `overlay` above the
+    /// backdrop it dims) is the one thing that reorders the pass.
     void renderInto(int dtMs) {
         canvas_.clear(Pixel4(0));
-        const float dt = dtMs / 1000.0f;
-        rig_->overlaySys.update(dt);
-        rig_->shapeSys.update(dt);
-        rig_->labelSys.update(dt);
-        rig_->iconSys.update(dt);
-        rig_->spriteSys.update(dt);
-        rig_->listSys.update(dt);
-        rig_->gaugeSys.update(dt);
-        rig_->barSys.update(dt);
-        rig_->popupSys.update(dt);
+        const float dt = static_cast<float>(dtMs) / 1000.0f;
+        World& w = *world_;
+
+        // Each system's legacy priority is the default `z` for its entities, so
+        // the collected order below (system sequence, then world order within a
+        // system) is the historical draw order once stable-sorted.
+        drawItems_.clear();
+        auto add = [&](Layer layer, int defaultZ, Entity e) {
+            const ZComponent* z = w.get<ZComponent>(e);
+            drawItems_.push_back(DrawItem{z ? static_cast<int>(z->z) : defaultZ, layer, e});
+        };
+        for (Entity e : w.query<OverlayComponent>())
+            add(Layer::Overlay, rig_->overlaySys.getPriority(), e);
+        for (Entity e : w.query<ShapeComponent, PositionComponent, SizeComponent>())
+            add(Layer::Shape, rig_->shapeSys.getPriority(), e);
+        for (Entity e : w.query<LabelComponent, PositionComponent, SizeComponent>())
+            add(Layer::Label, rig_->labelSys.getPriority(), e);
+        for (Entity e : w.query<IconComponent, PositionComponent>())
+            add(Layer::Icon, rig_->iconSys.getPriority(), e);
+        for (Entity e : w.query<SpriteComponent, PositionComponent>())
+            add(Layer::Sprite, rig_->spriteSys.getPriority(), e);
+        for (Entity e : w.query<ListComponent, PositionComponent, SizeComponent>())
+            add(Layer::List, rig_->listSys.getPriority(), e);
+        for (Entity e : w.query<GaugeComponent, PositionComponent>())
+            add(Layer::Gauge, rig_->gaugeSys.getPriority(), e);
+        for (Entity e : w.query<BarComponent, PositionComponent>())
+            add(Layer::Bar, rig_->barSys.getPriority(), e);
+        for (Entity e : w.query<PopUpComponent, PositionComponent>())
+            add(Layer::Popup, rig_->popupSys.getPriority(), e);
+
+        // Stable: equal-`z` entities keep insertion order — the legacy system
+        // sequence, then world order within a system.
+        std::stable_sort(drawItems_.begin(), drawItems_.end(),
+                         [](const DrawItem& a, const DrawItem& b) { return a.z < b.z; });
+
+        for (const DrawItem& item : drawItems_) {
+            switch (item.layer) {
+            case Layer::Overlay: rig_->overlaySys.drawEntity(item.entity, dt); break;
+            case Layer::Shape:   rig_->shapeSys.drawEntity(item.entity, dt); break;
+            case Layer::Label:   rig_->labelSys.drawEntity(item.entity, dt); break;
+            case Layer::Icon:    rig_->iconSys.drawEntity(item.entity, dt); break;
+            case Layer::Sprite:  rig_->spriteSys.drawEntity(item.entity, dt); break;
+            case Layer::List:    rig_->listSys.drawEntity(item.entity, dt); break;
+            case Layer::Gauge:   rig_->gaugeSys.drawEntity(item.entity, dt); break;
+            case Layer::Bar:     rig_->barSys.drawEntity(item.entity, dt); break;
+            case Layer::Popup:   rig_->popupSys.drawEntity(item.entity, dt); break;
+            }
+        }
     }
 
     // Widget systems in ascending priority order (overlay 800 < shape 850 <
     // label/icon/list 900 < gauge 950 < bar 955 < popup 1000) — the same rig as the
-    // engine tests. Shapes draw as decorative backdrop beneath content; bars
-    // draw with the gauges as level indicators above it.
+    // engine tests. Those priorities are now the *default* per-entity `z` for the
+    // merged z-sorted pass (unwn #243); an entity's own ZComponent overrides it.
     struct Rig {
         OverlaySystem<World, Canvas> overlaySys;
         ShapeSystem<World, Canvas> shapeSys;
@@ -321,6 +382,7 @@ private:
     std::unique_ptr<Rig> rig_;
     std::unique_ptr<SceneVM<World>> vm_;
     Canvas canvas_;
+    std::vector<DrawItem> drawItems_; ///< Merged z-sorted draw list, reused each frame (unwn #243)
 };
 
 } // namespace enjin2

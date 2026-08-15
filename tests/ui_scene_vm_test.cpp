@@ -448,6 +448,102 @@ static void test_var_namespace_and_setvar() {
            "var.: a bare token still resolves the same bag (guard-atom shorthand)");
 }
 
+// A one-gauge scene whose float `value` is both bound to a live var and the
+// target of an `enter` animation track — the track-vs-binding precedence case
+// (unwn #243, ADR-0014). The binding would hold 0.5; the track ramps 0 -> 1.
+static const char* const kTrackBindScene = R"json({
+  "version": 2,
+  "scene": "track_bind",
+  "variables": [ { "name": "live", "type": "float", "value": 0.5 } ],
+  "animations": {
+    "enter": { "tracks": [ { "target": "meter.value", "from": 0, "to": 1, "ms": 100 } ] }
+  },
+  "on": { "go": [ { "anim": ["play", "enter"] } ] },
+  "entities": [
+    { "components": {
+        "id": { "id": "meter" },
+        "gauge": { "diameter": 10 },
+        "bindings": { "bindings": { "value": "live" } } } }
+  ]
+})json";
+
+static bool near(double a, double b) { return std::fabs(a - b) < 0.01; }
+
+static void test_track_wins_over_binding_then_settles() {
+    // ADR-0014: while a track is live on (entity, prop), applyBindings must not
+    // write that prop; when the track completes, the binding resumes the *next*
+    // tick — enter-animate-then-settle.
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    ASSERT(readSceneDocJson(kTrackBindScene, doc, world, assets),
+           "track-vs-binding: fixture loads");
+    VM vm(&doc, &world, &assets);
+
+    // No track yet: the binding owns the property.
+    ASSERT(near(vm.lookup("meter.value").number, 0.5),
+           "track-vs-binding: binding writes the bound value when no track is live");
+
+    // Play the track. `anim play` snaps to `from` (0); applyBindings in the same
+    // dispatch must leave it there, not stamp the bound 0.5 back over it.
+    vm.dispatch("go");
+    ASSERT(vm.animPlaying("enter"), "track-vs-binding: enter track playing");
+    ASSERT(near(vm.lookup("meter.value").number, 0.0),
+           "track-vs-binding: binding is suppressed the moment the track arms (holds from=0)");
+
+    // Mid-flight: value follows the track (linear 0->1 at t=0.2), never the 0.5 binding.
+    vm.tick(20);
+    ASSERT(near(vm.lookup("meter.value").number, 0.2),
+           "track-vs-binding: mid-track the track wins over the binding");
+
+    // Completing tick: the track lands on `to` (1.0) and is still suppressing the
+    // binding, so 1.0 stands for its final frame.
+    vm.tick(200);
+    ASSERT(!vm.animPlaying("enter"), "track-vs-binding: track finished");
+    ASSERT(near(vm.lookup("meter.value").number, 1.0),
+           "track-vs-binding: the track's final value stands on the completing tick");
+
+    // Next tick: the track is gone, the binding resumes and settles to 0.5.
+    vm.tick(0);
+    ASSERT(near(vm.lookup("meter.value").number, 0.5),
+           "track-vs-binding: the binding resumes the tick after the track completes");
+}
+
+// Same shape as kTrackBindScene but the track's from/to are non-numeric — a
+// broken animation that drives nothing and must not claim the bound property.
+static const char* const kMalformedTrackScene = R"json({
+  "version": 2,
+  "scene": "bad_track",
+  "variables": [ { "name": "live", "type": "float", "value": 0.5 } ],
+  "animations": {
+    "enter": { "tracks": [ { "target": "meter.value", "from": "x", "to": "y", "ms": 100 } ] }
+  },
+  "on": { "go": [ { "anim": ["play", "enter"] } ] },
+  "entities": [
+    { "components": {
+        "id": { "id": "meter" },
+        "gauge": { "diameter": 10 },
+        "bindings": { "bindings": { "value": "live" } } } }
+  ]
+})json";
+
+static void test_malformed_track_does_not_suppress_binding() {
+    // A track whose from/to aren't numbers drives no value, so it must not
+    // suppress the binding on its target — a broken animation can't silently pin
+    // a bound property to 0 (unwn #243 review).
+    SceneDoc doc;
+    SceneVmWorld world;
+    AssetRegistry assets;
+    readSceneDocJson(kMalformedTrackScene, doc, world, assets);
+    VM vm(&doc, &world, &assets);
+    vm.dispatch("go");
+    ASSERT(near(vm.lookup("meter.value").number, 0.5),
+           "track-vs-binding: a non-numeric track never suppresses the binding");
+    vm.tick(20);
+    ASSERT(near(vm.lookup("meter.value").number, 0.5),
+           "track-vs-binding: binding still wins while the malformed track 'plays'");
+}
+
 static void test_condition_form_dispatch() {
     // A binding carrying `op` is the condition form (unwn #213): a numeric
     // comparison of the resolved `from` (state var `level` = 3) against the
@@ -942,6 +1038,8 @@ int main() {
     test_param_binding_shapes();
     test_value_chain_reserved_slots();
     test_var_namespace_and_setvar();
+    test_track_wins_over_binding_then_settles();
+    test_malformed_track_does_not_suppress_binding();
     test_condition_form_dispatch();
     test_condition_operators();
     test_condition_else_omitted();

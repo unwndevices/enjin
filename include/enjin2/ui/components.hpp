@@ -324,4 +324,32 @@ struct InputComponent : public Component<InputComponent> {
 // widgets/shape.hpp). RenderSystem now draws each RenderComponent as a filled
 // rectangle over its Size box.
 
+/**
+ * @brief Optional per-entity draw order for the scene render pass (unwn #243)
+ *
+ * Authorable cross-widget layering (ADR-0014): the scene player renders one
+ * z-sorted pass across every widget system instead of a hardcoded system
+ * sequence, so an entity's stacking is its own `z`, not its widget kind. The
+ * component is *optional* — an entity without it defaults to its widget
+ * system's legacy priority (overlay 800 < shape 850 < label/icon/sprite/list
+ * 900 < gauge 950 < bar 955 < popup 1000), so every pre-#243 scene renders
+ * byte-identically. Attaching a `z` overrides that default, letting (for
+ * example) an `overlay` sit mid-stack and dim only the content drawn below it.
+ *
+ * Additive and reflected, so it serializes through the same generic path as
+ * every other component and forces no scene-format version bump.
+ */
+struct ZComponent : public Component<ZComponent> {
+    int16_t z = 0; ///< Draw order; higher draws later (on top)
+
+    /// @brief Construct with an initial draw order.
+    ZComponent(int16_t z_ = 0) : z(z_) {}
+};
+
+/// @brief Serializable properties of @ref ZComponent (see reflect.hpp).
+#define ENJIN2_Z_COMPONENT_FIELDS(FIELD, PROP) \
+    FIELD(z)
+
+ENJIN2_REFLECT_COMPONENT(ZComponent, 16, "z", ENJIN2_Z_COMPONENT_FIELDS)
+
 } // namespace enjin2

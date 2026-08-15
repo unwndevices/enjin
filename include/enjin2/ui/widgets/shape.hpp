@@ -102,15 +102,21 @@ public:
      * @param dt Time since last update in seconds (unused; shapes are static)
      */
     void update(float dt) override {
-        (void)dt;
         if (!world_ || !canvas_) return;
-        for (Entity e : world_->template query<ShapeComponent, PositionComponent, SizeComponent>()) {
-            auto* shape = world_->template get<ShapeComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            auto* size = world_->template get<SizeComponent>(e);
-            if (!shape || !pos || !size) continue;
-            draw(*shape, pos->renderOrigin(size->size), size->size);
-        }
+        for (Entity e : world_->template query<ShapeComponent, PositionComponent, SizeComponent>())
+            drawEntity(e, dt);
+    }
+
+    /// @brief Draw one shape entity (the per-entity seam the scene player's
+    /// z-sorted pass drives, unwn #243).
+    void drawEntity(Entity e, float dt) {
+        (void)dt; // shapes are static
+        if (!world_ || !canvas_) return;
+        auto* shape = world_->template get<ShapeComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        auto* size = world_->template get<SizeComponent>(e);
+        if (!shape || !pos || !size) return;
+        draw(*shape, pos->renderOrigin(size->size), size->size);
     }
 
     /// @brief Shapes are decorative backdrop, drawn beneath labels/icons.

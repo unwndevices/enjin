@@ -18,6 +18,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 using namespace enjin2;
 
@@ -156,7 +157,103 @@ static void test_pre_v2_version_is_rejected() {
     ASSERT(p.active(), "version: player active after the v2 load");
 }
 
+// --- Authorable layering: per-entity z + single z-sorted pass (unwn #243) ---
+
+// Two filled rects stacked on the same 20x20 box, colors 5 then 10. `%Z1%` is
+// spliced into the first shape's entity to give it an explicit draw order.
+static const char* const kStackScene = R"json({
+  "version": 2, "scene": "stack",
+  "entities": [
+    { "components": { %Z1%
+        "shape": { "type": 0, "filled": true, "color": 5 },
+        "position": { "position": { "x": 10, "y": 10 } },
+        "size": { "size": { "width": 20, "height": 20 } } } },
+    { "components": {
+        "shape": { "type": 0, "filled": true, "color": 10 },
+        "position": { "position": { "x": 10, "y": 10 } },
+        "size": { "size": { "width": 20, "height": 20 } } } }
+  ]
+})json";
+
+static std::string stackScene(const char* z1) {
+    std::string s = kStackScene;
+    s.replace(s.find("%Z1%"), 4, z1);
+    return s;
+}
+
+static void test_z_order_reorders_the_pass() {
+    // Default z = legacy system order, ties broken by file order: the second
+    // shape draws last, so the overlap reads its color (10).
+    ScenePlayer def;
+    ASSERT(def.loadText(stackScene("")), "z: default-order scene loads");
+    def.stepFrame();
+    ASSERT(def.canvas()->getPixel(15, 15) == 10,
+           "z: with no authored z, later-in-file wins (byte-compatible order)");
+
+    // Lift the first shape's z above the second's default (850): it now draws
+    // last and wins the same pixel — a real per-entity, cross-default reorder.
+    ScenePlayer lifted;
+    ASSERT(lifted.loadText(stackScene(R"("z": { "z": 900 },)")),
+           "z: z-authored scene loads");
+    lifted.stepFrame();
+    ASSERT(lifted.canvas()->getPixel(15, 15) == 5,
+           "z: an authored z reorders the merged pass (first shape now on top)");
+}
+
+// A bright backdrop, a full-canvas dim, and a separate chrome patch. `%OZ%` and
+// `%CZ%` splice draw orders onto the overlay and the chrome so the same three
+// entities test both the legacy run-first no-op and the authored mid-z dim.
+static const char* const kDimScene = R"json({
+  "version": 2, "scene": "dim",
+  "entities": [
+    { "components": {
+        "shape": { "type": 0, "filled": true, "color": 15 },
+        "position": { "position": { "x": 0, "y": 0 } },
+        "size": { "size": { "width": 40, "height": 40 } } } },
+    { "components": { "id": { "id": "dim" }, "overlay": { "opacity": 5 }%OZ% } },
+    { "components": {
+        "shape": { "type": 0, "filled": true, "color": 12 },
+        "position": { "position": { "x": 50, "y": 50 } },
+        "size": { "size": { "width": 10, "height": 10 } }%CZ% } }
+  ]
+})json";
+
+static std::string dimScene(const char* oz, const char* cz) {
+    std::string s = kDimScene;
+    s.replace(s.find("%OZ%"), 4, oz);
+    s.replace(s.find("%CZ%"), 4, cz);
+    return s;
+}
+
+static void test_overlay_runs_first_noop_by_default() {
+    // With the overlay at its default z (800) it still sorts first, dimming the
+    // just-cleared black canvas — the harmless historical no-op, so the backdrop
+    // stays at full brightness. This is what keeps pre-#243 scenes byte-identical.
+    ScenePlayer p;
+    ASSERT(p.loadText(dimScene("", "")), "overlay: default-z scene loads");
+    p.stepFrame();
+    ASSERT(p.canvas()->getPixel(5, 5) == 15,
+           "overlay: a default-z overlay dims nothing (run-first no-op preserved)");
+}
+
+static void test_overlay_mid_z_dims_below_not_above() {
+    // Overlay lifted to z=900 (above the backdrop's 850) and the chrome to 950:
+    // the sorted pass draws the backdrop, dims the canvas as-drawn, then draws
+    // the chrome on top undimmed. The run-first no-op is gone (ADR-0014).
+    ScenePlayer p;
+    ASSERT(p.loadText(dimScene(R"(, "z": { "z": 900 })", R"(, "z": { "z": 950 })")),
+           "overlay: mid-z scene loads");
+    p.stepFrame();
+    ASSERT(p.canvas()->getPixel(5, 5) == 10,
+           "overlay: content below the overlay is dimmed (15 - 5)");
+    ASSERT(p.canvas()->getPixel(52, 52) == 12,
+           "overlay: chrome above the overlay is left undimmed");
+}
+
 int main() {
+    test_z_order_reorders_the_pass();
+    test_overlay_runs_first_noop_by_default();
+    test_overlay_mid_z_dims_below_not_above();
     test_load_activates_and_renders();
     test_dispatch_reaches_the_frame();
     test_render_frame_repaints_without_advancing();

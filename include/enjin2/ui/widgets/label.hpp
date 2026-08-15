@@ -136,15 +136,22 @@ public:
      * @param dt Time since last update in seconds (unused; labels are static)
      */
     void update(float dt) override {
-        (void)dt;
         if (!world_ || !canvas_) return;
-        for (Entity e : world_->template query<LabelComponent, PositionComponent, SizeComponent>()) {
-            auto* label = world_->template get<LabelComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            auto* size = world_->template get<SizeComponent>(e);
-            if (!label || !pos || !size) continue;
-            draw(*label, *pos, *size);
-        }
+        for (Entity e : world_->template query<LabelComponent, PositionComponent, SizeComponent>())
+            drawEntity(e, dt);
+    }
+
+    /// @brief Draw one label entity (the per-entity seam the scene player's
+    /// z-sorted pass drives, unwn #243). A missing component is skipped, as in
+    /// the whole-system loop.
+    void drawEntity(Entity e, float dt) {
+        (void)dt; // labels are static
+        if (!world_ || !canvas_) return;
+        auto* label = world_->template get<LabelComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        auto* size = world_->template get<SizeComponent>(e);
+        if (!label || !pos || !size) return;
+        draw(*label, *pos, *size);
     }
 
     /// @brief Labels render on top of scene content, alongside lists.

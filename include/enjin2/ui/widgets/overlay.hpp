@@ -83,19 +83,29 @@ public:
      * @param dt Time since last update in seconds (unused; overlays are static)
      */
     void update(float dt) override {
-        (void)dt;
         if (!world_ || !canvas_) return;
+        for (auto entry : world_->template components<OverlayComponent>())
+            drawEntity(entry.first, dt);
+    }
+
+    /// @brief Dim the whole canvas for one overlay entity (the per-entity seam
+    /// the scene player's z-sorted pass drives, unwn #243). Because the pass
+    /// invokes this at the overlay's `z`, it dims the canvas *as drawn below it*
+    /// — a mid-`z` overlay darkens scene content and leaves higher-`z` chrome
+    /// untouched, which is the run-order fix (ADR-0014).
+    void drawEntity(Entity e, float dt) {
+        (void)dt; // overlays are static
+        if (!world_ || !canvas_) return;
+        const OverlayComponent* overlay = world_->template get<OverlayComponent>(e);
+        if (!overlay || !overlay->visible || overlay->opacity == 0) return;
         const int w = canvas_->getWidth();
         const int h = canvas_->getHeight();
-        for (auto entry : world_->template components<OverlayComponent>()) {
-            const OverlayComponent& overlay = *entry.second;
-            if (!overlay.visible || overlay.opacity == 0) continue;
-            for (int y = 0; y < h; ++y) {
-                for (int x = 0; x < w; ++x) {
-                    const uint8_t v = canvas_->getPixel(static_cast<int16_t>(x), static_cast<int16_t>(y));
-                    canvas_->setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y),
-                                      Pixel4(overlay.dim(v)));
-                }
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                const uint8_t v =
+                    canvas_->getPixel(static_cast<int16_t>(x), static_cast<int16_t>(y));
+                canvas_->setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y),
+                                  Pixel4(overlay->dim(v)));
             }
         }
     }

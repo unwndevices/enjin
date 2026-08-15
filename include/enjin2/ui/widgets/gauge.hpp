@@ -160,14 +160,20 @@ public:
      * @param dt Time since last update in seconds (unused; gauges are static)
      */
     void update(float dt) override {
-        (void)dt;
         if (!world_ || !canvas_) return;
-        for (Entity e : world_->template query<GaugeComponent, PositionComponent>()) {
-            auto* gauge = world_->template get<GaugeComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            if (!gauge || !pos) continue;
-            draw(*gauge, *pos);
-        }
+        for (Entity e : world_->template query<GaugeComponent, PositionComponent>())
+            drawEntity(e, dt);
+    }
+
+    /// @brief Draw one gauge entity (the per-entity seam the scene player's
+    /// z-sorted pass drives, unwn #243).
+    void drawEntity(Entity e, float dt) {
+        (void)dt; // gauges are static
+        if (!world_ || !canvas_) return;
+        auto* gauge = world_->template get<GaugeComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        if (!gauge || !pos) return;
+        draw(*gauge, *pos);
     }
 
     /// @brief Gauges are overlay-level chrome, drawn above lists/labels.

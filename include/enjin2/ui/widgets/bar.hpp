@@ -136,19 +136,25 @@ public:
      * @param dt Time since last update in seconds (unused; bars are static)
      */
     void update(float dt) override {
-        (void)dt;
         if (!world_ || !canvas_) return;
-        for (Entity e : world_->template query<BarComponent, PositionComponent>()) {
-            auto* bar = world_->template get<BarComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            if (!bar || !pos) continue;
-            // The bar's bounding box is length along the fill axis, thickness
-            // across it — so a vertical bar swaps the two for the anchor.
-            const Size box = bar->orientation == BarOrientation::Horizontal
-                                 ? Size(bar->length, bar->thickness)
-                                 : Size(bar->thickness, bar->length);
-            draw(*bar, pos->renderOrigin(box));
-        }
+        for (Entity e : world_->template query<BarComponent, PositionComponent>())
+            drawEntity(e, dt);
+    }
+
+    /// @brief Draw one bar entity (the per-entity seam the scene player's
+    /// z-sorted pass drives, unwn #243).
+    void drawEntity(Entity e, float dt) {
+        (void)dt; // bars are static
+        if (!world_ || !canvas_) return;
+        auto* bar = world_->template get<BarComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        if (!bar || !pos) return;
+        // The bar's bounding box is length along the fill axis, thickness
+        // across it — so a vertical bar swaps the two for the anchor.
+        const Size box = bar->orientation == BarOrientation::Horizontal
+                             ? Size(bar->length, bar->thickness)
+                             : Size(bar->thickness, bar->length);
+        draw(*bar, pos->renderOrigin(box));
     }
 
     /// @brief Bars are level indicators, drawn just above the gauges (950) so a

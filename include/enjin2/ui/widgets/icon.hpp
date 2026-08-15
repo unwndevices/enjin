@@ -114,14 +114,20 @@ public:
      * @param dt Time since last update in seconds (unused; icons are static)
      */
     void update(float dt) override {
-        (void)dt;
         if (!world_ || !canvas_) return;
-        for (Entity e : world_->template query<IconComponent, PositionComponent>()) {
-            auto* icon = world_->template get<IconComponent>(e);
-            auto* pos = world_->template get<PositionComponent>(e);
-            if (!icon || !pos) continue;
-            draw(*icon, *pos);
-        }
+        for (Entity e : world_->template query<IconComponent, PositionComponent>())
+            drawEntity(e, dt);
+    }
+
+    /// @brief Blit one icon entity (the per-entity seam the scene player's
+    /// z-sorted pass drives, unwn #243).
+    void drawEntity(Entity e, float dt) {
+        (void)dt; // icons are static
+        if (!world_ || !canvas_) return;
+        auto* icon = world_->template get<IconComponent>(e);
+        auto* pos = world_->template get<PositionComponent>(e);
+        if (!icon || !pos) return;
+        draw(*icon, *pos);
     }
 
     /// @brief Icons render alongside the other widgets, above scene content.

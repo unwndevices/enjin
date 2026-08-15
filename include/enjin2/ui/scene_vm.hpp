@@ -274,9 +274,14 @@ public:
             }
             if (done) finished.push_back(a.first);
         }
-        for (const std::string& name : finished) stopAnim(name);
 
         applyBindings();
+        // Retire finished animations only *after* applyBindings has run this
+        // tick (unwn #243, ADR-0014): a track still in anims_ during
+        // applyBindings suppresses its bound property, so the track's final
+        // value stands for its last frame and the binding resumes next tick —
+        // the enter-animate-then-settle rule.
+        for (const std::string& name : finished) stopAnim(name);
         return effects;
     }
 
@@ -689,15 +694,65 @@ private:
 
     // ---- writing -----------------------------------------------------------
 
+    /// @brief The `(entity, prop)` pairs a live animation track currently owns
+    /// (unwn #243, ADR-0014). While a track drives a property, @ref applyBindings
+    /// leaves that property alone so the animation isn't overwritten every tick —
+    /// the enter-animate-then-settle rule. tick() removes a finished track only
+    /// *after* applyBindings runs, so the binding resumes the tick after the
+    /// track completes. Track targets that resolve to no entity (bare var paths,
+    /// unknown ids) are simply not listed and suppress nothing.
+    std::vector<std::pair<Entity, std::string>> liveTrackTargets() const {
+        std::vector<std::pair<Entity, std::string>> out;
+        for (const auto& a : anims_) {
+            const JsonValue* spec = doc_ ? doc_->animations.find(a.first.c_str()) : nullptr;
+            const JsonValue* tracks = spec ? spec->find("tracks") : nullptr;
+            if (!tracks || tracks->type != JsonValue::Type::Array) continue;
+            for (const JsonValue& track : tracks->array) {
+                const JsonValue* target = track.find("target");
+                const JsonValue* from = track.find("from");
+                const JsonValue* to = track.find("to");
+                // Only a track that actually drives a numeric value claims (and
+                // so suppresses) its bound property. A malformed track — no
+                // target, or non-numeric from/to — leaves the binding in charge,
+                // so a broken animation never silently pins a bound prop.
+                if (!target || target->type != JsonValue::Type::String || !from ||
+                    from->type != JsonValue::Type::Number || !to ||
+                    to->type != JsonValue::Type::Number)
+                    continue;
+                Entity e;
+                std::string prop;
+                if (splitEntityPath(target->str, e, prop)) out.emplace_back(e, std::move(prop));
+            }
+        }
+        return out;
+    }
+
+    /// @brief Whether a live track owns `(e, prop)` — the binding-skip test.
+    static bool isTrackSuppressed(Entity e, const std::string& prop,
+                                  const std::vector<std::pair<Entity, std::string>>& live) {
+        for (const auto& p : live)
+            if (p.first == e && p.second == prop) return true;
+        return false;
+    }
+
     void applyBindings() {
         if (!world_) return;
         if constexpr (TWorld::template composes<BindingsComponent>()) {
+            // A property a live track owns is suppressed for this pass (unwn #243).
+            // Only pay for the scan when something is actually animating — the
+            // common no-animation frame skips the per-track re-parse + id resolve.
+            const std::vector<std::pair<Entity, std::string>> suppressed =
+                anims_.empty() ? std::vector<std::pair<Entity, std::string>>{}
+                               : liveTrackTargets();
             const auto& storage = world_->template components<BindingsComponent>();
             for (size_t i = 0; i < storage.size(); ++i) {
                 const Entity e = storage.entityAt(i);
                 const BindingsComponent* b = world_->template get<BindingsComponent>(e);
                 if (!b || b->bindings.type != JsonValue::Type::Object) continue;
-                for (const auto& kv : b->bindings.object) applyBinding(e, kv.first, kv.second);
+                for (const auto& kv : b->bindings.object) {
+                    if (isTrackSuppressed(e, kv.first, suppressed)) continue;
+                    applyBinding(e, kv.first, kv.second);
+                }
             }
         }
     }
