@@ -52,20 +52,21 @@ enum class ShapeType : uint8_t {
  * @brief Data-only state for a geometric-primitive widget
  *
  * Carries only the primitive's appearance — @ref type, @ref filled, @ref
- * thickness and @ref color. Its geometry is the entity's shared Position+Size
- * box, so the component pairs with a PositionComponent and a SizeComponent; the
- * @ref ShapeSystem reads both to place the primitive.
+ * thickness, @ref color and @ref radius. Its geometry is the entity's shared
+ * Position+Size box, so the component pairs with a PositionComponent and a
+ * SizeComponent; the @ref ShapeSystem reads both to place the primitive.
  */
 struct ShapeComponent : public Component<ShapeComponent> {
     ShapeType type = ShapeType::Rect; ///< Which primitive to draw
     bool filled = false;              ///< Fill vs outline (a "frame" is rect + !filled)
     uint8_t thickness = 1;            ///< Outline ring count (rect/circle only; ignored when filled)
     Pixel4 color = Pixel4(15);        ///< Draw color, carried on the widget
+    uint8_t radius = 0;               ///< Rect corner radius (0 = sharp; Circle/Line ignore it)
 
     /// @brief Construct with an appearance (geometry rides Position+Size).
     ShapeComponent(ShapeType t = ShapeType::Rect, bool fill = false,
-                   uint8_t thick = 1, Pixel4 c = Pixel4(15))
-        : type(t), filled(fill), thickness(thick), color(c) {}
+                   uint8_t thick = 1, Pixel4 c = Pixel4(15), uint8_t rad = 0)
+        : type(t), filled(fill), thickness(thick), color(c), radius(rad) {}
 };
 
 /// @brief Serializable properties of @ref ShapeComponent (see reflect.hpp).
@@ -73,7 +74,8 @@ struct ShapeComponent : public Component<ShapeComponent> {
     FIELD(type)                                    \
     FIELD(filled)                                  \
     FIELD(thickness)                               \
-    FIELD(color)
+    FIELD(color)                                   \
+    FIELD(radius)
 
 ENJIN2_REFLECT_COMPONENT(ShapeComponent, 14, "shape", ENJIN2_SHAPE_COMPONENT_FIELDS)
 
@@ -142,22 +144,36 @@ private:
     }
 
     void drawRectShape(const ShapeComponent& s, const Point& pos, const Size& box) {
+        // Rounded corners (unwn #245): radius>0 routes to the round-rect
+        // primitives, clamped to half the shorter side — fillRoundRect has no
+        // internal clamp (unwn #168), so an over-large radius would draw wrong.
+        // radius==0 keeps the sharp fillRect/drawRect path, byte-identical to
+        // pre-#245 scenes.
+        const int maxRadius = std::min<int>(box.width, box.height) / 2;
+        const int radius = std::min<int>(s.radius, maxRadius);
         if (s.filled) {
-            Primitives<Pixel4>::fillRect(
-                *canvas_, Rect(pos.x, pos.y, box.width, box.height), s.color);
+            const Rect rect(pos.x, pos.y, box.width, box.height);
+            if (radius > 0)
+                Primitives<Pixel4>::fillRoundRect(*canvas_, rect, static_cast<int16_t>(radius), s.color);
+            else
+                Primitives<Pixel4>::fillRect(*canvas_, rect, s.color);
             return;
         }
         // Concentric outline rings, one per unit of thickness, inset from the box
-        // edge until the ring would collapse.
+        // edge until the ring would collapse. A rounded frame shrinks its corner
+        // radius with each inset ring so the rings stay concentric; once the
+        // inset radius collapses the ring falls back to a sharp drawRect.
         for (int t = 0; t < s.thickness; ++t) {
             const int w = static_cast<int>(box.width) - 2 * t;
             const int h = static_cast<int>(box.height) - 2 * t;
             if (w <= 0 || h <= 0) break;
-            Primitives<Pixel4>::drawRect(
-                *canvas_,
-                Rect(static_cast<int16_t>(pos.x + t), static_cast<int16_t>(pos.y + t),
-                     static_cast<uint16_t>(w), static_cast<uint16_t>(h)),
-                s.color);
+            const Rect ring(static_cast<int16_t>(pos.x + t), static_cast<int16_t>(pos.y + t),
+                            static_cast<uint16_t>(w), static_cast<uint16_t>(h));
+            const int ringRadius = radius - t;
+            if (ringRadius > 0)
+                Primitives<Pixel4>::drawRoundRect(*canvas_, ring, static_cast<int16_t>(ringRadius), s.color);
+            else
+                Primitives<Pixel4>::drawRect(*canvas_, ring, s.color);
         }
     }
 

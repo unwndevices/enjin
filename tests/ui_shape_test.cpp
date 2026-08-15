@@ -30,7 +30,7 @@ template<int W, int H>
 static Entity placeShape(ShapeWorld& world, const ShapeComponent& shape,
                          Point pos, Size box) {
     Entity e = world.create();
-    world.add<ShapeComponent>(e, shape.type, shape.filled, shape.thickness, shape.color);
+    world.add<ShapeComponent>(e, shape.type, shape.filled, shape.thickness, shape.color, shape.radius);
     world.add<PositionComponent>(e, pos);
     world.add<SizeComponent>(e, box);
     return e;
@@ -120,6 +120,72 @@ static void test_line_corner_to_corner() {
     ASSERT((uint8_t)canvas.getPixel(7, 0) == 0, "shape: line leaves the off-diagonal corner black");
 }
 
+// A rect with radius>0 rounds its corners (unwn #245): the round-rect path
+// cuts the corner pixel a sharp rect would ink, while the body still fills.
+// radius==0 keeps the corner (byte-identical to a pre-#245 sharp rect).
+static void test_rect_rounded_corners() {
+    {
+        ShapeWorld world;
+        Canvas4<16, 16> canvas;
+        ShapeSystem<ShapeWorld, Canvas4<16, 16>> system(&world, &canvas);
+        placeShape<16, 16>(world, ShapeComponent(ShapeType::Rect, true, 1, Pixel4(15), 3),
+                           Point(0, 0), Size(10, 10));
+        canvas.clear(Colors::BLACK);
+        system.update(0.0f);
+        ASSERT((uint8_t)canvas.getPixel(0, 0) == 0, "shape: rounded rect clears the corner pixel");
+        ASSERT((uint8_t)canvas.getPixel(5, 5) == 15, "shape: rounded rect still fills its body");
+    }
+    {
+        // radius==0 is the sharp path: the corner is inked, unchanged from #206.
+        ShapeWorld world;
+        Canvas4<16, 16> canvas;
+        ShapeSystem<ShapeWorld, Canvas4<16, 16>> system(&world, &canvas);
+        placeShape<16, 16>(world, ShapeComponent(ShapeType::Rect, true, 1, Pixel4(15), 0),
+                           Point(0, 0), Size(10, 10));
+        canvas.clear(Colors::BLACK);
+        system.update(0.0f);
+        ASSERT((uint8_t)canvas.getPixel(0, 0) == 15, "shape: radius 0 keeps the sharp corner");
+    }
+    {
+        // An over-large radius is clamped to min(w,h)/2 (unwn #168 has no
+        // internal clamp): the shape still draws a valid inked body, no overrun.
+        ShapeWorld world;
+        Canvas4<16, 16> canvas;
+        ShapeSystem<ShapeWorld, Canvas4<16, 16>> system(&world, &canvas);
+        placeShape<16, 16>(world, ShapeComponent(ShapeType::Rect, true, 1, Pixel4(15), 200),
+                           Point(0, 0), Size(10, 10));
+        canvas.clear(Colors::BLACK);
+        system.update(0.0f);
+        ASSERT((uint8_t)canvas.getPixel(5, 5) == 15, "shape: over-large radius clamps and still fills");
+    }
+}
+
+// Circle and Line ignore radius entirely (unwn #245): a radius set on either
+// draws exactly as it would with radius 0.
+static void test_circle_line_ignore_radius() {
+    {
+        ShapeWorld world;
+        Canvas4<16, 16> canvas;
+        ShapeSystem<ShapeWorld, Canvas4<16, 16>> system(&world, &canvas);
+        placeShape<16, 16>(world, ShapeComponent(ShapeType::Circle, true, 1, Pixel4(15), 4),
+                           Point(0, 0), Size(11, 11));
+        canvas.clear(Colors::BLACK);
+        system.update(0.0f);
+        ASSERT((uint8_t)canvas.getPixel(5, 5) == 15, "shape: circle ignores radius (fills center)");
+    }
+    {
+        ShapeWorld world;
+        Canvas4<16, 16> canvas;
+        ShapeSystem<ShapeWorld, Canvas4<16, 16>> system(&world, &canvas);
+        placeShape<16, 16>(world, ShapeComponent(ShapeType::Line, false, 1, Pixel4(15), 4),
+                           Point(0, 0), Size(8, 8));
+        canvas.clear(Colors::BLACK);
+        system.update(0.0f);
+        ASSERT((uint8_t)canvas.getPixel(0, 0) == 15, "shape: line ignores radius (inks corner)");
+        ASSERT((uint8_t)canvas.getPixel(3, 3) == 15, "shape: line ignores radius (inks diagonal)");
+    }
+}
+
 // A zero-size box has no geometry and draws nothing.
 static void test_empty_box_is_safe() {
     ShapeWorld world;
@@ -139,6 +205,8 @@ static void test_empty_box_is_safe() {
 int main() {
     test_rect_frame_vs_filled();
     test_rect_thickness_rings();
+    test_rect_rounded_corners();
+    test_circle_line_ignore_radius();
     test_circle_inscribed();
     test_line_corner_to_corner();
     test_empty_box_is_safe();
