@@ -821,6 +821,12 @@ private:
                 }
                 isParam = false;
                 number = raw.number;
+                // A `var.` source carries its own frame-map domain in the doc
+                // (unwn #244): the numeric variable's `sweep` min/max is promoted
+                // from editor-only preview metadata to the device normalization
+                // domain, so map:{to:"frame"} spans [min,max] rather than
+                // collapsing to frame 0. An entity.prop source has no domain.
+                if (isVarPath(from)) varDomain(from.substr(kVarPrefixLen), lo, hi);
             }
         }
 
@@ -870,6 +876,25 @@ private:
         const JsonValue* mx = raw.find("max");
         lo = mn && mn->type == JsonValue::Type::Number ? mn->number : 0.0;
         hi = mx && mx->type == JsonValue::Type::Number ? mx->number : 0.0;
+    }
+
+    /// @brief The frame-map `{min,max}` domain of a `var.` source (unwn #244).
+    /// Reads the numeric variable's `sweep` min/max straight off `doc_->variables`
+    /// (the raw descriptor array), promoting what was editor-only preview metadata
+    /// to the device VM's normalization domain — so map:{to:"frame"} places the
+    /// value across the authored range instead of collapsing to frame 0. Leaves
+    /// @p lo / @p hi at their [0,0] default when the var is absent or carries no
+    /// sweep; the editor gates the map toggle on a range being present, so a
+    /// rangeless var never reaches here with a frame map.
+    void varDomain(const std::string& name, double& lo, double& hi) const {
+        if (!doc_ || doc_->variables.type != JsonValue::Type::Array) return;
+        for (const JsonValue& v : doc_->variables.array) {
+            const JsonValue* nm = v.find("name");
+            if (!nm || nm->type != JsonValue::Type::String || nm->str != name) continue;
+            if (const JsonValue* sweep = v.find("sweep"))
+                paramDomain(*sweep, lo, hi); // sweep.{min,max} reuse the extractor
+            return;
+        }
     }
 
     /// @brief Parse the `ease` slot (unwn #221): a shorthand curve string

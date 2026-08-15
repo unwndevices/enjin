@@ -938,6 +938,43 @@ static void test_ease_feeds_map() {
     ASSERT(s->frame == 4, "ease->map: the completed tween reaches the last frame");
 }
 
+static void test_map_value_to_frame_var_domain() {
+    // #244: a `var.` source's `sweep` min/max is its frame-map normalization
+    // domain — promoted from editor-only preview metadata to the device VM. A
+    // var-driven value->frame spans [min,max] instead of collapsing to frame 0.
+    SpriteVmWorld world;
+    AssetRegistry assets;
+    SpriteComponent* s =
+        addBoundSprite(world, 4, 1, R"({"frame":{"from":"var.level","map":{"to":"frame"}}})"); // N=4
+    SceneDoc doc;
+    doc.variables = parse(
+        R"([{ "name": "level", "type": "int", "value": 0, "sweep": { "min": 0, "max": 100 } }])");
+    SpriteVM vm(&doc, &world, &assets);
+    ASSERT(s->frame == 0, "var-domain: value at sweep min quantizes to frame 0");
+    vm.setVar("level", 100.0);
+    vm.tick(16.0);
+    ASSERT(s->frame == 3, "var-domain: value at sweep max quantizes to frame N-1");
+    vm.setVar("level", 50.0);
+    vm.tick(16.0); // t=0.5 -> round(0.5*3)=2
+    ASSERT(s->frame == 2, "var-domain: midpoint rounds to nearest frame");
+}
+
+static void test_map_value_to_frame_var_rangeless() {
+    // A rangeless var (no `sweep`) has a degenerate [0,0] domain, so the frame
+    // map collapses to frame 0 regardless of value — the device echo of the
+    // editor gate that refuses to enable the map toggle without a range (#244).
+    SpriteVmWorld world;
+    AssetRegistry assets;
+    SpriteComponent* s =
+        addBoundSprite(world, 4, 1, R"({"frame":{"from":"var.level","map":{"to":"frame"}}})"); // N=4
+    SceneDoc doc;
+    doc.variables = parse(R"([{ "name": "level", "type": "int", "value": 3 }])");
+    SpriteVM vm(&doc, &world, &assets);
+    vm.setVar("level", 3.0);
+    vm.tick(16.0);
+    ASSERT(s->frame == 0, "var-domain: a rangeless var collapses to frame 0 (no implicit range)");
+}
+
 // ---- cross-kind binding targets (unwn #232) --------------------------------
 //
 // The value-chain terminal picks String-vs-Number from the **destination field
@@ -1054,6 +1091,8 @@ int main() {
     test_map_value_to_frame();
     test_map_frame_count_read_at_tick();
     test_map_misuse_no_sprite();
+    test_map_value_to_frame_var_domain();
+    test_map_value_to_frame_var_rangeless();
     test_ease_feeds_map();
     test_cross_kind_param_to_numeric();
     test_cross_kind_param_to_color();
