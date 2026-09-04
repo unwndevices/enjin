@@ -446,5 +446,7 @@ using Canvas4_128x64_ESP32S3 = Canvas4_ESP32S3<128, 64>;
 using Canvas4_256x128_ESP32S3 = Canvas4_ESP32S3<256, 128>;
 /// @brief ESP32-S3 optimized 320x240 canvas type alias
 using Canvas4_320x240_ESP32S3 = Canvas4_ESP32S3<320, 240>;
+/// @brief ESP32-S3 optimized 480x480 canvas type alias (Tomodachi square AMOLED)
+using Canvas4_480x480_ESP32S3 = Canvas4_ESP32S3<480, 480>;
 
 } // namespace enjin2
