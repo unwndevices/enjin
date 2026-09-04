@@ -1475,11 +1475,15 @@ namespace enjin2
     using Canvas4_128x128 = Canvas4<128, 128>;
     /// @brief 4-bit 320x240 canvas type alias
     using Canvas4_320x240 = Canvas4<320, 240>;
+    /// @brief 4-bit 480x480 canvas type alias (Tomodachi square AMOLED)
+    using Canvas4_480x480 = Canvas4<480, 480>;
     /// @brief 8-bit 128x64 canvas type alias
     using Canvas8_128x64 = Canvas8<128, 64>;
     /// @brief 8-bit 128x128 canvas type alias
     using Canvas8_128x128 = Canvas8<128, 128>;
     /// @brief 8-bit 320x240 canvas type alias
     using Canvas8_320x240 = Canvas8<320, 240>;
+    /// @brief 8-bit 480x480 canvas type alias (Tomodachi square AMOLED)
+    using Canvas8_480x480 = Canvas8<480, 480>;
 
 } // namespace enjin2
