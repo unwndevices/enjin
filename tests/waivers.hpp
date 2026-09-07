@@ -158,7 +158,19 @@ namespace parity
     //     contract (transparent skip, 8-bit fade, clipping). Consequence to
     //     verify at C2 (unwn #170): content drawn at true black inside an
     //     Opacity50/25-blended widget canvas now reads transparent.
-    inline constexpr std::array<Waiver, 5> kWaivers{{
+    //   * geom.drawRoundRect (Retired, Tomodachi #39) — HEAD deletes the
+    //     corner-arc annulus (`(r-1)^2 <= i^2+j^2 <= r^2`) and rasterises the
+    //     outline with the computed span-walker border stroke (border.hpp,
+    //     entered via Primitives::drawRoundRect). This is a wholesale algorithm
+    //     swap (2054/2318 cases diverge, by up to 874 px — dominated by the
+    //     annulus' unclamped r > extent/2 and negative-extent behaviour the
+    //     walker clamps), far past the 50% census gate, so a sub-range max_diff
+    //     waiver is retirement wearing a different name — Retired is the honest
+    //     classification. fillRoundRect is untouched and stays byte-exact GREEN.
+    //     Exit question: border_stroke_test (solid/bevel/drop-shadow ring) and
+    //     primitives_roundrect_test (edges/hollow/rounded-corner/r=0 square)
+    //     pin the ratified span-walker.
+    inline constexpr std::array<Waiver, 6> kWaivers{{
         {"text.drawChar", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
          "canvas.hpp", 0x8eae76df2a5304acull,
@@ -185,6 +197,12 @@ namespace parity
          "canvas.hpp", 0x8eae76df2a5304acull,
          "blit.hpp", 0x8ccf79c81069dae7ull,
          "unwndevices/Tomodachi#36", "claude+ciro", "2026-09-07"},
+        {"geom.drawRoundRect", WaiverStatus::Retired,
+         "pair retired: HEAD replaces the corner-arc annulus with the #39 "
+         "span-walker border stroke; the annulus is deleted", nullptr, 0,
+         "canvas.hpp", 0x8eae76df2a5304acull,
+         "primitives.hpp", 0x7b4f2bcb50064a6bull,
+         "unwndevices/Tomodachi#39", "claude+ciro", "2026-09-07"},
     }};
 
 } // namespace parity

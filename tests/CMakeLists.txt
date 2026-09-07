@@ -65,6 +65,28 @@ target_link_libraries(primitives_roundrect_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME primitives_roundrect_test COMMAND primitives_roundrect_test)
 
+# Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
+add_executable(border_stroke_test
+    border_stroke_test.cpp
+)
+target_include_directories(border_stroke_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(border_stroke_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME border_stroke_test COMMAND border_stroke_test)
+
+# Nine-slice blit test (Tomodachi #39): edges tile, never stretch (R4)
+add_executable(nine_slice_test
+    nine_slice_test.cpp
+)
+target_include_directories(nine_slice_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(nine_slice_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME nine_slice_test COMMAND nine_slice_test)
+
 # Label widget unit test (Phase 3a, #121: C_Label -> data-only LabelComponent + LabelSystem)
 add_executable(ui_label_test
     ui_label_test.cpp
