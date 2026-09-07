@@ -435,6 +435,113 @@ static void test_tmap03_no_sheet_no_draw() {
 }
 
 // ---------------------------------------------------------------------------
+// TMAP-09: uint16 cell packing/unpacking (issue #41)
+// ---------------------------------------------------------------------------
+static void test_tmap09_cell_packing() {
+    printf("--- TMAP-09: uint16 cell packing ---\n");
+
+    // Fixed-size guard: the widened member is 64*64*2 = 8192 bytes.
+    ASSERT(sizeof(uint16_t) * C_Tilemap::MAX_MAP_W * C_Tilemap::MAX_MAP_H == 8192,
+           "TMAP-09: cell grid must be 8192 bytes (uint16 x 64 x 64)");
+
+    // Layout [band:1 | vflip:1 | hflip:1 | palbank:4 | tileid:9].
+    // tileid 0x1A5 (421), palbank 0xB, hflip, vflip, band → all fields set.
+    uint16_t c = C_Tilemap::packCell(/*tileId*/0x1A5, /*band*/1, /*palbank*/0xB,
+                                     /*hflip*/true, /*vflip*/true);
+    ASSERT(C_Tilemap::cellTileId(c)  == 0x1A5, "TMAP-09: tileid round-trips");
+    ASSERT(C_Tilemap::cellPalbank(c) == 0xB,   "TMAP-09: palbank round-trips");
+    ASSERT(C_Tilemap::cellHFlip(c)   == true,  "TMAP-09: hflip round-trips");
+    ASSERT(C_Tilemap::cellVFlip(c)   == true,  "TMAP-09: vflip round-trips");
+    ASSERT(C_Tilemap::cellBand(c)    == 1,     "TMAP-09: band round-trips");
+
+    // Exact packed value: 1<<15 | 1<<14 | 1<<13 | 0xB<<9 | 0x1A5 = 0xF7A5.
+    ASSERT(c == 0xF7A5, "TMAP-09: packed value matches documented bit layout");
+
+    // tileid saturates at 9 bits (0x1FF = 511); higher bits belong to other
+    // fields and must not bleed in.
+    uint16_t big = C_Tilemap::packCell(511, 0, 0, false, false);
+    ASSERT(big == 0x01FF, "TMAP-09: max tileid 511 packs to 0x01FF");
+    ASSERT(C_Tilemap::cellBand(big) == 0, "TMAP-09: max tileid leaves band clear");
+
+    // A plain byte-map (setTiles(uint8_t*)) widens to band-0 cells.
+    static const uint8_t bytemap[2 * 2] = { 3, 0, 0, 7 };
+    Object* obj = new Object();
+    obj->addComponent<C_Position>();
+    C_Tilemap* tm = obj->addComponent<C_Tilemap>();
+    tm->setTiles(bytemap, 2, 2);
+    ASSERT(tm->getTile(0, 0)     == 3, "TMAP-09: byte map cell (0,0) == 3");
+    ASSERT(tm->getTileBand(0, 0) == 0, "TMAP-09: byte map cell (0,0) band == 0");
+    ASSERT(tm->getTileId(1, 1)   == 7, "TMAP-09: byte map tile id (1,1) == 7");
+
+    // A packed uint16 map (setTiles(uint16_t*)) preserves band/flip.
+    static const uint16_t packed[2 * 2] = {
+        C_Tilemap::packCell(1, /*band*/0, 0, false, false),
+        C_Tilemap::packCell(2, /*band*/1, 0, false, false),
+        C_Tilemap::packCell(0, /*band*/1, 0, false, false),
+        C_Tilemap::packCell(4, /*band*/1, 0, true,  false),
+    };
+    tm->setTiles(packed, 2, 2);
+    ASSERT(tm->getTileId(0, 0)   == 1, "TMAP-09: packed tile id (0,0) == 1");
+    ASSERT(tm->getTileBand(0, 0) == 0, "TMAP-09: packed band (0,0) == under");
+    ASSERT(tm->getTileBand(1, 0) == 1, "TMAP-09: packed band (1,0) == over");
+    ASSERT(C_Tilemap::cellHFlip(tm->getTile(1, 1)),
+           "TMAP-09: packed hflip preserved at (1,1)");
+
+    delete obj;
+}
+
+// ---------------------------------------------------------------------------
+// TMAP-10: band-filtered restore paint (drawCellBand) — issue #41
+//
+// The under band paints on L0 (clear background), the over band on L2 (clear
+// transparent). drawCellBand draws a cell ONLY when its band matches the call.
+// ---------------------------------------------------------------------------
+static void test_tmap10_band_filtered_restore() {
+    printf("--- TMAP-10: band-filtered restore paint ---\n");
+
+    // 2x1 map: cell (0,0) = tile 1 UNDER, cell (1,0) = tile 1 OVER.
+    static const uint16_t map[2] = {
+        C_Tilemap::packCell(1, /*band Under*/0, 0, false, false),
+        C_Tilemap::packCell(1, /*band Over*/ 1, 0, false, false),
+    };
+
+    Object* obj = new Object();
+    obj->addComponent<C_Position>();
+    C_Tilemap* tm = obj->addComponent<C_Tilemap>();
+    tm->setSheet(makeSheet());   // all tile pixels = TILE_PIXEL (5)
+    tm->setTiles(map, 2, 1);
+    tm->setScroll(0, 0);
+
+    Canvas4<64, 64> canvas;
+
+    // --- Under-band pass (L0 semantics: clear to background 0) ---
+    canvas.clear(Pixel4(9));  // sentinel
+    tm->drawCellBand(canvas, 0, 0, C_Tilemap::Band::Under, Pixel4(0));
+    tm->drawCellBand(canvas, 1, 0, C_Tilemap::Band::Under, Pixel4(0));
+
+    // Cell (0,0) is UNDER → tile drawn → its pixels == TILE_PIXEL.
+    ASSERT(canvas.getPixel(0, 0).value == TILE_PIXEL,
+           "TMAP-10: under pass draws the under cell (tile pixel)");
+    // Cell (1,0) is OVER → under pass must NOT draw it → clear color 0.
+    ASSERT(canvas.getPixel(TILE_W, 0).value == 0,
+           "TMAP-10: under pass leaves the over cell as clear (background)");
+
+    // --- Over-band pass (L2 semantics: clear to transparent 15) ---
+    canvas.clear(Pixel4(9));
+    tm->drawCellBand(canvas, 0, 0, C_Tilemap::Band::Over, Pixel4(15));
+    tm->drawCellBand(canvas, 1, 0, C_Tilemap::Band::Over, Pixel4(15));
+
+    // Cell (0,0) is UNDER → over pass must NOT draw it → transparent 15.
+    ASSERT(canvas.getPixel(0, 0).value == 15,
+           "TMAP-10: over pass leaves the under cell transparent (passthrough)");
+    // Cell (1,0) is OVER → tile drawn → TILE_PIXEL.
+    ASSERT(canvas.getPixel(TILE_W, 0).value == TILE_PIXEL,
+           "TMAP-10: over pass draws the over cell (tile pixel)");
+
+    delete obj;
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 int main() {
@@ -448,6 +555,8 @@ int main() {
     test_tmap04b_coordinate_helpers();
     test_tmap01_dimensions_reset();
     test_tmap03_no_sheet_no_draw();
+    test_tmap09_cell_packing();
+    test_tmap10_band_filtered_restore();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;

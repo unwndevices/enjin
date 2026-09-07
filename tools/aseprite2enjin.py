@@ -16,6 +16,7 @@ import argparse
 # ---------------------------------------------------------------------------
 ASE_MAGIC        = 0xA5E0
 FRAME_MAGIC      = 0xF1FA
+CHUNK_LAYER      = 0x2004
 CHUNK_CEL        = 0x2005
 CHUNK_CEL_EXTRA  = 0x2006
 COLOR_DEPTH_INDEXED = 8
@@ -25,6 +26,28 @@ CEL_TYPE_LINKED     = 1
 CEL_TYPE_COMPRESSED = 2
 
 TRANSPARENT_INDEX = 15
+
+# ---------------------------------------------------------------------------
+# Tilemap cell packing — the single source of truth mirrors
+# enjin2/graphics/tilemap_asset.hpp: [band:1 | vflip:1 | hflip:1 | palbank:4 | tileid:9]
+# ---------------------------------------------------------------------------
+TM_TILEID_MASK   = 0x01FF
+TM_PALBANK_SHIFT = 9
+TM_PALBANK_MASK  = 0x000F
+TM_HFLIP_BIT     = 1 << 13
+TM_VFLIP_BIT     = 1 << 14
+TM_BAND_BIT      = 1 << 15
+
+
+def pack_cell(tile_id, band=0, palbank=0, hflip=False, vflip=False):
+    """Pack a tilemap cell to a uint16 (matches tmPackCell in tilemap_asset.hpp)."""
+    return (
+        (tile_id & TM_TILEID_MASK)
+        | ((palbank & TM_PALBANK_MASK) << TM_PALBANK_SHIFT)
+        | (TM_HFLIP_BIT if hflip else 0)
+        | (TM_VFLIP_BIT if vflip else 0)
+        | (TM_BAND_BIT if band else 0)
+    ) & 0xFFFF
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +214,217 @@ def _composite(canvas, canvas_w, canvas_h, pixels, cel_w, cel_h, x, y):
 
 
 # ---------------------------------------------------------------------------
+# Layered parse (tilemap authoring: one canvas per Aseprite layer, frame 0)
+# ---------------------------------------------------------------------------
+
+def _read_layer_name(data, offset, body_size):
+    """Read a LAYER chunk (0x2004) name. Returns the layer name string.
+
+    Layout: flags(2) type(2) child(2) w(2) h(2) blend(2) opacity(1) reserved(3)
+            name(STRING = len WORD + utf8 bytes).
+    """
+    if body_size < 18:
+        return ""
+    name_len = struct.unpack_from('<H', data, offset + 16)[0]
+    start = offset + 18
+    raw = data[start:start + name_len]
+    try:
+        return raw.decode('utf-8')
+    except UnicodeDecodeError:
+        return raw.decode('latin-1', 'replace')
+
+
+def parse_aseprite_layers(path):
+    """Parse frame 0 of an .aseprite file into one canvas per layer.
+
+    Returns a dict:
+        width, height  -- canvas size in pixels
+        layers         -- list of {'name': str, 'pixels': bytes} in file order
+                          (bottom layer first, top layer last)
+    """
+    with open(path, 'rb') as f:
+        data = f.read()
+
+    if len(data) < 128:
+        raise ValueError("File too small to be a valid .aseprite file")
+
+    _, magic = struct.unpack_from('<IH', data, 0)
+    if magic != ASE_MAGIC:
+        raise ValueError(f"Not a valid .aseprite file (bad magic: 0x{magic:04X})")
+
+    _frame_count, width, height, color_depth = struct.unpack_from('<HHHH', data, 6)
+    if color_depth != COLOR_DEPTH_INDEXED:
+        raise ValueError(
+            f"Only indexed-color sprites are supported (found {color_depth}-bit). "
+            f"In Aseprite: Sprite > Color Mode > Indexed."
+        )
+
+    # --- Frame 0 only ---
+    offset = 128
+    if offset + 16 > len(data):
+        raise ValueError("Missing first frame")
+
+    frame_size, frame_magic, num_chunks_old, _dur = struct.unpack_from('<IHHH', data, offset)
+    num_chunks_new = struct.unpack_from('<I', data, offset + 12)[0]
+    if frame_magic != FRAME_MAGIC:
+        raise ValueError(f"Bad frame magic: 0x{frame_magic:04X}")
+    num_chunks = num_chunks_new if num_chunks_old == 0xFFFF else num_chunks_old
+
+    frame_end = offset + frame_size
+    chunk_offset = offset + 16
+
+    layer_names = []           # index -> name, in LAYER-chunk order
+    layer_pixels = {}          # layer_index -> bytearray canvas
+
+    for _ in range(num_chunks):
+        if chunk_offset + 6 > frame_end:
+            break
+        chunk_size, chunk_type = struct.unpack_from('<IH', data, chunk_offset)
+        if chunk_size < 6:
+            break
+        body_off = chunk_offset + 6
+        body_size = chunk_size - 6
+
+        if chunk_type == CHUNK_LAYER:
+            layer_names.append(_read_layer_name(data, body_off, body_size))
+        elif chunk_type == CHUNK_CEL:
+            li = struct.unpack_from('<H', data, body_off)[0]
+            canvas = layer_pixels.get(li)
+            if canvas is None:
+                canvas = bytearray([TRANSPARENT_INDEX] * (width * height))
+                layer_pixels[li] = canvas
+            _process_cel_chunk(data, body_off, body_size, canvas, width, height)
+
+        chunk_offset += chunk_size
+
+    layers = []
+    for idx, name in enumerate(layer_names):
+        px = layer_pixels.get(idx)
+        if px is None:
+            px = bytearray([TRANSPARENT_INDEX] * (width * height))
+        layers.append({'name': name, 'pixels': bytes(px)})
+
+    return {'width': width, 'height': height, 'layers': layers}
+
+
+# ---------------------------------------------------------------------------
+# Tilemap builder: dice under/over layers into a deduplicated tileset + .njm map
+# ---------------------------------------------------------------------------
+
+def _extract_tile(pixels, canvas_w, canvas_h, tx, ty, tile_w, tile_h):
+    """Return the tile_w*tile_h nibbles of grid cell (tx,ty), row-major."""
+    out = bytearray()
+    for py in range(tile_h):
+        for px in range(tile_w):
+            sx = tx * tile_w + px
+            sy = ty * tile_h + py
+            if sx < canvas_w and sy < canvas_h:
+                out.append(pixels[sy * canvas_w + sx] & 0x0F)
+            else:
+                out.append(TRANSPARENT_INDEX)
+    return bytes(out)
+
+
+def _tile_is_empty(tile):
+    """A tile is empty when every pixel is the transparent index."""
+    return all(b == TRANSPARENT_INDEX for b in tile)
+
+
+def _classify_layers(layers):
+    """Split layers into (under_layer, over_layer) by name, else by z-order.
+
+    A layer whose name contains 'over' is the over band; 'under' is the under
+    band. Absent names fall back to z-order: bottom layer = under, top = over.
+    """
+    under = over = None
+    for layer in layers:
+        name = layer['name'].lower()
+        if 'over' in name:
+            over = layer
+        elif 'under' in name or 'floor' in name or 'base' in name:
+            under = layer
+    if under is None or over is None:
+        # z-order fallback: first (bottom) = under, last (top) = over
+        if under is None:
+            under = layers[0] if layers else None
+        if over is None and len(layers) >= 2:
+            over = layers[-1]
+    return under, over
+
+
+def build_tilemap(layers, canvas_w, canvas_h, tile_w, tile_h):
+    """Dice under/over layers into a deduplicated tileset + packed .njm cells.
+
+    Returns (tileset_pixels, cell_count, cols, rows, map_cells) where:
+      tileset_pixels -- bytes, frame-major (frame 0 = transparent), 1 byte/px
+      cell_count     -- number of tileset frames (incl. the transparent frame 0)
+      cols, rows     -- grid tiles across / down (map dimensions)
+      map_cells      -- list of packed uint16 cells, row-major
+
+    A grid cell takes the OVER-band tile when the over layer has art there,
+    else the UNDER-band tile, else it is empty (cell 0). Only referenced tiles
+    enter the tileset; ids are assigned in row-major first-appearance order.
+    """
+    cols = canvas_w // tile_w
+    rows = canvas_h // tile_h
+    under, over = _classify_layers(layers)
+
+    frame_size = tile_w * tile_h
+    empty_tile = bytes([TRANSPARENT_INDEX] * frame_size)
+
+    tileset = [empty_tile]          # frame 0 = transparent (the "wasted" frame)
+    tile_ids = {empty_tile: 0}      # dedup: tile bytes -> id
+    map_cells = []
+
+    for ty in range(rows):
+        for tx in range(cols):
+            over_tile = (_extract_tile(over['pixels'], canvas_w, canvas_h,
+                                       tx, ty, tile_w, tile_h) if over else empty_tile)
+            under_tile = (_extract_tile(under['pixels'], canvas_w, canvas_h,
+                                        tx, ty, tile_w, tile_h) if under else empty_tile)
+
+            if not _tile_is_empty(over_tile):
+                band, tile = 1, over_tile
+            elif not _tile_is_empty(under_tile):
+                band, tile = 0, under_tile
+            else:
+                map_cells.append(0)   # empty cell
+                continue
+
+            tid = tile_ids.get(tile)
+            if tid is None:
+                tid = len(tileset)
+                tileset.append(tile)
+                tile_ids[tile] = tid
+            map_cells.append(pack_cell(tid, band=band))
+
+    tileset_pixels = b"".join(tileset)
+    return tileset_pixels, len(tileset), cols, rows, map_cells
+
+
+# ---------------------------------------------------------------------------
+# .njn tileset + .njm map binary emitters (see sprite_asset.hpp / tilemap_asset.hpp)
+# ---------------------------------------------------------------------------
+
+def emit_njn_bytes(pixel_data, cell_w, cell_h, cols, rows):
+    """Encode a tileset as .njn bytes: 8-byte 'NJ' header + 1 byte/pixel."""
+    if cols > 255 or rows > 255:
+        raise ValueError(f"tileset grid {cols}x{rows} exceeds the 255x255 .njn header limit")
+    header = struct.pack('<2sBBBBBB', b'NJ', 1, cell_w & 0xFF, cell_h & 0xFF,
+                         cols & 0xFF, rows & 0xFF, 0)
+    return header + bytes(b & 0x0F for b in pixel_data)
+
+
+def emit_njm_bytes(cells, map_w, map_h):
+    """Encode a map as .njm bytes: 8-byte 'NM' header + little-endian uint16 cells."""
+    if map_w > 255 or map_h > 255:
+        raise ValueError(f"map {map_w}x{map_h} exceeds the 255x255 .njm header limit")
+    header = struct.pack('<2sBBBBBB', b'NM', 1, 0, map_w & 0xFF, map_h & 0xFF, 0, 0)
+    body = b"".join(struct.pack('<H', c & 0xFFFF) for c in cells)
+    return header + body
+
+
+# ---------------------------------------------------------------------------
 # Grid / layout helpers
 # ---------------------------------------------------------------------------
 
@@ -304,6 +538,42 @@ def parse_grid(value: str):
     return (w, h)
 
 
+def _run_tilemap(args, input_path):
+    """Tilemap authoring path: emit a .njn tileset + a .njm map (issue #41)."""
+    tile_w, tile_h = args.grid if args.grid else (16, 16)
+
+    try:
+        parsed = parse_aseprite_layers(input_path)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not parsed['layers']:
+        print("Error: no layers found in file", file=sys.stderr)
+        sys.exit(1)
+
+    tileset_pixels, frame_count, cols, rows, cells = build_tilemap(
+        parsed['layers'], parsed['width'], parsed['height'], tile_w, tile_h
+    )
+
+    njn = emit_njn_bytes(tileset_pixels, tile_w, tile_h, frame_count, 1)
+    njm = emit_njm_bytes(cells, cols, rows)
+
+    base = os.path.splitext(args.output)[0] if args.output else os.path.splitext(input_path)[0]
+    njn_path = base + ".njn"
+    njm_path = base + ".njm"
+
+    out_dir = os.path.dirname(os.path.abspath(njn_path))
+    os.makedirs(out_dir, exist_ok=True)
+    with open(njn_path, 'wb') as f:
+        f.write(njn)
+    with open(njm_path, 'wb') as f:
+        f.write(njm)
+
+    print(f"Written: {njn_path}  ({len(njn)} bytes, {frame_count} tiles, {tile_w}x{tile_h})")
+    print(f"Written: {njm_path}  ({len(njm)} bytes, {cols}x{rows} map)")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert indexed-color .aseprite files to enjin C headers."
@@ -315,6 +585,9 @@ def main():
                         help="Output .h path (default: same directory as input, .h extension)")
     parser.add_argument("--grid",   default=None, type=parse_grid, metavar="WxH",
                         help="Cell size for spritesheet-in-single-image mode (e.g. 8x8)")
+    parser.add_argument("--tilemap", action="store_true",
+                        help="Tilemap authoring mode: dice under/over layers into a "
+                             ".njn tileset + .njm map (16x16 tiles unless --grid given)")
 
     args = parser.parse_args()
 
@@ -322,6 +595,10 @@ def main():
     if not os.path.isfile(input_path):
         print(f"Error: file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
+
+    if args.tilemap:
+        _run_tilemap(args, input_path)
+        return
 
     # Derive defaults
     name = args.name or derive_name(input_path)

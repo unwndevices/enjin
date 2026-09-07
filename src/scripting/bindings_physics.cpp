@@ -422,7 +422,9 @@ int LuaBindings::lua_engine_physics_raycast(lua_State* L) {
                         break;
                     }
 
-                    uint8_t tid = tm->getTile(
+                    // Collision keys on the tile id (low 9 bits), not the packed
+                    // cell — an over-band or flipped cell is still solid.
+                    uint16_t tid = tm->getTileId(
                         static_cast<uint8_t>(tileX),
                         static_cast<uint8_t>(tileY));
 

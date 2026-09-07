@@ -1,6 +1,7 @@
 #pragma once
 #include "drawable.hpp"
 #include "../graphics/sprite.hpp"
+#include "../graphics/tilemap_asset.hpp"
 #include <cstring>
 
 namespace enjin2 {
@@ -8,11 +9,14 @@ namespace enjin2 {
 /**
  * @brief Tilemap component for grid-based level rendering.
  *
- * Stores a fixed-size 64x64 uint8_t tile grid on the stack (zero dynamic
- * allocation). Renders only tiles visible within the canvas viewport
- * (viewport culling). Tile ID 0 is transparent (skipped in draw). IDs 1-255
- * are drawn via SpriteSheet::draw(). Includes a tilemap-scoped camera offset
- * and coordinate conversion helpers.
+ * Stores a fixed-size 64x64 uint16_t cell grid on the stack (zero dynamic
+ * allocation, 8192 bytes). Each cell is packed
+ * `[band:1 | vflip:1 | hflip:1 | palbank:4 | tileid:9]` (see tilemap_asset.hpp)
+ * — v1 HONORS band (via the presenter's under/over restore filter) and RESERVES
+ * palbank + the flip bits (stored, not acted on). Renders only tiles visible
+ * within the canvas viewport (viewport culling). Tile id 0 is transparent
+ * (skipped in draw). Includes a tilemap-scoped camera offset and coordinate
+ * conversion helpers.
  *
  * Designed as a C_Drawable component (layer 0 = background by default) that
  * integrates with the existing ECS and Lua binding infrastructure.
@@ -21,6 +25,21 @@ class C_Tilemap : public C_Drawable {
 public:
     static constexpr uint8_t MAX_MAP_W = 64;  ///< Maximum tile grid width, in tiles
     static constexpr uint8_t MAX_MAP_H = 64;  ///< Maximum tile grid height, in tiles
+
+    /// @brief Which restore band a cell belongs to (see drawCellBand).
+    enum class Band : uint8_t { Under = 0, Over = 1 };
+
+    // ---- Cell packing (thin wrappers over the shared tilemap_asset helpers) --
+    static constexpr uint16_t cellTileId(uint16_t cell)  { return tmCellTileId(cell); }
+    static constexpr uint8_t  cellPalbank(uint16_t cell) { return tmCellPalbank(cell); }
+    static constexpr bool     cellHFlip(uint16_t cell)   { return tmCellHFlip(cell); }
+    static constexpr bool     cellVFlip(uint16_t cell)   { return tmCellVFlip(cell); }
+    static constexpr uint8_t  cellBand(uint16_t cell)    { return tmCellBand(cell); }
+    static constexpr uint16_t packCell(uint16_t tileId, uint8_t band = 0,
+                                       uint8_t palbank = 0, bool hflip = false,
+                                       bool vflip = false) {
+        return tmPackCell(tileId, band, palbank, hflip, vflip);
+    }
 
     /**
      * @brief Constructor.
@@ -48,10 +67,11 @@ public:
     // ---- Map data -------------------------------------------------------
 
     /**
-     * @brief Copy tile data into the internal grid.
+     * @brief Copy a byte tile-id map into the internal grid.
      *
-     * Copies w*h bytes from data into m_tiles. Excess rows/columns are left
-     * as zero. Both w and h are clamped to MAX_MAP_W/MAX_MAP_H.
+     * Convenience overload: each input byte is a plain tile id (band 0, no
+     * flip, palbank 0), widened into a packed uint16 cell. Excess rows/columns
+     * are left as zero. Both w and h are clamped to MAX_MAP_W/MAX_MAP_H.
      *
      * @param data  Pointer to tile IDs in row-major order (row 0 first).
      * @param w     Map width in tiles (columns).
@@ -60,20 +80,48 @@ public:
     void setTiles(const uint8_t* data, uint8_t w, uint8_t h);
 
     /**
-     * @brief Set a single tile by grid coordinate.
-     * @param tx    Column index (0-indexed). Silently ignored if >= m_mapW.
-     * @param ty    Row index (0-indexed). Silently ignored if >= m_mapH.
-     * @param tileId Tile ID to place (0 = transparent).
+     * @brief Copy packed uint16 cells into the internal grid (the .njm path).
+     *
+     * Copies w*h cells verbatim (band/flip/palbank/tileid preserved). Excess
+     * rows/columns are left as zero. Both w and h clamp to MAX_MAP_W/MAX_MAP_H.
+     *
+     * @param data Pointer to packed cells in row-major order (row 0 first).
+     * @param w    Map width in tiles (columns).
+     * @param h    Map height in tiles (rows).
      */
-    void setTile(uint8_t tx, uint8_t ty, uint8_t tileId);
+    void setTiles(const uint16_t* data, uint8_t w, uint8_t h);
 
     /**
-     * @brief Get the tile ID at a grid coordinate.
+     * @brief Set a single packed cell by grid coordinate.
+     * @param tx   Column index (0-indexed). Silently ignored if >= m_mapW.
+     * @param ty   Row index (0-indexed). Silently ignored if >= m_mapH.
+     * @param cell Packed cell (tile id 0 = transparent).
+     */
+    void setTile(uint8_t tx, uint8_t ty, uint16_t cell);
+
+    /**
+     * @brief Get the packed cell at a grid coordinate.
      * @param tx Column index.
      * @param ty Row index.
-     * @return Tile ID, or 0 if out of bounds.
+     * @return Packed cell, or 0 if out of bounds.
      */
-    uint8_t getTile(uint8_t tx, uint8_t ty) const;
+    uint16_t getTile(uint8_t tx, uint8_t ty) const;
+
+    /**
+     * @brief Get just the tile id (0-511) at a grid coordinate.
+     * @param tx Column index.
+     * @param ty Row index.
+     * @return Tile id, or 0 if out of bounds / transparent.
+     */
+    uint16_t getTileId(uint8_t tx, uint8_t ty) const { return cellTileId(getTile(tx, ty)); }
+
+    /**
+     * @brief Get the band (0 = under, 1 = over) at a grid coordinate.
+     * @param tx Column index.
+     * @param ty Row index.
+     * @return Band bit, or 0 if out of bounds.
+     */
+    uint8_t getTileBand(uint8_t tx, uint8_t ty) const { return cellBand(getTile(tx, ty)); }
 
     // ---- Dimensions -----------------------------------------------------
 
@@ -131,9 +179,54 @@ public:
      *
      * @param px  Screen X in pixels.
      * @param py  Screen Y in pixels.
-     * @return Tile ID at that position, or 0 if out of bounds / transparent.
+     * @return Packed cell at that position, or 0 if out of bounds / transparent.
      */
-    uint8_t tileAtPixel(int16_t px, int16_t py) const;
+    uint16_t tileAtPixel(int16_t px, int16_t py) const;
+
+    /**
+     * @brief Paint a single 16×16 cell into a canvas, filtered by band.
+     *
+     * The presenter's under/over restore filter (issue #34/#41): the under-band
+     * layer (L0) restores with band Under, the over-band layer (L2) with band
+     * Over; actors on L1 render between the two. For compositor tile (tx,ty)
+     * this fills the cell's screen region with @p clearColor, then — only if the
+     * cell's band matches @p band and its tile id is non-zero — draws the tile
+     * over it (index 15 within the tile stays transparent, letting clearColor
+     * show through). Cells of the other band, or empty cells, leave just the
+     * clear fill. Honors the tilemap scroll offset like draw().
+     *
+     * @param canvas     Target 4-bit canvas (a compositor layer).
+     * @param tx         Grid column of the cell.
+     * @param ty         Grid row of the cell.
+     * @param band       Which band this call paints (Under → L0, Over → L2).
+     * @param clearColor Fill for the cell region before drawing (background for
+     *                   the under band, transparent index 15 for the over band).
+     */
+    void drawCellBand(ICanvas<Pixel4>& canvas, uint16_t tx, uint16_t ty,
+                      Band band, Pixel4 clearColor) const {
+        const int16_t tileW = static_cast<int16_t>(m_sheet.cellW);
+        const int16_t tileH = static_cast<int16_t>(m_sheet.cellH);
+        if (tileW == 0 || tileH == 0) return;
+        const int16_t px = static_cast<int16_t>(tx * tileW - m_scrollX);
+        const int16_t py = static_cast<int16_t>(ty * tileH - m_scrollY);
+
+        // Reset the cell region to the clear colour (setPixel bounds-checks).
+        for (int16_t yy = 0; yy < tileH; ++yy) {
+            for (int16_t xx = 0; xx < tileW; ++xx) {
+                canvas.setPixel(static_cast<int16_t>(px + xx),
+                                static_cast<int16_t>(py + yy), clearColor);
+            }
+        }
+
+        if (tx >= m_mapW || ty >= m_mapH) return;
+        const uint16_t cell = m_tiles[ty * m_mapW + tx];
+        const uint16_t tileId = cellTileId(cell);
+        if (tileId == 0) return;                              // transparent cell
+        if (cellBand(cell) != static_cast<uint8_t>(band)) return;  // other band
+        if (m_sheet.data) {
+            m_sheet.draw(canvas, static_cast<uint8_t>(tileId), px, py);
+        }
+    }
 
     // ---- C_Drawable overrides -------------------------------------------
 
@@ -168,7 +261,7 @@ public:
     bool continueToDraw() const override;
 
 private:
-    uint8_t     m_tiles[MAX_MAP_W * MAX_MAP_H];  ///< 4096 bytes, zero-alloc on stack
+    uint16_t    m_tiles[MAX_MAP_W * MAX_MAP_H];  ///< 8192 bytes, zero-alloc on stack
     SpriteSheet m_sheet;                          ///< Tileset (value copy)
     uint8_t     m_mapW{0};                        ///< Active map width in tiles
     uint8_t     m_mapH{0};                        ///< Active map height in tiles
