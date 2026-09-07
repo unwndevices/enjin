@@ -117,18 +117,32 @@ int LuaBindings::lua_engine_ui_panel(lua_State* L) {
     uint16_t w = static_cast<uint16_t>(luaL_checkinteger(L, 3));
     uint16_t h = static_cast<uint16_t>(luaL_checkinteger(L, 4));
 
-    uint8_t bg, border;
+    uint8_t bg;
+    BorderStyle bstyle;
     if (lua_type(L, 5) == LUA_TSTRING) {
+        // Slot: resolve a full BorderStyle (colour, thickness, radius, kind,
+        // shadow) from the style slot (#18/#39). Derived tones stay derived.
         const Style& st = b->resolveStyle(checkStyleSlotArg(L, 5));
-        bg     = st.fill.value;
-        border = st.border.value;
+        bg               = st.fill.value;
+        bstyle.color     = st.border;
+        bstyle.thickness = st.borderWidth ? st.borderWidth : uint8_t{1};
+        bstyle.radius    = st.radius;
+        bstyle.kind      = (st.borderKind <= static_cast<uint8_t>(BorderKind::DropShadow))
+                               ? static_cast<BorderKind>(st.borderKind)
+                               : BorderKind::Solid;
+        bstyle.shadowDx  = st.shadowDx;
+        bstyle.shadowDy  = st.shadowDy;
     } else {
-        bg     = static_cast<uint8_t>(luaL_checkinteger(L, 5));
-        border = static_cast<uint8_t>(luaL_checkinteger(L, 6));
+        // Legacy explicit (bg, border): a plain 1px solid outline.
+        bg               = static_cast<uint8_t>(luaL_checkinteger(L, 5));
+        bstyle.color     = Pixel4(static_cast<uint8_t>(luaL_checkinteger(L, 6)));
+        bstyle.thickness = 1;
+        bstyle.radius    = 0;
+        bstyle.kind      = BorderKind::Solid;
     }
 
-    b->currentCanvas->fillRect(x, y, w, h, bg);      // background fill
-    b->currentCanvas->drawRect(x, y, w, h, border);  // border outline over fill
+    b->currentCanvas->fillRect(x, y, w, h, bg);          // background fill
+    b->currentCanvas->strokeBorder(x, y, w, h, bstyle);  // computed span-walker border
     return 0;
 }
 

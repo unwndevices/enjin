@@ -24,6 +24,7 @@
 #include <cstdlib>
 
 #include "canvas.hpp"
+#include "palette.hpp"
 
 namespace enjin2
 {
@@ -200,6 +201,65 @@ namespace enjin2
                 const int d = dst.getPixel(x + sx, y + sy);
                 dst.setPixel(x + sx, y + sy, Pixel4(uint8_t(std::max(0, d - s))));
             }
+    }
+
+    // ---- Playdate-style 9-slice (Tomodachi #39) ----
+
+    // Draw `src` into the dst rect (x, y, w, h) as a nine-slice: the source is
+    // split into nine regions by `cornerW`/`cornerH` margins. The four corners
+    // are copied 1:1; the four edges TILE along their axis and the centre tiles
+    // in both — edges are **never stretched** (R4). Source pixels equal to
+    // `transparent` are skipped, so a rounded panel's outside stays clear.
+    //
+    // Because it copies palette indices verbatim, the panel art re-skins for
+    // free on a palette swap (the indices hold their roles). `cornerW`/`cornerH`
+    // are clamped so the corners never overlap in either the source or the dst.
+    inline void nineSlice(ICanvas<Pixel4> &dst, int16_t x, int16_t y, int16_t w,
+                          int16_t h, const ICanvas<Pixel4> &src, int16_t cornerW,
+                          int16_t cornerH, Pixel4 transparent = Pixel4(PALETTE_TRANSPARENT))
+    {
+        if (w <= 0 || h <= 0)
+            return;
+        const int16_t srcW = static_cast<int16_t>(src.getWidth());
+        const int16_t srcH = static_cast<int16_t>(src.getHeight());
+        if (srcW <= 0 || srcH <= 0)
+            return;
+
+        int16_t cw = cornerW;
+        int16_t ch = cornerH;
+        if (cw < 0) cw = 0;
+        if (ch < 0) ch = 0;
+        cw = std::min<int16_t>(cw, std::min<int16_t>(srcW / 2, w / 2));
+        ch = std::min<int16_t>(ch, std::min<int16_t>(srcH / 2, h / 2));
+
+        const int16_t srcMidW = static_cast<int16_t>(srcW - 2 * cw);
+        const int16_t srcMidH = static_cast<int16_t>(srcH - 2 * ch);
+
+        // Map a dst coordinate to a src coordinate along one axis: fixed corners,
+        // tiled middle. Returns -1 when the middle has no source strip to tile.
+        auto mapAxis = [](int16_t d, int16_t start, int16_t extent, int16_t corner,
+                          int16_t srcExtent, int16_t srcMid) -> int16_t {
+            const int16_t off = static_cast<int16_t>(d - start);
+            if (off < corner)
+                return off;  // leading corner, copied 1:1
+            if (off >= extent - corner)
+                return static_cast<int16_t>(srcExtent - (extent - off));  // trailing corner
+            if (srcMid <= 0)
+                return -1;
+            return static_cast<int16_t>(corner + ((off - corner) % srcMid));  // tiled middle
+        };
+
+        for (int16_t dy = y; dy < y + h; ++dy) {
+            const int16_t sy = mapAxis(dy, y, h, ch, srcH, srcMidH);
+            if (sy < 0) continue;
+            for (int16_t dx = x; dx < x + w; ++dx) {
+                const int16_t sx = mapAxis(dx, x, w, cw, srcW, srcMidW);
+                if (sx < 0) continue;
+                const Pixel4 sp = src.getPixel(sx, sy);
+                if (sp.value == transparent.value) continue;
+                dst.setPixel(dx, dy, sp);
+            }
+        }
     }
 }
 

@@ -168,7 +168,18 @@ public:
      * @param color Fill color
      */
     void fillRect(int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t color);
-    
+
+    /**
+     * @brief Stroke a (rounded) border with the computed span-walker (#39).
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param width Border outer width
+     * @param height Border outer height
+     * @param style Resolved border tokens (colour, thickness, radius, kind, shadow)
+     */
+    void strokeBorder(int16_t x, int16_t y, uint16_t width, uint16_t height,
+                      const BorderStyle& style);
+
     /**
      * @brief Draw circle outline
      * @param x Center X coordinate

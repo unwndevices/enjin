@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/types.hpp"
+#include "border.hpp"
 #include "canvas.hpp"
 #include <algorithm>
 #include <cmath>
@@ -172,39 +173,22 @@ public:
      * @brief Draw a rounded-rectangle outline
      * @param canvas Target canvas
      * @param rect Rectangle bounds
-     * @param radius Corner radius (no clamp — Canvas8 semantics, unwn #168)
+     * @param radius Corner radius (clamped to half the smaller extent)
      * @param color Outline color
      *
-     * Straight edges plus four corner arcs rasterised by the annulus test
-     * `(r-1)^2 <= i^2+j^2 <= r^2` — the Canvas8 original, byte-for-byte
-     * (sweep adjudication, unwn #168). Deliberately no radius clamp and no
-     * zero-radius degrade: Canvas8 has neither, and every shipped popup and
-     * label box was rasterised by exactly this walk. Upstreamed alongside the
-     * Pixel4 widget layer (Label/PopUp/Gauge) so they no longer settle for a
-     * square bar (see list.hpp Gate-2 note).
+     * The old corner-arc annulus (`(r-1)^2 <= i^2+j^2 <= r^2`) is deleted: this
+     * is now a 1px `strokeBorder` (Tomodachi #39), so there is one border
+     * rasteriser, not two. A zero radius still degrades to the square outline
+     * byte-for-byte; the rounded corners diverge from the Canvas8 annulus by a
+     * bounded amount, waived in the parity bench (`geom.drawRoundRect`, r > 0).
      */
     static void drawRoundRect(ICanvas<TPixel>& canvas, const Rect& rect, int16_t radius, TPixel color) {
-        const int16_t x = rect.x;
-        const int16_t y = rect.y;
-        const int16_t w = static_cast<int16_t>(rect.width);
-        const int16_t h = static_cast<int16_t>(rect.height);
-        // Straight edges.
-        drawLine(canvas, x + radius, y, x + w - radius - 1, y, color);                 // top
-        drawLine(canvas, x + radius, y + h - 1, x + w - radius - 1, y + h - 1, color); // bottom
-        drawLine(canvas, x, y + radius, x, y + h - radius - 1, color);                 // left
-        drawLine(canvas, x + w - 1, y + radius, x + w - 1, y + h - radius - 1, color); // right
-        // Corner arcs.
-        for (int16_t i = 0; i <= radius; i++) {
-            for (int16_t j = 0; j <= radius; j++) {
-                if (i * i + j * j <= radius * radius &&
-                    i * i + j * j >= (radius - 1) * (radius - 1)) {
-                    canvas.setPixel(x + radius - i, y + radius - j, color);                 // top-left
-                    canvas.setPixel(x + w - radius - 1 + i, y + radius - j, color);         // top-right
-                    canvas.setPixel(x + radius - i, y + h - radius - 1 + j, color);         // bottom-left
-                    canvas.setPixel(x + w - radius - 1 + i, y + h - radius - 1 + j, color); // bottom-right
-                }
-            }
-        }
+        BorderStyle style;
+        style.color = Pixel4(static_cast<uint8_t>(color));
+        style.thickness = 1;
+        style.radius = static_cast<uint8_t>(radius < 0 ? 0 : radius);
+        style.kind = BorderKind::Solid;
+        strokeBorder(canvas, rect, style);
     }
 
     /**

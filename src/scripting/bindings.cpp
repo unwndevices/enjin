@@ -308,6 +308,18 @@ void LuaCanvas::fillRect(int16_t x, int16_t y, uint16_t width, uint16_t height, 
     }
 }
 
+void LuaCanvas::strokeBorder(int16_t x, int16_t y, uint16_t width, uint16_t height,
+                             const BorderStyle& style) {
+    Rect rect(x, y, width, height);
+    if (is4Bit) {
+        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
+        enjin2::strokeBorder(*canvas, rect, style);
+    } else {
+        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
+        enjin2::strokeBorder(*canvas, rect, style);
+    }
+}
+
 void LuaCanvas::drawCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color) {
     if (is4Bit) {
         auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
