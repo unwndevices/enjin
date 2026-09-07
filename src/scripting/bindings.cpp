@@ -1,4 +1,5 @@
 #include "bindings_internal.hpp"
+#include "../../include/enjin2/scripting/effect_lua.hpp"
 #include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/components/lua_script.hpp"
@@ -307,6 +308,18 @@ void LuaCanvas::fillRect(int16_t x, int16_t y, uint16_t width, uint16_t height, 
     }
 }
 
+void LuaCanvas::strokeBorder(int16_t x, int16_t y, uint16_t width, uint16_t height,
+                             const BorderStyle& style) {
+    Rect rect(x, y, width, height);
+    if (is4Bit) {
+        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
+        enjin2::strokeBorder(*canvas, rect, style);
+    } else {
+        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
+        enjin2::strokeBorder(*canvas, rect, style);
+    }
+}
+
 void LuaCanvas::drawCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color) {
     if (is4Bit) {
         auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
@@ -441,6 +454,9 @@ void LuaBindings::registerAll() {
     resetSpritePool();
     currentColor = 15;
     lineWidth = 1;
+    // Style slots (#19/#37): a fresh applet starts on the ROM theme defaults —
+    // clearing the mask discards every override without touching the values.
+    m_styleSetMask = 0;
 
     // Reset game state machine
     strncpy(m_currentGameState, "none", sizeof(m_currentGameState) - 1);
@@ -578,6 +594,11 @@ void LuaBindings::registerAll() {
     lua_setfield(L, -2, "COLOR");  // gfx.COLOR
 
     lua_setglobal(L, "gfx");
+
+    // Index-shader constructors: gfx.remap / gfx.mask / gfx.effect (#36).
+    // Augments the gfx table just set above; the apply site gfx.drawSprite(..,
+    // fx) consumes the Effect userdata these return.
+    enjin2::lua::registerEffectApi(L);
 
     // === print() stays as bare global ===
     engine->registerFunction("print", lua_print);

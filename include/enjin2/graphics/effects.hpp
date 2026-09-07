@@ -21,25 +21,6 @@ template<typename TPixel>
 class Effects {
 public:
     /**
-     * @brief Dither pattern for anti-aliasing
-     * @param canvas Target canvas
-     * @param rect Region to dither
-     * @param color1 First color in pattern
-     * @param color2 Second color in pattern
-     * @param pattern Dithering pattern bitmask (default: 0xAA checkerboard)
-     */
-    static void ditherPattern(ICanvas<TPixel>& canvas, const Rect& rect,
-                             TPixel color1, TPixel color2, uint8_t pattern = 0xAA) {
-        for (int16_t y = rect.y; y < rect.y + rect.height; ++y) {
-            for (int16_t x = rect.x; x < rect.x + rect.width; ++x) {
-                uint8_t bit_pos = ((y - rect.y) * 8 + (x - rect.x)) % 8;
-                TPixel color = (pattern & (1 << bit_pos)) ? color1 : color2;
-                canvas.setPixel(x, y, color);
-            }
-        }
-    }
-
-    /**
      * @brief Apply simple blur effect (box filter)
      * @param canvas Target canvas
      * @param rect Region to blur

@@ -52,6 +52,25 @@ constexpr uint8_t PALETTE_TRANSPARENT = 15;
 constexpr uint8_t PALETTE_MAX_ENTRIES = 15;
 
 /**
+ * @name Ramp structure
+ * @brief The 15 colour indices (0-14) are organised as 5 ramps × 3 shades.
+ *
+ * A *ramp* is one hue at three tones; index `i` sits on ramp `i / 3` at shade
+ * `i % 3`. Shade 0 is the light tone, 1 the base, 2 the dark. This structure is
+ * a pure convention over the index space — it is independent of the RGB values,
+ * so re-authoring the palette re-skins every ramp while the structural
+ * operations (@ref Palette::ramp, @ref Palette::lighten, @ref Palette::darken)
+ * keep holding. Index 15 stays transparent and is never on a ramp.
+ * @{
+ */
+constexpr uint8_t RAMP_COUNT = 5;   ///< Number of ramps (hues) over indices 0-14
+constexpr uint8_t RAMP_SHADES = 3;  ///< Tones per ramp: light, base, dark
+constexpr uint8_t SHADE_LIGHT = 0;  ///< Lightest tone within a ramp
+constexpr uint8_t SHADE_BASE = 1;   ///< Mid tone within a ramp
+constexpr uint8_t SHADE_DARK = 2;   ///< Darkest tone within a ramp
+/** @} */
+
+/**
  * @brief Runtime color palette for Canvas4 pixel-to-RGB mapping
  *
  * Maps 4-bit pixel indices (0-14) to 24-bit RGB colors at display time.
@@ -142,6 +161,49 @@ struct Palette {
      * @return Number of active color entries (used for index wrapping)
      */
     uint8_t getSize() const;
+
+    /**
+     * @brief Index of a ramp/shade pair (structural, palette-independent).
+     * @param rampId Ramp (hue) 0-4.
+     * @param shade Tone within the ramp: @ref SHADE_LIGHT / @ref SHADE_BASE /
+     *              @ref SHADE_DARK.
+     * @return The palette index `rampId * RAMP_SHADES + shade`.
+     */
+    static constexpr uint8_t ramp(uint8_t rampId, uint8_t shade) {
+        return static_cast<uint8_t>((rampId * RAMP_SHADES) + shade);
+    }
+
+    /**
+     * @brief The next lighter shade on the same ramp, clamped within the ramp.
+     *
+     * Steps one tone toward the light end (`i - 1`) but never crosses into the
+     * previous ramp: an already-light index (`i % 3 == SHADE_LIGHT`) stays put.
+     * Index 15 (transparent) is returned unchanged.
+     *
+     * @param i Source palette index.
+     * @return The lightened index, clamped to its ramp.
+     */
+    static constexpr uint8_t lighten(uint8_t i) {
+        if (i == PALETTE_TRANSPARENT) return PALETTE_TRANSPARENT;
+        if (i % RAMP_SHADES == SHADE_LIGHT) return i;
+        return static_cast<uint8_t>(i - 1);
+    }
+
+    /**
+     * @brief The next darker shade on the same ramp, clamped within the ramp.
+     *
+     * Steps one tone toward the dark end (`i + 1`) but never crosses into the
+     * next ramp: an already-dark index (`i % 3 == SHADE_DARK`) stays put. Index
+     * 15 (transparent) is returned unchanged.
+     *
+     * @param i Source palette index.
+     * @return The darkened index, clamped to its ramp.
+     */
+    static constexpr uint8_t darken(uint8_t i) {
+        if (i == PALETTE_TRANSPARENT) return PALETTE_TRANSPARENT;
+        if (i % RAMP_SHADES == SHADE_DARK) return i;
+        return static_cast<uint8_t>(i + 1);
+    }
 };
 
 /**

@@ -1,4 +1,5 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
+#include "../../include/enjin2/scripting/effect_lua.hpp"
 
 namespace enjin2 {
 
@@ -98,6 +99,13 @@ int LuaBindings::lua_drawSprite(lua_State* L) {
     bool flipV    = lua_toboolean(L, 5) != 0;
     bool rotate90 = lua_toboolean(L, 6) != 0;
 
+    // Optional index shader (#36): arg 7 is an Effect userdata. The sprite's
+    // silhouette is the clip (index 15 is still skipped wholesale); surviving
+    // pixels are run through the effect at their absolute destination coords.
+    Effect shader;
+    const bool hasShader = luaL_testudata(L, 7, enjin2::lua::effectMt()) != nullptr;
+    if (hasShader) shader = enjin2::lua::checkEffect(L, 7);
+
     const auto& s = b->spritePool[handle];
     if (!s.sheet.data || s.frame >= s.sheet.frameCount()) return 0;
 
@@ -119,7 +127,10 @@ int LuaBindings::lua_drawSprite(lua_State* L) {
                 // Destination coordinate remapping for 90° rotation
                 int16_t dstX = rotate90 ? (cellH - 1 - fy) : fx;
                 int16_t dstY = rotate90 ? fx : fy;
-                b->currentCanvas->setPixel(x + dstX, y + dstY, px);
+                const int16_t ax = static_cast<int16_t>(x + dstX);
+                const int16_t ay = static_cast<int16_t>(y + dstY);
+                const uint8_t out = hasShader ? shader.shadePixel(px, ax, ay) : px;
+                b->currentCanvas->setPixel(ax, ay, out);
             }
         }
     }

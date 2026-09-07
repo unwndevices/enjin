@@ -13,6 +13,8 @@
 #include "gfxfont.h"
 // Include default font data
 #include "defaultfont.hpp"
+// Index-shader effect model (Mask x Remap x phase)
+#include "effect.hpp"
 
 namespace enjin2
 {
@@ -120,10 +122,26 @@ namespace enjin2
         /// @brief Pixel type used by this canvas
         using PixelType = Pixel4;
 
+    public:
+        /// @brief Side of one dirty/redraw/art tile, in pixels. The one grid:
+        /// 16×16 is the art unit, the restore unit and the composite push unit.
+        static constexpr uint16_t TILE_SIZE = 16;
+        /// @brief Tile columns (ceil(WIDTH / TILE_SIZE)).
+        static constexpr uint16_t TILES_X = (WIDTH + TILE_SIZE - 1) / TILE_SIZE;
+        /// @brief Tile rows (ceil(HEIGHT / TILE_SIZE)).
+        static constexpr uint16_t TILES_Y = (HEIGHT + TILE_SIZE - 1) / TILE_SIZE;
+        /// @brief Total tiles in the dirty grid.
+        static constexpr uint16_t TILE_COUNT = TILES_X * TILES_Y;
+
     private:
         static constexpr size_t ROW_BYTES = (WIDTH + 1) / 2;
         static constexpr size_t BUFFER_SIZE = ROW_BYTES * HEIGHT;
+        static constexpr size_t DIRTY_BYTES = (TILE_COUNT + 7) / 8;
         PackedPixel4 buffer[BUFFER_SIZE];
+
+        /// @brief One bit per 16×16 tile: set when a primitive (or explicit
+        /// invalidate) touched that tile this frame. Reset by clearDirty().
+        uint8_t dirtyBits[DIRTY_BYTES];
 
         size_t getIndex(int16_t x, int16_t y) const
         {
@@ -133,6 +151,14 @@ namespace enjin2
         bool isLowPixel(int16_t x) const
         {
             return (x % 2) == 0;
+        }
+
+        /// @brief Mark the tile that contains pixel (x, y). Assumes in-bounds.
+        void markTilePixel(int16_t x, int16_t y)
+        {
+            const uint16_t t = static_cast<uint16_t>(y / TILE_SIZE) * TILES_X +
+                               static_cast<uint16_t>(x / TILE_SIZE);
+            dirtyBits[t >> 3] |= static_cast<uint8_t>(1u << (t & 7));
         }
 
     public:
@@ -161,6 +187,7 @@ namespace enjin2
             {
                 buffer[index].setHigh(color);
             }
+            markTilePixel(x, y);
         }
 
         Pixel4 getPixel(int16_t x, int16_t y) const override
@@ -176,6 +203,132 @@ namespace enjin2
         {
             uint8_t packed = (color.value << 4) | color.value;
             memset(buffer, packed, BUFFER_SIZE);
+            invalidateAll();
+        }
+
+        // ========================================
+        // DIRTY-TILE TRACKING
+        // ========================================
+
+        /// @brief Mark a single tile (by tile coordinates) dirty. Out-of-range
+        /// tile coordinates are ignored.
+        void invalidateTile(uint16_t tx, uint16_t ty)
+        {
+            if (tx >= TILES_X || ty >= TILES_Y)
+                return;
+            const uint16_t t = ty * TILES_X + tx;
+            dirtyBits[t >> 3] |= static_cast<uint8_t>(1u << (t & 7));
+        }
+
+        /// @brief Mark every tile touched by a pixel rectangle dirty. The rect
+        /// is clipped to the canvas; a zero/negative extent marks nothing.
+        void invalidate(int16_t x, int16_t y, int16_t w, int16_t h)
+        {
+            if (w <= 0 || h <= 0)
+                return;
+            int16_t x1 = x < 0 ? 0 : x;
+            int16_t y1 = y < 0 ? 0 : y;
+            int16_t x2 = x + w; // exclusive
+            int16_t y2 = y + h;
+            if (x2 > WIDTH) x2 = WIDTH;
+            if (y2 > HEIGHT) y2 = HEIGHT;
+            if (x1 >= x2 || y1 >= y2)
+                return;
+            const uint16_t tx0 = static_cast<uint16_t>(x1 / TILE_SIZE);
+            const uint16_t ty0 = static_cast<uint16_t>(y1 / TILE_SIZE);
+            const uint16_t tx1 = static_cast<uint16_t>((x2 - 1) / TILE_SIZE);
+            const uint16_t ty1 = static_cast<uint16_t>((y2 - 1) / TILE_SIZE);
+            for (uint16_t ty = ty0; ty <= ty1; ++ty)
+            {
+                for (uint16_t tx = tx0; tx <= tx1; ++tx)
+                {
+                    const uint16_t t = ty * TILES_X + tx;
+                    dirtyBits[t >> 3] |= static_cast<uint8_t>(1u << (t & 7));
+                }
+            }
+        }
+
+        /// @brief Mark all tiles dirty.
+        void invalidateAll()
+        {
+            memset(dirtyBits, 0xFF, DIRTY_BYTES);
+        }
+
+        /// @brief Reset the dirty grid — no tiles dirty. Called at the frame
+        /// boundary once the compositor has consumed the dirty set.
+        void clearDirty()
+        {
+            memset(dirtyBits, 0, DIRTY_BYTES);
+        }
+
+        /// @brief Is the tile at (tx, ty) marked dirty? Out-of-range is false.
+        bool isTileDirty(uint16_t tx, uint16_t ty) const
+        {
+            if (tx >= TILES_X || ty >= TILES_Y)
+                return false;
+            const uint16_t t = ty * TILES_X + tx;
+            return (dirtyBits[t >> 3] & static_cast<uint8_t>(1u << (t & 7))) != 0;
+        }
+
+        /// @brief Does any tile carry a dirty mark?
+        bool hasDirty() const
+        {
+            for (size_t i = 0; i < DIRTY_BYTES; ++i)
+            {
+                if (dirtyBits[i] != 0)
+                    return true;
+            }
+            return false;
+        }
+
+        /// @brief Count of tiles currently marked dirty.
+        uint16_t dirtyTileCount() const
+        {
+            uint16_t count = 0;
+            for (uint16_t ty = 0; ty < TILES_Y; ++ty)
+            {
+                for (uint16_t tx = 0; tx < TILES_X; ++tx)
+                {
+                    if (isTileDirty(tx, ty))
+                        ++count;
+                }
+            }
+            return count;
+        }
+
+        /// @brief Read-only pointer to the raw dirty-tile bitmap (row-major,
+        /// bit `ty*TILES_X + tx`). Used by the compositor to snapshot and merge.
+        const uint8_t *dirtyBitmap() const { return dirtyBits; }
+        /// @brief Size of the dirty-tile bitmap in bytes.
+        static constexpr size_t dirtyBitmapBytes() { return DIRTY_BYTES; }
+        /// @brief Overwrite the dirty-tile bitmap from a snapshot of the same
+        /// size. Lets the compositor save/restore marks around a restore paint.
+        void setDirtyBitmap(const uint8_t *bits)
+        {
+            memcpy(dirtyBits, bits, DIRTY_BYTES);
+        }
+
+        /// @brief Fill a tile's pixel region with a colour WITHOUT marking it
+        /// dirty. The compositor's restore step uses this so restored tiles are
+        /// tracked via its own restore set rather than re-dirtying the layer
+        /// (which would stop a backdrop layer from ever settling).
+        void fillTileNoMark(uint16_t tx, uint16_t ty, Pixel4 color)
+        {
+            const int16_t x0 = static_cast<int16_t>(tx * TILE_SIZE);
+            const int16_t y0 = static_cast<int16_t>(ty * TILE_SIZE);
+            const int16_t x1 = static_cast<int16_t>(x0 + TILE_SIZE > WIDTH ? WIDTH : x0 + TILE_SIZE);
+            const int16_t y1 = static_cast<int16_t>(y0 + TILE_SIZE > HEIGHT ? HEIGHT : y0 + TILE_SIZE);
+            for (int16_t py = y0; py < y1; ++py)
+            {
+                for (int16_t px = x0; px < x1; ++px)
+                {
+                    size_t index = getIndex(px, py);
+                    if (isLowPixel(px))
+                        buffer[index].setLow(color);
+                    else
+                        buffer[index].setHigh(color);
+                }
+            }
         }
 
         // ========================================
@@ -204,6 +357,15 @@ namespace enjin2
             {
                 width = WIDTH - x;
             }
+
+            // Clipping a span that starts far off the left edge can drive width
+            // negative; bail before the memset fast path reads a negative count.
+            if (width <= 0)
+                return;
+
+            // Mark the row's tile span dirty (covers both the memset fast path,
+            // which bypasses setPixel, and the fallback).
+            invalidate(x, y, width, 1);
 
             // Fast path for even alignment and even width
             if ((x & 1) == 0 && (width & 1) == 0)
@@ -296,6 +458,9 @@ namespace enjin2
                 count = WIDTH - x;
             }
 
+            // Mark the tile span dirty (the fast path below bypasses setPixel).
+            invalidate(x, y, count, 1);
+
             // Optimized batch setting for even-aligned data
             if ((x & 1) == 0 && (count & 1) == 0)
             {
@@ -328,6 +493,39 @@ namespace enjin2
                 for (int16_t x = x1; x < x2; ++x)
                 {
                     setPixel(x, y, color);
+                }
+            }
+        }
+
+        /**
+         * @brief Apply an index shader over a rectangle.
+         *
+         * Each pixel in `rect` (clipped to the canvas) is read, run through the
+         * @ref Effect (mask x remap x phase) sampled at its **absolute** canvas
+         * coordinates, and written back. Because the mask is keyed on absolute
+         * coords, a shaded rect that spans several dirty tiles carries one
+         * continuous pattern phase — no seam appears at a tile boundary. Writes
+         * go through @ref setPixel, so the touched tiles mark themselves dirty.
+         *
+         * This is one of the two shader apply sites; @ref SpriteSheet::draw is
+         * the other, and both funnel through @ref Effect::shadePixel.
+         *
+         * @param rect Region to shade, in canvas coordinates.
+         * @param fx   The effect to apply.
+         */
+        void shade(const Rect &rect, const Effect &fx)
+        {
+            int16_t x1 = std::max<int16_t>(0, rect.x);
+            int16_t y1 = std::max<int16_t>(0, rect.y);
+            int16_t x2 = std::min<int16_t>(WIDTH, rect.x + rect.width);
+            int16_t y2 = std::min<int16_t>(HEIGHT, rect.y + rect.height);
+
+            for (int16_t y = y1; y < y2; ++y)
+            {
+                for (int16_t x = x1; x < x2; ++x)
+                {
+                    const uint8_t src = getPixel(x, y).value;
+                    setPixel(x, y, Pixel4(fx.shadePixel(src, x, y)));
                 }
             }
         }

@@ -105,12 +105,48 @@ static void test_clipping()
     ASSERT(dst.getPixel(15, 15).value == 3, "interior stays untouched");
 }
 
+// fillRectWithPattern samples at ABSOLUTE canvas coords (Tomodachi #36 ratified
+// HEAD; the rect-relative BASE `blit.pattern` bench pair is retired). This pins
+// that ratified behaviour: the sample index depends on where the rect sits, not
+// on its local origin, so abutting rects tile seamlessly.
+static void test_pattern_absolute_phase()
+{
+    printf("--- fillRectWithPattern absolute phase ---\n");
+    // 2x2 checker: pattern[(y%2)*2 + (x%2)] over {A,B,B,A}.
+    static const uint8_t checker[4] = {5, 6, 6, 5};
+    Dst dst;
+    dst.clear(Pixel4(0));
+
+    // A 1x1 rect at an even/even absolute coord samples cell (0,0) = 5.
+    fillRectWithPattern(dst, 4, 4, 1, 1, checker, 2, 2);
+    ASSERT(dst.getPixel(4, 4).value == 5, "even/even absolute -> cell(0,0)=5");
+
+    // A 1x1 rect at an odd x samples cell (1,0) = 6 — absolute, not rect-local
+    // (a rect-relative fill would sample cell(0,0) here since px==0).
+    fillRectWithPattern(dst, 5, 4, 1, 1, checker, 2, 2);
+    ASSERT(dst.getPixel(5, 4).value == 6, "odd-x absolute -> cell(1,0)=6");
+
+    // Seam check: a 2-wide rect at x=4 and two 1-wide rects at x=4 and x=5 must
+    // produce the same two pixels (absolute phase makes the split invisible).
+    Dst whole;
+    whole.clear(Pixel4(0));
+    fillRectWithPattern(whole, 4, 7, 2, 1, checker, 2, 2);
+    Dst split;
+    split.clear(Pixel4(0));
+    fillRectWithPattern(split, 4, 7, 1, 1, checker, 2, 2);
+    fillRectWithPattern(split, 5, 7, 1, 1, checker, 2, 2);
+    ASSERT(whole.getPixel(4, 7).value == split.getPixel(4, 7).value &&
+               whole.getPixel(5, 7).value == split.getPixel(5, 7).value,
+           "split fill matches whole fill (seamless)");
+}
+
 int main()
 {
     printf("=== blit_semantics_test (unwn #168) ===\n");
     test_transparent_skip();
     test_divisor_fade();
     test_clipping();
+    test_pattern_absolute_phase();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

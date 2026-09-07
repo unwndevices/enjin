@@ -1,14 +1,16 @@
-// Overlay + PopUp widget test (Phase 3a, #121): OverlayBg's dim and PopUpUI's modal
-// rewritten as data-only OverlayComponent / PopUpComponent + their systems.
+// PopUp widget test (Phase 3a, #121): PopUpUI's modal rewritten as a data-only
+// PopUpComponent + its system.
 //
-// Two pure seams carry the logic: the overlay's per-pixel subtractive dim (which
-// saturates at black), and the popup's auto-hide countdown (which accrues time and
-// hides itself at the deadline). Render passes then dim a real Canvas4 and draw the
-// popup card, and confirm a hidden popup paints nothing.
+// The popup's auto-hide countdown (which accrues time and hides itself at the
+// deadline) is the pure seam; a render pass then draws the popup card and
+// confirms a hidden popup paints nothing.
+//
+// The former OverlayBg subtractive dim (OverlayComponent/OverlaySystem) was
+// removed with presenter ticket #34: full-frame dimming is now expressed as a
+// per-layer tint Remap on the compositor, not a canvas-walking ECS system.
 #include <enjin2/ui/component.hpp>
 #include <enjin2/ui/components.hpp>
 #include <enjin2/ui/world.hpp>
-#include <enjin2/ui/widgets/overlay.hpp>
 #include <enjin2/ui/widgets/popup.hpp>
 #include <enjin2/graphics/canvas.hpp>
 #include <cstdio>
@@ -23,48 +25,6 @@ static int failures = 0;
         if (!(cond)) { fprintf(stderr, "FAIL: %s\n", msg); failures++; }      \
         else { printf("PASS: %s\n", msg); passes++; }                         \
     } while (0)
-
-// The overlay's dim subtracts its opacity from a pixel and saturates at 0 so a
-// dark pixel never wraps back to bright.
-static void test_overlay_dim_saturates() {
-    OverlayComponent overlay(5);
-    ASSERT(overlay.dim(12) == 7, "overlay: dim subtracts the opacity");
-    ASSERT(overlay.dim(5) == 0, "overlay: dim to exactly zero");
-    ASSERT(overlay.dim(2) == 0, "overlay: dim saturates at black");
-}
-
-// The overlay system darkens the whole canvas by the overlay's opacity.
-static void test_overlay_render_darkens_all() {
-    using OverlayWorld = World<8, OverlayComponent>;
-    OverlayWorld world;
-    Canvas4<16, 16> canvas;
-    OverlaySystem<OverlayWorld, Canvas4<16, 16>> system(&world, &canvas);
-
-    Entity e = world.create();
-    world.add<OverlayComponent>(e, static_cast<uint8_t>(4));
-
-    canvas.clear(Pixel4(10));
-    system.update(0.016f);
-
-    ASSERT(canvas.getPixel(0, 0) == 6, "overlay: top-left dimmed 10 -> 6");
-    ASSERT(canvas.getPixel(15, 15) == 6, "overlay: bottom-right dimmed 10 -> 6");
-}
-
-// A hidden overlay leaves the canvas untouched.
-static void test_overlay_hidden_is_noop() {
-    using OverlayWorld = World<8, OverlayComponent>;
-    OverlayWorld world;
-    Canvas4<16, 16> canvas;
-    OverlaySystem<OverlayWorld, Canvas4<16, 16>> system(&world, &canvas);
-
-    Entity e = world.create();
-    auto* overlay = world.add<OverlayComponent>(e, static_cast<uint8_t>(4));
-    overlay->setVisible(false);
-
-    canvas.clear(Pixel4(10));
-    system.update(0.016f);
-    ASSERT(canvas.getPixel(0, 0) == 10, "overlay: hidden overlay does not dim");
-}
 
 // setLines truncates each message to the popup's character cap.
 static void test_popup_truncates_lines() {
@@ -130,9 +90,6 @@ static void test_popup_render() {
 }
 
 int main() {
-    test_overlay_dim_saturates();
-    test_overlay_render_darkens_all();
-    test_overlay_hidden_is_noop();
     test_popup_truncates_lines();
     test_popup_auto_hide_seam();
     test_popup_render();

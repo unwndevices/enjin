@@ -43,6 +43,17 @@ target_link_libraries(ui_animator_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_animator_test COMMAND ui_animator_test)
 
+# Spring substrate unit test (#38: retargetable chrome spring beside the animator)
+add_executable(spring_test
+    spring_test.cpp
+)
+target_include_directories(spring_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(spring_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME spring_test COMMAND spring_test)
+
 # List widget unit test (Phase 3a, #121: C_List -> data-only ListComponent + ListSystem)
 add_executable(ui_list_test
     ui_list_test.cpp
@@ -64,6 +75,28 @@ target_include_directories(primitives_roundrect_test PRIVATE
 target_link_libraries(primitives_roundrect_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME primitives_roundrect_test COMMAND primitives_roundrect_test)
+
+# Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
+add_executable(border_stroke_test
+    border_stroke_test.cpp
+)
+target_include_directories(border_stroke_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(border_stroke_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME border_stroke_test COMMAND border_stroke_test)
+
+# Nine-slice blit test (Tomodachi #39): edges tile, never stretch (R4)
+add_executable(nine_slice_test
+    nine_slice_test.cpp
+)
+target_include_directories(nine_slice_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(nine_slice_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME nine_slice_test COMMAND nine_slice_test)
 
 # Label widget unit test (Phase 3a, #121: C_Label -> data-only LabelComponent + LabelSystem)
 add_executable(ui_label_test
@@ -120,6 +153,19 @@ target_link_libraries(palette_test PRIVATE
     enjin2
 )
 add_test(NAME palette_test COMMAND palette_test)
+
+# Style-slot layer — pure logic: derived tones, ROM defaults, slot-name cascade (#37/#19)
+add_executable(style_slot_test
+    style_slot_test.cpp
+)
+target_include_directories(style_slot_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(style_slot_test PRIVATE
+    enjin2
+    enjin2_ui
+)
+add_test(NAME style_slot_test COMMAND style_slot_test)
 
 # Odd-width Canvas4 (unwn #155/#165): padded row stride ROW_BYTES=(WIDTH+1)/2 —
 # geometry, row-aliasing, fast-path parity, even-width layout stability.
@@ -746,6 +792,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME ui_binding_test COMMAND ui_binding_test)
 
+    # Style-slot Lua surface — setStyle/setTheme mask behaviour + panel dispatch (#37/#19)
+    add_executable(style_slot_lua_test
+        style_slot_lua_test.cpp
+    )
+    target_include_directories(style_slot_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(style_slot_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME style_slot_lua_test COMMAND style_slot_lua_test)
+
     # Lua profiler test (Phase 63: PROF-01, PROF-02, PROF-03, PROF-06)
     add_executable(lua_profiler_test
         lua_profiler_test.cpp
@@ -795,3 +854,51 @@ if(ENJIN2_BUILD_SDL)
         )
     endif()
 endif()
+
+# remap.hpp is header-only — no library link (keeps the test independent of the
+# lua binding target).
+add_executable(shade_test
+    shade_test.cpp
+)
+target_include_directories(shade_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(shade_test PRIVATE enjin2_core enjin2_graphics)
+add_test(NAME shade_test COMMAND shade_test)
+
+add_executable(effect_test
+    effect_test.cpp
+)
+target_include_directories(effect_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+add_test(NAME effect_test COMMAND effect_test)
+
+add_executable(remap_test
+    remap_test.cpp
+)
+target_include_directories(remap_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME remap_test COMMAND remap_test)
+
+# Canvas4 dirty-tile tracking (presenter ticket #34): primitives + invalidate
+# mark 16x16 tiles; a static layer repaints 0 tiles across frames.
+add_executable(canvas_dirty_test
+    canvas_dirty_test.cpp
+)
+target_include_directories(canvas_dirty_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(canvas_dirty_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME canvas_dirty_test COMMAND canvas_dirty_test)
+
+# Dirty-tile compositor: restore sources, per-layer tint remap, presenter seam
+# (presenter ticket #34). Writes only dirty tiles into output; present() once
+# per frame; static layer settles to 0 tiles.
+add_executable(compositor_dirty_test
+    compositor_dirty_test.cpp
+)
+target_include_directories(compositor_dirty_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(compositor_dirty_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME compositor_dirty_test COMMAND compositor_dirty_test)

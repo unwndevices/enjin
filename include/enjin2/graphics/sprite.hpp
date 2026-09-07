@@ -2,6 +2,7 @@
 
 #include "../core/types.hpp"
 #include "../graphics/canvas.hpp"
+#include "../graphics/effect.hpp"
 #include <cstdint>
 
 namespace enjin2 {
@@ -73,6 +74,29 @@ struct SpriteSheet {
      * @param y           Destination Y coordinate on the canvas
      */
     void draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16_t x, int16_t y) const;
+
+    /**
+     * @brief Blit a frame through an index shader (the sprite's silhouette is
+     *        the clip).
+     *
+     * Identical to the plain @ref draw, except each non-transparent source
+     * pixel is run through @ref Effect::shadePixel at its **absolute**
+     * destination coordinates before it is written. Index 15 is still skipped
+     * wholesale — the sprite's own opaque pixels are the effect's clip — while
+     * the effect's remap may recolour the surviving pixels and its mask may
+     * gate them by absolute position (so a shaded sprite and a shaded rect that
+     * overlap share one continuous pattern). This is one of the two engine
+     * shader apply sites (@ref Canvas4::shade is the other); both, and the Lua
+     * `gfx.drawSprite` binding, apply the shared @ref Effect::shadePixel stage.
+     *
+     * @param canvas      Target canvas (ICanvas<Pixel4>)
+     * @param frameIndex  Linear frame index (clamped by frameCount check)
+     * @param x           Destination X coordinate on the canvas
+     * @param y           Destination Y coordinate on the canvas
+     * @param fx          The index shader to apply through the silhouette.
+     */
+    void draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16_t x, int16_t y,
+              const Effect& fx) const;
 };
 
 /**
@@ -90,6 +114,21 @@ inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16
             if (px != 15) {  // index 15 is transparent (compile-time constant per locked decision)
                 canvas.setPixel(x + fx, y + fy, Pixel4(px));
             }
+        }
+    }
+}
+
+inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16_t x, int16_t y,
+                              const Effect& fx) const {
+    if (!data || frameIndex >= frameCount()) return;
+    const uint8_t* frame = data + static_cast<uint16_t>(frameIndex) * cellW * cellH;
+    for (int16_t fy = 0; fy < static_cast<int16_t>(cellH); ++fy) {
+        for (int16_t sx = 0; sx < static_cast<int16_t>(cellW); ++sx) {
+            uint8_t px = frame[fy * cellW + sx] & 0x0F;  // lower nibble = palette index
+            if (px == 15) continue;  // silhouette clip: transparent pixels never draw
+            const int16_t ax = static_cast<int16_t>(x + sx);
+            const int16_t ay = static_cast<int16_t>(y + fy);
+            canvas.setPixel(ax, ay, Pixel4(fx.shadePixel(px, ax, ay)));
         }
     }
 }

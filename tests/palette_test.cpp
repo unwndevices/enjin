@@ -172,6 +172,32 @@ static void test_parse_hex_color()
            "parseHexColor(nullptr, ...) should return false");
 }
 
+// The ramp structure is pure index arithmetic over 5 ramps × 3 shades,
+// independent of the RGB values, so it holds for any palette.
+static void test_ramp_index()
+{
+    printf("--- ramp() index ---\n");
+    ASSERT(Palette::ramp(0, SHADE_LIGHT) == 0, "ramp(0,light) == 0");
+    ASSERT(Palette::ramp(0, SHADE_DARK) == 2, "ramp(0,dark) == 2");
+    ASSERT(Palette::ramp(3, SHADE_BASE) == 10, "ramp(3,base) == 10");
+    ASSERT(Palette::ramp(4, SHADE_DARK) == 14, "ramp(4,dark) == 14");
+}
+
+// lighten/darken step one shade but never cross into a neighbouring ramp, and
+// leave transparency (15) untouched.
+static void test_lighten_darken_clamp()
+{
+    printf("--- lighten/darken clamp ---\n");
+    ASSERT(Palette::lighten(1) == 0, "lighten: base -> light");
+    ASSERT(Palette::lighten(0) == 0, "lighten: light holds (no ramp cross)");
+    ASSERT(Palette::lighten(3) == 3, "lighten: next ramp's light holds");
+    ASSERT(Palette::darken(1) == 2, "darken: base -> dark");
+    ASSERT(Palette::darken(2) == 2, "darken: dark holds (no ramp cross)");
+    ASSERT(Palette::darken(14) == 14, "darken: last dark holds");
+    ASSERT(Palette::lighten(15) == 15, "lighten: transparency untouched");
+    ASSERT(Palette::darken(15) == 15, "darken: transparency untouched");
+}
+
 // ============================================================
 // main
 // ============================================================
@@ -186,6 +212,8 @@ int main()
     test_transparency_before_modulo();
     test_load_preset();
     test_parse_hex_color();
+    test_ramp_index();
+    test_lighten_darken_clamp();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
 

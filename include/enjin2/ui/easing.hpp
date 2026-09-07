@@ -91,6 +91,21 @@ public:
     /// @brief Accelerates then decelerates, symmetric about the midpoint (sinusoidal).
     static float EaseInOutSine(float t) { return -0.5f * (std::cos(kPi * t) - 1.0f); }
 
+    /**
+     * @brief Decelerates past the target and settles back (one overshoot).
+     *
+     * Polynomial (multiply/add only — no libm), pins both endpoints
+     * (f(0)=0, f(1)=1) and overshoots above 1 near the end for a springy kick.
+     * The one-shot tween counterpart to the retargetable spring; elastic/bounce
+     * are deliberately dropped in favour of this single overshoot curve.
+     */
+    static float EaseOutBack(float t) {
+        constexpr float c1 = 1.70158f;
+        constexpr float c3 = c1 + 1.0f;
+        const float t1 = t - 1.0f;
+        return 1.0f + c3 * t1 * t1 * t1 + c1 * t1 * t1;
+    }
+
     /// @brief Springy overshoot on both ends (does not pin endpoints exactly).
     static float EaseInOutElastic(float t) {
         if (t <= 0.5f) {

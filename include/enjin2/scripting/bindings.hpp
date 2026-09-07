@@ -17,6 +17,8 @@
 #include "../graphics/sprite.hpp"
 #include "../graphics/sprite_asset.hpp"
 #include "../input/input_state.hpp"
+#include "../ui/style.hpp"
+#include "../ui/spring.hpp"
 #include "../core/math.hpp"
 #include "../core/collision.hpp"
 #include "lua_event_bus.hpp"
@@ -166,7 +168,18 @@ public:
      * @param color Fill color
      */
     void fillRect(int16_t x, int16_t y, uint16_t width, uint16_t height, uint8_t color);
-    
+
+    /**
+     * @brief Stroke a (rounded) border with the computed span-walker (#39).
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param width Border outer width
+     * @param height Border outer height
+     * @param style Resolved border tokens (colour, thickness, radius, kind, shadow)
+     */
+    void strokeBorder(int16_t x, int16_t y, uint16_t width, uint16_t height,
+                      const BorderStyle& style);
+
     /**
      * @brief Draw circle outline
      * @param x Center X coordinate
@@ -377,6 +390,13 @@ private:
     uint8_t currentColor;       ///< Current drawing color
     uint16_t lineWidth;         ///< Current line width
 
+    // Style slots (#19/#37): ROM defaults (kDefaultStyles) -> per-applet
+    // overrides. A slot's mask bit set means the applet overrode it; else the
+    // ROM default resolves at draw time. Mask cleared in registerAll().
+    Style        m_styleValues[kStyleSlotCount]{};  ///< Per-slot applet overrides
+    uint16_t     m_styleSetMask{0};                 ///< Bit i set -> slot i overridden
+    const Style* m_themeBase{kDefaultStyles};       ///< Active ROM theme (setTheme swaps)
+
     // ── Text state ───────────────────────────────────────────────────────────
     uint8_t currentTextSize{1};       ///< Text size multiplier (1=normal, 2=double, etc.)
     const GFXfont* currentFont{nullptr}; ///< nullptr = built-in 5x7
@@ -478,7 +498,7 @@ private:
     static constexpr int TWEEN_MAX_PROPS = 4;   ///< Maximum animated properties per tween
     static constexpr int TWEEN_KEY_MAX   = 32;  ///< Maximum key string length per property
 
-    enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3 };
+    enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3, EaseOutBack = 4 };
 
     struct TweenSlot {
         int      targetRef{LUA_NOREF};                    ///< luaL_ref for the target Lua table
@@ -495,6 +515,25 @@ private:
     };
     TweenSlot m_tweenPool[TWEEN_POOL_SIZE]; ///< Fixed tween pool
     int       m_nextTweenId{0};             ///< Next ID to assign
+
+    // -- Spring pool (#38: retargetable chrome springs) ---------------------------
+    // A spring animates ONE numeric field of a Lua table with velocity held as
+    // state, so engine.tween.spring on an already-springing field RETARGETS it
+    // (change target, keep x+v) rather than queueing — the feel-spec's R1. One
+    // live spring per (table, key); ticked alongside tweens on the same frame.
+    static constexpr int SPRING_POOL_SIZE = 8; ///< Fixed spring pool — zero alloc
+
+    struct SpringSlot {
+        int    targetRef{LUA_NOREF};       ///< luaL_ref for the target Lua table
+        char   key[TWEEN_KEY_MAX]{};       ///< The single field name animated
+        Spring spring{};                   ///< The scalar integrator (x, v, target, k, ζ)
+        int    id{0};                      ///< Monotonically increasing cancel ID
+        bool   active{false};              ///< Slot in use
+    };
+    SpringSlot m_springPool[SPRING_POOL_SIZE]; ///< Fixed spring pool
+    // Spring IDs are drawn from m_nextTweenId (the tween counter) so tween and
+    // spring IDs never collide — a spring ID handed to engine.tween.cancel can
+    // then only miss (a safe no-op), never cancel an unrelated tween.
 
 public:
     /**
@@ -519,6 +558,17 @@ public:
      * @return Current canvas or nullptr
      */
     LuaCanvas* getCanvas() const { return currentCanvas; }
+
+    /**
+     * @brief Resolve a style slot to the Style a drawable should read.
+     * @param slot The slot id (out-of-range -> Panel default, never UB).
+     * @return The applet override if its mask bit is set, else the ROM default.
+     */
+    const Style& resolveStyle(StyleSlot slot) const {
+        const int i = static_cast<int>(slot);
+        if (i < 0 || i >= kStyleSlotCount) return m_themeBase[0];
+        return (m_styleSetMask & (1u << i)) ? m_styleValues[i] : m_themeBase[i];
+    }
 
     /**
      * @brief Set input state for this frame
@@ -618,8 +668,27 @@ public:
     /**
      * @brief Cancel all active tweens and unref their targets/callbacks.
      * Called on scene transition (setActiveScene) and hot-reload (registerAll).
+     *
+     * Also clears the spring pool (see @ref tickSprings), so a hot-reload or
+     * scene switch cannot leave a spring writing into a stale table.
      */
     void clearTweens();
+
+    /**
+     * @brief Tick all active springs — integrate one frame and write each field.
+     *
+     * Called from @ref tickTweens so springs share the tweens' priority-100
+     * frame slot with no extra host call site. A spring that settles below the
+     * R4-safe thresholds snaps exactly onto its target and frees its slot.
+     * @param dt Delta time in seconds
+     */
+    void tickSprings(float dt);
+
+    /**
+     * @brief Cancel all active springs and unref their targets.
+     * Called from @ref clearTweens so springs share the tween lifecycle.
+     */
+    void clearSprings();
 
     /**
      * @brief Inject debug canvas pointer (called from host alongside setLayers)
@@ -858,12 +927,16 @@ private:
     static int lua_engine_tween_cancelAll(lua_State* L);
     // Phase 57: QOL-01
     static int lua_engine_tween_await(lua_State* L);
+    // #38: retargetable chrome spring
+    static int lua_engine_tween_spring(lua_State* L);
 
     // engine.ui.* binding functions (Phase 52: UI-01..UI-04)
     static int lua_engine_ui_progressBar(lua_State* L);
     static int lua_engine_ui_statBar(lua_State* L);
     static int lua_engine_ui_panel(lua_State* L);
     static int lua_engine_ui_label(lua_State* L);
+    static int lua_engine_ui_setStyle(lua_State* L);
+    static int lua_engine_ui_setTheme(lua_State* L);
 
     // engine.store.* binding functions (persistent KV store)
     static int lua_engine_store_save(lua_State* L);
