@@ -232,8 +232,10 @@ static void test_getTextWidth_default8() {
     printf("--- getTextWidth with default8 font ---\n");
     TextFixture f;
     f.exec("gfx.setFont('default8'); w = gfx.getTextWidth('A')");
-    // defaultFont8pt7b 'A' glyph xAdvance = 5 (from glyph table at index 0x41-0x20)
-    ASSERT(f.getNum("w") == 5.0, "getTextWidth('A') should be 5 for default8 font");
+    // defaultFont8pt7b 'A' glyph = {xAdvance 5, width 4, xOffset 0}. getTextWidth
+    // trims the last glyph's trailing bearing (xAdvance - (xOffset+width) = 1),
+    // matching Canvas8::getTextWidth byte-for-byte (sweep adjudication, unwn #168).
+    ASSERT(f.getNum("w") == 4.0, "getTextWidth('A') should be 4 for default8 font (5 advance - 1 trailing bearing)");
 }
 
 // ============================================================
