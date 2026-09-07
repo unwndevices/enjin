@@ -206,9 +206,11 @@ public:
                       Band band, Pixel4 clearColor) const {
         const int16_t tileW = static_cast<int16_t>(m_sheet.cellW);
         const int16_t tileH = static_cast<int16_t>(m_sheet.cellH);
-        if (tileW == 0 || tileH == 0) return;
-        const int16_t px = static_cast<int16_t>(tx * tileW - m_scrollX);
-        const int16_t py = static_cast<int16_t>(ty * tileH - m_scrollY);
+        if (tileW == 0 || tileH == 0) {
+            return;
+        }
+        const int16_t px = static_cast<int16_t>((tx * tileW) - m_scrollX);
+        const int16_t py = static_cast<int16_t>((ty * tileH) - m_scrollY);
 
         // Reset the cell region to the clear colour (setPixel bounds-checks).
         for (int16_t yy = 0; yy < tileH; ++yy) {
@@ -218,12 +220,18 @@ public:
             }
         }
 
-        if (tx >= m_mapW || ty >= m_mapH) return;
-        const uint16_t cell = m_tiles[ty * m_mapW + tx];
+        if (tx >= m_mapW || ty >= m_mapH) {
+            return;
+        }
+        const uint16_t cell = m_tiles[(ty * m_mapW) + tx];
         const uint16_t tileId = cellTileId(cell);
-        if (tileId == 0) return;                              // transparent cell
-        if (cellBand(cell) != static_cast<uint8_t>(band)) return;  // other band
-        if (m_sheet.data) {
+        if (tileId == 0) {                                    // transparent cell
+            return;
+        }
+        if (cellBand(cell) != static_cast<uint8_t>(band)) {   // other band
+            return;
+        }
+        if (m_sheet.data != nullptr) {
             m_sheet.draw(canvas, static_cast<uint8_t>(tileId), px, py);
         }
     }

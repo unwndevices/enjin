@@ -41,9 +41,9 @@ static constexpr uint16_t TM_TILEID_BITS   = 9;
 static constexpr uint16_t TM_TILEID_MASK   = 0x01FF;              ///< bits 0-8
 static constexpr uint16_t TM_PALBANK_SHIFT = 9;
 static constexpr uint16_t TM_PALBANK_MASK  = 0x000F;             ///< 4 bits, pre-shift
-static constexpr uint16_t TM_HFLIP_BIT     = 1u << 13;
-static constexpr uint16_t TM_VFLIP_BIT     = 1u << 14;
-static constexpr uint16_t TM_BAND_BIT      = 1u << 15;
+static constexpr uint16_t TM_HFLIP_BIT     = 1U << 13;
+static constexpr uint16_t TM_VFLIP_BIT     = 1U << 14;
+static constexpr uint16_t TM_BAND_BIT      = 1U << 15;
 
 /// @brief Tile id (0-511). Id 0 = transparent (skipped in draw).
 static constexpr uint16_t tmCellTileId(uint16_t cell) { return cell & TM_TILEID_MASK; }
@@ -57,7 +57,7 @@ static constexpr bool tmCellHFlip(uint16_t cell) { return (cell & TM_HFLIP_BIT) 
 static constexpr bool tmCellVFlip(uint16_t cell) { return (cell & TM_VFLIP_BIT) != 0; }
 /// @brief Band bit: 0 = under (L0), 1 = over (L2). Honored in v1.
 static constexpr uint8_t tmCellBand(uint16_t cell) {
-    return static_cast<uint8_t>((cell & TM_BAND_BIT) ? 1 : 0);
+    return static_cast<uint8_t>((cell & TM_BAND_BIT) != 0 ? 1 : 0);
 }
 
 /// @brief Pack a cell from its fields. Fields are masked to their widths.
@@ -68,7 +68,7 @@ static constexpr uint16_t tmPackCell(uint16_t tileId, uint8_t band, uint8_t palb
         (static_cast<uint16_t>(palbank & TM_PALBANK_MASK) << TM_PALBANK_SHIFT) |
         (hflip ? TM_HFLIP_BIT : 0) |
         (vflip ? TM_VFLIP_BIT : 0) |
-        (band  ? TM_BAND_BIT  : 0));
+        (band != 0 ? TM_BAND_BIT : 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -104,7 +104,9 @@ static constexpr uint32_t njmCellCount(const NjmHeader& h) {
  * @return true if magic/version/dims are valid and the buffer holds all cells.
  */
 inline bool parseNjmHeader(const uint8_t* data, size_t size, NjmHeader& out) {
-    if (!data || size < sizeof(NjmHeader)) return false;
+    if (data == nullptr || size < sizeof(NjmHeader)) {
+        return false;
+    }
     out.magic[0]  = data[0];
     out.magic[1]  = data[1];
     out.version   = data[2];
@@ -113,11 +115,19 @@ inline bool parseNjmHeader(const uint8_t* data, size_t size, NjmHeader& out) {
     out.mapH      = data[5];
     out.reserved1 = data[6];
     out.reserved2 = data[7];
-    if (out.magic[0] != NJM_MAGIC_0 || out.magic[1] != NJM_MAGIC_1) return false;
-    if (out.version != NJM_VERSION) return false;
-    if (out.mapW == 0 || out.mapH == 0) return false;
+    if (out.magic[0] != NJM_MAGIC_0 || out.magic[1] != NJM_MAGIC_1) {
+        return false;
+    }
+    if (out.version != NJM_VERSION) {
+        return false;
+    }
+    if (out.mapW == 0 || out.mapH == 0) {
+        return false;
+    }
     // 2 bytes per cell.
-    if (size < sizeof(NjmHeader) + njmCellCount(out) * 2u) return false;
+    if (size < sizeof(NjmHeader) + (njmCellCount(out) * 2U)) {
+        return false;
+    }
     return true;
 }
 
@@ -131,9 +141,11 @@ inline bool parseNjmHeader(const uint8_t* data, size_t size, NjmHeader& out) {
  */
 inline uint16_t njmCellAt(const uint8_t* data, const NjmHeader& h,
                           uint16_t tx, uint16_t ty) {
-    if (tx >= h.mapW || ty >= h.mapH) return 0;
-    const uint32_t idx = static_cast<uint32_t>(ty) * h.mapW + tx;
-    const uint8_t* p = data + sizeof(NjmHeader) + idx * 2u;
+    if (tx >= h.mapW || ty >= h.mapH) {
+        return 0;
+    }
+    const uint32_t idx = (static_cast<uint32_t>(ty) * h.mapW) + tx;
+    const uint8_t* p = data + sizeof(NjmHeader) + (idx * 2U);
     return static_cast<uint16_t>(p[0] | (static_cast<uint16_t>(p[1]) << 8));
 }
 
