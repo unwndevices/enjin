@@ -53,6 +53,7 @@ protected:
     uint8_t width;              ///< Drawable width in pixels
     uint8_t height;             ///< Drawable height in pixels
     bool m_screenSpace{false};  ///< If true, drawable is in screen-space (skips camera offset)
+    int16_t depth_offset{0};    ///< Y-sort depth bias added to C_Position.y (#43)
 
 public:
     /**
@@ -140,6 +141,26 @@ public:
      */
     bool shouldDrawBefore(const C_Drawable& other) const {
         return buffer_index < other.buffer_index;
+    }
+
+    /// @brief Set the Y-sort depth offset (added to C_Position.y to form the
+    ///        sort depth). Lets a drawable bias itself in front of / behind its
+    ///        anchor row without moving its world position (Tomodachi #43).
+    /// @param off Depth offset in pixels (signed)
+    void SetDepthOffset(int16_t off) { depth_offset = off; }
+    /// @brief Get the Y-sort depth offset.
+    /// @return Current depth offset in pixels
+    int16_t GetDepthOffset() const { return depth_offset; }
+
+    /// @brief Y-sort depth: owner's world Y plus the depth offset.
+    ///
+    /// Recomputed by Scene::renderObjects every frame so the packed sort key
+    /// tracks live motion. A drawable with no position component sorts at
+    /// depth 0. The selection "pop" animates anchor_offset (not position), so
+    /// a bouncing selection holds a stable depth and never re-sorts (#43).
+    /// @return C_Position.y + depthOffset, or depthOffset if unpositioned
+    int getDepth() const {
+        return (position ? position->getPosition().y : 0) + depth_offset;
     }
 
     // ----------------------------------------------------------------

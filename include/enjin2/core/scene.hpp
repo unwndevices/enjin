@@ -360,14 +360,50 @@ private:
                 }
             }
         });
-        
-        // Sort drawables by layer and sort order
-        std::sort(drawables, drawables + drawableCount, 
-                  [](const C_Drawable* a, const C_Drawable* b) {
-                      return a->shouldDrawBefore(*b);
-                  });
-        
-        
+
+        // Sort on one packed int32 key = layer | depth | insertion-index, a
+        // TOTAL order over the drawables (Tomodachi #43). The insertion index
+        // (collection order, captured above) is a unique low-bits tiebreaker,
+        // so equal layer+depth never ties — the order is stable and the old
+        // parity waiver on std::sort's unspecified equal-element order is gone.
+        //
+        // Layout (MSB→LSB): [layer:4][depth:12][insertion:16].
+        //   * layer     = buffer_index (0-15), background→foreground, MAJOR key.
+        //   * depth     = C_Position.y + depthOffset, biased into 12 bits and
+        //                 clamped to [0,4095]; recomputed here every frame so
+        //                 Y-sort tracks live motion.
+        //   * insertion = position in `drawables` (0-based), unique tiebreak.
+        // Ascending sort draws low layer / small depth / earlier insertion
+        // first, i.e. back-to-front with a deterministic within-row order.
+        auto packKey = [](const C_Drawable* d, uint16_t insertion) -> uint32_t {
+            const uint32_t layer = static_cast<uint32_t>(d->GetBufferIndex()) & 0x0Fu;
+            int biased = d->getDepth() + 2048;  // bias so negative depths pack
+            if (biased < 0) biased = 0;
+            if (biased > 4095) biased = 4095;
+            const uint32_t depth = static_cast<uint32_t>(biased) & 0x0FFFu;
+            return (layer << 28) | (depth << 16) | static_cast<uint32_t>(insertion);
+        };
+        uint32_t keys[MAX_DRAWABLES];
+        for (size_t i = 0; i < drawableCount; ++i) {
+            keys[i] = packKey(drawables[i], static_cast<uint16_t>(i));
+        }
+        // Insertion-sort the (key, drawable) pairs together. drawableCount is
+        // small (<= MAX_DRAWABLES) and keys are already near-sorted by layer,
+        // so this stays cheap and needs no separate index array.
+        for (size_t i = 1; i < drawableCount; ++i) {
+            const uint32_t k = keys[i];
+            C_Drawable* d = drawables[i];
+            size_t j = i;
+            while (j > 0 && keys[j - 1] > k) {
+                keys[j] = keys[j - 1];
+                drawables[j] = drawables[j - 1];
+                --j;
+            }
+            keys[j] = k;
+            drawables[j] = d;
+        }
+
+
         // Find first active C_Camera in the scene (Phase 44)
         Point camOffset(0, 0);
         {

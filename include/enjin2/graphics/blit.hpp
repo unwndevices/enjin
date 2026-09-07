@@ -20,11 +20,13 @@
 // wraps to 0, 15 + 10 to 9). The mask is part of the design.
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 
 #include "canvas.hpp"
 #include "palette.hpp"
+#include "remap.hpp"
 
 namespace enjin2
 {
@@ -260,6 +262,68 @@ namespace enjin2
                 dst.setPixel(dx, dy, sp);
             }
         }
+    }
+
+    // ---- Filled ellipse (Tomodachi #43) ----
+
+    // Scanline-filled axis-aligned ellipse centred at (cx, cy) with radii
+    // (rx, ry). A free immediate draw meant to run BEFORE Scene::renderObjects
+    // — the launcher's optional ground shadow is one of these under the pet,
+    // toggled by a style slot (off by default). Cheap: one span per row via the
+    // ellipse equation, no per-pixel divide, no allocation.
+    //
+    // Two overloads mirror the compositor's colour/Remap split:
+    //   * colour  — paint a solid Pixel4 (a hard blob).
+    //   * Remap   — remap the pixels ALREADY under the ellipse (read dst, write
+    //               remap.apply(dst)). `Remap::darken()` gives a soft on-ramp
+    //               drop-shadow that tints the floor rather than stamping ink.
+    // Pixels equal to PALETTE_TRANSPARENT are left untouched by the Remap form
+    // so a shadow never paints into a hole.
+
+    namespace detail {
+        // For row dy (0-based from the top of the ellipse's bounding rows),
+        // invoke `plot(x)` across the ellipse's horizontal span. Shared by both
+        // fillEllipse overloads so the rasterisation lives in one place.
+        template <typename Plot>
+        inline void ellipseSpans(int16_t cx, int16_t cy, int16_t rx, int16_t ry,
+                                 Plot plot)
+        {
+            if (rx <= 0 || ry <= 0)
+                return;
+            const float rxf = static_cast<float>(rx);
+            const float ryf = static_cast<float>(ry);
+            for (int16_t dy = -ry; dy <= ry; ++dy) {
+                // half-width where (dy/ry)^2 + (hx/rx)^2 = 1
+                const float ny = static_cast<float>(dy) / ryf;
+                const float inside = 1.0f - ny * ny;
+                if (inside < 0.0f)
+                    continue;
+                const int16_t hx = static_cast<int16_t>(rxf * std::sqrt(inside));
+                const int16_t y = static_cast<int16_t>(cy + dy);
+                for (int16_t x = static_cast<int16_t>(cx - hx);
+                     x <= static_cast<int16_t>(cx + hx); ++x) {
+                    plot(x, y);
+                }
+            }
+        }
+    }
+
+    inline void fillEllipse(ICanvas<Pixel4> &dst, int16_t cx, int16_t cy,
+                            int16_t rx, int16_t ry, Pixel4 color)
+    {
+        detail::ellipseSpans(cx, cy, rx, ry,
+                             [&](int16_t x, int16_t y) { dst.setPixel(x, y, color); });
+    }
+
+    inline void fillEllipse(ICanvas<Pixel4> &dst, int16_t cx, int16_t cy,
+                            int16_t rx, int16_t ry, const Remap &remap)
+    {
+        detail::ellipseSpans(cx, cy, rx, ry, [&](int16_t x, int16_t y) {
+            const uint8_t d = dst.getPixel(x, y).value;
+            if (d == PALETTE_TRANSPARENT)
+                return;  // a shadow never paints into a hole
+            dst.setPixel(x, y, Pixel4(remap.apply(d)));
+        });
     }
 }
 
