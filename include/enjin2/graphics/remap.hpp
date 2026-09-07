@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "palette.hpp"
+
 namespace enjin2 {
 
 /**
@@ -20,10 +22,11 @@ namespace enjin2 {
  * that must honour transparency check the source index for 15 first (the
  * compositor does exactly this).
  *
- * This ticket ships the *skeleton* constructors — `identity()` and `solid()`.
- * The ramp-derived constructors (`lighten`, `darken`, `recolor`, `onRamp`,
- * `compose`) land with the ramp palette (see the ramp ticket); they build on
- * this same `lut[16]` representation.
+ * The compositor ticket shipped the skeleton constructors `identity()` and
+ * `solid()`; the ramp palette ticket adds the ramp-derived `lighten()`,
+ * `darken()` and `onRamp()`, built on the ramp structure in @ref Palette. The
+ * shader-composition constructors (`recolor`, `compose`) land with the index
+ * shader; they build on this same `lut[16]` representation.
  */
 struct Remap {
     /// The lookup table: `lut[i]` is the index that source index `i` maps to.
@@ -54,6 +57,61 @@ struct Remap {
             r.lut[i] = v;
         }
         r.lut[15] = 15;
+        return r;
+    }
+
+    /**
+     * @brief A ramp-wide lighten: every index maps one shade lighter.
+     *
+     * Each entry is @ref Palette::lighten of its source index, so the whole
+     * frame steps toward the light end of its ramp while staying on-ramp
+     * (already-light shades hold; transparency stays transparent).
+     *
+     * @return A `Remap` where `lut[i] == Palette::lighten(i)`.
+     */
+    static constexpr Remap lighten() {
+        Remap r{};
+        for (uint8_t i = 0; i < 16; ++i) {
+            r.lut[i] = Palette::lighten(i);
+        }
+        return r;
+    }
+
+    /**
+     * @brief A ramp-wide darken: every index maps one shade darker.
+     *
+     * The dark-end mirror of @ref lighten — each entry is @ref Palette::darken
+     * of its source index.
+     *
+     * @return A `Remap` where `lut[i] == Palette::darken(i)`.
+     */
+    static constexpr Remap darken() {
+        Remap r{};
+        for (uint8_t i = 0; i < 16; ++i) {
+            r.lut[i] = Palette::darken(i);
+        }
+        return r;
+    }
+
+    /**
+     * @brief Restrict another remap to a single ramp; pass everything else
+     *        through unchanged.
+     *
+     * Indices on ramp `rampId` (i.e. `i / RAMP_SHADES == rampId`) take
+     * `inner`'s mapping; all other indices — including transparency (15, which
+     * is on no ramp) — map to themselves. This is how a shader clips an effect
+     * to one hue, e.g. `Remap::onRamp(3, Remap::lighten())` lightens only the
+     * scenery ramp.
+     *
+     * @param rampId Ramp (hue) 0-4 the inner remap applies to.
+     * @param inner The remap applied to indices on that ramp.
+     * @return The ramp-clipped `Remap`.
+     */
+    static constexpr Remap onRamp(uint8_t rampId, const Remap& inner) {
+        Remap r{};
+        for (uint8_t i = 0; i < 16; ++i) {
+            r.lut[i] = (i / RAMP_SHADES == rampId) ? inner.lut[i] : i;
+        }
         return r;
     }
 
