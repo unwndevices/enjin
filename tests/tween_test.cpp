@@ -458,6 +458,156 @@ static void test_tween_zero_duration() {
 }
 
 // ============================================================
+// #38: easeOutBack easing — one overshoot above 1, pins endpoints
+// ============================================================
+static void test_tween_ease_out_back() {
+    printf("--- test_tween_ease_out_back ---\n");
+    TweenFixture f;
+
+    // Animate x: 0 -> 100 with easeOutBack over 1s. Sampled partway through the
+    // curve it should exceed 100 (the overshoot), then settle back to exactly 100.
+    LuaResult r = f.exec(
+        "obj = {x = 0}\n"
+        "engine.tween.to(obj, {x = 100}, 1.0, 'easeOutBack')\n"
+    );
+    ASSERT(r.success, "easeOutBack: setup must not error");
+
+    // t≈0.7 — easeOutBack is already past 1.0 here, so x > 100.
+    f.tick(0.7f);
+    f.exec("peak = obj.x\n");
+    ASSERT(f.getNum("peak") > 100.0, "easeOutBack: overshoots the end value mid-flight");
+
+    // Finish the tween — it must land exactly on the end value.
+    f.tick(0.4f);
+    f.exec("final = obj.x\n");
+    ASSERT_NEAR(f.getNum("final"), 100.0, 0.01, "easeOutBack: settles exactly on the end value");
+}
+
+// ============================================================
+// #38: engine.tween.spring exists and drives a field toward its target
+// ============================================================
+static void test_spring_table_and_basic() {
+    printf("--- test_spring_table_and_basic ---\n");
+    TweenFixture f;
+
+    LuaResult r = f.exec(
+        "ok_spring = (type(engine.tween.spring) == 'function') and 1 or 0\n"
+        "obj = {x = 0}\n"
+        "id = engine.tween.spring(obj, 'x', 100, {duration = 0.34, bounce = 0.55})\n"
+    );
+    ASSERT(r.success, "spring: setup must not error");
+    ASSERT(f.getNum("ok_spring") == 1.0, "spring: engine.tween.spring is a function");
+    ASSERT(f.getNum("id") >= 1.0, "spring: returns a positive integer ID");
+
+    // Tick ~600 ms at 30 fps — enough for the pop overshoot tail to settle.
+    for (int i = 0; i < 18; ++i) f.tick(1.0f / 30.0f);
+    f.exec("x_val = obj.x\n");
+    ASSERT_NEAR(f.getNum("x_val"), 100.0, 0.5, "spring: drives the field to its target within 400 ms");
+}
+
+// ============================================================
+// #38: a second spring on the same (table, key) RETARGETS, never queues (R1)
+// ============================================================
+static void test_spring_retargets_not_queues() {
+    printf("--- test_spring_retargets_not_queues ---\n");
+    TweenFixture f;
+
+    f.exec(
+        "obj = {x = 0}\n"
+        "id1 = engine.tween.spring(obj, 'x', 100)\n"
+    );
+    // Move partway, then retarget to a new goal from the SAME call surface.
+    for (int i = 0; i < 3; ++i) f.tick(1.0f / 30.0f);
+    f.exec("id2 = engine.tween.spring(obj, 'x', 0)\n");
+
+    // Same slot reused → same ID (retarget, not a new spring).
+    ASSERT(f.getNum("id1") == f.getNum("id2"), "spring: retarget reuses the same slot ID (R1)");
+
+    // It should now converge back to the new target (0), not the old one (100).
+    for (int i = 0; i < 18; ++i) f.tick(1.0f / 30.0f);
+    f.exec("x_val = obj.x\n");
+    ASSERT_NEAR(f.getNum("x_val"), 0.0, 0.5, "spring: settles on the retargeted goal");
+}
+
+// ============================================================
+// #38: a distinct (table, key) gets its OWN spring slot (distinct ID)
+// ============================================================
+static void test_spring_distinct_keys() {
+    printf("--- test_spring_distinct_keys ---\n");
+    TweenFixture f;
+
+    f.exec(
+        "obj = {x = 0, y = 0}\n"
+        "idx = engine.tween.spring(obj, 'x', 50)\n"
+        "idy = engine.tween.spring(obj, 'y', 80)\n"
+    );
+    ASSERT(f.getNum("idx") != f.getNum("idy"), "spring: different keys use different slots");
+
+    for (int i = 0; i < 18; ++i) f.tick(1.0f / 30.0f);
+    f.exec("x_val = obj.x; y_val = obj.y\n");
+    ASSERT_NEAR(f.getNum("x_val"), 50.0, 0.5, "spring: x reaches its own target");
+    ASSERT_NEAR(f.getNum("y_val"), 80.0, 0.5, "spring: y reaches its own target");
+}
+
+// ============================================================
+// #38: clearTweens() (hot-reload / scene switch) also drops springs
+// ============================================================
+static void test_spring_cleared_on_reload() {
+    printf("--- test_spring_cleared_on_reload ---\n");
+    TweenFixture f;
+
+    f.exec(
+        "obj = {x = 0}\n"
+        "engine.tween.spring(obj, 'x', 100)\n"
+    );
+    f.tick(1.0f / 30.0f);
+    f.bindings.clearTweens(); // stand-in for a hot-reload / scene transition
+
+    // A fresh spring after the clear starts a new ID sequence (pool was reset).
+    f.exec("id_after = engine.tween.spring(obj, 'x', 10)\n");
+    ASSERT(f.getNum("id_after") == 1.0, "spring: pool ID counter resets on clearTweens()");
+}
+
+// ============================================================
+// #38: spring IDs never collide with tween IDs (shared counter)
+// ============================================================
+static void test_spring_id_no_collision() {
+    printf("--- test_spring_id_no_collision ---\n");
+    TweenFixture f;
+
+    f.exec(
+        "obj = {x = 0, y = 0}\n"
+        "id_tween  = engine.tween.to(obj, {x = 100}, 1.0)\n"
+        "id_spring = engine.tween.spring(obj, 'y', 100)\n"
+    );
+    ASSERT(f.getNum("id_tween") != f.getNum("id_spring"),
+           "spring: spring ID is distinct from a concurrent tween ID");
+}
+
+// ============================================================
+// #38: engine.tween.cancelAll() stops springs too (they live under tween.*)
+// ============================================================
+static void test_spring_cancel_all() {
+    printf("--- test_spring_cancel_all ---\n");
+    TweenFixture f;
+
+    f.exec(
+        "obj = {x = 0}\n"
+        "engine.tween.spring(obj, 'x', 100)\n"
+    );
+    for (int i = 0; i < 3; ++i) f.tick(1.0f / 30.0f); // move partway
+    f.exec("x_before = obj.x\n");
+    ASSERT(f.getNum("x_before") > 0.0 && f.getNum("x_before") < 100.0,
+           "spring: mid-flight before cancelAll");
+
+    f.exec("engine.tween.cancelAll()\n");
+    for (int i = 0; i < 6; ++i) f.tick(1.0f / 30.0f); // ticks must not advance it now
+    f.exec("x_after = obj.x\n");
+    ASSERT_NEAR(f.getNum("x_after"), f.getNum("x_before"), 0.001,
+                "spring: cancelAll freezes the spring (no further writes)");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -473,6 +623,13 @@ int main() {
     test_tween_clear_on_reload();
     test_tween_multi_property();
     test_tween_zero_duration();
+    test_tween_ease_out_back();       // #38
+    test_spring_table_and_basic();    // #38
+    test_spring_retargets_not_queues(); // #38
+    test_spring_distinct_keys();      // #38
+    test_spring_cleared_on_reload();  // #38
+    test_spring_id_no_collision();    // #38
+    test_spring_cancel_all();         // #38
 
     printf("\n=== Tween Test: %d passed, %d failed ===\n", passes, failures);
     return failures;

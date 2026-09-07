@@ -42,7 +42,9 @@ static void clearTweenSlot(Slot& slot, lua_State* L) {
 }
 
 // ── Inline easing functions — multiply/add only, NO std::pow, NO libm ─────────
-// Easing codes match TweenEasing enum (0=Linear,1=EaseIn,2=EaseOut,3=EaseInOut)
+// Easing codes match TweenEasing enum (0=Linear,1=EaseIn,2=EaseOut,3=EaseInOut,
+// 4=EaseOutBack). EaseOutBack is polynomial (one overshoot above 1), so it stays
+// within the multiply/add rule; it mirrors Easing::EaseOutBack in easing.hpp.
 static inline float tweenEase(float t, uint8_t easingCode) {
     switch (easingCode) {
         case 1:  // EaseIn: quadratic
@@ -51,6 +53,12 @@ static inline float tweenEase(float t, uint8_t easingCode) {
             return 1.0f - (1.0f - t) * (1.0f - t);
         case 3:  // EaseInOut: smoothstep
             return t * t * (3.0f - 2.0f * t);
+        case 4: { // EaseOutBack: decelerate past 1, settle back (one overshoot)
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1.0f;
+            const float t1 = t - 1.0f;
+            return 1.0f + c3 * t1 * t1 * t1 + c1 * t1 * t1;
+        }
         case 0:  // Linear
         default:
             return t;
@@ -109,6 +117,8 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
         easing = TweenEasing::EaseOut;
     } else if (strcmp(easingStr, "easeInOut") == 0) {
         easing = TweenEasing::EaseInOut;
+    } else if (strcmp(easingStr, "easeOutBack") == 0) {
+        easing = TweenEasing::EaseOutBack;
     }
     // "linear" and unknown strings default to Linear
 
@@ -189,6 +199,7 @@ int LuaBindings::lua_engine_tween_cancelAll(lua_State* L) {
             clearTweenSlot(b->m_tweenPool[i], mainL);
         }
     }
+    b->clearSprings(); // #38: springs live under engine.tween.*, so cancelAll stops them too
     b->m_nextTweenId = 0;
     return 0;
 }
@@ -198,6 +209,9 @@ void LuaBindings::tickTweens(float dt) {
     if (!engine) return;
     lua_State* L = engine->getState();
     if (!L) return;
+
+    // #38: springs ride the same priority-100 frame slot as tweens.
+    tickSprings(dt);
 
     for (int i = 0; i < TWEEN_POOL_SIZE; ++i) {
         TweenSlot& slot = m_tweenPool[i];
@@ -295,6 +309,7 @@ void LuaBindings::clearTweens() {
         }
     }
     m_nextTweenId = 0;
+    clearSprings(); // #38: springs share the tween lifecycle (hot-reload, scene switch)
 }
 
 // ── Phase 57 QOL-01: engine.tween.await(id) ──────────────────────────────────
@@ -336,6 +351,145 @@ int LuaBindings::lua_engine_tween_await(lua_State* L) {
     return lua_yield(L, 0);
 }
 
+// ── Private helper: clear a single spring slot and unref its target ───────────
+// Templated like clearTweenSlot so the private nested SpringSlot type is deduced
+// (a free function cannot name LuaBindings::SpringSlot directly).
+template<typename Slot>
+static void clearSpringSlot(Slot& slot, lua_State* L) {
+    if (L && slot.targetRef != LUA_NOREF) {
+        luaL_unref(L, LUA_REGISTRYINDEX, slot.targetRef);
+    }
+    slot.targetRef = LUA_NOREF;
+    slot.key[0]    = '\0';
+    slot.spring    = Spring{};
+    slot.id        = 0;
+    slot.active    = false;
+}
+
+// ── #38: engine.tween.spring(target, key, goal, {duration, bounce}) ───────────
+// A retargetable spring on ONE numeric field. If a spring already animates
+// target[key], RETARGET it (change goal, keep x+v) rather than queueing a second
+// — the feel-spec's R1 (retarget-never-queue). Otherwise allocate a slot,
+// sampling target[key] as the start position. Returns the integer ID, or nil if
+// the pool is full (no Lua error, matching engine.tween.to).
+//
+// PIXEL-SPACE: the settle thresholds (0.5 px position, ~31 px/s velocity) are
+// tuned to R4's integer-pixel grid — this spring is for pixel-magnitude chrome
+// motion (a selection anchor offset, a panel transform), not for sub-unit fields
+// like an alpha in [0,1] or a scale near 1, which would settle almost at once.
+// Opacity/scale animate as linear fades via engine.tween.to, not springs.
+int LuaBindings::lua_engine_tween_spring(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);                       // target table
+    const char* key = luaL_checkstring(L, 2);               // field name
+    float goal = static_cast<float>(luaL_checknumber(L, 3)); // spring target
+    // arg 4: optional { duration, bounce } table
+
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) { lua_pushnil(L); return 1; }
+
+    // Resolve (duration, bounce): the caller's table wins, else the pop preset.
+    float durationS = springpreset::Pop.durationS;
+    float bounce    = springpreset::Pop.bounce;
+    bool  hasParams = lua_istable(L, 4);
+    if (hasParams) {
+        lua_getfield(L, 4, "duration");
+        if (lua_isnumber(L, -1)) durationS = static_cast<float>(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+        lua_getfield(L, 4, "bounce");
+        if (lua_isnumber(L, -1)) bounce = static_cast<float>(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+    }
+
+    // Retarget an existing spring on the SAME (table, key): keep x+v, move goal.
+    for (int i = 0; i < SPRING_POOL_SIZE; ++i) {
+        SpringSlot& slot = b->m_springPool[i];
+        if (!slot.active || strcmp(slot.key, key) != 0) continue;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.targetRef); // push stored target
+        bool sameTable = lua_rawequal(L, 1, -1);
+        lua_pop(L, 1);
+        if (!sameTable) continue;
+
+        slot.spring.retarget(goal);       // velocity inherited for free (R1)
+        if (hasParams) slot.spring.setPerceptual(durationS, bounce);
+        lua_pushinteger(L, static_cast<lua_Integer>(slot.id));
+        return 1;
+    }
+
+    // No live spring — allocate a free slot.
+    int freeIdx = -1;
+    for (int i = 0; i < SPRING_POOL_SIZE; ++i) {
+        if (!b->m_springPool[i].active) { freeIdx = i; break; }
+    }
+    if (freeIdx < 0) { lua_pushnil(L); return 1; } // pool full — nil per spec
+
+    SpringSlot& slot = b->m_springPool[freeIdx];
+
+    // Sample the current field value as the start position (default 0).
+    lua_getfield(L, 1, key);
+    float start = lua_isnumber(L, -1) ? static_cast<float>(lua_tonumber(L, -1)) : 0.0f;
+    lua_pop(L, 1);
+
+    // Anchor the target table in the registry.
+    lua_pushvalue(L, 1);
+    slot.targetRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    strncpy(slot.key, key, TWEEN_KEY_MAX - 1);
+    slot.key[TWEEN_KEY_MAX - 1] = '\0';
+
+    slot.spring = Spring{};
+    slot.spring.x = start;
+    slot.spring.v = 0.0f;
+    slot.spring.target = goal;
+    slot.spring.setPerceptual(durationS, bounce);
+    slot.id     = ++b->m_nextTweenId; // shared counter → IDs never collide with tweens
+    slot.active = true;
+
+    lua_pushinteger(L, static_cast<lua_Integer>(slot.id));
+    return 1;
+}
+
+// ── #38: tickSprings — integrate one frame, write each field, settle-and-free ─
+// Called from tickTweens so springs ride the same priority-100 frame slot. A
+// spring that settles below the R4-safe thresholds snaps exactly onto its target
+// (so the last write lands on the integer grid) and frees its slot.
+void LuaBindings::tickSprings(float dt) {
+    if (!engine) return;
+    lua_State* L = engine->getState();
+    if (!L) return;
+
+    for (int i = 0; i < SPRING_POOL_SIZE; ++i) {
+        SpringSlot& slot = m_springPool[i];
+        if (!slot.active) continue;
+
+        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.targetRef);
+        if (!lua_istable(L, -1)) {           // target GC'd or replaced — drop it
+            lua_pop(L, 1);
+            clearSpringSlot(slot, L);
+            continue;
+        }
+
+        slot.spring.advance(dt);
+        bool settled = slot.spring.settled();
+        if (settled) slot.spring.snap();     // land exactly on target (R4)
+
+        lua_pushnumber(L, static_cast<lua_Number>(slot.spring.x));
+        lua_setfield(L, -2, slot.key);
+        lua_pop(L, 1);                        // pop target table
+
+        if (settled) clearSpringSlot(slot, L);
+    }
+}
+
+// ── #38: clearSprings — cancel all active springs and unref their targets ─────
+// The shared ID counter (m_nextTweenId) is reset by the caller (clearTweens /
+// cancelAll), not here, so springs and tweens stay on one ID sequence.
+void LuaBindings::clearSprings() {
+    lua_State* L = engine ? engine->getState() : nullptr;
+    for (int i = 0; i < SPRING_POOL_SIZE; ++i) {
+        if (m_springPool[i].active) clearSpringSlot(m_springPool[i], L);
+    }
+}
+
 // ── registerTweenSubtable: engine.tween.* (called from registerEngineTable) ───
 void LuaBindings::registerTweenSubtable(lua_State* L) {
     static const LuaFuncDef kTweenFuncs[] = {
@@ -343,6 +497,7 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
         {"cancel",    lua_engine_tween_cancel},
         {"cancelAll", lua_engine_tween_cancelAll},
         {"await",     lua_engine_tween_await},  // Phase 57: QOL-01
+        {"spring",    lua_engine_tween_spring}, // #38: retargetable chrome spring
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kTweenFuncs, ENJIN_ARRAY_LEN(kTweenFuncs));

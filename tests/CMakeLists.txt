@@ -43,6 +43,17 @@ target_link_libraries(ui_animator_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_animator_test COMMAND ui_animator_test)
 
+# Spring substrate unit test (#38: retargetable chrome spring beside the animator)
+add_executable(spring_test
+    spring_test.cpp
+)
+target_include_directories(spring_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(spring_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME spring_test COMMAND spring_test)
+
 # List widget unit test (Phase 3a, #121: C_List -> data-only ListComponent + ListSystem)
 add_executable(ui_list_test
     ui_list_test.cpp

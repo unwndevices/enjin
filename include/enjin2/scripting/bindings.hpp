@@ -18,6 +18,7 @@
 #include "../graphics/sprite_asset.hpp"
 #include "../input/input_state.hpp"
 #include "../ui/style.hpp"
+#include "../ui/spring.hpp"
 #include "../core/math.hpp"
 #include "../core/collision.hpp"
 #include "lua_event_bus.hpp"
@@ -486,7 +487,7 @@ private:
     static constexpr int TWEEN_MAX_PROPS = 4;   ///< Maximum animated properties per tween
     static constexpr int TWEEN_KEY_MAX   = 32;  ///< Maximum key string length per property
 
-    enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3 };
+    enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3, EaseOutBack = 4 };
 
     struct TweenSlot {
         int      targetRef{LUA_NOREF};                    ///< luaL_ref for the target Lua table
@@ -503,6 +504,25 @@ private:
     };
     TweenSlot m_tweenPool[TWEEN_POOL_SIZE]; ///< Fixed tween pool
     int       m_nextTweenId{0};             ///< Next ID to assign
+
+    // -- Spring pool (#38: retargetable chrome springs) ---------------------------
+    // A spring animates ONE numeric field of a Lua table with velocity held as
+    // state, so engine.tween.spring on an already-springing field RETARGETS it
+    // (change target, keep x+v) rather than queueing — the feel-spec's R1. One
+    // live spring per (table, key); ticked alongside tweens on the same frame.
+    static constexpr int SPRING_POOL_SIZE = 8; ///< Fixed spring pool — zero alloc
+
+    struct SpringSlot {
+        int    targetRef{LUA_NOREF};       ///< luaL_ref for the target Lua table
+        char   key[TWEEN_KEY_MAX]{};       ///< The single field name animated
+        Spring spring{};                   ///< The scalar integrator (x, v, target, k, ζ)
+        int    id{0};                      ///< Monotonically increasing cancel ID
+        bool   active{false};              ///< Slot in use
+    };
+    SpringSlot m_springPool[SPRING_POOL_SIZE]; ///< Fixed spring pool
+    // Spring IDs are drawn from m_nextTweenId (the tween counter) so tween and
+    // spring IDs never collide — a spring ID handed to engine.tween.cancel can
+    // then only miss (a safe no-op), never cancel an unrelated tween.
 
 public:
     /**
@@ -637,8 +657,27 @@ public:
     /**
      * @brief Cancel all active tweens and unref their targets/callbacks.
      * Called on scene transition (setActiveScene) and hot-reload (registerAll).
+     *
+     * Also clears the spring pool (see @ref tickSprings), so a hot-reload or
+     * scene switch cannot leave a spring writing into a stale table.
      */
     void clearTweens();
+
+    /**
+     * @brief Tick all active springs — integrate one frame and write each field.
+     *
+     * Called from @ref tickTweens so springs share the tweens' priority-100
+     * frame slot with no extra host call site. A spring that settles below the
+     * R4-safe thresholds snaps exactly onto its target and frees its slot.
+     * @param dt Delta time in seconds
+     */
+    void tickSprings(float dt);
+
+    /**
+     * @brief Cancel all active springs and unref their targets.
+     * Called from @ref clearTweens so springs share the tween lifecycle.
+     */
+    void clearSprings();
 
     /**
      * @brief Inject debug canvas pointer (called from host alongside setLayers)
@@ -877,6 +916,8 @@ private:
     static int lua_engine_tween_cancelAll(lua_State* L);
     // Phase 57: QOL-01
     static int lua_engine_tween_await(lua_State* L);
+    // #38: retargetable chrome spring
+    static int lua_engine_tween_spring(lua_State* L);
 
     // engine.ui.* binding functions (Phase 52: UI-01..UI-04)
     static int lua_engine_ui_progressBar(lua_State* L);
