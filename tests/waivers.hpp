@@ -60,6 +60,21 @@
 // change, not a narrow sub-range, so retirement rather than an Active waiver.
 // Exit question: blit_semantics_test::test_pattern_absolute_phase pins the
 // ratified absolute-phase contract.
+//
+// Re-pin 2026-09-07 (Tomodachi #40, type system): text_renderer.hpp head pin
+// bumped to 0x25008f0e5f5a5650 (was 0x3a0e008f0006aea7). TextRenderer::drawChar
+// gained an *additive* index-shader path for GFX fonts — the glyph bitmap is
+// now the clip silhouette, and each drawn pixel may pass through an Effect
+// (Mask x Remap x phase) plus an optional +/-1 px legibility outline. With no
+// effect and no outline set (the state the bench drives), the GFX-font fill
+// writes exactly the pixels the original constant-colour loop did, so every
+// GFX-font sub-range stays byte-exact GREEN; only the glcd (font == 3)
+// sub-range these two waivers cover is affected, and only because the file
+// bytes moved. The glcd fallback path in drawChar is untouched, so the waived
+// difference (BASE Canvas8 draws nothing; HEAD renders the built-in 5x7) is
+// re-affirmed unchanged. text.println (Retired) shares the head pin and is
+// bumped in lockstep. canvas.hpp base pin unchanged (no Canvas8 text method
+// touched).
 
 #include <array>
 #include <cstddef>
@@ -174,17 +189,17 @@ namespace parity
         {"text.drawChar", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
          "canvas.hpp", 0x8eae76df2a5304acull,
-         "text_renderer.hpp", 0x3a0e008f0006aea7ull,
+         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.print", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 1812,
          "canvas.hpp", 0x8eae76df2a5304acull,
-         "text_renderer.hpp", 0x3a0e008f0006aea7ull,
+         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.println", WaiverStatus::Retired,
          "pair retired: HEAD '\\n' yAdvance ratified; no BASE call sites", nullptr, 0,
          "canvas.hpp", 0x8eae76df2a5304acull,
-         "text_renderer.hpp", 0x3a0e008f0006aea7ull,
+         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"blit.canvasOpacity", WaiverStatus::Retired,
          "pair retired: 4-bit source cannot carry BASE's out-of-band matte", nullptr, 0,

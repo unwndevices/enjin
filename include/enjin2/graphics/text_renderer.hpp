@@ -2,9 +2,12 @@
 #define ENJIN2_GRAPHICS_TEXT_RENDERER_HPP
 
 #include "canvas.hpp"
+#include "effect.hpp"     // index-shader data model (Mask x Remap x phase)
+#include "palette.hpp"    // ramp shade-stepping for the legibility outline
 #include "gfxfont.h"  // canonical GFXglyph/GFXfont definitions (Adafruit GFX layout)
 #include <string>
 #include <cstring>
+#include <type_traits>
 
 namespace enjin2 {
 
@@ -94,6 +97,33 @@ private:
     int16_t cursor_x;
     int16_t cursor_y;
 
+    // --- Type-system additions (#40): the glyph as index-shader clip ---
+    // The 1-bit GFX glyph bitmap is the clip silhouette: its set bits decide
+    // *where* to draw, and every drawn pixel is funnelled through an @ref
+    // Effect (Mask x Remap x phase) sampled at absolute canvas coordinates —
+    // so colour/holo/dim/fade are free `Remap` compositions and only this
+    // inner draw loop swaps. `has_effect_ == false` restores the original
+    // constant-colour write byte-for-byte (Canvas8 visual parity). The
+    // legibility outline is a separate shade-stepped silhouette pass drawn
+    // behind the fill at a +/-1 px offset (a shader composition, on for the
+    // banner, off for panel text).
+    Effect effect_{};            ///< Active glyph shader (identity by default).
+    bool has_effect_ = false;    ///< When false, the fill is a plain colour write.
+    bool outline_ = false;       ///< When true, draw a +/-1 px dark silhouette behind the fill.
+    bool outline_has_color_ = false;  ///< true if an explicit outline colour was set.
+    TPixel outline_color_{};     ///< Explicit outline colour (else darken(text_color)).
+
+    /// @brief The palette index behind a `TPixel` (`Pixel4::value` or the byte).
+    static constexpr uint8_t toIndex(TPixel p) {
+        if constexpr (std::is_same_v<TPixel, uint8_t>) return p;
+        else return p.value;
+    }
+    /// @brief Wrap a palette index back into a `TPixel`.
+    static constexpr TPixel fromIndex(uint8_t i) {
+        if constexpr (std::is_same_v<TPixel, uint8_t>) return static_cast<uint8_t>(i);
+        else return TPixel(i);
+    }
+
 public:
     /**
      * @brief Construct a new TextRenderer
@@ -116,6 +146,50 @@ public:
      */
     void setFont(const GFXfont* font) {
         gfx_font = font;
+    }
+
+    /**
+     * @brief Route every drawn glyph pixel through an index shader (#40).
+     *
+     * The glyph bitmap stays the 1-bit clip silhouette; the shader recolours
+     * the pixels it keeps. Compose colour/holo/dim/fade as `Remap`s
+     * (`Effect::holo()`, `Effect::dim()`, `Effect::fade(level)`, or a
+     * `Remap::solid(index)` fill). Sampling is at absolute canvas coordinates,
+     * so a scrolling phase stays seamless across dirty tiles.
+     *
+     * @param fx The effect to apply to the glyph silhouette.
+     */
+    void setEffect(const Effect& fx) {
+        effect_ = fx;
+        has_effect_ = true;
+    }
+
+    /// @brief Drop the shader; the fill reverts to a plain `text_color` write.
+    void clearEffect() {
+        has_effect_ = false;
+        effect_ = Effect{};
+    }
+
+    /**
+     * @brief Enable/disable the legibility outline (a +/-1 px dark silhouette).
+     *
+     * The outline is a shader composition, not a glyph feature: the glyph
+     * silhouette is stamped one shade darker (`Palette::darken(text_color)`)
+     * at the four +/-1 px offsets *behind* the fill, so the text reads over
+     * any scenery. On by default for the banner, off for panel text (#40).
+     *
+     * @param on true to draw the outline.
+     */
+    void setOutline(bool on) {
+        outline_ = on;
+        outline_has_color_ = false;
+    }
+
+    /// @brief Enable the outline with an explicit colour (else darken(text_color)).
+    void setOutline(bool on, TPixel color) {
+        outline_ = on;
+        outline_color_ = color;
+        outline_has_color_ = true;
     }
 
     /**
@@ -232,38 +306,67 @@ public:
                 }
             }
         } else {
-            // Custom GFX font
+            // Custom GFX font — the glyph bitmap is a 1-bit clip silhouette.
             if (c < gfx_font->first || c > gfx_font->last) return;
-            
+
             c -= gfx_font->first;
             const GFXglyph* glyph = (const GFXglyph*)gfx_font->glyph;
             const GFXglyph& g = glyph[c];
-            
-            uint16_t bo = g.bitmapOffset;
-            uint8_t w = g.width, h = g.height;
-            int8_t xo = g.xOffset, yo = g.yOffset;
-            uint8_t xx, yy, bits = 0, bit = 0;
-            
-            // Draw glyph bitmap
-            for (yy = 0; yy < h; yy++) {
-                for (xx = 0; xx < w; xx++) {
-                    if (!(bit++ & 7)) {
-                        bits = gfx_font->bitmap[bo++];
-                    }
-                    if (bits & 0x80) {
-                        if (text_size_x == 1 && text_size_y == 1) {
-                            canvas.setPixel(x + xo + xx, y + yo + yy, text_color);
-                        } else {
+
+            const uint16_t bo = g.bitmapOffset;
+            const uint8_t w = g.width, h = g.height;
+            const int8_t xo = g.xOffset, yo = g.yOffset;
+
+            // Walk the glyph's set bits once, stamping each into its scaled
+            // pixel block shifted by (offx, offy). `colorFn(px, py)` yields the
+            // colour per absolute pixel — a constant for the fill, a
+            // shade-stepped constant for the outline, or the index shader when
+            // one is set. Kept as one walk so the no-effect / no-outline case
+            // writes exactly the pixels the original constant-colour loop did
+            // (Canvas8 visual parity — see tests/waivers.hpp text pins).
+            auto stamp = [&](int16_t offx, int16_t offy, auto&& colorFn) {
+                uint16_t p = bo;
+                uint8_t bits = 0, bit = 0;
+                for (uint8_t yy = 0; yy < h; yy++) {
+                    for (uint8_t xx = 0; xx < w; xx++) {
+                        if (!(bit++ & 7)) {
+                            bits = gfx_font->bitmap[p++];
+                        }
+                        if (bits & 0x80) {
+                            const int16_t bx = x + (xo + xx) * text_size_x + offx;
+                            const int16_t by = y + (yo + yy) * text_size_y + offy;
                             for (uint8_t sy = 0; sy < text_size_y; sy++) {
                                 for (uint8_t sx = 0; sx < text_size_x; sx++) {
-                                    canvas.setPixel(x + (xo + xx) * text_size_x + sx, 
-                                                  y + (yo + yy) * text_size_y + sy, text_color);
+                                    const int16_t px = bx + sx;
+                                    const int16_t py = by + sy;
+                                    canvas.setPixel(px, py, colorFn(px, py));
                                 }
                             }
                         }
+                        bits <<= 1;
                     }
-                    bits <<= 1;
                 }
+            };
+
+            // Outline pass (#40): a +/-1 px dark silhouette *behind* the fill.
+            if (outline_) {
+                const TPixel oc = outline_has_color_
+                    ? outline_color_
+                    : fromIndex(Palette::darken(toIndex(text_color)));
+                const int16_t kOff[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+                for (auto& o : kOff) {
+                    stamp(o[0], o[1], [&](int16_t, int16_t) { return oc; });
+                }
+            }
+
+            // Fill pass: the index shader when set, else the plain text colour.
+            if (has_effect_) {
+                const uint8_t base = toIndex(text_color);
+                stamp(0, 0, [&](int16_t px, int16_t py) {
+                    return fromIndex(effect_.shadePixel(base, px, py));
+                });
+            } else {
+                stamp(0, 0, [&](int16_t, int16_t) { return text_color; });
             }
         }
     }

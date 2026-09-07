@@ -49,6 +49,10 @@ static void test_default_table() {
            "SceneObject fill is the scenery base");
     // Metrics are sane placeholders.
     ASSERT(kDefaultStyles[(int)StyleSlot::Panel].borderWidth == 1, "Panel border width 1");
+    // Type-system legibility outline (#40): on for the banner, off for panel text.
+    ASSERT(kDefaultStyles[(int)StyleSlot::Banner].textOutline == 1, "Banner outline on by default");
+    ASSERT(kDefaultStyles[(int)StyleSlot::Panel].textOutline == 0, "Panel text outline off");
+    ASSERT(kDefaultStyles[(int)StyleSlot::Popup].textOutline == 0, "Popup text outline off");
 }
 
 // Every default fill sits at a ramp *base* shade — i.e. it is a structural role

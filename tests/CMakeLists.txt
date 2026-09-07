@@ -870,6 +870,15 @@ add_executable(effect_test
 target_include_directories(effect_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 add_test(NAME effect_test COMMAND effect_test)
 
+# Type system (Tomodachi #40): the 1-bit GFX glyph as index-shader clip
+# (colour/outline/holo/dim as Remap compositions; format unchanged).
+add_executable(text_shader_test
+    text_shader_test.cpp
+)
+target_include_directories(text_shader_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(text_shader_test PRIVATE enjin2_core enjin2_graphics)
+add_test(NAME text_shader_test COMMAND text_shader_test)
+
 add_executable(remap_test
     remap_test.cpp
 )

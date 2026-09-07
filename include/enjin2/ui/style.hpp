@@ -34,6 +34,11 @@ struct Style {
     uint8_t borderKind;   ///< Border style (0 = line; bevel/shadow variants per #18)
     int8_t  shadowDx;     ///< Drop-shadow x offset (0 = none)
     int8_t  shadowDy;     ///< Drop-shadow y offset (0 = none)
+    uint8_t textOutline;  ///< Legibility outline for text drawn through this slot
+                          ///< (1 = a dark +/-1 px silhouette; #40). On for the
+                          ///< banner so it reads over any scenery, off for panel
+                          ///< text. The tone is derived (darken of the text
+                          ///< colour), never stored — the type system renders it.
 
     /// @brief The lighter tone of `fill`, one shade up its ramp (clamped).
     constexpr Pixel4 light() const { return Pixel4(Palette::lighten(fill.value)); }
@@ -83,14 +88,15 @@ constexpr Pixel4 roleDark(uint8_t role) { return Pixel4(Palette::ramp(role, SHAD
  * not hexes). Selected variants take the selection-accent ramp (role 4).
  */
 constexpr Style kDefaultStyles[kStyleSlotCount] = {
-    // Columns: { fill, text, border, borderWidth, radius, padding, borderKind, shadowDx, shadowDy }
+    // Columns: { fill, text, border, borderWidth, radius, padding, borderKind, shadowDx, shadowDy, textOutline }
     // Panel — chrome body, light chrome text, dark chrome border
-    /* Panel               */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 2, 0, 0, 0 },
-    /* PanelSelected       */ { detail::roleBase(4), detail::roleLight(4), detail::roleDark(4), 1, 0, 2, 0, 0, 0 },
-    /* Popup               */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 3, 0, 1, 1 },
-    /* Banner              */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 2, 0, 0, 0 },
-    /* SceneObject         */ { detail::roleBase(3), detail::roleLight(3), detail::roleDark(3), 1, 0, 1, 0, 0, 0 },
-    /* SceneObjectSelected */ { detail::roleBase(4), detail::roleLight(4), detail::roleDark(4), 1, 0, 1, 0, 0, 0 },
+    /* Panel               */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 2, 0, 0, 0, 0 },
+    /* PanelSelected       */ { detail::roleBase(4), detail::roleLight(4), detail::roleDark(4), 1, 0, 2, 0, 0, 0, 0 },
+    /* Popup               */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 3, 0, 1, 1, 0 },
+    // Banner — the naming label: outline on by default so it reads over scenery (#40).
+    /* Banner              */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 2, 0, 0, 0, 1 },
+    /* SceneObject         */ { detail::roleBase(3), detail::roleLight(3), detail::roleDark(3), 1, 0, 1, 0, 0, 0, 0 },
+    /* SceneObjectSelected */ { detail::roleBase(4), detail::roleLight(4), detail::roleDark(4), 1, 0, 1, 0, 0, 0, 0 },
 };
 
 /**
