@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include "../core/types.hpp"
 #include "canvas.hpp"
 #include "palette.hpp"
 #include "remap.hpp"
@@ -324,6 +325,86 @@ namespace enjin2
                 return;  // a shadow never paints into a hole
             dst.setPixel(x, y, Pixel4(remap.apply(d)));
         });
+    }
+
+    // ---- bilinear quad keystone warp (Tomodachi #44) ----
+
+    // Warp `src` into an arbitrary destination quad given by its four corners,
+    // clockwise from the top-left: `quad[0]=TL, quad[1]=TR, quad[2]=BR,
+    // quad[3]=BL`. This is the banner->panel IMU shear: a cached panel `Canvas4`
+    // stroked once (9-slice) and re-blitted every frame into the tilt quad.
+    //
+    // A keystone is affine **per horizontal strip**, so no per-pixel perspective
+    // divide is needed — each source texel is forward-mapped through the
+    // bilinear of the four corners (all multiplies) and filled over its integer
+    // destination footprint. Neighbouring texels' footprints overlap by design
+    // (the "downward + rightward overlap"), so a stretched quad leaves no
+    // hairline seams; a shrunk quad (opening panel) collapses many texels onto
+    // one pixel, nearest-neighbour. Every source pixel is read exactly once
+    // (a full 384x384 panel ≈ 147k reads ≈ 4.3 ms @240 MHz). Source pixels equal
+    // to `transparent` are skipped so the rounded panel's outside stays clear.
+    //
+    // The caller keys the warp on the integer quad corners: an unchanged quad
+    // (a still hand) re-blits the cached output and never calls this at all —
+    // the zero-read still-frame path lives at the call site, not here.
+    inline void warpCanvas(ICanvas<Pixel4> &dst, const ICanvas<Pixel4> &src,
+                           const Point quad[4],
+                           Pixel4 transparent = Pixel4(PALETTE_TRANSPARENT))
+    {
+        const int16_t sw = static_cast<int16_t>(src.getWidth());
+        const int16_t sh = static_cast<int16_t>(src.getHeight());
+        if (sw <= 0 || sh <= 0)
+            return;
+
+        const float TLx = quad[0].x, TLy = quad[0].y;
+        const float TRx = quad[1].x, TRy = quad[1].y;
+        const float BRx = quad[2].x, BRy = quad[2].y;
+        const float BLx = quad[3].x, BLy = quad[3].y;
+
+        const float invW = 1.0f / static_cast<float>(sw);
+        const float invH = 1.0f / static_cast<float>(sh);
+
+        // Bilinear of the four corners at (u,v) in [0,1]^2 — no per-pixel divide.
+        auto mapX = [&](float u, float v) {
+            const float tx = TLx + (TRx - TLx) * u;
+            const float bx = BLx + (BRx - BLx) * u;
+            return tx + (bx - tx) * v;
+        };
+        auto mapY = [&](float u, float v) {
+            const float ty = TLy + (TRy - TLy) * u;
+            const float by = BLy + (BRy - BLy) * u;
+            return ty + (by - ty) * v;
+        };
+
+        for (int16_t sy = 0; sy < sh; ++sy) {
+            const float v0 = static_cast<float>(sy) * invH;
+            const float v1 = static_cast<float>(sy + 1) * invH;
+            for (int16_t sx = 0; sx < sw; ++sx) {
+                const Pixel4 sp = src.getPixel(sx, sy);
+                if (sp.value == transparent.value)
+                    continue;
+                const float u0 = static_cast<float>(sx) * invW;
+                const float u1 = static_cast<float>(sx + 1) * invW;
+                // Dest footprint = the quad of this texel's four (u,v) corners;
+                // fill its integer bbox nearest-neighbour.
+                const float xs[4] = {mapX(u0, v0), mapX(u1, v0), mapX(u1, v1), mapX(u0, v1)};
+                const float ys[4] = {mapY(u0, v0), mapY(u1, v0), mapY(u1, v1), mapY(u0, v1)};
+                float fminx = xs[0], fmaxx = xs[0], fminy = ys[0], fmaxy = ys[0];
+                for (int i = 1; i < 4; ++i) {
+                    fminx = std::min(fminx, xs[i]);
+                    fmaxx = std::max(fmaxx, xs[i]);
+                    fminy = std::min(fminy, ys[i]);
+                    fmaxy = std::max(fmaxy, ys[i]);
+                }
+                const int16_t minx = static_cast<int16_t>(std::floor(fminx));
+                const int16_t maxx = static_cast<int16_t>(std::floor(fmaxx));
+                const int16_t miny = static_cast<int16_t>(std::floor(fminy));
+                const int16_t maxy = static_cast<int16_t>(std::floor(fmaxy));
+                for (int16_t dy = miny; dy <= maxy; ++dy)
+                    for (int16_t dx = minx; dx <= maxx; ++dx)
+                        dst.setPixel(dx, dy, sp);
+            }
+        }
     }
 }
 
