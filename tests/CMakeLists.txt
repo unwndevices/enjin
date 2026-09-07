@@ -98,6 +98,16 @@ target_link_libraries(nine_slice_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME nine_slice_test COMMAND nine_slice_test)
 
+add_executable(warp_canvas_test
+    warp_canvas_test.cpp
+)
+target_include_directories(warp_canvas_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(warp_canvas_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME warp_canvas_test COMMAND warp_canvas_test)
+
 # Label widget unit test (Phase 3a, #121: C_Label -> data-only LabelComponent + LabelSystem)
 add_executable(ui_label_test
     ui_label_test.cpp
