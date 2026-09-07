@@ -43,6 +43,18 @@ target_link_libraries(ui_animator_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_animator_test COMMAND ui_animator_test)
 
+# Spring motion primitive test (wayfinder #17 / spec #30: retargetable spring +
+# sub-stepping + settle threshold below the pixel round + SpringSystem)
+add_executable(ui_spring_test
+    ui_spring_test.cpp
+)
+target_include_directories(ui_spring_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(ui_spring_test PRIVATE
+    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
+add_test(NAME ui_spring_test COMMAND ui_spring_test)
+
 # List widget unit test (Phase 3a, #121: C_List -> data-only ListComponent + ListSystem)
 add_executable(ui_list_test
     ui_list_test.cpp
@@ -706,6 +718,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME tween_test COMMAND tween_test)
+
+    # Spring Lua round-trip test (wayfinder #17 / spec #30: engine.tween.spring + easeOutBack)
+    add_executable(spring_lua_test
+        spring_lua_test.cpp
+    )
+    target_include_directories(spring_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(spring_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME spring_lua_test COMMAND spring_lua_test)
 
     # QoL features test (Phase 57: QOL-01, QOL-02, QOL-03)
     add_executable(qol_test

@@ -43,6 +43,8 @@ static void test_endpoints() {
     ASSERT(near(Easing::EaseOutQuart(0.0f), 0.0f), "easing: EaseOutQuart(0)=0");
     ASSERT(near(Easing::EaseInOutCirc(0.0f), 0.0f), "easing: EaseInOutCirc(0)=0");
     ASSERT(near(Easing::EaseInOutCirc(1.0f), 1.0f), "easing: EaseInOutCirc(1)=1");
+    ASSERT(near(Easing::EaseOutBack(0.0f), 0.0f), "easing: EaseOutBack(0)=0");
+    ASSERT(near(Easing::EaseOutBack(1.0f), 1.0f), "easing: EaseOutBack(1)=1");
 }
 
 // Step holds at zero for the whole interval — it is the "no interpolation" curve.
@@ -62,6 +64,12 @@ static void test_shape() {
     ASSERT(near(Easing::EaseInOutQuad(0.5f), 0.5f), "easing: EaseInOutQuad crosses at 0.5");
     ASSERT(near(Easing::EaseInOutCubic(0.5f), 0.5f), "easing: EaseInOutCubic crosses at 0.5");
     ASSERT(near(Easing::EaseInOutSine(0.5f), 0.5f), "easing: EaseInOutSine crosses at 0.5");
+    // EaseOutBack overshoots past the target before easing back to it.
+    bool overshoots = false;
+    for (float t = 0.5f; t < 1.0f; t += 0.02f) {
+        if (Easing::EaseOutBack(t) > 1.0f) { overshoots = true; break; }
+    }
+    ASSERT(overshoots, "easing: EaseOutBack overshoots past 1 before settling");
 }
 
 // A function pointer of the public EasingFunction type must bind to these statics —

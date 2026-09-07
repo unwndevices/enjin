@@ -19,6 +19,7 @@
 #include "../input/input_state.hpp"
 #include "../core/math.hpp"
 #include "../core/collision.hpp"
+#include "../ui/spring.hpp"
 #include "lua_event_bus.hpp"
 
 namespace enjin2 {
@@ -478,7 +479,7 @@ private:
     static constexpr int TWEEN_MAX_PROPS = 4;   ///< Maximum animated properties per tween
     static constexpr int TWEEN_KEY_MAX   = 32;  ///< Maximum key string length per property
 
-    enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3 };
+    enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3, EaseOutBack = 4 };
 
     struct TweenSlot {
         int      targetRef{LUA_NOREF};                    ///< luaL_ref for the target Lua table
@@ -495,6 +496,20 @@ private:
     };
     TweenSlot m_tweenPool[TWEEN_POOL_SIZE]; ///< Fixed tween pool
     int       m_nextTweenId{0};             ///< Next ID to assign
+
+    // -- Spring pool (wayfinder #17 / spec #30: retargetable chrome springs) --------
+    static constexpr int SPRING_POOL_SIZE = 8;  ///< Fixed spring pool — zero alloc
+
+    struct SpringSlot {
+        int    targetRef{LUA_NOREF};        ///< luaL_ref for the target Lua table
+        char   key[TWEEN_KEY_MAX]{};        ///< Property key animated on the target
+        Spring spring;                      ///< Position/velocity/target physics state
+        int    id{0};                       ///< Monotonically increasing cancel ID
+        bool   active{false};               ///< Slot in use
+    };
+    SpringSlot m_springPool[SPRING_POOL_SIZE]; ///< Fixed spring pool
+    int        m_nextSpringId{0};              ///< Next ID to assign
+    float      m_springAccumulator{0.0f};      ///< Fixed-dt accumulator shared by the pool
 
 public:
     /**
@@ -620,6 +635,20 @@ public:
      * Called on scene transition (setActiveScene) and hot-reload (registerAll).
      */
     void clearTweens();
+
+    /**
+     * @brief Tick all active springs — fixed-dt sub-stepped integration, then write
+     * each spring's position back onto its target table field. Settled springs are
+     * snapped to rest and freed. Called once per frame alongside tickTweens(dt).
+     * @param dt Delta time in seconds
+     */
+    void tickSprings(float dt);
+
+    /**
+     * @brief Cancel all active springs and unref their targets.
+     * Called on scene transition (setActiveScene) and hot-reload (registerAll).
+     */
+    void clearSprings();
 
     /**
      * @brief Inject debug canvas pointer (called from host alongside setLayers)
@@ -858,6 +887,9 @@ private:
     static int lua_engine_tween_cancelAll(lua_State* L);
     // Phase 57: QOL-01
     static int lua_engine_tween_await(lua_State* L);
+    // Retargetable spring — engine.tween.spring(obj, key, target, {duration, bounce})
+    // (wayfinder #17 / spec #30)
+    static int lua_engine_tween_spring(lua_State* L);
 
     // engine.ui.* binding functions (Phase 52: UI-01..UI-04)
     static int lua_engine_ui_progressBar(lua_State* L);

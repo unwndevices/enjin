@@ -135,6 +135,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         sys.getBindings().setTimeState(dt, s_total, s_frame++);
         sys.getBindings().tickCoroutines(dt);
         sys.getBindings().tickTweens(dt);
+        sys.getBindings().tickSprings(dt);
         sys.getBindings().tickCameraFollow(dt);
     });
 

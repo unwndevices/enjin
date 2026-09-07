@@ -91,6 +91,15 @@ public:
     /// @brief Accelerates then decelerates, symmetric about the midpoint (sinusoidal).
     static float EaseInOutSine(float t) { return -0.5f * (std::cos(kPi * t) - 1.0f); }
 
+    /// @brief Decelerates past the target then eases back — a small overshoot at the
+    /// end (the one-shot tween's "spring-ish" curve, #17/#30). Pins f(0)=0, f(1)=1.
+    static float EaseOutBack(float t) {
+        constexpr float c1 = 1.70158f;        // standard back-easing overshoot constant
+        constexpr float c3 = c1 + 1.0f;
+        const float t1 = t - 1.0f;
+        return 1.0f + c3 * t1 * t1 * t1 + c1 * t1 * t1;
+    }
+
     /// @brief Springy overshoot on both ends (does not pin endpoints exactly).
     static float EaseInOutElastic(float t) {
         if (t <= 0.5f) {

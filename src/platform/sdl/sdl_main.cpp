@@ -362,6 +362,8 @@ int main(int argc, char* argv[]) {
                 g_lua.getBindings().tickCoroutines(dt);
                 // Tick tween scheduler (Phase 50: TWEEN-01..TWEEN-03)
                 g_lua.getBindings().tickTweens(dt);
+                // Tick spring pool (wayfinder #17 / spec #30)
+                g_lua.getBindings().tickSprings(dt);
 #ifdef ENJIN2_FRAME_TIMING
                 Uint64 t_upd_end = SDL_GetPerformanceCounter();
                 enjin2::FrameTimingInstrumentation::get().updateTime_us.store(

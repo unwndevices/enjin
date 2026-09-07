@@ -183,6 +183,7 @@ int main(int argc, char* argv[]) {
             g_lua.getBindings().tickCameraFollow(dt);
             g_lua.getBindings().tickCoroutines(dt);
             g_lua.getBindings().tickTweens(dt);
+            g_lua.getBindings().tickSprings(dt);
         }
 
         // ── Call draw(self) ──────────────────────────────────────────────

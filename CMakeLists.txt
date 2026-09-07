@@ -201,6 +201,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/esp32_storage.cpp
         src/scripting/bindings_async.cpp
         src/scripting/bindings_tween.cpp
+        src/scripting/bindings_spring.cpp
         src/scripting/bindings_system.cpp
         src/scripting/bindings_ui.cpp
         src/components/lua_script.cpp

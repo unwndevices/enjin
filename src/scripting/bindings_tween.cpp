@@ -51,6 +51,12 @@ static inline float tweenEase(float t, uint8_t easingCode) {
             return 1.0f - (1.0f - t) * (1.0f - t);
         case 3:  // EaseInOut: smoothstep
             return t * t * (3.0f - 2.0f * t);
+        case 4: {  // EaseOutBack: decelerate past the target then ease back (overshoot)
+            constexpr float c1 = 1.70158f;   // standard back-easing overshoot constant
+            constexpr float c3 = c1 + 1.0f;
+            const float t1 = t - 1.0f;
+            return 1.0f + c3 * t1 * t1 * t1 + c1 * t1 * t1;
+        }
         case 0:  // Linear
         default:
             return t;
@@ -109,6 +115,8 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
         easing = TweenEasing::EaseOut;
     } else if (strcmp(easingStr, "easeInOut") == 0) {
         easing = TweenEasing::EaseInOut;
+    } else if (strcmp(easingStr, "easeOutBack") == 0) {
+        easing = TweenEasing::EaseOutBack;
     }
     // "linear" and unknown strings default to Linear
 
@@ -343,6 +351,7 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
         {"cancel",    lua_engine_tween_cancel},
         {"cancelAll", lua_engine_tween_cancelAll},
         {"await",     lua_engine_tween_await},  // Phase 57: QOL-01
+        {"spring",    lua_engine_tween_spring}, // wayfinder #17 / spec #30
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kTweenFuncs, ENJIN_ARRAY_LEN(kTweenFuncs));

@@ -480,6 +480,7 @@ void LuaBindings::registerAll() {
     // ASYNC-03: clear coroutine pool on every hot-reload (clean slate)
     clearCoroutines();
     clearTweens();     // TWEEN-02: clean slate on every hot-reload
+    clearSprings();    // wayfinder #17 / spec #30: drop springs on hot-reload
     m_followTargetProxy = nullptr;  // DEBT-01: clear follow target on hot reload
     m_deadZoneW = 0.0f;             // Phase 57 QOL-03: clear dead zone on hot reload
     m_deadZoneH = 0.0f;
@@ -680,6 +681,7 @@ void LuaBindings::setActiveScene(Scene* scene) {
         // ASYNC-03: clear coroutines on scene transition (prevent stale refs)
         clearCoroutines();
         clearTweens();     // TWEEN-02: clean slate on scene transition
+        clearSprings();    // wayfinder #17 / spec #30: drop springs on scene transition
         m_followTargetProxy = nullptr;  // DEBT-01: clear follow target on scene change
         m_deadZoneW = 0.0f;             // Phase 57 QOL-03: clear dead zone on scene change
         m_deadZoneH = 0.0f;
