@@ -116,6 +116,43 @@ struct Remap {
     }
 
     /**
+     * @brief Recolour a single index; pass everything else through unchanged.
+     *
+     * `lut[from] == to`, every other entry identity. The one-index counterpart
+     * of @ref solid — a shader that repaints just one palette slot (e.g. an
+     * accent flash) without disturbing the rest of the frame.
+     *
+     * @param from Source index (0-15) to remap.
+     * @param to   Index it maps to.
+     * @return An otherwise-identity `Remap` with `lut[from & 0x0F] == to & 0x0F`.
+     */
+    static constexpr Remap recolor(uint8_t from, uint8_t to) {
+        Remap r{};
+        r.lut[from & 0x0F] = to & 0x0F;
+        return r;
+    }
+
+    /**
+     * @brief Compose two remaps into one — `first` applied, then `second`.
+     *
+     * Sequential composition in call order: the result maps `i` to
+     * `second.apply(first.apply(i))`, so `compose(a, b)` reads "do a, then b".
+     * This is how the presets stack passes — e.g. clip to a ramp then lighten —
+     * as a single `Remap` with no per-pixel double lookup.
+     *
+     * @param first  The remap applied first.
+     * @param second The remap applied to `first`'s output.
+     * @return A `Remap` where `lut[i] == second.lut[first.lut[i]]`.
+     */
+    static constexpr Remap compose(const Remap& first, const Remap& second) {
+        Remap r{};
+        for (uint8_t i = 0; i < 16; ++i) {
+            r.lut[i] = second.lut[first.lut[i] & 0x0F];
+        }
+        return r;
+    }
+
+    /**
      * @brief Apply the remap to a single index.
      * @param i Source palette index (only the low 4 bits are used).
      * @return The remapped index, `lut[i & 0x0F]`.

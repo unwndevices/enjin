@@ -13,6 +13,8 @@
 #include "gfxfont.h"
 // Include default font data
 #include "defaultfont.hpp"
+// Index-shader effect model (Mask x Remap x phase)
+#include "effect.hpp"
 
 namespace enjin2
 {
@@ -491,6 +493,39 @@ namespace enjin2
                 for (int16_t x = x1; x < x2; ++x)
                 {
                     setPixel(x, y, color);
+                }
+            }
+        }
+
+        /**
+         * @brief Apply an index shader over a rectangle.
+         *
+         * Each pixel in `rect` (clipped to the canvas) is read, run through the
+         * @ref Effect (mask x remap x phase) sampled at its **absolute** canvas
+         * coordinates, and written back. Because the mask is keyed on absolute
+         * coords, a shaded rect that spans several dirty tiles carries one
+         * continuous pattern phase — no seam appears at a tile boundary. Writes
+         * go through @ref setPixel, so the touched tiles mark themselves dirty.
+         *
+         * This is one of the two shader apply sites; @ref SpriteSheet::draw is
+         * the other, and both funnel through @ref Effect::shadePixel.
+         *
+         * @param rect Region to shade, in canvas coordinates.
+         * @param fx   The effect to apply.
+         */
+        void shade(const Rect &rect, const Effect &fx)
+        {
+            int16_t x1 = std::max<int16_t>(0, rect.x);
+            int16_t y1 = std::max<int16_t>(0, rect.y);
+            int16_t x2 = std::min<int16_t>(WIDTH, rect.x + rect.width);
+            int16_t y2 = std::min<int16_t>(HEIGHT, rect.y + rect.height);
+
+            for (int16_t y = y1; y < y2; ++y)
+            {
+                for (int16_t x = x1; x < x2; ++x)
+                {
+                    const uint8_t src = getPixel(x, y).value;
+                    setPixel(x, y, Pixel4(fx.shadePixel(src, x, y)));
                 }
             }
         }

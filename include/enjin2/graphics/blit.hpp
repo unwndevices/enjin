@@ -115,6 +115,13 @@ namespace enjin2
 
     // Tiled dither-pattern fill: `pattern` is a pw*ph block of 8-bit grayscale
     // values (0-255) tiled across the rect; each sample is mapped to 4-bit.
+    //
+    // The pattern is sampled at ABSOLUTE canvas coordinates (`x + px`, `y + py`),
+    // not relative to the rect's top-left. This is the R4 "one grid" rule the
+    // index shader also follows: two rects that abut across a tile boundary
+    // carry one continuous pattern phase, so a lone dirty-tile repaint never
+    // seams. (Rect-relative anchoring was retired — see the `blit.pattern`
+    // entry in tests/waivers.hpp, Tomodachi #36.)
     inline void fillRectWithPattern(ICanvas<Pixel4> &dst, int16_t x, int16_t y,
                                     int16_t w, int16_t h, const uint8_t *pattern,
                                     int16_t pw, int16_t ph)
@@ -124,8 +131,12 @@ namespace enjin2
         for (int16_t py = 0; py < h; ++py)
             for (int16_t px = 0; px < w; ++px)
             {
-                const uint8_t g = pattern[(py % ph) * pw + (px % pw)];
-                dst.setPixel(x + px, y + py, Pixel4(g & 0x0F));
+                const int16_t ax = static_cast<int16_t>(x + px);
+                const int16_t ay = static_cast<int16_t>(y + py);
+                const uint8_t sx = static_cast<uint8_t>(((ax % pw) + pw) % pw);
+                const uint8_t sy = static_cast<uint8_t>(((ay % ph) + ph) % ph);
+                const uint8_t g = pattern[sy * pw + sx];
+                dst.setPixel(ax, ay, Pixel4(g & 0x0F));
             }
     }
 

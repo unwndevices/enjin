@@ -42,6 +42,24 @@
 //
 // Pin hashes: run the bench with --hash to print the current per-header
 // hashes to copy into a new entry.
+//
+// Re-pin 2026-09-07: canvas.hpp base pin bumped to 0x6cce4a52aae9a3d9
+// (was 0xf18aba15dd7867cc). The change since the M5 adjudication was the
+// dirty-tile compositor + presenter seam + Remap tint and the 480x480 canvas
+// aliases (Tomodachi #34/#35); it touched only structural/compositor code, not
+// the text drawChar/print/getTextWidth methods this table waives, so the
+// adjudicated glcd-font sub-ranges are re-affirmed unchanged.
+//
+// Re-pin + retirement 2026-09-07 (Tomodachi #36, index shader): canvas.hpp
+// base pin bumped to 0x8eae76df2a5304ac (added Canvas4::shade + the effect.hpp
+// include — no Canvas8 text method touched, glcd sub-ranges re-affirmed), and
+// blit.hpp pin bumped to 0x8ccf79c81069dae7 (fillRectWithPattern → absolute
+// phase). The blit.pattern pair is RETIRED: HEAD now samples the pattern at
+// absolute canvas coordinates (the R4 one-grid rule, so dirty tiles never
+// seam) while BASE anchors it to the rect origin — a whole-pair behaviour
+// change, not a narrow sub-range, so retirement rather than an Active waiver.
+// Exit question: blit_semantics_test::test_pattern_absolute_phase pins the
+// ratified absolute-phase contract.
 
 #include <array>
 #include <cstddef>
@@ -140,27 +158,33 @@ namespace parity
     //     contract (transparent skip, 8-bit fade, clipping). Consequence to
     //     verify at C2 (unwn #170): content drawn at true black inside an
     //     Opacity50/25-blended widget canvas now reads transparent.
-    inline constexpr std::array<Waiver, 4> kWaivers{{
+    inline constexpr std::array<Waiver, 5> kWaivers{{
         {"text.drawChar", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
-         "canvas.hpp", 0xf18aba15dd7867ccull,
+         "canvas.hpp", 0x8eae76df2a5304acull,
          "text_renderer.hpp", 0x3a0e008f0006aea7ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.print", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 1812,
-         "canvas.hpp", 0xf18aba15dd7867ccull,
+         "canvas.hpp", 0x8eae76df2a5304acull,
          "text_renderer.hpp", 0x3a0e008f0006aea7ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.println", WaiverStatus::Retired,
          "pair retired: HEAD '\\n' yAdvance ratified; no BASE call sites", nullptr, 0,
-         "canvas.hpp", 0xf18aba15dd7867ccull,
+         "canvas.hpp", 0x8eae76df2a5304acull,
          "text_renderer.hpp", 0x3a0e008f0006aea7ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"blit.canvasOpacity", WaiverStatus::Retired,
          "pair retired: 4-bit source cannot carry BASE's out-of-band matte", nullptr, 0,
-         "canvas.hpp", 0xf18aba15dd7867ccull,
-         "blit.hpp", 0xd94a04540dfb6c79ull,
+         "canvas.hpp", 0x8eae76df2a5304acull,
+         "blit.hpp", 0x8ccf79c81069dae7ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
+        {"blit.pattern", WaiverStatus::Retired,
+         "pair retired: HEAD samples the pattern at absolute canvas coords (R4 "
+         "one-grid), BASE anchors it to the rect origin", nullptr, 0,
+         "canvas.hpp", 0x8eae76df2a5304acull,
+         "blit.hpp", 0x8ccf79c81069dae7ull,
+         "unwndevices/Tomodachi#36", "claude+ciro", "2026-09-07"},
     }};
 
 } // namespace parity

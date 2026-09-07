@@ -146,6 +146,31 @@ int main() {
         printf("  PASS: pikachu flipH\n");
     }
 
+    // ── TEST 8: index shader through drawSprite (#36) ──
+    {
+        // dim() = full mask + darken. The 4x4 sprite's opaque pixels are the
+        // clip; each surviving index darkens one shade on its ramp.
+        f.clear();
+        f.exec("gfx.drawSprite(_s0, 0, 0, false, false, false, gfx.effect('dim'))");
+        // Source (0,0)=1 (ramp0 base) -> darken -> 2 (ramp0 dark).
+        ASSERT(f.px(0, 0) == 2, "fx dim: base index 1 darkened to 2");
+        // Source (0,3)=13 (ramp4 light) -> darken -> 14 (ramp4 base).
+        ASSERT(f.px(0, 3) == 14, "fx dim: index 13 darkened to 14");
+        printf("  PASS: index shader (dim) through drawSprite\n");
+    }
+
+    // ── TEST 9: shader remap paints while silhouette clips ──
+    {
+        // solid(5) over a full mask: every opaque pixel -> 5; transparent (the
+        // sprite's index-15 cells, and the 0-index cells stay as drawn).
+        f.clear();
+        f.exec("gfx.drawSprite(_s0, 0, 0, false, false, false, "
+               "gfx.effect(gfx.mask('full'), gfx.remap('solid', 5)))");
+        ASSERT(f.px(0, 0) == 5, "fx solid(5): opaque pixel recoloured to 5");
+        ASSERT(f.px(3, 0) == 5, "fx solid(5): another opaque pixel -> 5");
+        printf("  PASS: shader remap through drawSprite\n");
+    }
+
     printf("=== sprite_flip_test: ALL PASSED ===\n");
     return 0;
 }

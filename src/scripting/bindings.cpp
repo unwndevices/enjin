@@ -1,4 +1,5 @@
 #include "bindings_internal.hpp"
+#include "../../include/enjin2/scripting/effect_lua.hpp"
 #include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/components/lua_script.hpp"
@@ -578,6 +579,11 @@ void LuaBindings::registerAll() {
     lua_setfield(L, -2, "COLOR");  // gfx.COLOR
 
     lua_setglobal(L, "gfx");
+
+    // Index-shader constructors: gfx.remap / gfx.mask / gfx.effect (#36).
+    // Augments the gfx table just set above; the apply site gfx.drawSprite(..,
+    // fx) consumes the Effect userdata these return.
+    enjin2::lua::registerEffectApi(L);
 
     // === print() stays as bare global ===
     engine->registerFunction("print", lua_print);

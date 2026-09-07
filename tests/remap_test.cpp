@@ -102,6 +102,36 @@ static void test_on_ramp()
     ASSERT(r.apply(15) == 15, "onRamp: transparency passes through");
 }
 
+static void test_recolor()
+{
+    printf("--- recolor() ---\n");
+    Remap r = Remap::recolor(4, 9);
+    ASSERT(!r.isIdentity(), "recolor(4,9) is not identity");
+    ASSERT(r.apply(4) == 9, "recolor(4,9): 4 -> 9");
+    ASSERT(r.apply(3) == 3, "recolor(4,9): other indices identity");
+    ASSERT(r.apply(15) == 15, "recolor(4,9): transparency untouched");
+    // A shader may repaint the transparent slot.
+    Remap paint = Remap::recolor(15, 2);
+    ASSERT(paint.apply(15) == 2, "recolor(15,2): shader paints the hole");
+}
+
+static void test_compose()
+{
+    printf("--- compose() ---\n");
+    // do darken, then lighten -> back toward base (base holds under both).
+    Remap r = Remap::compose(Remap::darken(), Remap::lighten());
+    ASSERT(r.apply(1) == 1, "compose(darken,lighten): base -> dark -> base");
+    // Order matters: solid(3) then recolor(3->7) yields solid(7) over 0-14.
+    Remap ordered = Remap::compose(Remap::solid(3), Remap::recolor(3, 7));
+    ASSERT(ordered.apply(0) == 7, "compose(solid(3),recolor(3,7)): 0 -> 3 -> 7");
+    ASSERT(ordered.apply(10) == 7, "compose: every source funnels 3 -> 7");
+    // Composing with identity is a no-op either side.
+    Remap li = Remap::compose(Remap::lighten(), Remap::identity());
+    ASSERT(li.apply(1) == 0, "compose(lighten,identity) == lighten");
+    Remap il = Remap::compose(Remap::identity(), Remap::lighten());
+    ASSERT(il.apply(1) == 0, "compose(identity,lighten) == lighten");
+}
+
 static void test_ramp_ctors_constexpr()
 {
     printf("--- ramp ctors constexpr ---\n");
@@ -109,6 +139,8 @@ static void test_ramp_ctors_constexpr()
     static_assert(Remap::darken().lut[0] == 1, "darken() constexpr");
     static_assert(Remap::onRamp(3, Remap::lighten()).lut[10] == 9, "onRamp() constexpr");
     static_assert(Remap::onRamp(3, Remap::lighten()).lut[1] == 1, "onRamp() off-ramp identity constexpr");
+    static_assert(Remap::recolor(4, 9).lut[4] == 9, "recolor() constexpr");
+    static_assert(Remap::compose(Remap::solid(3), Remap::recolor(3, 7)).lut[0] == 7, "compose() constexpr");
     ASSERT(true, "ramp ctors usable at compile time");
 }
 
@@ -125,6 +157,8 @@ int main()
     test_lighten();
     test_darken();
     test_on_ramp();
+    test_recolor();
+    test_compose();
     test_ramp_ctors_constexpr();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);

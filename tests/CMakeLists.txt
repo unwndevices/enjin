@@ -798,6 +798,19 @@ endif()
 
 # remap.hpp is header-only — no library link (keeps the test independent of the
 # lua binding target).
+add_executable(shade_test
+    shade_test.cpp
+)
+target_include_directories(shade_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(shade_test PRIVATE enjin2_core enjin2_graphics)
+add_test(NAME shade_test COMMAND shade_test)
+
+add_executable(effect_test
+    effect_test.cpp
+)
+target_include_directories(effect_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+add_test(NAME effect_test COMMAND effect_test)
+
 add_executable(remap_test
     remap_test.cpp
 )
