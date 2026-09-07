@@ -255,13 +255,15 @@ static int lua_cfsm_proxy_index_impl(lua_State* L) {
     }                                                                             \
     auto* (varname) = static_cast<enjin2::C_Tilemap*>(proxy->component)
 
-// tilemap:setTile(tx, ty, tileId) — TMAP-05
+// tilemap:setTile(tx, ty, cell) — TMAP-05
+// `cell` is the full 16-bit packed cell (tile id in the low 9 bits); a plain
+// tile id 0-511 works as-is (band/flip/palbank = 0).
 static int lua_tilemap_setTile(lua_State* L) {
     CTILEMAP_PROXY_CHECK(L, tm);
-    uint8_t tx     = static_cast<uint8_t>(luaL_checkinteger(L, 2));
-    uint8_t ty     = static_cast<uint8_t>(luaL_checkinteger(L, 3));
-    uint8_t tileId = static_cast<uint8_t>(luaL_checkinteger(L, 4));
-    tm->setTile(tx, ty, tileId);
+    uint8_t  tx   = static_cast<uint8_t>(luaL_checkinteger(L, 2));
+    uint8_t  ty   = static_cast<uint8_t>(luaL_checkinteger(L, 3));
+    uint16_t cell = static_cast<uint16_t>(luaL_checkinteger(L, 4) & 0xFFFF);
+    tm->setTile(tx, ty, cell);
     return 0;
 }
 

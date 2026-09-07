@@ -37,23 +37,42 @@ void C_Tilemap::setTiles(const uint8_t* data, uint8_t w, uint8_t h) {
     // Zero entire array first (keeps areas outside w*h transparent)
     memset(m_tiles, 0, sizeof(m_tiles));
 
-    // Copy rows. Stride inside m_tiles matches m_mapW (set below to w).
-    // Each row in 'data' has 'w' bytes; each row in m_tiles also has 'w'
-    // bytes (using m_mapW = w as stride), so we can copy row-by-row.
+    // Each input byte is a plain tile id → widen into a packed cell (band 0,
+    // no flip, palbank 0). Stride inside m_tiles matches m_mapW (= w).
     for (uint8_t row = 0; row < h; ++row) {
-        memcpy(&m_tiles[row * w], &data[row * w], w);
+        for (uint8_t col = 0; col < w; ++col) {
+            m_tiles[row * w + col] = static_cast<uint16_t>(data[row * w + col]);
+        }
     }
 
     m_mapW = w;
     m_mapH = h;
 }
 
-void C_Tilemap::setTile(uint8_t tx, uint8_t ty, uint8_t tileId) {
-    if (tx >= m_mapW || ty >= m_mapH) return;
-    m_tiles[ty * m_mapW + tx] = tileId;
+void C_Tilemap::setTiles(const uint16_t* data, uint8_t w, uint8_t h) {
+    if (!data) return;
+
+    if (w > MAX_MAP_W) w = MAX_MAP_W;
+    if (h > MAX_MAP_H) h = MAX_MAP_H;
+
+    // Zero entire array first (keeps areas outside w*h transparent)
+    memset(m_tiles, 0, sizeof(m_tiles));
+
+    // Copy packed cells verbatim, row by row (stride m_mapW = w).
+    for (uint8_t row = 0; row < h; ++row) {
+        memcpy(&m_tiles[row * w], &data[row * w], w * sizeof(uint16_t));
+    }
+
+    m_mapW = w;
+    m_mapH = h;
 }
 
-uint8_t C_Tilemap::getTile(uint8_t tx, uint8_t ty) const {
+void C_Tilemap::setTile(uint8_t tx, uint8_t ty, uint16_t cell) {
+    if (tx >= m_mapW || ty >= m_mapH) return;
+    m_tiles[ty * m_mapW + tx] = cell;
+}
+
+uint16_t C_Tilemap::getTile(uint8_t tx, uint8_t ty) const {
     if (tx >= m_mapW || ty >= m_mapH) return 0;
     return m_tiles[ty * m_mapW + tx];
 }
@@ -104,7 +123,7 @@ void C_Tilemap::tileToPixel(int16_t tx, int16_t ty, int16_t& px, int16_t& py) co
     py = static_cast<int16_t>(ty * tileH - m_scrollY);
 }
 
-uint8_t C_Tilemap::tileAtPixel(int16_t px, int16_t py) const {
+uint16_t C_Tilemap::tileAtPixel(int16_t px, int16_t py) const {
     int16_t tx = 0, ty = 0;
     pixelToTile(px, py, tx, ty);
     if (tx < 0 || ty < 0 || tx >= static_cast<int16_t>(m_mapW) || ty >= static_cast<int16_t>(m_mapH)) {
@@ -141,18 +160,21 @@ void C_Tilemap::draw(ICanvas<Pixel4>& canvas) {
 
     for (int16_t ty = startTY; ty < endTY; ++ty) {
         for (int16_t tx = startTX; tx < endTX; ++tx) {
-            const uint8_t tileId = m_tiles[ty * m_mapW + tx];
+            const uint16_t cell = m_tiles[ty * m_mapW + tx];
+            const uint16_t tileId = cellTileId(cell);
             if (tileId == 0) continue;  // transparent sentinel — skip draw
 
             // Screen-space position of this tile's top-left corner
             const int16_t px = static_cast<int16_t>(tx * tileW - m_scrollX);
             const int16_t py = static_cast<int16_t>(ty * tileH - m_scrollY);
 
-            // Tile ID used directly as frameIndex:
-            //   tile 0 = skip (transparent); tile 1 = frame 1; tile 2 = frame 2; etc.
+            // Tile id (low 9 bits) used as frameIndex:
+            //   tile 0 = skip (transparent); tile 1 = frame 1; etc.
             // Frame 0 in the tileset is intentionally "wasted" — this removes
-            // an off-by-one subtract from the hot rendering path.
-            m_sheet.draw(canvas, tileId, px, py);
+            // an off-by-one subtract from the hot rendering path. v1 draws the
+            // whole map ignoring band/flip/palbank; band is honored by the
+            // compositor restore filter (drawCellBand), not this bulk draw.
+            m_sheet.draw(canvas, static_cast<uint8_t>(tileId), px, py);
         }
     }
 }
