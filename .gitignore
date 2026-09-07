@@ -58,6 +58,7 @@ doxygen-warnings.log
 
 # Build variant directories
 build_*/
+/build-native/
 
 # Tool caches
 .cache/
