@@ -171,6 +171,23 @@ int LuaBindings::lua_circle(lua_State* L) {
     return 0;
 }
 
+// gfx.fillEllipse(cx, cy, rx, ry) — filled ellipse in the current colour
+// (Tomodachi #43). The launcher's optional ground shadow: set a dark on-ramp
+// colour with gfx.setColor first, then draw the blob under an actor.
+int LuaBindings::lua_fillEllipse(lua_State* L) {
+    REQUIRE_CANVAS(bindings, L);
+
+    if (lua_gettop(L) >= 4) {
+        int16_t cx = static_cast<int16_t>(lround(lua_tonumber(L, 1)));
+        int16_t cy = static_cast<int16_t>(lround(lua_tonumber(L, 2)));
+        int16_t rx = static_cast<int16_t>(lua_tointeger(L, 3));
+        int16_t ry = static_cast<int16_t>(lua_tointeger(L, 4));
+        bindings->currentCanvas->fillEllipse(cx, cy, rx, ry, bindings->currentColor);
+    }
+
+    return 0;
+}
+
 int LuaBindings::lua_triangle(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 

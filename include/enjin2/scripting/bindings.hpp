@@ -197,7 +197,20 @@ public:
      * @param color Fill color
      */
     void fillCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color);
-    
+
+    /**
+     * @brief Fill an axis-aligned ellipse (Tomodachi #43).
+     *
+     * The launcher's optional ground shadow. Backed by enjin2::fillEllipse (the
+     * colour overload) on the 4-bit path — a cheap scanline fill.
+     * @param cx Centre X coordinate
+     * @param cy Centre Y coordinate
+     * @param rx Horizontal radius
+     * @param ry Vertical radius
+     * @param color Fill color
+     */
+    void fillEllipse(int16_t cx, int16_t cy, int16_t rx, int16_t ry, uint8_t color);
+
     /**
      * @brief Draw triangle outline
      * @param x1 First vertex X
@@ -767,6 +780,7 @@ private:
     static int lua_line(lua_State* L);
     static int lua_rectangle(lua_State* L);
     static int lua_circle(lua_State* L);
+    static int lua_fillEllipse(lua_State* L);
     static int lua_triangle(lua_State* L);
     
     // Pixel access

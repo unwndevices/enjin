@@ -2,6 +2,8 @@
 #include "../../include/enjin2/scripting/effect_lua.hpp"
 #include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/text_renderer.hpp"
+#include "../../include/enjin2/graphics/blit.hpp"
+#include <cmath>
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/components/timer.hpp"
@@ -340,6 +342,28 @@ void LuaCanvas::fillCircle(int16_t x, int16_t y, uint16_t radius, uint8_t color)
     }
 }
 
+void LuaCanvas::fillEllipse(int16_t cx, int16_t cy, int16_t rx, int16_t ry, uint8_t color) {
+    if (is4Bit) {
+        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
+        enjin2::fillEllipse(*canvas, cx, cy, rx, ry, Pixel4(color));
+    } else {
+        // 8-bit path (unused by the 4-bit UI stack): a plain scanline fill via
+        // setPixel, since blit.hpp's fillEllipse is Pixel4-native.
+        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
+        if (rx <= 0 || ry <= 0) return;
+        const float rxf = static_cast<float>(rx);
+        const float ryf = static_cast<float>(ry);
+        for (int16_t dy = -ry; dy <= ry; ++dy) {
+            const float ny = static_cast<float>(dy) / ryf;
+            const float inside = 1.0f - ny * ny;
+            if (inside < 0.0f) continue;
+            const int16_t hx = static_cast<int16_t>(rxf * std::sqrt(inside));
+            for (int16_t x = static_cast<int16_t>(cx - hx); x <= static_cast<int16_t>(cx + hx); ++x)
+                canvas->setPixel(x, static_cast<int16_t>(cy + dy), color);
+        }
+    }
+}
+
 void LuaCanvas::drawTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
                            int16_t x3, int16_t y3, uint8_t color) {
     if (is4Bit) {
@@ -523,6 +547,7 @@ void LuaBindings::registerAll() {
     lua_pushcfunction(L, lua_line);           lua_setfield(L, -2, "line");
     lua_pushcfunction(L, lua_rectangle);      lua_setfield(L, -2, "rectangle");
     lua_pushcfunction(L, lua_circle);         lua_setfield(L, -2, "circle");
+    lua_pushcfunction(L, lua_fillEllipse);    lua_setfield(L, -2, "fillEllipse");
     lua_pushcfunction(L, lua_triangle);       lua_setfield(L, -2, "triangle");
 
     // Pixel access
