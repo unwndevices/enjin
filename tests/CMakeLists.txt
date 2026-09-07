@@ -121,6 +121,19 @@ target_link_libraries(palette_test PRIVATE
 )
 add_test(NAME palette_test COMMAND palette_test)
 
+# Style-slot layer — pure logic: derived tones, ROM defaults, slot-name cascade (#37/#19)
+add_executable(style_slot_test
+    style_slot_test.cpp
+)
+target_include_directories(style_slot_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(style_slot_test PRIVATE
+    enjin2
+    enjin2_ui
+)
+add_test(NAME style_slot_test COMMAND style_slot_test)
+
 # Odd-width Canvas4 (unwn #155/#165): padded row stride ROW_BYTES=(WIDTH+1)/2 —
 # geometry, row-aliasing, fast-path parity, even-width layout stability.
 add_executable(canvas4_odd_width_test
@@ -745,6 +758,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME ui_binding_test COMMAND ui_binding_test)
+
+    # Style-slot Lua surface — setStyle/setTheme mask behaviour + panel dispatch (#37/#19)
+    add_executable(style_slot_lua_test
+        style_slot_lua_test.cpp
+    )
+    target_include_directories(style_slot_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(style_slot_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME style_slot_lua_test COMMAND style_slot_lua_test)
 
     # Lua profiler test (Phase 63: PROF-01, PROF-02, PROF-03, PROF-06)
     add_executable(lua_profiler_test

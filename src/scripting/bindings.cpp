@@ -442,6 +442,9 @@ void LuaBindings::registerAll() {
     resetSpritePool();
     currentColor = 15;
     lineWidth = 1;
+    // Style slots (#19/#37): a fresh applet starts on the ROM theme defaults —
+    // clearing the mask discards every override without touching the values.
+    m_styleSetMask = 0;
 
     // Reset game state machine
     strncpy(m_currentGameState, "none", sizeof(m_currentGameState) - 1);

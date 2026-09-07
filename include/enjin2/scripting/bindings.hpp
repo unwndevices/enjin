@@ -17,6 +17,7 @@
 #include "../graphics/sprite.hpp"
 #include "../graphics/sprite_asset.hpp"
 #include "../input/input_state.hpp"
+#include "../ui/style.hpp"
 #include "../core/math.hpp"
 #include "../core/collision.hpp"
 #include "lua_event_bus.hpp"
@@ -377,6 +378,13 @@ private:
     uint8_t currentColor;       ///< Current drawing color
     uint16_t lineWidth;         ///< Current line width
 
+    // Style slots (#19/#37): ROM defaults (kDefaultStyles) -> per-applet
+    // overrides. A slot's mask bit set means the applet overrode it; else the
+    // ROM default resolves at draw time. Mask cleared in registerAll().
+    Style        m_styleValues[kStyleSlotCount]{};  ///< Per-slot applet overrides
+    uint16_t     m_styleSetMask{0};                 ///< Bit i set -> slot i overridden
+    const Style* m_themeBase{kDefaultStyles};       ///< Active ROM theme (setTheme swaps)
+
     // ── Text state ───────────────────────────────────────────────────────────
     uint8_t currentTextSize{1};       ///< Text size multiplier (1=normal, 2=double, etc.)
     const GFXfont* currentFont{nullptr}; ///< nullptr = built-in 5x7
@@ -519,6 +527,17 @@ public:
      * @return Current canvas or nullptr
      */
     LuaCanvas* getCanvas() const { return currentCanvas; }
+
+    /**
+     * @brief Resolve a style slot to the Style a drawable should read.
+     * @param slot The slot id (out-of-range -> Panel default, never UB).
+     * @return The applet override if its mask bit is set, else the ROM default.
+     */
+    const Style& resolveStyle(StyleSlot slot) const {
+        const int i = static_cast<int>(slot);
+        if (i < 0 || i >= kStyleSlotCount) return m_themeBase[0];
+        return (m_styleSetMask & (1u << i)) ? m_styleValues[i] : m_themeBase[i];
+    }
 
     /**
      * @brief Set input state for this frame
@@ -864,6 +883,8 @@ private:
     static int lua_engine_ui_statBar(lua_State* L);
     static int lua_engine_ui_panel(lua_State* L);
     static int lua_engine_ui_label(lua_State* L);
+    static int lua_engine_ui_setStyle(lua_State* L);
+    static int lua_engine_ui_setTheme(lua_State* L);
 
     // engine.store.* binding functions (persistent KV store)
     static int lua_engine_store_save(lua_State* L);

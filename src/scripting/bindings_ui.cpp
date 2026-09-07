@@ -8,6 +8,7 @@
  */
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include <cstring>
 
 namespace enjin2 {
 
@@ -83,19 +84,96 @@ int LuaBindings::lua_engine_ui_statBar(lua_State* L) {
     return 0;
 }
 
-// ── UI-03: engine.ui.panel(x, y, w, h, bg, border) ───────────────────────────
-// Draws a filled rectangle (bg) with a border outline on top.
+// ── UI-03: engine.ui.panel(x, y, w, h, bg|slot [, border]) ───────────────────
+// Draws a filled rectangle with a border outline on top. The 5th arg dispatches
+// by lua_type (#19): a string is a style slot (fill/border resolved from the
+// theme), a number is the legacy explicit (bg, border) pair. Existing applets
+// keep passing numbers; the launcher passes slot names.
+// Check a string arg naming a style slot; raises a Lua error (never returns) if
+// it is not one of the closed slot names. Shared by panel and setStyle so the
+// name→slot decode + error message live in one place.
+static StyleSlot checkStyleSlotArg(lua_State* L, int idx) {
+    const char* name = luaL_checkstring(L, idx);
+    StyleSlot slot = StyleSlot::Panel;
+    if (!styleSlotFromName(name, slot)) {
+        luaL_error(L, "engine.ui: unknown style slot '%s'", name);  // no return
+    }
+    return slot;
+}
+
+// Overlay one style field from a Lua table key onto `out`, only if the key is
+// present and numeric. One template covers Pixel4 / uint8_t / int8_t fields.
+template <typename T>
+static void overlayKey(lua_State* L, int tableIdx, const char* key, T& out) {
+    lua_getfield(L, tableIdx, key);
+    if (lua_isnumber(L, -1)) out = static_cast<T>(lua_tointeger(L, -1));
+    lua_pop(L, 1);
+}
+
 int LuaBindings::lua_engine_ui_panel(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t  x      = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t  y      = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint16_t w      = static_cast<uint16_t>(luaL_checkinteger(L, 3));
-    uint16_t h      = static_cast<uint16_t>(luaL_checkinteger(L, 4));
-    uint8_t  bg     = static_cast<uint8_t>(luaL_checkinteger(L, 5));
-    uint8_t  border = static_cast<uint8_t>(luaL_checkinteger(L, 6));
+    int16_t  x = static_cast<int16_t>(luaL_checkinteger(L, 1));
+    int16_t  y = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    uint16_t w = static_cast<uint16_t>(luaL_checkinteger(L, 3));
+    uint16_t h = static_cast<uint16_t>(luaL_checkinteger(L, 4));
+
+    uint8_t bg, border;
+    if (lua_type(L, 5) == LUA_TSTRING) {
+        const Style& st = b->resolveStyle(checkStyleSlotArg(L, 5));
+        bg     = st.fill.value;
+        border = st.border.value;
+    } else {
+        bg     = static_cast<uint8_t>(luaL_checkinteger(L, 5));
+        border = static_cast<uint8_t>(luaL_checkinteger(L, 6));
+    }
 
     b->currentCanvas->fillRect(x, y, w, h, bg);      // background fill
     b->currentCanvas->drawRect(x, y, w, h, border);  // border outline over fill
+    return 0;
+}
+
+// ── UI-05: engine.ui.setStyle(slotName, { fill=…, border=…, radius=…, … }) ────
+// Overrides one style slot. Resolution starts from the theme default (so absent
+// keys inherit it), overlays only the keys present in the table, stores the
+// result and marks the slot's mask bit. Colours are ramp role indices (#12);
+// derived tones (light/dark/shadow) are never stored (#19).
+int LuaBindings::lua_engine_ui_setStyle(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    StyleSlot slot = checkStyleSlotArg(L, 1);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    const int i = static_cast<int>(slot);
+
+    // Start from the theme default (absent keys inherit it), overlay present keys.
+    Style st = b->m_themeBase[i];
+    overlayKey(L, 2, "fill",   st.fill);
+    overlayKey(L, 2, "text",   st.text);
+    overlayKey(L, 2, "border", st.border);
+    overlayKey(L, 2, "borderWidth", st.borderWidth);
+    overlayKey(L, 2, "radius",      st.radius);
+    overlayKey(L, 2, "padding",     st.padding);
+    overlayKey(L, 2, "borderKind",  st.borderKind);
+    overlayKey(L, 2, "shadowDx",    st.shadowDx);
+    overlayKey(L, 2, "shadowDy",    st.shadowDy);
+
+    b->m_styleValues[i] = st;
+    b->m_styleSetMask |= static_cast<uint16_t>(1u << i);
+    return 0;
+}
+
+// ── UI-06: engine.ui.setTheme(name) ──────────────────────────────────────────
+// Swaps the active ROM theme base and clears every applet override (a new theme
+// is a fresh base). v1 ships one theme, "default".
+int LuaBindings::lua_engine_ui_setTheme(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) return 0;
+    const char* name = luaL_checkstring(L, 1);
+    if (strcmp(name, "default") == 0) {
+        b->m_themeBase = kDefaultStyles;
+    } else {
+        return luaL_error(L, "engine.ui.setTheme: unknown theme '%s'", name);
+    }
+    b->m_styleSetMask = 0;  // a new theme is a fresh base — drop overrides
     return 0;
 }
 
@@ -120,6 +198,8 @@ void LuaBindings::registerUISubtable(lua_State* L) {
         {"statBar",     lua_engine_ui_statBar},
         {"panel",       lua_engine_ui_panel},
         {"label",       lua_engine_ui_label},
+        {"setStyle",    lua_engine_ui_setStyle},
+        {"setTheme",    lua_engine_ui_setTheme},
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kUIFuncs, ENJIN_ARRAY_LEN(kUIFuncs));
