@@ -795,3 +795,38 @@ if(ENJIN2_BUILD_SDL)
         )
     endif()
 endif()
+
+# remap.hpp is header-only — no library link (keeps the test independent of the
+# lua binding target).
+add_executable(remap_test
+    remap_test.cpp
+)
+target_include_directories(remap_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME remap_test COMMAND remap_test)
+
+# Canvas4 dirty-tile tracking (presenter ticket #34): primitives + invalidate
+# mark 16x16 tiles; a static layer repaints 0 tiles across frames.
+add_executable(canvas_dirty_test
+    canvas_dirty_test.cpp
+)
+target_include_directories(canvas_dirty_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(canvas_dirty_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME canvas_dirty_test COMMAND canvas_dirty_test)
+
+# Dirty-tile compositor: restore sources, per-layer tint remap, presenter seam
+# (presenter ticket #34). Writes only dirty tiles into output; present() once
+# per frame; static layer settles to 0 tiles.
+add_executable(compositor_dirty_test
+    compositor_dirty_test.cpp
+)
+target_include_directories(compositor_dirty_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(compositor_dirty_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME compositor_dirty_test COMMAND compositor_dirty_test)
