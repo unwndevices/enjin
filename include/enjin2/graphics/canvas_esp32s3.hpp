@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #ifdef ESP32
+#include <vector>          // dual-core render-command queue API below
 #include "esp_attr.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
