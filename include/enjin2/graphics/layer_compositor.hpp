@@ -355,24 +355,76 @@ private:
         }
     }
 
+    /// Byte stride of one packed pixel row (two 4-bit pixels per byte, rows
+    /// padded to a whole byte). Re-derived from Canvas4's documented layout
+    /// contract — the same pattern as DIRTY_BYTES above — so recompositeTile can
+    /// walk the packed buffer directly. Layers and output share this stride.
+    static constexpr size_t ROW_BYTES = (W + 1) / 2;
+
     /// @brief Recomposite one 16×16 tile across all visible layers into output,
     /// applying each layer's tint. Source index 15 is transparent (the tint's
     /// entry 15 is ignored by the compositor).
+    ///
+    /// This is the frame-time hot loop (#66). It walks the packed buffer two
+    /// pixels (one byte) at a time instead of via getPixel/setPixel, and hoists
+    /// the per-pixel visibility test and bounds checks out: the visible layers'
+    /// buffers and tint LUTs are gathered once, then the inner loop is a flat
+    /// read-merge-write over bytes with a branch only on the transparency index.
     void recompositeTile(uint16_t tx, uint16_t ty) {
         const int16_t x0 = static_cast<int16_t>(tx * TILE_SIZE);
         const int16_t y0 = static_cast<int16_t>(ty * TILE_SIZE);
         const int16_t x1 = static_cast<int16_t>(x0 + TILE_SIZE > W ? W : x0 + TILE_SIZE);
         const int16_t y1 = static_cast<int16_t>(y0 + TILE_SIZE > H ? H : y0 + TILE_SIZE);
+
+        // Gather the visible layers' packed buffers and tint LUTs once. Applying
+        // the tint via the raw LUT (llut[k][s]) folds the identity case in for
+        // free — no per-layer isIdentity branch needed.
+        const PackedPixel4* lbuf[ENJIN_LAYER_COUNT];
+        const uint8_t* llut[ENJIN_LAYER_COUNT];
+        uint8_t nvis = 0;
+        for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
+            if (!visible[l]) continue;
+            lbuf[nvis] = layers[l].getBuffer();
+            llut[nvis] = tint[l].lut;
+            ++nvis;
+        }
+        PackedPixel4* obuf = output.getBuffer();
+
+        // x0 is even (TILE_SIZE is even), so the tile's first pixel is a low
+        // nibble and the whole span is byte-aligned. Complete byte pairs cover
+        // [x0, xEven); an odd canvas width leaves the tile's last column as a
+        // lone low-nibble pixel, handled after the row loop.
+        const int16_t xEven = static_cast<int16_t>(x1 & ~1);
+        const size_t bx0 = static_cast<size_t>(x0) >> 1;
+        const size_t bxEnd = static_cast<size_t>(xEven) >> 1;
+        const bool oddTail = xEven < x1;
+
         for (int16_t py = y0; py < y1; ++py) {
-            for (int16_t px = x0; px < x1; ++px) {
-                uint8_t out = 0; // default background
-                for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
-                    if (!visible[l]) continue;
-                    const uint8_t s = layers[l].getPixel(px, py).value;
-                    if (s == 0x0F) continue; // transparent source
-                    out = tint[l].apply(s);
+            const size_t row = static_cast<size_t>(py) * ROW_BYTES;
+            for (size_t bx = bx0; bx < bxEnd; ++bx) {
+                const size_t idx = row + bx;
+                uint8_t lo = 0; // even-x pixel, defaults to background
+                uint8_t hi = 0; // odd-x pixel
+                for (uint8_t k = 0; k < nvis; ++k) {
+                    const uint8_t b = lbuf[k][idx].getByte();
+                    const uint8_t sl = b & 0x0F;
+                    if (sl != 0x0F) lo = llut[k][sl];
+                    const uint8_t sh = static_cast<uint8_t>(b >> 4);
+                    if (sh != 0x0F) hi = llut[k][sh];
                 }
-                output.setPixel(px, py, Pixel4(out));
+                obuf[idx] = PackedPixel4(static_cast<uint8_t>((hi << 4) | lo));
+            }
+            if (oddTail) {
+                const size_t idx = row + bxEnd;
+                uint8_t lo = 0;
+                for (uint8_t k = 0; k < nvis; ++k) {
+                    const uint8_t sl = lbuf[k][idx].getByte() & 0x0F;
+                    if (sl != 0x0F) lo = llut[k][sl];
+                }
+                // Preserve the byte's high nibble: it is row padding (odd width)
+                // or belongs to no pixel this tile addresses.
+                const uint8_t cur = obuf[idx].getByte();
+                obuf[idx] = PackedPixel4(static_cast<uint8_t>((cur & 0xF0) | lo));
             }
         }
     }

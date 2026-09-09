@@ -921,3 +921,17 @@ target_include_directories(compositor_dirty_test PRIVATE
 target_link_libraries(compositor_dirty_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME compositor_dirty_test COMMAND compositor_dirty_test)
+
+# recompositeTile parity oracle (#66): pins the compositor inner loop's exact
+# per-pixel semantics against an independent naive reference, so a perf rewrite
+# of the loop stays visually identical (even/odd width, partial tiles, tint,
+# transparency, hidden layers).
+add_executable(recomposite_parity_test
+    recomposite_parity_test.cpp
+)
+target_include_directories(recomposite_parity_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(recomposite_parity_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME recomposite_parity_test COMMAND recomposite_parity_test)

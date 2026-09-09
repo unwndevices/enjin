@@ -67,6 +67,28 @@ int main() {
         ankerl::nanobench::doNotOptimizeAway(compositor.output.getPixel(64, 64));
     });
 
+    // --- compositeDirty full-frame recomposite (#66 hot path) ---
+    // The on-device cost that #66 targets: an animating full-screen applet
+    // dirties every tile, so recompositeTile runs over the whole canvas each
+    // frame. Seed opaque content on the back layer and a half-transparent
+    // pattern on the upper layers, then force a full-frame recomposite.
+    auto* dirtyComp = new enjin2::LayerCompositor<128, 128>();
+    dirtyComp->layers[0].fillRect(0, 0, 128, 128, enjin2::Pixel4(1));
+    for (uint8_t l = 1; l < enjin2::ENJIN_LAYER_COUNT; ++l) {
+        for (int16_t y = 0; y < 128; ++y)
+            for (int16_t x = 0; x < 128; ++x)
+                dirtyComp->layers[l].setPixel(
+                    x, y, enjin2::Pixel4(((x + y + l) & 3) == 0 ? (l + 2) : 15));
+    }
+    if (enjin2::ENJIN_LAYER_COUNT >= 3) dirtyComp->setTint(2, enjin2::Remap::darken());
+
+    bench.run("compositor: compositeDirty full-frame (5 layers)", [&] {
+        for (uint8_t l = 0; l < enjin2::ENJIN_LAYER_COUNT; ++l)
+            dirtyComp->invalidateLayer(l);
+        dirtyComp->compositeDirty();
+        ankerl::nanobench::doNotOptimizeAway(dirtyComp->output.getPixel(64, 64));
+    });
+
     // Write JSON results
     mkdir("bench-results", 0755);
     std::ofstream out("bench-results/bench_canvas.json");
