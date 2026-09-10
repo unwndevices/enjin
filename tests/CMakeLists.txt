@@ -738,6 +738,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME tilemap_lua_test COMMAND tilemap_lua_test)
 
+    # Runtime .njn v2 / .njm loaders (ADR-0003 §6, Tomodachi #91)
+    add_executable(asset_loader_test
+        asset_loader_test.cpp
+    )
+    target_include_directories(asset_loader_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(asset_loader_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME asset_loader_test COMMAND asset_loader_test)
+
     # Camera component test (Phase 44: CAM-01..CAM-06)
     add_executable(camera_test
         camera_test.cpp

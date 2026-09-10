@@ -670,6 +670,7 @@ void LuaBindings::resetSpritePool() {
     for (int i = 0; i < LUA_SPRITE_POOL_SIZE; ++i) {
         spritePool[i] = SpriteState{};
         loadedAssets_[i] = SpriteAsset{};
+        loadedClips_[i].clear();
     }
     assetBufferUsed_ = 0;
     currentTextSize = 1;
@@ -690,6 +691,12 @@ const enjin2::SpriteSheet* LuaBindings::getSpriteSheet(int handle) const {
     if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !spritePool[handle].active)
         return nullptr;
     return &spritePool[handle].sheet;
+}
+
+const std::vector<enjin2::NjnClip>* LuaBindings::getLoadedClips(int handle) const {
+    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !spritePool[handle].active)
+        return nullptr;
+    return &loadedClips_[handle];
 }
 
 void LuaBindings::registerProxyMetatable() {
