@@ -110,6 +110,13 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         .function("setCanvas", &LuaScriptSystem::setCanvas, allow_raw_pointers())
         .function("executeScript", &LuaScriptSystem::executeScript)
         .function("loadScript", &LuaScriptSystem::loadScript)
+        // Per-applet asset root (ADR-0003 §6): the base dir the engine's
+        // relative-path asset loaders (engine.sprite.load → fopen) resolve
+        // against. The web host writes the applet folder into MEMFS and sets
+        // this to that dir so the fopen path is identical to native/device.
+        .function("setAssetPath", +[](LuaScriptSystem& sys, std::string path) {
+            sys.getBindings().setAssetPath(path);
+        })
         .function("getMemoryUsage", &LuaScriptSystem::getMemoryUsage);
 
     // Per-frame input state update. Call this each frame BEFORE updateFrame().
