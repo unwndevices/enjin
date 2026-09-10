@@ -6,6 +6,7 @@
 #include "../../include/enjin2/components/tilemap.hpp"
 #include "../../include/enjin2/components/camera.hpp"
 #include "../../include/enjin2/components/sprite.hpp"
+#include "../../include/enjin2/components/body.hpp"
 #include <cstring>
 
 namespace enjin2 {

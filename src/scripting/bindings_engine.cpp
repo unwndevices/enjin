@@ -6,6 +6,7 @@
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/components/camera.hpp"
+#include "bindings_internal.hpp"
 
 namespace enjin2 {
 
@@ -41,6 +42,7 @@ void LuaBindings::registerEngineTable() {
         {"destroy",   lua_engine_scene_destroy},
         {"persist",   lua_engine_scene_persist},    // Phase 51: PERSIST-01
         {"unpersist", lua_engine_scene_unpersist},  // Phase 51: PERSIST-02
+        {"colliders", lua_engine_scene_colliders},  // ADR-0003 §4, #80
     };
     lua_newtable(L);
     luaBindFunctions(L, -1, kSceneFuncs, ENJIN_ARRAY_LEN(kSceneFuncs));
@@ -403,6 +405,17 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
     obj->setLuaProxy(proxy);
 
     return 1;
+}
+
+// --- engine.scene.colliders() — ADR-0003 §4, Tomodachi #80 ---
+// Returns a ColliderSet proxy over the active scene's scene-level collider
+// resource (non-owning userdata). nil when no scene is active.
+int LuaBindings::lua_engine_scene_colliders(lua_State* L) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
+    auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (scenePP == nullptr || *scenePP == nullptr) { lua_pushnil(L); return 1; }
+    return pushColliderSetProxy(L, &(*scenePP)->colliders());
 }
 
 // --- engine.scene.persist(proxy) — PERSIST-01 ---

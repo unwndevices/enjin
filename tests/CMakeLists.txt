@@ -360,6 +360,19 @@ target_include_directories(njn2_test PRIVATE
 )
 add_test(NAME njn2_test COMMAND njn2_test)
 
+# C_Body / ColliderSet physics step (issue #80: PHYS-BODY-01..03)
+# Header-only, no Lua dependency — always built.
+add_executable(body_test
+    body_test.cpp
+)
+target_include_directories(body_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(body_test PRIVATE
+    enjin2_core
+)
+add_test(NAME body_test COMMAND body_test)
+
 # Layer binding unit test (Lua layer API: setLayer, getLayer, clearLayer, etc.)
 if(ENJIN2_BUILD_LUA)
     add_executable(layer_binding_test
@@ -545,6 +558,20 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME sprite_lua_test COMMAND sprite_lua_test)
 
+    # C_Body / ColliderSet Lua binding test (ADR-0003 §4, #80: engine.scene.
+    # colliders() + obj:add("C_Body") + body:step + polled contact buffer)
+    add_executable(body_lua_test
+        body_lua_test.cpp
+    )
+    target_include_directories(body_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    target_link_libraries(body_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME body_lua_test COMMAND body_lua_test)
     # Sprite flipping test (drawSprite flipH/flipV/rotate90)
     add_executable(sprite_flip_test
         sprite_flip_test.cpp

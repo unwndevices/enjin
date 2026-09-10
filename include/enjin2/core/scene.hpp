@@ -2,6 +2,7 @@
 
 #include "object_collection.hpp"
 #include "signal.hpp"
+#include "colliders.hpp"
 #include "../graphics/canvas.hpp"
 #include "../components/drawable.hpp"
 #include "../components/camera.hpp"
@@ -22,6 +23,7 @@ class SceneStateMachine;  // forward declaration — prevents circular include
 class Scene {
 protected:
     ObjectCollection objects;       ///< Objects in this scene
+    ColliderSet m_colliders;        ///< Scene-level collider set (ADR-0003 §4)
     bool initialized;               ///< Whether scene has been initialized
     bool active;                    ///< Whether scene is currently active
     uint32_t sceneId;              ///< Unique scene identifier
@@ -239,6 +241,23 @@ public:
      */
     const ObjectCollection& getObjects() const {
         return objects;
+    }
+
+    /**
+     * @brief The scene's collider set (ADR-0003 §4) — a scene-level resource,
+     * not a per-object component. C_Body components reference it via
+     * setColliders(&scene.colliders()). Colliders are authored freeform
+     * (segments / circles / AABBs / flippers) and/or derived from a tilemap's
+     * SOLID attrs with C_Tilemap::buildSolidRects().
+     * @return Mutable reference to the collider set.
+     */
+    ColliderSet& colliders() {
+        return m_colliders;
+    }
+
+    /// @overload const accessor
+    const ColliderSet& colliders() const {
+        return m_colliders;
     }
     
     /**
