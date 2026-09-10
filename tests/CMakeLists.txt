@@ -360,6 +360,19 @@ target_include_directories(njn2_test PRIVATE
 )
 add_test(NAME njn2_test COMMAND njn2_test)
 
+# HUD numerals — glyph layout, digit-strip draw, RollingCounter, Timer
+# (ADR-0003 §8, #83). Links enjin2 for drawNumber/drawTimer (enjin2_graphics).
+add_executable(numerals_test
+    numerals_test.cpp
+)
+target_include_directories(numerals_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(numerals_test PRIVATE
+    enjin2
+)
+add_test(NAME numerals_test COMMAND numerals_test)
+
 # C_Body / ColliderSet physics step (issue #80: PHYS-BODY-01..03)
 # Header-only, no Lua dependency — always built.
 add_executable(body_test
@@ -557,6 +570,21 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME sprite_lua_test COMMAND sprite_lua_test)
+
+    # HUD numerals Lua binding test (ADR-0003 §8, #83: gfx.number / gfx.timer +
+    # engine.hud.rollingCounter / engine.hud.timer value objects)
+    add_executable(numerals_lua_test
+        numerals_lua_test.cpp
+    )
+    target_include_directories(numerals_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    target_link_libraries(numerals_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME numerals_lua_test COMMAND numerals_lua_test)
 
     # C_Body / ColliderSet Lua binding test (ADR-0003 §4, #80: engine.scene.
     # colliders() + obj:add("C_Body") + body:step + polled contact buffer)

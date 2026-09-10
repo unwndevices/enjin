@@ -239,6 +239,9 @@ void LuaBindings::registerEngineTable() {
     // --- engine.ui sub-table (Phase 52: UI-01..UI-04) ---
     registerUISubtable(L);
 
+    // --- engine.hud sub-table (#83: RollingCounter / Timer value objects) ---
+    registerHudSubtable(L);
+
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);
     lua_setfield(L, -2, "log");

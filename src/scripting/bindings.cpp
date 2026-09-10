@@ -560,6 +560,10 @@ void LuaBindings::registerAll() {
     lua_pushcfunction(L, lua_updateSprite);   lua_setfield(L, -2, "updateSprite");
     lua_pushcfunction(L, lua_setFrame);       lua_setfield(L, -2, "setFrame");
 
+    // HUD numerals (#83): digit-strip number / timer draws.
+    lua_pushcfunction(L, lua_number);         lua_setfield(L, -2, "number");
+    lua_pushcfunction(L, lua_timer);          lua_setfield(L, -2, "timer");
+
     // Layers
     lua_pushcfunction(L, lua_setLayer);       lua_setfield(L, -2, "setLayer");
     lua_pushcfunction(L, lua_getLayer);       lua_setfield(L, -2, "getLayer");

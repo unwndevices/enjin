@@ -851,6 +851,10 @@ private:
     static int lua_updateSprite(lua_State* L);
     static int lua_setFrame(lua_State* L);
 
+    // HUD numerals (ADR-0003 §8, #83): gfx.number / gfx.timer draw digit strips.
+    static int lua_number(lua_State* L);  ///< gfx.number(x,y,value,{strip,pad,align,sep,spacing,padZeros}) → width
+    static int lua_timer(lua_State* L);   ///< gfx.timer(x,y,ms,{strip,align,spacing}) → width
+
     // Layer system bindings (LAYER-06)
     static int lua_setLayer(lua_State* L);
     static int lua_getLayer(lua_State* L);
@@ -945,6 +949,7 @@ private:
     void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
     void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
     void registerUISubtable(lua_State* L);     ///< engine.ui.* sub-table (called from registerEngineTable)
+    void registerHudSubtable(lua_State* L);    ///< engine.hud.* sub-table (#83; called from registerEngineTable)
     void registerProxyMetatable();
 
     // engine.random.* binding functions

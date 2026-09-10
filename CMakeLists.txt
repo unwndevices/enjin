@@ -89,6 +89,7 @@ target_sources(enjin2_graphics PRIVATE
     src/graphics/primitives.cpp
     src/graphics/palette.cpp
     src/graphics/effects.cpp
+    src/graphics/numerals.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_graphics
@@ -193,6 +194,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_draw.cpp
         src/scripting/bindings_input_sprites.cpp
         src/scripting/bindings_sprite_load.cpp
+        src/scripting/bindings_numerals.cpp
         src/scripting/bindings_layers_text.cpp
         src/scripting/bindings_engine.cpp
         src/scripting/bindings_physics.cpp
