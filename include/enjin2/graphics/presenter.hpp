@@ -29,10 +29,9 @@ struct Frame {
     uint16_t             tilesY;    ///< Tile rows = ceil(H/16).
     const Palette*       palette;   ///< Palette for index→RGB; may be null (use g_palette).
 
-    /// @brief Test whether tile (tx,ty) is marked dirty in this frame.
-    /// @brief Derive a 10-bit band mask for the CO5300 480x480 panel from dirtyTiles.
-    /// Logical canvas 160x160, tile size 16 (10 tile rows). Panel scale x3 means
-    /// 1 logical tile row = exactly 1 48-row panel band. Returns 10-bit mask.
+    /// @brief Derive a 10-bit horizontal band mask from dirtyTiles: bit ty is
+    /// set when any tile in tile ROW ty is dirty. Logical canvas 160x160, tile
+    /// size 16 (10 tile rows); at panel scale x3 one tile row is one 48-row band.
     uint16_t deriveBandMask() const {
         uint16_t mask = 0;
         for (uint16_t ty = 0; ty < tilesY && ty < 10; ++ty) {
@@ -46,6 +45,25 @@ struct Frame {
         return mask;
     }
 
+    /// @brief Derive a 10-bit vertical strip mask from dirtyTiles: bit tx is set
+    /// when any tile in tile COLUMN tx is dirty. This is the mask the CO5300
+    /// device presenter wants: its MADCTL makes the panel scan along X, so a
+    /// tear-free push goes in vertical strips (one tile column = 48 panel
+    /// columns = two 24-column strips). See firmware display_driver.h.
+    uint16_t deriveStripMask() const {
+        uint16_t mask = 0;
+        for (uint16_t tx = 0; tx < tilesX && tx < 10; ++tx) {
+            for (uint16_t ty = 0; ty < tilesY; ++ty) {
+                if (isTileDirty(tx, ty)) {
+                    mask |= (1 << tx);
+                    break;
+                }
+            }
+        }
+        return mask;
+    }
+
+    /// @brief Test whether tile (tx,ty) is marked dirty in this frame.
     bool isTileDirty(uint16_t tx, uint16_t ty) const {
         if (tx >= tilesX || ty >= tilesY) {
             return false;
