@@ -656,6 +656,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME tilemap_test COMMAND tilemap_test)
 
+    # Tilemap attributes + collision query API test (issue #79: TMATTR-01..TMATTR-11)
+    add_executable(tilemap_attr_test
+        tilemap_attr_test.cpp
+    )
+    target_include_directories(tilemap_attr_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(tilemap_attr_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME tilemap_attr_test COMMAND tilemap_attr_test)
+
     # Tilemap Lua binding test (Phase 43: TMAP-05..TMAP-08)
     add_executable(tilemap_lua_test
         tilemap_lua_test.cpp

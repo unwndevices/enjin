@@ -37,10 +37,74 @@ namespace enjin2 {
 // Cell bit layout — the single source of truth (see file header).
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Tile attributes (ADR-0003 §3)
+// ---------------------------------------------------------------------------
+
+/// Cardinal direction of a directional attribute (one-way facing / conveyor).
+/// The authored 2-bit value is resolved to a concrete direction at fetch by the
+/// cell's flip flags (see tmResolveDir).
+enum class TileDir : uint8_t { Up = 0, Right = 1, Down = 2, Left = 3 };
+
+/**
+ * @brief Per-tile attribute record, keyed by tile id (the model Tiled / LDtk /
+ *        Godot TileData / pokeemerald all use — attributes live in the tileset,
+ *        never in the map cell).
+ *
+ * A flat array of these (tile 0, 1, …) backs the collision/query API. On disk
+ * it is the `.njn` v2 `ATTR` chunk (see njn2.hpp); at runtime it is the flat
+ * table owned by C_Tilemap.
+ *
+ * Layout (2 bytes):
+ *   - `flags` bit0 = SOLID, bit1 = ONEWAY, bits2-3 = DIR (cardinal), bits4-7 reserved
+ *   - `kind`  = full uint8 (256 kinds — material / trigger id, polled).
+ */
+struct TileAttr {
+    static constexpr uint8_t FLAG_SOLID  = 0x01;   ///< bit0 — the tile blocks movement
+    static constexpr uint8_t FLAG_ONEWAY = 0x02;   ///< bit1 — one-way platform
+    static constexpr uint8_t DIR_SHIFT   = 2;      ///< DIR lives in bits 2-3
+    static constexpr uint8_t DIR_MASK    = 0x0C;   ///< 0b1100 pre-shift mask
+
+    uint8_t flags{0};   ///< SOLID | ONEWAY | DIR:2 | reserved
+    uint8_t kind{0};    ///< 0–255 material / trigger kind
+
+    constexpr bool solid() const { return (flags & FLAG_SOLID) != 0; }
+    constexpr bool oneway() const { return (flags & FLAG_ONEWAY) != 0; }
+    /// @brief Authored/resolved 2-bit direction (see TileDir), unshifted (0-3).
+    constexpr uint8_t dir() const { return static_cast<uint8_t>((flags >> DIR_SHIFT) & 0x03u); }
+};
+
+/**
+ * @brief Resolve an authored DIR by the cell's flip flags (the Godot model).
+ *
+ * Horizontally flipping a directional attribute swaps East↔West (1↔3);
+ * vertically flipping swaps North↔South (0↔2). Tiles that carry a direction
+ * must therefore keep it transform-resolved at query time, not baked at author
+ * time.
+ *
+ * @param dir   Authored 2-bit direction (0-3).
+ * @param hflip Cell horizontal flip flag.
+ * @param vflip Cell vertical flip flag.
+ * @return The resolved direction (0-3).
+ */
+constexpr uint8_t tmResolveDir(uint8_t dir, bool hflip, bool vflip) {
+    if (hflip && ((dir == static_cast<uint8_t>(TileDir::Right)) ||
+                  (dir == static_cast<uint8_t>(TileDir::Left)))) {
+        dir ^= 0x02u;   // Right(1) <-> Left(3)
+    }
+    if (vflip && ((dir == static_cast<uint8_t>(TileDir::Up)) ||
+                  (dir == static_cast<uint8_t>(TileDir::Down)))) {
+        dir ^= 0x02u;   // Up(0) <-> Down(2)
+    }
+    return dir & 0x03u;
+}
+
 static constexpr uint16_t TM_TILEID_BITS   = 9;
 static constexpr uint16_t TM_TILEID_MASK   = 0x01FF;              ///< bits 0-8
+static constexpr uint16_t TM_MAX_TILES     = 1 << TM_TILEID_BITS; ///< 512 tile ids
 static constexpr uint16_t TM_PALBANK_SHIFT = 9;
 static constexpr uint16_t TM_PALBANK_MASK  = 0x000F;             ///< 4 bits, pre-shift
+static constexpr uint16_t TM_PALBANK_COUNT = 1 << 4;             ///< 16 palette banks
 static constexpr uint16_t TM_HFLIP_BIT     = 1U << 13;
 static constexpr uint16_t TM_VFLIP_BIT     = 1U << 14;
 static constexpr uint16_t TM_BAND_BIT      = 1U << 15;

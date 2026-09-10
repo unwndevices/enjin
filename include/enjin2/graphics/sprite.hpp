@@ -97,6 +97,27 @@ struct SpriteSheet {
      */
     void draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int16_t x, int16_t y,
               const Effect& fx) const;
+
+    /**
+     * @brief Blit a single frame with horizontal/vertical flip and a per-pixel
+     *        remap (the tilemap's flip + palbank path — ADR-0003 §3).
+     *
+     * Source pixels are mirrored by @p hflip / @p vflip before being written,
+     * and every non-transparent source index is run through @p remap. Index 15
+     * (transparent) is still skipped: a `Remap` may repaint the surviving
+     * palette indices but never fills holes. Pass `Remap::identity()` when no
+     * palette bank applies.
+     *
+     * @param canvas     Target canvas (ICanvas<Pixel4>).
+     * @param frameIndex Linear frame index.
+     * @param x          Destination X coordinate.
+     * @param y          Destination Y coordinate.
+     * @param hflip      Mirror horizontally.
+     * @param vflip      Mirror vertically.
+     * @param remap      Per-pixel index remap (identity for none).
+     */
+    void draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int16_t x, int16_t y,
+              bool hflip, bool vflip, const Remap& remap) const;
 };
 
 /**
@@ -129,6 +150,24 @@ inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int1
             const int16_t ax = static_cast<int16_t>(x + sx);
             const int16_t ay = static_cast<int16_t>(y + fy);
             canvas.setPixel(ax, ay, Pixel4(fx.shadePixel(px, ax, ay)));
+        }
+    }
+}
+
+inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int16_t x, int16_t y,
+                              bool hflip, bool vflip, const Remap& remap) const {
+    if (!data || frameIndex >= frameCount()) return;
+    const uint8_t* frame = data + static_cast<uint32_t>(frameIndex) * cellW * cellH;
+    const int16_t cw = static_cast<int16_t>(cellW);
+    const int16_t ch = static_cast<int16_t>(cellH);
+    for (int16_t fy = 0; fy < ch; ++fy) {
+        const int16_t srcY = vflip ? static_cast<int16_t>(ch - 1 - fy) : fy;
+        for (int16_t fx = 0; fx < cw; ++fx) {
+            const int16_t srcX = hflip ? static_cast<int16_t>(cw - 1 - fx) : fx;
+            uint8_t px = frame[srcY * cw + srcX] & 0x0F;  // lower nibble = palette index
+            if (px == 15) continue;  // index 15 is transparent
+            canvas.setPixel(static_cast<int16_t>(x + fx), static_cast<int16_t>(y + fy),
+                            Pixel4(remap.apply(px)));
         }
     }
 }

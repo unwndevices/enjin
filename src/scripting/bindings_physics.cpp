@@ -422,13 +422,12 @@ int LuaBindings::lua_engine_physics_raycast(lua_State* L) {
                         break;
                     }
 
-                    // Collision keys on the tile id (low 9 bits), not the packed
-                    // cell — an over-band or flipped cell is still solid.
-                    uint16_t tid = tm->getTileId(
-                        static_cast<uint8_t>(tileX),
-                        static_cast<uint8_t>(tileY));
-
-                    if (tid != 0) {
+                    // Collision keys on the SOLID attribute bit (ADR-0003 §3),
+                    // not merely a non-zero tile id — a painted but passable
+                    // tile no longer blocks the ray, while a SOLID tile does
+                    // regardless of band/flip.
+                    if (tm->isSolid(static_cast<uint8_t>(tileX),
+                                    static_cast<uint8_t>(tileY))) {
                         // Hit — compute world-space intersection point
                         float t = (tMaxX < tMaxY) ? tMaxX - tDeltaX : tMaxY - tDeltaY;
                         if (t < 0.0f) t = 0.0f;

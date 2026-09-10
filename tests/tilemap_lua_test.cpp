@@ -525,6 +525,70 @@ static void test_tmap05e_stale_proxy_error() {
 }
 
 // ============================================================
+// TMATTR-LUA: tile attribute + collision query API from Lua (#79)
+// ============================================================
+static void test_tmattr_lua_query() {
+    printf("--- TMATTR-LUA: attrAt + sweepAabb + setAttrs from Lua ---\n");
+
+    Object* obj = new Object();
+    obj->addComponent<C_Position>();
+    C_LuaScript* script = obj->addComponent<C_LuaScript>(64u, 64u);
+    C_Tilemap* tilemap = obj->addComponent<C_Tilemap>();
+
+    SpriteSheet sheet = makeSheet();
+    tilemap->setSheet(sheet);
+
+    // 4x4 map of zeros; setAttrs from Lua makes tile 1 SOLID.
+    static const uint16_t zeroMap[16] = {};
+    tilemap->setTiles(zeroMap, 4, 4);
+    tilemap->setScroll(0, 0);
+
+    bool loaded = script->loadScript(
+        "solid = -1\n"
+        "sx = -1\n"
+        "sy = -1\n"
+        "shit = -1\n"
+        "snx = 0\n"
+        "function init(self)\n"
+        "    local map = self:get('C_Tilemap')\n"
+        "    if map ~= nil then\n"
+        "        -- attrs: pairs of (flags, kind) for tile id 0,1,2,3\n"
+        "        map:setAttrs({0,0, 1,0, 0,42, 0,0})\n"
+        "        -- column 1 = tile id 1 = SOLID\n"
+        "        for y = 0, 3 do map:setTile(1, y, 1) end\n"
+        "        local f, k = map:attrAt(1, 0)\n"
+        "        solid = f % 2\n"
+        "        local rx, ry, rt, rnx, rny, rh = map:sweepAabb(0, 0, 8, 8, 100, 100, 1)\n"
+        "        sx = rx\n"
+        "        sy = ry\n"
+        "        shit = rh and 1 or 0\n"
+        "        snx = rnx\n"
+        "    end\n"
+        "end\n"
+        "function update(self, dt)\n"
+        "end\n"
+    );
+    ASSERT(loaded, "TMATTR-LUA: script loaded");
+
+    obj->update(0.016f);
+    ASSERT(!script->hasErrors(), "TMATTR-LUA: no Lua errors after update");
+
+    double solid = script->getScriptNumber("solid", -1.0);
+    ASSERT(static_cast<int>(solid) == 1, "TMATTR-LUA: attrAt(1,0) SOLID flag set");
+
+    double sx = script->getScriptNumber("sx", -1.0);
+    double sy = script->getScriptNumber("sy", -1.0);
+    double shit = script->getScriptNumber("shit", -1.0);
+    double snx = script->getScriptNumber("snx", -1.0);
+    ASSERT(static_cast<int>(sx) == 8, "TMATTR-LUA: sweepAabb X clamped to wall (x == 8)");
+    ASSERT(static_cast<int>(sy) == 100, "TMATTR-LUA: sweepAabb Y slides (y == 100)");
+    ASSERT(static_cast<int>(shit) == 1, "TMATTR-LUA: sweepAabb hit == true");
+    ASSERT(static_cast<int>(snx) == -1, "TMATTR-LUA: sweepAabb normalX == -1");
+
+    delete obj;
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -539,6 +603,7 @@ int main() {
     test_tmap06c_tile_at_pixel();
     test_tmap05d_getmapsize();
     test_tmap05e_stale_proxy_error();
+    test_tmattr_lua_query();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;

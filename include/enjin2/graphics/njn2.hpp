@@ -81,6 +81,8 @@
 #include <vector>
 #include <array>
 
+#include "tilemap_asset.hpp"
+
 namespace enjin2 {
 
 // ---------------------------------------------------------------------------
@@ -169,10 +171,7 @@ struct NjnClip {
 };
 
 /// Per-tile attribute record (matches §3 TileAttr layout from ADR-0003).
-struct NjnTileAttr {
-    uint8_t flags; ///< bit0=SOLID, bit1=ONEWAY, bits2-3=DIR, bits4-7 reserved
-    uint8_t kind;  ///< 0–255 material/trigger kind
-};
+using NjnTileAttr = TileAttr;
 
 // ---------------------------------------------------------------------------
 // Reader

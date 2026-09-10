@@ -472,6 +472,134 @@ static int lua_tilemap_getMapSize(lua_State* L) {
     return 2;
 }
 
+// tilemap:setAttrs(flatTable) — flat {flags,kind, flags,kind, …} (ADR-0003 §3)
+static int lua_tilemap_setAttrs(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    const int n = static_cast<int>(lua_rawlen(L, 2));
+    int count = n / 2;
+    if (count > TM_MAX_TILES) count = TM_MAX_TILES;
+
+    TileAttr attrs[TM_MAX_TILES];
+    for (int i = 0; i < count; ++i) {
+        lua_rawgeti(L, 2, i * 2 + 1);
+        attrs[i].flags = static_cast<uint8_t>(lua_tointeger(L, -1) & 0xFF);
+        lua_pop(L, 1);
+        lua_rawgeti(L, 2, i * 2 + 2);
+        attrs[i].kind = static_cast<uint8_t>(lua_tointeger(L, -1) & 0xFF);
+        lua_pop(L, 1);
+    }
+    tm->setAttrs(attrs, static_cast<uint16_t>(count));
+    return 0;
+}
+
+// tilemap:setPalbank(index, lutTable) — a 16-entry index→index remap
+static int lua_tilemap_setPalbank(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    const uint8_t index = static_cast<uint8_t>(luaL_checkinteger(L, 2) & 0x0F);
+    luaL_checktype(L, 3, LUA_TTABLE);
+    Remap r;
+    for (int i = 0; i < 16; ++i) {
+        lua_rawgeti(L, 3, i + 1);
+        r.lut[i] = static_cast<uint8_t>(lua_tointeger(L, -1) & 0x0F);
+        lua_pop(L, 1);
+    }
+    tm->setPalbank(index, r);
+    return 0;
+}
+
+// tilemap:attrAt(tx, ty) -> flags, kind (DIR already flip-resolved)
+static int lua_tilemap_attrAt(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    const uint8_t tx = static_cast<uint8_t>(luaL_checkinteger(L, 2));
+    const uint8_t ty = static_cast<uint8_t>(luaL_checkinteger(L, 3));
+    const TileAttr a = tm->attrAt(tx, ty);
+    lua_pushinteger(L, a.flags);
+    lua_pushinteger(L, a.kind);
+    return 2;
+}
+
+// tilemap:attrAtPixel(px, py) -> flags, kind
+static int lua_tilemap_attrAtPixel(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    const int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    const int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    const TileAttr a = tm->attrAtPixel(px, py);
+    lua_pushinteger(L, a.flags);
+    lua_pushinteger(L, a.kind);
+    return 2;
+}
+
+// Helper: push a SweepResult's fields onto the Lua stack (x, y, t, nx, ny, hit).
+static void pushSweepResult(lua_State* L, const SweepResult& r) {
+    lua_pushnumber(L, static_cast<lua_Number>(r.x));
+    lua_pushnumber(L, static_cast<lua_Number>(r.y));
+    lua_pushnumber(L, static_cast<lua_Number>(r.t));
+    lua_pushnumber(L, static_cast<lua_Number>(r.normalX));
+    lua_pushnumber(L, static_cast<lua_Number>(r.normalY));
+    lua_pushboolean(L, r.hit ? 1 : 0);
+}
+
+// tilemap:sweepAabb(x, y, w, h, vx, vy, dt) -> x, y, t, nx, ny, hit
+static int lua_tilemap_sweepAabb(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    const float x  = static_cast<float>(luaL_checknumber(L, 2));
+    const float y  = static_cast<float>(luaL_checknumber(L, 3));
+    const float w  = static_cast<float>(luaL_checknumber(L, 4));
+    const float h  = static_cast<float>(luaL_checknumber(L, 5));
+    const float vx = static_cast<float>(luaL_checknumber(L, 6));
+    const float vy = static_cast<float>(luaL_checknumber(L, 7));
+    const float dt = static_cast<float>(luaL_checknumber(L, 8));
+    pushSweepResult(L, tm->sweepAabb(x, y, w, h, vx, vy, dt));
+    return 6;
+}
+
+// tilemap:sweepCircle(cx, cy, r, vx, vy, dt) -> x, y, t, nx, ny, hit
+static int lua_tilemap_sweepCircle(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    const float cx = static_cast<float>(luaL_checknumber(L, 2));
+    const float cy = static_cast<float>(luaL_checknumber(L, 3));
+    const float r  = static_cast<float>(luaL_checknumber(L, 4));
+    const float vx = static_cast<float>(luaL_checknumber(L, 5));
+    const float vy = static_cast<float>(luaL_checknumber(L, 6));
+    const float dt = static_cast<float>(luaL_checknumber(L, 7));
+    pushSweepResult(L, tm->sweepCircle(cx, cy, r, vx, vy, dt));
+    return 6;
+}
+
+// tilemap:forEachCellIn(x, y, w, h, fn) — calls fn(tx, ty, cell) per overlapped cell
+static int lua_tilemap_forEachCellIn(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    const float x = static_cast<float>(luaL_checknumber(L, 2));
+    const float y = static_cast<float>(luaL_checknumber(L, 3));
+    const float w = static_cast<float>(luaL_checknumber(L, 4));
+    const float h = static_cast<float>(luaL_checknumber(L, 5));
+    luaL_checktype(L, 6, LUA_TFUNCTION);
+    tm->forEachCellIn(x, y, w, h, [&](uint8_t tx, uint8_t ty, uint16_t cell) {
+        lua_pushvalue(L, 6);                    // the callback (still at index 6)
+        lua_pushinteger(L, static_cast<lua_Integer>(tx));
+        lua_pushinteger(L, static_cast<lua_Integer>(ty));
+        lua_pushinteger(L, static_cast<lua_Integer>(cell));
+        lua_call(L, 3, 0);
+    });
+    return 0;
+}
+
+// tilemap:buildSolidRects() -> flat table {x,y,w,h, x,y,w,h, …}
+static int lua_tilemap_buildSolidRects(lua_State* L) {
+    CTILEMAP_PROXY_CHECK(L, tm);
+    const std::vector<Rect> rects = tm->buildSolidRects();
+    lua_createtable(L, static_cast<int>(rects.size() * 4), 0);
+    int idx = 1;
+    for (const Rect& r : rects) {
+        lua_pushinteger(L, r.x);               lua_rawseti(L, -2, idx++);
+        lua_pushinteger(L, r.y);               lua_rawseti(L, -2, idx++);
+        lua_pushinteger(L, r.width);           lua_rawseti(L, -2, idx++);
+        lua_pushinteger(L, r.height);          lua_rawseti(L, -2, idx++);
+    }
+    return 1;
+}
+
 #undef CTILEMAP_PROXY_CHECK
 
 // __index metamethod for C_Tilemap_Proxy — dispatches all method names
@@ -505,6 +633,22 @@ static int lua_ctilemap_proxy_index_impl(lua_State* L) {
         lua_pushcfunction(L, lua_tilemap_tileAtPixel);
     } else if (strcmp(key, "getMapSize") == 0) {
         lua_pushcfunction(L, lua_tilemap_getMapSize);
+    } else if (strcmp(key, "setAttrs") == 0) {
+        lua_pushcfunction(L, lua_tilemap_setAttrs);
+    } else if (strcmp(key, "setPalbank") == 0) {
+        lua_pushcfunction(L, lua_tilemap_setPalbank);
+    } else if (strcmp(key, "attrAt") == 0) {
+        lua_pushcfunction(L, lua_tilemap_attrAt);
+    } else if (strcmp(key, "attrAtPixel") == 0) {
+        lua_pushcfunction(L, lua_tilemap_attrAtPixel);
+    } else if (strcmp(key, "sweepAabb") == 0) {
+        lua_pushcfunction(L, lua_tilemap_sweepAabb);
+    } else if (strcmp(key, "sweepCircle") == 0) {
+        lua_pushcfunction(L, lua_tilemap_sweepCircle);
+    } else if (strcmp(key, "forEachCellIn") == 0) {
+        lua_pushcfunction(L, lua_tilemap_forEachCellIn);
+    } else if (strcmp(key, "buildSolidRects") == 0) {
+        lua_pushcfunction(L, lua_tilemap_buildSolidRects);
     } else {
         lua_pushnil(L);
     }
