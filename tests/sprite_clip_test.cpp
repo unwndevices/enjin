@@ -197,12 +197,97 @@ static void test_scrub_by_angle() {
     ASSERT(s.getFrame() == 21, "scrub: play() re-enables auto-advance");
 }
 
+// ============================================================
+// A single tick that advances several frames keeps the event
+// ============================================================
+static void test_multi_advance_event() {
+    printf("--- clip: event survives a multi-frame tick ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setSheet(dummySheet());
+    s.setClips({ makeClip("burst", NjnLoopMode::Loop, {
+        {0, 100, 0}, {1, 100, 5}, {2, 100, 0} }) });
+    s.play("burst");
+
+    // 250ms in one tick advances 0→1(evt5)→2(evt0); the event must not be lost.
+    s.lateUpdate(0.25f);
+    ASSERT(s.getFrame() == 2, "multi: landed on cell 2 after 250ms");
+    ASSERT(s.frameEvent() == 5, "multi: eventId 5 survives even though the last frame has no event");
+}
+
+// ============================================================
+// The opening frame's event is pollable right after play()
+// ============================================================
+static void test_play_frame0_event() {
+    printf("--- clip: frame-0 event on play ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setSheet(dummySheet());
+    s.setClips({ makeClip("spawn", NjnLoopMode::Once, {
+        {9, 100, 3}, {10, 100, 0} }) });
+    s.play("spawn");
+
+    ASSERT(s.frameEvent() == 3, "play: opening frame's eventId 3 is reported");
+    s.lateUpdate(0.0f);  // a zero-dt tick resets one-shot events
+    ASSERT(s.frameEvent() == 0, "play: frame-0 event clears on the next lateUpdate");
+}
+
+// ============================================================
+// A 2-frame PingPong latches justCompleted on return to frame 0
+// ============================================================
+static void test_pingpong_two_frame() {
+    printf("--- clip: 2-frame pingpong completion ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setSheet(dummySheet());
+    s.setClips({ makeClip("swing", NjnLoopMode::PingPong, {
+        {5, 100, 0}, {6, 100, 0} }) });
+    s.play("swing");
+
+    s.lateUpdate(0.1f);
+    ASSERT(s.getFrame() == 6, "pingpong: forward to cell 6");
+    ASSERT(!s.justCompleted(), "pingpong: not complete mid-swing");
+
+    s.lateUpdate(0.1f);
+    ASSERT(s.getFrame() == 5, "pingpong: turns back to cell 5");
+    ASSERT(s.justCompleted(), "pingpong: justCompleted on return to the first frame");
+
+    s.lateUpdate(0.1f);
+    ASSERT(s.getFrame() == 6, "pingpong: forward again");
+    ASSERT(!s.justCompleted(), "pingpong: completion flag cleared leaving frame 0");
+}
+
+// ============================================================
+// A no-clip sprite can leave scrub mode via setMode/setFPS
+// ============================================================
+static void test_legacy_scrub_resume() {
+    printf("--- scrub: legacy sprite resumes timed playback ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setSheet(dummySheet());  // 32 cells, no clips
+    s.setFPS(10.0f);
+    s.setMode(AnimMode::Loop);
+
+    s.setFrameForAngle(90.0f, 0.0f, 90.0f);  // scrub over the whole sheet → last cell
+    ASSERT(s.getFrame() == 31, "scrub: max angle → last sheet cell 31");
+    s.lateUpdate(0.1f);
+    ASSERT(s.getFrame() == 31, "scrub: frozen while scrubbing");
+
+    s.setMode(AnimMode::Loop);  // re-arm timed playback
+    s.lateUpdate(0.1f);
+    ASSERT(s.getFrame() == 0, "scrub: setMode leaves scrub → legacy advance wraps 31→0");
+}
+
 int main() {
     test_clip_loop();
     test_clip_once();
     test_clip_frame_event();
     test_flip_draw();
     test_scrub_by_angle();
+    test_multi_advance_event();
+    test_play_frame0_event();
+    test_pingpong_two_frame();
+    test_legacy_scrub_resume();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;

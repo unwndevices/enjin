@@ -97,7 +97,10 @@ public:
     bool play(const char* name) {
         if (!name) return false;
         for (size_t i = 0; i < _clips.size(); ++i) {
-            if (std::strncmp(_clips[i].name, name, sizeof(_clips[i].name)) == 0) {
+            // Names are stored truncated to 15 chars + NUL (see setClips path),
+            // so compare over that same span — a >15-char name is still findable
+            // by its stored prefix rather than failing the full-16-byte compare.
+            if (std::strncmp(_clips[i].name, name, sizeof(_clips[i].name) - 1) == 0) {
                 if (_clips[i].frames.empty()) return false;
                 _clipIndex = static_cast<int>(i);
                 _clipFrame = 0;
@@ -108,7 +111,10 @@ public:
                 _frame     = _clips[i].frames[0].frameIndex;
                 _justAdvanced = false;
                 _justCompleted = false;
-                _frameEvent = 0;
+                // Surface the opening frame's event so a poll right after play()
+                // sees a frame-0 event (spawn hitbox / entry SFX). It clears on
+                // the next lateUpdate like any one-tick frame event.
+                _frameEvent = _clips[i].frames[0].eventId;
                 return true;
             }
         }
@@ -172,14 +178,17 @@ public:
 
     // ── Legacy whole-sheet FPS animation (back-compat) ────────────────────────
 
-    /** Set frames-per-second playback rate for the legacy (no-clip) path. */
-    void setFPS(float fps) { _fps = fps; }
+    /** Set frames-per-second playback rate for the legacy (no-clip) path. Also
+     *  leaves scrub mode, so a sheet-animated sprite can resume timed playback
+     *  after a setFrameForAngle() call. */
+    void setFPS(float fps) { _fps = fps; _scrub = false; }
 
-    /** Set legacy loop mode. */
+    /** Set legacy loop mode. Also leaves scrub mode (see setFPS). */
     void setMode(AnimMode mode) {
         _mode = mode;
         _done = false;
         _forward = true;
+        _scrub = false;
     }
 
     /** Directly set the current sheet frame. Clamped to [0, frameCount-1].
@@ -312,12 +321,15 @@ private:
                 } else {
                     if (_clipFrame > 0) {
                         --_clipFrame;
-                        if (_clipFrame == 0) _justCompleted = true;  // back to start
                     } else {
                         _forward = true;
                         ++_clipFrame;
                     }
                 }
+                // A full there-and-back cycle ends whenever we land back on the
+                // first frame — covers the 2-frame case, where the turnaround
+                // steps straight to 0 without passing through the reverse leg.
+                if (_clipFrame == 0) _justCompleted = true;
                 emitFrame(clip);
                 break;
         }
@@ -327,7 +339,10 @@ private:
     void emitFrame(const NjnClip& clip) {
         const NjnFrameEntry& f = clip.frames[_clipFrame];
         _frame = f.frameIndex;
-        _frameEvent = f.eventId;
+        // Latch only non-zero events: when one tick advances across several
+        // frames, a later no-event (0) frame must not clobber an earlier
+        // frame's event. _frameEvent is cleared at the top of each lateUpdate.
+        if (f.eventId != 0) _frameEvent = f.eventId;
         _justAdvanced = true;
     }
 

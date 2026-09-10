@@ -9,6 +9,7 @@
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/core/scene.hpp"
+#include <cctype>
 
 namespace enjin2 {
 
@@ -775,8 +776,14 @@ static enjin2::NjnLoopMode parseLoopMode(lua_State* L, int idx) {
     }
     const char* s = lua_tostring(L, idx);
     if (s) {
-        if (strcmp(s, "once") == 0)     return enjin2::NjnLoopMode::Once;
-        if (strcmp(s, "pingpong") == 0) return enjin2::NjnLoopMode::PingPong;
+        // Case-insensitive so "Once"/"ONCE" match, not silently fall to Loop.
+        char buf[16] = {0};
+        size_t i = 0;
+        for (const char* p = s; *p && i < sizeof(buf) - 1; ++p, ++i) {
+            buf[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(*p)));
+        }
+        if (strcmp(buf, "once") == 0)     return enjin2::NjnLoopMode::Once;
+        if (strcmp(buf, "pingpong") == 0) return enjin2::NjnLoopMode::PingPong;
     }
     return enjin2::NjnLoopMode::Loop;
 }
