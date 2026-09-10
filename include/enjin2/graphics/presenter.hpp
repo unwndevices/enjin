@@ -30,6 +30,22 @@ struct Frame {
     const Palette*       palette;   ///< Palette for index→RGB; may be null (use g_palette).
 
     /// @brief Test whether tile (tx,ty) is marked dirty in this frame.
+    /// @brief Derive a 10-bit band mask for the CO5300 480x480 panel from dirtyTiles.
+    /// Logical canvas 160x160, tile size 16 (10 tile rows). Panel scale x3 means
+    /// 1 logical tile row = exactly 1 48-row panel band. Returns 10-bit mask.
+    uint16_t deriveBandMask() const {
+        uint16_t mask = 0;
+        for (uint16_t ty = 0; ty < tilesY && ty < 10; ++ty) {
+            for (uint16_t tx = 0; tx < tilesX; ++tx) {
+                if (isTileDirty(tx, ty)) {
+                    mask |= (1 << ty);
+                    break;
+                }
+            }
+        }
+        return mask;
+    }
+
     bool isTileDirty(uint16_t tx, uint16_t ty) const {
         if (tx >= tilesX || ty >= tilesY) {
             return false;

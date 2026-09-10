@@ -209,6 +209,7 @@ static void test_visibility_toggle_recomposites()
     c.endFrame();
 }
 
+#include "/tmp/opencode/replacement.cpp"
 int main()
 {
     printf("compositor_dirty_test\n");
@@ -223,6 +224,8 @@ int main()
     test_nonzero_backdrop_composites_and_settles();
     test_visibility_toggle_recomposites();
 
+    test_derive_band_mask();
     printf("\nResults: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
 }
+
