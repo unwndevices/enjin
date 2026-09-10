@@ -11,6 +11,9 @@ import os
 import sys
 import argparse
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from enjin_assets import emit as _emit  # noqa: E402  (shared v2 .njn writer)
+
 # ---------------------------------------------------------------------------
 # ASE format constants
 # ---------------------------------------------------------------------------
@@ -19,7 +22,11 @@ FRAME_MAGIC      = 0xF1FA
 CHUNK_LAYER      = 0x2004
 CHUNK_CEL        = 0x2005
 CHUNK_CEL_EXTRA  = 0x2006
+CHUNK_FRAME_TAGS = 0x2018
 COLOR_DEPTH_INDEXED = 8
+
+# Aseprite tag loop directions → enjin NjnLoopMode (reverse folds to Loop).
+_ASE_DIR_TO_LOOP = {0: _emit.LOOP_LOOP, 1: _emit.LOOP_LOOP, 2: _emit.LOOP_PINGPONG, 3: _emit.LOOP_PINGPONG}
 
 CEL_TYPE_RAW        = 0
 CEL_TYPE_LINKED     = 1
@@ -90,6 +97,8 @@ def parse_aseprite(path: str):
     offset = 128  # skip to first frame
 
     frames = []
+    durations = []   # per-frame hold time in ms
+    tags = []        # list of (from_frame, to_frame, loop_dir, name)
 
     for frame_idx in range(frame_count):
         if offset + 16 > len(data):
@@ -127,10 +136,13 @@ def parse_aseprite(path: str):
                     data, chunk_data_offset, chunk_body_size,
                     canvas, width, height
                 )
+            elif chunk_type == CHUNK_FRAME_TAGS:
+                tags.extend(_parse_frame_tags(data, chunk_data_offset, chunk_body_size))
 
             chunk_offset += chunk_size
 
         frames.append(bytes(canvas))
+        durations.append(frame_duration)
         offset = frame_end
 
     return {
@@ -139,7 +151,42 @@ def parse_aseprite(path: str):
         'color_depth': color_depth,
         'frame_count': len(frames),
         'frames':      frames,
+        'durations':   durations,
+        'tags':        tags,
     }
+
+
+def _parse_frame_tags(data, offset, body_size):
+    """Parse a FRAME_TAGS chunk (0x2018) → list of (from, to, loop_dir, name).
+
+    Layout: WORD numTags, BYTE[8] reserved, then per tag: WORD from, WORD to,
+    BYTE loopDir, WORD repeat, BYTE[6] reserved, BYTE[3] colour, BYTE extra,
+    STRING name (WORD length + utf-8 bytes).
+    """
+    end = offset + body_size
+    if offset + 10 > end:
+        return []
+    num_tags = struct.unpack_from('<H', data, offset)[0]
+    pos = offset + 2 + 8  # skip numTags + 8 reserved bytes
+    out = []
+    for _ in range(num_tags):
+        if pos + 17 > end:
+            break
+        from_frame, to_frame = struct.unpack_from('<HH', data, pos)
+        loop_dir = data[pos + 4]
+        pos += 4 + 1 + 2 + 6 + 3 + 1  # from,to + dir + repeat + reserved + colour + extra
+        if pos + 2 > end:
+            break
+        name_len = struct.unpack_from('<H', data, pos)[0]
+        pos += 2
+        raw = data[pos:pos + name_len]
+        pos += name_len
+        try:
+            name = raw.decode('utf-8')
+        except UnicodeDecodeError:
+            name = raw.decode('latin-1', 'replace')
+        out.append((from_frame, to_frame, loop_dir, name))
+    return out
 
 
 def _process_cel_chunk(data, offset, body_size, canvas, canvas_w, canvas_h):
@@ -425,6 +472,74 @@ def emit_njm_bytes(cells, map_w, map_h):
 
 
 # ---------------------------------------------------------------------------
+# .njn v2 sheet emitter — animation clips from Aseprite tags (issue #87)
+# ---------------------------------------------------------------------------
+
+def build_clips_from_tags(tags, durations, frame_count):
+    """Turn Aseprite frame tags into enjin CLIP records (per-frame durations)."""
+    clips = []
+    for from_frame, to_frame, loop_dir, name in tags:
+        lo = max(0, from_frame)
+        hi = min(frame_count - 1, to_frame)
+        if hi < lo:
+            continue
+        frames = [
+            (fi, durations[fi] if fi < len(durations) else 100, 0)
+            for fi in range(lo, hi + 1)
+        ]
+        clips.append(_emit.Clip(
+            name=name or f"clip{len(clips)}",
+            loop_mode=_ASE_DIR_TO_LOOP.get(loop_dir, _emit.LOOP_LOOP),
+            frames=frames,
+        ))
+    return clips
+
+
+def emit_njn_v2_sheet(ase, grid_spec):
+    """Build a .njn v2 sheet (META + PIXL + optional CLIP) from a parsed ASE file.
+
+    Returns ``(bytes, frame_count, clips)``. Frames become sheet cells in order;
+    CLIP frame indices reference those cells, so a clip is just a run of cells.
+    """
+    pixel_data, cell_w, cell_h, cols, rows = build_pixel_array(
+        ase['frames'], ase['width'], ase['height'], grid_spec
+    )
+    frame_count = cols * rows
+    # --grid slices one Aseprite frame into sheet cells (a static spritesheet), so
+    # frame-tag clips — which index the animation frames that grid mode discards —
+    # do not apply. Only build clips when the frames themselves are the cells.
+    if grid_spec is not None:
+        if ase.get('tags'):
+            print("Warning: --grid ignores Aseprite frame tags (no CLIP chunk emitted)",
+                  file=sys.stderr)
+        clips = None
+    else:
+        clips = build_clips_from_tags(ase.get('tags', []), ase.get('durations', []), frame_count) or None
+    data = _emit.build_njn(cell_w, cell_h, pixel_data, frame_count, clips=clips)
+    return data, frame_count, clips
+
+
+def _run_sprite_v2(args, input_path):
+    """v2 sheet authoring path: emit a .njn v2 container with animation clips."""
+    try:
+        ase = parse_aseprite(input_path)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    data, frame_count, clips = emit_njn_v2_sheet(ase, args.grid)
+    out_path = args.output or (os.path.splitext(input_path)[0] + ".njn")
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    with open(out_path, 'wb') as f:
+        f.write(data)
+    n_clips = len(clips) if clips else 0
+    print(f"Written: {out_path}  ({len(data)} bytes, .njn v2, {frame_count} frames, {n_clips} clips)")
+    if clips:
+        for c in clips:
+            print(f"  clip {c.name!r}: {len(c.frames)} frames, loop={c.loop_mode}")
+
+
+# ---------------------------------------------------------------------------
 # Grid / layout helpers
 # ---------------------------------------------------------------------------
 
@@ -588,6 +703,9 @@ def main():
     parser.add_argument("--tilemap", action="store_true",
                         help="Tilemap authoring mode: dice under/over layers into a "
                              ".njn tileset + .njm map (16x16 tiles unless --grid given)")
+    parser.add_argument("--v2", action="store_true",
+                        help="Emit a .njn v2 container sheet (META+PIXL, plus a CLIP "
+                             "chunk built from Aseprite frame tags) instead of a C header")
 
     args = parser.parse_args()
 
@@ -598,6 +716,10 @@ def main():
 
     if args.tilemap:
         _run_tilemap(args, input_path)
+        return
+
+    if args.v2:
+        _run_sprite_v2(args, input_path)
         return
 
     # Derive defaults

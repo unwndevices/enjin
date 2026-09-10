@@ -49,6 +49,18 @@ python3 tools/aseprite2enjin.py hero.aseprite --name hero --output src/assets/he
 | `--name NAME` | derived from filename | C identifier for the array |
 | `--output FILE` | same dir as input, `.h` extension | Output header path |
 | `--grid WxH` | none | Cell size for spritesheet-in-image mode |
+| `--tilemap` | off | Dice under/over layers into a v1 `.njn` tileset + `.njm` map |
+| `--v2` | off | Emit a `.njn` **v2** container sheet (META+PIXL, plus a CLIP chunk from Aseprite frame tags) |
+
+**`.njn` v2 animation sheet (frame tags → clips):**
+```
+python3 tools/aseprite2enjin.py walk.aseprite --v2 --output walk.njn
+```
+Each Aseprite frame becomes a sheet cell; every frame tag becomes a named clip
+whose per-frame durations come from the frame headers and whose loop mode maps
+from the tag's direction (forward/reverse → Loop, ping-pong → PingPong). See
+`README_tiled2enjin.md` for the shared `enjin_assets` library and the `.njn` v2
+container layout.
 
 ## Using in enjin
 
