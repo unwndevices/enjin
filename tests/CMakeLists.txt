@@ -503,6 +503,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME component_proxy_test COMMAND component_proxy_test)
 
+    # Component registry parity test (ADR-0003 §2: REG-01..REG-04)
+    add_executable(component_registry_test
+        component_registry_test.cpp
+    )
+    target_include_directories(component_registry_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(component_registry_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME component_registry_test COMMAND component_registry_test)
+
     # Sprite flipping test (drawSprite flipH/flipV/rotate90)
     add_executable(sprite_flip_test
         sprite_flip_test.cpp

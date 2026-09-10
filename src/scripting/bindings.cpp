@@ -29,6 +29,9 @@ static int lua_proxy_clearTags_impl(lua_State* L);
 // Forward declaration for self:get("TypeName") — ComponentProxy dispatch (Phase 39)
 static int lua_proxy_get_component_impl(lua_State* L);
 
+// Forward declaration for self:add("TypeName"[, params]) — attach verb (ADR-0003 §2)
+static int lua_proxy_add_component_impl(lua_State* L);
+
 // __index metamethod: called when Lua reads self.property
 // Stack layout on entry: [1]=userdata(self), [2]=key_string
 static int lua_proxy_index_impl(lua_State* L) {
@@ -55,6 +58,11 @@ static int lua_proxy_index_impl(lua_State* L) {
     // PROXY-01: self:get("TypeName") — checked FIRST before any property (PROXY-04b collision prevention)
     if (strcmp(key, "get") == 0) {
         lua_pushcfunction(L, lua_proxy_get_component_impl);
+        return 1;
+    }
+    // self:add("TypeName"[, params]) — the one attach verb (ADR-0003 §2).
+    if (strcmp(key, "add") == 0) {
+        lua_pushcfunction(L, lua_proxy_add_component_impl);
         return 1;
     }
 
@@ -203,45 +211,26 @@ static int lua_proxy_get_component_impl(lua_State* L) {
 
     const char* typeName = luaL_checkstring(L, 2);
     enjin2::Object* owner = proxy->component->getOwner();
-    if (!owner) { lua_pushnil(L); return 1; }
+    // Registry-generated dispatch (ADR-0003 §2): the type→proxy mapping lives
+    // only in ENJIN2_COMPONENT_LIST, so adding a component there makes it
+    // get()-able here with no edit to this function.
+    return pushComponentGet(L, owner, typeName);
+}
 
-    // Type dispatch — each proxied component type has an entry here.
-    // Phase 40 adds: C_Timer. Phase 41 adds: C_StateMachine.
-    enjin2::Component* comp = nullptr;
-    const char* metaName = nullptr;
-
-    if (strcmp(typeName, "C_Position") == 0) {
-        comp = owner->getComponent<enjin2::C_Position>();
-        metaName = "C_Position_Proxy";
-    } else if (strcmp(typeName, "C_Timer") == 0) {
-        comp = owner->getComponent<enjin2::C_Timer>();
-        metaName = "C_Timer_Proxy";
-    } else if (strcmp(typeName, "C_StateMachine") == 0) {
-        comp = owner->getComponent<enjin2::C_StateMachine>();
-        metaName = "C_StateMachine_Proxy";
-    } else if (strcmp(typeName, "C_Tilemap") == 0) {
-        comp = owner->getComponent<enjin2::C_Tilemap>();
-        metaName = "C_Tilemap_Proxy";
-    } else if (strcmp(typeName, "C_Camera") == 0) {
-        comp = owner->getComponent<enjin2::C_Camera>();
-        metaName = "C_Camera_Proxy";
+// lua_proxy_add_component_impl: stack [1]=ScriptProxy (self), [2]=type_name,
+// [3]=optional params table. Attaches the named component (or returns the
+// existing one) and hands back its writable ComponentProxy — the `add` half of
+// the one attach verb (ADR-0003 §2). Mirrors ObjectProxy:add.
+static int lua_proxy_add_component_impl(lua_State* L) {
+    enjin2::ScriptProxy* proxy = static_cast<enjin2::ScriptProxy*>(
+        luaL_checkudata(L, 1, PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "object has been destroyed");
+        return 0;
     }
-
-    if (!comp) { lua_pushnil(L); return 1; }
-
-    // Allocate ComponentProxy userdata with per-type metatable
-    auto* cproxy = static_cast<enjin2::ComponentProxy*>(
-        lua_newuserdata(L, sizeof(enjin2::ComponentProxy)));
-    cproxy->component = comp;
-    cproxy->valid = true;
-    luaL_getmetatable(L, metaName);
-    lua_setmetatable(L, -2);
-
-    // Register proxy with component for destructor invalidation
-    // Note: overwrites any previous proxy (single-proxy-per-component constraint — accepted v1.6 limitation)
-    comp->setLuaProxy(cproxy);
-
-    return 1;
+    const char* typeName = luaL_checkstring(L, 2);
+    enjin2::Object* owner = proxy->component->getOwner();
+    return pushComponentAdd(L, owner, typeName, 3);  // optional params table at arg 3
 }
 
 //==============================================================================

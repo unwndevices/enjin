@@ -189,6 +189,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/lua_platform.cpp
         src/scripting/bindings.cpp
         src/scripting/bindings_proxy.cpp
+        src/scripting/component_registry.cpp
         src/scripting/bindings_draw.cpp
         src/scripting/bindings_input_sprites.cpp
         src/scripting/bindings_sprite_load.cpp

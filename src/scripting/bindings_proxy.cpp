@@ -1,4 +1,5 @@
 #include "bindings_internal.hpp"
+#include "../../include/enjin2/scripting/component_registry.hpp"
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/components/timer.hpp"
 #include "../../include/enjin2/components/state_machine.hpp"
@@ -6,8 +7,70 @@
 #include "../../include/enjin2/components/camera.hpp"
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/core/object.hpp"
+#include "../../include/enjin2/core/scene.hpp"
 
 namespace enjin2 {
+
+//==============================================================================
+// Registry-generated component dispatch (ADR-0003 §2)
+//
+// The `add`/`get` verbs on both object-level proxies bottom out here, so the
+// only place that maps a component name string to a C++ type is the
+// ENJIN2_COMPONENT_LIST in component_registry.hpp. These push one Lua value
+// (a ComponentProxy userdata, or nil) and return 1.
+//==============================================================================
+
+// Allocate a ComponentProxy userdata for `comp`, attach its per-type metatable,
+// and register it for destructor invalidation. Pushes nil for a null component.
+static int pushComponentProxyUserdata(lua_State* L, Component* comp, const char* metaName) {
+    if (!comp) { lua_pushnil(L); return 1; }
+    auto* cproxy = static_cast<enjin2::ComponentProxy*>(
+        lua_newuserdata(L, sizeof(enjin2::ComponentProxy)));
+    cproxy->component = comp;
+    cproxy->valid = true;
+    luaL_getmetatable(L, metaName);
+    lua_setmetatable(L, -2);
+    // Overwrites any previous proxy (single-proxy-per-component constraint —
+    // accepted v1.6 limitation, matching self:get()).
+    comp->setLuaProxy(cproxy);
+    return 1;
+}
+
+int pushComponentGet(lua_State* L, Object* owner, const char* typeName) {
+    if (!owner) { lua_pushnil(L); return 1; }
+    const ComponentRegistryEntry* e = findComponentEntry(typeName);
+    if (!e) { lua_pushnil(L); return 1; }
+    return pushComponentProxyUserdata(L, e->get(owner), e->proxyMeta);
+}
+
+int pushComponentAdd(lua_State* L, Object* owner, const char* typeName, int paramsIdx) {
+    if (!owner) { lua_pushnil(L); return 1; }
+    const ComponentRegistryEntry* e = findComponentEntry(typeName);
+    if (!e) {
+        luaL_error(L, "add: unknown component '%s'", typeName ? typeName : "?");
+        return 0;  // unreachable — luaL_error longjmps
+    }
+    // Attach-or-fetch: never duplicate a component already on the object.
+    Component* comp = e->get(owner);
+    if (!comp) comp = e->add(owner);
+    pushComponentProxyUserdata(L, comp, e->proxyMeta);  // proxy (or nil) now on top
+
+    // Apply an optional params table by writing each field through the proxy's
+    // __newindex — the writable-add half of ADR-0003 §2. Fields the component's
+    // proxy does not handle are silently dropped (matching its own __newindex).
+    if (comp && paramsIdx > 0 && lua_istable(L, paramsIdx)) {
+        int proxyIdx = lua_gettop(L);  // absolute index of the proxy userdata
+        lua_pushnil(L);
+        while (lua_next(L, paramsIdx) != 0) {
+            // stack: ... key value  → write proxy[key] = value via __newindex
+            lua_pushvalue(L, -2);       // key
+            lua_pushvalue(L, -2);       // value
+            lua_settable(L, proxyIdx);
+            lua_pop(L, 1);              // pop value, keep key for the next lua_next
+        }
+    }
+    return 1;
+}
 
 //==============================================================================
 // C_Position_Proxy Metatable Implementation (Phase 39: ComponentProxy proof-of-concept)
@@ -26,6 +89,19 @@ static int lua_cposition_proxy_index_impl(lua_State* L) {
 
     const char* key = lua_tostring(L, 2);
     if (!key) { lua_pushnil(L); return 1; }
+
+    // Writable position properties (ADR-0003 §2: every component proxy gains the
+    // write side). `p.x`/`p.y` read here; the paired __newindex writes via the
+    // C_Position setter. The getX()/getY() methods stay for back-compat.
+    if (strcmp(key, "x") == 0) {
+        auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
+        lua_pushinteger(L, static_cast<lua_Integer>(pos->getPosition().x));
+        return 1;
+    } else if (strcmp(key, "y") == 0) {
+        auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
+        lua_pushinteger(L, static_cast<lua_Integer>(pos->getPosition().y));
+        return 1;
+    }
 
     if (strcmp(key, "getX") == 0) {
         lua_pushcfunction(L, [](lua_State* L2) -> int {
@@ -57,6 +133,30 @@ static int lua_cposition_proxy_index_impl(lua_State* L) {
 
     lua_pushnil(L);
     return 1;
+}
+
+// __newindex for C_Position_Proxy: `p.x = N` / `p.y = M` route straight to the
+// C_Position setter — the writable-proxy half of ADR-0003 §2. Writes to any
+// other key are silently ignored, matching the object-level proxies.
+static int lua_cposition_proxy_newindex_impl(lua_State* L) {
+    enjin2::ComponentProxy* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CPOSITION_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* key = lua_tostring(L, 2);
+    if (!key) return 0;
+
+    auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
+    if (strcmp(key, "x") == 0) {
+        pos->setPosition(static_cast<int16_t>(luaL_checkinteger(L, 3)),
+                         pos->getPosition().y);
+    } else if (strcmp(key, "y") == 0) {
+        pos->setPosition(pos->getPosition().x,
+                         static_cast<int16_t>(luaL_checkinteger(L, 3)));
+    }
+    return 0;
 }
 
 //==============================================================================
@@ -505,6 +605,49 @@ static int lua_ccamera_proxy_index_impl(lua_State* L) {
 // ObjectProxy Metatable Implementation (Phase 37: engine.scene.find() safety)
 //==============================================================================
 
+// proxy:get("TypeName") — fetch a component off a spawn/find'd object.
+static int lua_objproxy_get_component_impl(lua_State* L) {
+    enjin2::ObjectProxy* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_checkudata(L, 1, OBJECT_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->object) {
+        luaL_error(L, "object has been destroyed");
+        return 0;
+    }
+    const char* typeName = luaL_checkstring(L, 2);
+    return pushComponentGet(L, proxy->object, typeName);
+}
+
+// proxy:add("TypeName"[, params]) — attach (or fetch) a component and return its
+// writable proxy. Same registry-generated path as ScriptProxy:add.
+static int lua_objproxy_add_component_impl(lua_State* L) {
+    enjin2::ObjectProxy* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_checkudata(L, 1, OBJECT_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->object) {
+        luaL_error(L, "object has been destroyed");
+        return 0;
+    }
+    const char* typeName = luaL_checkstring(L, 2);
+    return pushComponentAdd(L, proxy->object, typeName, 3);  // optional params table at arg 3
+}
+
+// proxy:destroy() — remove this object from the active scene. Mirrors
+// engine.scene.destroy(proxy) so an ObjectProxy is a self-sufficient instance
+// handle (ADR-0003 §2). Object::~Object() sets proxy->valid = false, so a later
+// access on the proxy raises the usual "object has been destroyed" error.
+static int lua_objproxy_destroy_impl(lua_State* L) {
+    enjin2::ObjectProxy* proxy = static_cast<enjin2::ObjectProxy*>(
+        luaL_checkudata(L, 1, OBJECT_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->object) return 0;
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
+    auto** scenePP = static_cast<enjin2::Scene**>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (scenePP == nullptr || *scenePP == nullptr) return 0;
+
+    (*scenePP)->removeObject(proxy->object);
+    return 0;
+}
+
 // __index metamethod for ObjectProxy.
 // Reads proxy.name, proxy:hasTag(tag), proxy.position (table snapshot), proxy.enable.
 // Locked decisions (Phase 37 CONTEXT.md):
@@ -527,6 +670,23 @@ static int lua_objproxy_index_impl(lua_State* L) {
     if (!key) { lua_pushnil(L); return 1; }
 
     enjin2::Object* obj = proxy->object;
+
+    // self:get("TypeName") / self:add("TypeName"[, params]) — the same attach
+    // verb spawn()'d and find()'d objects get, so an ObjectProxy is a full
+    // instance handle (ADR-0003 §2, closing the spawn-can't-get gap). Checked
+    // before the property keys, mirroring ScriptProxy.
+    if (strcmp(key, "get") == 0) {
+        lua_pushcfunction(L, lua_objproxy_get_component_impl);
+        return 1;
+    }
+    if (strcmp(key, "add") == 0) {
+        lua_pushcfunction(L, lua_objproxy_add_component_impl);
+        return 1;
+    }
+    if (strcmp(key, "destroy") == 0) {
+        lua_pushcfunction(L, lua_objproxy_destroy_impl);
+        return 1;
+    }
 
     if (strcmp(key, "name") == 0) {
         const char* n = obj->getName();
@@ -657,10 +817,13 @@ void LuaBindings::registerComponentProxyMetatable() {
     lua_State* L = engine->getState();
     if (!L) return;
 
-    // Register C_Position_Proxy metatable (proof-of-concept for Phase 39)
+    // Register C_Position_Proxy metatable (proof-of-concept for Phase 39).
+    // __newindex makes it the writable proxy ADR-0003 §2 requires (p.x = N).
     if (luaL_newmetatable(L, CPOSITION_PROXY_METATABLE)) {
         lua_pushcfunction(L, lua_cposition_proxy_index_impl);
         lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, lua_cposition_proxy_newindex_impl);
+        lua_setfield(L, -2, "__newindex");
     }
     lua_pop(L, 1);
 
