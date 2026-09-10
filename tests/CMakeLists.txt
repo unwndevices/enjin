@@ -336,6 +336,16 @@ target_link_libraries(frame_timing_test PRIVATE enjin2_core)
 target_compile_definitions(frame_timing_test PRIVATE ENJIN2_FRAME_TIMING=1)
 add_test(NAME frame_timing_test COMMAND frame_timing_test)
 
+# .njn v2 typed-chunk container test (issue #76: NJN2-01..NJN2-15)
+# Header-only, no Lua dependency — always built.
+add_executable(njn2_test
+    njn2_test.cpp
+)
+target_include_directories(njn2_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME njn2_test COMMAND njn2_test)
+
 # Layer binding unit test (Lua layer API: setLayer, getLayer, clearLayer, etc.)
 if(ENJIN2_BUILD_LUA)
     add_executable(layer_binding_test
