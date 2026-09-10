@@ -5,6 +5,7 @@
 #include "../../include/enjin2/components/state_machine.hpp"
 #include "../../include/enjin2/components/tilemap.hpp"
 #include "../../include/enjin2/components/camera.hpp"
+#include "../../include/enjin2/components/sprite.hpp"
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/core/scene.hpp"
@@ -746,6 +747,215 @@ static int lua_ccamera_proxy_index_impl(lua_State* L) {
 }
 
 //==============================================================================
+// C_Sprite_Proxy Metatable Implementation (ADR-0003 §5, Tomodachi #81)
+//
+// The retained sprite: clip playback (per-frame durations + loop modes), polled
+// events, hflip/vflip through the flip-aware SpriteSheet::draw, and scrub-by-
+// angle. Attached with obj:add("C_Sprite") like every other component (§2).
+//==============================================================================
+
+#define CSPRITE_PROXY_CHECK(L, varname)                                           \
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(                           \
+        luaL_checkudata(L, 1, CSPRITE_PROXY_METATABLE));                          \
+    if (!proxy || !proxy->valid || !proxy->component) {                           \
+        luaL_error(L, "component has been destroyed");                            \
+        return 0;                                                                 \
+    }                                                                             \
+    auto* (varname) = static_cast<enjin2::C_Sprite*>(proxy->component)
+
+// Parse a loop-mode argument: accepts "once"/"loop"/"pingpong" (case-sensitive)
+// or the integer 0/1/2. Defaults to Loop for anything unrecognised.
+static enjin2::NjnLoopMode parseLoopMode(lua_State* L, int idx) {
+    if (lua_type(L, idx) == LUA_TNUMBER) {
+        switch (static_cast<int>(lua_tointeger(L, idx))) {
+            case 0: return enjin2::NjnLoopMode::Once;
+            case 2: return enjin2::NjnLoopMode::PingPong;
+            default: return enjin2::NjnLoopMode::Loop;
+        }
+    }
+    const char* s = lua_tostring(L, idx);
+    if (s) {
+        if (strcmp(s, "once") == 0)     return enjin2::NjnLoopMode::Once;
+        if (strcmp(s, "pingpong") == 0) return enjin2::NjnLoopMode::PingPong;
+    }
+    return enjin2::NjnLoopMode::Loop;
+}
+
+// sprite:setSheet(handle) — bind a SpriteSheet from the LuaBindings sprite pool.
+static int lua_sprite_setSheet(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    int handle = static_cast<int>(luaL_checkinteger(L, 2));
+    LuaBindings* b = LuaBindings::getBindings(L);
+    if (!b) { luaL_error(L, "C_Sprite.setSheet: LuaBindings not available"); return 0; }
+    const enjin2::SpriteSheet* sheet = b->getSpriteSheet(handle);
+    if (!sheet) { luaL_error(L, "C_Sprite.setSheet: invalid sprite handle %d", handle); return 0; }
+    sp->setSheet(*sheet);
+    return 0;
+}
+
+// sprite:setClips({ {name=, loop=, frames={ {frame=,dur=,event=}, ... }}, ... })
+static int lua_sprite_setClips(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    luaL_checktype(L, 2, LUA_TTABLE);
+
+    std::vector<enjin2::NjnClip> clips;
+    const int nClips = static_cast<int>(lua_rawlen(L, 2));
+    for (int ci = 1; ci <= nClips; ++ci) {
+        lua_rawgeti(L, 2, ci);            // clip table at top
+        if (!lua_istable(L, -1)) { lua_pop(L, 1); continue; }
+        int clipIdx = lua_gettop(L);
+
+        enjin2::NjnClip clip{};
+        std::memset(clip.name, 0, sizeof(clip.name));
+        lua_getfield(L, clipIdx, "name");
+        const char* name = lua_tostring(L, -1);
+        if (name) std::strncpy(clip.name, name, sizeof(clip.name) - 1);
+        lua_pop(L, 1);
+
+        lua_getfield(L, clipIdx, "loop");
+        clip.loopMode = parseLoopMode(L, lua_gettop(L));
+        lua_pop(L, 1);
+
+        lua_getfield(L, clipIdx, "frames");
+        if (lua_istable(L, -1)) {
+            int framesIdx = lua_gettop(L);
+            const int nFrames = static_cast<int>(lua_rawlen(L, framesIdx));
+            for (int fi = 1; fi <= nFrames; ++fi) {
+                lua_rawgeti(L, framesIdx, fi);   // frame table at top
+                if (lua_istable(L, -1)) {
+                    int frIdx = lua_gettop(L);
+                    enjin2::NjnFrameEntry fe{};
+                    lua_getfield(L, frIdx, "frame");
+                    fe.frameIndex = static_cast<uint16_t>(luaL_optinteger(L, -1, 0) & 0xFFFF);
+                    lua_pop(L, 1);
+                    lua_getfield(L, frIdx, "dur");
+                    fe.durationMs = static_cast<uint16_t>(luaL_optinteger(L, -1, 100) & 0xFFFF);
+                    lua_pop(L, 1);
+                    lua_getfield(L, frIdx, "event");
+                    fe.eventId = static_cast<uint8_t>(luaL_optinteger(L, -1, 0) & 0xFF);
+                    lua_pop(L, 1);
+                    clip.frames.push_back(fe);
+                }
+                lua_pop(L, 1);  // frame table
+            }
+        }
+        lua_pop(L, 1);  // frames
+
+        clips.push_back(std::move(clip));
+        lua_pop(L, 1);  // clip table
+    }
+    sp->setClips(clips);
+    return 0;
+}
+
+// sprite:play(name) -> bool
+static int lua_sprite_play(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    const char* name = luaL_checkstring(L, 2);
+    lua_pushboolean(L, sp->play(name) ? 1 : 0);
+    return 1;
+}
+
+// sprite:setFlip(h, v)
+static int lua_sprite_setFlip(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    sp->setFlip(lua_toboolean(L, 2) != 0, lua_toboolean(L, 3) != 0);
+    return 0;
+}
+
+// sprite:setFrameForAngle(angle, minAngle, maxAngle)
+static int lua_sprite_setFrameForAngle(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    sp->setFrameForAngle(static_cast<float>(luaL_checknumber(L, 2)),
+                         static_cast<float>(luaL_checknumber(L, 3)),
+                         static_cast<float>(luaL_checknumber(L, 4)));
+    return 0;
+}
+
+// sprite:setFrame(index)
+static int lua_sprite_setFrame(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    sp->setFrame(static_cast<uint16_t>(luaL_checkinteger(L, 2) & 0xFFFF));
+    return 0;
+}
+
+// sprite:setFPS(fps) — legacy whole-sheet playback (no-clip path)
+static int lua_sprite_setFPS(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    sp->setFPS(static_cast<float>(luaL_checknumber(L, 2)));
+    return 0;
+}
+
+// sprite:setMode(mode) — legacy loop mode; accepts "once"/"loop"/"pingpong" or 0/1/2
+static int lua_sprite_setMode(lua_State* L) {
+    CSPRITE_PROXY_CHECK(L, sp);
+    // AnimMode and NjnLoopMode share the Once/Loop/PingPong ordering.
+    sp->setMode(static_cast<enjin2::AnimMode>(parseLoopMode(L, 2)));
+    return 0;
+}
+
+#undef CSPRITE_PROXY_CHECK
+
+// __index for C_Sprite_Proxy: methods first, then read-only/readable properties.
+static int lua_csprite_proxy_index_impl(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CSPRITE_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* key = lua_tostring(L, 2);
+    if (!key) { lua_pushnil(L); return 1; }
+
+    // Methods
+    if (strcmp(key, "setSheet") == 0)         { lua_pushcfunction(L, lua_sprite_setSheet); return 1; }
+    if (strcmp(key, "setClips") == 0)         { lua_pushcfunction(L, lua_sprite_setClips); return 1; }
+    if (strcmp(key, "play") == 0)             { lua_pushcfunction(L, lua_sprite_play); return 1; }
+    if (strcmp(key, "setFlip") == 0)          { lua_pushcfunction(L, lua_sprite_setFlip); return 1; }
+    if (strcmp(key, "setFrameForAngle") == 0) { lua_pushcfunction(L, lua_sprite_setFrameForAngle); return 1; }
+    if (strcmp(key, "setFrame") == 0)         { lua_pushcfunction(L, lua_sprite_setFrame); return 1; }
+    if (strcmp(key, "setFPS") == 0)           { lua_pushcfunction(L, lua_sprite_setFPS); return 1; }
+    if (strcmp(key, "setMode") == 0)          { lua_pushcfunction(L, lua_sprite_setMode); return 1; }
+
+    // Readable properties
+    auto* sp = static_cast<enjin2::C_Sprite*>(proxy->component);
+    if (strcmp(key, "frame") == 0)         { lua_pushinteger(L, sp->getFrame()); return 1; }
+    if (strcmp(key, "hflip") == 0)         { lua_pushboolean(L, sp->getHFlip() ? 1 : 0); return 1; }
+    if (strcmp(key, "vflip") == 0)         { lua_pushboolean(L, sp->getVFlip() ? 1 : 0); return 1; }
+    if (strcmp(key, "visible") == 0)       { lua_pushboolean(L, sp->isVisible() ? 1 : 0); return 1; }
+    if (strcmp(key, "done") == 0)          { lua_pushboolean(L, sp->isDone() ? 1 : 0); return 1; }
+    if (strcmp(key, "justAdvanced") == 0)  { lua_pushboolean(L, sp->justAdvanced() ? 1 : 0); return 1; }
+    if (strcmp(key, "justCompleted") == 0) { lua_pushboolean(L, sp->justCompleted() ? 1 : 0); return 1; }
+    if (strcmp(key, "frameEvent") == 0)    { lua_pushinteger(L, sp->frameEvent()); return 1; }
+    if (strcmp(key, "clip") == 0) {
+        const char* c = sp->currentClip();
+        if (c && c[0]) lua_pushstring(L, c); else lua_pushnil(L);
+        return 1;
+    }
+
+    lua_pushnil(L);
+    return 1;
+}
+
+// __newindex for C_Sprite_Proxy: writable hflip/vflip/visible (ADR-0003 §2).
+static int lua_csprite_proxy_newindex_impl(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(
+        luaL_checkudata(L, 1, CSPRITE_PROXY_METATABLE));
+    if (!proxy || !proxy->valid || !proxy->component) {
+        luaL_error(L, "component has been destroyed");
+        return 0;
+    }
+    const char* key = lua_tostring(L, 2);
+    if (!key) return 0;
+
+    auto* sp = static_cast<enjin2::C_Sprite*>(proxy->component);
+    if (strcmp(key, "hflip") == 0)        sp->setHFlip(lua_toboolean(L, 3) != 0);
+    else if (strcmp(key, "vflip") == 0)   sp->setVFlip(lua_toboolean(L, 3) != 0);
+    else if (strcmp(key, "visible") == 0) sp->SetVisibility(lua_toboolean(L, 3) != 0);
+    return 0;
+}
+
+//==============================================================================
 // ObjectProxy Metatable Implementation (Phase 37: engine.scene.find() safety)
 //==============================================================================
 
@@ -996,6 +1206,16 @@ void LuaBindings::registerComponentProxyMetatable() {
     if (luaL_newmetatable(L, CCAMERA_PROXY_METATABLE)) {
         lua_pushcfunction(L, lua_ccamera_proxy_index_impl);
         lua_setfield(L, -2, "__index");
+    }
+    lua_pop(L, 1);
+
+    // Register C_Sprite_Proxy metatable (ADR-0003 §5, #81: clips, events, flips,
+    // scrub). __newindex makes hflip/vflip/visible the writable side (§2).
+    if (luaL_newmetatable(L, CSPRITE_PROXY_METATABLE)) {
+        lua_pushcfunction(L, lua_csprite_proxy_index_impl);
+        lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, lua_csprite_proxy_newindex_impl);
+        lua_setfield(L, -2, "__newindex");
     }
     lua_pop(L, 1);
 }

@@ -22,7 +22,8 @@ class Component;
     X(C_Timer,        "C_Timer_Proxy")        \
     X(C_StateMachine, "C_StateMachine_Proxy") \
     X(C_Tilemap,      "C_Tilemap_Proxy")      \
-    X(C_Camera,       "C_Camera_Proxy")
+    X(C_Camera,       "C_Camera_Proxy")        \
+    X(C_Sprite,       "C_Sprite_Proxy")
 
 /// One registry row. `get`/`add` are generated thunks over
 /// Object::getComponent<T> / Object::addComponent<T>, so the string→type mapping

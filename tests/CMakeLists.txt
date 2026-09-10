@@ -277,6 +277,20 @@ target_link_libraries(sprite_test PRIVATE
 )
 add_test(NAME sprite_test COMMAND sprite_test)
 
+# C_Sprite clip system unit test (ADR-0003 §5, Tomodachi #81:
+# clips + per-frame durations + loop modes, polled events, flips, scrub-by-angle)
+add_executable(sprite_clip_test
+    sprite_clip_test.cpp
+)
+target_include_directories(sprite_clip_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(sprite_clip_test PRIVATE
+    enjin2
+)
+add_test(NAME sprite_clip_test COMMAND sprite_clip_test)
+
 # Compositor unit test (LAYER-01, LAYER-02, LAYER-03, LAYER-04)
 add_executable(compositor_test
     compositor_test.cpp
@@ -515,6 +529,21 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME component_registry_test COMMAND component_registry_test)
+
+    # C_Sprite Lua binding test (ADR-0003 §5, #81: obj:add + setClips + play +
+    # hflip/vflip + setFrameForAngle + polled frame/justAdvanced/frameEvent)
+    add_executable(sprite_lua_test
+        sprite_lua_test.cpp
+    )
+    target_include_directories(sprite_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    target_link_libraries(sprite_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME sprite_lua_test COMMAND sprite_lua_test)
 
     # Sprite flipping test (drawSprite flipH/flipV/rotate90)
     add_executable(sprite_flip_test

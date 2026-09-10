@@ -13,6 +13,7 @@ static constexpr const char* CTIMER_PROXY_METATABLE    = "C_Timer_Proxy";
 static constexpr const char* CFSM_PROXY_METATABLE      = "C_StateMachine_Proxy";
 static constexpr const char* CTILEMAP_PROXY_METATABLE  = "C_Tilemap_Proxy";
 static constexpr const char* CCAMERA_PROXY_METATABLE   = "C_Camera_Proxy";
+static constexpr const char* CSPRITE_PROXY_METATABLE   = "C_Sprite_Proxy";
 static constexpr const char* OBJECT_PROXY_METATABLE    = "ObjectProxy";
 
 class Object;
