@@ -61,7 +61,8 @@ static void test_body_and_colliders_surface() {
         "col = engine.scene.colliders()\n"
         "col:addSeg(6, 150, 154, 150, 0.5, 0)\n"     // floor
         "col:addCircle(80, 60, 9, 1.15, 1)\n"       // bouncy bumper
-        "col:addFlipper(55, 150, 30, 0, -1.2, 0.2)\n"
+        "fi = col:addFlipper(55, 150, 30, 0, -1.2, 0.2)\n"
+        "col:addAabb(0, 156, 160, 160, 0.1, 0)\n"        // min/max corners, as in C++
         "total = col:count()\n"
         "nf = col:numFlippers()\n"
         "o = engine.scene.spawn()\n"
@@ -74,8 +75,12 @@ static void test_body_and_colliders_surface() {
         "x_body = body.x\n"
     );
 
-    ASSERT(static_cast<int>(f.num("total")) == 3, "colliders:count() == 3 (seg+circle+flipper)");
+    ASSERT(static_cast<int>(f.num("total")) == 4, "colliders:count() == 4 (seg+circle+flipper+aabb)");
     ASSERT(static_cast<int>(f.num("nf")) == 1, "colliders:numFlippers() == 1");
+    ASSERT(static_cast<int>(f.num("fi")) == 1, "colliders:addFlipper() returns the 1-based index");
+    const AabbCollider& aabb = f.scene.colliders().aabbs.at(0);
+    ASSERT(aabb.minx == 0.0f && aabb.miny == 156.0f && aabb.maxx == 160.0f && aabb.maxy == 160.0f,
+           "Lua addAabb takes min/max corners like ColliderSet::addAabb");
     ASSERT(std::fabs(f.num("r_body") - 4.0) < 1e-4, "C_Body radius set via add params");
     ASSERT(std::fabs(f.num("e_body") - 0.3) < 1e-4, "C_Body restitution set via add params");
     ASSERT(std::fabs(f.num("x_body") - 80.0) < 1e-4, "C_Body x writable");
@@ -152,7 +157,7 @@ static void test_flipper_launch_lua() {
         "body:setGravity(0, 320)\n"
         "for i=1,50 do body:step(1/30) end\n"
         "settleY = body.y\n"
-        "col:setFlipperTarget(1, -1.2)\n"
+        "col:setFlipperActive(1, true)\n"
         "sawFlip = false\n"
         "launched = false\n"
         "for i=1,30 do\n"
@@ -175,9 +180,9 @@ static void test_flipper_launch_lua() {
 
 // ---------------------------------------------------------------------------
 // Tile-derived colliders (ADR-0003 §4): C_Tilemap::buildSolidRects() over SOLID
-// attrs feeds the ColliderSet via addAabb — the maze (tile) half of the two
-// collider sources. Native C++ test of the bridge (the Lua addSolidRects is a
-// thin wrapper over the same path).
+// attrs feeds the ColliderSet via addSolidRects — the maze (tile) half of the
+// two collider sources. Native C++ test of the bridge; the Lua addSolidRects
+// calls the same ColliderSet::addSolidRects.
 // ---------------------------------------------------------------------------
 static void test_tile_derived_colliders() {
     printf("--- BODY-NATIVE-01: tile-derived AABBs from buildSolidRects ---\n");
@@ -206,11 +211,9 @@ static void test_tile_derived_colliders() {
 
     // Feed the rects into a collider set and drop a ball onto the floor.
     ColliderSet set;
-    for (const auto& r : rects) {
-        set.addAabb(static_cast<float>(r.x), static_cast<float>(r.y),
-                    static_cast<float>(r.x + r.width),
-                    static_cast<float>(r.y + r.height), 0.1f, ColliderKinds::Wall);
-    }
+    const size_t added = set.addSolidRects(rects, 0.1f, ColliderKinds::Wall);
+    ASSERT(added == rects.size() && set.aabbs.size() == rects.size(),
+           "addSolidRects appends one AABB per rect");
 
     BodyState body;
     body.x = 40; body.y = 60; body.radius = 4; body.restitution = 0.2f;

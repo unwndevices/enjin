@@ -1003,13 +1003,6 @@ static int lua_body_setSubsteps(lua_State* L) {
     return 0;
 }
 
-// body:setSwept(bool)
-static int lua_body_setSwept(lua_State* L) {
-    CBODY_PROXY_CHECK(L, body);
-    body->setSwept(lua_toboolean(L, 2) != 0);
-    return 0;
-}
-
 // body:setColliders(collidersProxy) — reference the active scene collider set.
 static int lua_body_setColliders(lua_State* L) {
     CBODY_PROXY_CHECK(L, body);
@@ -1042,28 +1035,19 @@ static int lua_body_contact(lua_State* L) {
     return 1;
 }
 
-#undef CBODY_PROXY_CHECK
-
 static int lua_cbody_proxy_index_impl(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ComponentProxy*>(
-        luaL_checkudata(L, 1, CBODY_PROXY_METATABLE));
-    if (!proxy || !proxy->valid || !proxy->component) {
-        luaL_error(L, "component has been destroyed");
-        return 0;
-    }
+    CBODY_PROXY_CHECK(L, body);
     const char* key = lua_tostring(L, 2);
     if (!key) { lua_pushnil(L); return 1; }
 
     if (strcmp(key, "step") == 0)         { lua_pushcfunction(L, lua_body_step); return 1; }
     if (strcmp(key, "setGravity") == 0)   { lua_pushcfunction(L, lua_body_setGravity); return 1; }
     if (strcmp(key, "setSubsteps") == 0)  { lua_pushcfunction(L, lua_body_setSubsteps); return 1; }
-    if (strcmp(key, "setSwept") == 0)     { lua_pushcfunction(L, lua_body_setSwept); return 1; }
     if (strcmp(key, "setColliders") == 0) { lua_pushcfunction(L, lua_body_setColliders); return 1; }
     if (strcmp(key, "numContacts") == 0)  { lua_pushcfunction(L, lua_body_numContacts); return 1; }
     if (strcmp(key, "contact") == 0)      { lua_pushcfunction(L, lua_body_contact); return 1; }
 
-    auto* body = static_cast<enjin2::C_Body*>(proxy->component);
-    if (strcmp(key, "x") == 0)           { lua_pushnumber(L, body->getX()); return 1; }
+    if (strcmp(key, "x") == 0)          { lua_pushnumber(L, body->getX()); return 1; }
     if (strcmp(key, "y") == 0)           { lua_pushnumber(L, body->getY()); return 1; }
     if (strcmp(key, "vx") == 0)          { lua_pushnumber(L, body->getVX()); return 1; }
     if (strcmp(key, "vy") == 0)          { lua_pushnumber(L, body->getVY()); return 1; }
@@ -1078,16 +1062,10 @@ static int lua_cbody_proxy_index_impl(lua_State* L) {
 // __newindex for C_Body_Proxy: writable state so obj:add("C_Body", {radius=4,
 // restitution=.8}) configures through the C++ setters (ADR-0003 §2).
 static int lua_cbody_proxy_newindex_impl(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ComponentProxy*>(
-        luaL_checkudata(L, 1, CBODY_PROXY_METATABLE));
-    if (!proxy || !proxy->valid || !proxy->component) {
-        luaL_error(L, "component has been destroyed");
-        return 0;
-    }
+    CBODY_PROXY_CHECK(L, body);
     const char* key = lua_tostring(L, 2);
     if (!key) return 0;
 
-    auto* body = static_cast<enjin2::C_Body*>(proxy->component);
     const float v = static_cast<float>(luaL_checknumber(L, 3));
     if (strcmp(key, "x") == 0)           body->setPosition(v, body->getY());
     else if (strcmp(key, "y") == 0)      body->setPosition(body->getX(), v);
@@ -1099,67 +1077,72 @@ static int lua_cbody_proxy_newindex_impl(lua_State* L) {
     return 0;
 }
 
+#undef CBODY_PROXY_CHECK
+
 //==============================================================================
 // ColliderSet_Proxy Metatable Implementation (ADR-0003 §4, Tomodachi #80)
 //
 // The scene-level collider resource (engine.scene.colliders()). Non-owning: the
 // userdata wraps the Scene's ColliderSet reference; the scene owns the storage.
+// Every method is a thin call onto the same ColliderSet member a C++ applet
+// uses, with the same argument order (parity by construction, ADR-0003 §2).
 //==============================================================================
+
+#define COLLIDERSET_PROXY_CHECK(L, varname)                                       \
+    auto* (varname) = *static_cast<enjin2::ColliderSet**>(                        \
+        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE))
+
+// Flipper index argument: 1-based from Lua, 0-based into the set.
+static size_t luaFlipperIndex(lua_State* L, int arg, const enjin2::ColliderSet& set,
+                              const char* fn) {
+    const lua_Integer i = luaL_checkinteger(L, arg);
+    if (i < 1 || static_cast<size_t>(i) > set.flippers.size())
+        luaL_error(L, "%s: bad flipper index %d", fn, static_cast<int>(i));
+    return static_cast<size_t>(i - 1);
+}
 
 // colliders:addSeg(ax, ay, bx, by, restitution, kind)
 static int lua_colliders_addSeg(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
-    enjin2::SegCollider s;
-    s.ax = static_cast<float>(luaL_checknumber(L, 2));
-    s.ay = static_cast<float>(luaL_checknumber(L, 3));
-    s.bx = static_cast<float>(luaL_checknumber(L, 4));
-    s.by = static_cast<float>(luaL_checknumber(L, 5));
-    s.restitution = static_cast<float>(luaL_optnumber(L, 6, 0.5f));
-    s.kind = static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall));
-    set->segments.push_back(s);
+    COLLIDERSET_PROXY_CHECK(L, set);
+    set->addSeg(static_cast<float>(luaL_checknumber(L, 2)),
+                static_cast<float>(luaL_checknumber(L, 3)),
+                static_cast<float>(luaL_checknumber(L, 4)),
+                static_cast<float>(luaL_checknumber(L, 5)),
+                static_cast<float>(luaL_optnumber(L, 6, 0.5f)),
+                static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
     return 0;
 }
 
 // colliders:addCircle(cx, cy, r, restitution, kind)
 static int lua_colliders_addCircle(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
-    enjin2::CircleCollider c;
-    c.cx = static_cast<float>(luaL_checknumber(L, 2));
-    c.cy = static_cast<float>(luaL_checknumber(L, 3));
-    c.r  = static_cast<float>(luaL_checknumber(L, 4));
-    c.restitution = static_cast<float>(luaL_optnumber(L, 5, 0.5f));
-    c.kind = static_cast<uint8_t>(luaL_optinteger(L, 6, enjin2::ColliderKinds::Wall));
-    set->circles.push_back(c);
+    COLLIDERSET_PROXY_CHECK(L, set);
+    set->addCircle(static_cast<float>(luaL_checknumber(L, 2)),
+                   static_cast<float>(luaL_checknumber(L, 3)),
+                   static_cast<float>(luaL_checknumber(L, 4)),
+                   static_cast<float>(luaL_optnumber(L, 5, 0.5f)),
+                   static_cast<uint8_t>(luaL_optinteger(L, 6, enjin2::ColliderKinds::Wall)));
     return 0;
 }
 
-// colliders:addAabb(x, y, w, h, restitution, kind)
+// colliders:addAabb(minx, miny, maxx, maxy, restitution, kind) — min/max
+// corners, the same argument order as ColliderSet::addAabb.
 static int lua_colliders_addAabb(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
-    const float x = static_cast<float>(luaL_checknumber(L, 2));
-    const float y = static_cast<float>(luaL_checknumber(L, 3));
-    const float w = static_cast<float>(luaL_checknumber(L, 4));
-    const float h = static_cast<float>(luaL_checknumber(L, 5));
-    const float restitution = static_cast<float>(luaL_optnumber(L, 6, 0.1f));
-    const uint8_t kind = static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall));
-    set->addAabb(x, y, x + w, y + h, restitution, kind);
+    COLLIDERSET_PROXY_CHECK(L, set);
+    set->addAabb(static_cast<float>(luaL_checknumber(L, 2)),
+                 static_cast<float>(luaL_checknumber(L, 3)),
+                 static_cast<float>(luaL_checknumber(L, 4)),
+                 static_cast<float>(luaL_checknumber(L, 5)),
+                 static_cast<float>(luaL_optnumber(L, 6, 0.1f)),
+                 static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
     return 0;
 }
 
-// colliders:addSolidRects(tilemapProxy) -> int
+// colliders:addSolidRects(tilemapProxy, restitution, kind) -> int
 // Derive AABBs from a tilemap's SOLID attrs (ADR-0003 §3 buildSolidRects) and
 // append them to the set — the "tile-derived AABBs" half of §4's two collider
 // sources. Returns the number of rects added.
 static int lua_colliders_addSolidRects(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
+    COLLIDERSET_PROXY_CHECK(L, set);
     auto* tmProxy = static_cast<enjin2::ComponentProxy*>(
         luaL_checkudata(L, 2, CTILEMAP_PROXY_METATABLE));
     if (!tmProxy || !tmProxy->valid || !tmProxy->component) {
@@ -1167,88 +1150,73 @@ static int lua_colliders_addSolidRects(lua_State* L) {
         return 0;
     }
     auto* tm = static_cast<enjin2::C_Tilemap*>(tmProxy->component);
-    const float restitution = static_cast<float>(luaL_optnumber(L, 3, 0.1f));
-    const uint8_t kind = static_cast<uint8_t>(luaL_optinteger(L, 4, enjin2::ColliderKinds::Wall));
-
-    const std::vector<enjin2::Rect> rects = tm->buildSolidRects();
-    for (const auto& r : rects) {
-        set->addAabb(static_cast<float>(r.x), static_cast<float>(r.y),
-                     static_cast<float>(r.x + r.width),
-                     static_cast<float>(r.y + r.height), restitution, kind);
-    }
-    lua_pushinteger(L, static_cast<lua_Integer>(rects.size()));
+    const size_t n = set->addSolidRects(
+        tm->buildSolidRects(),
+        static_cast<float>(luaL_optnumber(L, 3, 0.1f)),
+        static_cast<uint8_t>(luaL_optinteger(L, 4, enjin2::ColliderKinds::Wall)));
+    lua_pushinteger(L, static_cast<lua_Integer>(n));
     return 1;
 }
 
-// colliders:addFlipper(pivotX, pivotY, length, restAngle, activeAngle, restitution)
+// colliders:addFlipper(pivotX, pivotY, length, restAngle, activeAngle, restitution) -> index (1-based)
 static int lua_colliders_addFlipper(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
-    enjin2::Flipper f;
-    f.pivotX = static_cast<float>(luaL_checknumber(L, 2));
-    f.pivotY = static_cast<float>(luaL_checknumber(L, 3));
-    f.length = static_cast<float>(luaL_checknumber(L, 4));
-    f.restAngle   = static_cast<float>(luaL_checknumber(L, 5));
-    f.activeAngle = static_cast<float>(luaL_checknumber(L, 6));
-    f.angle = f.restAngle; f.target = f.restAngle; f.springVel = 0.0f;
-    f.restitution = static_cast<float>(luaL_optnumber(L, 7, 0.2f));
-    f.kind = enjin2::ColliderKinds::Flipper;
-    set->flippers.push_back(f);
+    COLLIDERSET_PROXY_CHECK(L, set);
+    const size_t i = set->addFlipper(static_cast<float>(luaL_checknumber(L, 2)),
+                                     static_cast<float>(luaL_checknumber(L, 3)),
+                                     static_cast<float>(luaL_checknumber(L, 4)),
+                                     static_cast<float>(luaL_checknumber(L, 5)),
+                                     static_cast<float>(luaL_checknumber(L, 6)),
+                                     static_cast<float>(luaL_optnumber(L, 7, 0.2f)));
+    lua_pushinteger(L, static_cast<lua_Integer>(i + 1));
+    return 1;
+}
+
+// colliders:setFlipperActive(i, bool) — spring toward activeAngle / restAngle (1-based index).
+static int lua_colliders_setFlipperActive(lua_State* L) {
+    COLLIDERSET_PROXY_CHECK(L, set);
+    const size_t i = luaFlipperIndex(L, 2, *set, "setFlipperActive");
+    set->setFlipperActive(i, lua_toboolean(L, 3) != 0);
     return 0;
 }
 
-// colliders:setFlipperTarget(i, angle) — drive a flipper (1-based index).
+// colliders:setFlipperTarget(i, angle) — raw spring target (1-based index).
 static int lua_colliders_setFlipperTarget(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
-    const size_t i = static_cast<size_t>(luaL_checkinteger(L, 2));
-    if (i < 1 || i > set->flippers.size()) { luaL_error(L, "setFlipperTarget: bad flipper index"); return 0; }
-    set->flippers[i - 1].target = static_cast<float>(luaL_checknumber(L, 3));
+    COLLIDERSET_PROXY_CHECK(L, set);
+    const size_t i = luaFlipperIndex(L, 2, *set, "setFlipperTarget");
+    set->setFlipperTarget(i, static_cast<float>(luaL_checknumber(L, 3)));
     return 0;
 }
 
 // colliders:setFlipperAngle(i, angle) — snap a flipper's angle (and spring state).
 static int lua_colliders_setFlipperAngle(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
-    const size_t i = static_cast<size_t>(luaL_checkinteger(L, 2));
-    if (i < 1 || i > set->flippers.size()) { luaL_error(L, "setFlipperAngle: bad flipper index"); return 0; }
-    set->flippers[i - 1].angle = static_cast<float>(luaL_checknumber(L, 3));
-    set->flippers[i - 1].target = set->flippers[i - 1].angle;
-    set->flippers[i - 1].springVel = 0.0f;
+    COLLIDERSET_PROXY_CHECK(L, set);
+    const size_t i = luaFlipperIndex(L, 2, *set, "setFlipperAngle");
+    set->setFlipperAngle(i, static_cast<float>(luaL_checknumber(L, 3)));
     return 0;
 }
 
 // colliders:numFlippers() -> int
 static int lua_colliders_numFlippers(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
+    COLLIDERSET_PROXY_CHECK(L, set);
     lua_pushinteger(L, static_cast<lua_Integer>(set->flippers.size()));
     return 1;
 }
 
 // colliders:count() -> total collider count
 static int lua_colliders_count(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
-    lua_pushinteger(L, static_cast<lua_Integer>(
-        set->segments.size() + set->circles.size() + set->aabbs.size() + set->flippers.size()));
+    COLLIDERSET_PROXY_CHECK(L, set);
+    lua_pushinteger(L, static_cast<lua_Integer>(set->count()));
     return 1;
 }
 
 // colliders:clear()
 static int lua_colliders_clear(lua_State* L) {
-    auto** slot = static_cast<enjin2::ColliderSet**>(
-        luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE));
-    enjin2::ColliderSet* set = *slot;
+    COLLIDERSET_PROXY_CHECK(L, set);
     set->clear();
     return 0;
 }
+
+#undef COLLIDERSET_PROXY_CHECK
 
 static int lua_colliderset_proxy_index_impl(lua_State* L) {
     luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE);
@@ -1260,6 +1228,7 @@ static int lua_colliderset_proxy_index_impl(lua_State* L) {
     if (strcmp(key, "addAabb") == 0)         { lua_pushcfunction(L, lua_colliders_addAabb); return 1; }
     if (strcmp(key, "addSolidRects") == 0)   { lua_pushcfunction(L, lua_colliders_addSolidRects); return 1; }
     if (strcmp(key, "addFlipper") == 0)      { lua_pushcfunction(L, lua_colliders_addFlipper); return 1; }
+    if (strcmp(key, "setFlipperActive") == 0){ lua_pushcfunction(L, lua_colliders_setFlipperActive); return 1; }
     if (strcmp(key, "setFlipperTarget") == 0){ lua_pushcfunction(L, lua_colliders_setFlipperTarget); return 1; }
     if (strcmp(key, "setFlipperAngle") == 0) { lua_pushcfunction(L, lua_colliders_setFlipperAngle); return 1; }
     if (strcmp(key, "numFlippers") == 0)     { lua_pushcfunction(L, lua_colliders_numFlippers); return 1; }

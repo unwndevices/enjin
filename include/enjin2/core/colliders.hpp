@@ -16,23 +16,29 @@
  *
  * Contacts are **buffered** — a list the applet polls (`kind / point / normal /
  * relSpeed`); there is deliberately no C++→Lua callback registry (anti-callback
- * stance, §4). Flippers are kinematic segments whose angle is spring-driven and
- * whose angular velocity becomes a surface velocity `ω × r` that imparts the
- * flip impulse (no rigid-body rotation).
+ * stance, §4). Flippers are kinematic segments whose angle is driven by the
+ * ADR-0002 spring integrator (ui/spring.hpp) and whose angular velocity becomes
+ * a surface velocity `ω × r` that imparts the flip impulse (no rigid-body
+ * rotation).
  *
  * Header-only, allocation-light, float math, no Lua dependency — usable from a
  * C++ applet and from the Lua bindings identically (parity by construction).
  */
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <vector>
 
+#include "types.hpp"
+#include "../ui/spring.hpp"
+
 namespace enjin2 {
 
-/// Collider semantic tags. The field is a full `uint8_t` (256 authored kinds),
-/// these are the reserved spatial ones; applets may poll any kind.
+/// Collider semantic tags. The field is a full `uint8_t` (256 authored kinds);
+/// these are the reserved spatial ones, shared with `TileAttr::kind` so tiles and
+/// colliders speak one vocabulary (#54). Applets may poll any kind.
 namespace ColliderKinds {
 constexpr uint8_t Wall    = 0;  ///< Solid wall (pinball rails, maze tiles).
 constexpr uint8_t Bouncy  = 1;  ///< Bumper: score + SFX on contact (from relSpeed).
@@ -52,7 +58,7 @@ struct BodyState {
     float drag{0};        ///< Velocity damping /s (rolling friction).
 };
 
-/// Static line segment (pinball walls; freeform auth e.g. Tiled object layer).
+/// Static line segment (pinball walls; freeform authoring).
 struct SegCollider {
     float ax{0}, ay{0}, bx{0}, by{0};
     float restitution{0.5f};
@@ -76,16 +82,18 @@ struct AabbCollider {
 /**
  * @brief Moving segment = flipper.
  *
- * A segment rotating about `pivot`, its `angle` animated by a damped spring
- * toward `target` (rest/active); `angVel` (rad/s) is read back each frame and
- * turned into a surface velocity at the contact point, which is what imparts
- * the flip impulse. The standard kinematic-mover pinball flipper.
+ * A segment rotating about `pivot`. Its `angle` is animated by the ADR-0002
+ * spring integrator (@ref springIntegrate) toward `target`, which
+ * @ref setActive snaps between `restAngle` and `activeAngle`; `angVel` (rad/s)
+ * is derived each substep and turned into a surface velocity at the contact
+ * point, which is what imparts the flip impulse. The standard kinematic-mover
+ * pinball flipper.
  */
 struct Flipper {
     float pivotX{0}, pivotY{0};
     float length{30};
-    float restAngle{0};    ///< Radians.
-    float activeAngle{0};  ///< Radians.
+    float restAngle{0};    ///< Radians — target when inactive.
+    float activeAngle{0};  ///< Radians — target when active (flipped).
     float angle{0};        ///< Current angle (radians).
     float angVel{0};       ///< Current omega (rad/s), read-only to physics.
     float restitution{0.2f};
@@ -93,9 +101,15 @@ struct Flipper {
     float target{0};       ///< Spring target angle.
     float springVel{0};    ///< Spring derivative state.
 
-    /// Default spring tuning (ADR-0002 Spring — slightly under-damped for a kick).
-    static constexpr float kStiffness = 1400.0f;
-    static constexpr float kDamping   = 2.0f * std::sqrt(kStiffness) * 0.55f;
+    /// Default spring tuning: raw (k, ζ) for @ref springIntegrate — slightly
+    /// under-damped for a kick.
+    static constexpr float kStiffness    = 1400.0f;
+    static constexpr float kDampingRatio = 0.55f;
+
+    /// Drive the flipper: active → spring toward activeAngle, else restAngle.
+    void setActive(bool on) { target = on ? activeAngle : restAngle; }
+    /// Snap the angle (and spring state) — no flight.
+    void snapAngle(float a) { angle = a; target = a; springVel = 0.0f; angVel = 0.0f; }
 };
 
 /// The whole static/kinematic world for one slice.
@@ -115,12 +129,69 @@ struct ColliderSet {
     bool empty() const {
         return segments.empty() && circles.empty() && aabbs.empty() && flippers.empty();
     }
+    size_t count() const {
+        return segments.size() + circles.size() + aabbs.size() + flippers.size();
+    }
 
-    /// Append an AABB collider (min/max corners). The tile-derived shape:
-    /// C_Tilemap::buildSolidRects() (ADR-0003 §3) feeds these from SOLID tiles.
+    // ── Freeform sources ──────────────────────────────────────────────────────
+
+    void addSeg(float ax, float ay, float bx, float by,
+                float restitution = 0.5f, uint8_t kind = ColliderKinds::Wall) {
+        segments.push_back({ax, ay, bx, by, restitution, kind});
+    }
+    void addCircle(float cx, float cy, float r,
+                   float restitution = 0.5f, uint8_t kind = ColliderKinds::Wall) {
+        circles.push_back({cx, cy, r, restitution, kind});
+    }
+    /// Append an AABB collider by its min/max corners.
     void addAabb(float minx, float miny, float maxx, float maxy,
-                 float restitution, uint8_t kind) {
+                 float restitution = 0.1f, uint8_t kind = ColliderKinds::Wall) {
         aabbs.push_back({minx, miny, maxx, maxy, restitution, kind});
+    }
+    /// Append a flipper at rest; returns its index for setFlipperActive().
+    size_t addFlipper(float pivotX, float pivotY, float length,
+                      float restAngle, float activeAngle, float restitution = 0.2f) {
+        Flipper f;
+        f.pivotX = pivotX; f.pivotY = pivotY; f.length = length;
+        f.restAngle = restAngle; f.activeAngle = activeAngle;
+        f.restitution = restitution;
+        f.snapAngle(restAngle);
+        flippers.push_back(f);
+        return flippers.size() - 1;
+    }
+
+    // ── Tile-derived source (ADR-0003 §3 → §4) ────────────────────────────────
+
+    /// Append one AABB per rect from C_Tilemap::buildSolidRects() — the
+    /// tile-derived half of §4's two collider sources. Returns the count added.
+    size_t addSolidRects(const std::vector<Rect>& rects,
+                         float restitution = 0.1f, uint8_t kind = ColliderKinds::Wall) {
+        for (const auto& r : rects) {
+            addAabb(static_cast<float>(r.x), static_cast<float>(r.y),
+                    static_cast<float>(r.x + r.width),
+                    static_cast<float>(r.y + r.height), restitution, kind);
+        }
+        return rects.size();
+    }
+
+    // ── Flipper drive (0-based index; false when out of range) ────────────────
+
+    bool setFlipperActive(size_t i, bool on) {
+        if (i >= flippers.size()) return false;
+        flippers[i].setActive(on);
+        return true;
+    }
+    /// Raw spring target (analogue flippers / tests); setFlipperActive is the
+    /// authored path.
+    bool setFlipperTarget(size_t i, float angle) {
+        if (i >= flippers.size()) return false;
+        flippers[i].target = angle;
+        return true;
+    }
+    bool setFlipperAngle(size_t i, float angle) {
+        if (i >= flippers.size()) return false;
+        flippers[i].snapAngle(angle);
+        return true;
     }
 };
 
@@ -128,7 +199,7 @@ struct ColliderSet {
 /// list each frame (polling) and reacts (e.g. Bouncy → score + SFX from relSpeed).
 struct Contact {
     uint8_t kind{0};   ///< Collider semantic tag (ColliderKinds).
-    float px{0};       ///< Contact point (px).
+    float px{0};       ///< Contact point on the collider surface (px).
     float py{0};
     float nx{0};       ///< Contact normal (unit, points away from collider).
     float ny{0};
@@ -151,6 +222,11 @@ struct SweepHit {
 };
 
 namespace detail {
+
+/// Restitution of a body/collider pair (ADR-0003 §4: max of the two).
+inline float bounce(const BodyState& body, float colliderRestitution) {
+    return std::max(body.restitution, colliderRestitution);
+}
 
 /// Velocity damping (drag = fractional per second, clamped so velocity never
 /// reverses sign).
@@ -291,9 +367,28 @@ inline void flipperSeg(const Flipper& f, float& ax, float& ay, float& bx, float&
     by = f.pivotY + std::sin(f.angle) * f.length;
 }
 
-/// Push the ball out of penetration along the normal, then reflect its velocity
-/// relative to the surface (flipper surfaceVel for movers, 0 for static). This
-/// is the depenetration+impulse step swept alone lacks.
+/// Reflect the body's velocity relative to a surface (moving at sx,sy; 0 for
+/// static) along normal n with restitution e, and buffer the contact at the
+/// surface point (centre − n·radius). Returns false — no impulse, no contact —
+/// when the body is already separating (vn ≥ 0), so a polled relSpeed is
+/// always ≥ 0. Shared by the swept TOI loop and the depenetration pass.
+inline bool impulse(BodyState& body, float nx, float ny, float e,
+                    uint8_t kind, float sx, float sy,
+                    std::vector<Contact>& contacts) {
+    float rvx = body.vx - sx, rvy = body.vy - sy;
+    const float vn = rvx * nx + rvy * ny;
+    if (vn >= 0.0f) return false;
+    rvx -= (1.0f + e) * vn * nx;
+    rvy -= (1.0f + e) * vn * ny;
+    body.vx = rvx + sx;
+    body.vy = rvy + sy;
+    contacts.push_back({kind, body.x - nx * body.radius, body.y - ny * body.radius,
+                        nx, ny, -vn});
+    return true;
+}
+
+/// Push the ball out of penetration along the normal, then apply the impulse.
+/// This is the depenetration+impulse step swept alone lacks.
 inline void resolveContact(BodyState& body, float nx, float ny, float pen, float e,
                            uint8_t kind, float sx, float sy,
                            std::vector<Contact>& contacts) {
@@ -302,15 +397,7 @@ inline void resolveContact(BodyState& body, float nx, float ny, float pen, float
         body.x += nx * pen;
         body.y += ny * pen;
     }
-    float rvx = body.vx - sx, rvy = body.vy - sy;
-    const float vn = rvx * nx + rvy * ny;
-    if (vn < 0.0f) {
-        rvx -= (1.0f + e) * vn * nx;
-        rvy -= (1.0f + e) * vn * ny;
-        body.vx = rvx + sx;
-        body.vy = rvy + sy;
-        contacts.push_back({kind, body.x, body.y, nx, ny, -vn});
-    }
+    impulse(body, nx, ny, e, kind, sx, sy, contacts);
 }
 
 /// Static depenetration pass over the whole set at its current pose (flippers
@@ -325,8 +412,8 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
         if (d < sum) {
             const float nx = d > 1e-6f ? dx / d : 1.0f;
             const float ny = d > 1e-6f ? dy / d : 0.0f;
-            const float e = body.restitution > cc.restitution ? body.restitution : cc.restitution;
-            resolveContact(body, nx, ny, sum - d, e, cc.kind, 0.0f, 0.0f, contacts);
+            resolveContact(body, nx, ny, sum - d, bounce(body, cc.restitution),
+                           cc.kind, 0.0f, 0.0f, contacts);
         }
     }
     for (const auto& s : set.segments) {
@@ -337,8 +424,8 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
         if (d < r) {
             const float nx = d > 1e-6f ? dx / d : 1.0f;
             const float ny = d > 1e-6f ? dy / d : 0.0f;
-            const float e = body.restitution > s.restitution ? body.restitution : s.restitution;
-            resolveContact(body, nx, ny, r - d, e, s.kind, 0.0f, 0.0f, contacts);
+            resolveContact(body, nx, ny, r - d, bounce(body, s.restitution),
+                           s.kind, 0.0f, 0.0f, contacts);
         }
     }
     for (const auto& a : set.aabbs) {
@@ -354,14 +441,14 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
             else if (m == dr) nx = 1.0f;
             else if (m == dt) ny = -1.0f;
             else ny = 1.0f;
-            const float e = body.restitution > a.restitution ? body.restitution : a.restitution;
-            resolveContact(body, nx, ny, m + r, e, a.kind, 0.0f, 0.0f, contacts);
+            resolveContact(body, nx, ny, m + r, bounce(body, a.restitution),
+                           a.kind, 0.0f, 0.0f, contacts);
         } else {
             const float dx = body.x - cx, dy = body.y - cy;
             const float d = std::hypot(dx, dy);
             if (d < r && d > 1e-6f) {
-                const float e = body.restitution > a.restitution ? body.restitution : a.restitution;
-                resolveContact(body, dx / d, dy / d, r - d, e, a.kind, 0.0f, 0.0f, contacts);
+                resolveContact(body, dx / d, dy / d, r - d, bounce(body, a.restitution),
+                               a.kind, 0.0f, 0.0f, contacts);
             }
         }
     }
@@ -377,8 +464,8 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
             const float ny = d > 1e-6f ? dy / d : -1.0f;
             float svx, svy;
             flipperSurfaceVel(f, cx, cy, svx, svy);
-            const float e = body.restitution > f.restitution ? body.restitution : f.restitution;
-            resolveContact(body, nx, ny, r - d, e, f.kind, svx, svy, contacts);
+            resolveContact(body, nx, ny, r - d, bounce(body, f.restitution),
+                           f.kind, svx, svy, contacts);
         }
     }
 }
@@ -393,12 +480,16 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
  * depenetration+impulse pass, then apply drag. Contacts are appended to @p
  * contacts (the caller polls/clears them per frame).
  *
+ * If the TOI budget is exhausted the substep's leftover displacement is dropped:
+ * the ball loses a little travel rather than tunnelling.
+ *
  * @param body      The dynamic body (mutated).
  * @param set       The collider set (flipper angles / springs mutated).
  * @param gx,gy     Gravity acceleration (px/s²).
  * @param frameDt   Full frame time (s).
  * @param substeps  N fixed-dt substeps (default 4).
- * @param swept     true = swept+depenetration; false = naive discrete (tunnels).
+ * @param swept     true = swept+depenetration (the product path); false = naive
+ *                  discrete push-out, kept only so tests can prove it tunnels.
  * @param contacts  Output buffer (appended; caller clears each frame).
  * @param stats     Output health counters.
  */
@@ -408,12 +499,12 @@ inline void stepFrame(BodyState& body, ColliderSet& set,
     const float h = frameDt / static_cast<float>(substeps > 0 ? substeps : 1);
 
     for (int step = 0; step < substeps; ++step) {
-        // 1. spring flipper angles toward target, derive angular velocity
+        // 1. spring flipper angles toward target (ADR-0002 integrator, one
+        //    physics substep = one spring substep), derive angular velocity
         for (auto& f : set.flippers) {
-            const float a = -Flipper::kStiffness * (f.angle - f.target) - Flipper::kDamping * f.springVel;
-            f.springVel += a * h;
             const float prev = f.angle;
-            f.angle += f.springVel * h;
+            springIntegrate(f.angle, f.springVel, f.target,
+                            Flipper::kStiffness, Flipper::kDampingRatio, h, 1);
             f.angVel = (f.angle - prev) / h;
         }
 
@@ -472,7 +563,7 @@ inline void stepFrame(BodyState& body, ColliderSet& set,
                 detail::flipperSeg(f, sax, say, sbx, sby);
                 if (detail::sweepSegment(body.x, body.y, dx, dy, body.radius,
                                          sax, say, sbx, sby, tt, nx, ny))
-                    consider(tt, nx, ny, ColliderKinds::Flipper, f.restitution, &f);
+                    consider(tt, nx, ny, f.kind, f.restitution, &f);
             }
 
             if (!any) {
@@ -487,26 +578,29 @@ inline void stepFrame(BodyState& body, ColliderSet& set,
             const float tAdv = segLen > 1e-9f
                 ? (best.t - SKIN / segLen > 0.0f ? best.t - SKIN / segLen : 0.0f)
                 : 0.0f;
-            const float px = body.x + dx * tAdv;
-            const float py = body.y + dy * tAdv;
-            body.x = px;
-            body.y = py;
+            body.x += dx * tAdv;
+            body.y += dy * tAdv;
 
+            // Surface velocity at the contact point (centre − n·radius), not the
+            // centre: ω × r is measured where the flipper actually touches.
             float sx = 0.0f, sy = 0.0f;
-            if (best.flipper) detail::flipperSurfaceVel(*best.flipper, px, py, sx, sy);
-            float rvx = body.vx - sx, rvy = body.vy - sy;
-            const float vn = rvx * best.nx + rvy * best.ny;
-            if (vn < 0.0f) {
-                // Approaching: reflect and buffer the contact. A separating hit
-                // (vn >= 0) yields no impulse and no contact — the same gate the
-                // depenetration pass applies in resolveContact — so a polled
-                // contact's relSpeed is always >= 0.
-                const float e = body.restitution > best.restitution ? body.restitution : best.restitution;
-                rvx -= (1.0f + e) * vn * best.nx;
-                rvy -= (1.0f + e) * vn * best.ny;
-                body.vx = rvx + sx;
-                body.vy = rvy + sy;
-                contacts.push_back({best.kind, px, py, best.nx, best.ny, -vn});
+            if (best.flipper) {
+                detail::flipperSurfaceVel(*best.flipper,
+                                          body.x - best.nx * body.radius,
+                                          body.y - best.ny * body.radius, sx, sy);
+            }
+            if (!detail::impulse(body, best.nx, best.ny,
+                                 detail::bounce(body, best.restitution),
+                                 best.kind, sx, sy, contacts)) {
+                // Separating hit: only a flipper whose surface is moving away
+                // faster than the ball can produce one, since static sweeps only
+                // report approaching hits. There is nothing to reflect; finish the
+                // substep's motion and let depenetration handle any overlap —
+                // stopping here would park the ball at SKIN and re-hit at t≈0
+                // until the TOI budget ran out.
+                body.x += dx * (1.0f - tAdv);
+                body.y += dy * (1.0f - tAdv);
+                break;
             }
 
             remaining *= 1.0f - best.t;

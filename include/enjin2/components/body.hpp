@@ -10,8 +10,16 @@
  * colliders.hpp) and **buffers** the resolved contacts, which the applet polls
  * (numContacts()/contact(i)) — there is no callback registry.
  *
+ * Stepping is explicit (`step(dt)`), not the Component `update(dt)` hook: the
+ * applet decides where in its frame the physics runs (after input, before
+ * render) and can pause it without disabling the component.
+ *
  * Attach from Lua with `obj:add("C_Body", {radius=4, restitution=.8})`; the
  * sole attach verb (ADR-0003 §2).
+ *
+ * @note The collider reference is non-owning and is not rebound on scene
+ * transitions. A body on a persisted object (`engine.scene.persist`) must call
+ * setColliders() again with the new scene's set; until then step() is a no-op.
  */
 #pragma once
 
@@ -23,10 +31,16 @@ namespace enjin2 {
 
 class C_Body : public Component {
 public:
+    /// Contacts buffered per step before the vector has to grow; one ball
+    /// rarely resolves more than a handful of hits per frame.
+    static constexpr size_t kContactReserve = 8;
+
     explicit C_Body(Object* owner)
         : Component(owner)
         , m_body()
-    {}
+    {
+        m_contacts.reserve(kContactReserve);
+    }
 
     // ── Body state ────────────────────────────────────────────────────────────
 
@@ -57,10 +71,6 @@ public:
     void setSubsteps(int n) { m_substeps = n > 0 ? n : 1; }
     int getSubsteps() const { return m_substeps; }
 
-    /// true = swept + depenetration; false = naive discrete (tunnels).
-    void setSwept(bool s) { m_swept = s; }
-    bool isSwept() const { return m_swept; }
-
     /// Which collider set this body steps against (scene-level resource, non-owning).
     void setColliders(ColliderSet* set) { m_colliders = set; }
     ColliderSet* getColliders() const { return m_colliders; }
@@ -72,7 +82,7 @@ public:
     void step(float dt) {
         m_contacts.clear();
         if (m_colliders == nullptr) return;
-        stepFrame(m_body, *m_colliders, m_gx, m_gy, dt, m_substeps, m_swept,
+        stepFrame(m_body, *m_colliders, m_gx, m_gy, dt, m_substeps, /*swept=*/true,
                   m_contacts, m_stats);
     }
 
@@ -92,7 +102,6 @@ private:
     float m_gx{0.0f};
     float m_gy{320.0f};
     int m_substeps{4};
-    bool m_swept{true};
     ColliderSet* m_colliders{nullptr};
     std::vector<Contact> m_contacts;
     StepStats m_stats;
