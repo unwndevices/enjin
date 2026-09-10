@@ -14,6 +14,8 @@ static constexpr const char* CFSM_PROXY_METATABLE      = "C_StateMachine_Proxy";
 static constexpr const char* CTILEMAP_PROXY_METATABLE  = "C_Tilemap_Proxy";
 static constexpr const char* CCAMERA_PROXY_METATABLE   = "C_Camera_Proxy";
 static constexpr const char* CSPRITE_PROXY_METATABLE   = "C_Sprite_Proxy";
+static constexpr const char* CBODY_PROXY_METATABLE     = "C_Body_Proxy";
+static constexpr const char* COLLIDERSET_PROXY_METATABLE = "ColliderSet_Proxy";
 static constexpr const char* OBJECT_PROXY_METATABLE    = "ObjectProxy";
 
 class Object;
@@ -30,5 +32,11 @@ class Object;
 // proxy does not write are silently ignored.
 int pushComponentGet(lua_State* L, Object* owner, const char* typeName);
 int pushComponentAdd(lua_State* L, Object* owner, const char* typeName, int paramsIdx);
+
+class ColliderSet;
+
+// Wrap a scene's collider set in a ColliderSet userdata (or push nil). Used by
+// the engine.scene.colliders() binding in bindings_engine.cpp (ADR-0003 §4).
+int pushColliderSetProxy(lua_State* L, ColliderSet* set);
 
 } // namespace enjin2

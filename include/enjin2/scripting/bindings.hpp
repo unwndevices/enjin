@@ -867,6 +867,7 @@ private:
     static int lua_engine_scene_find(lua_State* L);
     static int lua_engine_scene_spawn(lua_State* L);
     static int lua_engine_scene_destroy(lua_State* L);
+    static int lua_engine_scene_colliders(lua_State* L);   // ADR-0003 §4, #80
     // Phase 51: PERSIST-01, PERSIST-02, PERSIST-03
     static int lua_engine_scene_persist(lua_State* L);
     static int lua_engine_scene_unpersist(lua_State* L);
