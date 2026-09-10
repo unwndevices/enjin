@@ -48,8 +48,8 @@ struct SpriteSheet {
         : data(d), cellW(cw), cellH(ch), cols(c), rows(r) {}
 
     /// @brief Total number of frames in the sheet (rows * cols)
-    /// @return Frame count
-    uint8_t frameCount() const { return static_cast<uint8_t>(cols * rows); }
+    /// @return Frame count (up to cols*rows; max 255*255 = 65025, fits uint16_t)
+    uint16_t frameCount() const { return static_cast<uint16_t>(cols) * rows; }
 
     /**
      * @brief Convert (row, col) grid position to a linear frame index
@@ -57,8 +57,8 @@ struct SpriteSheet {
      * @param col  Zero-based column index
      * @return     Linear frame index suitable for draw()
      */
-    uint8_t toIndex(uint8_t row, uint8_t col) const {
-        return static_cast<uint8_t>(row * cols + col);
+    uint16_t toIndex(uint8_t row, uint8_t col) const {
+        return static_cast<uint16_t>(row) * cols + col;
     }
 
     /**
@@ -73,7 +73,7 @@ struct SpriteSheet {
      * @param x           Destination X coordinate on the canvas
      * @param y           Destination Y coordinate on the canvas
      */
-    void draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16_t x, int16_t y) const;
+    void draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int16_t x, int16_t y) const;
 
     /**
      * @brief Blit a frame through an index shader (the sprite's silhouette is
@@ -95,7 +95,7 @@ struct SpriteSheet {
      * @param y           Destination Y coordinate on the canvas
      * @param fx          The index shader to apply through the silhouette.
      */
-    void draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16_t x, int16_t y,
+    void draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int16_t x, int16_t y,
               const Effect& fx) const;
 };
 
@@ -105,9 +105,9 @@ struct SpriteSheet {
  * Inline definition kept in the header so that translation units that
  * only include sprite.hpp get the implementation without a separate .cpp.
  */
-inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16_t x, int16_t y) const {
+inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int16_t x, int16_t y) const {
     if (!data || frameIndex >= frameCount()) return;
-    const uint8_t* frame = data + static_cast<uint16_t>(frameIndex) * cellW * cellH;
+    const uint8_t* frame = data + static_cast<uint32_t>(frameIndex) * cellW * cellH;
     for (int16_t fy = 0; fy < static_cast<int16_t>(cellH); ++fy) {
         for (int16_t fx = 0; fx < static_cast<int16_t>(cellW); ++fx) {
             uint8_t px = frame[fy * cellW + fx] & 0x0F;  // lower nibble = palette index
@@ -118,10 +118,10 @@ inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16
     }
 }
 
-inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint8_t frameIndex, int16_t x, int16_t y,
+inline void SpriteSheet::draw(ICanvas<Pixel4>& canvas, uint16_t frameIndex, int16_t x, int16_t y,
                               const Effect& fx) const {
     if (!data || frameIndex >= frameCount()) return;
-    const uint8_t* frame = data + static_cast<uint16_t>(frameIndex) * cellW * cellH;
+    const uint8_t* frame = data + static_cast<uint32_t>(frameIndex) * cellW * cellH;
     for (int16_t fy = 0; fy < static_cast<int16_t>(cellH); ++fy) {
         for (int16_t sx = 0; sx < static_cast<int16_t>(cellW); ++sx) {
             uint8_t px = frame[fy * cellW + sx] & 0x0F;  // lower nibble = palette index

@@ -63,16 +63,16 @@ public:
 
     /** Directly set the current frame. Clamped to valid range [0, frameCount-1].
      *  @param index Frame index to set */
-    void setFrame(uint8_t index) {
-        const uint8_t total = _sheet.frameCount();
+    void setFrame(uint16_t index) {
+        const uint16_t total = _sheet.frameCount();
         if (total == 0) return;
-        _frame = (index >= total) ? static_cast<uint8_t>(total - 1) : index;
+        _frame = (index >= total) ? static_cast<uint16_t>(total - 1) : index;
         _accumSec = 0.0f;
     }
 
     /** Get the current frame index.
      *  @return Current frame index */
-    uint8_t getFrame() const { return _frame; }
+    uint16_t getFrame() const { return _frame; }
 
     /** True when Once mode animation has completed (frozen on last frame).
      *  @return true if animation is done */
@@ -117,13 +117,13 @@ private:
     SpriteSheet _sheet;    ///< Sprite sheet data (value copy, caller owns pixel data lifetime)
     float       _fps;      ///< Frames per second
     float       _accumSec; ///< Accumulated seconds since last frame advance
-    uint8_t     _frame;    ///< Current frame index
+    uint16_t    _frame;    ///< Current frame index
     AnimMode    _mode;    ///< Animation loop mode
     bool        _forward; ///< Ping-pong direction flag (true = forward)
     bool        _done;    ///< True when Once mode has completed
 
     void advanceFrame() {
-        const uint8_t total = _sheet.frameCount();
+        const uint16_t total = _sheet.frameCount();
         if (total == 0) return;
         switch (_mode) {
             case AnimMode::Once:
@@ -134,7 +134,7 @@ private:
                 }
                 break;
             case AnimMode::Loop:
-                _frame = static_cast<uint8_t>((_frame + 1) % total);
+                _frame = static_cast<uint16_t>((_frame + 1) % total);
                 break;
             case AnimMode::PingPong:
                 if (_forward) {

@@ -218,6 +218,8 @@ public:
         if (fileSize != static_cast<uint32_t>(size)) return false;
 
         // --- Directory ---
+        // Guard against uint32 wrap in numChunks * NJN2_DIR_ENTRY_SIZE.
+        if (numChunks > (UINT32_MAX / NJN2_DIR_ENTRY_SIZE)) return false;
         const uint32_t dirBytes = numChunks * NJN2_DIR_ENTRY_SIZE;
         if (size < NJN2_FILE_HEADER_SIZE + dirBytes) return false;
 

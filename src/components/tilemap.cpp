@@ -174,7 +174,7 @@ void C_Tilemap::draw(ICanvas<Pixel4>& canvas) {
             // an off-by-one subtract from the hot rendering path. v1 draws the
             // whole map ignoring band/flip/palbank; band is honored by the
             // compositor restore filter (drawCellBand), not this bulk draw.
-            m_sheet.draw(canvas, static_cast<uint8_t>(tileId), px, py);
+            m_sheet.draw(canvas, tileId, px, py);
         }
     }
 }

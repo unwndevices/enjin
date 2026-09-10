@@ -232,7 +232,7 @@ public:
             return;
         }
         if (m_sheet.data != nullptr) {
-            m_sheet.draw(canvas, static_cast<uint8_t>(tileId), px, py);
+            m_sheet.draw(canvas, tileId, px, py);
         }
     }
 
