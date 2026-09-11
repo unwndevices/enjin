@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <type_traits>
 
 namespace enjin2 {
 
@@ -43,12 +44,12 @@ enum class BorderKind : uint8_t {
  *        slots (a `Style` maps `border`/`borderWidth`/`radius`/`borderKind`/
  *        `shadowDx`/`shadowDy` onto this).
  *
- * Colours are ramp indices: the bevel tones and the shadow tone are *derived*
- * from `color` via `Palette::lighten`/`darken` at draw time, never stored, so
- * re-authoring the palette re-skins the border while its role holds.
+ * On Canvas4, colours are ramp indices: the bevel tones and the shadow tone are
+ * derived from `color` via `Palette::lighten`/`darken` at draw time. Canvas8
+ * keeps the full byte-wide palette index.
  */
 struct BorderStyle {
-    Pixel4 color{Pixel4(15)};        ///< Base stroke colour (a ramp index).
+    uint8_t color{15};               ///< Base stroke colour.
     uint8_t thickness{1};            ///< Stroke thickness in pixels (>=1).
     uint8_t radius{0};               ///< Corner radius (clamped to half the min extent).
     BorderKind kind{BorderKind::Solid};
@@ -133,11 +134,16 @@ void strokeBorder(ICanvas<TPixel>& canvas, const Rect& rect, const BorderStyle& 
     const int maxR = std::min<int>(w, h) / 2;
     if (r > maxR) r = maxR;
 
+    const TPixel baseTone = TPixel(style.color);
+
     // Drop shadow: an offset filled rounded rect painted behind the ring, in the
     // one-step-darker tone. The caller offsets it to track the IMU tilt.
     if (style.kind == BorderKind::DropShadow &&
         (style.shadowDx != 0 || style.shadowDy != 0)) {
-        const TPixel shadowTone = TPixel(Palette::darken(style.color.value));
+        TPixel shadowTone = baseTone;
+        if constexpr (std::is_same_v<TPixel, Pixel4>) {
+            shadowTone = TPixel(Palette::darken(baseTone.value));
+        }
         detail::fillRoundedSpan(
             canvas,
             Rect(static_cast<int16_t>(x + style.shadowDx),
@@ -146,10 +152,14 @@ void strokeBorder(ICanvas<TPixel>& canvas, const Rect& rect, const BorderStyle& 
     }
 
     const bool bevel = (style.kind == BorderKind::Bevel);
-    const TPixel light =
-        bevel ? TPixel(Palette::lighten(style.color.value)) : TPixel(style.color.value);
-    const TPixel dark =
-        bevel ? TPixel(Palette::darken(style.color.value)) : TPixel(style.color.value);
+    TPixel light = baseTone;
+    TPixel dark = baseTone;
+    if constexpr (std::is_same_v<TPixel, Pixel4>) {
+        if (bevel) {
+            light = TPixel(Palette::lighten(baseTone.value));
+            dark = TPixel(Palette::darken(baseTone.value));
+        }
+    }
 
     int16_t arcOuter[256];
     int16_t arcInner[256];

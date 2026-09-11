@@ -50,6 +50,15 @@ static void test_draw_outlines_and_hollow() {
     ASSERT(canvas.getPixel(2, 2) == 0, "drawRoundRect: corner is rounded away");
 }
 
+static void test_canvas8_draw_preserves_full_width_color() {
+    Canvas8<32, 32> canvas;
+    canvas.clear(0);
+    Primitives<uint8_t>::drawRoundRect(canvas, Rect(4, 4, 12, 12), 0, 200);
+
+    ASSERT(canvas.getPixel(10, 4) == 200,
+           "Canvas8 drawRoundRect: full-width colour is preserved");
+}
+
 // A zero radius is not a special-case bug: it must paint exactly the square rect,
 // corners included, matching fillRect/drawRect.
 static void test_zero_radius_degrades_to_square() {
@@ -69,6 +78,7 @@ static void test_zero_radius_degrades_to_square() {
 int main() {
     test_fill_rounds_corners();
     test_draw_outlines_and_hollow();
+    test_canvas8_draw_preserves_full_width_color();
     test_zero_radius_degrades_to_square();
 
     printf("\n%d passed, %d failed\n", passes, failures);

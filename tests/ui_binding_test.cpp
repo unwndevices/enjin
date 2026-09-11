@@ -68,6 +68,22 @@ struct UICanvasFixture {
     double getNum(const char* name)  { return engine.getGlobalNumber(name); }
 };
 
+struct UICanvas8Fixture {
+    LuaEngine engine;
+    LuaBindings bindings;
+    Canvas8<128, 128> canvas;
+    LuaCanvas luaCanvas;
+
+    UICanvas8Fixture() : bindings(&engine), luaCanvas(&canvas) {
+        engine.initialize();
+        bindings.registerAll();
+        bindings.setCanvas(&luaCanvas);
+        canvas.clear(0);
+    }
+
+    LuaResult exec(const char* code) { return engine.executeString(code); }
+};
+
 // ============================================================
 // Test 1: engine.ui table exists and has all four functions
 // ============================================================
@@ -224,6 +240,17 @@ static void test_panel_pixel_verification() {
     ASSERT(edge_tr == 7, "panel edge pixel(9,0) must be border=7");
 }
 
+static void test_canvas8_panel_preserves_full_width_border_color() {
+    UICanvas8Fixture f;
+
+    LuaResult r = f.exec("engine.ui.panel(0, 0, 10, 10, 3, 200)");
+    ASSERT(r.success, "Canvas8 panel draw call must succeed");
+    ASSERT(f.canvas.getPixel(5, 5) == 3,
+           "Canvas8 panel interior must use the background colour");
+    ASSERT(f.canvas.getPixel(5, 0) == 200,
+           "Canvas8 panel border must preserve the full-width colour");
+}
+
 // ============================================================
 // Test 7: label callable without crash
 // ============================================================
@@ -248,6 +275,7 @@ int main() {
     test_statBar_boundary_values();
     test_progressBar_value_clamping();
     test_panel_pixel_verification();
+    test_canvas8_panel_preserves_full_width_border_color();
     test_label_callable();
 
     printf("\n%d/%d passed\n", passes, passes + failures);
