@@ -111,6 +111,7 @@ target_sources(enjin2_ui PRIVATE
     src/ui/system.cpp
     src/ui/theme.cpp
     src/ui/style.cpp
+    src/ui/dialog.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_ui

@@ -373,6 +373,18 @@ target_link_libraries(numerals_test PRIVATE
 )
 add_test(NAME numerals_test COMMAND numerals_test)
 
+# Applet-owned dialog primitive: paginate + type-on + advance FSM (Tomodachi #86).
+add_executable(dialog_test
+    dialog_test.cpp
+)
+target_include_directories(dialog_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(dialog_test PRIVATE
+    enjin2
+)
+add_test(NAME dialog_test COMMAND dialog_test)
+
 # C_Body / ColliderSet physics step (issue #80: PHYS-BODY-01..03)
 # Header-only, no Lua dependency — always built.
 add_executable(body_test
