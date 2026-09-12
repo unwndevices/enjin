@@ -25,6 +25,14 @@ def _cel_chunk(layer_index, cel_w, cel_h, pixels):
     return struct.pack('<IH', len(body) + 6, a2e.CHUNK_CEL) + body
 
 
+def _layer_chunk(name="animation"):
+    name_bytes = name.encode('utf-8')
+    body = struct.pack('<HHHHHHB', 0x01, 0, 0, 0, 0, 0, 255)
+    body += b'\x00' * 3
+    body += struct.pack('<H', len(name_bytes)) + name_bytes
+    return struct.pack('<IH', len(body) + 6, a2e.CHUNK_LAYER) + body
+
+
 def _frame_tags_chunk(tags):
     body = struct.pack('<H', len(tags)) + b'\x00' * 8
     for from_frame, to_frame, loop_dir, name in tags:
@@ -49,7 +57,10 @@ def _frame(chunks, duration):
 def _make_multiframe_aseprite(w, h, frame_pixels, durations, tags):
     frames = []
     # Frame 0 carries the FRAME_TAGS chunk plus its cel.
-    frames.append(_frame([_frame_tags_chunk(tags), _cel_chunk(0, w, h, frame_pixels[0])], durations[0]))
+    frames.append(_frame([
+        _layer_chunk(), _frame_tags_chunk(tags),
+        _cel_chunk(0, w, h, frame_pixels[0]),
+    ], durations[0]))
     for i in range(1, len(frame_pixels)):
         frames.append(_frame([_cel_chunk(0, w, h, frame_pixels[i])], durations[i]))
     body = b"".join(frames)

@@ -278,6 +278,114 @@ static void test_legacy_scrub_resume() {
     ASSERT(s.getFrame() == 0, "scrub: setMode leaves scrub → legacy advance wraps 31→0");
 }
 
+// ============================================================
+// Pause preserves elapsed time; play and setSheet resume sensibly
+// ============================================================
+static void test_pause() {
+    printf("--- pause: freezes and resumes timed playback ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setSheet(dummySheet());
+    s.setFPS(10.0f);
+
+    s.lateUpdate(0.05f);
+    s.setPaused(true);
+    ASSERT(s.isPaused(), "pause: reports paused state");
+    s.lateUpdate(1.0f);
+    ASSERT(s.getFrame() == 0, "pause: lateUpdate does not advance");
+    s.setPaused(false);
+    s.lateUpdate(0.05f);
+    ASSERT(s.getFrame() == 1, "pause: resume preserves partial frame time");
+
+    s.setPaused(true);
+    s.setSheet(dummySheet());
+    ASSERT(!s.isPaused(), "pause: setSheet initializes as playing");
+
+    s.setClips({ makeClip("run", NjnLoopMode::Loop, {
+        {10, 100, 0}, {20, 100, 0} }) });
+    s.setPaused(true);
+    ASSERT(s.play("run"), "pause: play succeeds");
+    ASSERT(!s.isPaused(), "pause: successful play initializes as playing");
+}
+
+// ============================================================
+// Restart re-arms completed clips and legacy Once playback
+// ============================================================
+static void test_restart() {
+    printf("--- restart: active animation returns to first frame ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setSheet(dummySheet());
+    s.setClips({ makeClip("once", NjnLoopMode::Once, {
+        {7, 100, 0}, {19, 100, 0} }) });
+    s.play("once");
+    s.lateUpdate(0.2f);
+    ASSERT(s.isDone(), "restart: Once clip completed");
+    s.setPaused(true);
+    s.restart();
+    ASSERT(s.getFrame() == 7, "restart: clip returns to its first entry");
+    ASSERT(!s.isDone(), "restart: clears Once completion");
+    ASSERT(s.isPaused(), "restart: preserves paused state");
+    ASSERT(std::strcmp(s.currentClip(), "once") == 0, "restart: preserves active clip");
+    s.setPaused(false);
+    s.lateUpdate(0.1f);
+    ASSERT(s.getFrame() == 19, "restart: completed Once clip can play again");
+
+    s.setClips({});
+    s.setMode(AnimMode::Once);
+    s.setFrame(31);
+    s.lateUpdate(0.2f);
+    ASSERT(s.isDone(), "restart: legacy Once completed");
+    s.restart();
+    ASSERT(s.getFrame() == 0, "restart: whole sheet returns to frame zero");
+    ASSERT(!s.isDone(), "restart: re-arms legacy Once mode");
+}
+
+// ============================================================
+// Paused stepping follows clip entries and wraps for inspection
+// ============================================================
+static void test_step_frame() {
+    printf("--- step: clip and sheet inspection wraps ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setSheet(dummySheet());
+    s.setClips({ makeClip("poses", NjnLoopMode::Once, {
+        {4, 100, 0}, {17, 100, 0}, {9, 100, 0} }) });
+    s.play("poses");
+
+    s.stepFrame(1);
+    ASSERT(s.getFrame() == 4, "step: does nothing while playback is running");
+    s.setPaused(true);
+    s.stepFrame(1);
+    ASSERT(s.getFrame() == 17, "step: forward follows non-contiguous clip entries");
+    s.stepFrame(1);
+    ASSERT(s.getFrame() == 9, "step: advances to the final clip entry");
+    s.stepFrame(1);
+    ASSERT(s.getFrame() == 4, "step: forward wraps to first clip entry");
+    s.stepFrame(-1);
+    ASSERT(s.getFrame() == 9, "step: backward wraps to final clip entry");
+
+    s.setClips({});
+    s.setFrame(31);
+    s.stepFrame(1);
+    ASSERT(s.getFrame() == 0, "step: whole-sheet forward wraps");
+    s.stepFrame(-1);
+    ASSERT(s.getFrame() == 31, "step: whole-sheet backward wraps");
+}
+
+static void test_manual_controls_without_sheet() {
+    printf("--- manual controls: empty sheet is safe ---\n");
+    Object obj;
+    C_Sprite s(&obj);
+    s.setPaused(true);
+    s.stepFrame(1);
+    s.stepFrame(-1);
+    s.restart();
+    s.lateUpdate(1.0f);
+    ASSERT(s.getFrame() == 0, "manual: no-sheet controls remain on frame zero");
+    ASSERT(s.isPaused(), "manual: no-sheet controls preserve pause state");
+}
+
 int main() {
     test_clip_loop();
     test_clip_once();
@@ -288,6 +396,10 @@ int main() {
     test_play_frame0_event();
     test_pingpong_two_frame();
     test_legacy_scrub_resume();
+    test_pause();
+    test_restart();
+    test_step_frame();
+    test_manual_controls_without_sheet();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;
