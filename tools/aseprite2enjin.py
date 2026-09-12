@@ -42,6 +42,11 @@ CEL_TYPE_COMPRESSED = 2
 
 TRANSPARENT_INDEX = 15
 
+# Number of opaque Enjin palette indices (0..14); index 15 is transparency.
+# Mirrors enjin_assets.palette.OPAQUE_COUNT without importing numpy into the
+# converter's common stdlib-only path.
+OPAQUE_COLOR_COUNT = 15
+
 # ---------------------------------------------------------------------------
 # Tilemap cell packing — the single source of truth mirrors
 # enjin2/graphics/tilemap_asset.hpp: [band:1 | vflip:1 | hflip:1 | palbank:4 | tileid:9]
@@ -69,18 +74,13 @@ def pack_cell(tile_id, band=0, palbank=0, hflip=False, vflip=False):
 # ASE parser
 # ---------------------------------------------------------------------------
 
-def parse_aseprite(path: str, rgba_output=False):
-    """Parse an .aseprite file.
+def _read_aseprite(path: str, want_palette: bool = False):
+    """Parse an .aseprite into raw frame cels (the shared conversion front end).
 
-    Returns a dict with:
-        width, height         -- canvas size in pixels
-        color_depth           -- 8 (indexed) or 32 (RGBA)
-        frame_count           -- number of animation frames
-        frames                -- indexed bytes by default; RGBA bytes for RGBA
-                                 input or when rgba_output=True
-        frame_format          -- "indexed" or "rgba"
-        layers                -- parsed layer metadata in bottom-to-top order
-        warnings              -- narrowly recovered input issues
+    Returns a dict with canvas metadata, parsed layer metadata, the raw
+    per-frame cel tables (``frame_cels``), per-frame durations, tags, the
+    cumulative indexed palette, and narrow warnings.  Flattening (the flat
+    exporter) and layered assembly are the callers' concern.
     """
     with open(path, 'rb') as f:
         data = f.read()
@@ -166,7 +166,7 @@ def parse_aseprite(path: str, rgba_output=False):
             elif chunk_type == CHUNK_FRAME_TAGS:
                 tags.extend(_parse_frame_tags(data, chunk_data_offset, chunk_body_size))
             elif (chunk_type == CHUNK_PALETTE
-                  and color_depth == COLOR_DEPTH_INDEXED and rgba_output):
+                  and color_depth == COLOR_DEPTH_INDEXED and want_palette):
                 _parse_palette_update(data, chunk_data_offset, chunk_body_size, palette)
 
             chunk_offset += chunk_size
@@ -178,11 +178,44 @@ def parse_aseprite(path: str, rgba_output=False):
         durations.append(frame_duration)
         offset = frame_end
 
-    _validate_layers(layers)
     for frame_idx, cels in enumerate(frame_cels):
         unknown = set(cels) - set(range(len(layers)))
         if unknown:
             raise ValueError(f"Frame {frame_idx} references unknown layer {min(unknown)}")
+
+    return {
+        'width':       width,
+        'height':      height,
+        'color_depth': color_depth,
+        'transparent_index': transparent_index,
+        'frame_count': frame_count,
+        'frame_cels':  frame_cels,
+        'frame_palettes': frame_palettes,
+        'durations':   durations,
+        'tags':        tags,
+        'layers':      layers,
+        'warnings':    warnings,
+    }
+
+
+def parse_aseprite(path: str, rgba_output=False):
+    """Parse an .aseprite file and flatten it to full-canvas frames.
+
+    Returns a dict with:
+        width, height         -- canvas size in pixels
+        color_depth           -- 8 (indexed) or 32 (RGBA)
+        frame_count           -- number of animation frames
+        frames                -- indexed bytes by default; RGBA bytes for RGBA
+                                 input or when rgba_output=True
+        frame_format          -- "indexed" or "rgba"
+        layers                -- parsed layer metadata in bottom-to-top order
+        warnings              -- narrowly recovered input issues
+    """
+    raw = _read_aseprite(path, want_palette=rgba_output)
+    color_depth = raw['color_depth']
+    layers = raw['layers']
+    frame_cels = raw['frame_cels']
+    _validate_layers(layers)
 
     if color_depth == COLOR_DEPTH_INDEXED and not rgba_output:
         has_layer_opacity = any(
@@ -199,26 +232,36 @@ def parse_aseprite(path: str, rgba_output=False):
 
     output_rgba = color_depth == COLOR_DEPTH_RGBA or rgba_output
     frames = []
-    for frame_idx in range(frame_count):
+    for frame_idx in range(raw['frame_count']):
         frames.append(_flatten_frame(
-            frame_idx, frame_cels, layers, width, height, color_depth,
-            transparent_index, output_rgba,
-            frame_palettes[frame_idx] if color_depth == COLOR_DEPTH_INDEXED else None,
+            frame_idx, frame_cels, layers, raw['width'], raw['height'], color_depth,
+            raw['transparent_index'], output_rgba,
+            raw['frame_palettes'][frame_idx] if color_depth == COLOR_DEPTH_INDEXED else None,
         ))
 
     return {
-        'width':       width,
-        'height':      height,
+        'width':       raw['width'],
+        'height':      raw['height'],
         'color_depth': color_depth,
         'frame_format': 'rgba' if output_rgba else 'indexed',
-        'transparent_index': transparent_index,
+        'transparent_index': raw['transparent_index'],
         'frame_count': len(frames),
         'frames':      frames,
-        'durations':   durations,
-        'tags':        tags,
+        'durations':   raw['durations'],
+        'tags':        raw['tags'],
         'layers':      layers,
-        'warnings':    warnings,
+        'warnings':    raw['warnings'],
     }
+
+
+def parse_aseprite_layered(path: str):
+    """Parse an .aseprite preserving raw per-frame cels for ``--layered``.
+
+    Unlike :func:`parse_aseprite`, this neither flattens nor rejects layer/cel
+    opacity; :func:`build_layered_asset` performs the layered path's own precise
+    validation.
+    """
+    return _read_aseprite(path)
 
 
 def _parse_palette_update(data, offset, body_size, palette):
@@ -882,6 +925,354 @@ def _run_sprite_v2(args, input_path):
 
 
 # ---------------------------------------------------------------------------
+# Layered sprite (.njn v2 layered chunks, issue #94)
+# ---------------------------------------------------------------------------
+
+def _clip_cel_pixels(pixels, cel_x, cel_y, cel_w, cel_h,
+                     canvas_w, canvas_h, bytes_per_pixel):
+    """Clip a cel to the authored canvas, returning the in-canvas rectangle.
+
+    Returns ``(w, h, pixels, origin_x, origin_y)`` with the origin in canvas
+    coordinates, or ``None`` when the cel lies wholly outside the canvas.
+    Validation and bounds operate on this region, so off-canvas artwork never
+    inflates storage, rejects a colour, or moves a part.
+    """
+    x0 = max(0, cel_x)
+    y0 = max(0, cel_y)
+    x1 = min(canvas_w, cel_x + cel_w)
+    y1 = min(canvas_h, cel_y + cel_h)
+    if x1 <= x0 or y1 <= y0:
+        return None
+
+    w = x1 - x0
+    h = y1 - y0
+    src_x = x0 - cel_x
+    src_y = y0 - cel_y
+    out = bytearray(w * h * bytes_per_pixel)
+    for row in range(h):
+        src = ((src_y + row) * cel_w + src_x) * bytes_per_pixel
+        dst = row * w * bytes_per_pixel
+        out[dst:dst + w * bytes_per_pixel] = pixels[src:src + w * bytes_per_pixel]
+    return w, h, bytes(out), x0, y0
+
+
+def _rgba_palette_lookup(parsed, visible, target_palette, canvas_w, canvas_h):
+    """Validate in-canvas RGBA pixels against a target palette.
+
+    Every painted pixel must be binary-alpha and exactly match one of the 15
+    opaque target colours.  Absent colours are collected and reported together
+    so an author can fix the palette in one pass; no quantisation is performed.
+    Off-canvas pixels are clipped away first and never influence validation.
+    """
+    palette = [tuple(int(channel) & 0xFF for channel in entry[:3])
+               for entry in target_palette]
+    if len(palette) != OPAQUE_COLOR_COUNT:
+        raise ValueError(
+            f"target palette must have {OPAQUE_COLOR_COUNT} opaque colours, "
+            f"got {len(palette)}"
+        )
+    lookup = {}
+    for index, rgb in enumerate(palette):
+        lookup.setdefault(rgb, index)
+
+    missing = set()
+    for frame_idx, _cels in enumerate(parsed['frame_cels']):
+        for layer in visible:
+            cel = _resolve_cel(frame_idx, layer['index'], parsed['frame_cels'])
+            if cel is None:
+                continue
+            clipped = _clip_cel_pixels(
+                cel['pixels'], cel['x'], cel['y'], cel['width'], cel['height'],
+                canvas_w, canvas_h, 4,
+            )
+            if clipped is None:
+                continue
+            pixels = clipped[2]
+            for pos in range(0, len(pixels), 4):
+                r, g, b, alpha = pixels[pos:pos + 4]
+                if alpha == 0:
+                    continue
+                if alpha != 255:
+                    raise ValueError(
+                        f"Partially transparent pixel (alpha {alpha}) on layer "
+                        f"{layer['name']!r} in frame {frame_idx}; only binary "
+                        "alpha is supported"
+                    )
+                if (r, g, b) not in lookup:
+                    missing.add((r, g, b))
+    if missing:
+        listing = ", ".join(
+            "#%02X%02X%02X" % color for color in sorted(missing)
+        )
+        raise ValueError(
+            f"RGBA source colours absent from target palette: {listing}; "
+            "provide a palette containing every opaque source colour"
+        )
+    return lookup
+
+
+def _cel_to_indices(pixels, color_depth, source_transparent_index, palette_lookup):
+    """Map clipped cel pixels to canonical enjin indices (15 = transparent)."""
+    if color_depth == COLOR_DEPTH_INDEXED:
+        return bytes(
+            _remap_indexed_pixel(pixel, source_transparent_index)
+            for pixel in pixels
+        )
+    out = bytearray(len(pixels) // 4)
+    for pos in range(0, len(pixels), 4):
+        if pixels[pos + 3] == 0:
+            out[pos // 4] = TRANSPARENT_INDEX
+        else:
+            out[pos // 4] = palette_lookup[
+                (pixels[pos], pixels[pos + 1], pixels[pos + 2])
+            ]
+    return bytes(out)
+
+
+def _crop_indices(indices, w, h):
+    """Tight-crop an already-clipped index image to its non-transparent bounds.
+
+    Returns ``(min_x, min_y, w, h, pixels)`` or ``None`` when fully transparent.
+    """
+    min_x = min_y = None
+    max_x = max_y = -1
+    for row in range(h):
+        row_base = row * w
+        for col in range(w):
+            if indices[row_base + col] == TRANSPARENT_INDEX:
+                continue
+            if min_x is None:
+                min_x, min_y = col, row
+            else:
+                min_x = min(min_x, col)
+                min_y = min(min_y, row)
+            max_x = max(max_x, col)
+            max_y = max(max_y, row)
+    if min_x is None:
+        return None
+
+    crop_w = max_x - min_x + 1
+    crop_h = max_y - min_y + 1
+    cropped = bytearray(crop_w * crop_h)
+    for row in range(crop_h):
+        src = (min_y + row) * w + min_x
+        cropped[row * crop_w:(row + 1) * crop_w] = indices[src:src + crop_w]
+    return min_x, min_y, crop_w, crop_h, bytes(cropped)
+
+
+def _layered_clips(tags, durations, num_frames):
+    """Authored tag clips, or a looping ``default`` clip over every frame.
+
+    A tagged document whose tags all clamp to nothing is treated as untagged,
+    so every layered asset remains immediately playable.
+    """
+    if tags:
+        clips = build_clips_from_tags(tags, durations, num_frames)
+        if clips:
+            return clips
+    return [_emit.Clip(
+        name="default",
+        loop_mode=_emit.LOOP_LOOP,
+        frames=[
+            (frame_idx, durations[frame_idx] if frame_idx < len(durations) else 100, 0)
+            for frame_idx in range(num_frames)
+        ],
+    )]
+
+
+def build_layered_asset(parsed, target_palette=None):
+    """Assemble an ``emit.Layered`` asset and inspection summary from raw cels.
+
+    ``parsed`` is the output of :func:`parse_aseprite_layered`.  ``target_palette``
+    is the ``OPAQUE_COLOR_COUNT``-entry ``(r, g, b)`` list required for RGBA
+    sources and ignored for indexed ones.  Raises ``ValueError`` for any source
+    feature the layered authoring contract rejects.
+    """
+    color_depth = parsed['color_depth']
+    layers = parsed['layers']
+    frame_cels = parsed['frame_cels']
+    num_frames = parsed['frame_count']
+    canvas_w = parsed['width']
+    canvas_h = parsed['height']
+
+    visible = [layer for layer in layers if layer['visible']]
+    ignored_layers = [
+        layer['name'] or f"layer{layer['index']}"
+        for layer in layers if not layer['visible']
+    ]
+    if not visible:
+        raise ValueError("no visible layers to export as sprite parts")
+
+    _validate_layers(visible)
+    for layer in visible:
+        if layer['opacity'] != 255:
+            raise ValueError(
+                f"Unsupported layer opacity {layer['opacity']} on layer "
+                f"{layer['name']!r}; only 255 is supported"
+            )
+
+    palette_lookup = None
+    if color_depth == COLOR_DEPTH_RGBA:
+        if target_palette is None:
+            raise ValueError(
+                "RGBA sources require an explicit target palette (--palette)"
+            )
+        palette_lookup = _rgba_palette_lookup(
+            parsed, visible, target_palette, canvas_w, canvas_h
+        )
+
+    resolved = [[None] * len(visible) for _ in range(num_frames)]
+    linked_refs = 0
+    for frame_idx in range(num_frames):
+        raw_cels = frame_cels[frame_idx]
+        for part_index, layer in enumerate(visible):
+            layer_index = layer['index']
+            raw_cel = raw_cels.get(layer_index)
+            if raw_cel is not None and raw_cel['type'] == CEL_TYPE_LINKED:
+                linked_refs += 1
+            cel = _resolve_cel(frame_idx, layer_index, frame_cels)
+            if cel is None:
+                continue
+            if cel['z_index'] != 0:
+                raise ValueError(
+                    f"Unsupported nonzero cel z-index {cel['z_index']} on layer "
+                    f"{layer['name']!r} in frame {frame_idx}"
+                )
+            if cel['opacity'] != 255:
+                raise ValueError(
+                    f"Unsupported cel opacity {cel['opacity']} on layer "
+                    f"{layer['name']!r} in frame {frame_idx}; only 255 is supported"
+                )
+            resolved[frame_idx][part_index] = cel
+
+    images = []
+    refs = []
+    image_keys = {}
+    reused_refs = 0
+    for frame_idx in range(num_frames):
+        for part_index, layer in enumerate(visible):
+            cel = resolved[frame_idx][part_index]
+            if cel is None:
+                refs.append((_emit.LAYERED_INVISIBLE, 0, 0))
+                continue
+            bytes_per_pixel = 1 if color_depth == COLOR_DEPTH_INDEXED else 4
+            clipped = _clip_cel_pixels(
+                cel['pixels'], cel['x'], cel['y'], cel['width'], cel['height'],
+                canvas_w, canvas_h, bytes_per_pixel,
+            )
+            if clipped is None:
+                refs.append((_emit.LAYERED_INVISIBLE, 0, 0))
+                continue
+            clip_w, clip_h, clipped_pixels, origin_x, origin_y = clipped
+            indices = _cel_to_indices(
+                clipped_pixels, color_depth, parsed['transparent_index'],
+                palette_lookup,
+            )
+            crop = _crop_indices(indices, clip_w, clip_h)
+            if crop is None:
+                refs.append((_emit.LAYERED_INVISIBLE, 0, 0))
+                continue
+            min_x, min_y, w, h, cropped = crop
+            by_layer = image_keys.setdefault(part_index, {})
+            image_index = by_layer.get((w, h, cropped))
+            if image_index is None:
+                image_index = len(images)
+                images.append(_emit.PartImage(w, h, cropped))
+                by_layer[(w, h, cropped)] = image_index
+            else:
+                reused_refs += 1
+            refs.append((image_index, origin_x + min_x, origin_y + min_y))
+
+    if not images:
+        raise ValueError("no visible artwork to export: every cel is empty")
+
+    parts = [layer['name'] or f"part{layer['index']}" for layer in visible]
+    durations = list(parsed['durations'])
+    clips = _layered_clips(parsed['tags'], durations, num_frames)
+
+    asset = _emit.Layered(
+        canvas_w=canvas_w,
+        canvas_h=canvas_h,
+        images=images,
+        parts=parts,
+        refs=refs,
+        durations=durations,
+        clips=clips,
+    )
+    summary = {
+        'canvas_w': canvas_w,
+        'canvas_h': canvas_h,
+        'parts': parts,
+        'num_frames': num_frames,
+        'durations': durations,
+        'clips': [(clip.name, len(clip.frames), clip.loop_mode) for clip in clips],
+        'ignored_layers': ignored_layers,
+        'num_images': len(images),
+        'pool_pixels': sum(image.w * image.h for image in images),
+        'linked_refs': linked_refs,
+        'reused_refs': reused_refs,
+    }
+    return asset, summary
+
+
+def format_layered_summary(summary):
+    """Render the ``--layered`` inspection summary for the CLI."""
+    clip_text = ', '.join(
+        f"{name} ({count} frames)" for name, count, _loop in summary['clips']
+    ) or 'none'
+    ignored = summary['ignored_layers']
+    lines = [
+        f"Layered export: {summary['canvas_w']}x{summary['canvas_h']} canvas, "
+        f"{len(summary['parts'])} parts, {summary['num_frames']} frames, "
+        f"{summary['num_images']} images",
+        f"  parts   : {', '.join(summary['parts']) or 'none'}",
+        f"  clips   : {clip_text}",
+        f"  ignored : {', '.join(ignored) if ignored else 'none'}",
+        f"  reuse   : {summary['linked_refs']} linked refs, "
+        f"{summary['reused_refs']} duplicate refs, {summary['num_images']} images "
+        f"({summary['pool_pixels']} px)",
+        f"  storage : {summary.get('storage_bytes', 0)} bytes (.njn)",
+    ]
+    return "\n".join(lines)
+
+
+def _load_target_palette(spec):
+    """Load a 15-colour target palette from a .gpl path or tools/palettes name."""
+    from enjin_assets import palette as palette_mod
+    if os.path.isfile(spec):
+        path = spec
+    else:
+        path = os.path.join(
+            palette_mod.PALETTES_DIR,
+            spec if spec.endswith('.gpl') else spec + '.gpl',
+        )
+        if not os.path.isfile(path):
+            raise ValueError(f"target palette not found: {spec!r}")
+    loaded = palette_mod.load_gpl(path)
+    return [tuple(int(channel) for channel in rgb) for rgb in loaded.rgb.tolist()]
+
+
+def _run_layered(args, input_path):
+    """Layered authoring path: emit a .njn v2 layered asset + inspection summary."""
+    try:
+        parsed = parse_aseprite_layered(input_path)
+        target_palette = _load_target_palette(args.palette) if args.palette else None
+        asset, summary = build_layered_asset(parsed, target_palette)
+        data = _emit.build_njn_layered(asset)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    summary['storage_bytes'] = len(data)
+
+    out_path = args.output or (os.path.splitext(input_path)[0] + ".njn")
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    with open(out_path, 'wb') as f:
+        f.write(data)
+    print(f"Written: {out_path}  ({len(data)} bytes, .njn v2 layered)")
+    print(format_layered_summary(summary))
+
+
+# ---------------------------------------------------------------------------
 # Grid / layout helpers
 # ---------------------------------------------------------------------------
 
@@ -1063,6 +1454,13 @@ def main():
     parser.add_argument("--v2", action="store_true",
                         help="Emit a .njn v2 container sheet (META+PIXL, plus a CLIP "
                              "chunk built from Aseprite frame tags) instead of a C header")
+    parser.add_argument("--layered", action="store_true",
+                        help="Emit a .njn v2 layered sprite: cropped/deduplicated "
+                             "source-layer parts, frame-part references, durations, "
+                             "and clips, plus an inspection summary")
+    parser.add_argument("--palette", default=None,
+                        help="Target Enjin palette (.gpl path or tools/palettes name) "
+                             "required for RGBA layered sources")
 
     args = parser.parse_args()
 
@@ -1070,6 +1468,10 @@ def main():
     if not os.path.isfile(input_path):
         print(f"Error: file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
+
+    if args.layered:
+        _run_layered(args, input_path)
+        return
 
     if args.tilemap:
         _run_tilemap(args, input_path)
