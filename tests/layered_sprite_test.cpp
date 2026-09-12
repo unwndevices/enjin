@@ -28,6 +28,8 @@
  *   LAYSP-22  An untagged asset gets an enumerable looping default clip.
  *   LAYSP-23  Two instances share one asset's pixels; position/state independent.
  *   LAYSP-24  A store-retained asset survives free() while a sprite is bound.
+ *   LAYSP-25  Packed and unpacked store assets render identical pixels across
+ *            every frame and flip combination.
  */
 
 #include <enjin2/graphics/asset_arena.hpp>
@@ -648,6 +650,95 @@ static void test_store_lifetime() {
     ASSERT(store.assetCount() == 0, "LAYSP-24: slot reclaimed after last release");
 }
 
+// ---------------------------------------------------------------------------
+// LAYSP-25: packed and unpacked store assets render identical pixels
+// ---------------------------------------------------------------------------
+static void test_storage_parity() {
+    printf("--- LAYSP-25: packed/unpacked render parity ---\n");
+
+    NjnLayered l;
+    l.canvasW = 6;
+    l.canvasH = 6;
+    const std::vector<std::vector<uint8_t>> src = {
+        {1, 2, 3, 4}, {5, 6, 7, 8}, {9, 15, 15, 9}, {10}};
+    const uint16_t dims[4][2] = {{2, 2}, {2, 2}, {2, 2}, {1, 1}};
+    for (int i = 0; i < 4; ++i) {
+        NjnPartImage img;
+        img.w = dims[i][0];
+        img.h = dims[i][1];
+        img.pixels = src[i];
+        l.images.push_back(std::move(img));
+    }
+    for (const char* name : {"base", "over", "spark"}) {
+        NjnPart p;
+        std::memset(p.name, 0, sizeof(p.name));
+        std::strncpy(p.name, name, sizeof(p.name) - 1);
+        l.parts.push_back(p);
+    }
+    l.refs = {
+        {0, 0, 0}, {1, 1, 1}, {NJN2_LAYERED_INVISIBLE, 0, 0},
+        {0, 0, 0}, {1, 1, 1}, {2, 4, 2},
+        {0, -1, 2}, {NJN2_LAYERED_INVISIBLE, 0, 0}, {NJN2_LAYERED_INVISIBLE, 0, 0}};
+    l.durations = {100, 100, 100};
+    NjnClip clip;
+    std::memset(clip.name, 0, sizeof(clip.name));
+    std::memcpy(clip.name, "default", 7);
+    clip.loopMode = NjnLoopMode::Loop;
+    clip.frames = {{0, 100, 0}, {1, 100, 0}, {2, 100, 0}};
+    l.clips.push_back(std::move(clip));
+
+    NjnV2Writer writer;
+    njn2WriteLayered(writer, l);
+    std::vector<uint8_t> bytes;
+    writer.finalise(bytes);
+
+    AssetArena unpackedArena;
+    unpackedArena.allocateBacking(64 * 1024);
+    LayeredAssetStore unpacked(unpackedArena, PixelStorage::Unpacked8);
+    AssetArena packedArena;
+    packedArena.allocateBacking(64 * 1024);
+    LayeredAssetStore packed(packedArena, PixelStorage::Packed4bpp);
+
+    const auto hu = unpacked.loadFromMemory(bytes.data(), bytes.size());
+    const auto hp = packed.loadFromMemory(bytes.data(), bytes.size());
+    ASSERT(hu != LayeredAssetStore::INVALID_HANDLE &&
+           hp != LayeredAssetStore::INVALID_HANDLE, "LAYSP-25: both load");
+
+    LayeredSprite su;
+    LayeredSprite sp;
+    su.bind(unpacked.get(hu));
+    sp.bind(packed.get(hp));
+
+    for (uint16_t fr = 0; fr < 3; ++fr) {
+        for (int flip = 0; flip < 4; ++flip) {
+            const bool h = (flip & 1) != 0;
+            const bool v = (flip & 2) != 0;
+            su.setFrame(fr);
+            sp.setFrame(fr);
+            su.setFlip(h, v);
+            sp.setFlip(h, v);
+            su.setPosition(1, 1);
+            sp.setPosition(1, 1);
+            Canvas4<CW, CH> cu;
+            Canvas4<CW, CH> cp;
+            cu.clear(Pixel4(15));
+            cp.clear(Pixel4(15));
+            su.draw(cu);
+            sp.draw(cp);
+            bool same = true;
+            for (uint16_t y = 0; y < CH && same; ++y) {
+                for (uint16_t x = 0; x < CW; ++x) {
+                    if (cu.getPixel(x, y).value != cp.getPixel(x, y).value) {
+                        same = false;
+                        break;
+                    }
+                }
+            }
+            ASSERT(same, "LAYSP-25: packed frame/flip matches unpacked");
+        }
+    }
+}
+
 int main() {
     printf("=== layered_sprite_test: retained layered sprite (#96) ===\n");
     test_reconstruction();
@@ -658,6 +749,7 @@ int main() {
     test_default_clip();
     test_sharing();
     test_store_lifetime();
+    test_storage_parity();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
     return failures == 0 ? 0 : 1;

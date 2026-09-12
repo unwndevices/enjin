@@ -24,6 +24,12 @@
  *   LAYLA-15  A truncated record is rejected atomically.
  *   LAYLA-16  A malformed directory entry is rejected atomically.
  *   LAYLA-17  The arena rejects a byte count that would overflow its bounds.
+ *   LAYLA-18  Instrumentation reports asset count, current/peak bytes, load
+ *            count, allocation failures and injected load time; reset clears
+ *            the counters without touching the registry or arena.
+ *   LAYLA-19  Packed 4bpp and unpacked 8-bit arena representations decode to
+ *            identical palette indices; packed uses fewer bytes.
+ *   LAYLA-20  A default store uses the frozen default representation.
  */
 
 #include <enjin2/graphics/asset_arena.hpp>
@@ -529,6 +535,139 @@ static void test_LAYLA_17_arena_overflow() {
     ASSERT(arena.used() == 0, "LAYLA-17: failed allocate does not advance");
 }
 
+// ---------------------------------------------------------------------------
+// LAYLA-18: instrumentation reports counts, bytes, failures and load time
+// ---------------------------------------------------------------------------
+static uint64_t g_fakeMicros = 0;
+static uint64_t fakeClockStep100() {
+    g_fakeMicros += 100;
+    return g_fakeMicros;
+}
+
+static void test_LAYLA_18_metrics() {
+    printf("--- LAYLA-18: instrumentation metrics ---\n");
+    AssetArena arena;
+    arena.allocateBacking(256 * 1024);
+    LayeredAssetStore store(arena);
+    store.setClock(&fakeClockStep100);
+    g_fakeMicros = 0;
+
+    const std::vector<uint8_t> buf = writeLayered(makeFixture());
+    const auto h = store.loadFromMemory(buf.data(), buf.size());
+    ASSERT(h != LayeredAssetStore::INVALID_HANDLE, "LAYLA-18: load ok");
+
+    LayeredAssetMetrics m = store.metrics();
+    ASSERT(m.assetCount == 1, "LAYLA-18: asset count reported");
+    ASSERT(m.currentBytes == arena.used() && m.currentBytes > 0,
+           "LAYLA-18: current bytes mirror arena");
+    ASSERT(m.peakBytes >= m.currentBytes, "LAYLA-18: peak >= current");
+    ASSERT(m.loadCount == 1, "LAYLA-18: load count reported");
+    ASSERT(m.allocationFailures == 0, "LAYLA-18: no failure reported");
+    ASSERT(m.loadMicrosTotal == 100, "LAYLA-18: injected load time reported");
+    ASSERT(m.loadMicrosMax == 100, "LAYLA-18: injected max load time reported");
+
+    // A second load accumulates total and keeps the max.
+    const auto h2 = store.loadFromMemory(buf.data(), buf.size());
+    ASSERT(h2 != LayeredAssetStore::INVALID_HANDLE, "LAYLA-18: second load ok");
+    m = store.metrics();
+    ASSERT(m.loadCount == 2, "LAYLA-18: two loads counted");
+    ASSERT(m.loadMicrosTotal == 200, "LAYLA-18: load time accumulates");
+    ASSERT(m.loadMicrosMax == 100, "LAYLA-18: max stays the longest load");
+
+    // resetMetrics clears counters, never arena bytes.
+    store.resetMetrics();
+    m = store.metrics();
+    ASSERT(m.loadCount == 0 && m.loadMicrosTotal == 0 && m.loadMicrosMax == 0,
+           "LAYLA-18: reset clears load metrics");
+    ASSERT(m.assetCount == 2 && m.currentBytes > 0,
+           "LAYLA-18: reset leaves registry and arena alone");
+
+    // A null clock disables timing but not loading.
+    store.setClock(nullptr);
+    const auto h3 = store.loadFromMemory(buf.data(), buf.size());
+    ASSERT(h3 != LayeredAssetStore::INVALID_HANDLE, "LAYLA-18: load without clock");
+    ASSERT(store.metrics().loadMicrosTotal == 0,
+           "LAYLA-18: disabled clock reports zero time");
+}
+
+// ---------------------------------------------------------------------------
+// LAYLA-19: packed and unpacked arena representations decode identically
+// ---------------------------------------------------------------------------
+static NjnLayered makeStorageFixture() {
+    // The 2x2 fixture's images are smaller than the 32-byte arena alignment,
+    // so add one large image whose packed form (128 B) is half its unpacked
+    // form (256 B) and both exceed one alignment quantum — the case the
+    // measurement actually cares about.
+    NjnLayered l = makeFixture();
+    NjnPartImage big;
+    big.w = 16;
+    big.h = 16;
+    big.pixels.resize(16 * 16);
+    for (size_t i = 0; i < big.pixels.size(); ++i) {
+        big.pixels[i] = static_cast<uint8_t>(i % 15);
+    }
+    l.images.push_back(std::move(big));
+    return l;
+}
+
+static void test_LAYLA_19_storage_paths() {
+    printf("--- LAYLA-19: packed vs unpacked pixel storage ---\n");
+    const std::vector<uint8_t> buf = writeLayered(makeStorageFixture());
+
+    AssetArena unpackedArena;
+    unpackedArena.allocateBacking(256 * 1024);
+    LayeredAssetStore unpacked(unpackedArena, PixelStorage::Unpacked8);
+
+    AssetArena packedArena;
+    packedArena.allocateBacking(256 * 1024);
+    LayeredAssetStore packed(packedArena, PixelStorage::Packed4bpp);
+
+    const auto hu = unpacked.loadFromMemory(buf.data(), buf.size());
+    const auto hp = packed.loadFromMemory(buf.data(), buf.size());
+    ASSERT(hu != LayeredAssetStore::INVALID_HANDLE, "LAYLA-19: unpacked load");
+    ASSERT(hp != LayeredAssetStore::INVALID_HANDLE, "LAYLA-19: packed load");
+
+    const LayeredAsset* u = unpacked.get(hu);
+    const LayeredAsset* p = packed.get(hp);
+    ASSERT(u != nullptr && p != nullptr, "LAYLA-19: both assets exposed");
+    ASSERT(u->storage == PixelStorage::Unpacked8 &&
+           p->storage == PixelStorage::Packed4bpp, "LAYLA-19: storage recorded");
+
+    for (uint16_t img = 0; img < u->numImages; ++img) {
+        const uint32_t count =
+            static_cast<uint32_t>(u->images[img].w) * u->images[img].h;
+        bool same = true;
+        for (uint32_t idx = 0; idx < count; ++idx) {
+            if (layeredPixelAt(u->images[img], u->storage, idx) !=
+                layeredPixelAt(p->images[img], p->storage, idx)) {
+                same = false;
+                break;
+            }
+        }
+        ASSERT(same, "LAYLA-19: packed decodes to the same palette indices");
+    }
+
+    ASSERT(packed.currentBytes() < unpacked.currentBytes(),
+           "LAYLA-19: packed uses fewer arena bytes");
+}
+
+// ---------------------------------------------------------------------------
+// LAYLA-20: the frozen default representation is what a default store uses
+// ---------------------------------------------------------------------------
+static void test_LAYLA_20_default_storage() {
+    printf("--- LAYLA-20: frozen default storage ---\n");
+    AssetArena arena;
+    arena.allocateBacking(256 * 1024);
+    LayeredAssetStore store(arena);
+    ASSERT(store.storage() == LayeredAssetStore::DEFAULT_STORAGE,
+           "LAYLA-20: default store uses the frozen representation");
+
+    const std::vector<uint8_t> buf = writeLayered(makeFixture());
+    const auto h = store.loadFromMemory(buf.data(), buf.size());
+    ASSERT(store.get(h)->storage == LayeredAssetStore::DEFAULT_STORAGE,
+           "LAYLA-20: loaded asset carries the frozen representation");
+}
+
 int main() {
     printf("=== layered_asset_test: C++ owner/loader + per-applet arena (#95) ===\n");
 
@@ -549,6 +688,9 @@ int main() {
     test_LAYLA_15_truncated_record();
     test_LAYLA_16_bad_directory();
     test_LAYLA_17_arena_overflow();
+    test_LAYLA_18_metrics();
+    test_LAYLA_19_storage_paths();
+    test_LAYLA_20_default_storage();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
     return failures == 0 ? 0 : 1;

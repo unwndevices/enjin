@@ -46,19 +46,52 @@
 #include "asset_arena.hpp"
 #include "njn2.hpp"
 
+#include "../instrumentation/clock.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
 
 namespace enjin2 {
 
-/// One immutable cropped part image. `pixels` is arena-owned (`w*h` bytes,
-/// low nibble = palette index) and has a 32-byte-aligned start.
+/// How a part image's palette indices are stored in the arena (ADR-0004, #98).
+///
+/// The on-disk `LIMG` payload is always one palette byte per pixel; the loader
+/// chooses the arena representation at load time. The two paths trade arena
+/// bytes against per-pixel blit work, and the measurement harness in
+/// `benchmarks/bench_layered.cpp` compares them before the default is frozen.
+enum class PixelStorage : uint8_t {
+    Unpacked8 = 0,  ///< One palette byte per pixel (low nibble).
+    Packed4bpp = 1, ///< Two palette nibbles per byte, row-major.
+};
+
+/// One immutable cropped part image. `pixels` is arena-owned and has a
+/// 32-byte-aligned start; its byte count depends on the owning asset's
+/// `PixelStorage` (`w*h` unpacked, `(w*h+1)/2` packed).
 struct LayeredImage {
     uint16_t w;
     uint16_t h;
     const uint8_t* pixels;
 };
+
+/// Read one palette index out of a part image under @p storage.
+///
+/// `index` is the row-major pixel index (`y * w + x`) and must be `< w * h`.
+inline uint8_t layeredPixelAt(const LayeredImage& img, PixelStorage storage,
+                              uint32_t index) {
+    if (storage == PixelStorage::Packed4bpp) {
+        const uint8_t byte = img.pixels[index >> 1];
+        return (index & 1u) ? static_cast<uint8_t>(byte >> 4)
+                            : static_cast<uint8_t>(byte & 0x0Fu);
+    }
+    return static_cast<uint8_t>(img.pixels[index] & 0x0Fu);
+}
+
+/// Byte count the arena stores for a @p w × @p h part image under @p storage.
+inline size_t layeredPixelBytes(uint16_t w, uint16_t h, PixelStorage storage) {
+    const size_t count = static_cast<size_t>(w) * static_cast<size_t>(h);
+    return storage == PixelStorage::Packed4bpp ? (count + 1) / 2 : count;
+}
 
 /// One named sprite part in bottom-to-top painter order. The name is
 /// diagnostics metadata, never part identity.
@@ -88,6 +121,25 @@ struct LayeredAsset {
     const uint16_t* durations;        ///< numFrames milliseconds.
     const LayeredClip* clips;         ///< numClips records.
     uint16_t numClips;
+    PixelStorage storage;             ///< Arena pixel representation (#98).
+};
+
+/**
+ * @brief Point-in-time instrumentation snapshot for one `LayeredAssetStore`
+ *        (ADR-0004, #98).
+ *
+ * Reports the metrics the spec requires: loaded asset count, current and peak
+ * arena bytes, allocation failures, and load time. All byte counts are arena
+ * facts, so `currentBytes == arena.used()` and `peakBytes == arena.peak()`.
+ */
+struct LayeredAssetMetrics {
+    int assetCount = 0;                 ///< Registry slots in use (live/retained).
+    size_t currentBytes = 0;            ///< Arena bytes currently in use.
+    size_t peakBytes = 0;               ///< Arena high-water mark.
+    uint32_t allocationFailures = 0;    ///< Loads rejected for lack of capacity.
+    uint32_t loadCount = 0;             ///< Successful loads.
+    uint64_t loadMicrosTotal = 0;       ///< Summed successful-load duration.
+    uint64_t loadMicrosMax = 0;         ///< Longest successful load.
 };
 
 /**
@@ -104,7 +156,19 @@ public:
     using Handle = int;
     static constexpr Handle INVALID_HANDLE = -1;
 
-    explicit LayeredAssetStore(AssetArena& arena) : arena_(arena) {}
+    /// Frozen default arena pixel representation (#98). Chosen from the
+    /// `bench_layered` measurements and recorded in ADR-0005.
+    static constexpr PixelStorage DEFAULT_STORAGE = PixelStorage::Unpacked8;
+
+    /**
+     * @param arena    Bounded arena that owns all asset bytes.
+     * @param storage  Arena pixel representation to use for this store.
+     *                 Defaults to @ref DEFAULT_STORAGE; the measurement
+     *                 harness constructs one store per representation.
+     */
+    explicit LayeredAssetStore(AssetArena& arena,
+                               PixelStorage storage = DEFAULT_STORAGE)
+        : arena_(arena), storage_(storage) {}
 
     LayeredAssetStore(const LayeredAssetStore&) = delete;
     LayeredAssetStore& operator=(const LayeredAssetStore&) = delete;
@@ -168,6 +232,24 @@ public:
     /// Count of successful loads.
     uint32_t loadCount() const { return loadCount_; }
 
+    /// Arena pixel representation this store loads into.
+    PixelStorage storage() const { return storage_; }
+
+    /**
+     * @brief Install the microsecond time source for load timing.
+     *
+     * Timing is disabled until a clock is installed, so shipping builds pay no
+     * clock calls. `nullptr` disables it again; passing a clock accumulates
+     * durations until @ref resetMetrics.
+     */
+    void setClock(MicrosFn clock) { loadTiming_.clock = clock; }
+
+    /// Zero the load-time accumulators and failure/load counters.
+    void resetMetrics();
+
+    /// Snapshot of all instrumentation for this store (ADR-0004, #98).
+    LayeredAssetMetrics metrics() const;
+
 private:
     struct Slot {
         bool used = false;         ///< A view is (or was) published here.
@@ -183,9 +265,11 @@ private:
     void clearSlot(Slot* slot);
 
     AssetArena& arena_;
+    PixelStorage storage_;
     Slot slots_[MAX_ASSETS];
     uint32_t allocationFailures_ = 0;
     uint32_t loadCount_ = 0;
+    TimingAccumulator loadTiming_;
 };
 
 } // namespace enjin2

@@ -31,8 +31,9 @@ namespace enjin2 {
  */
 class AssetArena {
 public:
-    /// Provisional per-applet asset budget (ADR-0004: raises the old 64 KiB
-    /// limit to 512 KiB until measurements fix the final value).
+    /// Final per-applet asset budget (ADR-0004, ADR-0005 #98). The measured
+    /// reference asset occupies ~75.5 KiB unpacked, so 512 KiB holds several
+    /// such assets within the ESP32-S3's 8 MiB PSRAM.
     static constexpr size_t DEFAULT_CAPACITY = 512u * 1024u;
 
     /// Alignment of the arena base and of every allocation from it.

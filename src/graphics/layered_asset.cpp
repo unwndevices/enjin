@@ -48,10 +48,11 @@ struct LayeredBuilder {
  *        decoded layered asset.
  * @param base    Destination block, or nullptr to only measure.
  * @param decoded Validated source records (heap-owned).
+ * @param storage Arena pixel representation to lay out.
  * @param outView On commit, receives the view pointer.
  * @return The exact byte count the layout requires.
  */
-size_t buildLayered(uint8_t* base, const NjnLayered& decoded,
+size_t buildLayered(uint8_t* base, const NjnLayered& decoded, PixelStorage storage,
                     const LayeredAsset** outView) {
     LayeredBuilder b{base};
 
@@ -89,6 +90,7 @@ size_t buildLayered(uint8_t* base, const NjnLayered& decoded,
         view->durations = durations;
         view->clips = clips;
         view->numClips = static_cast<uint16_t>(nClips);
+        view->storage = storage;
 
         for (size_t i = 0; i < nParts; ++i) {
             std::memcpy(parts[i].name, decoded.parts[i].name, sizeof(parts[i].name));
@@ -111,14 +113,28 @@ size_t buildLayered(uint8_t* base, const NjnLayered& decoded,
     }
 
     for (size_t i = 0; i < nImages; ++i) {
-        const size_t pixelBytes =
+        const size_t count =
             static_cast<size_t>(decoded.images[i].w) * decoded.images[i].h;
+        const size_t pixelBytes =
+            layeredPixelBytes(decoded.images[i].w, decoded.images[i].h, storage);
         uint8_t* pixels = b.reserve(pixelBytes);
         if (base != nullptr) {
             images[i].w = decoded.images[i].w;
             images[i].h = decoded.images[i].h;
             images[i].pixels = pixels;
-            std::memcpy(pixels, decoded.images[i].pixels.data(), pixelBytes);
+            if (storage == PixelStorage::Packed4bpp) {
+                // Pack two row-major low-nibble indices per byte, low pixel
+                // first. The source is always one byte per pixel.
+                const uint8_t* src = decoded.images[i].pixels.data();
+                for (size_t px = 0; px < count; px += 2) {
+                    const uint8_t lo = static_cast<uint8_t>(src[px] & 0x0F);
+                    const uint8_t hi =
+                        (px + 1 < count) ? static_cast<uint8_t>(src[px + 1] & 0x0F) : 0;
+                    pixels[px >> 1] = static_cast<uint8_t>(lo | (hi << 4));
+                }
+            } else {
+                std::memcpy(pixels, decoded.images[i].pixels.data(), pixelBytes);
+            }
         }
     }
 
@@ -176,6 +192,8 @@ LayeredAssetStore::Handle LayeredAssetStore::load(const std::string& path,
 LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
                                                             size_t size,
                                                             std::string* error) {
+    const uint64_t startMicros = loadTiming_.start();
+
     // --- 1. Parse and validate (no arena or registry mutation). ---
     NjnV2Reader reader;
     if (!reader.open(data, size)) {
@@ -205,7 +223,7 @@ LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
     }
 
     // --- 3. Compute the exact byte requirement (dry run). ---
-    const size_t required = buildLayered(nullptr, decoded, nullptr);
+    const size_t required = buildLayered(nullptr, decoded, storage_, nullptr);
 
     // --- 4. Capacity check completes before any handle is published. ---
     if (!arena_.canAllocate(required, AssetArena::ALIGNMENT)) {
@@ -224,7 +242,7 @@ LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
         return INVALID_HANDLE;
     }
     const LayeredAsset* view = nullptr;
-    buildLayered(block, decoded, &view);
+    buildLayered(block, decoded, storage_, &view);
 
     Slot& slot = slots_[slotIndex];
     slot.used = true;
@@ -234,6 +252,7 @@ LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
     slot.arenaStart = before.used;
     slot.arenaEnd = arena_.used();
     ++loadCount_;
+    loadTiming_.stop(startMicros);
     return slotIndex;
 }
 
@@ -275,6 +294,24 @@ int LayeredAssetStore::assetCount() const {
         if (slot.used) ++count;
     }
     return count;
+}
+
+void LayeredAssetStore::resetMetrics() {
+    allocationFailures_ = 0;
+    loadCount_ = 0;
+    loadTiming_.reset();
+}
+
+LayeredAssetMetrics LayeredAssetStore::metrics() const {
+    LayeredAssetMetrics m;
+    m.assetCount = assetCount();
+    m.currentBytes = arena_.used();
+    m.peakBytes = arena_.peak();
+    m.allocationFailures = allocationFailures_;
+    m.loadCount = loadCount_;
+    m.loadMicrosTotal = loadTiming_.total;
+    m.loadMicrosMax = loadTiming_.max;
+    return m;
 }
 
 } // namespace enjin2

@@ -382,13 +382,14 @@ void LayeredSprite::blit(ICanvas<Pixel4>& target, int16_t originX, int16_t origi
                                       : static_cast<int16_t>(ref.offsetY + j);
             if (dy < 0 || dy >= canvasH) continue;
             const int16_t srcY = vflip_ ? static_cast<int16_t>(ih - 1 - j) : j;
-            const uint8_t* row = img.pixels + static_cast<size_t>(srcY) * img.w;
+            const uint32_t rowIndex = static_cast<uint32_t>(srcY) * img.w;
             for (int16_t i = 0; i < iw; ++i) {
                 const int16_t dx = hflip_ ? static_cast<int16_t>(canvasW - ref.offsetX - iw + i)
                                           : static_cast<int16_t>(ref.offsetX + i);
                 if (dx < 0 || dx >= canvasW) continue;
                 const int16_t srcX = hflip_ ? static_cast<int16_t>(iw - 1 - i) : i;
-                const uint8_t px = row[srcX] & 0x0F;
+                const uint8_t px = layeredPixelAt(
+                    img, asset_->storage, rowIndex + static_cast<uint32_t>(srcX));
                 if (px == 15) continue;  // index 15 is transparent
                 target.setPixel(static_cast<int16_t>(originX + dx),
                                 static_cast<int16_t>(originY + dy), Pixel4(px));
