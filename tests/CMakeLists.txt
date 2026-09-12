@@ -360,6 +360,16 @@ target_include_directories(njn2_test PRIVATE
 )
 add_test(NAME njn2_test COMMAND njn2_test)
 
+# .njn v2 layered sprite chunk contract test (issue #93: LAY-01..LAY-20)
+# Header-only, no Lua dependency — always built.
+add_executable(njn2_layered_test
+    njn2_layered_test.cpp
+)
+target_include_directories(njn2_layered_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME njn2_layered_test COMMAND njn2_layered_test)
+
 # HUD numerals — glyph layout, digit-strip draw, RollingCounter, Timer
 # (ADR-0003 §8, #83). Links enjin2 for drawNumber/drawTimer (enjin2_graphics).
 add_executable(numerals_test

@@ -38,7 +38,20 @@
  * | `ATTR` | Per-tile attribute table (numTiles × 2 bytes, see TileAttr)    |
  * | `PALB` | Palette-bank table (numBanks × 16 × 2 bytes RGB565)            |
  *
- * Chunk IDs not in the table above are *unknown* and must be skipped silently.
+ * The flat-sheet chunks (`META`/`PIXL`/`ATTR`/`PALB`) and `CLIP` keep their
+ * layouts above.  A *layered* sprite asset adds the chunks below and carries
+ * no flattened `META`/`PIXL` fallback payload; its `CLIP` frame indices
+ * reference **animation frames** (0..numFrames-1), not sheet cells.
+ *
+ * | ID     | Content                                                        |
+ * |--------|----------------------------------------------------------------|
+ * | `LHDR` | Layered header: schema version, canvas extent, counts          |
+ * | `LIMG` | Immutable pool of cropped part images (4bpp, 1 byte/px)        |
+ * | `LPRT` | Named sprite parts, bottom-to-top painter order                |
+ * | `LREF` | One frame-part reference per part per frame                    |
+ * | `LDUR` | Authored per-frame durations (ms)                              |
+ *
+ * Chunk IDs not in the tables above are *unknown* and must be skipped silently.
  *
  * ## Endianness
  *
@@ -123,6 +136,28 @@ static constexpr NjnChunkTag NJN2_CHUNK_ATTR = {{ 'A','T','T','R' }};
 /// Palette-bank table chunk: numBanks × 16 entries × 2 bytes RGB565 each.
 static constexpr NjnChunkTag NJN2_CHUNK_PALB = {{ 'P','A','L','B' }};
 
+// --- Layered sprite chunks (schema version 1, issue #93) ------------------
+
+/// Layered header chunk: schema version + authored canvas extent + counts.
+static constexpr NjnChunkTag NJN2_CHUNK_LHDR = {{ 'L','H','D','R' }};
+/// Layered part-image pool chunk: immutable cropped part images.
+static constexpr NjnChunkTag NJN2_CHUNK_LIMG = {{ 'L','I','M','G' }};
+/// Layered sprite-parts chunk: named parts in bottom-to-top painter order.
+static constexpr NjnChunkTag NJN2_CHUNK_LPRT = {{ 'L','P','R','T' }};
+/// Layered frame-part references chunk: one reference per part per frame.
+static constexpr NjnChunkTag NJN2_CHUNK_LREF = {{ 'L','R','E','F' }};
+/// Layered per-frame durations chunk: authored hold time per animation frame.
+static constexpr NjnChunkTag NJN2_CHUNK_LDUR = {{ 'L','D','U','R' }};
+
+/// The only layered schema version the codec understands.  A reader that sees
+/// a different value rejects the asset as an unsupported layered schema.
+static constexpr uint8_t NJN2_LAYERED_SCHEMA_VERSION = 1;
+
+/// Sentinel `imageIndex` meaning "this part is invisible this frame" (no image,
+/// no offset).  A valid image index is always in 0..numImages-1, so 0xFFFF is
+/// unambiguous given numImages < 0xFFFF.
+static constexpr uint16_t NJN2_LAYERED_INVISIBLE = 0xFFFF;
+
 // ---------------------------------------------------------------------------
 // CLIP chunk internal layout
 //
@@ -172,6 +207,74 @@ struct NjnClip {
 
 /// Per-tile attribute record (matches §3 TileAttr layout from ADR-0003).
 using NjnTileAttr = TileAttr;
+
+// ---------------------------------------------------------------------------
+// Layered sprite records (schema version 1)
+//
+// LHDR chunk byte layout:
+//   u8   schemaVersion   (must equal NJN2_LAYERED_SCHEMA_VERSION)
+//   u16  canvasW         (authored canvas width, px)
+//   u16  canvasH         (authored canvas height, px)
+//   u16  numFrames       (animation frame count)
+//   u16  numParts        (sprite part count)
+//   u16  numImages       (part-image pool size)
+//
+// LIMG chunk byte layout (numImages records, in image order):
+//   for each image:
+//     u16  w             (≥1)
+//     u16  h             (≥1)
+//     w*h bytes          4bpp palette index in low nibble, row-major
+//
+// LPRT chunk byte layout (numParts records, in bottom-to-top painter order):
+//   for each part:
+//     u8[16]  name       (null-padded, ≤15 printable chars)
+//
+// LREF chunk byte layout (numFrames × numParts records, frame-major):
+//   for each frame, for each part:
+//     u16  imageIndex    (0..numImages-1, or 0xFFFF = invisible)
+//     s16  offsetX       (authored offset from canvas origin, px)
+//     s16  offsetY
+//
+// LDUR chunk byte layout (numFrames records):
+//   for each frame:
+//     u16  durationMs
+//
+// CLIP chunk: unchanged layout; frame indices reference animation frames.
+//
+// Part-image identity is (w, h, canonical palette indices) only.  Offsets and
+// invisibility live on frame-part references, so linked pixels may move.
+// ---------------------------------------------------------------------------
+
+/// One cropped, immutable part image: dimensions + canonical 4bpp pixels.
+struct NjnPartImage {
+    uint16_t w;                       ///< Cropped width in pixels (≥1).
+    uint16_t h;                       ///< Cropped height in pixels (≥1).
+    std::vector<uint8_t> pixels;      ///< w*h bytes, low nibble = palette index.
+};
+
+/// One named sprite part.  The name is diagnostics metadata, never image identity.
+struct NjnPart {
+    char name[16];                    ///< Null-padded part name (≤15 chars + '\0').
+};
+
+/// One frame-part reference: an image at an authored offset, or invisible.
+struct NjnFramePartRef {
+    uint16_t imageIndex;              ///< 0..numImages-1, or NJN2_LAYERED_INVISIBLE.
+    int16_t  offsetX;                 ///< Offset from the canvas origin (px).
+    int16_t  offsetY;
+};
+
+/// A decoded layered sprite asset (the union of the layered chunks).
+struct NjnLayered {
+    uint8_t  schemaVersion = NJN2_LAYERED_SCHEMA_VERSION;
+    uint16_t canvasW = 0;             ///< Authored canvas extent (stable every frame).
+    uint16_t canvasH = 0;
+    std::vector<NjnPartImage> images; ///< Immutable image pool.
+    std::vector<NjnPart>      parts;  ///< Bottom-to-top painter order.
+    std::vector<NjnFramePartRef> refs;///< Frame-major: numFrames × numParts.
+    std::vector<uint16_t>     durations; ///< One per animation frame (ms).
+    std::vector<NjnClip>      clips;  ///< Optional; frameIndex → animation frame.
+};
 
 // ---------------------------------------------------------------------------
 // Reader
@@ -258,6 +361,19 @@ public:
 
     /// Number of chunks in the directory.
     uint32_t chunkCount() const { return static_cast<uint32_t>(m_chunks.size()); }
+
+    /**
+     * @brief Count the chunks with a given 4-byte tag (duplicate detection).
+     * @param tag  The chunk ID to count.
+     * @return The number of directory entries with that tag.
+     */
+    uint32_t count(const NjnChunkTag& tag) const {
+        uint32_t n = 0;
+        for (const auto& c : m_chunks) {
+            if (c.id == tag) ++n;
+        }
+        return n;
+    }
 
 private:
     std::vector<NjnV2Chunk> m_chunks;
@@ -605,6 +721,206 @@ inline bool njn2DecodeClip(const NjnV2Chunk* c, std::vector<NjnClip>& out) {
         }
         out.push_back(std::move(clip));
     }
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Layered sprite codec (schema version 1, issue #93)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Write a complete layered sprite asset (LHDR + LIMG + LPRT + LREF +
+ *        LDUR + optional CLIP) to a writer.
+ * @param w  Writer target.
+ * @param asset  The layered asset to serialise.
+ *
+ * Counts are derived from the vectors: numFrames = durations.size(),
+ * numParts = parts.size(), numImages = images.size().  The caller must keep
+ * refs.size() == numFrames * numParts, images[i].pixels.size() == w*h, and
+ * every count ≤ 0xFFFF (the Python mirror raises on these; the C++ writer
+ * trusts the caller like the other njn2Write* helpers).  The reader is the
+ * authority: njn2DecodeLayered rejects anything this writer could over-truncate.
+ *
+ * The CLIP chunk is reused unchanged; its frame indices reference animation
+ * frames (0..numFrames-1), not sheet cells.  No META/PIXL fallback is written.
+ */
+inline void njn2WriteLayered(NjnV2Writer& w, const NjnLayered& asset) {
+    const uint16_t numFrames = static_cast<uint16_t>(asset.durations.size());
+    const uint16_t numParts  = static_cast<uint16_t>(asset.parts.size());
+    const uint16_t numImages = static_cast<uint16_t>(asset.images.size());
+
+    w.beginChunk(NJN2_CHUNK_LHDR);
+    w.writeU8(asset.schemaVersion);
+    w.writeU16LE(asset.canvasW);
+    w.writeU16LE(asset.canvasH);
+    w.writeU16LE(numFrames);
+    w.writeU16LE(numParts);
+    w.writeU16LE(numImages);
+    w.endChunk();
+
+    w.beginChunk(NJN2_CHUNK_LIMG);
+    for (const auto& img : asset.images) {
+        w.writeU16LE(img.w);
+        w.writeU16LE(img.h);
+        w.writeBytes(img.pixels.data(), img.pixels.size());
+    }
+    w.endChunk();
+
+    w.beginChunk(NJN2_CHUNK_LPRT);
+    for (const auto& part : asset.parts) {
+        for (int k = 0; k < 16; ++k) {
+            w.writeU8(k < 15 ? static_cast<uint8_t>(part.name[k]) : 0u);
+        }
+    }
+    w.endChunk();
+
+    w.beginChunk(NJN2_CHUNK_LREF);
+    for (const auto& ref : asset.refs) {
+        w.writeU16LE(ref.imageIndex);
+        w.writeU16LE(static_cast<uint16_t>(ref.offsetX));
+        w.writeU16LE(static_cast<uint16_t>(ref.offsetY));
+    }
+    w.endChunk();
+
+    w.beginChunk(NJN2_CHUNK_LDUR);
+    for (uint16_t d : asset.durations) {
+        w.writeU16LE(d);
+    }
+    w.endChunk();
+
+    if (!asset.clips.empty()) {
+        njn2WriteClip(w, asset.clips.data(), static_cast<uint8_t>(asset.clips.size()));
+    }
+}
+
+/**
+ * @brief Decode a layered sprite asset from a .njn v2 reader, validating the
+ *        schema version, required-chunk presence, exact record sizes, and
+ *        reference bounds.
+ * @param r       A reader that already `open()`ed the file successfully.
+ * @param out     Decoded asset; only valid when the function returns true.
+ * @param errMsg  Optional out-param receiving a static failure reason string.
+ * @return true on success; false on any malformed/unsupported input.
+ *
+ * Rejects: missing or duplicate required chunks, an unsupported layered schema
+ * version, zero/overflowing counts, truncated records, images with zero
+ * dimensions, out-of-range part-image references, and CLIP frame indices that
+ * fall outside 0..numFrames-1.  Unknown chunks are ignored.
+ */
+inline bool njn2DecodeLayered(const NjnV2Reader& r, NjnLayered& out,
+                              const char** errMsg = nullptr) {
+    auto fail = [&](const char* m) -> bool {
+        if (errMsg) *errMsg = m;
+        return false;
+    };
+    auto rdU16 = [](const uint8_t* p) -> uint16_t {
+        return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
+    };
+    auto rdS16 = [&](const uint8_t* p) -> int16_t {
+        return static_cast<int16_t>(rdU16(p));
+    };
+
+    // --- Required chunks: present exactly once each ---
+    const NjnChunkTag required[] = {
+        NJN2_CHUNK_LHDR, NJN2_CHUNK_LIMG, NJN2_CHUNK_LPRT,
+        NJN2_CHUNK_LREF, NJN2_CHUNK_LDUR,
+    };
+    const NjnV2Chunk* req[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+    for (size_t i = 0; i < 5; ++i) {
+        const uint32_t n = r.count(required[i]);
+        if (n == 0) return fail("missing required layered chunk");
+        if (n > 1)  return fail("duplicate required layered chunk");
+        req[i] = r.find(required[i]);
+    }
+
+    // --- LHDR ---
+    const NjnV2Chunk* hdr = req[0];
+    if (hdr->size < 11) return fail("truncated LHDR");
+    const uint8_t schema = hdr->data[0];
+    if (schema != NJN2_LAYERED_SCHEMA_VERSION) return fail("unsupported layered schema version");
+    const uint16_t canvasW   = rdU16(hdr->data + 1);
+    const uint16_t canvasH   = rdU16(hdr->data + 3);
+    const uint16_t numFrames = rdU16(hdr->data + 5);
+    const uint16_t numParts  = rdU16(hdr->data + 7);
+    const uint16_t numImages = rdU16(hdr->data + 9);
+    if (canvasW == 0 || canvasH == 0) return fail("zero canvas extent");
+    if (numFrames == 0 || numParts == 0) return fail("zero frame/part count");
+    if (numImages == 0) return fail("empty part-image pool");
+
+    // --- LIMG: walk numImages records, exact size, non-zero dimensions ---
+    const NjnV2Chunk* imgChunk = req[1];
+    out.images.clear();
+    {
+        uint32_t pos = 0;
+        for (uint16_t i = 0; i < numImages; ++i) {
+            if (static_cast<uint64_t>(pos) + 4u > imgChunk->size) return fail("truncated LIMG image header");
+            const uint16_t w = rdU16(imgChunk->data + pos);
+            const uint16_t h = rdU16(imgChunk->data + pos + 2);
+            pos += 4;
+            if (w == 0 || h == 0) return fail("zero-size part image");
+            const uint64_t pixelBytes = static_cast<uint64_t>(w) * h;
+            if (static_cast<uint64_t>(pos) + pixelBytes > imgChunk->size) return fail("truncated LIMG pixels");
+            NjnPartImage img;
+            img.w = w;
+            img.h = h;
+            img.pixels.assign(imgChunk->data + pos, imgChunk->data + pos + pixelBytes);
+            pos += static_cast<uint32_t>(pixelBytes);
+            out.images.push_back(std::move(img));
+        }
+        if (pos != imgChunk->size) return fail("LIMG trailing bytes");
+    }
+
+    // --- LPRT: exact size ---
+    const NjnV2Chunk* partChunk = req[2];
+    if (partChunk->size != static_cast<uint64_t>(numParts) * 16u) return fail("LPRT size mismatch");
+    out.parts.clear();
+    out.parts.resize(numParts);
+    for (uint16_t i = 0; i < numParts; ++i) {
+        for (int k = 0; k < 16; ++k) {
+            out.parts[i].name[k] = static_cast<char>(partChunk->data[i * 16u + k]);
+        }
+    }
+
+    // --- LREF: exact size, reference bounds ---
+    const NjnV2Chunk* refChunk = req[3];
+    const uint64_t refBytes = static_cast<uint64_t>(numFrames) * numParts * 6u;
+    if (refChunk->size != refBytes) return fail("LREF size mismatch");
+    out.refs.clear();
+    out.refs.resize(static_cast<size_t>(numFrames) * numParts);
+    for (size_t i = 0; i < out.refs.size(); ++i) {
+        const uint8_t* p = refChunk->data + i * 6u;
+        const uint16_t idx = rdU16(p);
+        if (idx != NJN2_LAYERED_INVISIBLE && idx >= numImages) return fail("invalid part-image reference");
+        out.refs[i].imageIndex = idx;
+        out.refs[i].offsetX    = rdS16(p + 2);
+        out.refs[i].offsetY    = rdS16(p + 4);
+    }
+
+    // --- LDUR: exact size ---
+    const NjnV2Chunk* durChunk = req[4];
+    if (durChunk->size != static_cast<uint64_t>(numFrames) * 2u) return fail("LDUR size mismatch");
+    out.durations.clear();
+    out.durations.resize(numFrames);
+    for (uint16_t i = 0; i < numFrames; ++i) {
+        out.durations[i] = rdU16(durChunk->data + i * 2u);
+    }
+
+    // --- CLIP: optional, at most once; frame indices reference animation frames ---
+    out.clips.clear();
+    if (r.count(NJN2_CHUNK_CLIP) > 1) return fail("duplicate CLIP chunk");
+    const NjnV2Chunk* clipChunk = r.find(NJN2_CHUNK_CLIP);
+    if (clipChunk != nullptr) {
+        if (!njn2DecodeClip(clipChunk, out.clips)) return fail("malformed CLIP chunk");
+        for (const auto& clip : out.clips) {
+            for (const auto& f : clip.frames) {
+                if (f.frameIndex >= numFrames) return fail("CLIP frame index out of range");
+            }
+        }
+    }
+
+    out.schemaVersion = schema;
+    out.canvasW = canvasW;
+    out.canvasH = canvasH;
     return true;
 }
 

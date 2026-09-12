@@ -27,6 +27,21 @@ CHUNK_CLIP = b"CLIP"
 CHUNK_ATTR = b"ATTR"
 CHUNK_PALB = b"PALB"
 
+# --- Layered sprite chunks (schema version 1, mirror njn2.hpp, issue #93) ---
+
+CHUNK_LHDR = b"LHDR"
+CHUNK_LIMG = b"LIMG"
+CHUNK_LPRT = b"LPRT"
+CHUNK_LREF = b"LREF"
+CHUNK_LDUR = b"LDUR"
+
+#: The only layered schema version understood (mirror NJN2_LAYERED_SCHEMA_VERSION).
+LAYERED_SCHEMA_VERSION = 1
+
+#: Frame-part reference image index meaning "invisible this frame"
+#: (mirror NJN2_LAYERED_INVISIBLE).
+LAYERED_INVISIBLE = 0xFFFF
+
 # --- .njm map constants + cell packing (mirror tilemap_asset.hpp) --------
 
 NJM_MAGIC = b"NM"
@@ -68,6 +83,39 @@ class Clip:
     name: str
     loop_mode: int = LOOP_ONCE
     frames: list[tuple[int, int, int]] = field(default_factory=list)
+
+
+@dataclass
+class PartImage:
+    """One cropped, immutable part image: dimensions + canonical 4bpp pixels.
+
+    ``pixels`` is ``w*h`` bytes, one palette index per byte in the low nibble.
+    """
+
+    w: int
+    h: int
+    pixels: bytes
+
+
+@dataclass
+class Layered:
+    """A layered sprite asset (the union of the layered chunks).
+
+    ``refs`` is frame-major: ``num_frames * num_parts`` tuples of
+    ``(image_index, offset_x, offset_y)``; ``image_index == LAYERED_INVISIBLE``
+    marks the part invisible that frame.  ``parts`` lists names in bottom-to-top
+    painter order.  ``clips`` is optional; its frame indices reference animation
+    frames (0..num_frames-1), not sheet cells.
+    """
+
+    canvas_w: int
+    canvas_h: int
+    images: list[PartImage]
+    parts: list[str]
+    refs: list[tuple[int, int, int]]
+    durations: list[int]
+    clips: list[Clip] | None = None
+    schema_version: int = LAYERED_SCHEMA_VERSION
 
 
 class NjnV2Writer:
@@ -251,3 +299,226 @@ def parse_njn(buf: bytes) -> ParsedNjn:
             raise ValueError(f"chunk {tag!r} runs past the file")
         chunks[tag] = buf[offset:offset + size]
     return ParsedNjn(version=version, num_chunks=num_chunks, file_size=file_size, chunks=chunks)
+
+
+# --- layered sprite codec (schema version 1, mirror njn2DecodeLayered) ------
+
+def build_njn_layered(asset: Layered) -> bytes:
+    """Serialise a :class:`Layered` asset into ``.njn`` v2 bytes.
+
+    Counts are derived from the asset: ``num_frames = len(durations)``,
+    ``num_parts = len(parts)``, ``num_images = len(images)``.  Raises
+    ``ValueError`` on an inconsistent asset (wrong ``refs`` length, an image
+    whose ``pixels`` length disagrees with ``w*h``, or a count exceeding 16 bits).
+
+    The ``CLIP`` chunk is reused unchanged; its frame indices reference animation
+    frames, not sheet cells.  No ``META``/``PIXL`` fallback is written.
+    """
+    num_frames = len(asset.durations)
+    num_parts = len(asset.parts)
+    num_images = len(asset.images)
+
+    for name, count in (("frames", num_frames), ("parts", num_parts), ("images", num_images)):
+        if count > 0xFFFF:
+            raise ValueError(f"{count} {name} exceed the 16-bit layered count limit")
+    for name, value in (("canvas_w", asset.canvas_w), ("canvas_h", asset.canvas_h)):
+        if not 0 < value <= 0xFFFF:
+            raise ValueError(f"{name} {value} outside the 1..65535 canvas extent")
+    if num_images == 0:
+        raise ValueError("a layered asset needs at least one part image")
+
+    if len(asset.refs) != num_frames * num_parts:
+        raise ValueError(
+            f"refs has {len(asset.refs)} entries, expected {num_frames}*{num_parts}"
+        )
+
+    w = NjnV2Writer()
+    w.add_chunk(
+        CHUNK_LHDR,
+        struct.pack(
+            "<BHHHHH",
+            asset.schema_version & 0xFF,
+            asset.canvas_w,
+            asset.canvas_h,
+            num_frames,
+            num_parts,
+            num_images,
+        ),
+    )
+
+    limg = bytearray()
+    for img in asset.images:
+        if len(img.pixels) != img.w * img.h:
+            raise ValueError(
+                f"image {img.w}x{img.h} has {len(img.pixels)} pixels, expected {img.w * img.h}"
+            )
+        limg += struct.pack("<HH", img.w & 0xFFFF, img.h & 0xFFFF)
+        limg += bytes(b & 0x0F for b in img.pixels)
+    w.add_chunk(CHUNK_LIMG, bytes(limg))
+
+    lprt = bytearray()
+    for name in asset.parts:
+        encoded = name.encode("utf-8")[:15]
+        lprt += encoded + b"\x00" * (16 - len(encoded))
+    w.add_chunk(CHUNK_LPRT, bytes(lprt))
+
+    lref = bytearray()
+    for image_index, offset_x, offset_y in asset.refs:
+        if not -0x8000 <= offset_x <= 0x7FFF or not -0x8000 <= offset_y <= 0x7FFF:
+            raise ValueError(f"reference offset ({offset_x},{offset_y}) outside s16 range")
+        lref += struct.pack("<Hhh", image_index & 0xFFFF, offset_x, offset_y)
+    w.add_chunk(CHUNK_LREF, bytes(lref))
+
+    w.add_chunk(
+        CHUNK_LDUR,
+        b"".join(struct.pack("<H", d & 0xFFFF) for d in asset.durations),
+    )
+
+    if asset.clips:
+        w.add_chunk(CHUNK_CLIP, _build_clip_chunk(asset.clips))
+
+    return w.finalise()
+
+
+def parse_njn_layered(buf: bytes) -> Layered:
+    """Parse+validate a layered ``.njn`` v2 buffer as ``njn2DecodeLayered`` does.
+
+    Rejects the same conditions the C++ decoder rejects: bad magic/version, a
+    directory entry out of bounds, missing or duplicate required chunks, an
+    unsupported layered schema version, zero/overflowing counts, truncated
+    records, zero-size images, out-of-range part-image references, and CLIP frame
+    indices outside 0..num_frames-1.  Raises ``ValueError`` on any of these.
+    """
+    if len(buf) < NJN2_FILE_HEADER_SIZE:
+        raise ValueError("buffer smaller than the file header")
+    magic, version, _reserved, num_chunks, file_size = struct.unpack_from("<2sBBII", buf, 0)
+    if magic != NJN2_MAGIC:
+        raise ValueError(f"bad magic {magic!r}")
+    if version != NJN2_VERSION:
+        raise ValueError(f"bad version {version}")
+    if file_size != len(buf):
+        raise ValueError(f"file_size {file_size} != buffer length {len(buf)}")
+    dir_bytes = num_chunks * NJN2_DIR_ENTRY_SIZE
+    if len(buf) < NJN2_FILE_HEADER_SIZE + dir_bytes:
+        raise ValueError("directory runs past the buffer")
+
+    chunks: dict[bytes, bytes] = {}
+    counts: dict[bytes, int] = {}
+    for i in range(num_chunks):
+        base = NJN2_FILE_HEADER_SIZE + i * NJN2_DIR_ENTRY_SIZE
+        tag, offset, size = struct.unpack_from("<4sII", buf, base)
+        if offset < NJN2_FILE_HEADER_SIZE:
+            raise ValueError(f"chunk {tag!r} offset {offset} inside the header")
+        if offset + size > file_size:
+            raise ValueError(f"chunk {tag!r} runs past the file")
+        chunks[tag] = buf[offset:offset + size]
+        counts[tag] = counts.get(tag, 0) + 1
+
+    for required in (CHUNK_LHDR, CHUNK_LIMG, CHUNK_LPRT, CHUNK_LREF, CHUNK_LDUR):
+        n = counts.get(required, 0)
+        if n == 0:
+            raise ValueError(f"missing required layered chunk {required!r}")
+        if n > 1:
+            raise ValueError(f"duplicate required layered chunk {required!r}")
+    if counts.get(CHUNK_CLIP, 0) > 1:
+        raise ValueError("duplicate CLIP chunk")
+
+    hdr = chunks[CHUNK_LHDR]
+    if len(hdr) < 11:
+        raise ValueError("truncated LHDR")
+    schema, canvas_w, canvas_h, num_frames, num_parts, num_images = struct.unpack_from(
+        "<BHHHHH", hdr, 0
+    )
+    if schema != LAYERED_SCHEMA_VERSION:
+        raise ValueError(f"unsupported layered schema version {schema}")
+    if canvas_w == 0 or canvas_h == 0:
+        raise ValueError("zero canvas extent")
+    if num_frames == 0 or num_parts == 0:
+        raise ValueError("zero frame/part count")
+    if num_images == 0:
+        raise ValueError("empty part-image pool")
+
+    images: list[PartImage] = []
+    limg = chunks[CHUNK_LIMG]
+    pos = 0
+    for _ in range(num_images):
+        if pos + 4 > len(limg):
+            raise ValueError("truncated LIMG image header")
+        w, h = struct.unpack_from("<HH", limg, pos)
+        pos += 4
+        if w == 0 or h == 0:
+            raise ValueError("zero-size part image")
+        if pos + w * h > len(limg):
+            raise ValueError("truncated LIMG pixels")
+        images.append(PartImage(w=w, h=h, pixels=bytes(limg[pos:pos + w * h])))
+        pos += w * h
+    if pos != len(limg):
+        raise ValueError("LIMG trailing bytes")
+
+    lprt = chunks[CHUNK_LPRT]
+    if len(lprt) != num_parts * 16:
+        raise ValueError("LPRT size mismatch")
+    parts = [
+        lprt[i * 16:(i + 1) * 16].rstrip(b"\x00").decode("utf-8", "replace")
+        for i in range(num_parts)
+    ]
+
+    lref = chunks[CHUNK_LREF]
+    if len(lref) != num_frames * num_parts * 6:
+        raise ValueError("LREF size mismatch")
+    refs: list[tuple[int, int, int]] = []
+    for i in range(num_frames * num_parts):
+        image_index, offset_x, offset_y = struct.unpack_from("<Hhh", lref, i * 6)
+        if image_index != LAYERED_INVISIBLE and image_index >= num_images:
+            raise ValueError("invalid part-image reference")
+        refs.append((image_index, offset_x, offset_y))
+
+    ldur = chunks[CHUNK_LDUR]
+    if len(ldur) != num_frames * 2:
+        raise ValueError("LDUR size mismatch")
+    durations = [
+        struct.unpack_from("<H", ldur, i * 2)[0] for i in range(num_frames)
+    ]
+
+    clips: list[Clip] | None = None
+    if CHUNK_CLIP in chunks:
+        clips = _parse_clip_chunk(chunks[CHUNK_CLIP])
+        for clip in clips:
+            for frame_index, _dur, _event in clip.frames:
+                if frame_index >= num_frames:
+                    raise ValueError("CLIP frame index out of range")
+
+    return Layered(
+        canvas_w=canvas_w,
+        canvas_h=canvas_h,
+        images=images,
+        parts=parts,
+        refs=refs,
+        durations=durations,
+        clips=clips,
+        schema_version=schema,
+    )
+
+
+def _parse_clip_chunk(body: bytes) -> list[Clip]:
+    """Decode a ``CLIP`` chunk body (mirror njn2DecodeClip)."""
+    if len(body) < 1:
+        raise ValueError("truncated CLIP chunk")
+    num_clips = body[0]
+    pos = 1
+    clips: list[Clip] = []
+    for _ in range(num_clips):
+        if pos + 18 > len(body):
+            raise ValueError("truncated CLIP chunk")
+        name = body[pos:pos + 16].rstrip(b"\x00").decode("utf-8", "replace")
+        loop_mode = body[pos + 16]
+        num_frames = body[pos + 17]
+        pos += 18
+        if pos + num_frames * 5 > len(body):
+            raise ValueError("truncated CLIP chunk")
+        frames: list[tuple[int, int, int]] = []
+        for _ in range(num_frames):
+            frames.append(struct.unpack_from("<HHB", body, pos))
+            pos += 5
+        clips.append(Clip(name=name, loop_mode=loop_mode, frames=frames))
+    return clips
