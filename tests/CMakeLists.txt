@@ -370,6 +370,20 @@ target_include_directories(njn2_layered_test PRIVATE
 )
 add_test(NAME njn2_layered_test COMMAND njn2_layered_test)
 
+# Shared C++ layered-asset owner/loader + bounded per-applet arena
+# (ADR-0004, Tomodachi #95: LAYLA-01..LAYLA-17). Links enjin2_graphics for the
+# AssetArena / LayeredAssetStore translation units.
+add_executable(layered_asset_test
+    layered_asset_test.cpp
+)
+target_include_directories(layered_asset_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(layered_asset_test PRIVATE
+    enjin2_graphics
+)
+add_test(NAME layered_asset_test COMMAND layered_asset_test)
+
 # HUD numerals — glyph layout, digit-strip draw, RollingCounter, Timer
 # (ADR-0003 §8, #83). Links enjin2 for drawNumber/drawTimer (enjin2_graphics).
 add_executable(numerals_test
