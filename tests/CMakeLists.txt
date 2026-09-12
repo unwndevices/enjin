@@ -384,6 +384,20 @@ target_link_libraries(layered_asset_test PRIVATE
 )
 add_test(NAME layered_asset_test COMMAND layered_asset_test)
 
+# Retained layered-sprite instance: reconstruction + animation control
+# (ADR-0004, Tomodachi #96: LAYSP-01..LAYSP-23). Links enjin2_graphics for the
+# LayeredSprite translation unit.
+add_executable(layered_sprite_test
+    layered_sprite_test.cpp
+)
+target_include_directories(layered_sprite_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(layered_sprite_test PRIVATE
+    enjin2_graphics
+)
+add_test(NAME layered_sprite_test COMMAND layered_sprite_test)
+
 # HUD numerals — glyph layout, digit-strip draw, RollingCounter, Timer
 # (ADR-0003 §8, #83). Links enjin2 for drawNumber/drawTimer (enjin2_graphics).
 add_executable(numerals_test

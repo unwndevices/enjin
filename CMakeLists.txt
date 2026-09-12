@@ -93,6 +93,9 @@ target_sources(enjin2_graphics PRIVATE
     # Layered-asset arena + owner/loader (ADR-0004, Tomodachi #95)
     src/graphics/asset_arena.cpp
     src/graphics/layered_asset.cpp
+    # Retained layered-sprite instance: reconstruction + animation
+    # (ADR-0004, Tomodachi #96)
+    src/graphics/layered_sprite.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_graphics
