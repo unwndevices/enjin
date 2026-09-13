@@ -29,9 +29,10 @@ lua_State* LuaPlatform::createState(lua_Alloc allocator, void* ud) {
     }
     
 #elif defined(ESP32)
-    // ESP32: Use custom allocator with heap caps for optimal memory management
+    // ESP32: keep the Lua heap in PSRAM. Internal DMA-capable memory is shared
+    // by FreeRTOS, BLE, TinyUSB and display DMA, and a VM reset otherwise has
+    // too little contiguous headroom once those subsystems are running.
     if (!allocator) {
-        // Default ESP32 allocator using DMA-capable memory when possible
         allocator = [](void* ud, void* ptr, size_t osize, size_t nsize) -> void* {
             if (nsize == 0) {
                 if (ptr) {
@@ -41,15 +42,19 @@ lua_State* LuaPlatform::createState(lua_Alloc allocator, void* ud) {
             }
             
             if (ptr == nullptr) {
-                // Try DMA-capable memory first, fall back to regular heap
-                void* new_ptr = heap_caps_malloc(nsize, MALLOC_CAP_DMA);
+                void* new_ptr = heap_caps_malloc(
+                    nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
                 if (!new_ptr) {
                     new_ptr = heap_caps_malloc(nsize, MALLOC_CAP_8BIT);
                 }
                 return new_ptr;
             } else {
-                // Reallocate
-                return heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
+                void* new_ptr = heap_caps_realloc(
+                    ptr, nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+                if (!new_ptr) {
+                    new_ptr = heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
+                }
+                return new_ptr;
             }
         };
     }
