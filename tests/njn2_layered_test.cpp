@@ -25,6 +25,8 @@
  *   LAY-18  CLIP frame index out of range rejected.
  *   LAY-19  Duplicate CLIP rejected.
  *   LAY-20  Malformed directory entry rejected by the container reader.
+ *   LAY-21  Non-materialized decode leaves a non-owning pixel view that matches
+ *           a materialized decode (the device PSRAM load path, #100).
  */
 
 #include <enjin2/graphics/njn2.hpp>
@@ -548,6 +550,43 @@ static void test_LAY_20_bad_directory() {
 }
 
 // ---------------------------------------------------------------------------
+// LAY-21: non-materialized decode leaves a non-owning pixel view (#100)
+// ---------------------------------------------------------------------------
+static void test_LAY_21_nonmaterialized_pixels() {
+    printf("--- LAY-21: decode without materializing pixels ---\n");
+    std::vector<uint8_t> buf = writeLayered(makeFixture());
+
+    NjnV2Reader r;
+    ASSERT(r.open(buf.data(), buf.size()), "LAY-21: container opens");
+    NjnLayered out;
+    ASSERT(njn2DecodeLayered(r, out, nullptr, /*materializePixels=*/false),
+           "LAY-21: decode succeeds without pixel copies");
+
+    bool allViews = true;
+    for (const auto& img : out.images) {
+        if (!img.pixels.empty() || img.rawPixels == nullptr) allViews = false;
+    }
+    ASSERT(allViews, "LAY-21: images expose raw views only");
+
+    // The views read the same bytes a materialized decode copies out.
+    NjnV2Reader r2;
+    r2.open(buf.data(), buf.size());
+    NjnLayered materialized;
+    ASSERT(njn2DecodeLayered(r2, materialized), "LAY-21: materialized decode");
+    ASSERT(out.images.size() == materialized.images.size(),
+           "LAY-21: same image count");
+    for (size_t i = 0; i < out.images.size(); ++i) {
+        const size_t n =
+            static_cast<size_t>(out.images[i].w) * out.images[i].h;
+        bool same = materialized.images[i].pixels.size() == n;
+        for (size_t k = 0; same && k < n; ++k) {
+            same = out.images[i].rawPixels[k] == materialized.images[i].pixels[k];
+        }
+        ASSERT(same, "LAY-21: raw view matches materialized pixels");
+    }
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 int main() {
@@ -573,6 +612,7 @@ int main() {
     test_LAY_18_clip_frame_oob();
     test_LAY_19_duplicate_clip();
     test_LAY_20_bad_directory();
+    test_LAY_21_nonmaterialized_pixels();
 
     printf("=== Results: %d passed, %d failed ===\n", passes, failures);
     return failures == 0 ? 0 : 1;

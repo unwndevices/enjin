@@ -250,6 +250,12 @@ struct NjnPartImage {
     uint16_t w;                       ///< Cropped width in pixels (≥1).
     uint16_t h;                       ///< Cropped height in pixels (≥1).
     std::vector<uint8_t> pixels;      ///< w*h bytes, low nibble = palette index.
+    /// Non-owning view of the same w*h pixels inside the source container.
+    /// `njn2DecodeLayered()` fills this instead of `pixels` when decoding for a
+    /// direct copy into a destination (e.g. the PSRAM asset arena), so a large
+    /// asset never needs a second heap-resident pixel copy. Null when pixels
+    /// were materialized (the default) or the image was not decoded.
+    const uint8_t* rawPixels = nullptr;
 };
 
 /// One named sprite part.  The name is diagnostics metadata, never image identity.
@@ -800,6 +806,12 @@ inline void njn2WriteLayered(NjnV2Writer& w, const NjnLayered& asset) {
  * @param r       A reader that already `open()`ed the file successfully.
  * @param out     Decoded asset; only valid when the function returns true.
  * @param errMsg  Optional out-param receiving a static failure reason string.
+ * @param materializePixels
+ *                When true (default) each image owns a heap copy of its pixels.
+ *                When false, `NjnPartImage::rawPixels` points into @p r's buffer
+ *                instead, so a loader can copy straight into its destination
+ *                without a second full pixel copy (device PSRAM path, #100).
+ *                The reader buffer must outlive @p out in that case.
  * @return true on success; false on any malformed/unsupported input.
  *
  * Rejects: missing or duplicate required chunks, an unsupported layered schema
@@ -808,7 +820,8 @@ inline void njn2WriteLayered(NjnV2Writer& w, const NjnLayered& asset) {
  * fall outside 0..numFrames-1.  Unknown chunks are ignored.
  */
 inline bool njn2DecodeLayered(const NjnV2Reader& r, NjnLayered& out,
-                              const char** errMsg = nullptr) {
+                              const char** errMsg = nullptr,
+                              bool materializePixels = true) {
     auto fail = [&](const char* m) -> bool {
         if (errMsg) *errMsg = m;
         return false;
@@ -863,7 +876,11 @@ inline bool njn2DecodeLayered(const NjnV2Reader& r, NjnLayered& out,
             NjnPartImage img;
             img.w = w;
             img.h = h;
-            img.pixels.assign(imgChunk->data + pos, imgChunk->data + pos + pixelBytes);
+            if (materializePixels) {
+                img.pixels.assign(imgChunk->data + pos, imgChunk->data + pos + pixelBytes);
+            } else {
+                img.rawPixels = imgChunk->data + pos;
+            }
             pos += static_cast<uint32_t>(pixelBytes);
             out.images.push_back(std::move(img));
         }

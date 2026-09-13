@@ -2,13 +2,41 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
 #include <vector>
 
+#ifdef ESP32
+#include <esp_heap_caps.h>
+#endif
+
 namespace enjin2 {
 
 namespace {
+
+/// File-read scratch buffer, preferring PSRAM on device so the transient copy
+/// never competes for scarce internal DRAM (#100).
+uint8_t* allocScratch(size_t bytes) {
+#ifdef ESP32
+    uint8_t* p = static_cast<uint8_t*>(
+        heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (p == nullptr) {
+        p = static_cast<uint8_t*>(heap_caps_malloc(bytes, MALLOC_CAP_8BIT));
+    }
+    return p;
+#else
+    return static_cast<uint8_t*>(std::malloc(bytes));
+#endif
+}
+
+void freeScratch(uint8_t* p) {
+#ifdef ESP32
+    if (p != nullptr) heap_caps_free(p);
+#else
+    std::free(p);
+#endif
+}
 
 /// Overflow-checked byte-count multiply. Saturates to SIZE_MAX so the arena
 /// capacity check rejects rather than wrapping to a small "successful" size.
@@ -119,13 +147,19 @@ size_t buildLayered(uint8_t* base, const NjnLayered& decoded, PixelStorage stora
             layeredPixelBytes(decoded.images[i].w, decoded.images[i].h, storage);
         uint8_t* pixels = b.reserve(pixelBytes);
         if (base != nullptr) {
+            // The decoder either materialized the pixels or left a non-owning
+            // view into the source container (#100); either way there is exactly
+            // one source copy to read from.
+            const uint8_t* src = decoded.images[i].pixels.empty()
+                                     ? decoded.images[i].rawPixels
+                                     : decoded.images[i].pixels.data();
+            if (src == nullptr) continue;  // unreachable for a validated asset
             images[i].w = decoded.images[i].w;
             images[i].h = decoded.images[i].h;
             images[i].pixels = pixels;
             if (storage == PixelStorage::Packed4bpp) {
                 // Pack two row-major low-nibble indices per byte, low pixel
                 // first. The source is always one byte per pixel.
-                const uint8_t* src = decoded.images[i].pixels.data();
                 for (size_t px = 0; px < count; px += 2) {
                     const uint8_t lo = static_cast<uint8_t>(src[px] & 0x0F);
                     const uint8_t hi =
@@ -133,7 +167,7 @@ size_t buildLayered(uint8_t* base, const NjnLayered& decoded, PixelStorage stora
                     pixels[px >> 1] = static_cast<uint8_t>(lo | (hi << 4));
                 }
             } else {
-                std::memcpy(pixels, decoded.images[i].pixels.data(), pixelBytes);
+                std::memcpy(pixels, src, pixelBytes);
             }
         }
     }
@@ -179,14 +213,23 @@ LayeredAssetStore::Handle LayeredAssetStore::load(const std::string& path,
         return INVALID_HANDLE;
     }
 
-    std::vector<uint8_t> bytes(static_cast<size_t>(fileSize));
-    const size_t read = std::fread(bytes.data(), 1, bytes.size(), fp);
+    const size_t size = static_cast<size_t>(fileSize);
+    uint8_t* bytes = allocScratch(size);
+    if (bytes == nullptr) {
+        std::fclose(fp);
+        if (error != nullptr) *error = "out of memory for layered asset buffer";
+        return INVALID_HANDLE;
+    }
+    const size_t read = std::fread(bytes, 1, size, fp);
     std::fclose(fp);
-    if (read != bytes.size()) {
+    if (read != size) {
+        freeScratch(bytes);
         if (error != nullptr) *error = "incomplete layered asset read";
         return INVALID_HANDLE;
     }
-    return loadFromMemory(bytes.data(), bytes.size(), error);
+    const Handle handle = loadFromMemory(bytes, size, error);
+    freeScratch(bytes);
+    return handle;
 }
 
 LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
@@ -202,7 +245,12 @@ LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
     }
     NjnLayered decoded;
     const char* decodeError = nullptr;
-    if (!njn2DecodeLayered(reader, decoded, &decodeError)) {
+    // Decode as non-owning views into `data`: the pixels are copied straight
+    // into the arena below, so a large asset never needs a second full
+    // heap-resident copy (which on device is scarce internal DRAM). The caller
+    // guarantees `data` outlives this call.
+    if (!njn2DecodeLayered(reader, decoded, &decodeError,
+                           /*materializePixels=*/false)) {
         if (error != nullptr) {
             *error = decodeError != nullptr ? decodeError : "malformed layered asset";
         }
