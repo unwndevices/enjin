@@ -135,7 +135,7 @@ int LuaBindings::lua_engine_ui_panel(lua_State* L) {
     } else {
         // Legacy explicit (bg, border): a plain 1px solid outline.
         bg               = static_cast<uint8_t>(luaL_checkinteger(L, 5));
-        bstyle.color     = Pixel4(static_cast<uint8_t>(luaL_checkinteger(L, 6)));
+        bstyle.color     = static_cast<uint8_t>(luaL_checkinteger(L, 6));
         bstyle.thickness = 1;
         bstyle.radius    = 0;
         bstyle.kind      = BorderKind::Solid;

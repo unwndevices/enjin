@@ -16,6 +16,7 @@
 #include "../graphics/primitives.hpp"
 #include "../graphics/sprite.hpp"
 #include "../graphics/sprite_asset.hpp"
+#include "../graphics/njn2.hpp"
 #include "../input/input_state.hpp"
 #include "../ui/style.hpp"
 #include "../ui/spring.hpp"
@@ -445,6 +446,7 @@ private:
     uint8_t     assetBuffer_[65536];           ///< Fixed 64KB C++ buffer for loaded pixels
     uint32_t    assetBufferUsed_{0};           ///< Current offset into assetBuffer_
     SpriteAsset loadedAssets_[LUA_SPRITE_POOL_SIZE]{}; ///< Metadata for loaded assets
+    std::vector<NjnClip> loadedClips_[LUA_SPRITE_POOL_SIZE]; ///< Decoded v2 CLIP table per slot (empty for v1/no-clip)
 
     // ── Layer system ─────────────────────────────────────────────────────────
     static constexpr int MAX_LUA_LAYERS = 8;  ///< Ceiling matching ENJIN_LAYER_COUNT max
@@ -763,7 +765,34 @@ public:
      */
     const SpriteSheet* getSpriteSheet(int handle) const;
 
+    /**
+     * @brief Get the decoded v2 CLIP table for a loaded sprite slot (ADR-0003 §5/§6).
+     *
+     * Filled by engine.sprite.load() when the `.njn` is a v2 container with a
+     * CLIP chunk; empty for v1 assets or sheets with no clips.
+     * @param handle Sprite pool index (0..LUA_SPRITE_POOL_SIZE-1).
+     * @return Pointer to the slot's clip vector if active, nullptr otherwise.
+     */
+    const std::vector<NjnClip>* getLoadedClips(int handle) const;
+
 private:
+    /**
+     * @brief Read a `.njn` (v1 flat header or v2 typed-chunk container) into
+     *        asset slot @p handle (ADR-0003 §5/§6, Tomodachi #91).
+     *
+     * Copies the PIXL/pixel bytes into the fixed asset arena, fills the pool
+     * slot's SpriteSheet and the loadedAssets_/loadedClips_ metadata, and (v2
+     * only) decodes the ATTR chunk into @p outAttrs. The active flag and
+     * animation defaults are left to the caller. Does not resolve any path —
+     * @p path must already be absolute/asset-relative.
+     *
+     * @param path     Full filesystem path to the `.njn`.
+     * @param handle   Target slot (0..LUA_SPRITE_POOL_SIZE-1).
+     * @param outAttrs Receives the decoded v2 ATTR table (cleared for v1/absent).
+     * @return true on success; false on I/O, arena-full, or format error.
+     */
+    bool loadNjnAsset(const std::string& path, int handle, std::vector<TileAttr>& outAttrs);
+
     // Canvas management functions
     static int lua_getWidth(lua_State* L);
     static int lua_getHeight(lua_State* L);
@@ -817,9 +846,14 @@ private:
     static int lua_newSprite(lua_State* L);
     static int lua_loadSprite(lua_State* L);
     static int lua_freeSprite(lua_State* L);
+    static int lua_loadTilemap(lua_State* L);  ///< engine.tilemap.load(name) → C_Tilemap (#91)
     static int lua_drawSprite(lua_State* L);
     static int lua_updateSprite(lua_State* L);
     static int lua_setFrame(lua_State* L);
+
+    // HUD numerals (ADR-0003 §8, #83): gfx.number / gfx.timer draw digit strips.
+    static int lua_number(lua_State* L);  ///< gfx.number(x,y,value,{strip,pad,align,sep,spacing,padZeros}) → width
+    static int lua_timer(lua_State* L);   ///< gfx.timer(x,y,ms,{strip,align,spacing}) → width
 
     // Layer system bindings (LAYER-06)
     static int lua_setLayer(lua_State* L);
@@ -915,6 +949,7 @@ private:
     void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
     void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
     void registerUISubtable(lua_State* L);     ///< engine.ui.* sub-table (called from registerEngineTable)
+    void registerHudSubtable(lua_State* L);    ///< engine.hud.* sub-table (#83; called from registerEngineTable)
     void registerProxyMetatable();
 
     // engine.random.* binding functions

@@ -126,6 +126,14 @@ void LuaBindings::registerEngineTable() {
     luaBindFunctions(L, -1, kSpriteFuncs, ENJIN_ARRAY_LEN(kSpriteFuncs));
     lua_setfield(L, -2, "sprite");
 
+    // --- engine.tilemap sub-table (ADR-0003 §6, #91) ---
+    static const LuaFuncDef kTilemapFuncs[] = {
+        {"load", lua_loadTilemap},
+    };
+    lua_newtable(L);
+    luaBindFunctions(L, -1, kTilemapFuncs, ENJIN_ARRAY_LEN(kTilemapFuncs));
+    lua_setfield(L, -2, "tilemap");
+
     // --- engine.event sub-table (Phase 42: scene-scoped pub/sub) ---
     static const LuaFuncDef kEventFuncs[] = {
         {"on",   lua_engine_event_on},
@@ -230,6 +238,9 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.ui sub-table (Phase 52: UI-01..UI-04) ---
     registerUISubtable(L);
+
+    // --- engine.hud sub-table (#83: RollingCounter / Timer value objects) ---
+    registerHudSubtable(L);
 
     // --- engine.log top-level function (ENG-05) ---
     lua_pushcfunction(L, lua_engine_log);

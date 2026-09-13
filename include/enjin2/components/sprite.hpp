@@ -54,6 +54,7 @@ public:
         , _mode(AnimMode::Loop)
         , _forward(true)
         , _done(false)
+        , _paused(false)
     {}
 
     // ── Sheet ────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ public:
         _accumMs = 0.0f;
         _forward = true;
         _done = false;
+        _paused = false;
         _scrub = false;
         _clipIndex = -1;   // stop any clip playback; setClips()+play() re-arm it
         _clipFrame = 0;
@@ -107,6 +109,7 @@ public:
                 _accumMs   = 0.0f;
                 _forward   = true;
                 _done      = false;
+                _paused    = false;
                 _scrub     = false;
                 _frame     = _clips[i].frames[0].frameIndex;
                 _justAdvanced = false;
@@ -124,6 +127,62 @@ public:
     /** Name of the clip currently playing, or nullptr if none. */
     const char* currentClip() const {
         return (_clipIndex >= 0) ? _clips[static_cast<size_t>(_clipIndex)].name : nullptr;
+    }
+
+    /** Pause or resume timed animation without discarding elapsed frame time. */
+    void setPaused(bool paused) { _paused = paused; }
+
+    /** True while timed animation is paused. */
+    bool isPaused() const { return _paused; }
+
+    /** Restart the active clip, or the whole sheet when no clip is active.
+     *  Keeps the configured clip, loop mode, and paused state. */
+    void restart() {
+        if (!_sheet.data || _sheet.frameCount() == 0) return;
+        _accumSec = 0.0f;
+        _accumMs = 0.0f;
+        _forward = true;
+        _done = false;
+        _scrub = false;
+        _justAdvanced = false;
+        _justCompleted = false;
+        _frameEvent = 0;
+        if (_clipIndex >= 0) {
+            const NjnClip& clip = _clips[static_cast<size_t>(_clipIndex)];
+            if (clip.frames.empty()) return;
+            _clipFrame = 0;
+            _frame = clip.frames[0].frameIndex;
+            _frameEvent = clip.frames[0].eventId;
+        } else {
+            _frame = 0;
+        }
+    }
+
+    /** Move one frame forward or backward for paused inspection, wrapping at
+     *  either end. Clip stepping follows clip entry order, not sheet indices. */
+    void stepFrame(int direction) {
+        if (!_paused || direction == 0 || !_sheet.data) return;
+        const uint16_t n = clipOrSheetFrameCount();
+        if (n == 0) return;
+        _accumSec = 0.0f;
+        _accumMs = 0.0f;
+        _done = false;
+        _scrub = false;
+        _justAdvanced = false;
+        _justCompleted = false;
+        _frameEvent = 0;
+        if (_clipIndex >= 0) {
+            if (direction > 0) {
+                _clipFrame = static_cast<uint16_t>((_clipFrame + 1) % n);
+            } else {
+                _clipFrame = static_cast<uint16_t>((_clipFrame + n - 1) % n);
+            }
+            _frame = _clips[static_cast<size_t>(_clipIndex)].frames[_clipFrame].frameIndex;
+        } else if (direction > 0) {
+            _frame = static_cast<uint16_t>((_frame + 1) % n);
+        } else {
+            _frame = static_cast<uint16_t>((_frame + n - 1) % n);
+        }
     }
 
     // ── Polled clip events (ADR-0003 §5) ──────────────────────────────────────
@@ -224,7 +283,7 @@ public:
         _justCompleted = false;
         _frameEvent = 0;
 
-        if (!_sheet.data || _scrub) return;
+        if (!_sheet.data || _scrub || _paused) return;
 
         if (_clipIndex >= 0) {
             updateClip(dt);
@@ -245,6 +304,7 @@ private:
     AnimMode    _mode;     ///< Legacy loop mode
     bool        _forward;  ///< Ping-pong direction flag (true = forward)
     bool        _done;     ///< True when a Once animation has frozen
+    bool        _paused;   ///< True when timed animation is suspended
 
     // Clip state
     std::vector<NjnClip> _clips;      ///< Owned clip table

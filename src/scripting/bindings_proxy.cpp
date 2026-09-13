@@ -606,6 +606,142 @@ static int lua_tilemap_buildSolidRects(lua_State* L) {
 
 #undef CTILEMAP_PROXY_CHECK
 
+// engine.tilemap.load(name) -> C_Tilemap proxy, or nil (ADR-0003 §6, #91).
+//
+// Spawns an object in the active scene, attaches a C_Tilemap, and populates it
+// from the per-applet asset root: `<name>.njn` supplies the tileset sheet + the
+// inline ATTR table (#51), `<name>.njm` supplies the packed cells.
+//
+// Lifetime: the tileset pixels live in the shared asset arena and the tileset
+// occupies one sprite-pool slot until resetSpritePool() runs on the next scene
+// reload/hot-reload — the same model (and the same 16-slot / 64 KB ceiling) as
+// engine.sprite.load. Destroying the C_Tilemap alone does NOT reclaim the slot;
+// loading many maps within one scene session without a reload will exhaust the
+// pool. resetSpritePool() tears down every scene object's C_Tilemap together
+// with the arena, so its SpriteSheet never outlives the pixels it points into.
+int LuaBindings::lua_loadTilemap(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b) { lua_pushnil(L); return 1; }
+
+    const char* name = luaL_checkstring(L, 1);
+    if (!name) { lua_pushnil(L); return 1; }
+
+    // Active scene (same registry handle engine.scene.spawn/find use).
+    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
+    auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    if (scenePP == nullptr || *scenePP == nullptr) {
+        luaL_error(L, "engine.tilemap.load: no active scene");
+        return 0;  // unreachable — luaL_error longjmps
+    }
+    Scene* scene = *scenePP;
+
+    // Reserve a sprite-pool slot to own the tileset pixels for the map's lifetime.
+    int slot = -1;
+    for (int i = 0; i < LUA_SPRITE_POOL_SIZE; ++i) {
+        if (!b->spritePool[i].active) { slot = i; break; }
+    }
+    if (slot < 0) {
+        luaL_error(L, "engine.tilemap.load: sprite pool full (max %d)", LUA_SPRITE_POOL_SIZE);
+        return 0;
+    }
+
+    std::string base = b->assetPath_;
+    if (!base.empty() && base.back() != '/') base += '/';
+    base += name;
+
+    // Load the tileset .njn (sheet + inline ATTR).
+    std::vector<TileAttr> attrs;
+    if (!b->loadNjnAsset(base + ".njn", slot, attrs)) {
+        luaL_error(L, "engine.tilemap.load: failed to load tileset '%s.njn'", name);
+        return 0;
+    }
+    // Give the pinned slot well-defined animation state (mirrors sprite.load) so
+    // it never carries garbage from a prior occupant while marked active.
+    {
+        auto& s = b->spritePool[slot];
+        s.fps = 8.0f; s.accumSec = 0.0f; s.frame = 0;
+        s.mode = AnimMode::Loop; s.forward = true; s.done = false;
+        s.active = true;  // pin the arena; the sheet points into it
+    }
+
+    // On any failure past this point, release the pinned slot AND reclaim the
+    // tileset pixels we just bump-allocated (they still sit at the arena tip),
+    // so a pcall-guarded retry does not permanently leak the 64KB asset arena.
+    auto releaseSlot = [&]() {
+        auto& asset = b->loadedAssets_[slot];
+        if (asset.pixelDataSize > 0 &&
+            asset.pixelData + asset.pixelDataSize == b->assetBuffer_ + b->assetBufferUsed_) {
+            b->assetBufferUsed_ -= asset.pixelDataSize;
+        }
+        asset = SpriteAsset{};
+        b->loadedClips_[slot].clear();
+        b->spritePool[slot].active = false;
+    };
+
+    // Load and validate the .njm map.
+    FILE* fp = fopen((base + ".njm").c_str(), "rb");
+    if (!fp) {
+        releaseSlot();
+        luaL_error(L, "engine.tilemap.load: failed to read '%s.njm'", name);
+        return 0;
+    }
+    fseek(fp, 0, SEEK_END);
+    long njmSize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (njmSize <= 0) {
+        fclose(fp);
+        releaseSlot();
+        luaL_error(L, "engine.tilemap.load: empty '%s.njm'", name);
+        return 0;
+    }
+    std::string njm(static_cast<size_t>(njmSize), '\0');
+    size_t got = fread(&njm[0], 1, static_cast<size_t>(njmSize), fp);
+    fclose(fp);
+    const uint8_t* njmData = reinterpret_cast<const uint8_t*>(njm.data());
+    NjmHeader mh;
+    if (got != static_cast<size_t>(njmSize) ||
+        !parseNjmHeader(njmData, njm.size(), mh)) {
+        releaseSlot();
+        luaL_error(L, "engine.tilemap.load: invalid '%s.njm'", name);
+        return 0;
+    }
+
+    // Unpack cells (clamped to the component's fixed grid).
+    uint8_t mw = mh.mapW > C_Tilemap::MAX_MAP_W ? C_Tilemap::MAX_MAP_W : mh.mapW;
+    uint8_t mhgt = mh.mapH > C_Tilemap::MAX_MAP_H ? C_Tilemap::MAX_MAP_H : mh.mapH;
+    static uint16_t cells[C_Tilemap::MAX_MAP_W * C_Tilemap::MAX_MAP_H];
+    for (uint8_t ty = 0; ty < mhgt; ++ty) {
+        for (uint8_t tx = 0; tx < mw; ++tx) {
+            cells[ty * mw + tx] = njmCellAt(njmData, mh, tx, ty);
+        }
+    }
+
+    // Spawn the map object and populate its C_Tilemap.
+    Object* obj = scene->addObject<Object>();
+    if (!obj) {
+        releaseSlot();
+        luaL_error(L, "engine.tilemap.load: could not spawn map object");
+        return 0;
+    }
+    const ComponentRegistryEntry* e = findComponentEntry("C_Tilemap");
+    Component* comp = e ? e->add(obj) : nullptr;
+    auto* tm = static_cast<C_Tilemap*>(comp);
+    if (!tm) {
+        scene->removeObject(obj);
+        releaseSlot();
+        luaL_error(L, "engine.tilemap.load: could not attach C_Tilemap");
+        return 0;
+    }
+    tm->setSheet(b->spritePool[slot].sheet);
+    tm->setTiles(cells, mw, mhgt);
+    if (!attrs.empty()) {
+        tm->setAttrs(attrs.data(), static_cast<uint16_t>(attrs.size()));
+    }
+
+    return pushComponentProxyUserdata(L, comp, e->proxyMeta);
+}
+
 // __index metamethod for C_Tilemap_Proxy — dispatches all method names
 static int lua_ctilemap_proxy_index_impl(lua_State* L) {
     auto* proxy = static_cast<enjin2::ComponentProxy*>(
@@ -802,9 +938,22 @@ static int lua_sprite_setSheet(lua_State* L) {
     return 0;
 }
 
+// sprite:setClips(handle)  — pull the CLIP table decoded from a v2 .njn (#91), or
 // sprite:setClips({ {name=, loop=, frames={ {frame=,dur=,event=}, ... }}, ... })
 static int lua_sprite_setClips(lua_State* L) {
     CSPRITE_PROXY_CHECK(L, sp);
+
+    // Handle form: reuse the clips engine.sprite.load() decoded from the .njn.
+    if (lua_isnumber(L, 2)) {
+        int handle = static_cast<int>(lua_tointeger(L, 2));
+        LuaBindings* b = LuaBindings::getBindings(L);
+        if (!b) { luaL_error(L, "C_Sprite.setClips: LuaBindings not available"); return 0; }
+        const std::vector<enjin2::NjnClip>* loaded = b->getLoadedClips(handle);
+        if (!loaded) { luaL_error(L, "C_Sprite.setClips: invalid sprite handle %d", handle); return 0; }
+        sp->setClips(*loaded);
+        return 0;
+    }
+
     luaL_checktype(L, 2, LUA_TTABLE);
 
     std::vector<enjin2::NjnClip> clips;

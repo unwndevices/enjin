@@ -89,6 +89,13 @@ target_sources(enjin2_graphics PRIVATE
     src/graphics/primitives.cpp
     src/graphics/palette.cpp
     src/graphics/effects.cpp
+    src/graphics/numerals.cpp
+    # Layered-asset arena + owner/loader (ADR-0004, Tomodachi #95)
+    src/graphics/asset_arena.cpp
+    src/graphics/layered_asset.cpp
+    # Retained layered-sprite instance: reconstruction + animation
+    # (ADR-0004, Tomodachi #96)
+    src/graphics/layered_sprite.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_graphics
@@ -97,6 +104,10 @@ target_include_directories(enjin2_graphics
 )
 if(NOT ESP32)
     target_compile_definitions(enjin2_graphics PUBLIC VCV_RACK)
+else()
+    # asset_arena.cpp prefers PSRAM via esp_heap_caps on device (matches the
+    # enjin2_lua ESP32 define).
+    target_compile_definitions(enjin2_graphics PRIVATE ESP32)
 endif()
 target_link_libraries(enjin2_graphics PRIVATE enjin2_core)
 
@@ -110,6 +121,7 @@ target_sources(enjin2_ui PRIVATE
     src/ui/system.cpp
     src/ui/theme.cpp
     src/ui/style.cpp
+    src/ui/dialog.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_ui
@@ -193,6 +205,7 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_draw.cpp
         src/scripting/bindings_input_sprites.cpp
         src/scripting/bindings_sprite_load.cpp
+        src/scripting/bindings_numerals.cpp
         src/scripting/bindings_layers_text.cpp
         src/scripting/bindings_engine.cpp
         src/scripting/bindings_physics.cpp

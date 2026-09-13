@@ -360,6 +360,69 @@ target_include_directories(njn2_test PRIVATE
 )
 add_test(NAME njn2_test COMMAND njn2_test)
 
+# .njn v2 layered sprite chunk contract test (issue #93: LAY-01..LAY-20)
+# Header-only, no Lua dependency — always built.
+add_executable(njn2_layered_test
+    njn2_layered_test.cpp
+)
+target_include_directories(njn2_layered_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME njn2_layered_test COMMAND njn2_layered_test)
+
+# Shared C++ layered-asset owner/loader + bounded per-applet arena
+# (ADR-0004, Tomodachi #95: LAYLA-01..LAYLA-17). Links enjin2_graphics for the
+# AssetArena / LayeredAssetStore translation units.
+add_executable(layered_asset_test
+    layered_asset_test.cpp
+)
+target_include_directories(layered_asset_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(layered_asset_test PRIVATE
+    enjin2_graphics
+)
+add_test(NAME layered_asset_test COMMAND layered_asset_test)
+
+# Retained layered-sprite instance: reconstruction + animation control
+# (ADR-0004, Tomodachi #96: LAYSP-01..LAYSP-23). Links enjin2_graphics for the
+# LayeredSprite translation unit.
+add_executable(layered_sprite_test
+    layered_sprite_test.cpp
+)
+target_include_directories(layered_sprite_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(layered_sprite_test PRIVATE
+    enjin2_graphics
+)
+add_test(NAME layered_sprite_test COMMAND layered_sprite_test)
+
+# HUD numerals — glyph layout, digit-strip draw, RollingCounter, Timer
+# (ADR-0003 §8, #83). Links enjin2 for drawNumber/drawTimer (enjin2_graphics).
+add_executable(numerals_test
+    numerals_test.cpp
+)
+target_include_directories(numerals_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(numerals_test PRIVATE
+    enjin2
+)
+add_test(NAME numerals_test COMMAND numerals_test)
+
+# Applet-owned dialog primitive: paginate + type-on + advance FSM (Tomodachi #86).
+add_executable(dialog_test
+    dialog_test.cpp
+)
+target_include_directories(dialog_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(dialog_test PRIVATE
+    enjin2
+)
+add_test(NAME dialog_test COMMAND dialog_test)
+
 # C_Body / ColliderSet physics step (issue #80: PHYS-BODY-01..03)
 # Header-only, no Lua dependency — always built.
 add_executable(body_test
@@ -558,6 +621,21 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME sprite_lua_test COMMAND sprite_lua_test)
 
+    # HUD numerals Lua binding test (ADR-0003 §8, #83: gfx.number / gfx.timer +
+    # engine.hud.rollingCounter / engine.hud.timer value objects)
+    add_executable(numerals_lua_test
+        numerals_lua_test.cpp
+    )
+    target_include_directories(numerals_lua_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    target_link_libraries(numerals_lua_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME numerals_lua_test COMMAND numerals_lua_test)
+
     # C_Body / ColliderSet Lua binding test (ADR-0003 §4, #80: engine.scene.
     # colliders() + obj:add("C_Body") + body:step + polled contact buffer)
     add_executable(body_lua_test
@@ -737,6 +815,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME tilemap_lua_test COMMAND tilemap_lua_test)
+
+    # Runtime .njn v2 / .njm loaders (ADR-0003 §6, Tomodachi #91)
+    add_executable(asset_loader_test
+        asset_loader_test.cpp
+    )
+    target_include_directories(asset_loader_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(asset_loader_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME asset_loader_test COMMAND asset_loader_test)
 
     # Camera component test (Phase 44: CAM-01..CAM-06)
     add_executable(camera_test

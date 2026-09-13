@@ -28,6 +28,16 @@ target_link_libraries(bench_canvas PRIVATE
     enjin2_graphics
 )
 
+# bench_layered — layered-sprite packed vs unpacked arena storage (Tomodachi #98):
+# arena bytes, load time, allocation failures, and frame-time percentiles under
+# a four-layer composited layered-draw workload.
+add_executable(bench_layered bench_layered.cpp)
+target_include_directories(bench_layered PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(bench_layered PRIVATE
+    nanobench_vendor
+    enjin2_graphics
+)
+
 # bench_ecs — Object/Scene/Component ECS benchmarks (BENCH-03)
 add_executable(bench_ecs bench_ecs.cpp)
 target_include_directories(bench_ecs PRIVATE ${CMAKE_SOURCE_DIR}/include)

@@ -184,7 +184,7 @@ public:
      */
     static void drawRoundRect(ICanvas<TPixel>& canvas, const Rect& rect, int16_t radius, TPixel color) {
         BorderStyle style;
-        style.color = Pixel4(static_cast<uint8_t>(color));
+        style.color = static_cast<uint8_t>(color);
         style.thickness = 1;
         style.radius = static_cast<uint8_t>(radius < 0 ? 0 : radius);
         style.kind = BorderKind::Solid;

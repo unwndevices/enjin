@@ -49,6 +49,36 @@ python3 tools/aseprite2enjin.py hero.aseprite --name hero --output src/assets/he
 | `--name NAME` | derived from filename | C identifier for the array |
 | `--output FILE` | same dir as input, `.h` extension | Output header path |
 | `--grid WxH` | none | Cell size for spritesheet-in-image mode |
+| `--tilemap` | off | Dice under/over layers into a v1 `.njn` tileset + `.njm` map |
+| `--v2` | off | Emit a `.njn` **v2** container sheet (META+PIXL, plus a CLIP chunk from Aseprite frame tags) |
+| `--layered` | off | Emit a `.njn` **v2 layered** asset (cropped/deduplicated source-layer parts, frame-part references, durations, clips) |
+| `--palette` | none | Target Enjin `.gpl` palette (path or `tools/palettes` name); required for RGBA `--layered` sources |
+
+**`.njn` v2 animation sheet (frame tags → clips):**
+```
+python3 tools/aseprite2enjin.py walk.aseprite --v2 --output walk.njn
+```
+Each Aseprite frame becomes a sheet cell; every frame tag becomes a named clip
+whose per-frame durations come from the frame headers and whose loop mode maps
+from the tag's direction (forward/reverse → Loop, ping-pong → PingPong). See
+`README_tiled2enjin.md` for the shared `enjin_assets` library and the `.njn` v2
+container layout.
+
+**`.njn` v2 layered sprite (source layers → parts):**
+```
+python3 tools/aseprite2enjin.py hero.aseprite --layered --output hero.njn
+python3 tools/aseprite2enjin.py hero_rgba.aseprite --layered --palette enjin_default --output hero.njn
+```
+Each visible flat image layer (Normal blend, binary alpha, full opacity) becomes
+one named sprite part in bottom-to-top painter order. Cels are clipped to the
+authored canvas, tightly cropped, and deduplicated within their source layer
+(linked cels and identical artwork alike). Empty and absent cels become
+invisible frame-part references. Indexed sources map their palette indices to
+Enjin indices (index 15 is transparency); RGBA sources need `--palette` and
+match colours exactly. Groups, tilemap layers, non-Normal blending, nonzero cel
+z-index, opacity below 255, and partially transparent painted pixels are
+rejected. The converter prints an inspection summary (parts, images, reuse,
+ignored layers, clips, storage).
 
 ## Using in enjin
 

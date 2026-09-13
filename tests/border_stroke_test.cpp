@@ -39,6 +39,20 @@ static void test_solid_ring() {
     ASSERT(canvas.getPixel(2, 2) == 0, "solid: extreme corner rounded away");
 }
 
+// Canvas8 border colours are byte-wide palette indices, not Canvas4 ramp indices.
+static void test_canvas8_solid_preserves_full_width_color() {
+    Canvas8<32, 32> canvas;
+    canvas.clear(0);
+    BorderStyle st;
+    st.color = 200;
+    st.radius = 0;
+    st.kind = BorderKind::Solid;
+    strokeBorder(canvas, Rect(4, 4, 12, 12), st);
+
+    ASSERT(canvas.getPixel(10, 4) == 200,
+           "Canvas8 solid: full-width border colour is preserved");
+}
+
 // A thicker stroke inks `thickness` rows/columns of ring (t=3 -> 3 px deep).
 static void test_thickness() {
     Canvas4<32, 32> canvas;
@@ -81,6 +95,38 @@ static void test_bevel_two_tone() {
     ASSERT(canvas.getPixel(19, 12) == dark, "bevel: right edge is the dark tone");
 }
 
+static void test_canvas4_bevel_narrows_full_width_style_color() {
+    Canvas4<32, 32> canvas;
+    canvas.clear(Colors::BLACK);
+    BorderStyle st;
+    st.color = 16;
+    st.thickness = 2;
+    st.radius = 0;
+    st.kind = BorderKind::Bevel;
+    strokeBorder(canvas, Rect(4, 4, 16, 16), st);
+
+    ASSERT(canvas.getPixel(12, 4) == 0,
+           "Canvas4 bevel: full-width style colour narrows before ramp math");
+    ASSERT(canvas.getPixel(12, 19) == 1,
+           "Canvas4 bevel: dark tone derives from the narrowed colour");
+}
+
+static void test_canvas8_bevel_does_not_apply_pixel4_ramp_math() {
+    Canvas8<32, 32> canvas;
+    canvas.clear(0);
+    BorderStyle st;
+    st.color = 200;
+    st.thickness = 2;
+    st.radius = 0;
+    st.kind = BorderKind::Bevel;
+    strokeBorder(canvas, Rect(4, 4, 16, 16), st);
+
+    ASSERT(canvas.getPixel(12, 4) == 200,
+           "Canvas8 bevel: top edge keeps the byte-wide colour");
+    ASSERT(canvas.getPixel(12, 19) == 200,
+           "Canvas8 bevel: bottom edge keeps the byte-wide colour");
+}
+
 // A drop shadow paints an offset filled rounded rect behind the ring in the
 // one-step-darker tone; the ring itself is drawn on top at the origin.
 static void test_drop_shadow() {
@@ -104,6 +150,21 @@ static void test_drop_shadow() {
     ASSERT(canvas.getPixel(4, 10) == base, "shadow: ring drawn on top at origin");
 }
 
+static void test_canvas8_shadow_does_not_apply_pixel4_ramp_math() {
+    Canvas8<32, 32> canvas;
+    canvas.clear(0);
+    BorderStyle st;
+    st.color = 199;
+    st.radius = 0;
+    st.kind = BorderKind::DropShadow;
+    st.shadowDx = 3;
+    st.shadowDy = 3;
+    strokeBorder(canvas, Rect(4, 4, 12, 12), st);
+
+    ASSERT(canvas.getPixel(17, 17) == 199,
+           "Canvas8 shadow: offset fill keeps the byte-wide colour");
+}
+
 // A zero-radius stroke is exactly the square outline — no rounding, no gap.
 static void test_zero_radius_square() {
     Canvas4<32, 32> canvas;
@@ -121,9 +182,13 @@ static void test_zero_radius_square() {
 
 int main() {
     test_solid_ring();
+    test_canvas8_solid_preserves_full_width_color();
     test_thickness();
     test_bevel_two_tone();
+    test_canvas4_bevel_narrows_full_width_style_color();
+    test_canvas8_bevel_does_not_apply_pixel4_ramp_math();
     test_drop_shadow();
+    test_canvas8_shadow_does_not_apply_pixel4_ramp_math();
     test_zero_radius_square();
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
