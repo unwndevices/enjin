@@ -28,12 +28,16 @@ static void test_default_init()
            "Default palette size should be 15");
 
     RGB c0 = g_palette.getColor(0);
-    ASSERT(c0 == RGB(0x1a, 0x1c, 0x2c),
-           "Color[0] should be dark navy #1a1c2c");
+    ASSERT(c0 == RGB(0x00, 0x00, 0x00),
+           "Color[0] should be black #000000 (tomo system palette)");
 
-    RGB c12 = g_palette.getColor(12);
-    ASSERT(c12 == RGB(0xf4, 0xf4, 0xf4),
-           "Color[12] should be near-white #f4f4f4");
+    RGB c2 = g_palette.getColor(2);
+    ASSERT(c2 == RGB(0xff, 0xff, 0xff),
+           "Color[2] should be white #ffffff (tomo system palette)");
+
+    RGB c3 = g_palette.getColor(3);
+    ASSERT(c3 == RGB(0x1a, 0x1c, 0x2c),
+           "Color[3] should be navy #1a1c2c (tomo system palette)");
 
     RGB c14 = g_palette.getColor(14);
     ASSERT(c14 == RGB(0x33, 0x3c, 0x57),
@@ -72,8 +76,8 @@ static void test_set_get_color()
     ASSERT(ok, "loadPreset('default') should succeed after setColor test");
 
     RGB restored = g_palette.getColor(0);
-    ASSERT(restored == RGB(0x1a, 0x1c, 0x2c),
-           "Color[0] should be restored to dark navy after loadPreset('default')");
+    ASSERT(restored == RGB(0x00, 0x00, 0x00),
+           "Color[0] should be restored to black after loadPreset('default')");
 }
 
 // ============================================================
@@ -141,6 +145,21 @@ static void test_load_preset()
 
     bool ok_bad = g_palette.loadPreset("nonexistent");
     ASSERT(ok_bad == false, "loadPreset('nonexistent') should return false");
+}
+
+// The PICO-8 palette that was the system default before `tomo` is still
+// selectable by name.
+static void test_pico8_preset()
+{
+    printf("--- pico8 preset ---\n");
+
+    bool ok = g_palette.loadPreset("pico8");
+    ASSERT(ok, "loadPreset('pico8') should return true");
+    ASSERT(g_palette.getSize() == 15, "Pico8 preset size should be 15");
+    ASSERT(g_palette.getColor(0) == RGB(0x1a, 0x1c, 0x2c),
+           "pico8[0] should be dark navy #1a1c2c");
+
+    g_palette.loadPreset("default");
 }
 
 // ============================================================
@@ -211,6 +230,7 @@ int main()
     test_wrapping();
     test_transparency_before_modulo();
     test_load_preset();
+    test_pico8_preset();
     test_parse_hex_color();
     test_ramp_index();
     test_lighten_darken_clamp();

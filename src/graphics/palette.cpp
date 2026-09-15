@@ -5,10 +5,35 @@
 namespace enjin2 {
 
 // ============================================================
-// Default palette: PICO-8 minus #94b0c2, 15 colors (indices 0-14)
+// Default (system) palette: the authored `tomo_tune2` Aseprite palette
+// (tools/testdata/tomo_tune2.gpl), 15 opaque colors (indices 0-14). Index 15
+// is transparent. This is the one system theme every screen boots with; the
+// reference layered asset was exported against exactly these indices.
 // ============================================================
 static constexpr RGB DEFAULT_COLORS[15] = {
-    {0x1a, 0x1c, 0x2c}, // 0  — dark navy (default background)
+    {0x00, 0x00, 0x00}, // 0  — black
+    {0x89, 0x89, 0x89}, // 1  — grey
+    {0xff, 0xff, 0xff}, // 2  — white
+    {0x1a, 0x1c, 0x2c}, // 3  — navy
+    {0x5d, 0x27, 0x5d}, // 4  — purple
+    {0xb1, 0x3e, 0x53}, // 5  — red
+    {0xef, 0x7d, 0x57}, // 6  — orange
+    {0xff, 0xcd, 0x75}, // 7  — yellow
+    {0xa7, 0xf0, 0x70}, // 8  — light green
+    {0x38, 0xb7, 0x64}, // 9  — green
+    {0x25, 0x71, 0x79}, // 10 — teal
+    {0x3b, 0x5d, 0xc9}, // 11 — blue
+    {0x73, 0xef, 0xf7}, // 12 — cyan
+    {0x56, 0x6c, 0x86}, // 13 — slate
+    {0x33, 0x3c, 0x57}, // 14 — dark slate
+};
+
+// ============================================================
+// PICO-8 preset: the previous default (PICO-8 minus #94b0c2), 15 colors.
+// Kept as a named preset so the old look is still selectable.
+// ============================================================
+static constexpr RGB PICO8_COLORS[15] = {
+    {0x1a, 0x1c, 0x2c}, // 0  — dark navy
     {0x5d, 0x27, 0x5d}, // 1  — dark purple
     {0xb1, 0x3e, 0x53}, // 2  — dark red
     {0xef, 0x7d, 0x57}, // 3  — orange
@@ -46,7 +71,8 @@ struct PalettePreset {
 
 static const PalettePreset PRESETS[] = {
     {"default", DEFAULT_COLORS, 15},
-    {"gameboy",  GAMEBOY_COLORS,  4},
+    {"pico8",    PICO8_COLORS,  15},
+    {"gameboy",  GAMEBOY_COLORS, 4},
 };
 
 static constexpr int PRESET_COUNT = static_cast<int>(sizeof(PRESETS) / sizeof(PRESETS[0]));

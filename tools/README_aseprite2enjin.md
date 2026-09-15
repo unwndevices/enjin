@@ -97,28 +97,28 @@ The `SpriteSheet` constructor takes `(data, cellW, cellH, cols, rows)`. The usag
 
 ## Palette Reference
 
-The default palette is a PICO-8 variant with 15 colors. Index 15 is always transparent.
+The default palette is the authored `tomo` palette with 15 colors. Index 15 is always transparent.
 
 | Index | Hex | Name |
 |-------|-----|------|
-|  0 | `#1A1C2C` | dark navy |
-|  1 | `#5D275D` | dark purple |
-|  2 | `#B13E53` | dark red |
-|  3 | `#EF7D57` | orange |
-|  4 | `#FFCD75` | yellow |
-|  5 | `#A7F070` | light green |
-|  6 | `#38B764` | green |
-|  7 | `#257179` | dark teal |
-|  8 | `#29366F` | dark blue |
-|  9 | `#3B5DC9` | blue |
-| 10 | `#41A6F6` | light blue |
-| 11 | `#73EFF7` | cyan |
-| 12 | `#F4F4F4` | near-white |
-| 13 | `#566C86` | slate blue-grey |
+|  0 | `#000000` | black |
+|  1 | `#898989` | grey |
+|  2 | `#FFFFFF` | white |
+|  3 | `#1A1C2C` | navy |
+|  4 | `#5D275D` | purple |
+|  5 | `#B13E53` | red |
+|  6 | `#EF7D57` | orange |
+|  7 | `#FFCD75` | yellow |
+|  8 | `#A7F070` | light green |
+|  9 | `#38B764` | green |
+| 10 | `#257179` | teal |
+| 11 | `#3B5DC9` | blue |
+| 12 | `#73EFF7` | cyan |
+| 13 | `#566C86` | slate |
 | 14 | `#333C57` | dark slate |
 | 15 | `#FF00FF` | TRANSPARENT (skip when drawing) |
 
-The gameboy palette uses indices 0-3 (four green shades); indices 4-14 are unused (black placeholders); 15 is transparent.
+The legacy PICO-8 variant is still selectable at runtime as the `pico8` palette preset. The gameboy palette uses indices 0-3 (four green shades); indices 4-14 are unused (black placeholders); 15 is transparent.
 
 ## Limitations
 

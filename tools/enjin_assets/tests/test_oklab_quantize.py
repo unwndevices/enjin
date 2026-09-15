@@ -42,10 +42,10 @@ def test_load_default_palette():
     assert pal.name == "enjin-default"
     assert pal.rgb.shape == (15, 3)
     assert pal.oklab.shape == (15, 3)
-    # Index 3 is orange 239,125,87 in enjin_default.gpl.
-    assert tuple(pal.rgb[3]) == (239, 125, 87)
-    # Index 0 is dark navy 26,28,44.
-    assert tuple(pal.rgb[0]) == (26, 28, 44)
+    # Index 6 is orange 239,125,87 in enjin_default.gpl.
+    assert tuple(pal.rgb[6]) == (239, 125, 87)
+    # Index 0 is black 0,0,0.
+    assert tuple(pal.rgb[0]) == (0, 0, 0)
 
 
 def test_load_gpl_rejects_short_palette(tmp_path):
@@ -75,22 +75,22 @@ def test_transparent_pixels_map_to_index_15():
         [
             [239, 125, 87, 0],    # orange but fully transparent → 15
             [239, 125, 87, 128],  # exactly at threshold → transparent
-            [239, 125, 87, 129],  # just above threshold → orange (3)
+            [239, 125, 87, 129],  # just above threshold → orange (6)
         ],
         dtype=np.uint8,
     )
     res = quantize.quantize_rgba(rgba, pal)
-    assert list(res.indices) == [15, 15, 3]
+    assert list(res.indices) == [15, 15, 6]
     # Only one opaque pixel contributed to the error list.
     assert res.delta_e.shape == (1,)
 
 
 def test_near_colour_snaps_to_nearest_ramp():
     pal = palette.load_default()
-    # A slightly-off orange should still land on index 3 (orange).
+    # A slightly-off orange should still land on index 6 (orange).
     rgba = np.array([[235, 120, 90, 255]], dtype=np.uint8)
     res = quantize.quantize_rgba(rgba, pal)
-    assert res.indices[0] == 3
+    assert res.indices[0] == 6
     assert res.delta_e[0] < 0.05  # close
 
 

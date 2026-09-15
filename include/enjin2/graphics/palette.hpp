@@ -95,7 +95,7 @@ struct Palette {
     uint8_t size;                    ///< Active palette size — used for index wrapping
     bool debugTransparent;           ///< When true, renders transparent pixels as bright magenta
 
-    /** @brief Default constructor initializes to the PICO-8 minus #94b0c2 palette */
+    /** @brief Default constructor initializes to the system `tomo` palette */
     Palette();
 
     /**
@@ -147,9 +147,9 @@ struct Palette {
     /**
      * @brief Replace the active palette with a named preset
      *
-     * Supported preset names: "default", "gameboy". The palette `size` is
-     * updated to match the preset's entry count. Index wrapping uses the new
-     * size after load.
+     * Supported preset names: "default" (the system `tomo` palette), "pico8",
+     * "gameboy". The palette `size` is updated to match the preset's entry
+     * count. Index wrapping uses the new size after load.
      *
      * @param name Null-terminated preset name string
      * @return true if preset was found and loaded, false if name is unknown
