@@ -245,16 +245,24 @@ LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
     }
     NjnLayered decoded;
     const char* decodeError = nullptr;
+    const char* decodeWarn = nullptr;
     // Decode as non-owning views into `data`: the pixels are copied straight
     // into the arena below, so a large asset never needs a second full
     // heap-resident copy (which on device is scarce internal DRAM). The caller
     // guarantees `data` outlives this call.
     if (!njn2DecodeLayered(reader, decoded, &decodeError,
-                           /*materializePixels=*/false)) {
+                           /*materializePixels=*/false, &decodeWarn)) {
         if (error != nullptr) {
             *error = decodeError != nullptr ? decodeError : "malformed layered asset";
         }
         return INVALID_HANDLE;
+    }
+    // Non-fatal: an out-of-canvas pivot is tolerated but surfaced, so authoring
+    // mistakes are visible on device rather than silently loaded (issue #133).
+    if (decodeWarn != nullptr) {
+        fprintf(stderr, "[enjin2] layered asset: %s (pivot %d,%d, canvas %ux%u)\n",
+                decodeWarn, decoded.pivotX, decoded.pivotY,
+                decoded.canvasW, decoded.canvasH);
     }
 
     // --- 2. Reserve a registry slot before committing anything. ---

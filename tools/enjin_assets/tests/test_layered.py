@@ -9,6 +9,7 @@ loadability.
 import os
 import struct
 import sys
+import warnings
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -38,6 +39,26 @@ def _fixture() -> emit.Layered:
         durations=[100, 150],
         clips=[emit.Clip("default", emit.LOOP_LOOP, [(0, 100, 0), (1, 150, 0)])],
     )
+
+
+# The base fixture with a single in-canvas static pivot (2, 1); its golden bytes
+# are asserted byte-identical to the C++ mirror (LAY-22).
+PIVOT_GOLDEN_HEX = (
+    "4e4a020007000000d50000004c484452600000000b0000004c494d476b000000"
+    "0d0000004c50525478000000200000004c52454698000000180000004c445552"
+    "b0000000040000004c504956b400000004000000434c4950b80000001d000000"
+    "010400040002000200020002000200000102030100010005626f647900000000"
+    "0000000000000000657965000000000000000000000000000000000000000100"
+    "0100feff0000ffff0000ffff0000000064009600020001000164656661756c74"
+    "000000000000000000010200006400000100960000"
+)
+
+
+def _pivot_fixture() -> emit.Layered:
+    asset = _fixture()
+    asset.pivot_x = 2
+    asset.pivot_y = 1
+    return asset
 
 
 def _dir_entries(buf: bytes):
@@ -354,3 +375,82 @@ def test_layered_writer_rejects_empty_images():
         assert False, "expected ValueError"
     except ValueError:
         pass
+
+
+# --- static pivot (LPIV, issue #133) ---------------------------------------
+
+def test_layered_pivot_golden_bytes():
+    data = emit.build_njn_layered(_pivot_fixture())
+    assert data == bytes.fromhex(PIVOT_GOLDEN_HEX)
+
+
+def test_layered_pivot_roundtrip():
+    data = emit.build_njn_layered(_pivot_fixture())
+    out = emit.parse_njn_layered(data)
+    assert (out.pivot_x, out.pivot_y) == (2, 1)
+
+
+def test_layered_pivot_reserialise():
+    data = emit.build_njn_layered(_pivot_fixture())
+    out = emit.parse_njn_layered(data)
+    assert emit.build_njn_layered(out) == data
+
+
+def test_layered_pivot_absent_defaults_zero():
+    # The base fixture leaves pivot at (0, 0), so no LPIV chunk is written and
+    # the pivot round-trips back to (0, 0).
+    data = emit.build_njn_layered(_fixture())
+    assert emit.CHUNK_LPIV not in emit.parse_njn(data).chunks
+    out = emit.parse_njn_layered(data)
+    assert (out.pivot_x, out.pivot_y) == (0, 0)
+
+
+def test_layered_pivot_negative_roundtrip_and_warns():
+    asset = _fixture()
+    asset.pivot_x, asset.pivot_y = -3, 1  # negative x is outside the canvas
+    data = emit.build_njn_layered(asset)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        out = emit.parse_njn_layered(data)
+    assert (out.pivot_x, out.pivot_y) == (-3, 1)
+    assert any("outside canvas" in str(w.message) for w in caught)
+
+
+def test_layered_pivot_outside_canvas_warns():
+    asset = _fixture()
+    asset.pivot_x, asset.pivot_y = 10, 10  # both beyond the 4x4 canvas
+    data = emit.build_njn_layered(asset)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        out = emit.parse_njn_layered(data)
+    assert (out.pivot_x, out.pivot_y) == (10, 10)
+    assert any("outside canvas" in str(w.message) for w in caught)
+
+
+def test_layered_pivot_inside_canvas_no_warning():
+    data = emit.build_njn_layered(_pivot_fixture())
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        emit.parse_njn_layered(data)
+    assert not caught
+
+
+def test_layered_duplicate_pivot():
+    w = emit.NjnV2Writer()
+    for tag, data in emit.parse_njn(emit.build_njn_layered(_pivot_fixture())).chunks.items():
+        w.add_chunk(tag, data)
+    w.add_chunk(emit.CHUNK_LPIV, struct.pack("<hh", 2, 1))
+    try:
+        emit.parse_njn_layered(w.finalise())
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "duplicate" in str(e)
+
+
+def test_layered_truncated_pivot():
+    buf = _set_size(emit.build_njn_layered(_pivot_fixture()), emit.CHUNK_LPIV, 3)
+    try:
+        emit.parse_njn_layered(buf)
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "LPIV" in str(e)

@@ -50,6 +50,7 @@
  * | `LPRT` | Named sprite parts, bottom-to-top painter order                |
  * | `LREF` | One frame-part reference per part per frame                    |
  * | `LDUR` | Authored per-frame durations (ms)                              |
+ * | `LPIV` | Optional single static pivot point (s16 x, s16 y)              |
  *
  * Chunk IDs not in the tables above are *unknown* and must be skipped silently.
  *
@@ -148,6 +149,8 @@ static constexpr NjnChunkTag NJN2_CHUNK_LPRT = {{ 'L','P','R','T' }};
 static constexpr NjnChunkTag NJN2_CHUNK_LREF = {{ 'L','R','E','F' }};
 /// Layered per-frame durations chunk: authored hold time per animation frame.
 static constexpr NjnChunkTag NJN2_CHUNK_LDUR = {{ 'L','D','U','R' }};
+/// Layered static-pivot chunk: one s16 pivotX + s16 pivotY for the whole sprite.
+static constexpr NjnChunkTag NJN2_CHUNK_LPIV = {{ 'L','P','I','V' }};
 
 /// The only layered schema version the codec understands.  A reader that sees
 /// a different value rejects the asset as an unsupported layered schema.
@@ -239,6 +242,10 @@ using NjnTileAttr = TileAttr;
 //   for each frame:
 //     u16  durationMs
 //
+// LPIV chunk byte layout (optional, at most one; absent = pivot (0,0)):
+//   s16  pivotX         (canvas top-left origin, +x right; pixel-center coord
+//   s16  pivotY          in 0..canvasW-1 / 0..canvasH-1; outside-canvas warns)
+//
 // CLIP chunk: unchanged layout; frame indices reference animation frames.
 //
 // Part-image identity is (w, h, canonical palette indices) only.  Offsets and
@@ -280,6 +287,11 @@ struct NjnLayered {
     std::vector<NjnFramePartRef> refs;///< Frame-major: numFrames × numParts.
     std::vector<uint16_t>     durations; ///< One per animation frame (ms).
     std::vector<NjnClip>      clips;  ///< Optional; frameIndex → animation frame.
+    /// Single static pivot point (canvas top-left origin, +x right / +y down;
+    /// pixel-center coord in 0..canvasW-1 / 0..canvasH-1).  Default (0,0) is
+    /// written as an absent LPIV chunk; an absent chunk decodes back to (0,0).
+    int16_t  pivotX = 0;
+    int16_t  pivotY = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -749,6 +761,8 @@ inline bool njn2DecodeClip(const NjnV2Chunk* c, std::vector<NjnClip>& out) {
  *
  * The CLIP chunk is reused unchanged; its frame indices reference animation
  * frames (0..numFrames-1), not sheet cells.  No META/PIXL fallback is written.
+ * A non-zero pivot is written as a 4-byte LPIV chunk (s16 pivotX, s16 pivotY);
+ * the default (0,0) pivot is left absent.
  */
 inline void njn2WriteLayered(NjnV2Writer& w, const NjnLayered& asset) {
     const uint16_t numFrames = static_cast<uint16_t>(asset.durations.size());
@@ -794,6 +808,13 @@ inline void njn2WriteLayered(NjnV2Writer& w, const NjnLayered& asset) {
     }
     w.endChunk();
 
+    if (asset.pivotX != 0 || asset.pivotY != 0) {
+        w.beginChunk(NJN2_CHUNK_LPIV);
+        w.writeU16LE(static_cast<uint16_t>(asset.pivotX));
+        w.writeU16LE(static_cast<uint16_t>(asset.pivotY));
+        w.endChunk();
+    }
+
     if (!asset.clips.empty()) {
         njn2WriteClip(w, asset.clips.data(), static_cast<uint8_t>(asset.clips.size()));
     }
@@ -812,16 +833,23 @@ inline void njn2WriteLayered(NjnV2Writer& w, const NjnLayered& asset) {
  *                instead, so a loader can copy straight into its destination
  *                without a second full pixel copy (device PSRAM path, #100).
  *                The reader buffer must outlive @p out in that case.
+ * @param warnMsg When non-null, receives a static warning-reason string for a
+ *                non-fatal condition the decode tolerated (currently: a pivot
+ *                outside the canvas).  Left untouched when nothing warns, so
+ *                initialise it to nullptr before the call.
  * @return true on success; false on any malformed/unsupported input.
  *
  * Rejects: missing or duplicate required chunks, an unsupported layered schema
  * version, zero/overflowing counts, truncated records, images with zero
  * dimensions, out-of-range part-image references, and CLIP frame indices that
- * fall outside 0..numFrames-1.  Unknown chunks are ignored.
+ * fall outside 0..numFrames-1.  A duplicate or truncated LPIV is rejected; an
+ * out-of-canvas pivot is tolerated with a warning (see @p warnMsg).  An absent
+ * LPIV decodes to pivot (0,0).  Unknown chunks are ignored.
  */
 inline bool njn2DecodeLayered(const NjnV2Reader& r, NjnLayered& out,
                               const char** errMsg = nullptr,
-                              bool materializePixels = true) {
+                              bool materializePixels = true,
+                              const char** warnMsg = nullptr) {
     auto fail = [&](const char* m) -> bool {
         if (errMsg) *errMsg = m;
         return false;
@@ -932,6 +960,22 @@ inline bool njn2DecodeLayered(const NjnV2Reader& r, NjnLayered& out,
             for (const auto& f : clip.frames) {
                 if (f.frameIndex >= numFrames) return fail("CLIP frame index out of range");
             }
+        }
+    }
+
+    // --- LPIV: optional, at most one; absent = pivot (0,0) ---
+    out.pivotX = 0;
+    out.pivotY = 0;
+    if (r.count(NJN2_CHUNK_LPIV) > 1) return fail("duplicate LPIV chunk");
+    const NjnV2Chunk* pivChunk = r.find(NJN2_CHUNK_LPIV);
+    if (pivChunk != nullptr) {
+        if (pivChunk->size < 4) return fail("truncated LPIV");
+        out.pivotX = rdS16(pivChunk->data);
+        out.pivotY = rdS16(pivChunk->data + 2);
+        if (warnMsg != nullptr &&
+            (out.pivotX < 0 || out.pivotX >= static_cast<int32_t>(canvasW) ||
+             out.pivotY < 0 || out.pivotY >= static_cast<int32_t>(canvasH))) {
+            *warnMsg = "pivot outside canvas";
         }
     }
 

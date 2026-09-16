@@ -12,6 +12,7 @@ without a C++ build.
 from __future__ import annotations
 
 import struct
+import warnings
 from dataclasses import dataclass, field
 
 # --- .njn v2 container constants (mirror njn2.hpp) ------------------------
@@ -34,6 +35,7 @@ CHUNK_LIMG = b"LIMG"
 CHUNK_LPRT = b"LPRT"
 CHUNK_LREF = b"LREF"
 CHUNK_LDUR = b"LDUR"
+CHUNK_LPIV = b"LPIV"
 
 #: The only layered schema version understood (mirror NJN2_LAYERED_SCHEMA_VERSION).
 LAYERED_SCHEMA_VERSION = 1
@@ -106,6 +108,13 @@ class Layered:
     marks the part invisible that frame.  ``parts`` lists names in bottom-to-top
     painter order.  ``clips`` is optional; its frame indices reference animation
     frames (0..num_frames-1), not sheet cells.
+
+    ``pivot_x`` / ``pivot_y`` are the sprite's single static pivot point in the
+    canvas coordinate space: top-left origin, +x right / +y down, a pixel-center
+    coordinate in ``0..canvas_w-1`` / ``0..canvas_h-1``.  An outside-canvas value
+    is allowed but warns on parse.  The default ``(0, 0)`` is written as an
+    absent ``LPIV`` chunk (``build_njn_layered`` only emits ``LPIV`` for a
+    non-zero pivot), and an absent chunk round-trips back to ``(0, 0)``.
     """
 
     canvas_w: int
@@ -116,6 +125,8 @@ class Layered:
     durations: list[int]
     clips: list[Clip] | None = None
     schema_version: int = LAYERED_SCHEMA_VERSION
+    pivot_x: int = 0
+    pivot_y: int = 0
 
 
 class NjnV2Writer:
@@ -312,7 +323,9 @@ def build_njn_layered(asset: Layered) -> bytes:
     whose ``pixels`` length disagrees with ``w*h``, or a count exceeding 16 bits).
 
     The ``CLIP`` chunk is reused unchanged; its frame indices reference animation
-    frames, not sheet cells.  No ``META``/``PIXL`` fallback is written.
+    frames, not sheet cells.  No ``META``/``PIXL`` fallback is written.  A
+    non-zero pivot is written as a 4-byte ``LPIV`` chunk (s16 pivotX, s16 pivotY);
+    the default ``(0, 0)`` pivot is left absent.
     """
     num_frames = len(asset.durations)
     num_parts = len(asset.parts)
@@ -374,6 +387,13 @@ def build_njn_layered(asset: Layered) -> bytes:
         b"".join(struct.pack("<H", d & 0xFFFF) for d in asset.durations),
     )
 
+    if asset.pivot_x or asset.pivot_y:
+        if not -0x8000 <= asset.pivot_x <= 0x7FFF or not -0x8000 <= asset.pivot_y <= 0x7FFF:
+            raise ValueError(
+                f"pivot ({asset.pivot_x},{asset.pivot_y}) outside s16 range"
+            )
+        w.add_chunk(CHUNK_LPIV, struct.pack("<hh", asset.pivot_x, asset.pivot_y))
+
     if asset.clips:
         w.add_chunk(CHUNK_CLIP, _build_clip_chunk(asset.clips))
 
@@ -388,6 +408,9 @@ def parse_njn_layered(buf: bytes) -> Layered:
     unsupported layered schema version, zero/overflowing counts, truncated
     records, zero-size images, out-of-range part-image references, and CLIP frame
     indices outside 0..num_frames-1.  Raises ``ValueError`` on any of these.
+    A duplicate or truncated ``LPIV`` is rejected; an out-of-canvas pivot is
+    allowed but warns via :mod:`warnings`.  An absent ``LPIV`` decodes to
+    ``pivot_x == pivot_y == 0``.
     """
     if len(buf) < NJN2_FILE_HEADER_SIZE:
         raise ValueError("buffer smaller than the file header")
@@ -422,6 +445,8 @@ def parse_njn_layered(buf: bytes) -> Layered:
             raise ValueError(f"duplicate required layered chunk {required!r}")
     if counts.get(CHUNK_CLIP, 0) > 1:
         raise ValueError("duplicate CLIP chunk")
+    if counts.get(CHUNK_LPIV, 0) > 1:
+        raise ValueError("duplicate LPIV chunk")
 
     hdr = chunks[CHUNK_LHDR]
     if len(hdr) < 11:
@@ -488,6 +513,18 @@ def parse_njn_layered(buf: bytes) -> Layered:
                 if frame_index >= num_frames:
                     raise ValueError("CLIP frame index out of range")
 
+    pivot_x, pivot_y = 0, 0
+    if CHUNK_LPIV in chunks:
+        lpiv = chunks[CHUNK_LPIV]
+        if len(lpiv) < 4:
+            raise ValueError("truncated LPIV")
+        pivot_x, pivot_y = struct.unpack_from("<hh", lpiv, 0)
+        if not (0 <= pivot_x < canvas_w and 0 <= pivot_y < canvas_h):
+            warnings.warn(
+                f"pivot ({pivot_x},{pivot_y}) outside canvas {canvas_w}x{canvas_h}",
+                stacklevel=2,
+            )
+
     return Layered(
         canvas_w=canvas_w,
         canvas_h=canvas_h,
@@ -497,6 +534,8 @@ def parse_njn_layered(buf: bytes) -> Layered:
         durations=durations,
         clips=clips,
         schema_version=schema,
+        pivot_x=pivot_x,
+        pivot_y=pivot_y,
     )
 
 

@@ -27,6 +27,13 @@
  *   LAY-20  Malformed directory entry rejected by the container reader.
  *   LAY-21  Non-materialized decode leaves a non-owning pixel view that matches
  *           a materialized decode (the device PSRAM load path, #100).
+ *   LAY-22  Writer emits the exact golden byte stream for a pivot (byte-identical
+ *           with the Python mirror), proving the LPIV chunk round-trips (#133).
+ *   LAY-23  Pivot round-trip + re-serialise; an in-canvas pivot does not warn.
+ *   LAY-24  Absent LPIV decodes to pivot (0,0) and writes no chunk.
+ *   LAY-25  Out-of-canvas pivot round-trips but warns via warnMsg.
+ *   LAY-26  Duplicate LPIV rejected.
+ *   LAY-27  Truncated LPIV rejected.
  */
 
 #include <enjin2/graphics/njn2.hpp>
@@ -587,6 +594,122 @@ static void test_LAY_21_nonmaterialized_pixels() {
 }
 
 // ---------------------------------------------------------------------------
+// LAY-22..LAY-27: static pivot (LPIV chunk, issue #133)
+// ---------------------------------------------------------------------------
+
+/// The base fixture with a single in-canvas static pivot (2, 1).
+static NjnLayered makePivotFixture() {
+    NjnLayered l = makeFixture();
+    l.pivotX = 2;
+    l.pivotY = 1;
+    return l;
+}
+
+// LAY-22: golden bytes with a pivot (byte-identical with the Python mirror).
+static void test_LAY_22_pivot_golden_bytes() {
+    printf("--- LAY-22: Pivot golden byte stream ---\n");
+    const std::vector<uint8_t> golden = fromHex(
+        "4e4a020007000000d50000004c484452600000000b0000004c494d476b000000"
+        "0d0000004c50525478000000200000004c52454698000000180000004c445552"
+        "b0000000040000004c504956b400000004000000434c4950b80000001d000000"
+        "010400040002000200020002000200000102030100010005626f647900000000"
+        "0000000000000000657965000000000000000000000000000000000000000100"
+        "0100feff0000ffff0000ffff0000000064009600020001000164656661756c74"
+        "000000000000000000010200006400000100960000");
+    const std::vector<uint8_t> written = writeLayered(makePivotFixture());
+    ASSERT(written.size() == golden.size(), "LAY-22: size matches");
+    ASSERT(written == golden, "LAY-22: bytes identical to Python mirror");
+
+    // The spec's "C++ read" side: decode the golden literal itself so the pivot
+    // is proven to come back from the exact bytes, not just from bytes our own
+    // writer produced.
+    NjnV2Reader r;
+    ASSERT(r.open(golden.data(), golden.size()), "LAY-22: golden opens");
+    NjnLayered out;
+    const char* warn = nullptr;
+    ASSERT(njn2DecodeLayered(r, out, nullptr, true, &warn), "LAY-22: golden decodes");
+    ASSERT(out.pivotX == 2 && out.pivotY == 1, "LAY-22: pivot read from golden bytes");
+    ASSERT(warn == nullptr, "LAY-22: in-canvas golden pivot does not warn");
+}
+
+// LAY-23: round-trip + re-serialise a pivot.
+static void test_LAY_23_pivot_roundtrip() {
+    printf("--- LAY-23: Pivot round-trip ---\n");
+    const std::vector<uint8_t> buf = writeLayered(makePivotFixture());
+    NjnV2Reader r;
+    r.open(buf.data(), buf.size());
+    NjnLayered out;
+    const char* warn = nullptr;
+    ASSERT(njn2DecodeLayered(r, out, nullptr, true, &warn), "LAY-23: decode succeeds");
+    ASSERT(out.pivotX == 2 && out.pivotY == 1, "LAY-23: pivot decoded");
+    ASSERT(warn == nullptr, "LAY-23: in-canvas pivot does not warn");
+    ASSERT(writeLayered(out) == buf, "LAY-23: re-serialised bytes identical");
+}
+
+// LAY-24: absent LPIV decodes to pivot (0,0) and writes no chunk.
+static void test_LAY_24_pivot_absent_default() {
+    printf("--- LAY-24: Absent pivot defaults to (0,0) ---\n");
+    const std::vector<uint8_t> buf = writeLayered(makeFixture());
+    NjnV2Reader r;
+    r.open(buf.data(), buf.size());
+    ASSERT(r.count(NJN2_CHUNK_LPIV) == 0, "LAY-24: no LPIV written for default pivot");
+    NjnLayered out;
+    const char* warn = nullptr;
+    ASSERT(njn2DecodeLayered(r, out, nullptr, true, &warn), "LAY-24: decode succeeds");
+    ASSERT(out.pivotX == 0 && out.pivotY == 0, "LAY-24: pivot is (0,0)");
+    ASSERT(warn == nullptr, "LAY-24: absent pivot does not warn");
+}
+
+// LAY-25: an out-of-canvas pivot round-trips but warns.
+static void test_LAY_25_pivot_outside_canvas_warns() {
+    printf("--- LAY-25: Out-of-canvas pivot warns ---\n");
+    NjnLayered src = makeFixture();
+    src.pivotX = -3;  // negative x is outside the 4x4 canvas
+    src.pivotY = 1;
+    const std::vector<uint8_t> buf = writeLayered(src);
+    NjnV2Reader r;
+    r.open(buf.data(), buf.size());
+    NjnLayered out;
+    const char* warn = nullptr;
+    ASSERT(njn2DecodeLayered(r, out, nullptr, true, &warn), "LAY-25: decode still succeeds");
+    ASSERT(out.pivotX == -3 && out.pivotY == 1, "LAY-25: pivot round-trips");
+    ASSERT(warn != nullptr && std::strstr(warn, "outside canvas") != nullptr,
+           "LAY-25: warns outside canvas");
+}
+
+// LAY-26: duplicate LPIV rejected.
+static void test_LAY_26_duplicate_pivot() {
+    printf("--- LAY-26: Duplicate LPIV rejected ---\n");
+    NjnV2Writer w;
+    njn2WriteLayered(w, makePivotFixture());
+    w.beginChunk(NJN2_CHUNK_LPIV);
+    w.writeU16LE(2);
+    w.writeU16LE(1);
+    w.endChunk();
+    std::vector<uint8_t> buf;
+    w.finalise(buf);
+    NjnV2Reader r;
+    ASSERT(r.open(buf.data(), buf.size()), "LAY-26: open succeeds");
+    NjnLayered out;
+    const char* err = nullptr;
+    ASSERT(!njn2DecodeLayered(r, out, &err), "LAY-26: duplicate LPIV rejected");
+    ASSERT(err != nullptr && std::strstr(err, "duplicate") != nullptr, "LAY-26: reason");
+}
+
+// LAY-27: truncated LPIV rejected.
+static void test_LAY_27_truncated_pivot() {
+    printf("--- LAY-27: Truncated LPIV rejected ---\n");
+    std::vector<uint8_t> buf = writeLayered(makePivotFixture());
+    setChunkSize(buf, 5, 3);  // LPIV is directory entry 5 (after LDUR)
+    NjnV2Reader r;
+    ASSERT(r.open(buf.data(), buf.size()), "LAY-27: open succeeds");
+    NjnLayered out;
+    const char* err = nullptr;
+    ASSERT(!njn2DecodeLayered(r, out, &err), "LAY-27: truncated LPIV rejected");
+    ASSERT(err != nullptr && std::strstr(err, "LPIV") != nullptr, "LAY-27: reason");
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 int main() {
@@ -613,6 +736,12 @@ int main() {
     test_LAY_19_duplicate_clip();
     test_LAY_20_bad_directory();
     test_LAY_21_nonmaterialized_pixels();
+    test_LAY_22_pivot_golden_bytes();
+    test_LAY_23_pivot_roundtrip();
+    test_LAY_24_pivot_absent_default();
+    test_LAY_25_pivot_outside_canvas_warns();
+    test_LAY_26_duplicate_pivot();
+    test_LAY_27_truncated_pivot();
 
     printf("=== Results: %d passed, %d failed ===\n", passes, failures);
     return failures == 0 ? 0 : 1;
