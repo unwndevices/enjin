@@ -53,6 +53,7 @@ python3 tools/aseprite2enjin.py hero.aseprite --name hero --output src/assets/he
 | `--v2` | off | Emit a `.njn` **v2** container sheet (META+PIXL, plus a CLIP chunk from Aseprite frame tags) |
 | `--layered` | off | Emit a `.njn` **v2 layered** asset (cropped/deduplicated source-layer parts, frame-part references, durations, clips) |
 | `--palette` | none | Target Enjin `.gpl` palette (path or `tools/palettes` name); required for RGBA `--layered` sources |
+| `--pivot X,Y` | `0,0` | Static pivot point for `--layered` exports, in canvas pixel coordinates (written as an `LPIV` chunk; absent when `0,0`) |
 
 **`.njn` v2 animation sheet (frame tags → clips):**
 ```

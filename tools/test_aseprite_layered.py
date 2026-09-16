@@ -576,5 +576,66 @@ def test_cli_layered_writes_loadable_asset(tmp_path):
     assert 'Layered export' in result.stdout
 
 
+# ---------------------------------------------------------------------------
+# --pivot (issue #136)
+# ---------------------------------------------------------------------------
+
+def test_parse_pivot_valid():
+    assert a2e.parse_pivot('2,1') == (2, 1)
+    assert a2e.parse_pivot('-3,10') == (-3, 10)
+
+
+def test_parse_pivot_rejects_malformed():
+    import argparse
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        a2e.parse_pivot('2')
+    with pytest.raises(argparse.ArgumentTypeError):
+        a2e.parse_pivot('a,b')
+
+
+def test_cli_layered_pivot_flag_carries_into_njn(tmp_path):
+    import subprocess
+
+    frame0 = _frame([
+        _layer_chunk('body'),
+        _cel_chunk(0, [1] * 4, width=2, height=2),
+    ])
+    ase_path = _write(tmp_path, _aseprite([frame0], width=2, height=2), 'pivot.aseprite')
+    out_path = os.path.join(str(tmp_path), 'pivot.njn')
+    tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'aseprite2enjin.py')
+
+    subprocess.run(
+        [sys.executable, tool, ase_path, '--layered', '--pivot', '1,0',
+         '--output', out_path],
+        capture_output=True, text=True, check=True,
+    )
+
+    with open(out_path, 'rb') as f:
+        out = emit.parse_njn_layered(f.read())
+    assert (out.pivot_x, out.pivot_y) == (1, 0)
+
+
+def test_cli_layered_without_pivot_flag_defaults_zero(tmp_path):
+    import subprocess
+
+    frame0 = _frame([
+        _layer_chunk('body'),
+        _cel_chunk(0, [1] * 4, width=2, height=2),
+    ])
+    ase_path = _write(tmp_path, _aseprite([frame0], width=2, height=2), 'nopivot.aseprite')
+    out_path = os.path.join(str(tmp_path), 'nopivot.njn')
+    tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'aseprite2enjin.py')
+
+    subprocess.run(
+        [sys.executable, tool, ase_path, '--layered', '--output', out_path],
+        capture_output=True, text=True, check=True,
+    )
+
+    with open(out_path, 'rb') as f:
+        out = emit.parse_njn_layered(f.read())
+    assert (out.pivot_x, out.pivot_y) == (0, 0)
+
+
 if __name__ == '__main__':
     sys.exit(pytest.main([__file__, '-v']))

@@ -1258,6 +1258,8 @@ def _run_layered(args, input_path):
         parsed = parse_aseprite_layered(input_path)
         target_palette = _load_target_palette(args.palette) if args.palette else None
         asset, summary = build_layered_asset(parsed, target_palette)
+        if args.pivot is not None:
+            asset.pivot_x, asset.pivot_y = args.pivot
         data = _emit.build_njn_layered(asset)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -1401,6 +1403,18 @@ def parse_grid(value: str):
     return (w, h)
 
 
+def parse_pivot(value: str):
+    """Parse an X,Y pivot string. Returns (x, y) or raises."""
+    parts = value.split(',')
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError(f"Pivot must be X,Y (e.g. 4,2), got: {value!r}")
+    try:
+        x, y = int(parts[0]), int(parts[1])
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Pivot coordinates must be integers, got: {value!r}")
+    return (x, y)
+
+
 def _run_tilemap(args, input_path):
     """Tilemap authoring path: emit a .njn tileset + a .njm map (issue #41)."""
     tile_w, tile_h = args.grid if args.grid else (16, 16)
@@ -1461,6 +1475,10 @@ def main():
     parser.add_argument("--palette", default=None,
                         help="Target Enjin palette (.gpl path or tools/palettes name) "
                              "required for RGBA layered sources")
+    parser.add_argument("--pivot", default=None, type=parse_pivot, metavar="X,Y",
+                        help="Static pivot point for --layered exports, in canvas "
+                             "pixel coordinates (default: 0,0, written as an "
+                             "absent LPIV chunk)")
 
     args = parser.parse_args()
 
