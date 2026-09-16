@@ -30,6 +30,9 @@
  *   LAYSP-24  A store-retained asset survives free() while a sprite is bound.
  *   LAYSP-25  Packed and unpacked store assets render identical pixels across
  *            every frame and flip combination.
+ *   LAYSP-26  Pivot getter returns the asset pivot; absent/unbound reads (0,0).
+ *   LAYSP-27  A non-zero pivot anchors the drawn frame on the position.
+ *   LAYSP-28  The pivot mirrors around the extent under hflip/vflip.
  */
 
 #include <enjin2/graphics/asset_arena.hpp>
@@ -253,7 +256,13 @@ static void test_flips() {
     s.setFrame(1);  // ring image2@(4,2)
     Canvas4<CW, CH> c;
 
+    // The default (0,0) pivot anchors the authored top-left, which the flip
+    // formulas mirror to (canvasW-1, canvasH-1). Position each case at the
+    // flipped anchor so the drawn box lands back at the canvas origin and the
+    // golden maps below stay in extent coordinates.
+
     // H flip: authored x=4,5 mirror to x=1,0 around the 6-wide extent.
+    s.setPosition(5, 0);
     s.setHFlip(true);
     uint8_t eh[CW * CH];
     expectRect(eh, 15);
@@ -266,6 +275,7 @@ static void test_flips() {
     checkCanvas(c, eh, "LAYSP-06 horizontal flip");
 
     // V flip: authored y=2,3 mirror to y=3,2 around the 6-tall extent.
+    s.setPosition(0, 5);
     s.setHFlip(false);
     s.setVFlip(true);
     uint8_t ev[CW * CH];
@@ -279,6 +289,7 @@ static void test_flips() {
     checkCanvas(c, ev, "LAYSP-07 vertical flip");
 
     // Both axes.
+    s.setPosition(5, 5);
     s.setHFlip(true);
     uint8_t eb[CW * CH];
     expectRect(eb, 15);
@@ -739,10 +750,85 @@ static void test_storage_parity() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// LAYSP-26..28: static pivot anchor (#135)
+// ---------------------------------------------------------------------------
+static void test_pivot() {
+    printf("--- LAYSP-26..28: static pivot anchor ---\n");
+
+    // Two views over the same render fixture: one with the default (0,0) pivot,
+    // one with an in-canvas pivot (4,2).
+    Fixture f0 = makeRenderAsset();
+    const LayeredAsset* a0 = f0.finish(6, 6);
+    Fixture fp = makeRenderAsset();
+    fp.asset.pivotX = 4;
+    fp.asset.pivotY = 2;
+    const LayeredAsset* ap = fp.finish(6, 6);
+
+    LayeredSprite ref;
+    LayeredSprite piv;
+    ref.bind(a0);
+    piv.bind(ap);
+
+    // LAYSP-26: the getter reports the asset pivot; an absent pivot reads (0,0).
+    ASSERT(piv.pivotX() == 4 && piv.pivotY() == 2, "LAYSP-26 getter returns the asset pivot");
+    ASSERT(ref.pivotX() == 0 && ref.pivotY() == 0, "LAYSP-26 absent pivot reads (0,0)");
+    LayeredSprite unbound;
+    ASSERT(unbound.pivotX() == 0 && unbound.pivotY() == 0, "LAYSP-26 unbound pivot is (0,0)");
+
+    // LAYSP-27/28: position each sprite at its own flipped pivot so both draw
+    // onto the same target origin; the reconstructed frame must then be
+    // identical, for every frame and flip. The pivot (like the default-pivot
+    // reference) mirrors around the extent under a flip (canvasW-1 / canvasH-1).
+    const int16_t cw = 6;
+    const int16_t ch = 6;
+    const int16_t originX = 1;
+    const int16_t originY = 1;
+    for (uint16_t fr = 0; fr < 3; ++fr) {
+        for (int flip = 0; flip < 4; ++flip) {
+            const bool h = (flip & 1) != 0;
+            const bool v = (flip & 2) != 0;
+            // Flipped pivots: reference (0,0) and the pivoted asset (4,2).
+            const int16_t rax = h ? static_cast<int16_t>(cw - 1) : 0;
+            const int16_t ray = v ? static_cast<int16_t>(ch - 1) : 0;
+            const int16_t pax = h ? static_cast<int16_t>(cw - 1 - 4) : 4;
+            const int16_t pay = v ? static_cast<int16_t>(ch - 1 - 2) : 2;
+
+            ref.setFrame(fr);
+            ref.setFlip(h, v);
+            ref.setPosition(static_cast<int16_t>(originX + rax),
+                            static_cast<int16_t>(originY + ray));
+            piv.setFrame(fr);
+            piv.setFlip(h, v);
+            piv.setPosition(static_cast<int16_t>(originX + pax),
+                            static_cast<int16_t>(originY + pay));
+
+            Canvas4<CW, CH> cr;
+            Canvas4<CW, CH> cp;
+            cr.clear(Pixel4(15));
+            cp.clear(Pixel4(15));
+            ref.draw(cr);
+            piv.draw(cp);
+
+            bool same = true;
+            for (uint16_t y = 0; y < CH && same; ++y) {
+                for (uint16_t x = 0; x < CW; ++x) {
+                    if (cr.getPixel(x, y).value != cp.getPixel(x, y).value) {
+                        same = false;
+                        break;
+                    }
+                }
+            }
+            ASSERT(same, "LAYSP-27/28: pivot anchors the frame across flips");
+        }
+    }
+}
+
 int main() {
     printf("=== layered_sprite_test: retained layered sprite (#96) ===\n");
     test_reconstruction();
     test_flips();
+    test_pivot();
     test_clip_selection();
     test_timed_playback();
     test_frame_and_scrub();

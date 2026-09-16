@@ -122,6 +122,10 @@ struct LayeredAsset {
     const LayeredClip* clips;         ///< numClips records.
     uint16_t numClips;
     PixelStorage storage;             ///< Arena pixel representation (#98).
+    int16_t pivotX;                   ///< Static positioning anchor (canvas-space,
+                                      ///< +x right/+y down); absent LPIV → (0,0).
+    int16_t pivotY;                   ///< Paired with pivotX; LayeredSprite mirrors
+                                      ///< both around the extent under a flip.
 };
 
 /**

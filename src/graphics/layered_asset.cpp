@@ -119,6 +119,8 @@ size_t buildLayered(uint8_t* base, const NjnLayered& decoded, PixelStorage stora
         view->clips = clips;
         view->numClips = static_cast<uint16_t>(nClips);
         view->storage = storage;
+        view->pivotX = decoded.pivotX;
+        view->pivotY = decoded.pivotY;
 
         for (size_t i = 0; i < nParts; ++i) {
             std::memcpy(parts[i].name, decoded.parts[i].name, sizeof(parts[i].name));

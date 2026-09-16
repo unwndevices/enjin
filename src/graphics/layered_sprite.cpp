@@ -351,7 +351,22 @@ uint8_t LayeredSprite::activeEventId(uint16_t pos) const {
 // ---------------------------------------------------------------------------
 
 void LayeredSprite::draw(ICanvas<Pixel4>& target) const {
-    blit(target, x_, y_);
+    // The position places the asset's static pivot. Under a flip the pivot pixel
+    // mirrors around the authored extent (canvasW-1-pivotX / canvasH-1-pivotY),
+    // so the origin subtracts the flipped pivot to keep it on the position. An
+    // absent pivot is (0,0), which anchors the authored top-left as before.
+    int16_t anchorX = 0;
+    int16_t anchorY = 0;
+    if (asset_ != nullptr) {
+        const int16_t canvasW = static_cast<int16_t>(asset_->canvasW);
+        const int16_t canvasH = static_cast<int16_t>(asset_->canvasH);
+        anchorX = hflip_ ? static_cast<int16_t>(canvasW - 1 - asset_->pivotX)
+                         : asset_->pivotX;
+        anchorY = vflip_ ? static_cast<int16_t>(canvasH - 1 - asset_->pivotY)
+                         : asset_->pivotY;
+    }
+    blit(target, static_cast<int16_t>(x_ - anchorX),
+         static_cast<int16_t>(y_ - anchorY));
 }
 
 void LayeredSprite::blit(ICanvas<Pixel4>& target, int16_t originX, int16_t originY) const {

@@ -82,11 +82,22 @@ public:
     /// Whether an asset is bound.
     bool isBound() const { return asset_ != nullptr; }
 
-    // ── Position (top-left of the authored canvas) ───────────────────────────
+    // ── Position (places the asset's pivot anchor) ───────────────────────────
+    //
+    // The position is the screen coordinate the asset's static pivot is drawn
+    // at. With the default pivot (0,0) this is the authored canvas top-left, so
+    // an asset without an `LPIV` chunk positions exactly as before. A non-zero
+    // pivot shifts the drawn frame so the pivot pixel lands on the position, and
+    // a flip mirrors the pivot around the canvas extent (see @ref pivotX).
 
     void setPosition(int16_t x, int16_t y) { x_ = x; y_ = y; }
     int16_t positionX() const { return x_; }
     int16_t positionY() const { return y_; }
+
+    /// Authored static pivot of the bound asset — the positioning anchor before
+    /// flips. 0 when unbound; an absent `LPIV` chunk decodes to (0,0).
+    int16_t pivotX() const { return asset_ != nullptr ? asset_->pivotX : 0; }
+    int16_t pivotY() const { return asset_ != nullptr ? asset_->pivotY : 0; }
 
     /// Authored canvas width — stable for every frame. 0 when unbound.
     uint16_t width() const { return asset_ != nullptr ? asset_->canvasW : 0; }
