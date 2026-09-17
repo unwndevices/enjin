@@ -224,6 +224,9 @@ if(ENJIN2_BUILD_LUA)
         src/components/tilemap.cpp
         src/components/camera.cpp
         src/scripting/lua_event_bus.cpp
+        # Skin-pack loader seam (Tomodachi #154): a graphics seam whose manifest
+        # reader needs Lua, so it lives here (enjin2_graphics stays Lua-free).
+        src/graphics/skin_pack.cpp
     )
     target_include_directories(enjin2_lua
         PRIVATE
