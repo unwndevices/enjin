@@ -23,7 +23,7 @@ namespace enjin2 {
  */
 struct SkinPack {
     /// Named-asset capacity. A skin holds a handful of sheets (e.g. tileset,
-    /// border, controls, room to grow).
+    /// border, controls), with room to grow.
     static constexpr int MAX_ASSETS = 8;
     /// Inclusive cap on a skin-asset name (bytes, NUL-terminated).
     static constexpr int NAME_CAP = 24;
