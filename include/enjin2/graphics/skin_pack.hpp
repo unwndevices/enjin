@@ -22,8 +22,8 @@ namespace enjin2 {
  * when omitted, so a caller can fall back per-asset.
  */
 struct SkinPack {
-    /// Named-asset capacity. A skin holds a handful of sheets (tileset, border,
-    /// controls, cover fallback, room to grow).
+    /// Named-asset capacity. A skin holds a handful of sheets (e.g. tileset,
+    /// border, controls, room to grow).
     static constexpr int MAX_ASSETS = 8;
     /// Inclusive cap on a skin-asset name (bytes, NUL-terminated).
     static constexpr int NAME_CAP = 24;
@@ -77,8 +77,8 @@ bool loadSkinPack(const std::string& folder, LayeredAssetStore& store,
  * @brief Copy a pack's palette colours + size into @p dst.
  *
  * The live-switch palette step (#147): overwrite the destination palette from
- * the pack. The caller rebuilds any RGB565 LUT and redraws — covers and sprites
- * store indices, so they recolour for free.
+ * the pack. The caller rebuilds any RGB565 LUT and redraws — sprites store
+ * indices, so they recolour for free.
  */
 void applySkinPalette(const SkinPack& pack, Palette& dst);
 
