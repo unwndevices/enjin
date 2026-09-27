@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790153012137,
+  "lastUpdate": 1790506513565,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -2805,6 +2805,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3465,
             "range": "± 0.57%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "67eacf9507e7974481ec989ef2b372bc8f21cfe3",
+          "message": "fix(graphics): exact-midpoint sagged line, overflow-safe curves + lines (Tomodachi #226)\n\nReview follow-ups for drawQuadBezier / drawSaggedLine.\n\n- drawSaggedLine puts the control point over the chord's exact midpoint\n  instead of rounding it toward (x0,y0). With the control point there, x\n  moves evenly along the curve, so the Span is the graph\n  chord + 4*sag*k*(w-k)/w^2 and is drawn column by column on exact\n  integer terms, using drawLine's own decisions on the exact curve:\n  - odd-width level Spans droop symmetrically (was 195/290 asymmetric);\n  - Sag 0 is drawLine, and more Sag only moves pixels down, steep chords\n    included (was 67/3320 chords popping up from Sag 0 to 1);\n  - a curve that turns back is walked from both ends toward the turn, and\n    the two halves drop an \"L\" against each other's end;\n  - a vertical chord draws drawLine at any Sag instead of running past\n    its lower end.\n- The corner filter also drops a one-pixel spur (the next pixel touches\n  the one before the last, not only diagonally), where a curve dips less\n  than a pixel past an end and comes back.\n- drawLine's error terms are 32-bit, so a span longer than 32767 px ends\n  (it looped forever); drawQuadBezier's chord test is 64-bit. Pixels far\n  outside int16_t are skipped instead of wrapping onto the canvas.\n- Cleanups: one helper for the turn-point formula, the pixel rule stated\n  in words, readable half-walk state, no pixel drawn twice at the join.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-09-27T12:53:06+02:00",
+          "tree_id": "bf996d82d8a50c7669a9b70e30cd30164d3128da",
+          "url": "https://github.com/unwndevices/enjin/commit/67eacf9507e7974481ec989ef2b372bc8f21cfe3"
+        },
+        "date": 1790506512263,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 281,
+            "range": "± 0.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 84578,
+            "range": "± 0.17%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 992,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 5 layers",
+            "value": 6432,
+            "range": "± 0.47%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (5 layers)",
+            "value": 38387,
+            "range": "± 0.3%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 291,
+            "range": "± 0.34%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 791,
+            "range": "± 1.15%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1452,
+            "range": "± 0.73%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2695.5,
+            "range": "± 0.77%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3998,
+            "range": "± 0.49%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 90,
+            "range": "± 1.1%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 90,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 211,
+            "range": "± 2.28%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 311,
+            "range": "± 0.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 60363.5,
+            "range": "± 1.63%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 986.5,
+            "range": "± 4.23%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1788,
+            "range": "± 6.41%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2685,
+            "range": "± 2.43%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2520,
+            "range": "± 1.41%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1543,
+            "range": "± 5.22%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 4098,
+            "range": "± 0.27%",
             "unit": "ns/op"
           }
         ]
