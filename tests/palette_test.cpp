@@ -28,20 +28,16 @@ static void test_default_init()
            "Default palette size should be 15");
 
     RGB c0 = g_palette.getColor(0);
-    ASSERT(c0 == RGB(0x00, 0x00, 0x00),
-           "Color[0] should be black #000000 (tomo system palette)");
+    ASSERT(c0 == RGB(0x08, 0x1a, 0x1c),
+           "Color[0] should be the darkest green #081a1c (system green ramp)");
 
-    RGB c2 = g_palette.getColor(2);
-    ASSERT(c2 == RGB(0xff, 0xff, 0xff),
-           "Color[2] should be white #ffffff (tomo system palette)");
-
-    RGB c3 = g_palette.getColor(3);
-    ASSERT(c3 == RGB(0x1a, 0x1c, 0x2c),
-           "Color[3] should be navy #1a1c2c (tomo system palette)");
+    RGB c7 = g_palette.getColor(7);
+    ASSERT(c7 == RGB(0x3d, 0x96, 0x28),
+           "Color[7] should be the middle green #3d9628");
 
     RGB c14 = g_palette.getColor(14);
-    ASSERT(c14 == RGB(0x33, 0x3c, 0x57),
-           "Color[14] should be dark slate #333c57");
+    ASSERT(c14 == RGB(0xe8, 0xf4, 0xcc),
+           "Color[14] should be the lightest green #e8f4cc");
 }
 
 // ============================================================
@@ -76,8 +72,8 @@ static void test_set_get_color()
     ASSERT(ok, "loadPreset('default') should succeed after setColor test");
 
     RGB restored = g_palette.getColor(0);
-    ASSERT(restored == RGB(0x00, 0x00, 0x00),
-           "Color[0] should be restored to black after loadPreset('default')");
+    ASSERT(restored == RGB(0x08, 0x1a, 0x1c),
+           "Color[0] should be restored to the darkest green after loadPreset('default')");
 }
 
 // ============================================================
@@ -145,6 +141,22 @@ static void test_load_preset()
 
     bool ok_bad = g_palette.loadPreset("nonexistent");
     ASSERT(ok_bad == false, "loadPreset('nonexistent') should return false");
+}
+
+// The hue-ordered `tomo` palette that was the system default before the green
+// ramp is still selectable by name.
+static void test_tomo_preset()
+{
+    printf("--- tomo preset ---\n");
+
+    bool ok = g_palette.loadPreset("tomo");
+    ASSERT(ok, "loadPreset('tomo') should return true");
+    ASSERT(g_palette.getSize() == 15, "tomo preset size should be 15");
+    ASSERT(g_palette.getColor(2) == RGB(0xff, 0xff, 0xff), "tomo[2] should be white #ffffff");
+    ASSERT(g_palette.getColor(3) == RGB(0x1a, 0x1c, 0x2c), "tomo[3] should be navy #1a1c2c");
+
+    g_palette.loadPreset("default");
+    ASSERT(g_palette.getColor(0) == RGB(0x08, 0x1a, 0x1c), "default is back to the green ramp");
 }
 
 // The PICO-8 palette that was the system default before `tomo` is still
@@ -230,6 +242,7 @@ int main()
     test_wrapping();
     test_transparency_before_modulo();
     test_load_preset();
+    test_tomo_preset();
     test_pico8_preset();
     test_parse_hex_color();
     test_ramp_index();

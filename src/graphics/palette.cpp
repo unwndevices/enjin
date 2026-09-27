@@ -5,12 +5,35 @@
 namespace enjin2 {
 
 // ============================================================
-// Default (system) palette: the authored `tomo_tune2` Aseprite palette
-// (tools/testdata/tomo_tune2.gpl), 15 opaque colors (indices 0-14). Index 15
-// is transparent. This is the one system theme every screen boots with; the
-// reference layered asset was exported against exactly these indices.
+// Default (system) palette: Tomodachi's tape-deck green ramp (its music
+// player's template skin), 15 opaque colors from darkest (0) to lightest (14).
+// Index 15 is transparent. This is the one system theme every screen boots
+// with.
 // ============================================================
 static constexpr RGB DEFAULT_COLORS[15] = {
+    {0x08, 0x1a, 0x1c}, // 0  — darkest
+    {0x0c, 0x28, 0x28}, // 1
+    {0x11, 0x35, 0x33}, // 2
+    {0x16, 0x46, 0x32}, // 3
+    {0x1a, 0x57, 0x31}, // 4
+    {0x21, 0x6d, 0x2a}, // 5
+    {0x27, 0x83, 0x22}, // 6
+    {0x3d, 0x96, 0x28}, // 7
+    {0x52, 0xa8, 0x2e}, // 8
+    {0x6b, 0xb9, 0x35}, // 9
+    {0x83, 0xca, 0x3c}, // 10
+    {0x9b, 0xd2, 0x50}, // 11
+    {0xb2, 0xda, 0x63}, // 12
+    {0xce, 0xe8, 0x96}, // 13
+    {0xe8, 0xf4, 0xcc}, // 14 — lightest
+};
+
+// ============================================================
+// tomo preset: the previous default, the authored `tomo_tune2` Aseprite
+// palette (tools/testdata/tomo_tune2.gpl), ordered by hue. Kept as a named
+// preset so hue-indexed art (the tomo_tune2 reference asset) still resolves.
+// ============================================================
+static constexpr RGB TOMO_COLORS[15] = {
     {0x00, 0x00, 0x00}, // 0  — black
     {0x89, 0x89, 0x89}, // 1  — grey
     {0xff, 0xff, 0xff}, // 2  — white
@@ -71,6 +94,7 @@ struct PalettePreset {
 
 static const PalettePreset PRESETS[] = {
     {"default", DEFAULT_COLORS, 15},
+    {"tomo",     TOMO_COLORS,   15},
     {"pico8",    PICO8_COLORS,  15},
     {"gameboy",  GAMEBOY_COLORS, 4},
 };

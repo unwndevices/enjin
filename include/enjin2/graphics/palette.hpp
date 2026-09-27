@@ -95,7 +95,7 @@ struct Palette {
     uint8_t size;                    ///< Active palette size — used for index wrapping
     bool debugTransparent;           ///< When true, renders transparent pixels as bright magenta
 
-    /** @brief Default constructor initializes to the system `tomo` palette */
+    /** @brief Default constructor initializes to the system palette (the green ramp) */
     Palette();
 
     /**
@@ -147,7 +147,8 @@ struct Palette {
     /**
      * @brief Replace the active palette with a named preset
      *
-     * Supported preset names: "default" (the system `tomo` palette), "pico8",
+     * Supported preset names: "default" (the system green ramp), "tomo" (the
+     * previous, hue-ordered system palette), "pico8",
      * "gameboy". The palette `size` is updated to match the preset's entry
      * count. Index wrapping uses the new size after load.
      *
