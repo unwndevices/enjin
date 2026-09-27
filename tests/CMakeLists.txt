@@ -76,6 +76,17 @@ target_link_libraries(primitives_roundrect_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME primitives_roundrect_test COMMAND primitives_roundrect_test)
 
+# Quadratic Bezier primitive test (Tomodachi #226: drawQuadBezier + sagged line, Sag 0 = drawLine)
+add_executable(primitives_quad_bezier_test
+    primitives_quad_bezier_test.cpp
+)
+target_include_directories(primitives_quad_bezier_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(primitives_quad_bezier_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME primitives_quad_bezier_test COMMAND primitives_quad_bezier_test)
+
 # Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
 add_executable(border_stroke_test
     border_stroke_test.cpp

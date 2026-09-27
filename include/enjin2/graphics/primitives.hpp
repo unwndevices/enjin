@@ -60,6 +60,117 @@ public:
     }
     
     /**
+     * @brief Draw a quadratic Bezier curve (Zingl's integer rasteriser)
+     * @param canvas Target canvas
+     * @param x0 Start X coordinate
+     * @param y0 Start Y coordinate
+     * @param cx Control point X coordinate
+     * @param cy Control point Y coordinate
+     * @param x1 End X coordinate
+     * @param y1 End Y coordinate
+     * @param color Curve color
+     *
+     * Zingl, "A Rasterizing Algorithm for Drawing Curves" (2012), §2: split
+     * where x or y turns back, so each piece steps in one fixed direction, and
+     * walk each piece with integer error terms. The pixel rule is the reel
+     * sheet's (`scripts/gen-tape-reel.mjs`): 8-connected, one pixel per step,
+     * no gaps, no doubled "L" corners, both ends drawn (Tomodachi #226).
+     *
+     * - A control point on the chord (between the ends) is the straight
+     *   segment and draws exactly @ref drawLine's pixels, so a Tape Span
+     *   doesn't flicker by a pixel as its Sag reaches 0.
+     * - When only one axis turns back (a Span drooping below both its ends),
+     *   both halves are walked on the curve's own error terms from their true
+     *   ends to the turn, rather than re-fitting each half through a rounded
+     *   turn point as Zingl does. That keeps every pixel the nearest one to
+     *   the curve, so more Sag only ever moves pixels down. A walk that would
+     *   leave its quadrant is caught by a dry run first, and falls back to
+     *   Zingl's split.
+     * - Where the slope crosses 45° the curve can pass through a pixel
+     *   corner; the corner pixel of the resulting "L" is dropped.
+     * - Split points are exact fractions rounded half away from zero from an
+     *   end, so mirrored curves come out mirrored.
+     *
+     * Integer only, no allocation; 64-bit error terms, so any int16_t curve
+     * fits. A curve that folds back within a pixel or two of itself (a
+     * hairpin) can't be a thin path, and may double up at the fold.
+     */
+    static void drawQuadBezier(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
+                               int16_t cx, int16_t cy, int16_t x1, int16_t y1, TPixel color) {
+        const int32_t cross = int32_t(cx - x0) * (y1 - y0) - int32_t(cy - y0) * (x1 - x0);
+        if (cross == 0 && cx >= std::min(x0, x1) && cx <= std::max(x0, x1) &&
+            cy >= std::min(y0, y1) && cy <= std::max(y0, y1)) {
+            drawLine(canvas, x0, y0, x1, y1, color);
+            return;
+        }
+
+        int64_t ax = x0, ay = y0, bx = cx, by = cy, ex = x1, ey = y1;
+        const bool turnsX = (ax - bx) * (ex - bx) > 0;
+        const bool turnsY = (ay - by) * (ey - by) > 0;
+        if (turnsX != turnsY && drawQuadHalves(canvas, ax, ay, bx, by, ex, ey, turnsY, color)) {
+            return;
+        }
+
+        // Zingl's plotQuadBezier: cut at each turn, re-fit the rest through it.
+        if (turnsX) {                                // x turns back: cut at the vertical tangent
+            if (turnsY) {                            // y turns back too: cut the nearer one first
+                const int64_t d = ax - 2 * bx + ex;
+                if (absI64((ay - 2 * by + ey) * (ax - bx)) > absI64(ay - by) * absI64(d)) {
+                    std::swap(ax, ex);
+                    std::swap(ay, ey);
+                }
+            }
+            const int64_t d = ax - 2 * bx + ex;      // cut at t = (ax - bx) / d
+            const int64_t t = ax - bx, u = ex - bx;
+            const int64_t px = ax + roundDiv(-t * t, d);
+            const int64_t py = ay + roundDiv(2 * t * u * (by - ay) + t * t * (ey - ay), d * d);
+            drawQuadSegment(canvas, ax, ay, px, ay + roundDiv((by - ay) * t, d), px, py, color);
+            by = ey + roundDiv((by - ey) * u, d);
+            ax = bx = px;
+            ay = py;
+        }
+        if ((ay - by) * (ey - by) > 0) {             // y turns back: cut at the horizontal tangent
+            const int64_t d = ay - 2 * by + ey;      // cut at t = (ay - by) / d
+            const int64_t t = ay - by, u = ey - by;
+            const int64_t px = ax + roundDiv(2 * t * u * (bx - ax) + t * t * (ex - ax), d * d);
+            const int64_t py = ay + roundDiv(-t * t, d);
+            drawQuadSegment(canvas, ax, ay, ax + roundDiv((bx - ax) * t, d), py, px, py, color);
+            bx = ex + roundDiv((bx - ex) * u, d);
+            ax = px;
+            ay = by = py;
+        }
+        drawQuadSegment(canvas, ax, ay, bx, by, ex, ey, color);
+    }
+
+    /**
+     * @brief Draw a line drooping straight down the screen by @p sag pixels
+     * @param canvas Target canvas
+     * @param x0 Start X coordinate
+     * @param y0 Start Y coordinate
+     * @param x1 End X coordinate
+     * @param y1 End Y coordinate
+     * @param sag Droop at the middle, in pixels (0 = taut; negative bows up)
+     * @param color Line color
+     *
+     * A Tape Span (Tomodachi #226): @ref drawQuadBezier with the control point
+     * at the chord midpoint pushed down by 2·sag, so the middle of the curve
+     * hangs exactly @p sag below the chord. Sag 0 is exactly @ref drawLine.
+     * An odd chord's midpoint rounds toward (x0, y0). On a steep chord, keep
+     * the control point above the lower end: past it the curve folds back
+     * over that end instead of drooping.
+     */
+    static void drawSaggedLine(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
+                               int16_t x1, int16_t y1, int16_t sag, TPixel color) {
+        if (sag == 0) {
+            drawLine(canvas, x0, y0, x1, y1, color);
+            return;
+        }
+        const int16_t cx = static_cast<int16_t>(x0 + (x1 - x0) / 2);
+        const int16_t cy = static_cast<int16_t>(y0 + (y1 - y0) / 2 + 2 * sag);
+        drawQuadBezier(canvas, x0, y0, cx, cy, x1, y1, color);
+    }
+
+    /**
      * @brief Draw rectangle outline
      * @param canvas Target canvas
      * @param rect Rectangle bounds
@@ -387,6 +498,193 @@ public:
         }
     }
 private:
+    static int64_t absI64(int64_t v) { return v < 0 ? -v : v; }
+
+    /// @brief n / d rounded to nearest, halves away from zero (mirror-symmetric).
+    static int64_t roundDiv(int64_t n, int64_t d) {
+        const int64_t q = (2 * absI64(n) + absI64(d)) / (2 * absI64(d));
+        return (n < 0) != (d < 0) ? -q : q;
+    }
+
+    /**
+     * @brief Pixel sink for one curve walk that drops doubled "L" corners
+     *
+     * Holds the last two pixels back. When the next one is diagonal to the
+     * older, the newer is the corner of an L and is dropped: the path stays
+     * 8-connected through the diagonal. The exact curve can pass through a
+     * pixel corner where its slope crosses 45°, and the walk then takes an
+     * x step and a y step one after the other.
+     */
+    struct Stroke {
+        ICanvas<TPixel>& canvas;
+        TPixel color;
+        int64_t ax = 0, ay = 0, bx = 0, by = 0;
+        int held = 0;
+
+        Stroke(ICanvas<TPixel>& c, TPixel col) : canvas(c), color(col) {}
+
+        void plot(int64_t x, int64_t y) {
+            if (held == 2 && x == bx && y == by) return;
+            if (held == 2 && absI64(x - ax) == 1 && absI64(y - ay) == 1) { bx = x; by = y; return; }
+            if (held == 2) { set(ax, ay); ax = bx; ay = by; bx = x; by = y; return; }
+            if (held == 1) { if (x == ax && y == ay) return; bx = x; by = y; held = 2; return; }
+            ax = x; ay = y; held = 1;
+        }
+
+        /// @brief Bresenham from (x0,y0) to (x1,y1): @ref drawLine's steps.
+        void line(int64_t x0, int64_t y0, int64_t x1, int64_t y1) {
+            const int64_t dx = absI64(x1 - x0), dy = absI64(y1 - y0);
+            const int64_t sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+            int64_t err = dx - dy;
+            while (true) {
+                plot(x0, y0);
+                if (x0 == x1 && y0 == y1) break;
+                const int64_t e2 = 2 * err;
+                if (e2 > -dy) { err -= dy; x0 += sx; }
+                if (e2 < dx)  { err += dx; y0 += sy; }
+            }
+        }
+
+        void finish() {
+            if (held >= 1) set(ax, ay);
+            if (held == 2) set(bx, by);
+            held = 0;
+        }
+
+        void set(int64_t x, int64_t y) {
+            canvas.setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), color);
+        }
+    };
+
+    /**
+     * @brief Walk one quadratic Bezier piece whose gradient keeps its sign
+     *
+     * Zingl's plotQuadBezierSeg with 64-bit error terms. It starts from the
+     * end farther from the control point and finishes with a straight line
+     * once the error terms can no longer tell the steps apart (or at once,
+     * for a straight piece).
+     */
+    static void drawQuadSegment(ICanvas<TPixel>& canvas, int64_t x0, int64_t y0,
+                                int64_t x1, int64_t y1, int64_t x2, int64_t y2, TPixel color) {
+        Stroke stroke(canvas, color);
+        int64_t sx = x2 - x1, sy = y2 - y1;
+        int64_t xx = x0 - x1, yy = y0 - y1;
+        int64_t cur = xx * sy - yy * sx;             // curvature
+        if (sx * sx + sy * sy > xx * xx + yy * yy) { // begin with the longer part
+            x2 = x0; x0 = sx + x1; y2 = y0; y0 = sy + y1; cur = -cur;
+        }
+        if (cur != 0) {
+            xx += sx; sx = x0 < x2 ? 1 : -1; xx *= sx;
+            yy += sy; sy = y0 < y2 ? 1 : -1; yy *= sy;
+            int64_t xy = 2 * xx * yy;                 // 2nd-degree differences
+            xx *= xx; yy *= yy;
+            if (cur * sx * sy < 0) { xx = -xx; yy = -yy; xy = -xy; cur = -cur; }
+            int64_t dx = 4 * sy * cur * (x1 - x0) + xx - xy; // 1st-degree differences
+            int64_t dy = 4 * sx * cur * (y0 - y1) + yy - xy;
+            xx += xx; yy += yy;
+            int64_t err = dx + dy + xy;
+            do {
+                stroke.plot(x0, y0);
+                if (x0 == x2 && y0 == y2) { stroke.finish(); return; }
+                const bool stepY = 2 * err < dx;
+                if (2 * err > dy) { x0 += sx; dx -= xy; dy += yy; err += dy; }
+                if (stepY)        { y0 += sy; dy -= xy; dx += xx; err += dx; }
+            } while (dy < 0 && dx > 0);              // gradient turned: finish straight
+        }
+        stroke.line(x0, y0, x2, y2);
+        stroke.finish();
+    }
+
+    static bool touches(int64_t ax, int64_t ay, int64_t bx, int64_t by) {
+        return absI64(ax - bx) <= 1 && absI64(ay - by) <= 1;
+    }
+
+    /**
+     * @brief Draw a curve with one turn as two walks that meet at the turn
+     * @return false (nothing drawn) if either walk would leave its quadrant
+     *
+     * The turn's column (y turns back) or row (x turns back) is rounded from
+     * the exact fraction; each half walks from its end until it steps onto
+     * that line. The two stop pixels are joined by whichever one touches both
+     * halves (the usual case is that they're the same pixel), else by a line.
+     */
+    static bool drawQuadHalves(ICanvas<TPixel>& canvas, int64_t ax, int64_t ay, int64_t bx,
+                               int64_t by, int64_t ex, int64_t ey, bool turnsY, TPixel color) {
+        int64_t line;
+        if (turnsY) {                                // along x at the horizontal tangent
+            const int64_t d = ay - 2 * by + ey, t = ay - by, u = ey - by;
+            line = ax + roundDiv(2 * t * u * (bx - ax) + t * t * (ex - ax), d * d);
+        } else {                                     // along y at the vertical tangent
+            const int64_t d = ax - 2 * bx + ex, t = ax - bx, u = ex - bx;
+            line = ay + roundDiv(2 * t * u * (by - ay) + t * t * (ey - ay), d * d);
+        }
+        int64_t s1x = ax, s1y = ay, l1x = ax, l1y = ay;
+        int64_t s2x = ex, s2y = ey, l2x = ex, l2y = ey;
+        if (!walkQuadHalf(nullptr, s1x, s1y, l1x, l1y, bx, by, ex, ey, line, turnsY) ||
+            !walkQuadHalf(nullptr, s2x, s2y, l2x, l2y, bx, by, ax, ay, line, turnsY)) {
+            return false;
+        }
+        Stroke half1(canvas, color), half2(canvas, color);
+        s1x = ax; s1y = ay; s2x = ex; s2y = ey;
+        walkQuadHalf(&half1, s1x, s1y, l1x, l1y, bx, by, ex, ey, line, turnsY);
+        walkQuadHalf(&half2, s2x, s2y, l2x, l2y, bx, by, ax, ay, line, turnsY);
+        const bool walked = !(s1x == ax && s1y == ay) && !(s2x == ex && s2y == ey);
+        if (walked && touches(l2x, l2y, s1x, s1y)) {
+            half1.plot(s1x, s1y);
+            half2.plot(s1x, s1y);
+        } else if (walked && touches(l1x, l1y, s2x, s2y)) {
+            half1.plot(s2x, s2y);
+            half2.plot(s2x, s2y);
+        } else {
+            half1.line(s1x, s1y, s2x, s2y);
+            half2.plot(s2x, s2y);
+        }
+        half1.finish();
+        half2.finish();
+        return true;
+    }
+
+    /**
+     * @brief Walk a curve from (x0,y0) toward its control point up to a turn
+     * @param stroke Pixel sink, or nullptr for a dry run that only checks
+     * @param x0 In: start (an end of the curve). Out: the first pixel not drawn
+     * @param y0 In: start. Out: the first pixel not drawn
+     * @param lastX Out: last pixel drawn before @p line (unchanged if none)
+     * @param lastY Out: last pixel drawn before @p line
+     * @param line Column (@p stopOnColumn) or row where the curve turns back
+     * @return true if the walk reached @p line, or turned within a pixel of it
+     *         (the turn lies between), without leaving its quadrant
+     *
+     * @ref drawQuadSegment's error terms, but for the whole curve (x2,y2 is
+     * the far end), so the walk tracks the true curve right up to the turn.
+     */
+    static bool walkQuadHalf(Stroke* stroke, int64_t& x0, int64_t& y0,
+                             int64_t& lastX, int64_t& lastY,
+                             int64_t x1, int64_t y1, int64_t x2, int64_t y2,
+                             int64_t line, bool stopOnColumn) {
+        const int64_t sx = x1 != x0 ? (x1 > x0 ? 1 : -1) : (x2 > x0 ? 1 : -1);
+        const int64_t sy = y1 != y0 ? (y1 > y0 ? 1 : -1) : (y2 > y0 ? 1 : -1);
+        int64_t cur = (x0 - x1) * (y2 - y1) - (y0 - y1) * (x2 - x1);
+        if (cur == 0) return false;
+        int64_t xx = (x0 - 2 * x1 + x2) * sx, yy = (y0 - 2 * y1 + y2) * sy;
+        int64_t xy = 2 * xx * yy;
+        xx *= xx; yy *= yy;
+        if (cur * sx * sy < 0) { xx = -xx; yy = -yy; xy = -xy; cur = -cur; }
+        int64_t dx = 4 * sy * cur * (x1 - x0) + xx - xy;
+        int64_t dy = 4 * sx * cur * (y0 - y1) + yy - xy;
+        xx += xx; yy += yy;
+        int64_t err = dx + dy + xy;
+        while (dy < 0 && dx > 0) {
+            if ((stopOnColumn ? x0 : y0) == line) return true;
+            if (stroke) stroke->plot(x0, y0);
+            lastX = x0; lastY = y0;
+            const bool stepY = 2 * err < dx;
+            if (2 * err > dy) { x0 += sx; dx -= xy; dy += yy; err += dy; }
+            if (stepY)        { y0 += sy; dy -= xy; dx += xx; err += dx; }
+        }
+        return absI64((stopOnColumn ? x0 : y0) - line) <= 1; // turned just short of it
+    }
+
     /**
      * @brief Fill a signed-extent rectangle (rounded-rect band helper)
      * @param canvas Target canvas
