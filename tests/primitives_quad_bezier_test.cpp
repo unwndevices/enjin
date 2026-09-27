@@ -10,13 +10,18 @@
 //     doubled "L" corners, no side-by-side steps, both endpoints drawn;
 //   - a curve mirrored about the vertical comes out mirrored;
 //   - a Span's middle droops by exactly its Sag, each column holds the pixel
-//     nearest the curve, and more Sag only ever moves pixels down;
-//   - dirty tiles and canvas-edge clipping behave like every other primitive.
+//     nearest the curve, and more Sag only ever moves pixels down, on steep
+//     chords too;
+//   - a Span's control point is the chord's exact midpoint, so odd-width
+//     level Spans droop symmetrically; a vertical chord stays straight;
+//   - dirty tiles and canvas-edge clipping behave like every other primitive,
+//     and spans longer than 32767 px end and stay in place.
 #include <enjin2/graphics/canvas.hpp>
 #include <enjin2/graphics/primitives.hpp>
 #include <cstdio>
 #include <algorithm>
 #include <cstdlib>
+#include <iterator>
 #include <numeric>
 
 using namespace enjin2;
@@ -166,11 +171,12 @@ static void test_sagged_curve_leaves_the_chord() {
     ASSERT(curve.getPixel(32, 10) == 0, "control 20 below a flat chord: chord middle not drawn");
 }
 
-// Is b the mirror image of a about column m (x <-> 2m - x)?
-static bool isMirrorAbout(const C& a, const C& b, int16_t m) {
+// Is b the mirror image of a about the vertical x = m2 / 2 (x <-> m2 - x)?
+// Doubled, so the axis can fall between two columns.
+static bool isMirrorAbout(const C& a, const C& b, int16_t m2) {
     for (int16_t y = 0; y < N; y++)
         for (int16_t x = 0; x < N; x++) {
-            const int16_t mx = 2 * m - x;
+            const int16_t mx = m2 - x;
             const bool other = mx >= 0 && mx < N && b.getPixel(mx, y) != 0;
             if ((a.getPixel(x, y) != 0) != other) return false;
         }
@@ -188,7 +194,7 @@ static void test_symmetric_curve_is_symmetric() {
             P::drawQuadBezier(curve, 32 - half, 8, 32, 8 + 2 * sag, 32 + half, 8, Colors::WHITE);
             snprintf(msg, sizeof msg, "level chord half-width %d, sag %d: symmetric about its middle",
                      half, sag);
-            ASSERT(isMirrorAbout(curve, curve, 32), msg);
+            ASSERT(isMirrorAbout(curve, curve, 64), msg);
         }
     }
 }
@@ -208,7 +214,46 @@ static void test_mirrored_inputs_mirror_the_pixels() {
             P::drawQuadBezier(mirror, 64 - c.x0, c.y0, 64 - cx, cy, 64 - c.x1, c.y1, Colors::WHITE);
             snprintf(msg, sizeof msg, "(%d,%d)-(%d,%d) control (%d,%d): mirrored inputs, mirrored pixels",
                      c.x0, c.y0, c.x1, c.y1, cx, cy);
-            ASSERT(isMirrorAbout(curve, mirror, 32), msg);
+            ASSERT(isMirrorAbout(curve, mirror, 64), msg);
+        }
+    }
+}
+
+// A vertical chord has no room to droop straight down: at any Sag it is the
+// straight line between its ends, never running past the lower one.
+static void test_vertical_span_stays_drawLine() {
+    char msg[160];
+    static const Chord kVertical[] = {{20, 10, 20, 50}, {20, 50, 20, 10}, {5, 30, 5, 31}, {60, 0, 60, 63}};
+    for (const Chord& c : kVertical) {
+        C line;
+        line.clear(Colors::BLACK);
+        P::drawLine(line, c.x0, c.y0, c.x1, c.y1, Colors::WHITE);
+        for (int16_t sag = -12; sag <= 12; sag++) {
+            C sagged;
+            sagged.clear(Colors::BLACK);
+            P::drawSaggedLine(sagged, c.x0, c.y0, c.x1, c.y1, sag, Colors::WHITE);
+            snprintf(msg, sizeof msg, "vertical (%d,%d)-(%d,%d) sag %d: drawLine's pixels",
+                     c.x0, c.y0, c.x1, c.y1, sag);
+            ASSERT(sameCanvas(sagged, line), msg);
+        }
+    }
+}
+
+// A level Span droops symmetrically about its exact middle, for odd widths too,
+// whose middle falls between two columns: the control point is not rounded to
+// a pixel. Bowing up (negative Sag) as well.
+static void test_sagged_level_span_is_symmetric_for_every_width() {
+    char msg[160];
+    for (int16_t w = 1; w <= 60; w++) {
+        const int16_t x0 = static_cast<int16_t>(32 - w / 2), x1 = static_cast<int16_t>(x0 + w);
+        for (int16_t sag = -8; sag <= 24; sag++) {
+            const int16_t y = sag < 0 ? 40 : 8;
+            C curve;
+            curve.clear(Colors::BLACK);
+            P::drawSaggedLine(curve, x0, y, x1, y, sag, Colors::WHITE);
+            snprintf(msg, sizeof msg, "level (%d,%d)-(%d,%d) sag %d: symmetric about its middle",
+                     x0, y, x1, y, sag);
+            ASSERT(isMirrorAbout(curve, curve, static_cast<int16_t>(x0 + x1)), msg);
         }
     }
 }
@@ -257,13 +302,33 @@ static bool columnSpan(const C& c, int16_t x, int16_t& top, int16_t& bottom) {
     return top >= 0;
 }
 
+// Steep chords of odd width, whose exact middle falls between two columns:
+// the jog between the columns must not pop up as the Span starts to droop.
+static const Chord kSteepChords[] = {
+    {2, 44, 3, 4}, {3, 4, 2, 44}, {40, 50, 43, 6}, {20, 6, 25, 58}, {50, 2, 47, 61}, {9, 60, 16, 1},
+};
+
+// Is each column of next at or below the same column of prev: its top and
+// bottom pixels only move down (or stay), and no column empties or fills?
+static bool onlyMovedDown(const C& prev, const C& next) {
+    for (int16_t x = 0; x < N; x++) {
+        int16_t pt = 0, pb = 0, nt = 0, nb = 0;
+        const bool had = columnSpan(prev, x, pt, pb);
+        const bool has = columnSpan(next, x, nt, nb);
+        if (had != has || (had && (nt < pt || nb < pb))) return false;
+    }
+    return true;
+}
+
 // Easing a Span from taut to drooping never flickers upward: each extra pixel of
 // Sag only ever moves a column's pixels down (or leaves them), starting from
-// drawLine at Sag 0. Shallow chords, where the Tape's droop reads per column.
+// drawLine at Sag 0. Shallow and steep chords alike.
 static void test_more_sag_only_moves_pixels_down() {
     char msg[160];
-    for (const Chord& c : kSweepChords) {
-        if (abs(c.y1 - c.y0) > abs(c.x1 - c.x0)) continue;
+    Chord chords[std::size(kSweepChords) + std::size(kSteepChords)];
+    std::copy(std::begin(kSweepChords), std::end(kSweepChords), chords);
+    std::copy(std::begin(kSteepChords), std::end(kSteepChords), chords + std::size(kSweepChords));
+    for (const Chord& c : chords) {
         C prev;
         prev.clear(Colors::BLACK);
         P::drawSaggedLine(prev, c.x0, c.y0, c.x1, c.y1, 0, Colors::WHITE);
@@ -271,49 +336,44 @@ static void test_more_sag_only_moves_pixels_down() {
             C next;
             next.clear(Colors::BLACK);
             P::drawSaggedLine(next, c.x0, c.y0, c.x1, c.y1, sag, Colors::WHITE);
-            bool down = true;
-            for (int16_t x = 0; x < N; x++) {
-                int16_t pt = 0, pb = 0, nt = 0, nb = 0;
-                const bool had = columnSpan(prev, x, pt, pb);
-                const bool has = columnSpan(next, x, nt, nb);
-                if (had != has || (had && (nt < pt || nb < pb))) down = false;
-            }
             snprintf(msg, sizeof msg, "(%d,%d)-(%d,%d) sag %d -> %d: pixels only move down",
                      c.x0, c.y0, c.x1, c.y1, sag - 1, sag);
-            ASSERT(down, msg);
+            ASSERT(onlyMovedDown(prev, next), msg);
             prev = next;
         }
     }
 }
 
+static int64_t floorDiv(int64_t n, int64_t d) { return n >= 0 ? n / d : -((-n + d - 1) / d); }
+
 // Each column of a shallow sagged Span holds the pixel nearest the true curve,
 // all the way along, including next to the bottom of the droop. With the
-// control point at the chord's midpoint x moves evenly with t, so the curve's
-// height over column x is an exact fraction: y = Y / w² with k = x - x0 and
-// Y = (w-k)²·y0 + 2k(w-k)·cy + k²·y1. Only columns flatter than 1:2 count:
-// nearer 45° the walk's pick is nearest across the curve, not straight down.
-// Near-ties (within 1/16 px of half a pixel) are skipped for the same reason;
-// the error this guards against, re-fitting past a rounded turn, is ~0.4 px.
+// control point over the chord's exact midpoint x moves evenly with t, so the
+// curve's depth below y0 over column k of a w-column Span is an exact
+// fraction: 2w²·depth = 2w·dy·k + 8·sag·k·(w − k). Only columns flatter than
+// 1:2 count: nearer 45° the pick is nearest across the curve, not straight
+// down. Near-ties (within 1/16 px of half a pixel) are skipped for the same
+// reason; the error this guards against, re-fitting past a rounded turn, is
+// ~0.4 px.
 static void test_sagged_columns_are_nearest_pixel() {
     char msg[160];
     for (const Chord& c : kSweepChords) {
-        const int32_t w = c.x1 - c.x0;
-        if (w % 2 != 0 || abs(c.y1 - c.y0) > abs(w)) continue;
+        const int64_t w = abs(c.x1 - c.x0), dy = c.y1 - c.y0, unit = 2 * w * w;
+        const int16_t sx = c.x1 > c.x0 ? 1 : -1;
+        if (abs(dy) > w) continue;
         for (int16_t sag = 1; sag <= 16; sag++) {
-            const int32_t cy = c.y0 + (c.y1 - c.y0) / 2 + 2 * sag;
             C curve;
             curve.clear(Colors::BLACK);
             P::drawSaggedLine(curve, c.x0, c.y0, c.x1, c.y1, sag, Colors::WHITE);
-            const int32_t w2 = w * w;
             bool nearest = true;
-            const int32_t step = w > 0 ? 1 : -1;
-            for (int32_t k = step; k != w; k += step) {
-                const int32_t Y = (w - k) * (w - k) * c.y0 + 2 * k * (w - k) * cy + k * k * c.y1;
-                const int32_t slope = 2 * (k - w) * c.y0 + 2 * (w - 2 * k) * cy + 2 * k * c.y1;
-                const int32_t half = (2 * Y) % (2 * w2) - w2; // 0 = exactly half a pixel
-                if (2 * abs(slope) > w2 || 8 * abs(half) < w2) continue;
-                const int16_t want = static_cast<int16_t>((2 * Y + w2) / (2 * w2));
-                if (curve.getPixel(static_cast<int16_t>(c.x0 + k), want) == 0) nearest = false;
+            for (int64_t k = 1; k < w; k++) {
+                const int64_t depth = 2 * w * dy * k + 8 * sag * k * (w - k);
+                const int64_t slope = 2 * w * dy + 8 * sag * (w - 2 * k);
+                const int64_t half = depth - floorDiv(depth, unit) * unit - unit / 2;
+                if (2 * std::abs(slope) > unit || 16 * std::abs(half) < unit) continue;
+                const int64_t want = c.y0 + floorDiv(depth + unit / 2, unit);
+                if (curve.getPixel(static_cast<int16_t>(c.x0 + sx * k), static_cast<int16_t>(want)) == 0)
+                    nearest = false;
             }
             snprintf(msg, sizeof msg, "(%d,%d)-(%d,%d) sag %d: every column is the nearest pixel",
                      c.x0, c.y0, c.x1, c.y1, sag);
@@ -378,6 +438,39 @@ static void test_clips_per_pixel_at_the_canvas_edge() {
     ASSERT(same, "curve off the canvas edge: the on-canvas pixels are unchanged");
 }
 
+static bool onlyLit(const C& c, bool (*want)(int16_t x, int16_t y)) {
+    for (int16_t y = 0; y < N; y++)
+        for (int16_t x = 0; x < N; x++)
+            if ((c.getPixel(x, y) != 0) != want(x, y)) return false;
+    return true;
+}
+
+// Coordinates anywhere in int16_t: spans longer than 32767 px still end, and
+// draw the same on-canvas pixels as the short span would; a Span hanging far
+// below the canvas doesn't wrap around onto it.
+static void test_long_spans_end_and_stay_in_place() {
+    C c;
+    c.clear(Colors::BLACK);
+    P::drawLine(c, -20000, 5, 20000, 5, Colors::WHITE);
+    ASSERT(onlyLit(c, [](int16_t, int16_t y) { return y == 5; }), "40000 px level line: row 5");
+    c.clear(Colors::BLACK);
+    P::drawLine(c, -20000, -20000, 20000, 20000, Colors::WHITE);
+    ASSERT(onlyLit(c, [](int16_t x, int16_t y) { return x == y; }), "40000 px diagonal: x == y");
+    c.clear(Colors::BLACK);
+    P::drawQuadBezier(c, INT16_MIN, 7, 0, 7, INT16_MAX, 7, Colors::WHITE);
+    ASSERT(onlyLit(c, [](int16_t, int16_t y) { return y == 7; }), "full-range control on chord: row 7");
+    c.clear(Colors::BLACK);
+    P::drawSaggedLine(c, -20000, 9, 20000, 9, 1, Colors::WHITE);
+    ASSERT(onlyLit(c, [](int16_t, int16_t y) { return y == 10; }),
+           "40000 px Span, sag 1: its middle stretch hangs on row 10");
+    c.clear(Colors::BLACK);
+    P::drawSaggedLine(c, -100, 30000, 100, 30000, 3000, Colors::WHITE);
+    ASSERT(onlyLit(c, [](int16_t, int16_t) { return false; }), "Span hanging below y 32767: nothing on canvas");
+    c.clear(Colors::BLACK);
+    P::drawSaggedLine(c, INT16_MIN, INT16_MAX, INT16_MAX, INT16_MAX, INT16_MAX, Colors::WHITE);
+    ASSERT(onlyLit(c, [](int16_t, int16_t) { return false; }), "full-range Span, full sag: nothing on canvas");
+}
+
 // Tape scale (160×160, Canvas4 like the player): where a Span's slope crosses
 // 45° the exact curve can pass through a pixel corner, and a walk would take
 // an x step and a y step in turn. The corner pixel is dropped, so these stay
@@ -419,6 +512,8 @@ int main() {
     test_symmetric_curve_is_symmetric();
     test_mirrored_inputs_mirror_the_pixels();
     test_sag_zero_is_drawLine();
+    test_sagged_level_span_is_symmetric_for_every_width();
+    test_vertical_span_stays_drawLine();
     test_sag_droops_the_middle_by_sag();
     test_more_sag_only_moves_pixels_down();
     test_sagged_columns_are_nearest_pixel();
@@ -426,6 +521,7 @@ int main() {
     test_marks_exactly_its_dirty_tiles();
     test_clips_per_pixel_at_the_canvas_edge();
     test_tape_scale_spans_have_no_L_corners();
+    test_long_spans_end_and_stay_in_place();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

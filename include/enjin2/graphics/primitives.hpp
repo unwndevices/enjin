@@ -5,6 +5,8 @@
 #include "canvas.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 namespace enjin2
 {
 
@@ -34,11 +36,11 @@ public:
      */
     static void drawLine(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
                         int16_t x1, int16_t y1, TPixel color) {
-        int16_t dx = abs(x1 - x0);
-        int16_t dy = abs(y1 - y0);
+        int32_t dx = abs(x1 - x0);                   // 32-bit: a span may exceed 32767 px
+        int32_t dy = abs(y1 - y0);
         int16_t sx = x0 < x1 ? 1 : -1;
         int16_t sy = y0 < y1 ? 1 : -1;
-        int16_t err = dx - dy;
+        int32_t err = dx - dy;
         
         int16_t x = x0, y = y0;
         
@@ -47,7 +49,7 @@ public:
             
             if (x == x1 && y == y1) break;
             
-            int16_t e2 = 2 * err;
+            int32_t e2 = 2 * err;
             if (e2 > -dy) {
                 err -= dy;
                 x += sx;
@@ -72,20 +74,18 @@ public:
      *
      * Zingl, "A Rasterizing Algorithm for Drawing Curves" (2012), §2: split
      * where x or y turns back, so each piece steps in one fixed direction, and
-     * walk each piece with integer error terms. The pixel rule is the reel
-     * sheet's (`scripts/gen-tape-reel.mjs`): 8-connected, one pixel per step,
-     * no gaps, no doubled "L" corners, both ends drawn (Tomodachi #226).
+     * walk each piece with integer error terms. The pixel rule (Tomodachi
+     * #226): a thin 8-connected path, one pixel per step, with no gaps, no
+     * doubled "L" corners, no side-by-side steps, and both ends drawn.
      *
      * - A control point on the chord (between the ends) is the straight
-     *   segment and draws exactly @ref drawLine's pixels, so a Tape Span
-     *   doesn't flicker by a pixel as its Sag reaches 0.
-     * - When only one axis turns back (a Span drooping below both its ends),
+     *   segment and draws exactly @ref drawLine's pixels.
+     * - When only one axis turns back (a curve bulging past both its ends),
      *   both halves are walked on the curve's own error terms from their true
      *   ends to the turn, rather than re-fitting each half through a rounded
      *   turn point as Zingl does. That keeps every pixel the nearest one to
-     *   the curve, so more Sag only ever moves pixels down. A walk that would
-     *   leave its quadrant is caught by a dry run first, and falls back to
-     *   Zingl's split.
+     *   the curve. A walk that would leave its quadrant is caught by a dry
+     *   run first, and falls back to Zingl's split.
      * - Where the slope crosses 45° the curve can pass through a pixel
      *   corner; the corner pixel of the resulting "L" is dropped.
      * - Split points are exact fractions rounded half away from zero from an
@@ -97,7 +97,7 @@ public:
      */
     static void drawQuadBezier(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
                                int16_t cx, int16_t cy, int16_t x1, int16_t y1, TPixel color) {
-        const int32_t cross = int32_t(cx - x0) * (y1 - y0) - int32_t(cy - y0) * (x1 - x0);
+        const int64_t cross = int64_t(cx - x0) * (y1 - y0) - int64_t(cy - y0) * (x1 - x0);
         if (cross == 0 && cx >= std::min(x0, x1) && cx <= std::max(x0, x1) &&
             cy >= std::min(y0, y1) && cy <= std::max(y0, y1)) {
             drawLine(canvas, x0, y0, x1, y1, color);
@@ -123,7 +123,7 @@ public:
             const int64_t d = ax - 2 * bx + ex;      // cut at t = (ax - bx) / d
             const int64_t t = ax - bx, u = ex - bx;
             const int64_t px = ax + roundDiv(-t * t, d);
-            const int64_t py = ay + roundDiv(2 * t * u * (by - ay) + t * t * (ey - ay), d * d);
+            const int64_t py = atTurn(ay, by, ey, t, u, d);
             drawQuadSegment(canvas, ax, ay, px, ay + roundDiv((by - ay) * t, d), px, py, color);
             by = ey + roundDiv((by - ey) * u, d);
             ax = bx = px;
@@ -132,7 +132,7 @@ public:
         if ((ay - by) * (ey - by) > 0) {             // y turns back: cut at the horizontal tangent
             const int64_t d = ay - 2 * by + ey;      // cut at t = (ay - by) / d
             const int64_t t = ay - by, u = ey - by;
-            const int64_t px = ax + roundDiv(2 * t * u * (bx - ax) + t * t * (ex - ax), d * d);
+            const int64_t px = atTurn(ax, bx, ex, t, u, d);
             const int64_t py = ay + roundDiv(-t * t, d);
             drawQuadSegment(canvas, ax, ay, ax + roundDiv((bx - ax) * t, d), py, px, py, color);
             bx = ex + roundDiv((bx - ex) * u, d);
@@ -152,22 +152,72 @@ public:
      * @param sag Droop at the middle, in pixels (0 = taut; negative bows up)
      * @param color Line color
      *
-     * A Tape Span (Tomodachi #226): @ref drawQuadBezier with the control point
-     * at the chord midpoint pushed down by 2·sag, so the middle of the curve
-     * hangs exactly @p sag below the chord. Sag 0 is exactly @ref drawLine.
-     * An odd chord's midpoint rounds toward (x0, y0). On a steep chord, keep
-     * the control point above the lower end: past it the curve folds back
-     * over that end instead of drooping.
+     * A Tape Span (Tomodachi #226): the quadratic Bezier whose control point
+     * is the chord's exact midpoint pushed down by 2·sag, so the middle of the
+     * curve hangs exactly @p sag below the chord. With the control point over
+     * the midpoint, x moves evenly along the curve, so it is the graph
+     * y = chord + 4·sag·k·(w − k) / w² over the columns k = 0..w, and it is
+     * drawn column by column on exact integer terms: odd-width Spans droop
+     * symmetrically too.
+     *
+     * - The steps are @ref drawLine's decisions on the exact curve, so Sag 0
+     *   is exactly drawLine and more Sag only ever moves pixels down.
+     * - A curve that turns back (its lowest point lies between the ends) is
+     *   walked from both ends toward the turn, so a symmetric Span comes out
+     *   symmetric.
+     * - A vertical chord has no room to droop: it draws drawLine at any Sag.
+     * - On a steep chord, a Sag of more than a quarter of its height hangs
+     *   below the lower end and comes back up to it. On Spans 8 px wide or
+     *   more that is still a thin path; on narrower ones a lot of Sag folds
+     *   into a hairpin, which can't be (and can bottom out a pixel short).
+     *
+     * Integer only, no allocation: 64-bit terms, evaluated once per column.
      */
     static void drawSaggedLine(ICanvas<TPixel>& canvas, int16_t x0, int16_t y0,
                                int16_t x1, int16_t y1, int16_t sag, TPixel color) {
-        if (sag == 0) {
+        if (sag == 0 || x0 == x1) {
             drawLine(canvas, x0, y0, x1, y1, color);
             return;
         }
-        const int16_t cx = static_cast<int16_t>(x0 + (x1 - x0) / 2);
-        const int16_t cy = static_cast<int16_t>(y0 + (y1 - y0) / 2 + 2 * sag);
-        drawQuadBezier(canvas, x0, y0, cx, cy, x1, y1, color);
+        const SagSpan span{x0, y0, x1 > x0 ? 1 : -1, std::abs(int32_t(x1) - x0),
+                           int32_t(y1) - y0, sag};
+        const int32_t w = span.w, dy = span.dy;
+        if (4 * std::abs(int32_t(sag)) <= std::abs(dy)) {
+            // No turn: one walk, from the steep end to the flat one.
+            Stroke stroke(canvas, color);
+            const int32_t down = dy > 0 ? 1 : -1;
+            if ((sag > 0) == (dy > 0)) {
+                const int32_t row = walkSag(span, stroke, 0, 0, 1, down, w - 1);
+                span.fillColumn(stroke, w, row, dy, down);
+            } else {
+                const int32_t row = walkSag(span, stroke, w, dy, -1, -down, 1);
+                span.fillColumn(stroke, 0, row, 0, -down);
+            }
+            stroke.finish();
+            return;
+        }
+        // The curve turns back at column n / d; both halves walk toward it.
+        const int32_t toward = sag > 0 ? 1 : -1;
+        const int64_t n = int64_t(w) * (dy + 4 * sag) * toward, d = 8 * int64_t(sag) * toward;
+        Stroke half1(canvas, color), half2(canvas, color);
+        if (2 * n % (2 * d) == d) {
+            // The turn is on the edge between columns c and c + 1 (a level
+            // Span of odd width): each half ends at its side of the edge.
+            const int32_t c = static_cast<int32_t>((2 * n - d) / (2 * d));
+            walkSag(span, half1, 0, 0, 1, toward, c);
+            walkSag(span, half2, w, dy, -1, toward, c + 1);
+            Stroke::meet(half1, half2);
+            return;
+        }
+        // Column t holds the turn. Both halves enter it; the one entering
+        // nearer the chord draws the column down to the other's entry.
+        const int32_t t = static_cast<int32_t>((2 * n + d) / (2 * d));
+        const int32_t in1 = walkSag(span, half1, 0, 0, 1, toward, t - 1);
+        const int32_t in2 = walkSag(span, half2, w, dy, -1, toward, t + 1);
+        const bool firstRuns = toward * in1 < toward * in2;
+        span.fillColumn(firstRuns ? half1 : half2, t, firstRuns ? in1 : in2,
+                        firstRuns ? in2 : in1, toward);
+        Stroke::meet(half1, half2);
     }
 
     /**
@@ -507,13 +557,26 @@ private:
     }
 
     /**
+     * @brief One coordinate of a curve at its turn in the other coordinate
+     * @param a Start, @p b control and @p e end value of this coordinate
+     * @param t,u,d The other coordinate turns at t / d, with u = d − t
+     *
+     * The Bezier a·(1−τ)² + 2b·τ(1−τ) + e·τ² at τ = t / d, rounded:
+     * a + (2·t·u·(b − a) + t²·(e − a)) / d².
+     */
+    static int64_t atTurn(int64_t a, int64_t b, int64_t e, int64_t t, int64_t u, int64_t d) {
+        return a + roundDiv(2 * t * u * (b - a) + t * t * (e - a), d * d);
+    }
+
+    /**
      * @brief Pixel sink for one curve walk that drops doubled "L" corners
      *
-     * Holds the last two pixels back. When the next one is diagonal to the
-     * older, the newer is the corner of an L and is dropped: the path stays
-     * 8-connected through the diagonal. The exact curve can pass through a
-     * pixel corner where its slope crosses 45°, and the walk then takes an
-     * x step and a y step one after the other.
+     * Holds the last two pixels back. When the next one touches the older,
+     * the newer is dropped: the path stays 8-connected without it. That is
+     * the corner of an "L" (the exact curve can pass through a pixel corner
+     * where its slope crosses 45°, and the walk then takes an x step and a
+     * y step one after the other), or a one-pixel spur where a curve dips
+     * less than a pixel past an end and comes back.
      */
     struct Stroke {
         ICanvas<TPixel>& canvas;
@@ -525,7 +588,8 @@ private:
 
         void plot(int64_t x, int64_t y) {
             if (held == 2 && x == bx && y == by) return;
-            if (held == 2 && absI64(x - ax) == 1 && absI64(y - ay) == 1) { bx = x; by = y; return; }
+            if (held == 2 && x == ax && y == ay) { held = 1; return; }
+            if (held == 2 && absI64(x - ax) <= 1 && absI64(y - ay) <= 1) { bx = x; by = y; return; }
             if (held == 2) { set(ax, ay); ax = bx; ay = by; bx = x; by = y; return; }
             if (held == 1) { if (x == ax && y == ay) return; bx = x; by = y; held = 2; return; }
             ax = x; ay = y; held = 1;
@@ -548,13 +612,97 @@ private:
         void finish() {
             if (held >= 1) set(ax, ay);
             if (held == 2) set(bx, by);
-            held = 0;
+        }
+
+        /// @brief Finish where the path runs on into (x,y), drawn by another
+        /// stroke: (x,y) still decides which corner to drop, but isn't drawn.
+        void finishBefore(int64_t x, int64_t y) {
+            plot(x, y);
+            if (held == 2) set(ax, ay);
+        }
+
+        /// @brief Finish two strokes walked toward each other, whose ends are
+        /// distinct neighbouring pixels: each drops its "L" corner against the
+        /// other's end, so the join is treated the same from either side.
+        static void meet(Stroke& one, Stroke& two) {
+            int64_t x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+            const bool has1 = one.newest(x1, y1), has2 = two.newest(x2, y2);
+            if (has2) one.finishBefore(x2, y2); else one.finish();
+            if (has1) two.finishBefore(x1, y1); else two.finish();
+        }
+
+        bool newest(int64_t& x, int64_t& y) const {
+            if (held == 0) return false;
+            x = held == 2 ? bx : ax;
+            y = held == 2 ? by : ay;
+            return true;
         }
 
         void set(int64_t x, int64_t y) {
+            if (x < INT16_MIN || x > INT16_MAX || y < INT16_MIN || y > INT16_MAX) return;
             canvas.setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), color);
         }
     };
+
+    /**
+     * @brief A sagged Span as a graph over its columns (@ref drawSaggedLine)
+     *
+     * Columns k = 0..w run from (x0,y0) toward the far end, @p dy rows below.
+     * @ref height is the curve's depth below y0 at half-column h (h = 2k at a
+     * column's centre, odd at the edge between two columns) in units of
+     * 1 / (2w²) row, which makes it exact: 2w²·y(h/2) = w·dy·h + 2·sag·h·(2w − h).
+     */
+    struct SagSpan {
+        int32_t x0, y0, sx, w, dy, sag;
+
+        int64_t height(int64_t h) const { return h * (int64_t(w) * dy + 2 * int64_t(sag) * (2 * w - h)); }
+        int64_t row() const { return 2 * int64_t(w) * w; }
+        int64_t x(int32_t col) const { return x0 + int64_t(sx) * col; }
+        int64_t y(int32_t row) const { return y0 + int64_t(row); }
+
+        /// @brief Plot column @p col from @p from to @p to, stepping @p dir.
+        void fillColumn(Stroke& stroke, int32_t col, int32_t from, int32_t to, int32_t dir) const {
+            for (; dir * (to - from) > 0; from += dir) stroke.plot(x(col), y(from));
+            stroke.plot(x(col), y(to));
+        }
+    };
+
+    /**
+     * @brief Walk a sagged Span column by column, on @ref drawLine's decisions
+     * @param col Start column
+     * @param row Start row (relative to the Span's y0)
+     * @param dc Column step, +1 or -1
+     * @param dir Row step: the way the curve moves along the walk
+     * @param last Last column walked; the walk ends by stepping out of it
+     * @return Row at which the walk enters the column after @p last
+     *
+     * Stay in the column (step the row) while the curve at its far edge is a
+     * whole row or more past the current one; leave it otherwise, stepping
+     * the row too if the curve at the next column's centre is more than half
+     * a row past. On a straight chord that is drawLine exactly. Walks run
+     * from a steep end toward a flat end or the turn, where a run of pixels
+     * leaves its column diagonally, except where the slope crosses 45°: the
+     * Stroke drops that "L" corner.
+     */
+    static int32_t walkSag(const SagSpan& span, Stroke& stroke, int32_t col, int32_t row,
+                           int32_t dc, int32_t dir, int32_t last) {
+        const int64_t unit = span.row();
+        int64_t at = dir * unit * row;               // the row, oriented, in height() units
+        for (; col != last + dc; col += dc) {
+            const int64_t edge = dir * span.height(2 * int64_t(col) + dc);
+            while (true) {
+                stroke.plot(span.x(col), span.y(row));
+                if (edge - at < unit) break;
+                row += dir;
+                at += unit;
+            }
+            if (dir * span.height(2 * int64_t(col) + 2 * dc) - at > unit / 2) {
+                row += dir;
+                at += unit;
+            }
+        }
+        return row;
+    }
 
     /**
      * @brief Walk one quadratic Bezier piece whose gradient keeps its sign
@@ -610,58 +758,66 @@ private:
      */
     static bool drawQuadHalves(ICanvas<TPixel>& canvas, int64_t ax, int64_t ay, int64_t bx,
                                int64_t by, int64_t ex, int64_t ey, bool turnsY, TPixel color) {
-        int64_t line;
-        if (turnsY) {                                // along x at the horizontal tangent
-            const int64_t d = ay - 2 * by + ey, t = ay - by, u = ey - by;
-            line = ax + roundDiv(2 * t * u * (bx - ax) + t * t * (ex - ax), d * d);
-        } else {                                     // along y at the vertical tangent
-            const int64_t d = ax - 2 * bx + ex, t = ax - bx, u = ex - bx;
-            line = ay + roundDiv(2 * t * u * (by - ay) + t * t * (ey - ay), d * d);
+        int64_t turn;
+        if (turnsY) {                                // a column: x at the horizontal tangent
+            const int64_t d = ay - 2 * by + ey;
+            turn = atTurn(ax, bx, ex, ay - by, ey - by, d);
+        } else {                                     // a row: y at the vertical tangent
+            const int64_t d = ax - 2 * bx + ex;
+            turn = atTurn(ay, by, ey, ax - bx, ex - bx, d);
         }
-        int64_t s1x = ax, s1y = ay, l1x = ax, l1y = ay;
-        int64_t s2x = ex, s2y = ey, l2x = ex, l2y = ey;
-        if (!walkQuadHalf(nullptr, s1x, s1y, l1x, l1y, bx, by, ex, ey, line, turnsY) ||
-            !walkQuadHalf(nullptr, s2x, s2y, l2x, l2y, bx, by, ax, ay, line, turnsY)) {
+        HalfWalk one{ax, ay, ax, ay}, two{ex, ey, ex, ey};
+        if (!walkQuadHalf(nullptr, one, bx, by, ex, ey, turn, turnsY) ||
+            !walkQuadHalf(nullptr, two, bx, by, ax, ay, turn, turnsY)) {
             return false;
         }
         Stroke half1(canvas, color), half2(canvas, color);
-        s1x = ax; s1y = ay; s2x = ex; s2y = ey;
-        walkQuadHalf(&half1, s1x, s1y, l1x, l1y, bx, by, ex, ey, line, turnsY);
-        walkQuadHalf(&half2, s2x, s2y, l2x, l2y, bx, by, ax, ay, line, turnsY);
-        const bool walked = !(s1x == ax && s1y == ay) && !(s2x == ex && s2y == ey);
-        if (walked && touches(l2x, l2y, s1x, s1y)) {
-            half1.plot(s1x, s1y);
-            half2.plot(s1x, s1y);
-        } else if (walked && touches(l1x, l1y, s2x, s2y)) {
-            half1.plot(s2x, s2y);
-            half2.plot(s2x, s2y);
+        one = {ax, ay, ax, ay};
+        two = {ex, ey, ex, ey};
+        walkQuadHalf(&half1, one, bx, by, ex, ey, turn, turnsY);
+        walkQuadHalf(&half2, two, bx, by, ax, ay, turn, turnsY);
+        const bool walked = !(one.nextX == ax && one.nextY == ay) && !(two.nextX == ex && two.nextY == ey);
+        if (walked && touches(two.lastX, two.lastY, one.nextX, one.nextY)) {
+            half1.plot(one.nextX, one.nextY);
+            half1.finish();
+            half2.finishBefore(one.nextX, one.nextY);
+        } else if (walked && touches(one.lastX, one.lastY, two.nextX, two.nextY)) {
+            half2.plot(two.nextX, two.nextY);
+            half2.finish();
+            half1.finishBefore(two.nextX, two.nextY);
         } else {
-            half1.line(s1x, s1y, s2x, s2y);
-            half2.plot(s2x, s2y);
+            half1.line(one.nextX, one.nextY, two.nextX, two.nextY);
+            half1.finish();
+            half2.finishBefore(two.nextX, two.nextY);
         }
-        half1.finish();
-        half2.finish();
         return true;
     }
 
+    /// @brief Where a half-curve walk got to: the first pixel it didn't draw
+    /// (it starts at the curve's end) and the last one it did.
+    struct HalfWalk {
+        int64_t nextX, nextY, lastX, lastY;
+    };
+
     /**
-     * @brief Walk a curve from (x0,y0) toward its control point up to a turn
+     * @brief Walk a curve from one end toward its control point, up to a turn
      * @param stroke Pixel sink, or nullptr for a dry run that only checks
-     * @param x0 In: start (an end of the curve). Out: the first pixel not drawn
-     * @param y0 In: start. Out: the first pixel not drawn
-     * @param lastX Out: last pixel drawn before @p line (unchanged if none)
-     * @param lastY Out: last pixel drawn before @p line
-     * @param line Column (@p stopOnColumn) or row where the curve turns back
-     * @return true if the walk reached @p line, or turned within a pixel of it
+     * @param walk In: nextX/nextY = the end to start from. Out: the first
+     *        pixel not drawn, and the last pixel drawn before @p turn
+     *        (lastX/lastY unchanged if none)
+     * @param turn Column (@p turnsY) or row where the curve turns back
+     * @param turnsY y turns back, so @p turn is a column; else a row
+     * @return true if the walk reached @p turn, or turned within a pixel of it
      *         (the turn lies between), without leaving its quadrant
      *
      * @ref drawQuadSegment's error terms, but for the whole curve (x2,y2 is
      * the far end), so the walk tracks the true curve right up to the turn.
      */
-    static bool walkQuadHalf(Stroke* stroke, int64_t& x0, int64_t& y0,
-                             int64_t& lastX, int64_t& lastY,
+    static bool walkQuadHalf(Stroke* stroke, HalfWalk& walk,
                              int64_t x1, int64_t y1, int64_t x2, int64_t y2,
-                             int64_t line, bool stopOnColumn) {
+                             int64_t turn, bool turnsY) {
+        int64_t& x0 = walk.nextX;
+        int64_t& y0 = walk.nextY;
         const int64_t sx = x1 != x0 ? (x1 > x0 ? 1 : -1) : (x2 > x0 ? 1 : -1);
         const int64_t sy = y1 != y0 ? (y1 > y0 ? 1 : -1) : (y2 > y0 ? 1 : -1);
         int64_t cur = (x0 - x1) * (y2 - y1) - (y0 - y1) * (x2 - x1);
@@ -675,14 +831,14 @@ private:
         xx += xx; yy += yy;
         int64_t err = dx + dy + xy;
         while (dy < 0 && dx > 0) {
-            if ((stopOnColumn ? x0 : y0) == line) return true;
+            if ((turnsY ? x0 : y0) == turn) return true;
             if (stroke) stroke->plot(x0, y0);
-            lastX = x0; lastY = y0;
+            walk.lastX = x0; walk.lastY = y0;
             const bool stepY = 2 * err < dx;
             if (2 * err > dy) { x0 += sx; dx -= xy; dy += yy; err += dy; }
             if (stepY)        { y0 += sy; dy -= xy; dx += xx; err += dx; }
         }
-        return absI64((stopOnColumn ? x0 : y0) - line) <= 1; // turned just short of it
+        return absI64((turnsY ? x0 : y0) - turn) <= 1; // turned just short of it
     }
 
     /**
