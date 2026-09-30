@@ -2,26 +2,24 @@
 
 namespace enjin2 {
 
-// File-local helper: convert 1-indexed Lua layer index to clamped 0-indexed C++
-static inline int clampLayerIdx(int lua_idx, int layerCount) {
-    int cpp = lua_idx - 1;
-    if (cpp < 0) cpp = 0;
-    if (cpp >= layerCount) cpp = layerCount - 1;
-    return cpp;
+// Applet-facing indices are 1-based; the final compositor layer is shell UI.
+static inline int checkLayerIdx(lua_State* L, int arg, int layerCount) {
+    const lua_Integer layer = luaL_checkinteger(L, arg);
+    if (layer < 1 || layer > layerCount)
+        luaL_argerror(L, arg, "applet layer must be 1..3");
+    return static_cast<int>(layer - 1);
 }
 
 //==============================================================================
 // Layer System Bindings (LAYER-06)
 //==============================================================================
 
-// setLayer(n)  — Switch the active canvas to layer n (Lua 1-indexed, silently clamped)
+// setLayer(n)  — Switch the active canvas to layer n (Lua 1-indexed)
 int LuaBindings::lua_setLayer(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || b->layerCount == 0) return 0;
 
-    int cpp_idx = clampLayerIdx(
-        static_cast<int>(luaL_checkinteger(L, 1)),
-        static_cast<int>(b->layerCount));
+    int cpp_idx = checkLayerIdx(L, 1, b->layerCount);
 
     b->activeLayer   = static_cast<uint8_t>(cpp_idx);
     b->currentCanvas = b->layerCanvases[cpp_idx];
@@ -41,9 +39,7 @@ int LuaBindings::lua_clearLayer(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || b->layerCount == 0) return 0;
 
-    int cpp_idx = clampLayerIdx(
-        static_cast<int>(luaL_checkinteger(L, 1)),
-        static_cast<int>(b->layerCount));
+    int cpp_idx = checkLayerIdx(L, 1, b->layerCount);
 
     uint8_t color = static_cast<uint8_t>(luaL_optinteger(L, 2, 0));
 
@@ -67,9 +63,7 @@ int LuaBindings::lua_setLayerVisible(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || b->layerCount == 0 || !b->layerVisible) return 0;
 
-    int cpp_idx = clampLayerIdx(
-        static_cast<int>(luaL_checkinteger(L, 1)),
-        static_cast<int>(b->layerCount));
+    int cpp_idx = checkLayerIdx(L, 1, b->layerCount);
 
     b->layerVisible[cpp_idx] = (lua_toboolean(L, 2) != 0);
     return 0;
@@ -83,9 +77,7 @@ int LuaBindings::lua_isLayerVisible(lua_State* L) {
         return 1;
     }
 
-    int cpp_idx = clampLayerIdx(
-        static_cast<int>(luaL_checkinteger(L, 1)),
-        static_cast<int>(b->layerCount));
+    int cpp_idx = checkLayerIdx(L, 1, b->layerCount);
 
     lua_pushboolean(L, b->layerVisible[cpp_idx] ? 1 : 0);
     return 1;

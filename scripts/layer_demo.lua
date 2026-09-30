@@ -20,8 +20,8 @@ function draw(self)
     gfx.setColor(8)  -- red
     gfx.circle("fill", 64, 64, 24)
 
-    -- Layer 4 (UI): draw score text area at top
-    gfx.setLayer(gfx.LAYER_UI)
+    -- Score overlay shares the foreground layer (the fourth is shell-owned).
+    gfx.setLayer(gfx.LAYER_FG)
     gfx.setColor(7)  -- white
     gfx.rectangle("fill", 0, 0, 128, 12)
     gfx.setColor(0)  -- black

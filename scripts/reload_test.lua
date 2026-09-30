@@ -37,8 +37,8 @@ function draw(self)
 	gfx.setColor(CIRCLE_COLOR)
 	gfx.circle("fill", CIRCLE_X, CIRCLE_Y, CIRCLE_RADIUS)
 
-	-- Layer 4 (UI): parameter readout as colored bar
-	gfx.setLayer(gfx.LAYER_UI)
+	-- Parameter readout shares foreground (the fourth layer is shell-owned).
+	gfx.setLayer(gfx.LAYER_FG)
 	gfx.setColor(7) -- white
 	gfx.rectangle("fill", 0, 0, 128, 8)
 	gfx.setColor(0) -- black dots showing reload worked

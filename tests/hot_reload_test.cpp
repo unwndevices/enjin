@@ -23,7 +23,7 @@ static int failures = 0;
 static uint8_t g_dummyPixels[16] = {0};
 
 // ============================================================
-// Test fixture: LuaEngine + LuaBindings + 4 Canvas4 layers
+// Test fixture: LuaEngine + LuaBindings + 3 Canvas4 applet layers
 // Reuses the same pattern as layer_binding_test.cpp
 // ============================================================
 struct HotReloadFixture {
@@ -34,25 +34,21 @@ struct HotReloadFixture {
     LuaCanvas layer0;
     LuaCanvas layer1;
     LuaCanvas layer2;
-    LuaCanvas layer3;
-
-    LuaCanvas* layerPtrs[4];
+    LuaCanvas* layerPtrs[3];
 
     HotReloadFixture()
         : bindings(&engine)
         , layer0(&compositor.layers[0])
         , layer1(&compositor.layers[1])
         , layer2(&compositor.layers[2])
-        , layer3(&compositor.layers[3])
     {
         layerPtrs[0] = &layer0;
         layerPtrs[1] = &layer1;
         layerPtrs[2] = &layer2;
-        layerPtrs[3] = &layer3;
 
         engine.initialize();
         bindings.registerAll();
-        bindings.setLayers(layerPtrs, 4, compositor.visible);
+        bindings.setLayers(layerPtrs, 3, compositor.visible);
         compositor.clearAll();
 
         // Expose dummy sprite data as lightuserdata for Lua sprite tests
@@ -126,7 +122,7 @@ static void test_registerAll_resets_drawing_state()
     // Re-register all bindings (simulates what happens on reload)
     f.bindings.registerAll();
     // Re-wire layers since registerAll re-registers the bindings pointer
-    f.bindings.setLayers(f.layerPtrs, 4, f.compositor.visible);
+    f.bindings.setLayers(f.layerPtrs, 3, f.compositor.visible);
 
     // Verify defaults are restored
     LuaResult rd = f.exec("c2 = gfx.getColor(); w2 = gfx.getLineWidth()");
@@ -160,7 +156,7 @@ static void test_registerAll_resets_sprite_pool()
 
     // Re-register (which calls resetSpritePool internally)
     f.bindings.registerAll();
-    f.bindings.setLayers(f.layerPtrs, 4, f.compositor.visible);
+    f.bindings.setLayers(f.layerPtrs, 3, f.compositor.visible);
 
     // Re-expose lightuserdata (registerAll creates fresh Lua globals)
     lua_pushlightuserdata(f.engine.getState(), g_dummyPixels);
@@ -192,7 +188,7 @@ static void test_reload_cycle_preserves_bindings()
     f.engine.shutdown();
     ASSERT(f.engine.initialize(), "re-initialize should succeed");
     f.bindings.registerAll();
-    f.bindings.setLayers(f.layerPtrs, 4, f.compositor.visible);
+    f.bindings.setLayers(f.layerPtrs, 3, f.compositor.visible);
 
     // Clear canvas for fresh start (like performReload does)
     f.compositor.clearAll();
@@ -212,8 +208,8 @@ static void test_reload_cycle_preserves_bindings()
 
     // Verify gfx.getLayerCount still works
     f.exec("count = gfx.getLayerCount()");
-    ASSERT(f.getNum("count") == 4.0,
-           "post-reload: gfx.getLayerCount should return 4");
+    ASSERT(f.getNum("count") == 3.0,
+           "post-reload: gfx.getLayerCount should return 3");
 }
 
 // ============================================================

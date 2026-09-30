@@ -125,7 +125,7 @@ static void flush_frame_strips(const enjin2::Canvas4<LCD_W, LCD_H>& canvas,
 
 // --- Enjin2 objects (allocated in setup, must outlive setup() scope) ---
 static enjin2::LuaScriptSystem* g_lua = nullptr;
-static enjin2::LuaCanvas* g_lua_layers = nullptr;  // Array of 4, PSRAM-allocated
+static enjin2::LuaCanvas* g_lua_layers = nullptr;  // Array of 3, PSRAM-allocated
 static uint16_t* strip_buf[2] = {nullptr, nullptr};
 
 // --- Frame timing ---
@@ -178,18 +178,18 @@ void setup() {
     Serial.printf("LayerCompositor allocated in PSRAM (%d bytes)\n", sizeof(Compositor));
 
     // LuaCanvas wrappers — must outlive setup(), allocated in PSRAM
-    void* layers_mem = heap_caps_malloc(sizeof(enjin2::LuaCanvas) * 4, MALLOC_CAP_SPIRAM);
+    void* layers_mem = heap_caps_malloc(sizeof(enjin2::LuaCanvas) * 3, MALLOC_CAP_SPIRAM);
     if (!layers_mem) {
         Serial.println("ERROR: Failed to allocate LuaCanvas array");
         psram_delete(g_comp);
         return;
     }
     g_lua_layers = static_cast<enjin2::LuaCanvas*>(layers_mem);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         new (&g_lua_layers[i]) enjin2::LuaCanvas(&g_comp->layers[i]);
     }
-    enjin2::LuaCanvas* layer_ptrs[4] = {
-        &g_lua_layers[0], &g_lua_layers[1], &g_lua_layers[2], &g_lua_layers[3],
+    enjin2::LuaCanvas* layer_ptrs[3] = {
+        &g_lua_layers[0], &g_lua_layers[1], &g_lua_layers[2],
     };
 
     // --- Lua script system (PSRAM) ---
@@ -209,7 +209,7 @@ void setup() {
     Serial.println("Lua script system initialized (in PSRAM)");
 
     // Wire layer canvases into the Lua bindings
-    g_lua->getBindings().setLayers(layer_ptrs, 4, g_comp->visible);
+    g_lua->getBindings().setLayers(layer_ptrs, 3, g_comp->visible);
     g_lua->getBindings().setCanvas(layer_ptrs[0]);
 
     // Load the demo script
@@ -242,7 +242,7 @@ void loop() {
                 g_lua = nullptr;
             }
             if (g_lua_layers) {
-                for (int i = 0; i < 4; i++) g_lua_layers[i].~LuaCanvas();
+                for (int i = 0; i < 3; i++) g_lua_layers[i].~LuaCanvas();
                 heap_caps_free(g_lua_layers);
                 g_lua_layers = nullptr;
             }

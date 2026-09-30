@@ -7,7 +7,7 @@
  * - All draw functions are callable without crash (null canvas — early return)
  * - setEnabled/getEnabled toggle works correctly
  * - Draw functions are no-ops when disabled (DEBUG-03)
- * - LAYER_DEBUG global constant is registered and equals 5
+ * - the debug canvas remains host-only (no Lua layer constant)
  */
 #include <enjin2/scripting/bindings.hpp>
 #include <enjin2/scripting/lua_engine.hpp>
@@ -160,21 +160,17 @@ static void test_draw_no_op_when_disabled() {
 }
 
 // ============================================================
-// Test 5: gfx.LAYER_DEBUG constant is registered as 5
+// Test 5: debug layer is not applet-addressable
 // ============================================================
 static void test_layer_debug_constant() {
-    printf("--- gfx.LAYER_DEBUG constant ---\n");
+    printf("--- gfx.LAYER_DEBUG is absent ---\n");
 
     DebugFixture f;
 
-    LuaResult r = f.exec(
-        "layer_debug_val = gfx.LAYER_DEBUG\n"
-        "layer_debug_type = (type(gfx.LAYER_DEBUG) == 'number') and 1 or 0\n"
-    );
+    LuaResult r = f.exec("layer_debug_absent = gfx.LAYER_DEBUG == nil and 1 or 0");
 
-    ASSERT(r.success,                          "gfx.LAYER_DEBUG constant check must not error");
-    ASSERT(f.getNum("layer_debug_val")  == 5.0, "gfx.LAYER_DEBUG must equal 5");
-    ASSERT(f.getNum("layer_debug_type") == 1.0, "gfx.LAYER_DEBUG must be a number");
+    ASSERT(r.success, "gfx.LAYER_DEBUG constant check must not error");
+    ASSERT(f.getNum("layer_debug_absent") == 1.0, "gfx.LAYER_DEBUG must be nil");
 }
 
 // ============================================================

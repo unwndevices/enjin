@@ -3,6 +3,7 @@
 #include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/graphics/blit.hpp"
+#include "../../include/enjin2/graphics/layer_compositor.hpp"
 #include <cmath>
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/components/position.hpp"
@@ -588,8 +589,6 @@ void LuaBindings::registerAll() {
     lua_pushinteger(L, 1); lua_setfield(L, -2, "LAYER_BG");
     lua_pushinteger(L, 2); lua_setfield(L, -2, "LAYER_MID");
     lua_pushinteger(L, 3); lua_setfield(L, -2, "LAYER_FG");
-    lua_pushinteger(L, 4); lua_setfield(L, -2, "LAYER_UI");
-    lua_pushinteger(L, 5); lua_setfield(L, -2, "LAYER_DEBUG");
 
     // Palette indices are authored directly; only transparency is named.
     lua_newtable(L);
@@ -634,13 +633,13 @@ void LuaBindings::setInput(InputState* input) {
 }
 
 void LuaBindings::setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleArr) {
-    layerCount = (count > MAX_LUA_LAYERS) ? static_cast<uint8_t>(MAX_LUA_LAYERS) : count;
+    layerCount = (count > ENJIN_LAYER_COUNT - 1) ? ENJIN_LAYER_COUNT - 1 : count;
     for (uint8_t i = 0; i < layerCount; ++i) {
         layerCanvases[i] = canvases[i];
     }
     layerVisible = visibleArr;
     activeLayer = 0;
-    currentCanvas = layerCanvases[0];
+    currentCanvas = layerCount ? layerCanvases[0] : nullptr;
 }
 
 void LuaBindings::resetSpritePool() {

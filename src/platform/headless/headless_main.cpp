@@ -30,19 +30,17 @@
 static enjin2::LayerCompositor<ENJIN2_CANVAS_WIDTH, ENJIN2_CANVAS_HEIGHT> g_compositor;
 static enjin2::LuaScriptSystem                                              g_lua;
 
-// 5 LuaCanvas wrappers: 4 game layers (index 0-3) + 1 debug layer (index 4)
+// Three Lua canvases + a separate debug canvas (same reserved top slot as shell UI).
 static enjin2::LuaCanvas g_lua_layer0(&g_compositor.layers[0]);
 static enjin2::LuaCanvas g_lua_layer1(&g_compositor.layers[1]);
 static enjin2::LuaCanvas g_lua_layer2(&g_compositor.layers[2]);
 static enjin2::LuaCanvas g_lua_layer3(&g_compositor.layers[3]);
-static enjin2::LuaCanvas g_lua_layer4(&g_compositor.layers[4]);  // debug layer
 
-// Pointer array for setLayers() — 4 game layers only (debug is separate)
-static enjin2::LuaCanvas* g_lua_layers[4] = {
+// Pointer array for setLayers() — 3 game layers only (UI is separate)
+static enjin2::LuaCanvas* g_lua_layers[3] = {
     &g_lua_layer0,
     &g_lua_layer1,
     &g_lua_layer2,
-    &g_lua_layer3,
 };
 
 // ── Usage ───────────────────────────────────────────────────────────────────
@@ -117,8 +115,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Wire layer canvases — CRITICAL: prevents null canvas dereference in draw calls
-    g_lua.getBindings().setLayers(g_lua_layers, 4, g_compositor.visible);
-    g_lua.getBindings().setDebugCanvas(&g_lua_layer4);
+    g_lua.getBindings().setLayers(g_lua_layers, 3, g_compositor.visible);
+    g_lua.getBindings().setDebugCanvas(&g_lua_layer3);
 
     // NOTE: setInput() is NOT called — currentInput remains nullptr.
     //       The removed engine.input table does not use currentInput.

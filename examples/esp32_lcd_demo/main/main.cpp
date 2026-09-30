@@ -328,14 +328,13 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "LayerCompositor allocated in PSRAM (%d bytes)", sizeof(Compositor));
 
     // LuaCanvas wrappers (tiny, ok on stack)
-    enjin2::LuaCanvas lua_layers[4] = {
+    enjin2::LuaCanvas lua_layers[3] = {
         enjin2::LuaCanvas(&g_comp->layers[0]),
         enjin2::LuaCanvas(&g_comp->layers[1]),
         enjin2::LuaCanvas(&g_comp->layers[2]),
-        enjin2::LuaCanvas(&g_comp->layers[3]),
     };
-    enjin2::LuaCanvas* layer_ptrs[4] = {
-        &lua_layers[0], &lua_layers[1], &lua_layers[2], &lua_layers[3],
+    enjin2::LuaCanvas* layer_ptrs[3] = {
+        &lua_layers[0], &lua_layers[1], &lua_layers[2],
     };
 
     // LuaScriptSystem: ~65KB (assetBuffer) → PSRAM
@@ -356,7 +355,7 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "Lua script system initialized (in PSRAM)");
 
     // Wire layer canvases into the Lua bindings
-    lua->getBindings().setLayers(layer_ptrs, 4, g_comp->visible);
+    lua->getBindings().setLayers(layer_ptrs, 3, g_comp->visible);
     lua->getBindings().setCanvas(layer_ptrs[0]);
 
     // Load the demo script

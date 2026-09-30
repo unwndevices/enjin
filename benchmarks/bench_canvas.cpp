@@ -60,7 +60,7 @@ int main() {
     // --- LayerCompositor<128,128> benchmark (Canvas4 only) ---
     enjin2::LayerCompositor<128, 128> compositor;
 
-    bench.run("compositor: composite 5 layers", [&] {
+    bench.run("compositor: composite 4 layers", [&] {
         compositor.clearAll();
         compositor.layers[0].fillRect(0, 0, 128, 128, enjin2::Pixel4(1));
         compositor.composite();
@@ -82,7 +82,7 @@ int main() {
     }
     if (enjin2::ENJIN_LAYER_COUNT >= 3) dirtyComp->setTint(2, enjin2::Remap::darken());
 
-    bench.run("compositor: compositeDirty full-frame (5 layers)", [&] {
+    bench.run("compositor: compositeDirty full-frame (4 layers)", [&] {
         for (uint8_t l = 0; l < enjin2::ENJIN_LAYER_COUNT; ++l)
             dirtyComp->invalidateLayer(l);
         dirtyComp->compositeDirty();

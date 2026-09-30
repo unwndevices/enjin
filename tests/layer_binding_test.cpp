@@ -30,25 +30,22 @@ struct LayerBindingFixture {
     LuaCanvas layer0;
     LuaCanvas layer1;
     LuaCanvas layer2;
-    LuaCanvas layer3;
 
-    LuaCanvas* layerPtrs[4];
+    LuaCanvas* layerPtrs[3];
 
     LayerBindingFixture()
         : bindings(&engine)
         , layer0(&compositor.layers[0])
         , layer1(&compositor.layers[1])
         , layer2(&compositor.layers[2])
-        , layer3(&compositor.layers[3])
     {
         layerPtrs[0] = &layer0;
         layerPtrs[1] = &layer1;
         layerPtrs[2] = &layer2;
-        layerPtrs[3] = &layer3;
 
         engine.initialize();
         bindings.registerAll();
-        bindings.setLayers(layerPtrs, 4, compositor.visible);
+        bindings.setLayers(layerPtrs, 3, compositor.visible);
         compositor.clearAll();
     }
 
@@ -73,34 +70,44 @@ static void test_setLayer_getLayer_roundtrip()
     ASSERT(r.success, "setLayer/getLayer script should succeed");
     ASSERT(f.getNum("result") == 3.0,
            "roundtrip: getLayer() should return 3 after setLayer(3)");
+    ASSERT(f.exec("gfx.setLayer(gfx.LAYER_BG); gfx.setPixel(0,0,5); "
+                  "gfx.setLayer(gfx.LAYER_MID); gfx.setPixel(0,0,6); "
+                  "gfx.setLayer(gfx.LAYER_FG); gfx.setPixel(0,0,7)").success,
+           "each public layer constant draws successfully");
+    for (int i = 0; i < 3; ++i)
+        ASSERT(f.compositor.layers[i].getPixel(0, 0).value == i + 5,
+               "each public layer constant addresses its own compositor slot");
 }
 
 // ============================================================
-// test_setLayer_clamp_low
+// test_setLayer_reject_low
 // ============================================================
-static void test_setLayer_clamp_low()
+static void test_setLayer_reject_low()
 {
-    printf("--- setLayer clamp low ---\n");
+    printf("--- setLayer reject low ---\n");
 
     LayerBindingFixture f;
     LuaResult r = f.exec("gfx.setLayer(0); result = gfx.getLayer()");
-    ASSERT(r.success, "gfx.setLayer(0) script should succeed");
-    ASSERT(f.getNum("result") == 1.0,
-           "clamp low: setLayer(0) should clamp to layer 1");
+    ASSERT(!r.success, "gfx.setLayer(0) must error");
 }
 
 // ============================================================
-// test_setLayer_clamp_high
+// test_setLayer_reject_high
 // ============================================================
-static void test_setLayer_clamp_high()
+static void test_setLayer_reject_high()
 {
-    printf("--- setLayer clamp high ---\n");
+    printf("--- setLayer reject high ---\n");
 
     LayerBindingFixture f;
     LuaResult r = f.exec("gfx.setLayer(99); result = gfx.getLayer()");
-    ASSERT(r.success, "gfx.setLayer(99) script should succeed");
-    ASSERT(f.getNum("result") == 4.0,
-           "clamp high: setLayer(99) should clamp to layer 4");
+    ASSERT(!r.success, "gfx.setLayer(99) must error");
+    ASSERT(!f.exec("gfx.setLayer(4)").success, "UI layer must error");
+    ASSERT(f.exec("for _, n in ipairs({0, 4, 256, -1}) do "
+                  "assert(not pcall(gfx.clearLayer, n, 5)); "
+                  "assert(not pcall(gfx.setLayerVisible, n, false)); "
+                  "assert(not pcall(gfx.isLayerVisible, n)) end").success,
+           "all layer-taking enjin bindings reject non-applet indices");
+    ASSERT(f.compositor.visible[3], "UI layer visibility stays unchanged");
 }
 
 // ============================================================
@@ -141,8 +148,10 @@ static void test_getLayerCount()
     LayerBindingFixture f;
     LuaResult r = f.exec("result = gfx.getLayerCount()");
     ASSERT(r.success, "gfx.getLayerCount script should succeed");
-    ASSERT(f.getNum("result") == 4.0,
-           "getLayerCount: should return 4");
+    ASSERT(f.getNum("result") == 3.0,
+           "getLayerCount: should return 3");
+    ASSERT(f.exec("assert(gfx.LAYER_UI == nil and gfx.LAYER_DEBUG == nil)").success,
+           "only the three applet constants are exposed");
 }
 
 // ============================================================
@@ -188,8 +197,8 @@ int main()
     printf("==================\n");
 
     test_setLayer_getLayer_roundtrip();
-    test_setLayer_clamp_low();
-    test_setLayer_clamp_high();
+    test_setLayer_reject_low();
+    test_setLayer_reject_high();
     test_clearLayer_specific();
     test_getLayerCount();
     test_setLayerVisible_isLayerVisible();
