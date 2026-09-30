@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790803805647,
+  "lastUpdate": 1790807284716,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -5301,6 +5301,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 4512,
             "range": "± 0.66%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "6c3dbe4fd8418c1c5a891b7324c1f10826385a58",
+          "message": "feat(scripting): count sprite and tileset loads a full pool refuses (Tomodachi #269)\n\nLuaBindings::spriteLoadFailures(): engine.sprite.load and engine.tilemap.load\ncalls refused because every slot was taken or the pixel buffer was full,\nreset with the sprite pool. The Studio's Budgets tab reads it to tell when\nthe sprite budget tripped during a run.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-10-01T00:27:08+02:00",
+          "tree_id": "0773654a3070661e55f8ca1e6b8bc35f51fe88b5",
+          "url": "https://github.com/unwndevices/enjin/commit/6c3dbe4fd8418c1c5a891b7324c1f10826385a58"
+        },
+        "date": 1790807283516,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 22,
+            "range": "± 4.35%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 66,
+            "range": "± 1.49%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 120,
+            "range": "± 2.07%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 228,
+            "range": "± 0.44%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 71831,
+            "range": "± 0.05%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 22,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 645,
+            "range": "± 0.16%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 4136.5,
+            "range": "± 0.29%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 24099,
+            "range": "± 0.43%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 228,
+            "range": "± 0.44%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 634,
+            "range": "± 1.93%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1203,
+            "range": "± 1.07%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2165.5,
+            "range": "± 1.07%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3070,
+            "range": "± 0.62%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 70,
+            "range": "± 1.41%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 75,
+            "range": "± 1.35%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 28,
+            "range": "± 3.45%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 52.5,
+            "range": "± 0.96%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 83,
+            "range": "± 1.19%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 147,
+            "range": "± 0.68%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 210,
+            "range": "± 2.44%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 49734,
+            "range": "± 1.46%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 787,
+            "range": "± 5.65%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1387.5,
+            "range": "± 3.28%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2029.5,
+            "range": "± 2.75%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2397,
+            "range": "± 2.94%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1153.5,
+            "range": "± 5.49%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 2634,
+            "range": "± 0.48%",
             "unit": "ns/op"
           }
         ]
