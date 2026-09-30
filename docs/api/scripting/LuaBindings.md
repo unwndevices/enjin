@@ -531,22 +531,6 @@ Stored via "enjin_bindings" key during registerAll(). Used by static Lua C-funct
 
 ---
 
-### `static int lua_engine_input_held(lua_State *L)`
-
----
-
-### `static int lua_engine_input_just_pressed(lua_State *L)`
-
----
-
-### `static int lua_engine_input_just_released(lua_State *L)`
-
----
-
-### `static int lua_engine_input_axis(lua_State *L)`
-
----
-
 ### `static int lua_engine_time_delta(lua_State *L)`
 
 ---
