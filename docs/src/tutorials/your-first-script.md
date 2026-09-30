@@ -5,11 +5,13 @@ sidebar_label: Your First Script
 
 # Your First Script
 
-Enjin2 scripts are Lua files loaded by the SDL3 runner. The runner calls two globals every frame: `update(dt)` for logic and `draw()` for rendering. Everything else — state, input, graphics, time — is accessed through the `engine.*` API table.
+Enjin2 scripts are Lua files loaded by a host. The host calls `update(dt)` for logic
+and `draw()` for rendering. State and time live under `engine.*`, graphics under
+`gfx.*`; Tomodachi hosts additionally register the `input.*` table.
 
 ## Script Structure
 
-Every script must define `update` and `draw`. The runner calls them in that order each frame.
+Every script must define `update` and `draw`. The host calls them in that order each frame.
 
 ```lua
 function update(dt)
@@ -23,11 +25,9 @@ function draw()
 end
 ```
 
-`tamagotchi.lua` is a complete working example that covers every concept below. Run it with:
-
-```bash
-./build/sdl3/enjin2_sdl --script scripts/tamagotchi.lua
-```
+`tamagotchi.lua` illustrates these concepts. Its A button and wheel controls work
+when loaded by Tomodachi; the standalone Enjin SDL runner can draw it but does not
+register the platform `input` table, so it cannot be played there.
 
 ## Reading Resolution
 

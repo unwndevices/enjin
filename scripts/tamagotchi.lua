@@ -46,7 +46,7 @@ engine.state.switch("alive")
 
 function update(dt)
     if dt > 0.05 then dt = 0.05 end
-    local a = pressed_a()
+    local a_pressed = pressed_a()
     local wheel = input and input.encoder() or 0
 
     if msg_timer > 0 then
@@ -56,7 +56,7 @@ function update(dt)
     local cur = engine.state.current()
 
     if cur == "dead" then
-        if a then
+        if a_pressed then
             reset()
         end
         return
@@ -72,7 +72,7 @@ function update(dt)
             engine.state.switch("alive")
         end
 
-        if a and stats.energy > 50 then
+        if a_pressed and stats.energy > 50 then
             show_msg("WAKEY WAKEY!", 2.0)
             engine.state.switch("alive")
         end
@@ -104,7 +104,7 @@ function update(dt)
             end
         end
 
-        if a then
+        if a_pressed then
             -- Sleep
             show_msg("NIGHT NIGHT", 1.0)
             engine.state.switch("sleeping")

@@ -1,7 +1,7 @@
 -- scripts/arkanoid.lua
 -- Arkanoid-like brick breaker for Enjin Lua
--- Run: ./build/tests/sprite_sdl_test --script scripts/arkanoid.lua
--- Controls: LEFT/RIGHT (or A/D) = move paddle, A = launch ball / restart
+-- Interactive controls require a Tomodachi host (standalone Enjin has no input table).
+-- Controls: wheel = move paddle, A = launch ball / restart
 -- Note: all drawing functions are available via gfx.* namespace
 
 -- ═══════════════════════════════════════════════════════════════════════════
