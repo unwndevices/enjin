@@ -205,6 +205,10 @@ enum class LuaApiScope : uint8_t {
     Metatable,  ///< Metamethods of userdata type `path` (__add, __index, ...)
 };
 
+/// Lowercase names of the kinds and scopes ("function", "globals", ...).
+const char* luaApiKindName(LuaApiKind kind);
+const char* luaApiScopeName(LuaApiScope scope);
+
 /** @brief A descriptor array plus where it is registered. */
 struct LuaApiModule {
     LuaApiScope        scope = LuaApiScope::Table;
@@ -242,6 +246,41 @@ void luaApiSetGlobals(lua_State* L, const LuaApiModule& module);
 /// A path can repeat: a switch may add fields to a table another module built
 /// (engine.physics and its raycast), so group by path rather than key by it.
 std::vector<const LuaApiModule*> luaApiModules(lua_State* L);
+
+/** @brief One table (or globals / methods / metatable scope) as the VM has it. */
+struct LuaApiTableView {
+    LuaApiScope                     scope = LuaApiScope::Table;
+    std::string                     path;
+    const char*                     summary = nullptr;  ///< The first module's at this place
+    std::vector<const LuaApiEntry*> entries;            ///< One per name
+};
+
+/**
+ * @brief The VM's registered API, merged the way Lua sees it.
+ *
+ * Modules at the same scope and path are one table. A name registered twice
+ * keeps the later entry, at the earlier one's position: the second
+ * registration's lua_setfield replaced the first (libtomo's `print` over
+ * enjin's, its stroke `gfx.setLineWidth` over the core one). Nested Table
+ * modules follow their parent, each at its own scope and path. This is what
+ * the Studio's API reference reads (Tomodachi #260).
+ */
+std::vector<LuaApiTableView> luaApiView(lua_State* L);
+
+/**
+ * @brief Every problem between what a script can reach and what is described.
+ *
+ * Walks the live _G (and every table reached through it) against luaApiView()
+ * and the stdlib list (lua_api_stdlib.hpp), with no exception list:
+ * - a name with no descriptor and no stdlib line is reported;
+ * - a described function must be the C function its entry registers, and a
+ *   constant its value, so a stale merge is reported too;
+ * - a described Table/Globals name, or a stdlib name, that a script cannot
+ *   reach is reported;
+ * - every registered module must pass validateLuaApiModule (signatures parse).
+ * Returns one line per problem; empty = the API reference is exactly the VM.
+ */
+std::vector<std::string> luaApiCensus(lua_State* L);
 
 //==============================================================================
 // Signatures (grammar at the top of this file)

@@ -12,10 +12,12 @@
 #include <enjin2/scripting/lua_engine.hpp>
 #include <enjin2/scripting/tilemap_lua.hpp>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <set>
 #include <string>
+#include <vector>
 
 using namespace enjin2;
 
@@ -227,6 +229,92 @@ static void testRegistryIsPerVm() {
 }
 
 //==============================================================================
+// The merged view and the _G census (Tomodachi #260)
+//==============================================================================
+
+// A second module at "demo" that re-registers `a` and adds `c`, the way
+// libtomo's stroke module augments gfx.
+static constexpr LuaApiEntry kDemoOverride[] = {
+    luaFunction("a", fnB, "() -> int", "Overrides a."),
+    luaFunction("c", fnA, "() -> int", "Adds c."),
+};
+static constexpr LuaApiModule kDemoOverrideModule =
+    luaApiModule(LuaApiScope::Table, "demo", "Demo, augmented.", kDemoOverride);
+
+static std::vector<std::string> entryNames(const LuaApiTableView& t) {
+    std::vector<std::string> names;
+    for (const auto* e : t.entries) names.push_back(e->name);
+    return names;
+}
+
+static void testViewMergesByPlace() {
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    luaApiSetGlobalTable(L, kDemoModule);
+    lua_getglobal(L, "demo");
+    luaApiSetFields(L, -1, kDemoOverrideModule);
+    lua_pop(L, 1);
+
+    const auto view = luaApiView(L);
+    ASSERT(view.size() == 2, "demo and demo.INNER, one table each");
+    if (view.size() == 2) {
+        ASSERT(view[0].path == "demo" && view[1].path == "demo.INNER", "nested follows its parent");
+        ASSERT(std::string(view[0].summary) == "A demo module.", "the first module's summary");
+        ASSERT((entryNames(view[0]) ==
+                std::vector<std::string>{"a", "b", "K", "INNER", "update", "c"}),
+               "a keeps its place, c is appended");
+        ASSERT(view[0].entries[0]->func == fnB, "a is the later registration");
+    }
+    ASSERT(evalInt(L, "demo.a()") == 2, "Lua holds the later a too");
+    lua_close(L);
+}
+
+static int undescribed(lua_State*) { return 0; }
+
+static void testCensusFindsUndescribedNames() {
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    LuaPlatform::configureSecurityRestrictions(L);
+    luaApiSetGlobalTable(L, kDemoModule);
+    luaApiSetGlobals(L, kGlobalsModule);
+    // Workaround for the host build only: enjin's desktop tests link the system
+    // Lua, which may carry LUA_COMPAT_5_3 names (math.pow, ...) the stdlib list
+    // rightly leaves out, so compare with this VM's own starting problems. The
+    // Tomodachi census (vendored Lua, as on the device) expects none at all.
+    const std::vector<std::string> before = luaApiCensus(L);
+    for (const auto& p : before)
+        ASSERT(p.rfind("demo", 0) != 0, "the demo module is fully described: " + p);
+
+    lua_register(L, "sneaky", undescribed);
+    lua_getglobal(L, "demo");
+    lua_pushcfunction(L, undescribed);
+    lua_setfield(L, -2, "a");          // described name, other function
+    lua_pushnil(L);
+    lua_setfield(L, -2, "K");          // described name, gone
+    lua_pushcfunction(L, undescribed);
+    lua_setfield(L, -2, "extra");      // no descriptor
+    lua_pop(L, 1);
+    lua_pushnil(L);
+    lua_setglobal(L, "pairs");         // listed stdlib name, gone
+
+    std::vector<std::string> added;
+    for (const auto& p : luaApiCensus(L))
+        if (std::find(before.begin(), before.end(), p) == before.end()) added.push_back(p);
+    std::sort(added.begin(), added.end());
+    const std::vector<std::string> expected = {
+        "demo.K is described but not registered",
+        "demo.a is not the function its descriptor registers",
+        "demo.extra has no descriptor",
+        "sneaky has no descriptor",
+        "stdlib pairs is listed but not reachable",
+    };
+    std::string got;
+    for (const auto& p : added) got += "\n  " + p;
+    ASSERT(added == expected, "census reports exactly the drift:" + got);
+    lua_close(L);
+}
+
+//==============================================================================
 // Validation
 //==============================================================================
 
@@ -263,16 +351,6 @@ static void testValidateCatchesDrift() {
 // enjin core: every module registerAll() installs is described and valid
 //==============================================================================
 
-static const char* scopeName(LuaApiScope s) {
-    switch (s) {
-        case LuaApiScope::Table:     return "table";
-        case LuaApiScope::Globals:   return "globals";
-        case LuaApiScope::Methods:   return "methods";
-        case LuaApiScope::Metatable: return "metatable";
-    }
-    return "?";
-}
-
 static std::vector<const LuaApiModule*> modulesAt(const std::vector<const LuaApiModule*>& mods,
                                                   LuaApiScope scope, const char* path) {
     std::vector<const LuaApiModule*> found;
@@ -308,7 +386,7 @@ static void testEnjinCoreModules() {
     for (const auto* m : modules) {
         std::string errors;
         ASSERT(validateLuaApiModule(*m, &errors),
-               std::string(scopeName(m->scope)) + " '" + m->path + "' validates:\n" + errors);
+               std::string(luaApiScopeName(m->scope)) + " '" + m->path + "' validates:\n" + errors);
     }
 
     // The converted core surfaces are registered through descriptors, and
@@ -373,7 +451,7 @@ static void expectAllValidate(const std::vector<const LuaApiModule*>& modules,
                               const std::string& where) {
     for (const auto* m : modules) {
         std::string errors;
-        ASSERT(validateLuaApiModule(*m, &errors), where + ": " + scopeName(m->scope) + " '" +
+        ASSERT(validateLuaApiModule(*m, &errors), where + ": " + luaApiScopeName(m->scope) + " '" +
                                                       m->path + "' validates:\n" + errors);
     }
 }
@@ -576,6 +654,8 @@ int main() {
     testMalformed();
     testModuleExposesExactlyItsEntries();
     testRegistryIsPerVm();
+    testViewMergesByPlace();
+    testCensusFindsUndescribedNames();
     testValidateCatchesDrift();
     testEnjinCoreModules();
     testEngineTableDescribed();
