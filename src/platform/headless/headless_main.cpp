@@ -109,6 +109,8 @@ int main(int argc, char* argv[]) {
     }
 
     // ── LuaScriptSystem initialization ───────────────────────────────────
+    // The standalone runtime runs scene games: every switchable feature on.
+    g_lua.getBindings().setFeatures(enjin2::LuaFeatures::all());
     if (!g_lua.initialize()) {
         fprintf(stderr, "error: LuaScriptSystem::initialize() failed\n");
         return 1;

@@ -10,6 +10,7 @@
 #include <enjin2/scripting/bindings.hpp>
 #include <enjin2/scripting/lua_api.hpp>
 #include <enjin2/scripting/lua_engine.hpp>
+#include <enjin2/scripting/tilemap_lua.hpp>
 
 #include <cstdio>
 #include <cstring>
@@ -338,6 +339,236 @@ static void testEnjinCoreModules() {
     }
 }
 
+//==============================================================================
+// engine.* (Tomodachi #258): fully described; the switchable features
+//==============================================================================
+
+static bool evalBool(lua_State* L, const char* expr) {
+    const std::string code = std::string("return ") + expr;
+    if (luaL_dostring(L, code.c_str()) != LUA_OK) {
+        fprintf(stderr, "  lua error: %s\n", lua_tostring(L, -1));
+        lua_pop(L, 1);
+        return false;
+    }
+    const bool v = lua_toboolean(L, -1) != 0;
+    lua_pop(L, 1);
+    return v;
+}
+
+// The registry lists top-level modules; nested ones (a metatable's __index
+// methods, gfx.COLOR) are reached through Table entries. Both, flattened.
+static void addWithNested(std::vector<const LuaApiModule*>& out, const LuaApiModule* m) {
+    out.push_back(m);
+    for (size_t i = 0; i < m->count; ++i)
+        if (m->entries[i].kind == LuaApiKind::Table) addWithNested(out, m->entries[i].table);
+}
+
+static std::vector<const LuaApiModule*> allModules(lua_State* L) {
+    std::vector<const LuaApiModule*> out;
+    for (const auto* m : luaApiModules(L)) addWithNested(out, m);
+    return out;
+}
+
+static void expectAllValidate(const std::vector<const LuaApiModule*>& modules,
+                              const std::string& where) {
+    for (const auto* m : modules) {
+        std::string errors;
+        ASSERT(validateLuaApiModule(*m, &errors), where + ": " + scopeName(m->scope) + " '" +
+                                                      m->path + "' validates:\n" + errors);
+    }
+}
+
+// Every key of `engine` is described: a value by an "engine" module entry, a
+// subtable by the modules registered at "engine.<key>" (which must describe
+// every key of that subtable).
+static void expectEngineDescribed(lua_State* L, const std::vector<const LuaApiModule*>& mods,
+                                  const std::string& where) {
+    lua_getglobal(L, "engine");
+    ASSERT(lua_istable(L, -1), where + ": engine is a table");
+    const auto top = modulesAt(mods, LuaApiScope::Table, "engine");
+    for (const std::string& key : tableKeys(L, -1)) {
+        lua_getfield(L, -1, key.c_str());
+        const std::string path = "engine." + key;
+        if (lua_istable(L, -1)) {
+            expectDescribed(L, modulesAt(mods, LuaApiScope::Table, path.c_str()),
+                            where + ": " + path);
+        } else {
+            ASSERT(describes(top, key), where + ": " + path + " has a descriptor");
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+}
+
+// The metatable `mtName` is described by the Metatable modules at `type`
+// (every key but Lua's own __name), and when its __index is a table, that
+// table is described by the Methods module its __index entry names.
+static void expectMetatableDescribed(lua_State* L, const std::vector<const LuaApiModule*>& mods,
+                                     const char* mtName, const char* type) {
+    luaL_getmetatable(L, mtName);
+    ASSERT(lua_istable(L, -1), std::string(mtName) + " metatable is registered");
+    if (!lua_istable(L, -1)) { lua_pop(L, 1); return; }
+    const auto meta = modulesAt(mods, LuaApiScope::Metatable, type);
+    ASSERT(!meta.empty(), std::string(type) + " has a metatable module");
+    for (const std::string& key : tableKeys(L, -1)) {
+        if (key == "__name") continue;
+        ASSERT(describes(meta, key), std::string(type) + " metatable " + key + " has a descriptor");
+    }
+    lua_getfield(L, -1, "__index");
+    if (lua_istable(L, -1)) {
+        // The methods module is the one the metatable's __index entry builds.
+        const char* methodsPath = type;
+        for (const auto* m : meta)
+            for (size_t i = 0; i < m->count; ++i)
+                if (m->entries[i].kind == LuaApiKind::Table &&
+                    std::strcmp(m->entries[i].name, "__index") == 0)
+                    methodsPath = m->entries[i].table->path;
+        expectDescribed(L, modulesAt(mods, LuaApiScope::Methods, methodsPath),
+                        std::string(type) + " methods");
+    }
+    lua_pop(L, 2);
+}
+
+static const char* const kProxyMetatables[] = {
+    "ScriptProxy",      "ObjectProxy",       "C_Position_Proxy",     "C_Timer_Proxy",
+    "C_StateMachine_Proxy", "C_Tilemap_Proxy", "C_Camera_Proxy",     "C_Sprite_Proxy",
+    "C_Body_Proxy",     "ColliderSet_Proxy",
+};
+
+static bool anyProxyMetatable(lua_State* L) {
+    bool any = false;
+    for (const char* mt : kProxyMetatables) {
+        luaL_getmetatable(L, mt);
+        any = any || !lua_isnil(L, -1);
+        lua_pop(L, 1);
+    }
+    return any;
+}
+
+static void testEngineTableDescribed() {
+    LuaEngine engine;
+    LuaBindings bindings(&engine);
+    engine.initialize();
+    bindings.registerAll();
+    lua_State* L = engine.getState();
+    const auto modules = allModules(L);
+
+    expectAllValidate(modules, "defaults");
+    expectEngineDescribed(L, modules, "defaults");
+
+    // engine.graphics re-exports gfx functions with gfx's own descriptors.
+    const auto gfx = modulesAt(modules, LuaApiScope::Table, "gfx");
+    const auto graphics = modulesAt(modules, LuaApiScope::Table, "engine.graphics");
+    ASSERT(!graphics.empty(), "engine.graphics is a descriptor module");
+    for (const auto* m : graphics) {
+        for (size_t i = 0; i < m->count; ++i) {
+            const LuaApiEntry& alias = m->entries[i];
+            bool same = false;
+            for (const auto* g : gfx)
+                for (size_t j = 0; j < g->count; ++j)
+                    same = same || (std::strcmp(g->entries[j].name, alias.name) == 0 &&
+                                    g->entries[j].func == alias.func &&
+                                    std::strcmp(g->entries[j].signature, alias.signature) == 0 &&
+                                    std::strcmp(g->entries[j].summary, alias.summary) == 0);
+            ASSERT(same, std::string("engine.graphics.") + alias.name + " is gfx's entry");
+        }
+    }
+
+    // The scene-free map handle (#256) and the HUD value objects (#83).
+    expectMetatableDescribed(L, modules, "enjin2.Tilemap", "Tilemap");
+    expectMetatableDescribed(L, modules, "enjin2.RollingCounter", "RollingCounter");
+    expectMetatableDescribed(L, modules, "enjin2.Timer", "Timer");
+
+    // Every switchable feature is off by default: not registered, not listed.
+    ASSERT(evalBool(L, "engine.scene == nil"), "engine.scene is off by default");
+    ASSERT(evalBool(L, "engine.camera == nil"), "engine.camera is off by default");
+    ASSERT(evalBool(L, "engine.debug == nil"), "engine.debug is off by default");
+    ASSERT(evalBool(L, "engine.physics.raycast == nil"), "physics.raycast is off by default");
+    ASSERT(evalBool(L, "engine.physics.bounce ~= nil"), "the rest of engine.physics stays");
+    ASSERT(!anyProxyMetatable(L), "no proxy metatable is registered by default");
+    for (const char* path : {"engine.scene", "engine.camera", "engine.debug"})
+        ASSERT(modulesAt(modules, LuaApiScope::Table, path).empty(),
+               std::string(path) + " is not in the registry when off");
+    ASSERT(!describes(modulesAt(modules, LuaApiScope::Table, "engine.physics"), "raycast"),
+           "raycast is not in the registry when off");
+
+    // A map handle still works with the proxies off.
+    lua::pushTilemap(L);
+    lua_setglobal(L, "handle");
+    ASSERT(luaL_dostring(L, "handle:setTiles({1, 2, 3, 4}, 2, 2)") == LUA_OK,
+           "a map handle's setTiles runs with the proxies off");
+    ASSERT(evalBool(L, "handle:getTile(1, 1) == 4"), "and its getTile reads the map back");
+}
+
+// Each switch registers exactly its own feature, from its descriptors.
+static void testEachFeatureSwitch() {
+    struct Case {
+        const char* name;
+        bool LuaFeatures::*flag;
+        const char* probe;  // nullptr: the proxies (probed by metatable)
+    };
+    static const Case kCases[] = {
+        {"scene", &LuaFeatures::scene, "engine.scene"},
+        {"camera", &LuaFeatures::camera, "engine.camera"},
+        {"debug", &LuaFeatures::debug, "engine.debug"},
+        {"raycast", &LuaFeatures::raycast, "engine.physics.raycast"},
+        {"proxies", &LuaFeatures::proxies, nullptr},
+    };
+    for (const Case& on : kCases) {
+        LuaEngine engine;
+        LuaBindings bindings(&engine);
+        LuaFeatures features;
+        features.*on.flag = true;
+        bindings.setFeatures(features);
+        engine.initialize();
+        bindings.registerAll();
+        lua_State* L = engine.getState();
+        const auto modules = allModules(L);
+        const std::string where = std::string(on.name) + " on";
+
+        expectAllValidate(modules, where);
+        expectEngineDescribed(L, modules, where);
+        for (const Case& other : kCases) {
+            const bool present = other.probe
+                ? evalBool(L, (std::string(other.probe) + " ~= nil").c_str())
+                : anyProxyMetatable(L);
+            ASSERT(present == (&other == &on),
+                   where + ": " + other.name + (present ? " registered" : " not registered"));
+        }
+        if (on.flag == &LuaFeatures::proxies) {
+            // Every proxy metatable, and the methods its __index consults, is described.
+            static const struct { const char* mt; const char* type; const char* methods; } kProxies[] = {
+                {"ScriptProxy", "ScriptProxy", "ScriptProxy.methods"},
+                {"ObjectProxy", "ObjectProxy", "ObjectProxy.methods"},
+                {"C_Position_Proxy", "C_Position", "C_Position.methods"},
+                {"C_Timer_Proxy", "C_Timer", nullptr},
+                {"C_StateMachine_Proxy", "C_StateMachine", nullptr},
+                {"C_Tilemap_Proxy", "C_Tilemap", nullptr},
+                {"C_Camera_Proxy", "C_Camera", nullptr},
+                {"C_Sprite_Proxy", "C_Sprite", "C_Sprite.methods"},
+                {"C_Body_Proxy", "C_Body", "C_Body.methods"},
+                {"ColliderSet_Proxy", "ColliderSet", nullptr},
+            };
+            static_assert(sizeof(kProxies) / sizeof(kProxies[0]) ==
+                              sizeof(kProxyMetatables) / sizeof(kProxyMetatables[0]),
+                          "every proxy metatable is checked");
+            for (const auto& p : kProxies) {
+                expectMetatableDescribed(L, modules, p.mt, p.type);
+                if (p.methods) {
+                    lua_getfield(L, LUA_REGISTRYINDEX, p.methods);
+                    expectDescribed(L, modulesAt(modules, LuaApiScope::Methods, p.type),
+                                    std::string(p.type) + " methods");
+                    lua_pop(L, 1);
+                }
+            }
+        }
+        if (on.flag == &LuaFeatures::raycast) {
+            ASSERT(describes(modulesAt(modules, LuaApiScope::Table, "engine.physics"), "raycast"),
+                   "raycast has a descriptor when on");
+        }
+    }
+}
+
 int main() {
     testRoundTrip();
     testStructure();
@@ -347,6 +578,8 @@ int main() {
     testRegistryIsPerVm();
     testValidateCatchesDrift();
     testEnjinCoreModules();
+    testEngineTableDescribed();
+    testEachFeatureSwitch();
 
     printf("lua_api_test: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

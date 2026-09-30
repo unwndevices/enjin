@@ -7,7 +7,7 @@
  * m_debugCanvas is nullptr.
  */
 #include "../../include/enjin2/scripting/bindings.hpp"
-#include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
 
 namespace enjin2 {
 
@@ -95,21 +95,58 @@ int LuaBindings::lua_engine_debug_getEnabled(lua_State* L) {
     return 1;
 }
 
-// ── Sub-table registration (called from registerEngineTable) ──────────────────
+// ── Sub-table registration (called from registerEngineTable, when switched on) ──
 void LuaBindings::registerDebugSubtable(lua_State* L) {
     // Assumes engine table is at top of stack
-    static const LuaFuncDef kDebugFuncs[] = {
-        {"rect",       lua_engine_debug_rect},
-        {"circle",     lua_engine_debug_circle},
-        {"line",       lua_engine_debug_line},
-        {"cross",      lua_engine_debug_cross},
-        {"text",       lua_engine_debug_text},
-        {"setEnabled", lua_engine_debug_setEnabled},
-        {"getEnabled", lua_engine_debug_getEnabled},
+    static constexpr LuaApiEntry kDebug[] = {
+        luaFunction("rect", lua_engine_debug_rect,
+                    "(x:int, y:int, w:int, h:int, color:int?=8) -> nil",
+                    "Outline a rectangle on the debug overlay.",
+                    "x: left edge\n"
+                    "y: top edge\n"
+                    "w: width\n"
+                    "h: height\n"
+                    "color: palette index"),
+        luaFunction("circle", lua_engine_debug_circle, "(x:int, y:int, r:int, color:int?=8) -> nil",
+                    "Outline a circle on the debug overlay.",
+                    "x: centre column\n"
+                    "y: centre row\n"
+                    "r: radius\n"
+                    "color: palette index"),
+        luaFunction("line", lua_engine_debug_line,
+                    "(x1:int, y1:int, x2:int, y2:int, color:int?=8) -> nil",
+                    "Draw a line on the debug overlay.",
+                    "x1: start column\n"
+                    "y1: start row\n"
+                    "x2: end column\n"
+                    "y2: end row\n"
+                    "color: palette index"),
+        luaFunction("cross", lua_engine_debug_cross,
+                    "(x:int, y:int, size:int?=4, color:int?=8) -> nil",
+                    "Draw a + marker on the debug overlay.",
+                    "x: centre column\n"
+                    "y: centre row\n"
+                    "size: arm length in pixels\n"
+                    "color: palette index"),
+        luaFunction("text", lua_engine_debug_text,
+                    "(str:string, x:int, y:int, color:int?=8) -> nil",
+                    "Draw text on the debug overlay, in the default font at size 1.",
+                    "str: the text\n"
+                    "x: left edge\n"
+                    "y: vertical position\n"
+                    "color: palette index"),
+        luaFunction("setEnabled", lua_engine_debug_setEnabled, "(on:boolean) -> nil",
+                    "Turn the overlay draws on or off.",
+                    "on: whether debug draws run")
+            .note("On again after every reload."),
+        luaFunction("getEnabled", lua_engine_debug_getEnabled, "() -> boolean",
+                    "Whether the overlay draws run."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kDebugFuncs, ENJIN_ARRAY_LEN(kDebugFuncs));
-    lua_setfield(L, -2, "debug");   // engine.debug = { ... }
+    static constexpr LuaApiModule kDebugModule = luaApiModule(
+        LuaApiScope::Table, "engine.debug",
+        "Overlay drawing on the host's debug layer; a no-op without one or while disabled.",
+        kDebug);
+    luaApiSetSubtable(L, -1, kDebugModule);   // engine.debug = { ... }
 }
 
 } // namespace enjin2

@@ -1,5 +1,5 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
-#include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/scripting/lua_event_bus.hpp"
 #include "../../include/enjin2/core/scene.hpp"
 #include "../../include/enjin2/core/scene_state_machine.hpp"
@@ -27,6 +27,11 @@ static int lua_engine_camera_clearBounds(lua_State* L);
 
 //==============================================================================
 // engine.* Global Table (ENG-01..ENG-06)
+//
+// Every sub-table registers from a descriptor array (ADR-0013). engine.scene,
+// engine.camera, engine.debug and engine.physics.raycast are switchable
+// (LuaFeatures, off by default): each is checked once, here or in its own
+// register function, and its descriptors stay written either way.
 //==============================================================================
 
 void LuaBindings::registerEngineTable() {
@@ -34,206 +39,498 @@ void LuaBindings::registerEngineTable() {
 
     lua_newtable(L);                               // [engine_table]
 
-    // --- engine.scene sub-table (ENG-01: switch, ENG-02: find) ---
-    static const LuaFuncDef kSceneFuncs[] = {
-        {"switch",    lua_engine_scene_switch},
-        {"find",      lua_engine_scene_find},
-        {"spawn",     lua_engine_scene_spawn},
-        {"destroy",   lua_engine_scene_destroy},
-        {"persist",   lua_engine_scene_persist},    // Phase 51: PERSIST-01
-        {"unpersist", lua_engine_scene_unpersist},  // Phase 51: PERSIST-02
-        {"colliders", lua_engine_scene_colliders},  // ADR-0003 §4, #80
+    // --- engine.scene (ENG-01/02, Phase 51 persistence, ADR-0003 §4) — switchable ---
+    static constexpr LuaApiEntry kScene[] = {
+        luaFunction("switch", lua_engine_scene_switch, "(id:int) -> nil",
+                    "Ask the scene state machine to switch to scene id.",
+                    "id: the scene's id in the state machine")
+            .note("A no-op when the host installed no scene state machine."),
+        luaFunction("find", lua_engine_scene_find, "(name:string) -> ObjectProxy?",
+                    "The named object in the active scene, else a persisted one; nil when none.",
+                    "name: the object's name"),
+        luaFunction("spawn", lua_engine_scene_spawn, "(name:string?) -> ObjectProxy?",
+                    "Add a new object, with a C_Position, to the active scene; nil without one.",
+                    "name: optional name, for engine.scene.find"),
+        luaFunction("destroy", lua_engine_scene_destroy, "(obj:ObjectProxy) -> nil",
+                    "Remove an object from the active scene; a destroyed or foreign value is ignored.",
+                    "obj: the object"),
+        luaFunction("persist", lua_engine_scene_persist, "(obj:ObjectProxy) -> boolean?",
+                    "Keep an object alive across scene switches: true, or nil when the pool is full.",
+                    "obj: the object; any other value gives nil")
+            .note("nil without a scene state machine."),
+        luaFunction("unpersist", lua_engine_scene_unpersist, "(obj:ObjectProxy) -> boolean?",
+                    "Let a persisted object go at the next scene switch: true, or nil.",
+                    "obj: the object; any other value gives nil")
+            .note("nil without a scene state machine."),
+        luaFunction("colliders", lua_engine_scene_colliders, "() -> ColliderSet?",
+                    "The active scene's static collider set; nil without a scene."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kSceneFuncs, ENJIN_ARRAY_LEN(kSceneFuncs));
-    lua_setfield(L, -2, "scene");
+    static constexpr LuaApiModule kSceneModule = luaApiModule(
+        LuaApiScope::Table, "engine.scene",
+        "The active scene: find, spawn and destroy objects, switch scenes.", kScene);
+    if (m_features.scene) luaApiSetSubtable(L, -1, kSceneModule);
 
-    // --- engine.time sub-table (ENG-04) ---
-    static const LuaFuncDef kTimeFuncs[] = {
-        {"delta", lua_engine_time_delta},
-        {"now",   lua_engine_time_now},
-        {"frame", lua_engine_time_frame},
+    // --- engine.time (ENG-04) ---
+    static constexpr LuaApiEntry kTime[] = {
+        luaFunction("delta", lua_engine_time_delta, "() -> number",
+                    "Seconds since the previous frame, as the host reported it."),
+        luaFunction("now", lua_engine_time_now, "() -> number",
+                    "Total seconds of frame time the host has reported."),
+        luaFunction("frame", lua_engine_time_frame, "() -> int", "The host's frame counter."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kTimeFuncs, ENJIN_ARRAY_LEN(kTimeFuncs));
-    lua_setfield(L, -2, "time");
+    static constexpr LuaApiModule kTimeModule = luaApiModule(
+        LuaApiScope::Table, "engine.time", "Frame time, as the host reports it each frame.", kTime);
+    luaApiSetSubtable(L, -1, kTimeModule);
 
-    // --- engine.collision sub-table ---
-    static const LuaFuncDef kCollisionFuncs[] = {
-        {"aabb",           lua_engine_collision_aabb},
-        {"circleCircle",   lua_engine_collision_circleCircle},
-        {"pointInRect",    lua_engine_collision_pointInRect},
-        {"pointInCircle",  lua_engine_collision_pointInCircle},
-        {"lineLine",       lua_engine_collision_lineLine},
-        {"lineCircle",     lua_engine_collision_lineCircle},
-        {"aabbOverlap",    lua_engine_collision_aabbOverlap},
-        {"circleResponse", lua_engine_collision_circleResponse},
-        {"reflect",        lua_engine_collision_reflect},
+    // --- engine.collision ---
+    static constexpr LuaApiEntry kCollision[] = {
+        luaFunction("aabb", lua_engine_collision_aabb,
+                    "(x1:number, y1:number, w1:number, h1:number, "
+                    "x2:number, y2:number, w2:number, h2:number) -> boolean\n"
+                    "(a:Rect, b:Rect) -> boolean",
+                    "Whether two axis-aligned rectangles overlap; touching edges do not count.",
+                    "x1: first rectangle's left edge\n"
+                    "y1: first rectangle's top edge\n"
+                    "w1: first rectangle's width\n"
+                    "h1: first rectangle's height\n"
+                    "x2: second rectangle's left edge\n"
+                    "y2: second rectangle's top edge\n"
+                    "w2: second rectangle's width\n"
+                    "h2: second rectangle's height\n"
+                    "a: first rectangle\n"
+                    "b: second rectangle"),
+        luaFunction("circleCircle", lua_engine_collision_circleCircle,
+                    "(x1:number, y1:number, r1:number, x2:number, y2:number, r2:number) -> boolean",
+                    "Whether two circles overlap or touch.",
+                    "x1: first centre column\n"
+                    "y1: first centre row\n"
+                    "r1: first radius\n"
+                    "x2: second centre column\n"
+                    "y2: second centre row\n"
+                    "r2: second radius"),
+        luaFunction("pointInRect", lua_engine_collision_pointInRect,
+                    "(px:number, py:number, rx:number, ry:number, rw:number, rh:number) -> boolean\n"
+                    "(p:Point|Vec2, r:Rect) -> boolean",
+                    "Whether a point is inside a rectangle; the right and bottom edges are outside.",
+                    "px: point column\n"
+                    "py: point row\n"
+                    "rx: rectangle's left edge\n"
+                    "ry: rectangle's top edge\n"
+                    "rw: rectangle's width\n"
+                    "rh: rectangle's height\n"
+                    "p: the point\n"
+                    "r: the rectangle"),
+        luaFunction("pointInCircle", lua_engine_collision_pointInCircle,
+                    "(px:number, py:number, cx:number, cy:number, r:number) -> boolean\n"
+                    "(p:Point|Vec2, cx:number, cy:number, r:number) -> boolean",
+                    "Whether a point is inside or on a circle.",
+                    "px: point column\n"
+                    "py: point row\n"
+                    "cx: centre column\n"
+                    "cy: centre row\n"
+                    "r: radius\n"
+                    "p: the point"),
+        luaFunction("lineLine", lua_engine_collision_lineLine,
+                    "(x1:number, y1:number, x2:number, y2:number, "
+                    "x3:number, y3:number, x4:number, y4:number) -> "
+                    "hit:boolean, x:number?, y:number?",
+                    "Whether two segments cross, and where; parallel segments never do.",
+                    "x1: first segment's start column\n"
+                    "y1: first segment's start row\n"
+                    "x2: first segment's end column\n"
+                    "y2: first segment's end row\n"
+                    "x3: second segment's start column\n"
+                    "y3: second segment's start row\n"
+                    "x4: second segment's end column\n"
+                    "y4: second segment's end row"),
+        luaFunction("lineCircle", lua_engine_collision_lineCircle,
+                    "(x1:number, y1:number, x2:number, y2:number, cx:number, cy:number, "
+                    "r:number) -> boolean",
+                    "Whether a segment touches a circle.",
+                    "x1: start column\n"
+                    "y1: start row\n"
+                    "x2: end column\n"
+                    "y2: end row\n"
+                    "cx: centre column\n"
+                    "cy: centre row\n"
+                    "r: radius"),
+        luaFunction("aabbOverlap", lua_engine_collision_aabbOverlap,
+                    "(x1:number, y1:number, w1:number, h1:number, "
+                    "x2:number, y2:number, w2:number, h2:number) -> "
+                    "hit:boolean, x:number?, y:number?, w:number?, h:number?",
+                    "Whether two rectangles overlap, and the rectangle they share.",
+                    "x1: first rectangle's left edge\n"
+                    "y1: first rectangle's top edge\n"
+                    "w1: first rectangle's width\n"
+                    "h1: first rectangle's height\n"
+                    "x2: second rectangle's left edge\n"
+                    "y2: second rectangle's top edge\n"
+                    "w2: second rectangle's width\n"
+                    "h2: second rectangle's height"),
+        luaFunction("circleResponse", lua_engine_collision_circleResponse,
+                    "(x1:number, y1:number, r1:number, x2:number, y2:number, r2:number) -> "
+                    "hit:boolean, nx:number?, ny:number?, depth:number?",
+                    "Whether two circles overlap, the unit normal from the first to the second, "
+                    "and how deep.",
+                    "x1: first centre column\n"
+                    "y1: first centre row\n"
+                    "r1: first radius\n"
+                    "x2: second centre column\n"
+                    "y2: second centre row\n"
+                    "r2: second radius")
+            .note("Circles on the same centre give the normal (1, 0)."),
+        luaFunction("reflect", lua_engine_collision_reflect,
+                    "(vx:number, vy:number, nx:number, ny:number) -> vx:number, vy:number",
+                    "A velocity mirrored off a surface: v - 2(v.n)n.",
+                    "vx: velocity x\n"
+                    "vy: velocity y\n"
+                    "nx: surface normal x (unit length)\n"
+                    "ny: surface normal y (unit length)"),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kCollisionFuncs, ENJIN_ARRAY_LEN(kCollisionFuncs));
-    lua_setfield(L, -2, "collision");
+    static constexpr LuaApiModule kCollisionModule = luaApiModule(
+        LuaApiScope::Table, "engine.collision",
+        "Overlap tests and responses for points, rectangles, circles and segments.", kCollision);
+    luaApiSetSubtable(L, -1, kCollisionModule);
 
-    // --- engine.lua sub-table (GC-01, GC-02) ---
-    static const LuaFuncDef kLuaFuncs[] = {
-        {"collect", lua_engine_lua_collect},
-        {"memory",  lua_engine_lua_memory},
+    // --- engine.lua (GC-01, GC-02) ---
+    static constexpr LuaApiEntry kLua[] = {
+        luaFunction("collect", lua_engine_lua_collect, "() -> nil",
+                    "Run one small incremental garbage-collection step, not a full collection."),
+        luaFunction("memory", lua_engine_lua_memory, "() -> number",
+                    "Bytes the Lua heap uses now."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kLuaFuncs, ENJIN_ARRAY_LEN(kLuaFuncs));
-    lua_setfield(L, -2, "lua");
+    static constexpr LuaApiModule kLuaModule = luaApiModule(
+        LuaApiScope::Table, "engine.lua", "The Lua VM's heap.", kLua);
+    luaApiSetSubtable(L, -1, kLuaModule);
 
-    // --- engine.random sub-table (seeded xorshift32 PRNG) ---
-    static const LuaFuncDef kRandomFuncs[] = {
-        {"seed",    lua_engine_random_seed},
-        {"integer", lua_engine_random_integer},
-        {"float",   lua_engine_random_float},
+    // --- engine.random (seeded xorshift32 PRNG) ---
+    static constexpr LuaApiEntry kRandom[] = {
+        luaFunction("seed", lua_engine_random_seed, "(n:int) -> nil",
+                    "Reseed the generator; 0 picks a fixed non-zero seed.",
+                    "n: the seed (32 bits)")
+            .note("Every reload reseeds with the same fixed value, so sequences repeat until "
+                  "a script seeds it."),
+        luaFunction("integer", lua_engine_random_integer, "(a:int, b:int) -> int",
+                    "A random integer from a to b, both included; the bounds may come in either order.",
+                    "a: one bound\n"
+                    "b: the other bound"),
+        luaFunction("float", lua_engine_random_float,
+                    "() -> number\n"
+                    "(a:number, b:number) -> number",
+                    "A random number in (0, 1], or scaled to run from a to b.",
+                    "a: the value for 0\n"
+                    "b: the value for 1"),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kRandomFuncs, ENJIN_ARRAY_LEN(kRandomFuncs));
-    lua_setfield(L, -2, "random");
+    static constexpr LuaApiModule kRandomModule = luaApiModule(
+        LuaApiScope::Table, "engine.random",
+        "A seeded xorshift32 generator, separate from math.random.", kRandom);
+    luaApiSetSubtable(L, -1, kRandomModule);
 
-    // --- engine.store sub-table (persistent KV store) ---
-    static const LuaFuncDef kStoreFuncs[] = {
-        {"save",   lua_engine_store_save},
-        {"load",   lua_engine_store_load},
-        {"exists", lua_engine_store_exists},
-        {"delete", lua_engine_store_delete},
-        {"clear",  lua_engine_store_clear},
-        {"flush",  lua_engine_store_flush},   // Phase 48: STORE-02
-        {"path",   lua_engine_store_path},    // Phase 48: STORE-02
+    // --- engine.store (persistent key-value store) ---
+    static constexpr LuaApiEntry kStore[] = {
+        luaFunction("save", lua_engine_store_save,
+                    "(key:string, value:number|string|boolean|table) -> boolean",
+                    "Store a value under key; false when all 16 keys are taken or a table does "
+                    "not fit.",
+                    "key: the name; up to 63 bytes, and 15 characters on the device (longer raises)\n"
+                    "value: a number, a string (up to 127 bytes), a boolean, or a flat table of up "
+                    "to 16 string keys holding numbers, strings or booleans (other values are "
+                    "skipped); anything else raises")
+            .note("Desktop hosts write the file at once when a path is set; the web and the "
+                  "device keep changes in memory until engine.store.flush()."),
+        luaFunction("load", lua_engine_store_load,
+                    "(key:string) -> value:number|string|boolean|table?",
+                    "The value stored under key, or nil; a table comes back as a new table.",
+                    "key: the name"),
+        luaFunction("exists", lua_engine_store_exists, "(key:string) -> boolean",
+                    "Whether key holds a value.",
+                    "key: the name"),
+        luaFunction("delete", lua_engine_store_delete, "(key:string) -> boolean",
+                    "Remove a key; true when it existed.",
+                    "key: the name"),
+        luaFunction("clear", lua_engine_store_clear, "() -> nil", "Remove every key."),
+        luaFunction("flush", lua_engine_store_flush, "() -> boolean",
+                    "Write the store out: localStorage on the web, NVS on the device, the path "
+                    "file on desktop.")
+            .note("false on desktop until engine.store.path sets a file."),
+        luaFunction("path", lua_engine_store_path, "(filepath:string) -> nil",
+                    "Set the desktop save file and load what it holds.",
+                    "filepath: the JSON file")
+            .note("The web and the device ignore the path and reload their saved store."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kStoreFuncs, ENJIN_ARRAY_LEN(kStoreFuncs));
-    lua_setfield(L, -2, "store");
+    static constexpr LuaApiModule kStoreModule = luaApiModule(
+        LuaApiScope::Table, "engine.store",
+        "A small persistent key-value store: 16 keys, shared by every script the engine runs.",
+        kStore);
+    luaApiSetSubtable(L, -1, kStoreModule);
 
-    // --- engine.sprite sub-table ---
-    static const LuaFuncDef kSpriteFuncs[] = {
-        {"load", lua_loadSprite},
+    // --- engine.sprite ---
+    static constexpr LuaApiEntry kSprite[] = {
+        luaFunction("load", lua_loadSprite, "(name:string) -> handle:int",
+                    "Load <name>.njn from the asset folder into a sprite slot; -1 on failure.",
+                    "name: the file name without .njn, relative to the applet's asset folder")
+            .note("Fails when all 16 sprite slots are busy or the 64 KiB pixel arena is full. "
+                  "The sprite starts on frame 0, looping at 8 fps."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kSpriteFuncs, ENJIN_ARRAY_LEN(kSpriteFuncs));
-    lua_setfield(L, -2, "sprite");
+    static constexpr LuaApiModule kSpriteModule = luaApiModule(
+        LuaApiScope::Table, "engine.sprite", "Sprite sheets loaded from asset files.", kSprite);
+    luaApiSetSubtable(L, -1, kSpriteModule);
 
-    // --- engine.tilemap sub-table (ADR-0003 §6, #91) ---
-    static const LuaFuncDef kTilemapFuncs[] = {
-        {"load", lua_loadTilemap},
+    // --- engine.tilemap (ADR-0003 §6, #91; scene-free handle #256) ---
+    static constexpr LuaApiEntry kTilemap[] = {
+        luaFunction("load", lua_loadTilemap, "(name:string) -> Tilemap",
+                    "Load <name>.njn (tileset and tile attributes) and <name>.njm (cells) into a "
+                    "new map.",
+                    "name: the file name without extension, relative to the applet's asset folder")
+            .note("Raises when a file is missing or invalid, or all 16 sprite slots are busy. The "
+                  "tileset holds its sprite slot until the next reload, even after the map is "
+                  "collected. Maps larger than 64x64 are cropped."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kTilemapFuncs, ENJIN_ARRAY_LEN(kTilemapFuncs));
-    lua_setfield(L, -2, "tilemap");
+    static constexpr LuaApiModule kTilemapModule = luaApiModule(
+        LuaApiScope::Table, "engine.tilemap", "Tile maps loaded from asset files.", kTilemap);
+    luaApiSetSubtable(L, -1, kTilemapModule);
+    registerTilemapMethods(L);
 
-    // --- engine.event sub-table (Phase 42: scene-scoped pub/sub) ---
-    static const LuaFuncDef kEventFuncs[] = {
-        {"on",   lua_engine_event_on},
-        {"off",  lua_engine_event_off},
-        {"emit", lua_engine_event_emit},
+    // --- engine.event (Phase 42: pub/sub) ---
+    static constexpr LuaApiEntry kEvent[] = {
+        luaFunction("on", lua_engine_event_on, "(name:string, fn:function) -> id:int",
+                    "Call fn() whenever name is emitted; returns the handler's id, 0 when a limit "
+                    "is reached.",
+                    "name: the event\n"
+                    "fn: the handler, called with no arguments"),
+        luaFunction("off", lua_engine_event_off, "(id:int) -> nil",
+                    "Remove a handler; unknown ids are ignored.",
+                    "id: the id engine.event.on returned"),
+        luaFunction("emit", lua_engine_event_emit, "(name:string) -> nil",
+                    "Call every handler of name now, with no arguments.",
+                    "name: the event"),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kEventFuncs, ENJIN_ARRAY_LEN(kEventFuncs));
-    lua_setfield(L, -2, "event");
+    static constexpr LuaApiModule kEventModule = luaApiModule(
+        LuaApiScope::Table, "engine.event",
+        "Named events: handlers are dropped on every reload and scene change.", kEvent);
+    luaApiSetSubtable(L, -1, kEventModule);
 
-    // --- engine.camera sub-table (Phase 44: 2D camera system) ---
-    static const LuaFuncDef kCameraFuncs[] = {
-        {"setPosition",  lua_engine_camera_setPosition},
-        {"getPosition",  lua_engine_camera_getPosition},
-        {"lookAt",       lua_engine_camera_lookAt},
-        {"shake",        lua_engine_camera_shake},
-        {"setBounds",    lua_engine_camera_setBounds},
-        {"clearBounds",  lua_engine_camera_clearBounds},
-        {"follow",       lua_engine_camera_follow},      // Phase 48: CAM-01
-        {"stopFollow",   lua_engine_camera_stopFollow},  // Phase 48: CAM-02
-        {"setDeadZone",  lua_engine_camera_setDeadZone}, // Phase 57: QOL-03
+    // --- engine.camera (Phase 44/48/57) — switchable ---
+    static constexpr LuaApiEntry kCamera[] = {
+        luaFunction("setPosition", lua_engine_camera_setPosition, "(x:number, y:number) -> nil",
+                    "Move the camera.",
+                    "x: world column\n"
+                    "y: world row"),
+        luaFunction("getPosition", lua_engine_camera_getPosition, "() -> x:number, y:number",
+                    "The camera's position; 0, 0 without a camera."),
+        luaFunction("lookAt", lua_engine_camera_lookAt,
+                    "(x:number, y:number, speed:number?=1) -> nil",
+                    "Glide the camera toward a point; a speed of 1 or more jumps there.",
+                    "x: world column\n"
+                    "y: world row\n"
+                    "speed: how fast it glides; 0.1 covers the distance in about a second"),
+        luaFunction("shake", lua_engine_camera_shake, "(intensity:number, duration:number) -> nil",
+                    "Shake the camera.",
+                    "intensity: how far it shakes, in pixels\n"
+                    "duration: seconds"),
+        luaFunction("setBounds", lua_engine_camera_setBounds,
+                    "(minX:number, minY:number, maxX:number, maxY:number) -> nil",
+                    "Keep the camera's position inside a rectangle.",
+                    "minX: left limit\n"
+                    "minY: top limit\n"
+                    "maxX: right limit\n"
+                    "maxY: bottom limit"),
+        luaFunction("clearBounds", lua_engine_camera_clearBounds, "() -> nil",
+                    "Let the camera move anywhere again."),
+        luaFunction("follow", lua_engine_camera_follow,
+                    "(target:ObjectProxy?, speed:number?=0.1) -> nil",
+                    "Glide toward an object every frame; nil or a destroyed object stops following.",
+                    "target: the object to follow\n"
+                    "speed: the lookAt speed"),
+        luaFunction("stopFollow", lua_engine_camera_stopFollow, "() -> nil",
+                    "Stop following."),
+        luaFunction("setDeadZone", lua_engine_camera_setDeadZone, "(w:number, h:number) -> nil",
+                    "While following, hold still as long as the target stays in a box centred on "
+                    "the camera.",
+                    "w: box width; 0 turns the dead zone off, negative counts as 0\n"
+                    "h: box height; 0 turns the dead zone off, negative counts as 0"),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kCameraFuncs, ENJIN_ARRAY_LEN(kCameraFuncs));
-    lua_setfield(L, -2, "camera");
+    static constexpr LuaApiModule kCameraModule = luaApiModule(
+        LuaApiScope::Table, "engine.camera",
+        "The active scene's camera; every call is a no-op without one.", kCamera);
+    if (m_features.camera) luaApiSetSubtable(L, -1, kCameraModule);
 
-    // --- engine.graphics sub-table (quick-007 API-03: aliases for global drawing functions) ---
-    static const LuaFuncDef kGraphicsFuncs[] = {
-        {"clear",         lua_clear},
-        {"setColor",      lua_setColor},
-        {"getColor",      lua_getColor},
-        {"setLineWidth",  lua_setLineWidth},
-        {"getLineWidth",  lua_getLineWidth},
-        {"point",         lua_point},
-        {"line",          lua_line},
-        {"rectangle",     lua_rectangle},
-        {"circle",        lua_circle},
-        {"triangle",      lua_triangle},
-        {"setPixel",      lua_setPixel},
-        {"getPixel",      lua_getPixel},
-        {"text",          lua_text},
-        {"textWrapped",   lua_textWrapped},
-        {"textCentered",  lua_textCentered},
-        {"textAligned",   lua_textAligned},
-        {"setTextSize",   lua_setTextSize},
-        {"getTextSize",   lua_getTextSize},
-        {"setFont",       lua_setFont},
-        {"getFont",       lua_getFont},
-        {"getTextWidth",  lua_getTextWidth},
-        {"getTextHeight", lua_getTextHeight},
-        {"getWidth",      lua_getWidth},
-        {"getHeight",     lua_getHeight},
+    // --- engine.config (quick-007 API-07) ---
+    static constexpr LuaApiEntry kConfig[] = {
+        luaFunction("resolution", lua_engine_config_resolution, "() -> width:int, height:int",
+                    "The size of the layer being drawn on; 0, 0 without one."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kGraphicsFuncs, ENJIN_ARRAY_LEN(kGraphicsFuncs));
-    lua_setfield(L, -2, "graphics");
+    static constexpr LuaApiModule kConfigModule = luaApiModule(
+        LuaApiScope::Table, "engine.config", "The drawing surface's configuration.", kConfig);
+    luaApiSetSubtable(L, -1, kConfigModule);
 
-    // --- engine.config sub-table (quick-007 API-07: canvas configuration) ---
-    static const LuaFuncDef kConfigFuncs[] = {
-        {"resolution", lua_engine_config_resolution},
+    // --- engine.state (quick-007 API-07: named states with enter/exit callbacks) ---
+    static constexpr LuaApiEntry kState[] = {
+        luaFunction("switch", lua_engine_state_switch, "(name:string) -> nil",
+                    "Run the current state's on_exit, change state, then run the new state's "
+                    "on_enter.",
+                    "name: the new state; it need not have callbacks")
+            .note("An error inside a callback is discarded silently."),
+        luaFunction("current", lua_engine_state_current, "() -> string",
+                    "The current state's name; \"none\" after a reload."),
+        luaFunction("on_enter", lua_engine_state_on_enter, "(name:string, fn:function) -> nil",
+                    "Set the callback run when switching into a state, replacing any earlier one.",
+                    "name: the state; up to 63 bytes\n"
+                    "fn: called with no arguments")
+            .note("Up to 16 states have callbacks; more are ignored."),
+        luaFunction("on_exit", lua_engine_state_on_exit, "(name:string, fn:function) -> nil",
+                    "Set the callback run when switching out of a state, replacing any earlier one.",
+                    "name: the state; up to 63 bytes\n"
+                    "fn: called with no arguments")
+            .note("Up to 16 states have callbacks; more are ignored."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kConfigFuncs, ENJIN_ARRAY_LEN(kConfigFuncs));
-    lua_setfield(L, -2, "config");
+    static constexpr LuaApiModule kStateModule = luaApiModule(
+        LuaApiScope::Table, "engine.state",
+        "One global named state with enter and exit callbacks, reset on every reload.", kState);
+    luaApiSetSubtable(L, -1, kStateModule);
 
-    // --- engine.state sub-table (quick-007 API-07: lightweight global state machine) ---
-    static const LuaFuncDef kStateFuncs[] = {
-        {"switch",   lua_engine_state_switch},
-        {"current",  lua_engine_state_current},
-        {"on_enter", lua_engine_state_on_enter},
-        {"on_exit",  lua_engine_state_on_exit},
+    // --- engine.physics (Phase 45: PHYS-09..PHYS-13); raycast is switchable ---
+    static constexpr LuaApiEntry kPhysics[] = {
+        luaFunction("setGravity", lua_engine_physics_setGravity, "(gx:number, gy:number) -> nil",
+                    "Set the gravity applyGravity uses when a call gives none.",
+                    "gx: acceleration along x\n"
+                    "gy: acceleration along y (positive is down)"),
+        luaFunction("getGravity", lua_engine_physics_getGravity, "() -> gx:number, gy:number",
+                    "The gravity set by setGravity."),
+        luaFunction("applyGravity", lua_engine_physics_applyGravity,
+                    "(vx:number, vy:number, dt:number) -> vx:number, vy:number\n"
+                    "(vx:number, vy:number, gx:number, gy:number, dt:number) -> vx:number, vy:number\n"
+                    "(v:Vec2, dt:number) -> vx:number, vy:number\n"
+                    "(v:Vec2, gx:number, gy:number, dt:number) -> vx:number, vy:number",
+                    "A velocity after dt seconds of gravity: the set gravity, or gx, gy for this "
+                    "call.",
+                    "vx: velocity x\n"
+                    "vy: velocity y\n"
+                    "dt: seconds\n"
+                    "gx: gravity x for this call\n"
+                    "gy: gravity y for this call\n"
+                    "v: the velocity"),
+        luaFunction("bounce", lua_engine_physics_bounce,
+                    "(vx:number, vy:number, nx:number, ny:number, restitution:number) -> "
+                    "vx:number, vy:number\n"
+                    "(v:Vec2, n:Vec2, restitution:number) -> vx:number, vy:number\n"
+                    "(v:Vec2, nx:number, ny:number, restitution:number) -> vx:number, vy:number",
+                    "A velocity reflected off a surface and scaled by restitution.",
+                    "vx: velocity x\n"
+                    "vy: velocity y\n"
+                    "nx: surface normal x (unit length)\n"
+                    "ny: surface normal y (unit length)\n"
+                    "restitution: 1 keeps all the speed, 0 stops dead\n"
+                    "v: the velocity\n"
+                    "n: the surface normal (unit length)"),
+        luaFunction("applyDrag", lua_engine_physics_applyDrag,
+                    "(vx:number, vy:number, drag:number, dt:number) -> vx:number, vy:number\n"
+                    "(v:Vec2, drag:number, dt:number) -> vx:number, vy:number",
+                    "A velocity scaled by 1 - drag * dt, never below 0.",
+                    "vx: velocity x\n"
+                    "vy: velocity y\n"
+                    "drag: the fraction lost per second\n"
+                    "dt: seconds\n"
+                    "v: the velocity"),
+        luaFunction("springForce", lua_engine_physics_springForce,
+                    "(pos:number, target:number, vel:number, stiffness:number, damping:number, "
+                    "dt:number) -> vel:number",
+                    "One axis of a damped spring: the velocity after dt seconds.",
+                    "pos: the position\n"
+                    "target: the rest position\n"
+                    "vel: the velocity\n"
+                    "stiffness: pull per unit of distance\n"
+                    "damping: drag per unit of velocity\n"
+                    "dt: seconds"),
+        luaFunction("attract", lua_engine_physics_attract,
+                    "(x:number, y:number, ax:number, ay:number, strength:number, "
+                    "maxForce:number) -> fx:number, fy:number\n"
+                    "(p:Vec2, a:Vec2, strength:number, maxForce:number) -> fx:number, fy:number",
+                    "A force toward an attractor: strength / distance squared, capped at maxForce.",
+                    "x: the point's column\n"
+                    "y: the point's row\n"
+                    "ax: the attractor's column\n"
+                    "ay: the attractor's row\n"
+                    "strength: force at distance 1\n"
+                    "maxForce: the cap\n"
+                    "p: the point\n"
+                    "a: the attractor"),
+        luaFunction("orbitVelocity", lua_engine_physics_orbitVelocity,
+                    "(x:number, y:number, cx:number, cy:number, speed:number) -> "
+                    "vx:number, vy:number\n"
+                    "(p:Vec2, c:Vec2, speed:number) -> vx:number, vy:number",
+                    "A velocity of the given speed that circles the centre clockwise on screen; "
+                    "0, 0 at the centre.",
+                    "x: the body's column\n"
+                    "y: the body's row\n"
+                    "cx: the centre's column\n"
+                    "cy: the centre's row\n"
+                    "speed: the speed; negative circles the other way\n"
+                    "p: the body\n"
+                    "c: the centre"),
+        luaFunction("applyVelocity", lua_engine_physics_applyVelocity,
+                    "(x:number, y:number, vx:number, vy:number, dt:number) -> x:number, y:number\n"
+                    "(p:Vec2, v:Vec2, dt:number) -> x:number, y:number",
+                    "A position moved by velocity times dt.",
+                    "x: column\n"
+                    "y: row\n"
+                    "vx: velocity x\n"
+                    "vy: velocity y\n"
+                    "dt: seconds\n"
+                    "p: the position\n"
+                    "v: the velocity"),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kStateFuncs, ENJIN_ARRAY_LEN(kStateFuncs));
-    lua_setfield(L, -2, "state");
-
-    // --- engine.physics sub-table (Phase 45: PHYS-09..PHYS-13) ---
-    static const LuaFuncDef kPhysicsFuncs[] = {
-        {"setGravity",    lua_engine_physics_setGravity},
-        {"getGravity",    lua_engine_physics_getGravity},
-        {"applyGravity",  lua_engine_physics_applyGravity},
-        {"bounce",        lua_engine_physics_bounce},
-        {"applyDrag",     lua_engine_physics_applyDrag},
-        {"springForce",   lua_engine_physics_springForce},
-        {"attract",       lua_engine_physics_attract},
-        {"orbitVelocity", lua_engine_physics_orbitVelocity},
-        {"applyVelocity", lua_engine_physics_applyVelocity},
-        {"raycast",       lua_engine_physics_raycast},
+    static constexpr LuaApiModule kPhysicsModule = luaApiModule(
+        LuaApiScope::Table, "engine.physics",
+        "Stateless motion helpers: gravity, bounce, drag, springs and orbits.", kPhysics);
+    static constexpr LuaApiEntry kRaycast[] = {
+        luaFunction("raycast", lua_engine_physics_raycast,
+                    "(x1:number, y1:number, x2:number, y2:number) -> "
+                    "hit:boolean, x:number?, y:number?, dist:number?, what:string?",
+                    "Cast a ray through the active scene: the first SOLID tile of its tilemap, "
+                    "else the nearest object within 8 px.",
+                    "x1: start column\n"
+                    "y1: start row\n"
+                    "x2: end column\n"
+                    "y2: end row")
+            .note("false without an active scene. what is \"tilemap\" or \"object\"; dist is "
+                  "the fraction along the ray for a tile but pixels for an object, and a tile "
+                  "hit may lie past the end point. Only the scene's first tilemap is tested."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kPhysicsFuncs, ENJIN_ARRAY_LEN(kPhysicsFuncs));
-    lua_setfield(L, -2, "physics");
+    static constexpr LuaApiModule kRaycastModule = luaApiModule(
+        LuaApiScope::Table, "engine.physics", "Ray casts through the active scene.", kRaycast);
+    luaApiSetSubtable(L, -1, kPhysicsModule);
+    if (m_features.raycast) {
+        lua_getfield(L, -1, "physics");
+        luaApiSetFields(L, -1, kRaycastModule);
+        lua_pop(L, 1);
+    }
 
-    // --- engine.debug sub-table (Phase 47: DEBUG-01..DEBUG-03) ---
-    registerDebugSubtable(L);
+    // --- engine.debug (Phase 47) — switchable ---
+    if (m_features.debug) registerDebugSubtable(L);
 
-    // --- engine.async sub-table (Phase 49: ASYNC-01..ASYNC-03) ---
+    // --- engine.async (Phase 49: ASYNC-01..ASYNC-03) ---
     registerAsyncSubtable(L);
 
-    // --- engine.tween sub-table (Phase 50: TWEEN-01..TWEEN-03) ---
+    // --- engine.tween (Phase 50: TWEEN-01..TWEEN-03) ---
     registerTweenSubtable(L);
 
-    // --- engine.ui sub-table (Phase 52: UI-01..UI-04) ---
+    // --- engine.ui (Phase 52: UI-01..UI-04) ---
     registerUISubtable(L);
 
-    // --- engine.hud sub-table (#83: RollingCounter / Timer value objects) ---
+    // --- engine.hud (#83: RollingCounter / Timer value objects) ---
     registerHudSubtable(L);
 
-    // --- engine.log top-level function (ENG-05) ---
-    lua_pushcfunction(L, lua_engine_log);
-    lua_setfield(L, -2, "log");
+    // --- engine.log (ENG-05) ---
+    static constexpr LuaApiEntry kEngine[] = {
+        luaFunction("log", lua_engine_log, "(...:any) -> nil",
+                    "Write values to the log, tab-separated, ending with a newline.",
+                    "...: strings and numbers print as text; other values print as their type")
+            .note("The same output as print."),
+    };
+    static constexpr LuaApiModule kEngineModule = luaApiModule(
+        LuaApiScope::Table, "engine", "The engine's services, one sub-table each.", kEngine);
+    luaApiSetFields(L, -1, kEngineModule);
 
     lua_setglobal(L, "engine");                    // pops engine_table; stack is now balanced
 }

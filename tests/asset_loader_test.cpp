@@ -62,6 +62,7 @@ struct Fixture {
 
     Fixture() : bindings(&engine), scene(1u) {
         engine.initialize();
+        bindings.setFeatures(LuaFeatures::all());  // scene/camera/debug/raycast/proxies
         bindings.registerAll();
         scene.initialize();
         bindings.setActiveScene(&scene);

@@ -11,7 +11,7 @@
 //   rc = engine.hud.rollingCounter(initial [, durationS])
 //     rc:set(target)  rc:snap(value)  rc:update(dtSeconds)
 //     rc:value() -> int (floored)   rc:valuef() -> number   rc:target() -> number
-//   t = engine.hud.timer(ms [, "down"|"up"])
+//   t = engine.hud.timer(ms [, "down"|"up"])   (kTimerModeNames)
 //     t:update(dtSeconds)  t:pause()  t:resume()  t:reset()
 //     t:done() -> bool  t:millis() -> int  t:seconds() -> int
 //     t:format() -> "mm:ss" string  t:paused() -> bool
@@ -19,7 +19,9 @@
 #include <cstring>
 #include <new>
 
+#include "../core/name_index.hpp"
 #include "../graphics/numerals.hpp"
+#include "lua_api.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -32,6 +34,13 @@ namespace lua {
 /// Metatable names for the value-object userdata.
 inline const char* rollingCounterMt() { return "enjin2.RollingCounter"; }
 inline const char* timerMt() { return "enjin2.Timer"; }
+
+/// engine.hud.timer's mode names, indexed by TimerMode and published as the
+/// TimerMode enum of its descriptor.
+inline constexpr const char* kTimerModeNames[] = {"down", "up"};
+static_assert(static_cast<int>(TimerMode::CountDown) == 0 &&
+                  static_cast<int>(TimerMode::CountUp) == 1,
+              "kTimerModeNames is indexed by TimerMode");
 
 namespace detail {
 
@@ -127,12 +136,9 @@ inline int lua_newTimer(lua_State* L) {
     const double ms = static_cast<double>(luaL_checknumber(L, 1));
     TimerMode mode = TimerMode::CountDown;
     if (!lua_isnoneornil(L, 2)) {
-        const char* m = luaL_checkstring(L, 2);
-        if (std::strcmp(m, "up") == 0) {
-            mode = TimerMode::CountUp;
-        } else if (std::strcmp(m, "down") != 0) {
-            return luaL_error(L, "engine.hud.timer: mode must be 'down' or 'up'");
-        }
+        const int m = nameIndex(luaL_checkstring(L, 2), kTimerModeNames);
+        if (m < 0) return luaL_error(L, "engine.hud.timer: mode must be 'down' or 'up'");
+        mode = static_cast<TimerMode>(m);
     }
     void* p = lua_newuserdata(L, sizeof(Timer));
     new (p) Timer(ms, mode);
@@ -140,45 +146,68 @@ inline int lua_newTimer(lua_State* L) {
     return 1;
 }
 
-// Build a metatable whose __index is itself, populated from a method table.
-inline void buildMethodMt(lua_State* L, const char* name,
-                          const luaL_Reg* methods) {
-    luaL_newmetatable(L, name);                 // [mt]
-    lua_pushvalue(L, -1);                       // [mt, mt]
-    lua_setfield(L, -2, "__index");             // mt.__index = mt  -> [mt]
-    luaL_setfuncs(L, methods, 0);               // install methods into mt
-    lua_pop(L, 1);                              // []
-}
-
 } // namespace detail
 
-/// Register the RollingCounter / Timer userdata metatables. Idempotent (safe on
-/// a Lua-state reload) — RollingCounter and Timer are trivially destructible, so
-/// no __gc is attached.
+/// Register the RollingCounter / Timer userdata metatables from their
+/// descriptors: each metatable's __index is its methods table. Idempotent
+/// (safe on a Lua-state reload) — RollingCounter and Timer are trivially
+/// destructible, so no __gc is attached.
 inline void ensureHudMetatables(lua_State* L) {
-    static const luaL_Reg kRcMethods[] = {
-        {"set",    detail::rc_set},
-        {"snap",   detail::rc_snap},
-        {"update", detail::rc_update},
-        {"value",  detail::rc_value},
-        {"valuef", detail::rc_valuef},
-        {"target", detail::rc_target},
-        {nullptr, nullptr},
+    static constexpr LuaApiEntry kRcMethods[] = {
+        luaFunction("set", detail::rc_set, "(target:number) -> nil",
+                    "Roll toward a new target, keeping the current speed.",
+                    "target: the value to roll to"),
+        luaFunction("snap", detail::rc_snap, "(value:number) -> nil",
+                    "Jump to a value with no roll.",
+                    "value: the new value and target"),
+        luaFunction("update", detail::rc_update, "(dt:number) -> nil",
+                    "Advance the roll by dt seconds; within 1 of the target it snaps onto it.",
+                    "dt: seconds"),
+        luaFunction("value", detail::rc_value, "() -> int",
+                    "The number to display: floored, and never below 0."),
+        luaFunction("valuef", detail::rc_valuef, "() -> number",
+                    "The unrounded position of the roll."),
+        luaFunction("target", detail::rc_target, "() -> number", "The value it is rolling to."),
     };
-    static const luaL_Reg kTimerMethods[] = {
-        {"update",  detail::tmr_update},
-        {"pause",   detail::tmr_pause},
-        {"resume",  detail::tmr_resume},
-        {"reset",   detail::tmr_reset},
-        {"done",    detail::tmr_done},
-        {"millis",  detail::tmr_millis},
-        {"seconds", detail::tmr_seconds},
-        {"paused",  detail::tmr_paused},
-        {"format",  detail::tmr_format},
-        {nullptr, nullptr},
+    static constexpr LuaApiModule kRcMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "RollingCounter", "RollingCounter methods, called as rc:name(...).",
+        kRcMethods);
+    static constexpr LuaApiEntry kRcMeta[] = {
+        luaTable("__index", kRcMethodsModule, "The methods."),
     };
-    detail::buildMethodMt(L, rollingCounterMt(), kRcMethods);
-    detail::buildMethodMt(L, timerMt(), kTimerMethods);
+    static constexpr LuaApiModule kRcMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "RollingCounter", "RollingCounter method lookup.", kRcMeta);
+
+    static constexpr LuaApiEntry kTimerMethods[] = {
+        luaFunction("update", detail::tmr_update, "(dt:number) -> nil",
+                    "Advance by dt seconds unless paused, stopping at 0 (down) or the start "
+                    "value (up).",
+                    "dt: seconds"),
+        luaFunction("pause", detail::tmr_pause, "() -> nil", "Stop the clock."),
+        luaFunction("resume", detail::tmr_resume, "() -> nil", "Start the clock again."),
+        luaFunction("reset", detail::tmr_reset, "() -> nil",
+                    "Back to the start (the full time down, 0 up), and running."),
+        luaFunction("done", detail::tmr_done, "() -> boolean",
+                    "Whether it reached 0 (down) or the start value (up)."),
+        luaFunction("millis", detail::tmr_millis, "() -> int", "Whole milliseconds on the clock."),
+        luaFunction("seconds", detail::tmr_seconds, "() -> int", "Whole seconds on the clock."),
+        luaFunction("paused", detail::tmr_paused, "() -> boolean", "Whether the clock is paused."),
+        luaFunction("format", detail::tmr_format, "() -> string",
+                    "The clock as \"mm:ss\"; past 99 minutes the minutes grow a digit."),
+    };
+    static constexpr LuaApiModule kTimerMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "Timer", "Timer methods, called as t:name(...).", kTimerMethods);
+    static constexpr LuaApiEntry kTimerMeta[] = {
+        luaTable("__index", kTimerMethodsModule, "The methods."),
+    };
+    static constexpr LuaApiModule kTimerMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "Timer", "Timer method lookup.", kTimerMeta);
+
+    luaL_newmetatable(L, rollingCounterMt());
+    luaApiSetFields(L, -1, kRcMetaModule);
+    luaL_newmetatable(L, timerMt());
+    luaApiSetFields(L, -1, kTimerMetaModule);
+    lua_pop(L, 2);
 }
 
 } // namespace lua

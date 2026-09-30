@@ -165,6 +165,7 @@ static void test_proxy04_stale_raises_error()
 
     // Step 1: Create the standalone Lua scripting system
     LuaScriptSystem lss;
+    lss.getBindings().setFeatures(LuaFeatures::all());  // the component proxies
     bool initOk = lss.initialize();
     ASSERT(initOk, "PROXY-04: LuaScriptSystem initialize");
     if (!initOk) return;

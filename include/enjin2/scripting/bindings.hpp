@@ -389,6 +389,30 @@ private:
 };
 
 /**
+ * @brief Registration switches for Lua surface a host may not want.
+ *
+ * One switch per feature, all off by default (ADR-0013, Tomodachi). A feature
+ * that is off is not registered at all: its names are nil in Lua and absent
+ * from luaApiModules(). Its descriptors stay written, so switching it on
+ * brings back the functions and their docs together. Set before registerAll().
+ */
+struct LuaFeatures {
+    bool scene   = false;  ///< engine.scene (switch/find/spawn/... on the active Scene);
+                           ///< find/spawn hand back ObjectProxies, so pair it with proxies
+    bool camera  = false;  ///< engine.camera (the active scene's C_Camera)
+    bool debug   = false;  ///< engine.debug (overlay drawn on the host's debug canvas)
+    bool raycast = false;  ///< engine.physics.raycast (walks the active scene)
+    bool proxies = false;  ///< ScriptProxy, ObjectProxy and the component proxy metatables
+
+    /// Every feature on: the full enjin surface (enjin's own SDL/headless hosts).
+    static constexpr LuaFeatures all() {
+        LuaFeatures f;
+        f.scene = f.camera = f.debug = f.raycast = f.proxies = true;
+        return f;
+    }
+};
+
+/**
  * @brief Lua bindings for Enjin graphics and UI
  * 
  * Provides love2d.graphics-style API for familiar Lua scripting.
@@ -397,6 +421,7 @@ private:
 class LuaBindings {
 private:
     LuaEngine* engine;          ///< Lua engine instance
+    LuaFeatures m_features;     ///< Switchable surface registerAll() installs
     LuaCanvas* currentCanvas;   ///< Currently active canvas
     InputState* currentInput;   ///< Current frame's input state (set by host before each Lua call)
 
@@ -556,6 +581,11 @@ public:
      * @param luaEngine Lua engine to bind to
      */
     LuaBindings(LuaEngine* luaEngine);
+
+    /// Choose which switchable features registerAll() installs (all off by default).
+    void setFeatures(const LuaFeatures& features) { m_features = features; }
+    /// The switchable features registerAll() installs.
+    const LuaFeatures& getFeatures() const { return m_features; }
 
     /**
      * @brief Register all bindings with Lua engine
@@ -946,6 +976,7 @@ private:
     void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
     void registerUISubtable(lua_State* L);     ///< engine.ui.* sub-table (called from registerEngineTable)
     void registerHudSubtable(lua_State* L);    ///< engine.hud.* sub-table (#83; called from registerEngineTable)
+    void registerTilemapMethods(lua_State* L); ///< The engine.tilemap.load handle's metatable (called from registerEngineTable)
     void registerProxyMetatable();
 
     // engine.random.* binding functions

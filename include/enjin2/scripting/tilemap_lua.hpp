@@ -17,6 +17,7 @@
 
 #include "../components/tilemap.hpp"
 #include "component_proxy.hpp"
+#include "lua_api.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -40,9 +41,15 @@ inline int tilemapGc(lua_State* L) {
 /// Create the handle metatable (with __gc) if this state lacks it. The
 /// bindings add the method table (__index) on top.
 inline void registerTilemapMetatable(lua_State* L) {
+    static constexpr LuaApiEntry kGc[] = {
+        luaFunction("__gc", tilemapGc, "(map:Tilemap) -> nil",
+                    "Free the map's cells when Lua collects the handle.",
+                    "map: the map handle"),
+    };
+    static constexpr LuaApiModule kGcModule =
+        luaApiModule(LuaApiScope::Metatable, "Tilemap", "Map lifetime.", kGc);
     if (luaL_newmetatable(L, tilemapMt())) {
-        lua_pushcfunction(L, tilemapGc);
-        lua_setfield(L, -2, "__gc");
+        luaApiSetFields(L, -1, kGcModule);
     }
     lua_pop(L, 1);
 }

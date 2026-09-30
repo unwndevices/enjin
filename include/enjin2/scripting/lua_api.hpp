@@ -174,6 +174,29 @@ constexpr LuaApiEntry luaLifecycle(const char* name, const char* signature,
     return e;
 }
 
+namespace detail {
+constexpr bool luaApiNameEquals(const char* a, const char* b) {
+    while (*a != '\0' && *a == *b) { ++a; ++b; }
+    return *a == *b;
+}
+// Deliberately not constexpr: reaching it while initialising a constexpr
+// array is a compile error, which is how a misspelt alias is reported.
+inline LuaApiEntry luaApiAliasNotFound() { return LuaApiEntry{}; }
+} // namespace detail
+
+/// The entry named `name` in `entries`, for a table that re-exports functions
+/// documented elsewhere (engine.graphics = the gfx drawing calls): the alias
+/// and the original are one descriptor, so they cannot drift. Use it to
+/// initialise a constexpr array, where a name missing from `entries` fails to
+/// compile.
+template <size_t N>
+constexpr LuaApiEntry luaApiAlias(const LuaApiEntry (&entries)[N], const char* name) {
+    for (size_t i = 0; i < N; ++i) {
+        if (detail::luaApiNameEquals(entries[i].name, name)) return entries[i];
+    }
+    return detail::luaApiAliasNotFound();
+}
+
 /** @brief Where a module's entries live once registered. */
 enum class LuaApiScope : uint8_t {
     Table,      ///< A table at `path` ("gfx", "engine.tween", "gfx.COLOR")
@@ -216,6 +239,8 @@ void luaApiSetGlobals(lua_State* L, const LuaApiModule& module);
 
 /// The modules registered into this VM, in registration order. Nested tables
 /// are reached through their parent's Table entries, not listed separately.
+/// A path can repeat: a switch may add fields to a table another module built
+/// (engine.physics and its raycast), so group by path rather than key by it.
 std::vector<const LuaApiModule*> luaApiModules(lua_State* L);
 
 //==============================================================================

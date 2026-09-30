@@ -61,6 +61,8 @@ C_LuaScript::~C_LuaScript() {
 bool C_LuaScript::initializeScriptSystem() {
     try {
         scriptSystem = std::unique_ptr<LuaScriptSystem>(new LuaScriptSystem());
+        // A scene script needs the scene surface: its self is a ScriptProxy.
+        scriptSystem->getBindings().setFeatures(LuaFeatures::all());
         if (!scriptSystem->initialize()) {
             snprintf(errorMessage, sizeof(errorMessage), "%s", "Failed to initialize Lua script system");
             scriptError = true;

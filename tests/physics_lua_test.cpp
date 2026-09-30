@@ -32,6 +32,7 @@ int main() {
     LuaEngine eng;
     eng.initialize();
     LuaBindings bindings(&eng);
+    bindings.setFeatures(LuaFeatures::all());  // engine.physics.raycast
     bindings.registerAll();
     lua_State* L = eng.getState();
 

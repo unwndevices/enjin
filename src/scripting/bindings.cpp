@@ -36,6 +36,9 @@ static int lua_proxy_get_component_impl(lua_State* L);
 // Forward declaration for self:add("TypeName"[, params]) — attach verb (ADR-0003 §2)
 static int lua_proxy_add_component_impl(lua_State* L);
 
+// Registry table of the ScriptProxy methods (setProxyMethods).
+static constexpr const char* kScriptProxyMethods = "ScriptProxy.methods";
+
 // __index metamethod: called when Lua reads self.property
 // Stack layout on entry: [1]=userdata(self), [2]=key_string
 static int lua_proxy_index_impl(lua_State* L) {
@@ -59,16 +62,8 @@ static int lua_proxy_index_impl(lua_State* L) {
         return 1;
     }
 
-    // PROXY-01: self:get("TypeName") — checked FIRST before any property (PROXY-04b collision prevention)
-    if (strcmp(key, "get") == 0) {
-        lua_pushcfunction(L, lua_proxy_get_component_impl);
-        return 1;
-    }
-    // self:add("TypeName"[, params]) — the one attach verb (ADR-0003 §2).
-    if (strcmp(key, "add") == 0) {
-        lua_pushcfunction(L, lua_proxy_add_component_impl);
-        return 1;
-    }
+    // Methods first (get/add/tags): PROXY-04b collision prevention.
+    if (pushProxyMethod(L, kScriptProxyMethods, 2)) return 1;
 
     enjin2::C_LuaScript* comp = proxy->component;
     enjin2::Object* owner = comp->getOwner();
@@ -99,15 +94,6 @@ static int lua_proxy_index_impl(lua_State* L) {
         } else {
             lua_pushnil(L);
         }
-        return 1;
-    } else if (strcmp(key, "addTag") == 0) {
-        lua_pushcfunction(L, lua_proxy_addTag_impl);
-        return 1;
-    } else if (strcmp(key, "hasTag") == 0) {
-        lua_pushcfunction(L, lua_proxy_hasTag_impl);
-        return 1;
-    } else if (strcmp(key, "clearTags") == 0) {
-        lua_pushcfunction(L, lua_proxy_clearTags_impl);
         return 1;
     }
 
@@ -808,14 +794,38 @@ void LuaBindings::registerAll() {
     // Register engine.* global table (ENG-06: must be before any script loads)
     registerEngineTable();
 
-    // Register ScriptProxy metatable for C_LuaScript component path
-    registerProxyMetatable();
+    // engine.graphics: gfx drawing calls under a second name (quick-007 API-03).
+    // Built here, next to the gfx descriptors it re-exports, so each alias is
+    // gfx's own entry.
+    static constexpr LuaApiEntry kGraphics[] = {
+        luaApiAlias(kGfx, "clear"),         luaApiAlias(kGfx, "setColor"),
+        luaApiAlias(kGfx, "getColor"),      luaApiAlias(kGfx, "setLineWidth"),
+        luaApiAlias(kGfx, "getLineWidth"),  luaApiAlias(kGfx, "point"),
+        luaApiAlias(kGfx, "line"),          luaApiAlias(kGfx, "rectangle"),
+        luaApiAlias(kGfx, "circle"),        luaApiAlias(kGfx, "triangle"),
+        luaApiAlias(kGfx, "setPixel"),      luaApiAlias(kGfx, "getPixel"),
+        luaApiAlias(kGfx, "text"),          luaApiAlias(kGfx, "textWrapped"),
+        luaApiAlias(kGfx, "textCentered"),  luaApiAlias(kGfx, "textAligned"),
+        luaApiAlias(kGfx, "setTextSize"),   luaApiAlias(kGfx, "getTextSize"),
+        luaApiAlias(kGfx, "setFont"),       luaApiAlias(kGfx, "getFont"),
+        luaApiAlias(kGfx, "getTextWidth"),  luaApiAlias(kGfx, "getTextHeight"),
+        luaApiAlias(kGfx, "getWidth"),      luaApiAlias(kGfx, "getHeight"),
+    };
+    static constexpr LuaApiModule kGraphicsModule = luaApiModule(
+        LuaApiScope::Table, "engine.graphics",
+        "The same functions as gfx under a second name; prefer gfx.", kGraphics);
+    lua_getglobal(L, "engine");
+    luaApiSetSubtable(L, -1, kGraphicsModule);
+    lua_pop(L, 1);
 
-    // Register ObjectProxy metatable for engine.scene.find() return value (Phase 37)
-    registerObjectProxyMetatable();
-
-    // Register ComponentProxy metatables for self:get() return values (Phase 39)
-    registerComponentProxyMetatable();
+    // Scene-object proxies (switchable, off by default): ScriptProxy for the
+    // C_LuaScript self, ObjectProxy for engine.scene.find/spawn (Phase 37),
+    // and the component proxies self:get() returns (Phase 39).
+    if (m_features.proxies) {
+        registerProxyMetatable();
+        registerObjectProxyMetatable();
+        registerComponentProxyMetatable();
+    }
 
     // Register Vec2/Point/Rect userdata metatables and math utility globals
     registerMathBindings();
@@ -875,14 +885,51 @@ const std::vector<enjin2::NjnClip>* LuaBindings::getLoadedClips(int handle) cons
 void LuaBindings::registerProxyMetatable() {
     lua_State* L = engine->getState();
     if (!L) return;
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("get", lua_proxy_get_component_impl, "(type:string) -> proxy:userdata?",
+                    "The object's component of a type, as its proxy; nil when it has none.",
+                    "type: a component name such as \"C_Position\"; an unknown name gives nil"),
+        luaFunction("add", lua_proxy_add_component_impl,
+                    "(type:string, params:table?) -> proxy:userdata?",
+                    "Attach a component, or take the one already there, and set fields from params.",
+                    "type: a component name; an unknown name raises\n"
+                    "params: field = value pairs written through the proxy; unknown fields are "
+                    "ignored"),
+        luaFunction("addTag", lua_proxy_addTag_impl, "(tag:string) -> nil",
+                    "Tag the object.",
+                    "tag: the tag"),
+        luaFunction("hasTag", lua_proxy_hasTag_impl, "(tag:string) -> boolean",
+                    "Whether the object has a tag.",
+                    "tag: the tag"),
+        luaFunction("clearTags", lua_proxy_clearTags_impl, "() -> nil",
+                    "Remove every tag from the object."),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "ScriptProxy", "A scene script's self, called as self:name(...).",
+        kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaFunction("__index", lua_proxy_index_impl, "(self:ScriptProxy, key:string) -> any",
+                    "self.x and self.y (int), self.visible, self.layer (1-based), self.active and "
+                    "self.name read the object; other keys look up a method.",
+                    "self: the script's object\n"
+                    "key: a field or method name; unknown keys give nil")
+            .note("Raises once the object is destroyed."),
+        luaFunction("__newindex", lua_proxy_newindex_impl,
+                    "(self:ScriptProxy, key:string, value:any) -> nil",
+                    "Writes x, y, visible, layer and active; name and other keys are ignored.",
+                    "self: the script's object\n"
+                    "key: the field\n"
+                    "value: the new value; layer below 1 is ignored"),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "ScriptProxy", "A scene script's self: its object's fields.",
+        kMeta);
     // luaL_newmetatable returns 1 if new (creates it), 0 if it already exists
     if (luaL_newmetatable(L, PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, lua_proxy_newindex_impl);
-        lua_setfield(L, -2, "__newindex");
+        luaApiSetFields(L, -1, kMetaModule);
     }
     lua_pop(L, 1);  // always pop — both new and existing cases leave table on stack
+    setProxyMethods(L, kScriptProxyMethods, kMethodsModule);
 }
 
 void LuaBindings::setActiveScene(Scene* scene) {

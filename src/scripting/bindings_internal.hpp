@@ -4,6 +4,7 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/scripting/component_proxy.hpp"
 #include "../../include/enjin2/scripting/tilemap_lua.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/core/name_index.hpp"
 
 namespace enjin2 {
@@ -28,6 +29,27 @@ inline constexpr const char* kShapeModeNames[] = {"fill", "line"};
 
 inline bool isFillMode(const char* mode) {
     return nameIndex(mode, kShapeModeNames) == static_cast<int>(ShapeMode::Fill);
+}
+
+// A proxy type's methods live in a registry table built from its Methods
+// descriptors (the Vec2 pattern), which its __index consults before the
+// type's properties. `registryKey` names that table ("C_Timer.methods").
+inline void setProxyMethods(lua_State* L, const char* registryKey, const LuaApiModule& methods) {
+    lua_newtable(L);
+    luaApiSetFields(L, -1, methods);
+    lua_setfield(L, LUA_REGISTRYINDEX, registryKey);
+}
+
+// Push the method named by the key at `keyIdx`; false (nothing pushed) when
+// the type has no such method.
+inline bool pushProxyMethod(lua_State* L, const char* registryKey, int keyIdx) {
+    lua_getfield(L, LUA_REGISTRYINDEX, registryKey);
+    if (!lua_istable(L, -1)) { lua_pop(L, 1); return false; }
+    lua_pushvalue(L, keyIdx);
+    lua_rawget(L, -2);
+    lua_remove(L, -2);
+    if (lua_isnil(L, -1)) { lua_pop(L, 1); return false; }
+    return true;
 }
 
 class Object;

@@ -44,6 +44,7 @@ struct EngineTableFixture {
 
     EngineTableFixture() : bindings(&engine) {
         engine.initialize();
+        bindings.setFeatures(LuaFeatures::all());  // scene/camera/debug/raycast/proxies
         bindings.registerAll();
     }
 

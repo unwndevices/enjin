@@ -9,7 +9,7 @@
  * userdata defined header-only in hud_lua.hpp.
  */
 #include "../../include/enjin2/scripting/bindings.hpp"
-#include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/scripting/hud_lua.hpp"
 #include "../../include/enjin2/graphics/numerals.hpp"
 #include "../../include/enjin2/core/name_index.hpp"
@@ -159,13 +159,25 @@ int LuaBindings::lua_timer(lua_State* L) {
 // engine.hud.* — HUD numeral value objects (RollingCounter, Timer).
 void LuaBindings::registerHudSubtable(lua_State* L) {
     enjin2::lua::ensureHudMetatables(L);
-    lua_newtable(L);
-    static const LuaFuncDef kHudFuncs[] = {
-        {"rollingCounter", enjin2::lua::detail::lua_newRollingCounter},
-        {"timer",          enjin2::lua::detail::lua_newTimer},
+    static constexpr LuaApiEnum kTimerMode =
+        luaApiEnum("TimerMode", enjin2::lua::kTimerModeNames);
+    static constexpr LuaApiEntry kHud[] = {
+        luaFunction("rollingCounter", enjin2::lua::detail::lua_newRollingCounter,
+                    "(initial:number?=0, duration:number?=0.35) -> RollingCounter",
+                    "A number that rolls toward its target without overshoot, for scores.",
+                    "initial: the starting value\n"
+                    "duration: settle time in seconds"),
+        luaFunction("timer", enjin2::lua::detail::lua_newTimer,
+                    "(ms:number, mode:TimerMode?=down) -> Timer",
+                    "A millisecond clock that counts down to 0 or up to ms.",
+                    "ms: the start value (down) or the target (up)\n"
+                    "mode: the direction; any other name raises")
+            .withEnum(kTimerMode),
     };
-    luaBindFunctions(L, -1, kHudFuncs, ENJIN_ARRAY_LEN(kHudFuncs));
-    lua_setfield(L, -2, "hud");
+    static constexpr LuaApiModule kHudModule = luaApiModule(
+        LuaApiScope::Table, "engine.hud",
+        "HUD value objects; draw them with gfx.number and gfx.timer.", kHud);
+    luaApiSetSubtable(L, -1, kHudModule);
 }
 
 } // namespace enjin2

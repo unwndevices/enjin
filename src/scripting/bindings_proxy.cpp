@@ -1,6 +1,7 @@
 #include "bindings_internal.hpp"
 #include "../../include/enjin2/scripting/component_registry.hpp"
 #include "../../include/enjin2/scripting/tilemap_lua.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/components/timer.hpp"
 #include "../../include/enjin2/components/state_machine.hpp"
@@ -15,6 +16,12 @@
 #include <cctype>
 
 namespace enjin2 {
+
+// Registry tables of the proxy methods their __index looks up (setProxyMethods).
+static constexpr const char* kObjectProxyMethods = "ObjectProxy.methods";
+static constexpr const char* kPositionMethods    = "C_Position.methods";
+static constexpr const char* kSpriteMethods      = "C_Sprite.methods";
+static constexpr const char* kBodyMethods        = "C_Body.methods";
 
 //==============================================================================
 // Registry-generated component dispatch (ADR-0003 §2)
@@ -81,8 +88,24 @@ int pushComponentAdd(lua_State* L, Object* owner, const char* typeName, int para
 // C_Position_Proxy Metatable Implementation (Phase 39: ComponentProxy proof-of-concept)
 //==============================================================================
 
-// __index metamethod for C_Position_Proxy.
-// Methods: getX(), getY()
+// pos:getX() / pos:getY() — kept for back-compat beside the x/y fields.
+static int lua_cposition_getX(lua_State* L) {
+    auto* p = static_cast<enjin2::ComponentProxy*>(luaL_checkudata(L, 1, CPOSITION_PROXY_METATABLE));
+    if (!p || !p->valid || !p->component) return luaL_error(L, "component has been destroyed");
+    auto* pos = static_cast<enjin2::C_Position*>(p->component);
+    lua_pushinteger(L, static_cast<lua_Integer>(pos->getPosition().x));
+    return 1;
+}
+
+static int lua_cposition_getY(lua_State* L) {
+    auto* p = static_cast<enjin2::ComponentProxy*>(luaL_checkudata(L, 1, CPOSITION_PROXY_METATABLE));
+    if (!p || !p->valid || !p->component) return luaL_error(L, "component has been destroyed");
+    auto* pos = static_cast<enjin2::C_Position*>(p->component);
+    lua_pushinteger(L, static_cast<lua_Integer>(pos->getPosition().y));
+    return 1;
+}
+
+// __index metamethod for C_Position_Proxy: x/y fields, then the methods.
 // Stale access raises luaL_error (PROXY-04).
 static int lua_cposition_proxy_index_impl(lua_State* L) {
     enjin2::ComponentProxy* proxy = static_cast<enjin2::ComponentProxy*>(
@@ -97,44 +120,16 @@ static int lua_cposition_proxy_index_impl(lua_State* L) {
 
     // Writable position properties (ADR-0003 §2: every component proxy gains the
     // write side). `p.x`/`p.y` read here; the paired __newindex writes via the
-    // C_Position setter. The getX()/getY() methods stay for back-compat.
+    // C_Position setter.
+    auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
     if (strcmp(key, "x") == 0) {
-        auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
         lua_pushinteger(L, static_cast<lua_Integer>(pos->getPosition().x));
         return 1;
     } else if (strcmp(key, "y") == 0) {
-        auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
         lua_pushinteger(L, static_cast<lua_Integer>(pos->getPosition().y));
         return 1;
     }
-
-    if (strcmp(key, "getX") == 0) {
-        lua_pushcfunction(L, [](lua_State* L2) -> int {
-            enjin2::ComponentProxy* p = static_cast<enjin2::ComponentProxy*>(
-                luaL_checkudata(L2, 1, "C_Position_Proxy"));
-            if (!p || !p->valid || !p->component) {
-                luaL_error(L2, "component has been destroyed");
-                return 0;
-            }
-            enjin2::C_Position* pos2 = static_cast<enjin2::C_Position*>(p->component);
-            lua_pushinteger(L2, static_cast<lua_Integer>(pos2->getPosition().x));
-            return 1;
-        });
-        return 1;
-    } else if (strcmp(key, "getY") == 0) {
-        lua_pushcfunction(L, [](lua_State* L2) -> int {
-            enjin2::ComponentProxy* p = static_cast<enjin2::ComponentProxy*>(
-                luaL_checkudata(L2, 1, "C_Position_Proxy"));
-            if (!p || !p->valid || !p->component) {
-                luaL_error(L2, "component has been destroyed");
-                return 0;
-            }
-            enjin2::C_Position* pos2 = static_cast<enjin2::C_Position*>(p->component);
-            lua_pushinteger(L2, static_cast<lua_Integer>(pos2->getPosition().y));
-            return 1;
-        });
-        return 1;
-    }
+    if (pushProxyMethod(L, kPositionMethods, 2)) return 1;
 
     lua_pushnil(L);
     return 1;
@@ -225,31 +220,6 @@ static int lua_timer_cancel(lua_State* L) {
     return 0;
 }
 
-// __index metamethod for C_Timer_Proxy
-static int lua_ctimer_proxy_index_impl(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ComponentProxy*>(
-        luaL_checkudata(L, 1, CTIMER_PROXY_METATABLE));
-    if (!proxy || !proxy->valid || !proxy->component) {
-        luaL_error(L, "component has been destroyed");
-        return 0;
-    }
-    const char* key = lua_tostring(L, 2);
-    if (!key) { lua_pushnil(L); return 1; }
-
-    if (strcmp(key, "after") == 0) {
-        lua_pushcfunction(L, lua_timer_after);
-        return 1;
-    } else if (strcmp(key, "every") == 0) {
-        lua_pushcfunction(L, lua_timer_every);
-        return 1;
-    } else if (strcmp(key, "cancel") == 0) {
-        lua_pushcfunction(L, lua_timer_cancel);
-        return 1;
-    }
-    lua_pushnil(L);
-    return 1;
-}
-
 //==============================================================================
 // C_StateMachine_Proxy Metatable Implementation (Phase 41: fsm:addState/setState/getState)
 //==============================================================================
@@ -317,31 +287,6 @@ static int lua_fsm_getState(lua_State* L) {
     }
     auto* fsm = static_cast<enjin2::C_StateMachine*>(proxy->component);
     lua_pushstring(L, fsm->getState());
-    return 1;
-}
-
-// __index metamethod for C_StateMachine_Proxy
-static int lua_cfsm_proxy_index_impl(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ComponentProxy*>(
-        luaL_checkudata(L, 1, CFSM_PROXY_METATABLE));
-    if (!proxy || !proxy->valid || !proxy->component) {
-        luaL_error(L, "component has been destroyed");
-        return 0;
-    }
-    const char* key = lua_tostring(L, 2);
-    if (!key) { lua_pushnil(L); return 1; }
-
-    if (strcmp(key, "addState") == 0) {
-        lua_pushcfunction(L, lua_fsm_addState);
-        return 1;
-    } else if (strcmp(key, "setState") == 0) {
-        lua_pushcfunction(L, lua_fsm_setState);
-        return 1;
-    } else if (strcmp(key, "getState") == 0) {
-        lua_pushcfunction(L, lua_fsm_getState);
-        return 1;
-    }
-    lua_pushnil(L);
     return 1;
 }
 
@@ -713,53 +658,115 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     return 1;
 }
 
-// __index metamethod for C_Tilemap_Proxy and the map handle — dispatches all
-// method names
-static int lua_ctilemap_proxy_index_impl(lua_State* L) {
-    lua::checkTilemap(L, 1);
-    const char* key = lua_tostring(L, 2);
-    if (!key) { lua_pushnil(L); return 1; }
+// The map's methods, shared by the scene-free handle (always registered) and a
+// scene C_Tilemap's proxy (with the proxies): each metatable's __index is a
+// table built from this module.
+static constexpr LuaApiEntry kTilemapMethods[] = {
+    luaFunction("setTile", lua_tilemap_setTile, "(tx:int, ty:int, cell:int) -> nil",
+                "Set one cell; cells outside the map are ignored.",
+                "tx: column, from 0\n"
+                "ty: row, from 0\n"
+                "cell: a tile id 0..511, or a packed cell (id in the low 9 bits, then palette "
+                "bank, hflip, vflip and band); tile 0 is empty"),
+    luaFunction("getTile", lua_tilemap_getTile, "(tx:int, ty:int) -> cell:int",
+                "The packed cell at a grid position (tile id in the low 9 bits); 0 outside the map.",
+                "tx: column, from 0\n"
+                "ty: row, from 0"),
+    luaFunction("setTiles", lua_tilemap_setTiles, "(tiles:table, w:int, h:int) -> nil",
+                "Replace the whole map from a flat, row-major list of tile ids.",
+                "tiles: w * h tile ids 0..255 (band, flips and palette bank 0)\n"
+                "w: map width in tiles, up to 64\n"
+                "h: map height in tiles, up to 64"),
+    luaFunction("setSheet", lua_tilemap_setSheet, "(handle:int) -> nil",
+                "Use a loaded sprite sheet as the tileset; an invalid handle raises.",
+                "handle: a sprite handle; its frame size is the tile size"),
+    luaFunction("setScroll", lua_tilemap_setScroll, "(sx:int, sy:int) -> nil",
+                "Set the map's scroll offset in pixels.",
+                "sx: horizontal scroll\n"
+                "sy: vertical scroll"),
+    luaFunction("getScroll", lua_tilemap_getScroll, "() -> sx:int, sy:int",
+                "The map's scroll offset in pixels."),
+    luaFunction("pixelToTile", lua_tilemap_pixelToTile, "(px:int, py:int) -> tx:int, ty:int",
+                "The grid position under a screen pixel, scroll applied; may lie outside the map.",
+                "px: screen column\n"
+                "py: screen row"),
+    luaFunction("tileToPixel", lua_tilemap_tileToPixel, "(tx:int, ty:int) -> px:int, py:int",
+                "The screen pixel of a cell's top-left corner, scroll applied.",
+                "tx: column\n"
+                "ty: row"),
+    luaFunction("tileAtPixel", lua_tilemap_tileAtPixel, "(px:int, py:int) -> cell:int",
+                "The packed cell under a screen pixel, scroll applied; 0 outside the map.",
+                "px: screen column\n"
+                "py: screen row"),
+    luaFunction("getMapSize", lua_tilemap_getMapSize, "() -> w:int, h:int",
+                "The map's size in tiles."),
+    luaFunction("setAttrs", lua_tilemap_setAttrs, "(attrs:table) -> nil",
+                "Replace the per-tile attributes, keyed by tile id: {flags, kind, flags, kind, ...}.",
+                "attrs: a flag byte (1 solid, 2 one-way, bits 2-3 direction) and a kind 0..255 "
+                "for tile 0, 1, ...; an empty table makes every tile passable"),
+    luaFunction("setPalbank", lua_tilemap_setPalbank, "(index:int, lut:table) -> nil",
+                "Set the colour remap a cell's palette bank applies when drawn.",
+                "index: palette bank 0..15\n"
+                "lut: 16 palette indices, the colour for index 0, 1, ...")
+        .note("The bank bits are stored but not yet drawn."),
+    luaFunction("attrAt", lua_tilemap_attrAt, "(tx:int, ty:int) -> flags:int, kind:int",
+                "A cell's attribute, its direction turned by the cell's flips; 0, 0 when none.",
+                "tx: column\n"
+                "ty: row"),
+    luaFunction("attrAtPixel", lua_tilemap_attrAtPixel, "(px:int, py:int) -> flags:int, kind:int",
+                "The attribute under a map pixel (scroll not applied); 0, 0 when none.",
+                "px: map column in pixels\n"
+                "py: map row in pixels"),
+    luaFunction("sweepAabb", lua_tilemap_sweepAabb,
+                "(x:number, y:number, w:number, h:number, vx:number, vy:number, dt:number) -> "
+                "x:number, y:number, t:number, nx:number, ny:number, hit:boolean",
+                "Move a box by its velocity for dt, sliding along solid and one-way tiles.",
+                "x: left edge in map pixels\n"
+                "y: top edge in map pixels\n"
+                "w: width\n"
+                "h: height\n"
+                "vx: velocity x in pixels per second\n"
+                "vy: velocity y in pixels per second\n"
+                "dt: seconds")
+        .note("Returns the new top-left, the fraction of the move made, the contact normal "
+              "(0, 0 when free) and whether it touched. X resolves before Y."),
+    luaFunction("sweepCircle", lua_tilemap_sweepCircle,
+                "(cx:number, cy:number, r:number, vx:number, vy:number, dt:number) -> "
+                "x:number, y:number, t:number, nx:number, ny:number, hit:boolean",
+                "Move a circle like sweepAabb, through its bounding box; returns the new centre.",
+                "cx: centre column in map pixels\n"
+                "cy: centre row in map pixels\n"
+                "r: radius\n"
+                "vx: velocity x in pixels per second\n"
+                "vy: velocity y in pixels per second\n"
+                "dt: seconds"),
+    luaFunction("forEachCellIn", lua_tilemap_forEachCellIn,
+                "(x:number, y:number, w:number, h:number, fn:function) -> nil",
+                "Call fn(tx, ty, cell) for every map cell a box overlaps, row by row.",
+                "x: left edge in map pixels\n"
+                "y: top edge in map pixels\n"
+                "w: width\n"
+                "h: height\n"
+                "fn: the callback; an error in it propagates"),
+    luaFunction("buildSolidRects", lua_tilemap_buildSolidRects, "() -> rects:table",
+                "The solid tiles merged into rectangles: a flat {x, y, w, h, x, y, w, h, ...} in "
+                "map pixels."),
+};
+static constexpr LuaApiModule kTilemapMethodsModule = luaApiModule(
+    LuaApiScope::Methods, "Tilemap",
+    "Map methods, called as map:name(...); a scene C_Tilemap has the same.", kTilemapMethods);
 
-    if (strcmp(key, "setTile") == 0) {
-        lua_pushcfunction(L, lua_tilemap_setTile);
-    } else if (strcmp(key, "getTile") == 0) {
-        lua_pushcfunction(L, lua_tilemap_getTile);
-    } else if (strcmp(key, "setTiles") == 0) {
-        lua_pushcfunction(L, lua_tilemap_setTiles);
-    } else if (strcmp(key, "setSheet") == 0) {
-        lua_pushcfunction(L, lua_tilemap_setSheet);
-    } else if (strcmp(key, "setScroll") == 0) {
-        lua_pushcfunction(L, lua_tilemap_setScroll);
-    } else if (strcmp(key, "getScroll") == 0) {
-        lua_pushcfunction(L, lua_tilemap_getScroll);
-    } else if (strcmp(key, "pixelToTile") == 0) {
-        lua_pushcfunction(L, lua_tilemap_pixelToTile);
-    } else if (strcmp(key, "tileToPixel") == 0) {
-        lua_pushcfunction(L, lua_tilemap_tileToPixel);
-    } else if (strcmp(key, "tileAtPixel") == 0) {
-        lua_pushcfunction(L, lua_tilemap_tileAtPixel);
-    } else if (strcmp(key, "getMapSize") == 0) {
-        lua_pushcfunction(L, lua_tilemap_getMapSize);
-    } else if (strcmp(key, "setAttrs") == 0) {
-        lua_pushcfunction(L, lua_tilemap_setAttrs);
-    } else if (strcmp(key, "setPalbank") == 0) {
-        lua_pushcfunction(L, lua_tilemap_setPalbank);
-    } else if (strcmp(key, "attrAt") == 0) {
-        lua_pushcfunction(L, lua_tilemap_attrAt);
-    } else if (strcmp(key, "attrAtPixel") == 0) {
-        lua_pushcfunction(L, lua_tilemap_attrAtPixel);
-    } else if (strcmp(key, "sweepAabb") == 0) {
-        lua_pushcfunction(L, lua_tilemap_sweepAabb);
-    } else if (strcmp(key, "sweepCircle") == 0) {
-        lua_pushcfunction(L, lua_tilemap_sweepCircle);
-    } else if (strcmp(key, "forEachCellIn") == 0) {
-        lua_pushcfunction(L, lua_tilemap_forEachCellIn);
-    } else if (strcmp(key, "buildSolidRects") == 0) {
-        lua_pushcfunction(L, lua_tilemap_buildSolidRects);
-    } else {
-        lua_pushnil(L);
-    }
-    return 1;
+// The scene-free map handle's methods (engine.tilemap.load); not switchable.
+void LuaBindings::registerTilemapMethods(lua_State* L) {
+    static constexpr LuaApiEntry kMeta[] = {
+        luaTable("__index", kTilemapMethodsModule, "The map's methods."),
+    };
+    static constexpr LuaApiModule kMetaModule =
+        luaApiModule(LuaApiScope::Metatable, "Tilemap", "Map method lookup.", kMeta);
+    lua::registerTilemapMetatable(L);
+    luaL_getmetatable(L, lua::tilemapMt());
+    luaApiSetFields(L, -1, kMetaModule);
+    lua_pop(L, 1);
 }
 
 //==============================================================================
@@ -839,19 +846,6 @@ static int lua_ccamera_proxy_clearBounds(lua_State* L) {
     return 0;
 }
 
-// __index metamethod for C_Camera_Proxy
-static int lua_ccamera_proxy_index_impl(lua_State* L) {
-    const char* key = luaL_checkstring(L, 2);
-    if (strcmp(key, "setPosition") == 0) { lua_pushcfunction(L, lua_ccamera_proxy_setPosition); return 1; }
-    if (strcmp(key, "getPosition") == 0) { lua_pushcfunction(L, lua_ccamera_proxy_getPosition); return 1; }
-    if (strcmp(key, "lookAt") == 0)      { lua_pushcfunction(L, lua_ccamera_proxy_lookAt);      return 1; }
-    if (strcmp(key, "shake") == 0)       { lua_pushcfunction(L, lua_ccamera_proxy_shake);       return 1; }
-    if (strcmp(key, "setBounds") == 0)   { lua_pushcfunction(L, lua_ccamera_proxy_setBounds);   return 1; }
-    if (strcmp(key, "clearBounds") == 0) { lua_pushcfunction(L, lua_ccamera_proxy_clearBounds); return 1; }
-    lua_pushnil(L);
-    return 1;
-}
-
 //==============================================================================
 // C_Sprite_Proxy Metatable Implementation (ADR-0003 §5, Tomodachi #81)
 //
@@ -869,8 +863,16 @@ static int lua_ccamera_proxy_index_impl(lua_State* L) {
     }                                                                             \
     auto* (varname) = static_cast<enjin2::C_Sprite*>(proxy->component)
 
-// Parse a loop-mode argument: accepts "once"/"loop"/"pingpong" (case-sensitive)
-// or the integer 0/1/2. Defaults to Loop for anything unrecognised.
+// Loop-mode names, indexed by NjnLoopMode (and AnimMode, same order) and
+// published as the LoopMode enum of the C_Sprite descriptors.
+static constexpr const char* kLoopModeNames[] = {"once", "loop", "pingpong"};
+static_assert(static_cast<int>(enjin2::NjnLoopMode::Once) == 0 &&
+                  static_cast<int>(enjin2::NjnLoopMode::Loop) == 1 &&
+                  static_cast<int>(enjin2::NjnLoopMode::PingPong) == 2,
+              "kLoopModeNames is indexed by NjnLoopMode");
+
+// Parse a loop-mode argument: a kLoopModeNames name (any case) or the integer
+// 0/1/2. Defaults to Loop for anything unrecognised.
 static enjin2::NjnLoopMode parseLoopMode(lua_State* L, int idx) {
     if (lua_type(L, idx) == LUA_TNUMBER) {
         switch (static_cast<int>(lua_tointeger(L, idx))) {
@@ -887,8 +889,8 @@ static enjin2::NjnLoopMode parseLoopMode(lua_State* L, int idx) {
         for (const char* p = s; *p && i < sizeof(buf) - 1; ++p, ++i) {
             buf[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(*p)));
         }
-        if (strcmp(buf, "once") == 0)     return enjin2::NjnLoopMode::Once;
-        if (strcmp(buf, "pingpong") == 0) return enjin2::NjnLoopMode::PingPong;
+        const int mode = nameIndex(buf, kLoopModeNames);
+        if (mode >= 0) return static_cast<enjin2::NjnLoopMode>(mode);
     }
     return enjin2::NjnLoopMode::Loop;
 }
@@ -1021,7 +1023,7 @@ static int lua_sprite_setMode(lua_State* L) {
 
 #undef CSPRITE_PROXY_CHECK
 
-// __index for C_Sprite_Proxy: methods first, then read-only/readable properties.
+// __index for C_Sprite_Proxy: methods first, then the readable properties.
 static int lua_csprite_proxy_index_impl(lua_State* L) {
     auto* proxy = static_cast<enjin2::ComponentProxy*>(
         luaL_checkudata(L, 1, CSPRITE_PROXY_METATABLE));
@@ -1032,15 +1034,7 @@ static int lua_csprite_proxy_index_impl(lua_State* L) {
     const char* key = lua_tostring(L, 2);
     if (!key) { lua_pushnil(L); return 1; }
 
-    // Methods
-    if (strcmp(key, "setSheet") == 0)         { lua_pushcfunction(L, lua_sprite_setSheet); return 1; }
-    if (strcmp(key, "setClips") == 0)         { lua_pushcfunction(L, lua_sprite_setClips); return 1; }
-    if (strcmp(key, "play") == 0)             { lua_pushcfunction(L, lua_sprite_play); return 1; }
-    if (strcmp(key, "setFlip") == 0)          { lua_pushcfunction(L, lua_sprite_setFlip); return 1; }
-    if (strcmp(key, "setFrameForAngle") == 0) { lua_pushcfunction(L, lua_sprite_setFrameForAngle); return 1; }
-    if (strcmp(key, "setFrame") == 0)         { lua_pushcfunction(L, lua_sprite_setFrame); return 1; }
-    if (strcmp(key, "setFPS") == 0)           { lua_pushcfunction(L, lua_sprite_setFPS); return 1; }
-    if (strcmp(key, "setMode") == 0)          { lua_pushcfunction(L, lua_sprite_setMode); return 1; }
+    if (pushProxyMethod(L, kSpriteMethods, 2)) return 1;
 
     // Readable properties
     auto* sp = static_cast<enjin2::C_Sprite*>(proxy->component);
@@ -1156,12 +1150,7 @@ static int lua_cbody_proxy_index_impl(lua_State* L) {
     const char* key = lua_tostring(L, 2);
     if (!key) { lua_pushnil(L); return 1; }
 
-    if (strcmp(key, "step") == 0)         { lua_pushcfunction(L, lua_body_step); return 1; }
-    if (strcmp(key, "setGravity") == 0)   { lua_pushcfunction(L, lua_body_setGravity); return 1; }
-    if (strcmp(key, "setSubsteps") == 0)  { lua_pushcfunction(L, lua_body_setSubsteps); return 1; }
-    if (strcmp(key, "setColliders") == 0) { lua_pushcfunction(L, lua_body_setColliders); return 1; }
-    if (strcmp(key, "numContacts") == 0)  { lua_pushcfunction(L, lua_body_numContacts); return 1; }
-    if (strcmp(key, "contact") == 0)      { lua_pushcfunction(L, lua_body_contact); return 1; }
+    if (pushProxyMethod(L, kBodyMethods, 2)) return 1;
 
     if (strcmp(key, "x") == 0)          { lua_pushnumber(L, body->getX()); return 1; }
     if (strcmp(key, "y") == 0)           { lua_pushnumber(L, body->getY()); return 1; }
@@ -1328,27 +1317,6 @@ static int lua_colliders_clear(lua_State* L) {
 
 #undef COLLIDERSET_PROXY_CHECK
 
-static int lua_colliderset_proxy_index_impl(lua_State* L) {
-    luaL_checkudata(L, 1, COLLIDERSET_PROXY_METATABLE);
-    const char* key = lua_tostring(L, 2);
-    if (!key) { lua_pushnil(L); return 1; }
-
-    if (strcmp(key, "addSeg") == 0)          { lua_pushcfunction(L, lua_colliders_addSeg); return 1; }
-    if (strcmp(key, "addCircle") == 0)       { lua_pushcfunction(L, lua_colliders_addCircle); return 1; }
-    if (strcmp(key, "addAabb") == 0)         { lua_pushcfunction(L, lua_colliders_addAabb); return 1; }
-    if (strcmp(key, "addSolidRects") == 0)   { lua_pushcfunction(L, lua_colliders_addSolidRects); return 1; }
-    if (strcmp(key, "addFlipper") == 0)      { lua_pushcfunction(L, lua_colliders_addFlipper); return 1; }
-    if (strcmp(key, "setFlipperActive") == 0){ lua_pushcfunction(L, lua_colliders_setFlipperActive); return 1; }
-    if (strcmp(key, "setFlipperTarget") == 0){ lua_pushcfunction(L, lua_colliders_setFlipperTarget); return 1; }
-    if (strcmp(key, "setFlipperAngle") == 0) { lua_pushcfunction(L, lua_colliders_setFlipperAngle); return 1; }
-    if (strcmp(key, "numFlippers") == 0)     { lua_pushcfunction(L, lua_colliders_numFlippers); return 1; }
-    if (strcmp(key, "count") == 0)           { lua_pushcfunction(L, lua_colliders_count); return 1; }
-    if (strcmp(key, "clear") == 0)           { lua_pushcfunction(L, lua_colliders_clear); return 1; }
-
-    lua_pushnil(L);
-    return 1;
-}
-
 // Allocate a ColliderSet userdata over a scene's collider set. Non-owning.
 int pushColliderSetProxy(lua_State* L, enjin2::ColliderSet* set) {
     if (!set) { lua_pushnil(L); return 1; }
@@ -1407,6 +1375,18 @@ static int lua_objproxy_destroy_impl(lua_State* L) {
     return 0;
 }
 
+// proxy:hasTag(tag) -> boolean
+static int lua_objproxy_hasTag_impl(lua_State* L) {
+    auto* p = static_cast<enjin2::ObjectProxy*>(luaL_checkudata(L, 1, OBJECT_PROXY_METATABLE));
+    if (!p || !p->valid || !p->object) {
+        luaL_error(L, "object has been destroyed");
+        return 0;
+    }
+    const char* tag = luaL_checkstring(L, 2);
+    lua_pushboolean(L, p->object->hasTag(tag) ? 1 : 0);
+    return 1;
+}
+
 // __index metamethod for ObjectProxy.
 // Reads proxy.name, proxy:hasTag(tag), proxy.position (table snapshot), proxy.enable.
 // Locked decisions (Phase 37 CONTEXT.md):
@@ -1430,41 +1410,15 @@ static int lua_objproxy_index_impl(lua_State* L) {
 
     enjin2::Object* obj = proxy->object;
 
-    // self:get("TypeName") / self:add("TypeName"[, params]) — the same attach
-    // verb spawn()'d and find()'d objects get, so an ObjectProxy is a full
-    // instance handle (ADR-0003 §2, closing the spawn-can't-get gap). Checked
-    // before the property keys, mirroring ScriptProxy.
-    if (strcmp(key, "get") == 0) {
-        lua_pushcfunction(L, lua_objproxy_get_component_impl);
-        return 1;
-    }
-    if (strcmp(key, "add") == 0) {
-        lua_pushcfunction(L, lua_objproxy_add_component_impl);
-        return 1;
-    }
-    if (strcmp(key, "destroy") == 0) {
-        lua_pushcfunction(L, lua_objproxy_destroy_impl);
-        return 1;
-    }
+    // Methods (get/add/destroy/hasTag) — the same attach verb spawn()'d and
+    // find()'d objects get, so an ObjectProxy is a full instance handle
+    // (ADR-0003 §2, closing the spawn-can't-get gap). Checked before the
+    // property keys, mirroring ScriptProxy.
+    if (pushProxyMethod(L, kObjectProxyMethods, 2)) return 1;
 
     if (strcmp(key, "name") == 0) {
         const char* n = obj->getName();
         if (n) lua_pushstring(L, n); else lua_pushnil(L);
-        return 1;
-    } else if (strcmp(key, "hasTag") == 0) {
-        // Return a function: proxy:hasTag(tag) -> boolean
-        // Non-capturing lambda converts to plain function pointer (C++11, safe for lua_pushcfunction)
-        lua_pushcfunction(L, [](lua_State* L2) -> int {
-            enjin2::ObjectProxy* p = static_cast<enjin2::ObjectProxy*>(
-                luaL_checkudata(L2, 1, OBJECT_PROXY_METATABLE));
-            if (!p || !p->valid || !p->object) {
-                luaL_error(L2, "object has been destroyed");
-                return 0;
-            }
-            const char* tag = luaL_checkstring(L2, 2);
-            lua_pushboolean(L2, p->object->hasTag(tag) ? 1 : 0);
-            return 1;
-        });
         return 1;
     } else if (strcmp(key, "position") == 0) {
         // Return a table {x=..., y=...} snapshot of current C_Position
@@ -1558,96 +1512,390 @@ static int lua_objproxy_gc_impl(lua_State* L) {
 void LuaBindings::registerObjectProxyMetatable() {
     lua_State* L = engine->getState();
     if (!L) return;
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("get", lua_objproxy_get_component_impl, "(type:string) -> proxy:userdata?",
+                    "The object's component of a type, as its proxy; nil when it has none.",
+                    "type: a component name such as \"C_Position\"; an unknown name gives nil"),
+        luaFunction("add", lua_objproxy_add_component_impl,
+                    "(type:string, params:table?) -> proxy:userdata?",
+                    "Attach a component, or take the one already there, and set fields from params.",
+                    "type: a component name; an unknown name raises\n"
+                    "params: field = value pairs written through the proxy; unknown fields are "
+                    "ignored"),
+        luaFunction("destroy", lua_objproxy_destroy_impl, "() -> nil",
+                    "Remove the object from the active scene; its proxies go stale."),
+        luaFunction("hasTag", lua_objproxy_hasTag_impl, "(tag:string) -> boolean",
+                    "Whether the object has a tag.",
+                    "tag: the tag"),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "ObjectProxy", "A scene object's methods, called as obj:name(...).",
+        kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaFunction("__index", lua_objproxy_index_impl, "(obj:ObjectProxy, key:string) -> any",
+                    "obj.name, obj.position (an {x, y} copy) and obj.enable (its script runs; nil "
+                    "without a script) read the object; other keys look up a method.",
+                    "obj: the object\n"
+                    "key: a field or method name; unknown keys give nil")
+            .note("Raises once the object is destroyed."),
+        luaFunction("__newindex", lua_objproxy_newindex_impl,
+                    "(obj:ObjectProxy, key:string, value:any) -> nil",
+                    "obj.position = {x = n, y = n} moves the object and obj.enable = b runs or "
+                    "pauses its script; other keys are ignored.",
+                    "obj: the object\n"
+                    "key: the field\n"
+                    "value: the new value; a position that is not a table raises"),
+        luaFunction("__gc", lua_objproxy_gc_impl, "(obj:ObjectProxy) -> nil",
+                    "Detach the object from a collected proxy.",
+                    "obj: the proxy"),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "ObjectProxy",
+        "A scene object, from engine.scene.find or spawn.", kMeta);
     // luaL_newmetatable returns 1 if new (creates it), 0 if it already exists
     if (luaL_newmetatable(L, OBJECT_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_objproxy_index_impl);
-        lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, lua_objproxy_newindex_impl);
-        lua_setfield(L, -2, "__newindex");
-        // __gc: clear Object::m_luaProxy back-pointer when Lua frees this proxy.
-        // Prevents heap-use-after-free in Object::~Object() (PROXY-GC-01).
-        lua_pushcfunction(L, lua_objproxy_gc_impl);
-        lua_setfield(L, -2, "__gc");
+        luaApiSetFields(L, -1, kMetaModule);
     }
     lua_pop(L, 1);  // always pop — both new and existing cases leave table on stack
+    setProxyMethods(L, kObjectProxyMethods, kMethodsModule);
+}
+
+// Create a component proxy's metatable from its descriptors (if new).
+static void newProxyMetatable(lua_State* L, const char* name, const LuaApiModule& meta) {
+    if (luaL_newmetatable(L, name)) {
+        luaApiSetFields(L, -1, meta);
+    }
+    lua_pop(L, 1);
+}
+
+// C_Position_Proxy (Phase 39): x/y fields plus getX/getY. The __newindex makes
+// it the writable proxy ADR-0003 §2 requires (p.x = N).
+static void registerPositionProxy(lua_State* L) {
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("getX", lua_cposition_getX, "() -> int", "The column; the same as p.x."),
+        luaFunction("getY", lua_cposition_getY, "() -> int", "The row; the same as p.y."),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "C_Position", "Position methods, called as p:name().", kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaFunction("__index", lua_cposition_proxy_index_impl,
+                    "(p:C_Position, key:string) -> any",
+                    "p.x and p.y (int) read the position; other keys look up a method.",
+                    "p: the component\n"
+                    "key: a field or method name; unknown keys give nil")
+            .note("Raises once the component is destroyed."),
+        luaFunction("__newindex", lua_cposition_proxy_newindex_impl,
+                    "(p:C_Position, key:string, value:int) -> nil",
+                    "p.x = n and p.y = n move the object; other keys are ignored.",
+                    "p: the component\n"
+                    "key: \"x\" or \"y\"\n"
+                    "value: the new coordinate"),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "C_Position", "An object's position.", kMeta);
+    newProxyMetatable(L, CPOSITION_PROXY_METATABLE, kMetaModule);
+    setProxyMethods(L, kPositionMethods, kMethodsModule);
+}
+
+// C_Timer_Proxy (Phase 40): timer:after/every/cancel.
+static void registerTimerProxy(lua_State* L) {
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("after", lua_timer_after, "(seconds:number, fn:function) -> id:int",
+                    "Call fn(self) once after a delay; 0 when all 8 timers are busy.",
+                    "seconds: the delay\n"
+                    "fn: the callback; self is the owning object's script"),
+        luaFunction("every", lua_timer_every, "(seconds:number, fn:function) -> id:int",
+                    "Call fn(self) at a fixed interval; 0 when all 8 timers are busy.",
+                    "seconds: the interval\n"
+                    "fn: the callback; self is the owning object's script"),
+        luaFunction("cancel", lua_timer_cancel, "(id:int) -> nil",
+                    "Stop a timer; unknown ids are ignored.",
+                    "id: the id after or every returned"),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "C_Timer", "Timer methods, called as timer:name(...).", kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaTable("__index", kMethodsModule, "The methods; each raises once the component is destroyed."),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "C_Timer", "An object's callback timers.", kMeta);
+    newProxyMetatable(L, CTIMER_PROXY_METATABLE, kMetaModule);
+}
+
+// C_StateMachine_Proxy (Phase 41): fsm:addState/setState/getState.
+static void registerStateMachineProxy(lua_State* L) {
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("addState", lua_fsm_addState, "(name:string, callbacks:table) -> nil",
+                    "Add a state with optional enter, exit and update callbacks.",
+                    "name: the state; up to 31 bytes\n"
+                    "callbacks: {enter = fn(self), exit = fn(self), update = fn(self, dt)}, each "
+                    "optional")
+            .note("Raises when all 8 states are used or the name is too long."),
+        luaFunction("setState", lua_fsm_setState, "(name:string) -> nil",
+                    "Switch state at the end of the next update.",
+                    "name: the state"),
+        luaFunction("getState", lua_fsm_getState, "() -> string",
+                    "The current state's name; \"\" before the first switch."),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "C_StateMachine", "State machine methods, called as fsm:name(...).",
+        kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaTable("__index", kMethodsModule, "The methods; each raises once the component is destroyed."),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "C_StateMachine", "An object's state machine.", kMeta);
+    newProxyMetatable(L, CFSM_PROXY_METATABLE, kMetaModule);
+}
+
+// C_Camera_Proxy (Phase 44): the scene camera component's methods.
+static void registerCameraProxy(lua_State* L) {
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("setPosition", lua_ccamera_proxy_setPosition, "(x:number, y:number) -> nil",
+                    "Move the camera.",
+                    "x: world column\n"
+                    "y: world row"),
+        luaFunction("getPosition", lua_ccamera_proxy_getPosition, "() -> x:number, y:number",
+                    "The camera's position."),
+        luaFunction("lookAt", lua_ccamera_proxy_lookAt,
+                    "(x:number, y:number, speed:number?=1) -> nil",
+                    "Glide the camera toward a point; a speed of 1 or more jumps there.",
+                    "x: world column\n"
+                    "y: world row\n"
+                    "speed: how fast it glides; 0.1 covers the distance in about a second"),
+        luaFunction("shake", lua_ccamera_proxy_shake, "(intensity:number, duration:number) -> nil",
+                    "Shake the camera.",
+                    "intensity: how far it shakes, in pixels\n"
+                    "duration: seconds"),
+        luaFunction("setBounds", lua_ccamera_proxy_setBounds,
+                    "(minX:number, minY:number, maxX:number, maxY:number) -> nil",
+                    "Keep the camera's position inside a rectangle.",
+                    "minX: left limit\n"
+                    "minY: top limit\n"
+                    "maxX: right limit\n"
+                    "maxY: bottom limit"),
+        luaFunction("clearBounds", lua_ccamera_proxy_clearBounds, "() -> nil",
+                    "Let the camera move anywhere again."),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "C_Camera", "Camera methods, called as cam:name(...).", kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaTable("__index", kMethodsModule, "The methods; each raises once the camera is destroyed."),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "C_Camera", "A scene camera component.", kMeta);
+    newProxyMetatable(L, CCAMERA_PROXY_METATABLE, kMetaModule);
+}
+
+// C_Sprite_Proxy (ADR-0003 §5, #81): clips, events, flips, scrub. The
+// __newindex makes hflip/vflip/visible the writable side (§2).
+static void registerSpriteProxy(lua_State* L) {
+    static constexpr LuaApiEnum kLoopMode = luaApiEnum("LoopMode", kLoopModeNames);
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("setSheet", lua_sprite_setSheet, "(handle:int) -> nil",
+                    "Draw frames from a loaded sprite sheet; an invalid handle raises.",
+                    "handle: a sprite handle from engine.sprite.load"),
+        luaFunction("setClips", lua_sprite_setClips,
+                    "(handle:int) -> nil\n"
+                    "(clips:table) -> nil",
+                    "Replace the clips: the ones a .njn sprite carried, or a list of "
+                    "{name, loop, frames = {{frame, dur, event}, ...}}.",
+                    "handle: a sprite handle from engine.sprite.load; an invalid one raises\n"
+                    "clips: clip tables; loop is a LoopMode name or 0..2, dur is milliseconds "
+                    "(100 by default), event is a number polled through frameEvent")
+            .withEnum(kLoopMode),
+        luaFunction("play", lua_sprite_play, "(name:string) -> boolean",
+                    "Start a clip from its first frame; false when there is no such clip or it is "
+                    "empty.",
+                    "name: the clip's name"),
+        luaFunction("setFlip", lua_sprite_setFlip, "(h:boolean, v:boolean) -> nil",
+                    "Mirror the sprite; nil counts as false.",
+                    "h: mirror left to right\n"
+                    "v: mirror top to bottom"),
+        luaFunction("setFrameForAngle", lua_sprite_setFrameForAngle,
+                    "(angle:number, minAngle:number, maxAngle:number) -> nil",
+                    "Show the frame an angle maps to and stop timed playback.",
+                    "angle: the current angle\n"
+                    "minAngle: the angle of the first frame\n"
+                    "maxAngle: the angle of the last frame"),
+        luaFunction("setFrame", lua_sprite_setFrame, "(index:int) -> nil",
+                    "Show one frame of the sheet.",
+                    "index: the frame, from 0"),
+        luaFunction("setFPS", lua_sprite_setFPS, "(fps:number) -> nil",
+                    "Frame rate of the whole-sheet animation used while no clip plays; also stops "
+                    "angle scrubbing.",
+                    "fps: frames per second"),
+        luaFunction("setMode", lua_sprite_setMode, "(mode:LoopMode) -> nil",
+                    "How the whole-sheet animation repeats.",
+                    "mode: a LoopMode name in any case, or 0..2; anything else loops")
+            .withEnum(kLoopMode),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "C_Sprite", "Sprite methods, called as sp:name(...).", kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaFunction("__index", lua_csprite_proxy_index_impl, "(sp:C_Sprite, key:string) -> any",
+                    "sp.frame, sp.clip (nil when none), sp.hflip, sp.vflip, sp.visible, sp.done, "
+                    "sp.justAdvanced, sp.justCompleted and sp.frameEvent read the sprite; other "
+                    "keys look up a method.",
+                    "sp: the component\n"
+                    "key: a field or method name; unknown keys give nil")
+            .note("Raises once the component is destroyed."),
+        luaFunction("__newindex", lua_csprite_proxy_newindex_impl,
+                    "(sp:C_Sprite, key:string, value:boolean) -> nil",
+                    "Writes hflip, vflip and visible; other keys are ignored.",
+                    "sp: the component\n"
+                    "key: the field\n"
+                    "value: the new flag"),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "C_Sprite", "A retained, clip-animated sprite.", kMeta);
+    newProxyMetatable(L, CSPRITE_PROXY_METATABLE, kMetaModule);
+    setProxyMethods(L, kSpriteMethods, kMethodsModule);
+}
+
+// C_Body_Proxy (ADR-0003 §4, #80): the circle body. Writable
+// x/y/vx/vy/radius/restitution/drag via __newindex.
+static void registerBodyProxy(lua_State* L) {
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("step", lua_body_step, "(dt:number) -> nil",
+                    "Advance the body by dt seconds, in substeps, against its collider set.",
+                    "dt: seconds"),
+        luaFunction("setGravity", lua_body_setGravity, "(gx:number, gy:number) -> nil",
+                    "Set the body's gravity.",
+                    "gx: acceleration along x\n"
+                    "gy: acceleration along y (positive is down)"),
+        luaFunction("setSubsteps", lua_body_setSubsteps, "(n:int) -> nil",
+                    "How many substeps each step runs.",
+                    "n: the substep count"),
+        luaFunction("setColliders", lua_body_setColliders, "(set:ColliderSet) -> nil",
+                    "Collide against a scene's collider set.",
+                    "set: from engine.scene.colliders()"),
+        luaFunction("numContacts", lua_body_numContacts, "() -> int",
+                    "How many contacts the last step made."),
+        luaFunction("contact", lua_body_contact, "(i:int) -> contact:table?",
+                    "A contact of the last step: {kind, x, y, nx, ny, relSpeed}; nil past the end.",
+                    "i: the contact, from 1"),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "C_Body", "Body methods, called as body:name(...).", kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaFunction("__index", lua_cbody_proxy_index_impl, "(body:C_Body, key:string) -> any",
+                    "body.x, y, vx, vy, radius, restitution and drag (numbers) read the body; "
+                    "other keys look up a method.",
+                    "body: the component\n"
+                    "key: a field or method name; unknown keys give nil")
+            .note("Raises once the component is destroyed."),
+        luaFunction("__newindex", lua_cbody_proxy_newindex_impl,
+                    "(body:C_Body, key:string, value:number) -> nil",
+                    "Writes x, y, vx, vy, radius, restitution and drag; other keys are ignored.",
+                    "body: the component\n"
+                    "key: the field\n"
+                    "value: the new value; a non-number raises, whatever the key"),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "C_Body", "The single dynamic circle body.", kMeta);
+    newProxyMetatable(L, CBODY_PROXY_METATABLE, kMetaModule);
+    setProxyMethods(L, kBodyMethods, kMethodsModule);
+}
+
+// ColliderSet_Proxy (ADR-0003 §4, #80): the scene-level collider resource.
+static void registerColliderSetProxy(lua_State* L) {
+    static constexpr LuaApiEntry kMethods[] = {
+        luaFunction("addSeg", lua_colliders_addSeg,
+                    "(ax:number, ay:number, bx:number, by:number, restitution:number?=0.5, "
+                    "kind:int?=0) -> nil",
+                    "Add a line segment collider.",
+                    "ax: start column\n"
+                    "ay: start row\n"
+                    "bx: end column\n"
+                    "by: end row\n"
+                    "restitution: bounciness, 0..1\n"
+                    "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
+        luaFunction("addCircle", lua_colliders_addCircle,
+                    "(cx:number, cy:number, r:number, restitution:number?=0.5, kind:int?=0) -> nil",
+                    "Add a circle collider.",
+                    "cx: centre column\n"
+                    "cy: centre row\n"
+                    "r: radius\n"
+                    "restitution: bounciness, 0..1\n"
+                    "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
+        luaFunction("addAabb", lua_colliders_addAabb,
+                    "(minX:number, minY:number, maxX:number, maxY:number, "
+                    "restitution:number?=0.1, kind:int?=0) -> nil",
+                    "Add a rectangle collider by its corners.",
+                    "minX: left edge\n"
+                    "minY: top edge\n"
+                    "maxX: right edge\n"
+                    "maxY: bottom edge\n"
+                    "restitution: bounciness, 0..1\n"
+                    "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
+        luaFunction("addSolidRects", lua_colliders_addSolidRects,
+                    "(map:Tilemap, restitution:number?=0.1, kind:int?=0) -> int",
+                    "Add rectangles covering a map's solid tiles; returns how many.",
+                    "map: a map handle or a scene C_Tilemap\n"
+                    "restitution: bounciness, 0..1\n"
+                    "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
+        luaFunction("addFlipper", lua_colliders_addFlipper,
+                    "(pivotX:number, pivotY:number, length:number, restAngle:number, "
+                    "activeAngle:number, restitution:number?=0.2) -> int",
+                    "Add a flipper at rest; returns its index, from 1.",
+                    "pivotX: pivot column\n"
+                    "pivotY: pivot row\n"
+                    "length: arm length\n"
+                    "restAngle: angle at rest, in radians\n"
+                    "activeAngle: angle when active, in radians\n"
+                    "restitution: bounciness, 0..1"),
+        luaFunction("setFlipperActive", lua_colliders_setFlipperActive,
+                    "(i:int, active:boolean) -> nil",
+                    "Spring a flipper toward its active or rest angle.",
+                    "i: the flipper, from 1; a bad index raises\n"
+                    "active: true for the active angle"),
+        luaFunction("setFlipperTarget", lua_colliders_setFlipperTarget,
+                    "(i:int, angle:number) -> nil",
+                    "Spring a flipper toward any angle.",
+                    "i: the flipper, from 1; a bad index raises\n"
+                    "angle: the target, in radians"),
+        luaFunction("setFlipperAngle", lua_colliders_setFlipperAngle,
+                    "(i:int, angle:number) -> nil",
+                    "Put a flipper at an angle at once.",
+                    "i: the flipper, from 1; a bad index raises\n"
+                    "angle: the angle, in radians"),
+        luaFunction("numFlippers", lua_colliders_numFlippers, "() -> int", "How many flippers."),
+        luaFunction("count", lua_colliders_count, "() -> int", "How many colliders in all."),
+        luaFunction("clear", lua_colliders_clear, "() -> nil", "Remove every collider."),
+    };
+    static constexpr LuaApiModule kMethodsModule = luaApiModule(
+        LuaApiScope::Methods, "ColliderSet", "Collider set methods, called as set:name(...).",
+        kMethods);
+    static constexpr LuaApiEntry kMeta[] = {
+        luaTable("__index", kMethodsModule, "The methods."),
+    };
+    static constexpr LuaApiModule kMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "ColliderSet", "A scene's static colliders.", kMeta);
+    newProxyMetatable(L, COLLIDERSET_PROXY_METATABLE, kMetaModule);
 }
 
 void LuaBindings::registerComponentProxyMetatable() {
     lua_State* L = engine->getState();
     if (!L) return;
 
-    // Register C_Position_Proxy metatable (proof-of-concept for Phase 39).
-    // __newindex makes it the writable proxy ADR-0003 §2 requires (p.x = N).
-    if (luaL_newmetatable(L, CPOSITION_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_cposition_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, lua_cposition_proxy_newindex_impl);
-        lua_setfield(L, -2, "__newindex");
-    }
-    lua_pop(L, 1);
+    registerPositionProxy(L);
+    registerTimerProxy(L);
+    registerStateMachineProxy(L);
 
-    // Register C_Timer_Proxy metatable (Phase 40: timer:after/every/cancel)
-    if (luaL_newmetatable(L, CTIMER_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_ctimer_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-    }
-    lua_pop(L, 1);
+    // Register C_Tilemap_Proxy metatable (Phase 43: tilemap component): the
+    // same methods as the scene-free map handle (engine.tilemap.load, #256).
+    static constexpr LuaApiEntry kTilemapProxyMeta[] = {
+        luaTable("__index", kTilemapMethodsModule, "The map's methods."),
+    };
+    static constexpr LuaApiModule kTilemapProxyMetaModule = luaApiModule(
+        LuaApiScope::Metatable, "C_Tilemap", "Map method lookup.", kTilemapProxyMeta);
+    newProxyMetatable(L, CTILEMAP_PROXY_METATABLE, kTilemapProxyMetaModule);
 
-    // Register C_StateMachine_Proxy metatable (Phase 41: fsm:addState/setState/getState)
-    if (luaL_newmetatable(L, CFSM_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_cfsm_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-    }
-    lua_pop(L, 1);
-
-    // Register C_Tilemap_Proxy metatable (Phase 43: tilemap component)
-    if (luaL_newmetatable(L, CTILEMAP_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_ctilemap_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-    }
-    lua_pop(L, 1);
-
-    // The scene-free map handle (engine.tilemap.load, #256) shares the methods.
-    lua::registerTilemapMetatable(L);
-    luaL_getmetatable(L, lua::tilemapMt());
-    lua_pushcfunction(L, lua_ctilemap_proxy_index_impl);
-    lua_setfield(L, -2, "__index");
-    lua_pop(L, 1);
-
-    // Register C_Camera_Proxy metatable (Phase 44: cam:setPosition/getPosition/lookAt/shake/setBounds/clearBounds)
-    if (luaL_newmetatable(L, CCAMERA_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_ccamera_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-    }
-    lua_pop(L, 1);
-
-    // Register C_Sprite_Proxy metatable (ADR-0003 §5, #81: clips, events, flips,
-    // scrub). __newindex makes hflip/vflip/visible the writable side (§2).
-    if (luaL_newmetatable(L, CSPRITE_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_csprite_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, lua_csprite_proxy_newindex_impl);
-        lua_setfield(L, -2, "__newindex");
-    }
-    lua_pop(L, 1);
-
-    // Register C_Body_Proxy metatable (ADR-0003 §4, #80: circle body). Writable
-    // x/y/vx/vy/radius/restitution/drag via __newindex.
-    if (luaL_newmetatable(L, CBODY_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_cbody_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, lua_cbody_proxy_newindex_impl);
-        lua_setfield(L, -2, "__newindex");
-    }
-    lua_pop(L, 1);
-
-    // Register ColliderSet_Proxy metatable (ADR-0003 §4, #80: scene-level
-    // collider resource — addSeg/addCircle/addAabb/addFlipper/setFlipperTarget).
-    if (luaL_newmetatable(L, COLLIDERSET_PROXY_METATABLE)) {
-        lua_pushcfunction(L, lua_colliderset_proxy_index_impl);
-        lua_setfield(L, -2, "__index");
-    }
-    lua_pop(L, 1);
+    registerCameraProxy(L);
+    registerSpriteProxy(L);
+    registerBodyProxy(L);
+    registerColliderSetProxy(L);
 }
 
 } // namespace enjin2

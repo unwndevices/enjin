@@ -121,6 +121,8 @@ static bool performReload(enjin2::LuaScriptSystem& lua,
                           const std::string& path)
 {
     lua.shutdown();
+    // The standalone runtime runs scene games: every switchable feature on.
+    lua.getBindings().setFeatures(enjin2::LuaFeatures::all());
     if (!lua.initialize()) {
         std::cerr << "[reload error] Lua init failed\n";
         return false;

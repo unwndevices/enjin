@@ -458,6 +458,7 @@ static void test_tmap05e_stale_proxy_error() {
 
     // Create standalone Lua scripting system
     LuaScriptSystem lss;
+    lss.getBindings().setFeatures(LuaFeatures::all());  // the component proxies
     bool initOk = lss.initialize();
     ASSERT(initOk, "TMAP-05e: LuaScriptSystem initialize");
     if (!initOk) return;

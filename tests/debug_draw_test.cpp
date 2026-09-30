@@ -38,6 +38,7 @@ struct DebugFixture {
 
     DebugFixture() : bindings(&engine) {
         engine.initialize();
+        bindings.setFeatures(LuaFeatures::all());  // scene/camera/debug/raycast/proxies
         bindings.registerAll();
         // Intentionally do NOT call setDebugCanvas() — tests null-canvas safety
     }

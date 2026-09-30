@@ -164,6 +164,7 @@ static void test_null_safety() {
     };
 
     LuaScriptSystem sys;
+    sys.getBindings().setFeatures(LuaFeatures::all());  // engine.scene null-guards too
     bool ok = sys.initialize();
     ASSERT(ok, "LuaScriptSystem initializes successfully");
     if (!ok) return;

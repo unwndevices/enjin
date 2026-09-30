@@ -57,6 +57,7 @@ struct PersistLuaFixture {
 
     PersistLuaFixture() : bindings(&engine) {
         engine.initialize();
+        bindings.setFeatures(LuaFeatures::all());  // scene/camera/debug/raycast/proxies
         bindings.registerAll();
         bindings.setSceneStateMachine(&ssm);
     }
@@ -385,6 +386,7 @@ static void test09_persist_without_ssm_prints_warning() {
     LuaEngine engine;
     LuaBindings bindings(&engine);
     engine.initialize();
+    bindings.setFeatures(LuaFeatures::all());  // scene/camera/debug/raycast/proxies
     bindings.registerAll();
     // Intentionally NOT calling bindings.setSceneStateMachine(&ssm)
 
