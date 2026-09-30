@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790527295842,
+  "lastUpdate": 1790780732358,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -3189,6 +3189,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 4068,
             "range": "± 0.48%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "6ce38e9d46832356b04ca2eb807e152052dffeb0",
+          "message": "feat(scripting): use palette indices and retire legacy input (#252, #253)",
+          "timestamp": "2026-09-30T17:04:27+02:00",
+          "tree_id": "cb8f87f4c4af71aacacb65fcebe35292a2d0d413",
+          "url": "https://github.com/unwndevices/enjin/commit/6ce38e9d46832356b04ca2eb807e152052dffeb0"
+        },
+        "date": 1790780730787,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 130.5,
+            "range": "± 0.38%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 291,
+            "range": "± 0.34%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 81503,
+            "range": "± 0.02%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 851,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 5 layers",
+            "value": 6981,
+            "range": "± 0.43%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (5 layers)",
+            "value": 38088,
+            "range": "± 0.1%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 281,
+            "range": "± 0.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 791,
+            "range": "± 1.25%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1452,
+            "range": "± 0.68%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2764,
+            "range": "± 0.56%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 4061.5,
+            "range": "± 0.86%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 90,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 100,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 40,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0.7%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 130,
+            "range": "± 0.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 230,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 331,
+            "range": "± 0.3%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 54322,
+            "range": "± 5.4%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 996,
+            "range": "± 6.24%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1818,
+            "range": "± 3.41%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2598.5,
+            "range": "± 1.74%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2574,
+            "range": "± 3.11%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1527.5,
+            "range": "± 2.92%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 4557,
+            "range": "± 0.44%",
             "unit": "ns/op"
           }
         ]
