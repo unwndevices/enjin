@@ -863,13 +863,8 @@ static int lua_ccamera_proxy_clearBounds(lua_State* L) {
     }                                                                             \
     auto* (varname) = static_cast<enjin2::C_Sprite*>(proxy->component)
 
-// Loop-mode names, indexed by NjnLoopMode (and AnimMode, same order) and
-// published as the LoopMode enum of the C_Sprite descriptors.
-static constexpr const char* kLoopModeNames[] = {"once", "loop", "pingpong"};
-static_assert(static_cast<int>(enjin2::NjnLoopMode::Once) == 0 &&
-                  static_cast<int>(enjin2::NjnLoopMode::Loop) == 1 &&
-                  static_cast<int>(enjin2::NjnLoopMode::PingPong) == 2,
-              "kLoopModeNames is indexed by NjnLoopMode");
+// kLoopModeNames (njn2.hpp) is indexed by NjnLoopMode, and AnimMode keeps the
+// same order; it is published as the LoopMode enum of the C_Sprite descriptors.
 
 // Parse a loop-mode argument: a kLoopModeNames name (any case) or the integer
 // 0/1/2. Defaults to Loop for anything unrecognised.

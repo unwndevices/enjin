@@ -194,6 +194,14 @@ enum class NjnLoopMode : uint8_t {
     PingPong = 2,
 };
 
+/// Loop-mode names, indexed by NjnLoopMode: the names the Lua bindings accept
+/// (matched with nameIndex) and publish as the LoopMode enum (ADR-0013).
+inline constexpr const char* kLoopModeNames[] = {"once", "loop", "pingpong"};
+static_assert(static_cast<int>(NjnLoopMode::Once) == 0 &&
+                  static_cast<int>(NjnLoopMode::Loop) == 1 &&
+                  static_cast<int>(NjnLoopMode::PingPong) == 2,
+              "kLoopModeNames is indexed by NjnLoopMode");
+
 /// One frame entry inside a CLIP chunk.
 struct NjnFrameEntry {
     uint16_t frameIndex;   ///< Sheet cell index.

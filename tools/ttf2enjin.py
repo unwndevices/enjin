@@ -134,8 +134,9 @@ def emit_header(glyphs, y_advance, name, first, last):
     lines.append('#include "enjin2/graphics/gfxfont.h"')
     lines.append("")
 
-    # Bitmap array
-    lines.append("const uint8_t %sBitmaps[] = {" % name)
+    # Bitmap array. The three definitions are C++17 inline variables, so every
+    # translation unit that includes the header shares one copy (and one address).
+    lines.append("inline const uint8_t %sBitmaps[] = {" % name)
     row = "  "
     for i, byte in enumerate(bitmap):
         row += "0x%02X, " % byte
@@ -148,7 +149,7 @@ def emit_header(glyphs, y_advance, name, first, last):
     lines.append("")
 
     # Glyph array
-    lines.append("const GFXglyph %sGlyphs[] = {" % name)
+    lines.append("inline const GFXglyph %sGlyphs[] = {" % name)
     lines.append("  // bitmapOffset, width, height, xAdvance, xOffset, yOffset")
     for g, off in zip(glyphs, offsets):
         ch = g.code
@@ -162,7 +163,7 @@ def emit_header(glyphs, y_advance, name, first, last):
     lines.append("")
 
     # Font struct
-    lines.append("const GFXfont %s = {" % name)
+    lines.append("inline const GFXfont %s = {" % name)
     lines.append("  (uint8_t  *)%sBitmaps," % name)
     lines.append("  (GFXglyph *)%sGlyphs, 0x%02X, 0x%02X, %d };"
                  % (name, first, last, y_advance))

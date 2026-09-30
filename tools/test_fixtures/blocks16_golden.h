@@ -5,12 +5,12 @@
 // Mono 1-bit GFXfont for enjin2::TextRenderer (type system #40).
 #include "enjin2/graphics/gfxfont.h"
 
-const uint8_t tomoBlocks16Bitmaps[] = {
+inline const uint8_t tomoBlocks16Bitmaps[] = {
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF0, 0xFF, 0xFF, 0xFF, 0x00,
   0x0F, 0xFF, 0xFF, 0xF0, 0xFF, 0xFC, 0x30, 0xC3, 0x0C, 0x30, 0xC3, 0x00,
 };
 
-const GFXglyph tomoBlocks16Glyphs[] = {
+inline const GFXglyph tomoBlocks16Glyphs[] = {
   // bitmapOffset, width, height, xAdvance, xOffset, yOffset
   {     0,   0,   0,   6,    0,    0 },   // 0x20 ' '
   {     0,   0,   0,   0,    0,    0 },   // 0x21 '!'
@@ -50,7 +50,7 @@ const GFXglyph tomoBlocks16Glyphs[] = {
   {    16,   6,  10,   8,    0,  -10 },   // 0x43 'C'
 };
 
-const GFXfont tomoBlocks16 = {
+inline const GFXfont tomoBlocks16 = {
   (uint8_t  *)tomoBlocks16Bitmaps,
   (GFXglyph *)tomoBlocks16Glyphs, 0x20, 0x43, 16 };
 

@@ -490,6 +490,7 @@ scale.set_root(48)
 
 local tilt_slew = slew.new(0.1, 0.1)
 local playing = false
+local a_was_down = false
 
 function update(dt)
     local tilt = sensors.imu.tiltX()
@@ -501,18 +502,19 @@ function update(dt)
 
     local index = util.linexp(math.abs(sensors.imu.tiltY()), 0, 45, 0.3, 8.0)
     audio.set(drone, "index", index, 10)
-end
 
-function on_button(name, down)
-    if name == "A" and down then
+    -- Buttons are polled (there are no event callbacks): A toggles the drone.
+    local down = input.button("a")
+    if down and not a_was_down then
         if not playing then
-            audio.note_on(drone, 60, 0.6)
+            audio.note_on(drone, 60, 76)
             playing = true
         else
             audio.note_off(drone)
             playing = false
         end
     end
+    a_was_down = down
 end
 ```
 

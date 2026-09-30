@@ -527,7 +527,9 @@ void LuaBindings::registerAll() {
                     "Height of the active layer in pixels; 0 with no canvas."),
         luaFunction("clear", lua_clear, "(color:int?=current) -> nil",
                     "Fill the active layer with one colour.",
-                    "color: palette index; defaults to the current draw colour"),
+                    "color: palette index; defaults to the current draw colour")
+            .note("The draw colour starts at 15 (transparent) after every reload, so a bare "
+                  "gfx.clear() clears to transparent until gfx.setColor picks another."),
 
         // Drawing state
         luaFunction("setColor", lua_setColor, "(color:int) -> nil",

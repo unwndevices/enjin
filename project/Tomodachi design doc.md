@@ -128,15 +128,11 @@ A script (“app”) may implement:
 
 function init() end (optional)
 
-function update(dt) end (optional; dt in seconds)
+function update(_, dt) end (optional; the first argument is always nil, dt in seconds)
 
-event handlers (optional):
+function draw() end (optional)
 
-function on_button(name, down) end where name ∈ {"A","B","ENC"}
-
-function on_encoder(delta) end (delta is integer ticks)
-
-function on_sensor(name, value) end (optional generic path)
+There are no event callbacks: buttons, the encoder and the sensors are polled through input.* and engine.sensor.*.
 
 
 
@@ -231,7 +227,6 @@ input.isDown(name) -> bool where name ∈ {"A","B","ENC"}
 input.encoderDelta() -> int (delta since last tick)
 
 
-(Preferred) apps rely on event callbacks (on_button, on_encoder).
 
 6.4 sensors
 
