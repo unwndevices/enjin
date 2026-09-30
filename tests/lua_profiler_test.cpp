@@ -176,8 +176,6 @@ static void test_null_safety() {
     // Wire time state so engine.time.* return valid values
     sys.getBindings().setTimeState(1.0f / 60.0f, 0.016f, 1u);
 
-    // NOTE: setInput() intentionally NOT called — currentInput remains nullptr.
-    //       All engine.input.* bindings null-guard safely.
     // NOTE: setActiveScene() / setSceneStateMachine() NOT called.
     //       All engine.scene.* bindings null-guard safely.
 
@@ -187,7 +185,7 @@ static void test_null_safety() {
         "local now = engine.time.now()\n"
         "local mem = engine.lua.memory()\n"
         "engine.log('null safety test')\n"
-        "local held = engine.input.held(0)\n"
+        "local input_absent = engine.input == nil\n"
         "local found = engine.scene.find('x')\n"
     );
     ASSERT(r.success, "engine.* subtable calls do not crash in headless mode (PROF-06)");

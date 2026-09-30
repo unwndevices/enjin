@@ -21,18 +21,17 @@ end
 local function draw_input_indicators()
     local y = gfx.getHeight() - CELL_H
 
-    -- Button-0 indicator: bottom-right corner.
-    -- Color index 7 (bright) when button 0 held; index 2 (dim) when not held.
+    -- A button indicator: bottom-right corner.
+    -- Color index 7 (bright) when held; index 2 (dim) otherwise.
     local bx = gfx.getWidth() - CELL_W
-    if engine.input.held(0) then
+    if input and input.button("a") then
         gfx.setColor(7)
     else
         gfx.setColor(2)
     end
     gfx.rectangle(bx, y, CELL_W, CELL_H)
 
-    -- Axis-0 indicator: one cell to the left of the button indicator.
-    -- Uses engine.input for axis check.
+    -- Second cell marks the input area.
     local ax = bx - CELL_W
     gfx.setColor(1)
     gfx.rectangle(ax, y, CELL_W, CELL_H)
@@ -40,7 +39,7 @@ end
 
 function update(self, dt)
     -- No per-frame state to update.
-    -- Input is polled by the host and written to InputState before this call.
+    -- Input is polled by the host before this call.
 end
 
 function draw(self)

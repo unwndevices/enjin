@@ -905,10 +905,6 @@ private:
     // Phase 51: PERSIST-01, PERSIST-02, PERSIST-03
     static int lua_engine_scene_persist(lua_State* L);
     static int lua_engine_scene_unpersist(lua_State* L);
-    static int lua_engine_input_held(lua_State* L);
-    static int lua_engine_input_just_pressed(lua_State* L);
-    static int lua_engine_input_just_released(lua_State* L);
-    static int lua_engine_input_axis(lua_State* L);
     static int lua_engine_time_delta(lua_State* L);
     static int lua_engine_time_now(lua_State* L);
     static int lua_engine_time_frame(lua_State* L);
@@ -940,7 +936,7 @@ private:
 
     /**
      * @brief Register engine.* global table (called from registerAll())
-     * Builds engine.scene, engine.input, engine.time, engine.lua sub-tables and engine.log.
+     * Builds engine.scene, engine.time, engine.lua sub-tables and engine.log.
      * All C++ pointers (SSM, activeScene, timeState) must be stored in the Lua registry
      * during this call so closures can retrieve them at call time.
      */

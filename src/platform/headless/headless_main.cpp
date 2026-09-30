@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
     g_lua.getBindings().setDebugCanvas(&g_lua_layer4);
 
     // NOTE: setInput() is NOT called — currentInput remains nullptr.
-    //       All engine.input.* bindings null-guard currentInput safely.
+    //       The removed engine.input table does not use currentInput.
 
     // ── Profiler wiring (BEFORE loadScript so init() calls are counted) ──
     lua_State* L = g_lua.getEngine().getState();

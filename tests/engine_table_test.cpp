@@ -3,7 +3,7 @@
  * @brief Tests for engine.* global Lua table (Phase 31 ENG-01..ENG-06)
  *
  * Verifies:
- * - Module-level access to all engine.* sub-tables (ENG-06)
+ * - Module-level access to engine.* sub-tables (ENG-06)
  * - Behavioral correctness with no host data injected (null-guard paths)
  * - engine.time.* reads live EngineTimeState after setTimeState()
  * - engine.log does not crash on any argument type
@@ -75,7 +75,7 @@ static void test_engine_global_not_nil() {
         "local g = engine.log\n"
         "local c = engine.collision\n"
         "ok_scene  = (s ~= nil) and 1 or 0\n"
-        "ok_input  = (i ~= nil) and 1 or 0\n"
+        "ok_input  = (i == nil) and 1 or 0\n"
         "ok_time   = (t ~= nil) and 1 or 0\n"
         "ok_lua    = (l ~= nil) and 1 or 0\n"
         "ok_log    = (g ~= nil) and 1 or 0\n"
@@ -83,7 +83,7 @@ static void test_engine_global_not_nil() {
     );
     ASSERT(r.success, "module-level engine.* access should not error");
     ASSERT(f.getNum("ok_scene") == 1.0, "engine.scene should be non-nil");
-    ASSERT(f.getNum("ok_input") == 1.0, "engine.input should be non-nil");
+    ASSERT(f.getNum("ok_input") == 1.0, "engine.input should be nil");
     ASSERT(f.getNum("ok_time")  == 1.0, "engine.time should be non-nil");
     ASSERT(f.getNum("ok_lua")   == 1.0, "engine.lua should be non-nil");
     ASSERT(f.getNum("ok_log")   == 1.0, "engine.log should be non-nil");
@@ -101,7 +101,7 @@ static void test_engine_type_checks() {
     LuaResult r = f.exec(
         "t_engine = (type(engine)       == 'table')   and 1 or 0\n"
         "t_scene  = (type(engine.scene) == 'table')   and 1 or 0\n"
-        "t_input  = (type(engine.input) == 'table')   and 1 or 0\n"
+        "t_input  = (type(engine.input) == 'nil')     and 1 or 0\n"
         "t_time   = (type(engine.time)  == 'table')   and 1 or 0\n"
         "t_lua    = (type(engine.lua)   == 'table')   and 1 or 0\n"
         "t_collision = (type(engine.collision) == 'table') and 1 or 0\n"
@@ -110,7 +110,7 @@ static void test_engine_type_checks() {
     ASSERT(r.success, "type checks should not error");
     ASSERT(f.getNum("t_engine") == 1.0, "type(engine) should be 'table'");
     ASSERT(f.getNum("t_scene")  == 1.0, "type(engine.scene) should be 'table'");
-    ASSERT(f.getNum("t_input")  == 1.0, "type(engine.input) should be 'table'");
+    ASSERT(f.getNum("t_input")  == 1.0, "type(engine.input) should be 'nil'");
     ASSERT(f.getNum("t_time")   == 1.0, "type(engine.time) should be 'table'");
     ASSERT(f.getNum("t_lua")    == 1.0, "type(engine.lua) should be 'table'");
     ASSERT(f.getNum("t_collision") == 1.0, "type(engine.collision) should be 'table'");
@@ -118,25 +118,16 @@ static void test_engine_type_checks() {
 }
 
 // ============================================================
-// test_engine_input_null_guards
-// ENG-03: input functions return false/0.0 when no input is set
+// test_engine_input_absent
+// ENG-03 was retired: the entire table is absent.
 // ============================================================
-static void test_engine_input_null_guards() {
-    printf("--- engine.input null guards ---\n");
+static void test_engine_input_absent() {
+    printf("--- engine.input absent ---\n");
 
     EngineTableFixture f;
-    // No bindings.setInput() call — currentInput is nullptr
-    LuaResult r = f.exec(
-        "h  = engine.input.held(0)          and 1 or 0\n"
-        "jp = engine.input.just_pressed(0)  and 1 or 0\n"
-        "jr = engine.input.just_released(0) and 1 or 0\n"
-        "ax = engine.input.axis(0)\n"
-    );
-    ASSERT(r.success, "engine.input.* should not error when input is nil");
-    ASSERT(f.getNum("h")  == 0.0, "held() should return false when no input");
-    ASSERT(f.getNum("jp") == 0.0, "just_pressed() should return false when no input");
-    ASSERT(f.getNum("jr") == 0.0, "just_released() should return false when no input");
-    ASSERT(f.getNum("ax") == 0.0, "axis() should return 0.0 when no input");
+    LuaResult r = f.exec("input_absent = (engine.input == nil) and 1 or 0");
+    ASSERT(r.success, "engine.input nil check should not error");
+    ASSERT(f.getNum("input_absent") == 1.0, "engine.input is nil");
 }
 
 // ============================================================
@@ -486,7 +477,7 @@ int main() {
 
     test_engine_global_not_nil();
     test_engine_type_checks();
-    test_engine_input_null_guards();
+    test_engine_input_absent();
     test_engine_time_defaults();
     test_engine_time_after_setTimeState();
     test_engine_log_no_crash();

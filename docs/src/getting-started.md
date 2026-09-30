@@ -40,17 +40,19 @@ Every Lua script defines two globals the engine calls each frame:
 ```lua
 function update(dt)
     -- dt: delta time in seconds (clamped to 0.05)
-    if engine.input.just_pressed(BTN.A) then
-        engine.state.switch("playing")
-    end
+    -- Applets running under Tomodachi can read input.button("a").
+    -- Standalone Enjin does not inject the platform input table.
+    if input and input.button("a") then engine.state.switch("playing") end
 end
 
 function draw()
-    clear(COLOR.BLACK)
-    setColor(COLOR.WHITE)
-    textCentered("Hello, enjin2!", 32)
+    gfx.clear(0)
+    gfx.setColor(7)
+    gfx.textCentered("Hello, enjin2!", 32)
 end
 ```
+
+Drawing colours are palette indices 0–14; `gfx.COLOR.TRANSPARENT` is 15.
 
 ## Next Steps
 

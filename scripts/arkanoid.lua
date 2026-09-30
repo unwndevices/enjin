@@ -38,8 +38,8 @@ local BRICK_TOP   = AREA_T + 12
 local GRID_W    = BRICK_COLS * BRICK_W + (BRICK_COLS - 1) * BRICK_GAP_X
 local BRICK_LEFT = (W - GRID_W) / 2
 
--- Brick colors per row (top = hardest)
-local ROW_COLORS = { gfx.COLOR.RED, gfx.COLOR.ORANGE, gfx.COLOR.YELLOW, gfx.COLOR.GREEN, gfx.COLOR.BLUE, gfx.COLOR.INDIGO }
+-- Palette indices per row (top = hardest)
+local ROW_COLORS = { 8, 9, 10, 11, 12, 13 }
 local ROW_POINTS = { 60, 50, 40, 30, 20, 10 }
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -166,13 +166,19 @@ end
 -- UPDATE
 -- ═══════════════════════════════════════════════════════════════════════════
 
+local last_a_held = false
+
 function update(dt)
     if dt > 0.05 then dt = 0.05 end
+    local a_held = input and input.button("a") or false
+    local a_pressed = a_held and not last_a_held
+    last_a_held = a_held
+    local wheel = input and input.encoder() or 0
     local cur = engine.state.current()
 
     -- TITLE
     if cur == "title" then
-        if engine.input.just_pressed(BTN.A) or engine.input.just_pressed(BTN.START) then
+        if a_pressed then
             start_game()
         end
         return
@@ -181,25 +187,20 @@ function update(dt)
     -- GAME OVER / WIN
     if cur == "gameover" or cur == "win" then
         update_particles(dt)
-        if engine.input.just_pressed(BTN.A) or engine.input.just_pressed(BTN.START) then
+        if a_pressed then
             engine.state.switch("title")
         end
         return
     end
 
     -- Paddle movement
-    if engine.input.held(BTN.LEFT) then
-        paddle_x = paddle_x - PADDLE_SPEED * dt
-    end
-    if engine.input.held(BTN.RIGHT) then
-        paddle_x = paddle_x + PADDLE_SPEED * dt
-    end
+    paddle_x = paddle_x + wheel * PADDLE_SPEED * dt
     paddle_x = clamp(paddle_x, AREA_L, AREA_R - PADDLE_W)
 
     -- SERVE: ball sticks to paddle
     if cur == "serve" then
         attach_ball()
-        if engine.input.just_pressed(BTN.A) or engine.input.just_pressed(BTN.START) then
+        if a_pressed then
             engine.state.switch("play")
         end
         return
@@ -308,22 +309,22 @@ end
 -- ═══════════════════════════════════════════════════════════════════════════
 
 local function draw_walls()
-    gfx.setColor(gfx.COLOR.DARK_GRAY)
+    gfx.setColor(5)
     gfx.rectangle(0, AREA_T, AREA_L, H - AREA_T)
     gfx.rectangle(AREA_R, AREA_T, W - AREA_R, H - AREA_T)
     gfx.rectangle(0, AREA_T - 2, W, 2)
 end
 
 local function draw_hud()
-    gfx.setColor(gfx.COLOR.DARK_BLUE)
+    gfx.setColor(1)
     gfx.rectangle(0, 0, W, AREA_T)
 
-    gfx.setColor(gfx.COLOR.WHITE)
+    gfx.setColor(7)
     gfx.text("SCORE:" .. score, 4, 3)
 
     -- Lives as balls
     for i = 1, lives do
-        gfx.setColor(gfx.COLOR.RED)
+        gfx.setColor(8)
         gfx.circle(W - 10 - (i - 1) * 14, 7, 3)
     end
 end
@@ -336,10 +337,10 @@ local function draw_bricks()
                 gfx.setColor(ROW_COLORS[r])
                 gfx.rectangle(bx, by, bw, bh)
                 -- Top highlight
-                gfx.setColor(gfx.COLOR.WHITE)
+                gfx.setColor(7)
                 gfx.line(bx + 1, by + 1, bx + bw - 2, by + 1)
                 -- Bottom shadow
-                gfx.setColor(gfx.COLOR.DARK_GRAY)
+                gfx.setColor(5)
                 gfx.line(bx + 1, by + bh - 1, bx + bw - 2, by + bh - 1)
             end
         end
@@ -348,21 +349,21 @@ end
 
 local function draw_paddle()
     -- Shadow
-    gfx.setColor(gfx.COLOR.DARK_GRAY)
+    gfx.setColor(5)
     gfx.rectangle(paddle_x + 1, PADDLE_Y + 1, PADDLE_W, PADDLE_H)
     -- Body
-    gfx.setColor(gfx.COLOR.GRAY)
+    gfx.setColor(6)
     gfx.rectangle(paddle_x, PADDLE_Y, PADDLE_W, PADDLE_H)
     -- Highlight
-    gfx.setColor(gfx.COLOR.WHITE)
+    gfx.setColor(7)
     gfx.line(paddle_x + 1, PADDLE_Y, paddle_x + PADDLE_W - 2, PADDLE_Y)
 end
 
 local function draw_ball()
     -- Small glow
-    gfx.setColor(gfx.COLOR.GRAY)
+    gfx.setColor(6)
     gfx.circle(ball.x, ball.y, BALL_R + 1)
-    gfx.setColor(gfx.COLOR.WHITE)
+    gfx.setColor(7)
     gfx.circle(ball.x, ball.y, BALL_R)
 end
 
@@ -384,7 +385,7 @@ local function draw_particles()
 end
 
 local function draw_title()
-    gfx.clear(gfx.COLOR.BLACK)
+    gfx.clear(0)
 
     -- Starfield
     engine.random.seed(999)
@@ -397,75 +398,74 @@ local function draw_title()
     engine.random.seed(math.floor(engine.time.now() * 100))
 
     -- Title text with drop shadow (scale=2 for large title)
-    gfx.setColor(gfx.COLOR.DARK_RED)
+    gfx.setColor(2)
     gfx.textCentered("ARKANOID", 40, 2)
-    gfx.setColor(gfx.COLOR.RED)
+    gfx.setColor(8)
     gfx.textCentered("ARKANOID", 39, 2)
-    gfx.setColor(gfx.COLOR.ORANGE)
+    gfx.setColor(9)
     gfx.textCentered("ARKANOID", 38, 2)
 
     -- Rainbow brick row
-    local demo_colors = { gfx.COLOR.RED, gfx.COLOR.ORANGE, gfx.COLOR.YELLOW, gfx.COLOR.GREEN, gfx.COLOR.BLUE, gfx.COLOR.INDIGO,
-                          gfx.COLOR.PINK, gfx.COLOR.RED, gfx.COLOR.ORANGE, gfx.COLOR.YELLOW }
+    local demo_colors = { 8, 9, 10, 11, 12, 13, 14, 8, 9, 10 }
     for i = 1, 10 do
         local bx = 60 + (i - 1) * 22
         gfx.setColor(demo_colors[i])
         gfx.rectangle(bx, 65, 20, 8)
-        gfx.setColor(gfx.COLOR.WHITE)
+        gfx.setColor(7)
         gfx.line(bx + 1, 66, bx + 18, 66)
     end
 
     -- Instructions
-    gfx.setColor(gfx.COLOR.GRAY)
-    gfx.textCentered("A/D or LEFT/RIGHT : MOVE", 110)
-    gfx.textCentered("Z or ENTER        : LAUNCH", 124)
+    gfx.setColor(6)
+    gfx.textCentered("WHEEL : MOVE", 110)
+    gfx.textCentered("A : LAUNCH", 124)
 
     -- Blinking prompt
     if math.floor(engine.time.now() * 2) % 2 == 0 then
-        gfx.setColor(gfx.COLOR.WHITE)
-        gfx.textCentered("PRESS Z TO START", 170)
+        gfx.setColor(7)
+        gfx.textCentered("PRESS A TO START", 170)
     end
 
-    gfx.setColor(gfx.COLOR.DARK_GRAY)
+    gfx.setColor(5)
     gfx.textCentered("BUILT WITH ENJIN LUA", 220)
 end
 
 local function draw_dialog()
-    gfx.setColor(gfx.COLOR.BLACK)
+    gfx.setColor(0)
     gfx.rectangle(60, 80, 200, 80)
-    gfx.setColor(gfx.COLOR.DARK_GRAY)
+    gfx.setColor(5)
     gfx.rectangle(62, 82, 196, 76)
-    gfx.setColor(gfx.COLOR.BLACK)
+    gfx.setColor(0)
     gfx.rectangle(64, 84, 192, 72)
 end
 
 local function draw_gameover()
     draw_dialog()
 
-    gfx.setColor(gfx.COLOR.RED)
+    gfx.setColor(8)
     gfx.textCentered("GAME OVER", 95)
 
-    gfx.setColor(gfx.COLOR.WHITE)
+    gfx.setColor(7)
     gfx.textCentered("FINAL SCORE: " .. score, 118)
 
     if math.floor(engine.time.now() * 2) % 2 == 0 then
-        gfx.setColor(gfx.COLOR.GRAY)
-        gfx.textCentered("PRESS Z", 140)
+        gfx.setColor(6)
+        gfx.textCentered("PRESS A", 140)
     end
 end
 
 local function draw_win()
     draw_dialog()
 
-    gfx.setColor(gfx.COLOR.YELLOW)
+    gfx.setColor(10)
     gfx.textCentered("YOU WIN!", 95)
 
-    gfx.setColor(gfx.COLOR.WHITE)
+    gfx.setColor(7)
     gfx.textCentered("FINAL SCORE: " .. score, 118)
 
     if math.floor(engine.time.now() * 2) % 2 == 0 then
-        gfx.setColor(gfx.COLOR.GRAY)
-        gfx.textCentered("PRESS Z", 140)
+        gfx.setColor(6)
+        gfx.textCentered("PRESS A", 140)
     end
 end
 
@@ -477,7 +477,7 @@ function draw()
         return
     end
 
-    gfx.clear(gfx.COLOR.BLACK)
+    gfx.clear(0)
     draw_walls()
     draw_bricks()
     draw_paddle()
@@ -492,8 +492,8 @@ function draw()
     if cur == "serve" then
         draw_ball()
         if math.floor(engine.time.now() * 3) % 2 == 0 then
-            gfx.setColor(gfx.COLOR.YELLOW)
-            gfx.textCentered("PRESS Z TO LAUNCH", H / 2 + 20)
+            gfx.setColor(10)
+            gfx.textCentered("PRESS A TO LAUNCH", H / 2 + 20)
         end
     elseif cur == "gameover" then
         draw_gameover()

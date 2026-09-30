@@ -62,7 +62,7 @@ Reading the current state in `update`:
 local cur = engine.state.current()
 
 if cur == "dead" then
-    if engine.input.just_pressed(BTN.START) or engine.input.just_pressed(BTN.A) then
+    if a then  -- rising edge of input.button("a") sampled at frame start
         reset()
     end
     return
@@ -71,11 +71,11 @@ end
 
 ## Handling Input
 
-`engine.input.just_pressed(BTN.X)` returns `true` only on the first frame a button goes down — it does not repeat while held. The `BTN` table provides: `UP`, `DOWN`, `LEFT`, `RIGHT`, `A`, `B`, `START`.
+Tomodachi exposes `input.button("a")`, `input.button("b")`, and `input.button("enc")` as held states, and `input.encoder()` as a consume-on-read wheel delta. Track the previous held value for a press edge. Standalone Enjin does not inject `input`, so guard calls when running these scripts without Tomodachi.
 
 ```lua
--- tamagotchi.lua lines 78–87: feed on LEFT
-if engine.input.just_pressed(BTN.LEFT) then
+-- tamagotchi.lua: feed by turning the wheel back
+if wheel < 0 then
     if stats.hunger > 0 then
         stats.hunger = clamp(stats.hunger - 20, 0, 100)
         stats.energy = clamp(stats.energy + 5, 0, 100)
@@ -85,8 +85,8 @@ if engine.input.just_pressed(BTN.LEFT) then
     end
 end
 
--- tamagotchi.lua line 100: sleep on A
-if engine.input.just_pressed(BTN.A) then
+-- tamagotchi.lua: sleep on the A press edge
+if a then
     show_msg("NIGHT NIGHT", 1.0)
     engine.state.switch("sleeping")
 end
@@ -94,22 +94,22 @@ end
 
 ## Drawing
 
-`draw()` runs after every `update` call. Start each frame with `clear()` to erase the previous frame, then set a color with `setColor()` before each draw command. The bare globals (`clear`, `setColor`, `text`, `textCentered`, `rectangle`, `circle`, `line`, `setPixel`) and the `engine.graphics.*` equivalents are both valid — the SDL3 runner exposes both forms.
+`draw()` runs after every `update` call. Start each frame with `gfx.clear()` to erase the previous frame, then set a palette index with `gfx.setColor()` before each draw command. Drawing functions live under `gfx.*`.
 
 ```lua
 -- tamagotchi.lua lines 130–136
 function draw()
-    clear(COLOR.BLACK)
+    gfx.clear(0)
     local cur = engine.state.current()
 
-    setColor(COLOR.WHITE)
-    textCentered("TAMAGOTCHI", 10, 2)
+    gfx.setColor(7)
+    gfx.textCentered("TAMAGOTCHI", 10, 2)
 
-    setColor(COLOR.GRAY)
-    text("HUNGER:", 10, 34)
+    gfx.setColor(6)
+    gfx.text("HUNGER:", 10, 34)
 ```
 
-Available color constants: `COLOR.BLACK`, `COLOR.WHITE`, `COLOR.GRAY`, `COLOR.DARK_GRAY`, `COLOR.RED`, `COLOR.GREEN`, `COLOR.BLUE`, `COLOR.PINK`, `COLOR.YELLOW`.
+Opaque colours use palette indices 0–14, whose RGB values depend on the current palette. Only transparency is named: `gfx.COLOR.TRANSPARENT` (15).
 
 ## Time
 
@@ -118,7 +118,7 @@ Available color constants: `COLOR.BLACK`, `COLOR.WHITE`, `COLOR.GRAY`, `COLOR.DA
 ```lua
 -- tamagotchi.lua line 177: blink a "Z" every half second during sleep
 if math.floor(engine.time.now() * 2) % 2 == 0 then
-    text("Z", petX + 35, petY - 30)
+    gfx.text("Z", petX + 35, petY - 30)
 end
 ```
 

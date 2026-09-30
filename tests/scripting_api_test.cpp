@@ -2,8 +2,8 @@
  * @file scripting_api_test.cpp
  * @brief Tests for 7 scripting API improvements (quick task 007)
  *
- * API-01: BTN.* global table (UP, DOWN, LEFT, RIGHT, A, B, START)
- * API-02: COLOR.* global table (BLACK..TRANSPARENT)
+ * API-01: BTN.* global table removed
+ * API-02: gfx.COLOR contains only TRANSPARENT (15)
  * API-03: engine.graphics.* alias sub-table
  * API-04: Float-to-int rounding in drawing primitives (lround)
  * API-05: text(str, x, y, scale) optional 4th scale param
@@ -60,47 +60,29 @@ struct Fixture {
 };
 
 // ============================================================
-// test_constants: BTN.* and COLOR.* global tables (API-01, API-02)
+// test_constants: removed BTN and transparent-only gfx.COLOR (API-01, API-02)
 // ============================================================
 static void test_constants() {
-    printf("--- test_constants: BTN.* and COLOR.* ---\n");
+    printf("--- test_constants: BTN absent, gfx.COLOR.TRANSPARENT only ---\n");
     Fixture f;
 
-    // BTN constants
     LuaResult r = f.exec(
-        "btn_up    = BTN.UP\n"
-        "btn_down  = BTN.DOWN\n"
-        "btn_left  = BTN.LEFT\n"
-        "btn_right = BTN.RIGHT\n"
-        "btn_a     = BTN.A\n"
-        "btn_b     = BTN.B\n"
-        "btn_start = BTN.START\n"
-    );
-    ASSERT(r.success, "BTN table access did not error");
-    ASSERT((int)f.getNum("btn_up")    == 0, "BTN.UP == 0");
-    ASSERT((int)f.getNum("btn_down")  == 1, "BTN.DOWN == 1");
-    ASSERT((int)f.getNum("btn_left")  == 2, "BTN.LEFT == 2");
-    ASSERT((int)f.getNum("btn_right") == 3, "BTN.RIGHT == 3");
-    ASSERT((int)f.getNum("btn_a")     == 4, "BTN.A == 4");
-    ASSERT((int)f.getNum("btn_b")     == 5, "BTN.B == 5");
-    ASSERT((int)f.getNum("btn_start") == 6, "BTN.START == 6");
-
-    // COLOR constants (nested under gfx)
-    r = f.exec(
-        "c_black = gfx.COLOR.BLACK\n"
-        "c_red   = gfx.COLOR.RED\n"
-        "c_white = gfx.COLOR.WHITE\n"
-        "c_green = gfx.COLOR.GREEN\n"
-        "c_blue  = gfx.COLOR.BLUE\n"
+        "btn_absent = (BTN == nil) and 1 or 0\n"
+        "color_is_table = (type(gfx.COLOR) == 'table') and 1 or 0\n"
         "c_trans = gfx.COLOR.TRANSPARENT\n"
+        "color_count = 0\n"
+        "color_only_transparent = 1\n"
+        "for key in pairs(gfx.COLOR) do\n"
+        "  color_count = color_count + 1\n"
+        "  if key ~= 'TRANSPARENT' then color_only_transparent = 0 end\n"
+        "end\n"
     );
-    ASSERT(r.success, "gfx.COLOR table access did not error");
-    ASSERT((int)f.getNum("c_black") ==  0, "COLOR.BLACK == 0");
-    ASSERT((int)f.getNum("c_red")   ==  8, "COLOR.RED == 8");
-    ASSERT((int)f.getNum("c_white") ==  7, "COLOR.WHITE == 7");
-    ASSERT((int)f.getNum("c_green") == 11, "COLOR.GREEN == 11");
-    ASSERT((int)f.getNum("c_blue")  == 12, "COLOR.BLUE == 12");
-    ASSERT((int)f.getNum("c_trans") == 15, "COLOR.TRANSPARENT == 15");
+    ASSERT(r.success, "gfx.COLOR contract query did not error");
+    ASSERT((int)f.getNum("btn_absent") == 1, "BTN is nil");
+    ASSERT((int)f.getNum("color_is_table") == 1, "gfx.COLOR is a table");
+    ASSERT((int)f.getNum("c_trans") == 15, "gfx.COLOR.TRANSPARENT == 15");
+    ASSERT((int)f.getNum("color_count") == 1, "gfx.COLOR has exactly one key");
+    ASSERT((int)f.getNum("color_only_transparent") == 1, "gfx.COLOR has no named colours");
 }
 
 // ============================================================
@@ -280,10 +262,6 @@ static void test_bare_globals_removed() {
     // And print() should still work as bare global
     LuaResult r7 = f.exec("print('hello')");
     ASSERT(r7.success, "bare print() should still work");
-
-    // And BTN should still work as bare global
-    LuaResult r8 = f.exec("local x = BTN.UP");
-    ASSERT(r8.success, "bare BTN.UP should still work");
 
     printf("  bare_globals_removed: all assertions passed\n");
 }

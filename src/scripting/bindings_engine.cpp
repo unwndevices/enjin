@@ -48,17 +48,6 @@ void LuaBindings::registerEngineTable() {
     luaBindFunctions(L, -1, kSceneFuncs, ENJIN_ARRAY_LEN(kSceneFuncs));
     lua_setfield(L, -2, "scene");
 
-    // --- engine.input sub-table (ENG-03) ---
-    static const LuaFuncDef kInputFuncs[] = {
-        {"held",          lua_engine_input_held},
-        {"just_pressed",  lua_engine_input_just_pressed},
-        {"just_released", lua_engine_input_just_released},
-        {"axis",          lua_engine_input_axis},
-    };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kInputFuncs, ENJIN_ARRAY_LEN(kInputFuncs));
-    lua_setfield(L, -2, "input");
-
     // --- engine.time sub-table (ENG-04) ---
     static const LuaFuncDef kTimeFuncs[] = {
         {"delta", lua_engine_time_delta},
@@ -543,43 +532,6 @@ int LuaBindings::lua_engine_scene_destroy(lua_State* L) {
     (*scenePP)->removeObject(proxy->object);
     // Object::~Object() has already set proxy->valid = false at this point
     return 0;
-}
-
-// --- engine.input.held(btn) — ENG-03 ---
-int LuaBindings::lua_engine_input_held(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
-    int btn = static_cast<int>(luaL_checkinteger(L, 1));
-    lua_pushboolean(L, b->currentInput->held(btn) ? 1 : 0);
-    return 1;
-}
-
-// --- engine.input.just_pressed(btn) — ENG-03 ---
-int LuaBindings::lua_engine_input_just_pressed(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
-    int btn = static_cast<int>(luaL_checkinteger(L, 1));
-    lua_pushboolean(L, b->currentInput->justPressed(btn) ? 1 : 0);
-    return 1;
-}
-
-// --- engine.input.just_released(btn) — ENG-03 ---
-int LuaBindings::lua_engine_input_just_released(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
-    int btn = static_cast<int>(luaL_checkinteger(L, 1));
-    lua_pushboolean(L, b->currentInput->justReleased(btn) ? 1 : 0);
-    return 1;
-}
-
-// --- engine.input.axis(n) — ENG-03 ---
-int LuaBindings::lua_engine_input_axis(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b || !b->currentInput) { lua_pushnumber(L, 0.0); return 1; }
-    int axis = static_cast<int>(luaL_checkinteger(L, 1));
-    float val = (axis >= 0 && axis < 8) ? b->currentInput->axes[axis] : 0.0f;
-    lua_pushnumber(L, static_cast<lua_Number>(val));
-    return 1;
 }
 
 // --- engine.time.delta() — ENG-04 ---

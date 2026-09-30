@@ -13,14 +13,19 @@ else
 end
 
 local flipH, flipV, rot90 = false, false, false
+local last_a, last_b, last_enc = false, false, false
 
 function update(dt)
     if sprite >= 0 then
         gfx.updateSprite(sprite, dt)
     end
-    if engine.input.just_pressed(1) then flipH = not flipH end
-    if engine.input.just_pressed(2) then rot90 = not rot90 end
-    if engine.input.just_pressed(3) then flipV = not flipV end
+    local a = input and input.button("a") or false
+    local b = input and input.button("b") or false
+    local enc = input and input.button("enc") or false
+    if a and not last_a then flipH = not flipH end
+    if b and not last_b then rot90 = not rot90 end
+    if enc and not last_enc then flipV = not flipV end
+    last_a, last_b, last_enc = a, b, enc
 end
 
 function draw()
@@ -33,6 +38,6 @@ function draw()
     end
 
     gfx.setColor(15)
-    gfx.text("Btn1:FlipH Btn2:Rot90", 2, 2)
-    gfx.text("Btn3:FlipV", 2, 12)
+    gfx.text("A:FlipH B:Rot90", 2, 2)
+    gfx.text("Enc:FlipV", 2, 12)
 end

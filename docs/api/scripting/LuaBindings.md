@@ -885,7 +885,7 @@ Stored via "enjin_bindings" key during registerAll(). Used by static Lua C-funct
 
 ### `void registerEngineTable()`
 
-Register engine.* global table (called from registerAll()) Builds engine.scene, engine.input, engine.time, engine.lua sub-tables and engine.log. All C++ pointers (SSM, activeScene, timeState) must be stored in the Lua registry during this call so closures can retrieve them at call time. 
+Register engine.* global table (called from registerAll()). Builds engine.scene, engine.time, engine.lua sub-tables and engine.log. All C++ pointers (SSM, activeScene, timeState) must be stored in the Lua registry during this call so closures can retrieve them at call time.
 
 ---
 
@@ -934,4 +934,3 @@ Register ComponentProxy metatables for self:get() return values (Phase 39). Regi
 Register Vec2/Point/Rect metatables and math utility globals (called from registerAll()). 
 
 ---
-
