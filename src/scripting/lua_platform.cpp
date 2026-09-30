@@ -82,35 +82,16 @@ void LuaPlatform::openLibraries(lua_State* L) {
 
 void LuaPlatform::configureSecurityRestrictions(lua_State* L) {
     if (!L) return;
-    
-    // Common security restrictions for embedded environments
-    if (!LuaPlatformConfig::ENABLE_FILE_IO) {
-        // Disable potentially dangerous file I/O functions
+
+    // One sandbox on every platform (Tomodachi ADR-0012, #251): a script runs
+    // the same on the desktop/web build as on the device, so nothing it can
+    // reach differs by host. No file or OS access, no debug library, no module
+    // system: the host installs whatever module loader it allows (Tomodachi's
+    // applet-scoped `require`).
+    for (const char* name : LuaPlatformConfig::SANDBOXED_GLOBALS) {
         lua_pushnil(L);
-        lua_setglobal(L, "dofile");
-        lua_pushnil(L);
-        lua_setglobal(L, "loadfile");
-        lua_pushnil(L);
-        lua_setglobal(L, "require");
-        
-        // Remove io library if it was loaded
-        lua_pushnil(L);
-        lua_setglobal(L, "io");
+        lua_setglobal(L, name);
     }
-    
-    if (!LuaPlatformConfig::ENABLE_DEBUG) {
-        // Remove debug library
-        lua_pushnil(L);
-        lua_setglobal(L, "debug");
-    }
-    
-#ifdef ESP32
-    // ESP32-specific restrictions
-    lua_pushnil(L);
-    lua_setglobal(L, "package");  // Disable package system
-    lua_pushnil(L);
-    lua_setglobal(L, "os");       // Disable OS access
-#endif
 }
 
 size_t LuaPlatform::getMemoryUsage(lua_State* L) {
@@ -169,7 +150,8 @@ void LuaPlatform::openDesktopLibraries(lua_State* L) {
 
 #ifdef ESP32
 void LuaPlatform::openEmbeddedLibraries(lua_State* L) {
-    // Open all standard Lua libraries; io/os/debug are restricted by configureSecurityRestrictions() below.
+    // Open all standard Lua libraries; configureSecurityRestrictions() then
+    // removes the sandboxed ones (LuaPlatformConfig::SANDBOXED_GLOBALS).
     luaL_openlibs(L);
 }
 
