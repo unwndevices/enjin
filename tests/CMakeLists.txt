@@ -461,6 +461,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME layer_binding_test COMMAND layer_binding_test)
 
+    # Draw-state bindings: setPaletteColor forms + setLineWidth primitives (Tomodachi #255)
+    add_executable(draw_state_binding_test
+        draw_state_binding_test.cpp
+    )
+    target_include_directories(draw_state_binding_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(draw_state_binding_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME draw_state_binding_test COMMAND draw_state_binding_test)
+
     # Script sandbox: identical on every platform (Tomodachi ADR-0012, #251)
     add_executable(lua_sandbox_test
         lua_sandbox_test.cpp

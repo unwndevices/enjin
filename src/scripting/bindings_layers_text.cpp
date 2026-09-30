@@ -34,12 +34,15 @@ int LuaBindings::lua_getLayer(lua_State* L) {
     return 1;
 }
 
-// clearLayer(n, color)  — Clear only the specified layer buffer (1-indexed, color optional, defaults to 0)
+// clearLayer([n [, color]])  — Clear only the specified layer buffer (1-indexed;
+// without n, the current layer; color optional, defaults to 0)
 int LuaBindings::lua_clearLayer(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || b->layerCount == 0) return 0;
 
-    int cpp_idx = checkLayerIdx(L, 1, b->layerCount);
+    int cpp_idx = lua_isnoneornil(L, 1)
+        ? static_cast<int>(b->activeLayer)
+        : checkLayerIdx(L, 1, b->layerCount);
 
     uint8_t color = static_cast<uint8_t>(luaL_optinteger(L, 2, 0));
 

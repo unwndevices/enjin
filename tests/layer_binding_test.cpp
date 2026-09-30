@@ -139,6 +139,27 @@ static void test_clearLayer_specific()
 }
 
 // ============================================================
+// test_clearLayer_current — the layer argument is optional (#255)
+// ============================================================
+static void test_clearLayer_current()
+{
+    printf("--- clearLayer current ---\n");
+
+    LayerBindingFixture f;
+
+    f.exec("gfx.setLayer(1); gfx.setPixel(0, 0, 7)");
+    f.exec("gfx.setLayer(2); gfx.setPixel(0, 0, 3)");
+
+    // No layer argument: clears the current layer (2) only
+    LuaResult r = f.exec("gfx.clearLayer()");
+    ASSERT(r.success, "gfx.clearLayer() without a layer should succeed");
+    ASSERT(f.compositor.layers[0].getPixel(0, 0).value == 7,
+           "clearLayer(): layer 1 pixel (0,0) should still be 7 (untouched)");
+    ASSERT(f.compositor.layers[1].getPixel(0, 0).value == 0,
+           "clearLayer(): current layer 2 pixel (0,0) should be cleared to 0");
+}
+
+// ============================================================
 // test_getLayerCount
 // ============================================================
 static void test_getLayerCount()
@@ -200,6 +221,7 @@ int main()
     test_setLayer_reject_low();
     test_setLayer_reject_high();
     test_clearLayer_specific();
+    test_clearLayer_current();
     test_getLayerCount();
     test_setLayerVisible_isLayerVisible();
 
