@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790795001916,
+  "lastUpdate": 1790796581378,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -4533,6 +4533,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 4867.5,
             "range": "± 0.81%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "c97e0c5359143668de79be5d1c42ce8a8b07d416",
+          "message": "feat(scripting): engine.* registers from descriptors, behind per-feature switches (Tomodachi #258)\n\nThe rest of the enjin core surface now registers from descriptor arrays\n(ADR-0013), and the parts a Tomodachi host does not run are switchable.\n\n- LuaFeatures {scene, camera, debug, raycast, proxies}, all off by default,\n  set with LuaBindings::setFeatures() before registerAll(). Each switch is\n  checked once. LuaFeatures::all() is the full surface; the SDL/headless\n  mains, C_LuaScript and the tests that exercise those features opt in.\n- engine.* in bindings_engine.cpp: time, collision, lua, random, store,\n  sprite, tilemap, event, camera, config, state, physics (+ a switchable\n  raycast module), scene and log. engine.debug (bindings_debug.cpp) and\n  engine.hud (bindings_numerals.cpp) too; RollingCounter/Timer metatables in\n  hud_lua.hpp, timer modes matched by nameIndex(kTimerModeNames).\n- engine.graphics re-exports gfx through constexpr luaApiAlias(kGfx, name):\n  a misspelt name fails to compile.\n- Tilemap handle: the strcmp __index is gone; kTilemapMethodsModule is\n  registered from registerEngineTable whatever the switches say.\n- Proxies: ScriptProxy, ObjectProxy and the component proxies. Types with\n  properties keep an __index function over a registry methods table\n  (setProxyMethods / pushProxyMethod); methods-only types index a methods\n  table, so a stale proxy now errors on call rather than on index. Sprite\n  loop modes use kLoopModeNames.\n- lua_api_test: engine.* described, defaults off, each switch alone\n  registers only its own feature, every proxy described, graphics aliases\n  are gfx's entries, a map handle works with the proxies off.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-09-30T21:28:47+02:00",
+          "tree_id": "5db339745cfd5db9105d01bd6167134de628a8fe",
+          "url": "https://github.com/unwndevices/enjin/commit/c97e0c5359143668de79be5d1c42ce8a8b07d416"
+        },
+        "date": 1790796580352,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 130,
+            "range": "± 0.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 281,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 84567.5,
+            "range": "± 0.02%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 1002,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 5380,
+            "range": "± 0.56%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 31023,
+            "range": "± 0.31%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 291,
+            "range": "± 3.0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 791,
+            "range": "± 1.15%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1472,
+            "range": "± 0.74%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2734.5,
+            "range": "± 0.72%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3967,
+            "range": "± 0.38%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 81,
+            "range": "± 1.25%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 91,
+            "range": "± 1.11%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 40,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 211,
+            "range": "± 0.48%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 311,
+            "range": "± 0.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 66504,
+            "range": "± 5.01%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 977,
+            "range": "± 3.14%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1698,
+            "range": "± 4.99%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2685,
+            "range": "± 2.68%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 3061,
+            "range": "± 2.24%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1483,
+            "range": "± 4.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3669.6559,
+            "range": "± 0.68%",
             "unit": "ns/op"
           }
         ]
