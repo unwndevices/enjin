@@ -119,20 +119,7 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
         })
         .function("getMemoryUsage", &LuaScriptSystem::getMemoryUsage);
 
-    // Per-frame input state update. Call this each frame BEFORE updateFrame().
-    // buttons: bitmask (uint16_t) of currently held buttons (bit N = button index N).
-    // ax0, ay0: normalized axis values for axes[0] and axes[1], clamped to -1.0..1.0.
-    // This mirrors sdl_main.cpp: input_advance_frame -> input_platform_poll -> setInput.
-    function("setInputState", +[](LuaScriptSystem& sys, int buttons, float ax0, float ay0) {
-        static enjin2::InputState s_wasm_input{};
-        enjin2::input_advance_frame(&s_wasm_input);
-        s_wasm_input.buttons = static_cast<uint16_t>(buttons & 0xFFFF);
-        s_wasm_input.axes[0] = ax0;
-        s_wasm_input.axes[1] = ay0;
-        sys.getBindings().setInput(&s_wasm_input);
-    });
-
-    // Per-frame update. Call each requestAnimationFrame tick AFTER setInputState().
+    // Per-frame update. Call each requestAnimationFrame tick.
     // dt: elapsed time in seconds since last frame.
     // Mirrors sdl_main.cpp game loop order: setTimeState -> tickCoroutines -> tickTweens -> tickCameraFollow.
     function("updateFrame", +[](LuaScriptSystem& sys, float dt) {

@@ -1,12 +1,12 @@
 -- scripts/spawn_destroy_demo.lua
--- Interactive demo: spawn and destroy objects with keyboard
+-- Interactive demo: spawn and destroy objects with Tomodachi controls
 --
 -- Controls:
---   Z (btn 4)  = spawn a new particle at a random position
---   X (btn 5)  = destroy the oldest live particle
---   Arrows     = move the cursor
+--   A = spawn a new particle at the cursor
+--   B = destroy the oldest live particle
+--   Wheel/touch = move the cursor
 --
--- Run with: ./sprite_sdl_test --script scripts/spawn_destroy_demo.lua
+-- Standalone Enjin can render the scene without injecting platform input.
 
 -- State
 local W, H = 128, 128
@@ -16,6 +16,7 @@ local destroy_count = 0
 local cursor_x, cursor_y = 64, 64
 local flash_timer = 0    -- brief flash on spawn/destroy
 local flash_color = 0
+local last_a, last_b = false, false
 
 engine.random.seed(42)
 
@@ -24,12 +25,17 @@ function update(dt)
     W = gfx.getWidth()
     H = gfx.getHeight()
 
-    -- Move cursor with arrows
+    -- Move cursor with the wheel and touch position
     local spd = 60
-    if engine.input.held(0) then cursor_y = cursor_y - spd * dt end  -- up
-    if engine.input.held(1) then cursor_y = cursor_y + spd * dt end  -- down
-    if engine.input.held(2) then cursor_x = cursor_x - spd * dt end  -- left
-    if engine.input.held(3) then cursor_x = cursor_x + spd * dt end  -- right
+    if input then
+        cursor_x = cursor_x + input.encoder() * spd * dt
+        local x, y, down = input.touch()
+        if down then cursor_x, cursor_y = x, y end
+    end
+    local a = input and input.button("a") or false
+    local b = input and input.button("b") or false
+    local spawn, destroy = a and not last_a, b and not last_b
+    last_a, last_b = a, b
 
     -- Clamp cursor
     if cursor_x < 4 then cursor_x = 4 end
@@ -37,8 +43,8 @@ function update(dt)
     if cursor_y < 4 then cursor_y = 4 end
     if cursor_y > H - 20 then cursor_y = H - 20 end
 
-    -- Z = spawn
-    if engine.input.just_pressed(4) then
+    -- A = spawn
+    if spawn then
         local name = "obj_" .. tostring(spawn_count)
         local proxy = engine.scene.spawn(name)
         if proxy then
@@ -62,8 +68,8 @@ function update(dt)
         end
     end
 
-    -- X = destroy oldest
-    if engine.input.just_pressed(5) and #objects > 0 then
+    -- B = destroy oldest
+    if destroy and #objects > 0 then
         local oldest = table.remove(objects, 1)
         engine.scene.destroy(oldest.proxy)
         destroy_count = destroy_count + 1

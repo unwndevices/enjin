@@ -591,23 +591,8 @@ void LuaBindings::registerAll() {
     lua_pushinteger(L, 4); lua_setfield(L, -2, "LAYER_UI");
     lua_pushinteger(L, 5); lua_setfield(L, -2, "LAYER_DEBUG");
 
-    // COLOR table nested under gfx
+    // Palette indices are authored directly; only transparency is named.
     lua_newtable(L);
-    lua_pushinteger(L, 0);  lua_setfield(L, -2, "BLACK");
-    lua_pushinteger(L, 1);  lua_setfield(L, -2, "DARK_BLUE");
-    lua_pushinteger(L, 2);  lua_setfield(L, -2, "DARK_RED");
-    lua_pushinteger(L, 3);  lua_setfield(L, -2, "DARK_GREEN");
-    lua_pushinteger(L, 4);  lua_setfield(L, -2, "BROWN");
-    lua_pushinteger(L, 5);  lua_setfield(L, -2, "DARK_GRAY");
-    lua_pushinteger(L, 6);  lua_setfield(L, -2, "GRAY");
-    lua_pushinteger(L, 7);  lua_setfield(L, -2, "WHITE");
-    lua_pushinteger(L, 8);  lua_setfield(L, -2, "RED");
-    lua_pushinteger(L, 9);  lua_setfield(L, -2, "ORANGE");
-    lua_pushinteger(L, 10); lua_setfield(L, -2, "YELLOW");
-    lua_pushinteger(L, 11); lua_setfield(L, -2, "GREEN");
-    lua_pushinteger(L, 12); lua_setfield(L, -2, "BLUE");
-    lua_pushinteger(L, 13); lua_setfield(L, -2, "INDIGO");
-    lua_pushinteger(L, 14); lua_setfield(L, -2, "PINK");
     lua_pushinteger(L, 15); lua_setfield(L, -2, "TRANSPARENT");
     lua_setfield(L, -2, "COLOR");  // gfx.COLOR
 
@@ -623,18 +608,6 @@ void LuaBindings::registerAll() {
 
     // Pre-register built-in 8pt font so setFont("default8") works
     registerFont("default8", &defaultFont8pt7b);
-
-    // === BTN stays as bare global ===
-    // Indices match InputState button order: 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT, 4=A(Z), 5=B(X), 6=START
-    lua_newtable(L);
-    lua_pushinteger(L, 0); lua_setfield(L, -2, "UP");
-    lua_pushinteger(L, 1); lua_setfield(L, -2, "DOWN");
-    lua_pushinteger(L, 2); lua_setfield(L, -2, "LEFT");
-    lua_pushinteger(L, 3); lua_setfield(L, -2, "RIGHT");
-    lua_pushinteger(L, 4); lua_setfield(L, -2, "A");
-    lua_pushinteger(L, 5); lua_setfield(L, -2, "B");
-    lua_pushinteger(L, 6); lua_setfield(L, -2, "START");
-    lua_setglobal(L, "BTN");
 
     // Register engine.* global table (ENG-06: must be before any script loads)
     registerEngineTable();

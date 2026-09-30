@@ -13,6 +13,13 @@ local stats = {
 
 local msg_timer = 0
 local msg_text = ""
+local last_a = false
+local function pressed_a()
+    local held = input and input.button("a") or false
+    local edge = held and not last_a
+    last_a = held
+    return edge
+end
 
 local function clamp(val, lo, hi)
     if val < lo then return lo end
@@ -39,6 +46,8 @@ engine.state.switch("alive")
 
 function update(dt)
     if dt > 0.05 then dt = 0.05 end
+    local a = pressed_a()
+    local wheel = input and input.encoder() or 0
 
     if msg_timer > 0 then
         msg_timer = msg_timer - dt
@@ -47,7 +56,7 @@ function update(dt)
     local cur = engine.state.current()
 
     if cur == "dead" then
-        if engine.input.just_pressed(BTN.START) or engine.input.just_pressed(BTN.A) then
+        if a then
             reset()
         end
         return
@@ -63,7 +72,7 @@ function update(dt)
             engine.state.switch("alive")
         end
 
-        if engine.input.just_pressed(BTN.A) and stats.energy > 50 then
+        if a and stats.energy > 50 then
             show_msg("WAKEY WAKEY!", 2.0)
             engine.state.switch("alive")
         end
@@ -73,7 +82,7 @@ function update(dt)
         stats.happiness = clamp(stats.happiness - 4 * dt, 0, 100)
         stats.energy = clamp(stats.energy - 2 * dt, 0, 100)
 
-        if engine.input.just_pressed(BTN.LEFT) then
+        if wheel < 0 then
             -- Feed
             if stats.hunger > 0 then
                 stats.hunger = clamp(stats.hunger - 20, 0, 100)
@@ -84,7 +93,7 @@ function update(dt)
             end
         end
 
-        if engine.input.just_pressed(BTN.RIGHT) then
+        if wheel > 0 then
             -- Play
             if stats.energy >= 15 then
                 stats.happiness = clamp(stats.happiness + 20, 0, 100)
@@ -95,7 +104,7 @@ function update(dt)
             end
         end
 
-        if engine.input.just_pressed(BTN.A) then
+        if a then
             -- Sleep
             show_msg("NIGHT NIGHT", 1.0)
             engine.state.switch("sleeping")
@@ -114,7 +123,7 @@ end
 -- DRAW
 
 local function drawProgressBar(x, y, w, h, val, color)
-    gfx.setColor(gfx.COLOR.DARK_GRAY)
+    gfx.setColor(5)
     gfx.rectangle(x, y, w, h)
     gfx.setColor(color)
     local fillW = (val / 100) * w
@@ -124,33 +133,33 @@ local function drawProgressBar(x, y, w, h, val, color)
 end
 
 function draw()
-    gfx.clear(gfx.COLOR.BLACK)
+    gfx.clear(0)
     local cur = engine.state.current()
 
     -- Title
-    gfx.setColor(gfx.COLOR.WHITE)
+    gfx.setColor(7)
     gfx.textCentered("TAMAGOTCHI", 10, 2)
 
     -- Stats
-    gfx.setColor(gfx.COLOR.GRAY)
+    gfx.setColor(6)
     gfx.text("HUNGER:", 10, 34)
-    drawProgressBar(80, 33, 100, 10, stats.hunger, gfx.COLOR.RED)
+    drawProgressBar(80, 33, 100, 10, stats.hunger, 8)
 
     gfx.text("HAPPINESS:", 10, 49)
-    drawProgressBar(80, 48, 100, 10, stats.happiness, gfx.COLOR.GREEN)
+    drawProgressBar(80, 48, 100, 10, stats.happiness, 11)
 
     gfx.text("ENERGY:", 10, 64)
-    drawProgressBar(80, 63, 100, 10, stats.energy, gfx.COLOR.BLUE)
+    drawProgressBar(80, 63, 100, 10, stats.energy, 12)
 
     -- Draw pet
     local petX, petY = W / 2, H / 2 + 30
 
-    gfx.setColor(gfx.COLOR.PINK)
+    gfx.setColor(14)
     gfx.circle(petX, petY, 30)
 
     -- Face
     if cur == "alive" then
-        gfx.setColor(gfx.COLOR.BLACK)
+        gfx.setColor(0)
         -- eyes
         gfx.circle(petX - 10, petY - 5, 3)
         gfx.circle(petX + 10, petY - 5, 3)
@@ -165,17 +174,17 @@ function draw()
             gfx.setPixel(petX + 6, petY + 11)
         end
     elseif cur == "sleeping" then
-        gfx.setColor(gfx.COLOR.BLACK)
+        gfx.setColor(0)
         gfx.line(petX - 15, petY - 5, petX - 5, petY - 5)
         gfx.line(petX + 5, petY - 5, petX + 15, petY - 5)
         -- Zzz
-        gfx.setColor(gfx.COLOR.WHITE)
+        gfx.setColor(7)
         if math.floor(engine.time.now() * 2) % 2 == 0 then
             gfx.text("Z", petX + 35, petY - 30)
         end
         gfx.text("z", petX + 45, petY - 40)
     elseif cur == "dead" then
-        gfx.setColor(gfx.COLOR.BLACK)
+        gfx.setColor(0)
         -- dead eyes (X)
         gfx.line(petX - 15, petY - 10, petX - 5, petY)
         gfx.line(petX - 15, petY, petX - 5, petY - 10)
@@ -187,19 +196,19 @@ function draw()
 
     -- Interaction message
     if msg_timer > 0 then
-        gfx.setColor(gfx.COLOR.YELLOW)
+        gfx.setColor(10)
         gfx.textCentered(msg_text, petY - 50)
     end
 
     -- Controls prompt
     if cur == "dead" then
-        gfx.setColor(gfx.COLOR.RED)
-        gfx.textCentered("PET DIED! PRESS A OR START TO RESET", H - 20)
+        gfx.setColor(8)
+        gfx.textCentered("PET DIED! PRESS A TO RESET", H - 20)
     elseif cur == "alive" then
-        gfx.setColor(gfx.COLOR.GRAY)
-        gfx.textCentered("LEFT: FEED   RIGHT: PLAY   A: SLEEP", H - 20)
+        gfx.setColor(6)
+        gfx.textCentered("WHEEL: FEED/PLAY   A: SLEEP", H - 20)
     elseif cur == "sleeping" then
-        gfx.setColor(gfx.COLOR.GRAY)
+        gfx.setColor(6)
         gfx.textCentered("A: WAKE UP (IF ENERGY > 50)", H - 20)
     end
 end

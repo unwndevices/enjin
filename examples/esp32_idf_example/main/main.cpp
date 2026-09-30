@@ -56,7 +56,7 @@ extern "C" void app_main() {
         //    In a real project, read GPIO pins here and set g_input.buttons / g_input.axes.
         enjin2::input_platform_poll(&g_input);
 
-        // 3. Wire input into Lua bindings so scripts can read engine.input.
+        // 3. Wire the host's applet button state through its platform adapter.
         //    Must happen AFTER poll and BEFORE any Lua update call.
         //    Requires migrating this example from LuaEngine to LuaScriptSystem:
         // scriptSystem.getBindings().setInput(&g_input);
