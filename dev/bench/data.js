@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790784345325,
+  "lastUpdate": 1790784423791,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -3765,6 +3765,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3537,
             "range": "± 3.77%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "95d6c45e32a36db315eaed85a039cb65101ac573",
+          "message": "fix(scripting): setPaletteColor r,g,b form, optional clearLayer layer, line width (Tomodachi #255)\n\n- gfx.setPaletteColor(i, r, g, b) works again: lua_isstring accepted the\n  number r, so the r,g,b form was parsed as a hex string.\n- gfx.clearLayer's layer is optional; without it the current layer clears.\n- gfx.setLineWidth feeds gfx.line and the \"line\" modes of rectangle, circle\n  and triangle. Rectangle and circle outlines grow inward (the rectangle is\n  the solid border stroke); lines and triangle edges use a centred square\n  pen. The width is clamped to 1..255.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-09-30T18:05:59+02:00",
+          "tree_id": "b9ab8bd7c738cce5f3e10c0064e81b82b19ed208",
+          "url": "https://github.com/unwndevices/enjin/commit/95d6c45e32a36db315eaed85a039cb65101ac573"
+        },
+        "date": 1790784422450,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 22,
+            "range": "± 4.35%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 73,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 121,
+            "range": "± 2.42%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 232.5,
+            "range": "± 0.65%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 71747,
+            "range": "± 0.71%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 22,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 652,
+            "range": "± 0.15%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 4212,
+            "range": "± 0.24%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 23325.5,
+            "range": "± 0.68%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 233.5,
+            "range": "± 3.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 633,
+            "range": "± 1.58%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1135,
+            "range": "± 0.92%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2122,
+            "range": "± 1.46%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3065.5,
+            "range": "± 1.03%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 70.5,
+            "range": "± 3.68%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 81,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 28,
+            "range": "± 3.58%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 52,
+            "range": "± 0.94%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 85.5,
+            "range": "± 0.59%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 146,
+            "range": "± 0.68%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 205,
+            "range": "± 0.49%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 50009,
+            "range": "± 1.43%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 787,
+            "range": "± 4.27%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1376,
+            "range": "± 5.64%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 1998.5,
+            "range": "± 3.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2134.5,
+            "range": "± 3.54%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1176.5,
+            "range": "± 2.98%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 2773,
+            "range": "± 0.32%",
             "unit": "ns/op"
           }
         ]
