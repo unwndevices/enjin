@@ -461,6 +461,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME layer_binding_test COMMAND layer_binding_test)
 
+    # Script sandbox: identical on every platform (Tomodachi ADR-0012, #251)
+    add_executable(lua_sandbox_test
+        lua_sandbox_test.cpp
+    )
+    target_include_directories(lua_sandbox_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(lua_sandbox_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME lua_sandbox_test COMMAND lua_sandbox_test)
+
     # Hot-reload state management test (resetSpritePool, registerAll reset, reload cycle)
     add_executable(hot_reload_test
         hot_reload_test.cpp

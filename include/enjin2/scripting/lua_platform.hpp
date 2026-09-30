@@ -57,6 +57,14 @@ struct LuaPlatformConfig {
 #endif
 
     // Common settings
+
+    /// Globals the script sandbox removes after the standard libraries open,
+    /// on every platform (Tomodachi ADR-0012, #251): file and OS access, the
+    /// debug library and the module system. ENABLE_FILE_IO / ENABLE_DEBUG
+    /// describe the host side (LuaFileSystem), not what a script can reach.
+    static constexpr const char* SANDBOXED_GLOBALS[] = {
+        "io", "os", "debug", "package", "dofile", "loadfile", "require",
+    };
     static constexpr size_t STACK_SIZE = 8192;            ///< Lua stack size (8KB)
     static constexpr int MAX_RECURSION_DEPTH = 32;       ///< Maximum recursion depth for stack overflow prevention
 };
@@ -81,7 +89,8 @@ public:
     static void openLibraries(lua_State* L);
     
     /**
-     * @brief Configure platform-specific security restrictions
+     * @brief Apply the script sandbox: nil every SANDBOXED_GLOBALS entry.
+     *        The same on every platform.
      * @param L Lua state
      */
     static void configureSecurityRestrictions(lua_State* L);
