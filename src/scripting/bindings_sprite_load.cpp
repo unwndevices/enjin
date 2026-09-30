@@ -97,6 +97,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
         printf(".njn asset buffer full (needs %u bytes, %u free): %s\n",
                pxSize, static_cast<uint32_t>(sizeof(assetBuffer_)) - assetBufferUsed_,
                path.c_str());
+        ++spriteLoadFailures_;
         loadedClips_[handle].clear();
         outAttrs.clear();
         return false;
@@ -146,6 +147,7 @@ int LuaBindings::lua_loadSprite(lua_State* L) {
     }
     if (handle < 0) {
         printf("Sprite pool is full (max %d slots)\n", LUA_SPRITE_POOL_SIZE);
+        ++b->spriteLoadFailures_;
         lua_pushinteger(L, -1);
         return 1;
     }

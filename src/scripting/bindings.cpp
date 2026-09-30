@@ -858,6 +858,7 @@ void LuaBindings::resetSpritePool() {
         loadedClips_[i].clear();
     }
     assetBufferUsed_ = 0;
+    spriteLoadFailures_ = 0;
     currentTextSize = 1;
     currentFont = nullptr;
     strncpy(currentFontName, "default", 31);

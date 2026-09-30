@@ -575,6 +575,7 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
         if (!b->spritePool[i].active) { slot = i; break; }
     }
     if (slot < 0) {
+        ++b->spriteLoadFailures_;
         luaL_error(L, "engine.tilemap.load: sprite pool full (max %d)", LUA_SPRITE_POOL_SIZE);
         return 0;
     }

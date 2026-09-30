@@ -471,6 +471,7 @@ private:
     static constexpr uint32_t SPRITE_BUFFER_BYTES = 65536;
     uint8_t     assetBuffer_[SPRITE_BUFFER_BYTES]; ///< Fixed C++ buffer for loaded pixels
     uint32_t    assetBufferUsed_{0};           ///< Current offset into assetBuffer_
+    uint32_t    spriteLoadFailures_{0};        ///< Loads refused for a slot or buffer space
     SpriteAsset loadedAssets_[LUA_SPRITE_POOL_SIZE]{}; ///< Metadata for loaded assets
     std::vector<NjnClip> loadedClips_[LUA_SPRITE_POOL_SIZE]; ///< Decoded v2 CLIP table per slot (empty for v1/no-clip)
 
@@ -815,6 +816,10 @@ public:
     /// Sprite pool slots in use, out of spriteSlotCapacity() (Tomodachi #262).
     int spriteSlotsUsed() const;
     static constexpr int spriteSlotCapacity() { return LUA_SPRITE_POOL_SIZE; }
+
+    /// Sprite and tileset loads refused because every slot was taken or the
+    /// pixel buffer was full, since the last resetSpritePool() (Tomodachi #269).
+    uint32_t spriteLoadFailures() const { return spriteLoadFailures_; }
 
 private:
     /**
