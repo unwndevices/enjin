@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790791549421,
+  "lastUpdate": 1790795001916,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -4341,6 +4341,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3812,
             "range": "± 0.78%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "961e7a4e07e3b62dadc39b65964a4a2fb4cb925f",
+          "message": "feat(scripting): Lua API descriptors register and document the core bindings (Tomodachi #257)\n\nEach binding's descriptor array is now its registration input (ADR-0013):\nan entry holds the name and C function (or constant / nested table /\nlifecycle callback), a signature string, a one-line summary, one line per\nargument, an optional host note, and the named enums the binding matches its\narguments against. The arrays are static constexpr, so they sit in flash.\n\n- lua_api.hpp: descriptor types, registration helpers (luaApiSetFields /\n  SetSubtable / SetGlobalTable / SetGlobals) that record each module in a\n  per-VM registry (luaApiModules), and the signature grammar.\n- lua_api_signature.cpp: parser, canonical formatter, arg-line split and\n  validateLuaApiModule (signatures parse, arg lines match the parameters,\n  lowercase types are builtins, enums are referenced).\n- Converted: the gfx block and print in registerAll(), gfx.remap/mask/effect\n  (effect_lua.hpp), bindings_math.cpp (globals, Vec2/Point/Rect metatables\n  and methods), engine.tween, engine.async and engine.ui.\n- Enum name arrays (easings, style slots, palette presets, alignments, shape\n  modes, theme, remap/mask/effect kinds) are matched through nameIndex(), so\n  the documented and accepted names are one array.\n- lua_api_test: grammar round-trip and malformed strings, exact-entries\n  registration, the registry, validation, and every key the converted\n  surfaces put in Lua is described.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-09-30T21:02:15+02:00",
+          "tree_id": "b0382d52137db363610dc790795c984db297bdf9",
+          "url": "https://github.com/unwndevices/enjin/commit/961e7a4e07e3b62dadc39b65964a4a2fb4cb925f"
+        },
+        "date": 1790795000657,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 140,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 300,
+            "range": "± 0.33%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 84047,
+            "range": "± 0.04%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 851,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 5829,
+            "range": "± 0.53%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 30937,
+            "range": "± 0.18%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 280.5,
+            "range": "± 0.18%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 791,
+            "range": "± 0.94%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1442,
+            "range": "± 1.35%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2764.5,
+            "range": "± 0.71%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 4047,
+            "range": "± 0.74%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 90,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 100,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 40,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 80,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 230,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 331,
+            "range": "± 0.3%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 52870,
+            "range": "± 2.65%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 906,
+            "range": "± 5.17%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1647,
+            "range": "± 2.49%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2509,
+            "range": "± 2.68%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2373.5,
+            "range": "± 2.15%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1452.5,
+            "range": "± 2.87%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 4867.5,
+            "range": "± 0.81%",
             "unit": "ns/op"
           }
         ]
