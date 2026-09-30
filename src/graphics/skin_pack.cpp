@@ -7,8 +7,13 @@ extern "C" {
 }
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <sys/stat.h>
+
+#ifdef ESP32
+#include <esp_heap_caps.h>
+#endif
 
 namespace enjin2 {
 namespace {
@@ -42,6 +47,35 @@ bool readText(const std::string& path, size_t limit, std::string& out) {
 
 void instructionLimit(lua_State* L, lua_Debug*) {
     luaL_error(L, "skin.lua instruction limit exceeded");
+}
+
+// The manifest VM's allocator. On device plain malloc is internal RAM only,
+// which a whole VM does not fit beside TinyUSB and BLE (Tomodachi #277): prefer
+// PSRAM, like the applet VM (LuaPlatform::createState).
+void* skinAlloc(void*, void* ptr, size_t, size_t nsize) {
+    if (nsize == 0) {
+        std::free(ptr);
+        return nullptr;
+    }
+#ifdef ESP32
+    void* p = heap_caps_realloc(ptr, nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    return p ? p : heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
+#else
+    return std::realloc(ptr, nsize);
+#endif
+}
+
+// Runs under lua_pcall, so running out of memory fails the load instead of
+// aborting. Only the base library: the reader needs load/assert/type, and the
+// manifest itself runs in an empty environment.
+int readManifest(lua_State* L) {
+    const auto* source = static_cast<const std::string*>(lua_touserdata(L, 1));
+    luaL_requiref(L, LUA_GNAME, luaopen_base, 1);
+    lua_pop(L, 1);
+    if (luaL_loadstring(L, kSkinManifestReader) != LUA_OK) return lua_error(L);
+    lua_pushlstring(L, source->data(), source->size());
+    lua_call(L, 1, 1);
+    return 1;
 }
 
 void fail(std::string* error, const char* msg) {
@@ -172,18 +206,15 @@ bool loadSkinPack(const std::string& folder, LayeredAssetStore& store,
         return false;
     }
 
-    lua_State* L = luaL_newstate();
+    lua_State* L = lua_newstate(skinAlloc, nullptr);
     if (!L) {
         fail(error, "cannot allocate skin Lua state");
         return false;
     }
-    luaL_openlibs(L);
     lua_sethook(L, instructionLimit, LUA_MASKCOUNT, 100000);
-    int status = luaL_loadstring(L, kSkinManifestReader);
-    if (status == LUA_OK) {
-        lua_pushlstring(L, source.data(), source.size());
-        status = lua_pcall(L, 1, 1, 0);
-    }
+    lua_pushcfunction(L, readManifest);
+    lua_pushlightuserdata(L, &source);
+    const int status = lua_pcall(L, 1, 1, 0);
     lua_sethook(L, nullptr, 0, 0);
     if (status != LUA_OK) {
         if (error) *error = lua_tostring(L, -1) ? lua_tostring(L, -1)
