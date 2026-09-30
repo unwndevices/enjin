@@ -468,7 +468,8 @@ private:
 
     // ── Sprite asset loading ─────────────────────────────────────────────────
     std::string assetPath_;                    ///< Base directory for .njn files
-    uint8_t     assetBuffer_[65536];           ///< Fixed 64KB C++ buffer for loaded pixels
+    static constexpr uint32_t SPRITE_BUFFER_BYTES = 65536;
+    uint8_t     assetBuffer_[SPRITE_BUFFER_BYTES]; ///< Fixed C++ buffer for loaded pixels
     uint32_t    assetBufferUsed_{0};           ///< Current offset into assetBuffer_
     SpriteAsset loadedAssets_[LUA_SPRITE_POOL_SIZE]{}; ///< Metadata for loaded assets
     std::vector<NjnClip> loadedClips_[LUA_SPRITE_POOL_SIZE]; ///< Decoded v2 CLIP table per slot (empty for v1/no-clip)
@@ -804,6 +805,16 @@ public:
      * @return Pointer to the slot's clip vector if active, nullptr otherwise.
      */
     const std::vector<NjnClip>* getLoadedClips(int handle) const;
+
+    /// Sprite pixel buffer bytes in use (engine.sprite.load and every
+    /// engine.tilemap.load tileset share it), out of spriteBufferCapacity().
+    /// Read by the Studio's live budgets (Tomodachi #262).
+    uint32_t spriteBufferUsed() const { return assetBufferUsed_; }
+    static constexpr uint32_t spriteBufferCapacity() { return SPRITE_BUFFER_BYTES; }
+
+    /// Sprite pool slots in use, out of spriteSlotCapacity() (Tomodachi #262).
+    int spriteSlotsUsed() const;
+    static constexpr int spriteSlotCapacity() { return LUA_SPRITE_POOL_SIZE; }
 
 private:
     /**

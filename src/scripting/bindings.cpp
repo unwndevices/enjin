@@ -878,6 +878,12 @@ const enjin2::SpriteSheet* LuaBindings::getSpriteSheet(int handle) const {
     return &spritePool[handle].sheet;
 }
 
+int LuaBindings::spriteSlotsUsed() const {
+    int used = 0;
+    for (const auto& s : spritePool) used += s.active ? 1 : 0;
+    return used;
+}
+
 const std::vector<enjin2::NjnClip>* LuaBindings::getLoadedClips(int handle) const {
     if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !spritePool[handle].active)
         return nullptr;
