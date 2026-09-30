@@ -1,5 +1,6 @@
 #include "bindings_internal.hpp"
 #include "../../include/enjin2/scripting/component_registry.hpp"
+#include "../../include/enjin2/scripting/tilemap_lua.hpp"
 #include "../../include/enjin2/components/position.hpp"
 #include "../../include/enjin2/components/timer.hpp"
 #include "../../include/enjin2/components/state_machine.hpp"
@@ -348,22 +349,14 @@ static int lua_cfsm_proxy_index_impl(lua_State* L) {
 // C_Tilemap_Proxy Metatable Implementation (Phase 43: tilemap Lua API)
 //==============================================================================
 
-// Helper macro: validate C_Tilemap_Proxy userdata and cast to C_Tilemap*.
-// Must be at the top of every proxy method.
-#define CTILEMAP_PROXY_CHECK(L, varname)                                          \
-    auto* proxy = static_cast<enjin2::ComponentProxy*>(                           \
-        luaL_checkudata(L, 1, CTILEMAP_PROXY_METATABLE));                         \
-    if (!proxy || !proxy->valid || !proxy->component) {                           \
-        luaL_error(L, "component has been destroyed");                            \
-        return 0;                                                                 \
-    }                                                                             \
-    auto* (varname) = static_cast<enjin2::C_Tilemap*>(proxy->component)
+// Every method resolves `self` — a map handle or a scene C_Tilemap proxy — with
+// lua::checkTilemap (tilemap_lua.hpp).
 
 // tilemap:setTile(tx, ty, cell) — TMAP-05
 // `cell` is the full 16-bit packed cell (tile id in the low 9 bits); a plain
 // tile id 0-511 works as-is (band/flip/palbank = 0).
 static int lua_tilemap_setTile(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     uint8_t  tx   = static_cast<uint8_t>(luaL_checkinteger(L, 2));
     uint8_t  ty   = static_cast<uint8_t>(luaL_checkinteger(L, 3));
     uint16_t cell = static_cast<uint16_t>(luaL_checkinteger(L, 4) & 0xFFFF);
@@ -373,7 +366,7 @@ static int lua_tilemap_setTile(lua_State* L) {
 
 // tilemap:getTile(tx, ty) -> tileId — TMAP-05
 static int lua_tilemap_getTile(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     uint8_t tx = static_cast<uint8_t>(luaL_checkinteger(L, 2));
     uint8_t ty = static_cast<uint8_t>(luaL_checkinteger(L, 3));
     lua_pushinteger(L, static_cast<lua_Integer>(tm->getTile(tx, ty)));
@@ -382,7 +375,7 @@ static int lua_tilemap_getTile(lua_State* L) {
 
 // tilemap:setTiles(flat_table, w, h) — TMAP-07
 static int lua_tilemap_setTiles(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
     uint8_t w = static_cast<uint8_t>(luaL_checkinteger(L, 3));
     uint8_t h = static_cast<uint8_t>(luaL_checkinteger(L, 4));
@@ -402,7 +395,7 @@ static int lua_tilemap_setTiles(lua_State* L) {
 // tilemap:setSheet(handle) — TMAP-08
 // handle is an integer index into the LuaBindings sprite pool.
 static int lua_tilemap_setSheet(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     int handle = static_cast<int>(luaL_checkinteger(L, 2));
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) {
@@ -420,7 +413,7 @@ static int lua_tilemap_setSheet(lua_State* L) {
 
 // tilemap:setScroll(sx, sy) — TMAP-04/05
 static int lua_tilemap_setScroll(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     int16_t sx = static_cast<int16_t>(luaL_checkinteger(L, 2));
     int16_t sy = static_cast<int16_t>(luaL_checkinteger(L, 3));
     tm->setScroll(sx, sy);
@@ -429,7 +422,7 @@ static int lua_tilemap_setScroll(lua_State* L) {
 
 // tilemap:getScroll() -> sx, sy — TMAP-04/05
 static int lua_tilemap_getScroll(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     lua_pushinteger(L, static_cast<lua_Integer>(tm->getScrollX()));
     lua_pushinteger(L, static_cast<lua_Integer>(tm->getScrollY()));
     return 2;
@@ -437,7 +430,7 @@ static int lua_tilemap_getScroll(lua_State* L) {
 
 // tilemap:pixelToTile(px, py) -> tx, ty — TMAP-06
 static int lua_tilemap_pixelToTile(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
     int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
     int16_t tx = 0, ty = 0;
@@ -449,7 +442,7 @@ static int lua_tilemap_pixelToTile(lua_State* L) {
 
 // tilemap:tileToPixel(tx, ty) -> px, py — TMAP-06
 static int lua_tilemap_tileToPixel(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     int16_t tx = static_cast<int16_t>(luaL_checkinteger(L, 2));
     int16_t ty = static_cast<int16_t>(luaL_checkinteger(L, 3));
     int16_t px = 0, py = 0;
@@ -461,7 +454,7 @@ static int lua_tilemap_tileToPixel(lua_State* L) {
 
 // tilemap:tileAtPixel(px, py) -> tileId — TMAP-06
 static int lua_tilemap_tileAtPixel(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
     int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
     lua_pushinteger(L, static_cast<lua_Integer>(tm->tileAtPixel(px, py)));
@@ -470,7 +463,7 @@ static int lua_tilemap_tileAtPixel(lua_State* L) {
 
 // tilemap:getMapSize() -> w, h — TMAP-05
 static int lua_tilemap_getMapSize(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     lua_pushinteger(L, static_cast<lua_Integer>(tm->getMapWidth()));
     lua_pushinteger(L, static_cast<lua_Integer>(tm->getMapHeight()));
     return 2;
@@ -478,7 +471,7 @@ static int lua_tilemap_getMapSize(lua_State* L) {
 
 // tilemap:setAttrs(flatTable) — flat {flags,kind, flags,kind, …} (ADR-0003 §3)
 static int lua_tilemap_setAttrs(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
     const int n = static_cast<int>(lua_rawlen(L, 2));
     int count = n / 2;
@@ -499,7 +492,7 @@ static int lua_tilemap_setAttrs(lua_State* L) {
 
 // tilemap:setPalbank(index, lutTable) — a 16-entry index→index remap
 static int lua_tilemap_setPalbank(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     const uint8_t index = static_cast<uint8_t>(luaL_checkinteger(L, 2) & 0x0F);
     luaL_checktype(L, 3, LUA_TTABLE);
     Remap r;
@@ -514,7 +507,7 @@ static int lua_tilemap_setPalbank(lua_State* L) {
 
 // tilemap:attrAt(tx, ty) -> flags, kind (DIR already flip-resolved)
 static int lua_tilemap_attrAt(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     const uint8_t tx = static_cast<uint8_t>(luaL_checkinteger(L, 2));
     const uint8_t ty = static_cast<uint8_t>(luaL_checkinteger(L, 3));
     const TileAttr a = tm->attrAt(tx, ty);
@@ -525,7 +518,7 @@ static int lua_tilemap_attrAt(lua_State* L) {
 
 // tilemap:attrAtPixel(px, py) -> flags, kind
 static int lua_tilemap_attrAtPixel(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     const int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
     const int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
     const TileAttr a = tm->attrAtPixel(px, py);
@@ -546,7 +539,7 @@ static void pushSweepResult(lua_State* L, const SweepResult& r) {
 
 // tilemap:sweepAabb(x, y, w, h, vx, vy, dt) -> x, y, t, nx, ny, hit
 static int lua_tilemap_sweepAabb(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     const float x  = static_cast<float>(luaL_checknumber(L, 2));
     const float y  = static_cast<float>(luaL_checknumber(L, 3));
     const float w  = static_cast<float>(luaL_checknumber(L, 4));
@@ -560,7 +553,7 @@ static int lua_tilemap_sweepAabb(lua_State* L) {
 
 // tilemap:sweepCircle(cx, cy, r, vx, vy, dt) -> x, y, t, nx, ny, hit
 static int lua_tilemap_sweepCircle(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     const float cx = static_cast<float>(luaL_checknumber(L, 2));
     const float cy = static_cast<float>(luaL_checknumber(L, 3));
     const float r  = static_cast<float>(luaL_checknumber(L, 4));
@@ -573,7 +566,7 @@ static int lua_tilemap_sweepCircle(lua_State* L) {
 
 // tilemap:forEachCellIn(x, y, w, h, fn) — calls fn(tx, ty, cell) per overlapped cell
 static int lua_tilemap_forEachCellIn(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     const float x = static_cast<float>(luaL_checknumber(L, 2));
     const float y = static_cast<float>(luaL_checknumber(L, 3));
     const float w = static_cast<float>(luaL_checknumber(L, 4));
@@ -591,7 +584,7 @@ static int lua_tilemap_forEachCellIn(lua_State* L) {
 
 // tilemap:buildSolidRects() -> flat table {x,y,w,h, x,y,w,h, …}
 static int lua_tilemap_buildSolidRects(lua_State* L) {
-    CTILEMAP_PROXY_CHECK(L, tm);
+    auto* tm = lua::checkTilemap(L, 1);
     const std::vector<Rect> rects = tm->buildSolidRects();
     lua_createtable(L, static_cast<int>(rects.size() * 4), 0);
     int idx = 1;
@@ -604,21 +597,22 @@ static int lua_tilemap_buildSolidRects(lua_State* L) {
     return 1;
 }
 
-#undef CTILEMAP_PROXY_CHECK
-
-// engine.tilemap.load(name) -> C_Tilemap proxy, or nil (ADR-0003 §6, #91).
+// engine.tilemap.load(name) -> map handle (ADR-0003 §6, #91; scene-free #256).
 //
-// Spawns an object in the active scene, attaches a C_Tilemap, and populates it
-// from the per-applet asset root: `<name>.njn` supplies the tileset sheet + the
-// inline ATTR table (#51), `<name>.njm` supplies the packed cells.
+// Returns a Lua-owned map handle (tilemap_lua.hpp) populated from the per-applet
+// asset root: `<name>.njn` supplies the tileset sheet + the inline ATTR table
+// (#51), `<name>.njm` supplies the packed cells. No scene is involved: a host
+// draws the handle through its restore source (gfx.setTilemap) and the
+// collision helpers (attrAt, sweepAabb, …) are its methods.
 //
-// Lifetime: the tileset pixels live in the shared asset arena and the tileset
-// occupies one sprite-pool slot until resetSpritePool() runs on the next scene
-// reload/hot-reload — the same model (and the same 16-slot / 64 KB ceiling) as
-// engine.sprite.load. Destroying the C_Tilemap alone does NOT reclaim the slot;
-// loading many maps within one scene session without a reload will exhaust the
-// pool. resetSpritePool() tears down every scene object's C_Tilemap together
-// with the arena, so its SpriteSheet never outlives the pixels it points into.
+// Lifetime: the handle is collected like any Lua value. The tileset pixels live
+// in the shared asset arena and occupy one sprite-pool slot until
+// resetSpritePool() runs in registerAll(). Hosts call that on a fresh VM, so no
+// handle outlives the pixels; a host that re-runs registerAll() on a live VM
+// must drop its map handles first. Same model (and
+// the same 16-slot / 64 KB ceiling) as engine.sprite.load. Collecting the handle
+// does NOT reclaim the slot; loading many maps in one VM exhausts the pool.
+// Maps larger than 64×64 are cropped to the component's fixed grid.
 int LuaBindings::lua_loadTilemap(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushnil(L); return 1; }
@@ -626,15 +620,9 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     if (!name) { lua_pushnil(L); return 1; }
 
-    // Active scene (same registry handle engine.scene.spawn/find use).
-    lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
-    auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
-    lua_pop(L, 1);
-    if (scenePP == nullptr || *scenePP == nullptr) {
-        luaL_error(L, "engine.tilemap.load: no active scene");
-        return 0;  // unreachable — luaL_error longjmps
-    }
-    Scene* scene = *scenePP;
+    // Allocate the handle first: a Lua memory error then fails before any slot
+    // is pinned, and an error below just leaves the empty handle to the GC.
+    C_Tilemap* tm = lua::pushTilemap(L);
 
     // Reserve a sprite-pool slot to own the tileset pixels for the map's lifetime.
     int slot = -1;
@@ -717,39 +705,18 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
         }
     }
 
-    // Spawn the map object and populate its C_Tilemap.
-    Object* obj = scene->addObject<Object>();
-    if (!obj) {
-        releaseSlot();
-        luaL_error(L, "engine.tilemap.load: could not spawn map object");
-        return 0;
-    }
-    const ComponentRegistryEntry* e = findComponentEntry("C_Tilemap");
-    Component* comp = e ? e->add(obj) : nullptr;
-    auto* tm = static_cast<C_Tilemap*>(comp);
-    if (!tm) {
-        scene->removeObject(obj);
-        releaseSlot();
-        luaL_error(L, "engine.tilemap.load: could not attach C_Tilemap");
-        return 0;
-    }
     tm->setSheet(b->spritePool[slot].sheet);
     tm->setTiles(cells, mw, mhgt);
     if (!attrs.empty()) {
         tm->setAttrs(attrs.data(), static_cast<uint16_t>(attrs.size()));
     }
-
-    return pushComponentProxyUserdata(L, comp, e->proxyMeta);
+    return 1;
 }
 
-// __index metamethod for C_Tilemap_Proxy — dispatches all method names
+// __index metamethod for C_Tilemap_Proxy and the map handle — dispatches all
+// method names
 static int lua_ctilemap_proxy_index_impl(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ComponentProxy*>(
-        luaL_checkudata(L, 1, CTILEMAP_PROXY_METATABLE));
-    if (!proxy || !proxy->valid || !proxy->component) {
-        luaL_error(L, "component has been destroyed");
-        return 0;
-    }
+    lua::checkTilemap(L, 1);
     const char* key = lua_tostring(L, 2);
     if (!key) { lua_pushnil(L); return 1; }
 
@@ -1286,19 +1253,13 @@ static int lua_colliders_addAabb(lua_State* L) {
     return 0;
 }
 
-// colliders:addSolidRects(tilemapProxy, restitution, kind) -> int
+// colliders:addSolidRects(map, restitution, kind) -> int
 // Derive AABBs from a tilemap's SOLID attrs (ADR-0003 §3 buildSolidRects) and
 // append them to the set — the "tile-derived AABBs" half of §4's two collider
 // sources. Returns the number of rects added.
 static int lua_colliders_addSolidRects(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
-    auto* tmProxy = static_cast<enjin2::ComponentProxy*>(
-        luaL_checkudata(L, 2, CTILEMAP_PROXY_METATABLE));
-    if (!tmProxy || !tmProxy->valid || !tmProxy->component) {
-        luaL_error(L, "component has been destroyed");
-        return 0;
-    }
-    auto* tm = static_cast<enjin2::C_Tilemap*>(tmProxy->component);
+    auto* tm = lua::checkTilemap(L, 2);
     const size_t n = set->addSolidRects(
         tm->buildSolidRects(),
         static_cast<float>(luaL_optnumber(L, 3, 0.1f)),
@@ -1644,6 +1605,13 @@ void LuaBindings::registerComponentProxyMetatable() {
         lua_pushcfunction(L, lua_ctilemap_proxy_index_impl);
         lua_setfield(L, -2, "__index");
     }
+    lua_pop(L, 1);
+
+    // The scene-free map handle (engine.tilemap.load, #256) shares the methods.
+    lua::registerTilemapMetatable(L);
+    luaL_getmetatable(L, lua::tilemapMt());
+    lua_pushcfunction(L, lua_ctilemap_proxy_index_impl);
+    lua_setfield(L, -2, "__index");
     lua_pop(L, 1);
 
     // Register C_Camera_Proxy metatable (Phase 44: cam:setPosition/getPosition/lookAt/shake/setBounds/clearBounds)

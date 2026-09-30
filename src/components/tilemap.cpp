@@ -448,7 +448,7 @@ void C_Tilemap::draw(ICanvas<Pixel4>& canvas) {
 }
 
 bool C_Tilemap::continueToDraw() const {
-    return !owner->isQueuedForRemoval();
+    return !owner || !owner->isQueuedForRemoval();
 }
 
 void C_Tilemap::drawWithOffset(ICanvas<Pixel4>& canvas, Point offset) {

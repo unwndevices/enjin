@@ -18,13 +18,14 @@ C_Drawable::C_Drawable(Object* owner, uint8_t width, uint8_t height)
     , width(width)
     , height(height)
 {
-    // Get position component from owner (matches original Enjin pattern)
-    position = owner->getComponent<C_Position>();
+    // Get position component from owner (matches original Enjin pattern). A
+    // scene-free drawable (the Lua map handle, #256) has no owner.
+    position = owner ? owner->getComponent<C_Position>() : nullptr;
 }
 
 bool C_Drawable::continueToDraw() const {
     // Check if object is not queued for removal (matches original Enjin)
-    return !owner->isQueuedForRemoval();
+    return !owner || !owner->isQueuedForRemoval();
 }
 
 void C_Drawable::SetAnchorPoint(Anchor anchor) {
