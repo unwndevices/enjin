@@ -4,6 +4,7 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/scripting/component_proxy.hpp"
 #include "../../include/enjin2/scripting/tilemap_lua.hpp"
+#include "../../include/enjin2/core/name_index.hpp"
 
 namespace enjin2 {
 
@@ -18,6 +19,16 @@ static constexpr const char* CSPRITE_PROXY_METATABLE   = "C_Sprite_Proxy";
 static constexpr const char* CBODY_PROXY_METATABLE     = "C_Body_Proxy";
 static constexpr const char* COLLIDERSET_PROXY_METATABLE = "ColliderSet_Proxy";
 static constexpr const char* OBJECT_PROXY_METATABLE    = "ObjectProxy";
+
+// Draw modes of gfx.rectangle/circle/triangle, indexed by ShapeMode and
+// published as the ShapeMode enum. "fill" fills; any other name (canonically
+// "line") draws the outline.
+enum class ShapeMode : uint8_t { Fill, Line };
+inline constexpr const char* kShapeModeNames[] = {"fill", "line"};
+
+inline bool isFillMode(const char* mode) {
+    return nameIndex(mode, kShapeModeNames) == static_cast<int>(ShapeMode::Fill);
+}
 
 class Object;
 

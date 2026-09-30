@@ -14,7 +14,8 @@
  *   engine.tween.cancelAll()     -- Cancel all active tweens
  */
 #include "../../include/enjin2/scripting/bindings.hpp"
-#include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
+#include "../../include/enjin2/core/name_index.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -40,6 +41,13 @@ static void clearTweenSlot(Slot& slot, lua_State* L) {
     slot.id         = 0;
     slot.active     = false;
 }
+
+// ── Easing names, indexed by TweenEasing ──────────────────────────────────────
+// engine.tween.to matches its easing argument against this array, and the
+// descriptor publishes the same array as the Easing enum.
+static constexpr const char* kTweenEasingNames[] = {
+    "linear", "easeIn", "easeOut", "easeInOut", "easeOutBack",
+};
 
 // ── Inline easing functions — multiply/add only, NO std::pow, NO libm ─────────
 // Easing codes match TweenEasing enum (0=Linear,1=EaseIn,2=EaseOut,3=EaseInOut,
@@ -109,18 +117,13 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
         slot.doneCbRef = LUA_NOREF;
     }
 
-    // Parse easing string
-    TweenEasing easing = TweenEasing::Linear;
-    if (strcmp(easingStr, "easeIn") == 0) {
-        easing = TweenEasing::EaseIn;
-    } else if (strcmp(easingStr, "easeOut") == 0) {
-        easing = TweenEasing::EaseOut;
-    } else if (strcmp(easingStr, "easeInOut") == 0) {
-        easing = TweenEasing::EaseInOut;
-    } else if (strcmp(easingStr, "easeOutBack") == 0) {
-        easing = TweenEasing::EaseOutBack;
-    }
-    // "linear" and unknown strings default to Linear
+    // Parse easing string; "linear" and unknown strings default to Linear
+    static_assert(static_cast<size_t>(TweenEasing::EaseOutBack) + 1 ==
+                      sizeof(kTweenEasingNames) / sizeof(kTweenEasingNames[0]),
+                  "kTweenEasingNames is indexed by TweenEasing");
+    const int easingIdx = nameIndex(easingStr, kTweenEasingNames);
+    const TweenEasing easing =
+        easingIdx < 0 ? TweenEasing::Linear : static_cast<TweenEasing>(easingIdx);
 
     // Iterate props table; sample start values from target table
     int propCount = 0;
@@ -492,16 +495,44 @@ void LuaBindings::clearSprings() {
 
 // ── registerTweenSubtable: engine.tween.* (called from registerEngineTable) ───
 void LuaBindings::registerTweenSubtable(lua_State* L) {
-    static const LuaFuncDef kTweenFuncs[] = {
-        {"to",        lua_engine_tween_to},
-        {"cancel",    lua_engine_tween_cancel},
-        {"cancelAll", lua_engine_tween_cancelAll},
-        {"await",     lua_engine_tween_await},  // Phase 57: QOL-01
-        {"spring",    lua_engine_tween_spring}, // #38: retargetable chrome spring
+    static constexpr LuaApiEnum kEasing = luaApiEnum("Easing", kTweenEasingNames);
+    static constexpr LuaApiEntry kTween[] = {
+        luaFunction("to", lua_engine_tween_to,
+                    "(target:table, props:table, duration:number, easing:Easing?=linear, "
+                    "done:function?) -> id:int?",
+                    "Animate numeric fields of a table to new values; nil when all 8 slots are busy.",
+                    "target: the plain Lua table to animate (userdata is rejected)\n"
+                    "props: field name -> end value; at most 4 string-keyed numbers are used\n"
+                    "duration: seconds; a negative value finishes on the next tick\n"
+                    "easing: curve name; an unknown name falls back to linear\n"
+                    "done: called (under pcall) when the tween finishes")
+            .withEnum(kEasing)
+            .note("Start values are sampled now (a missing field starts at 0). Written values "
+                  "are floats. Cleared on reload and on a scene change."),
+        luaFunction("cancel", lua_engine_tween_cancel, "(id:int) -> nil",
+                    "Stop a tween where it is, without calling done; unknown ids are ignored.",
+                    "id: the id tween.to returned (springs are not cancelled here)"),
+        luaFunction("cancelAll", lua_engine_tween_cancelAll, "() -> nil",
+                    "Stop every tween and spring and restart the id counter."),
+        luaFunction("await", lua_engine_tween_await, "(id:int) -> nil",
+                    "Suspend the calling coroutine until the tween finishes; returns at once if it already has.",
+                    "id: the id tween.to returned (spring ids are not awaitable)")
+            .note("Raises outside a coroutine; call it from engine.async.start."),
+        luaFunction("spring", lua_engine_tween_spring,
+                    "(target:table, key:string, goal:number, params:table?) -> id:int?",
+                    "Spring one numeric field toward goal; a running spring on the same field is retargeted.",
+                    "target: the plain Lua table holding the field\n"
+                    "key: the field name\n"
+                    "goal: the value to settle on\n"
+                    "params: {duration = 0.34, bounce = 0.55} overrides (the Pop preset)")
+            .note("Tuned for pixel-scale values: it settles within 0.5 and snaps exactly onto "
+                  "goal. Retargeting keeps the velocity and returns the existing id; nil when "
+                  "all 8 spring slots are busy."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kTweenFuncs, ENJIN_ARRAY_LEN(kTweenFuncs));
-    lua_setfield(L, -2, "tween");
+    static constexpr LuaApiModule kTweenModule = luaApiModule(
+        LuaApiScope::Table, "engine.tween",
+        "Tweens and springs that animate fields of Lua tables, advanced once per frame.", kTween);
+    luaApiSetSubtable(L, -1, kTweenModule);
 }
 
 } // namespace enjin2

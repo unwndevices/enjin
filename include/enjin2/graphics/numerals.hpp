@@ -53,6 +53,13 @@ enum class NumberAlign : uint8_t {
     Center,  ///< x is the field's centre.
 };
 
+/// Lua names of @ref NumberAlign, indexed by it: gfx.number/gfx.timer (opts.align)
+/// and gfx.textAligned match against this array, and their descriptors publish it.
+inline constexpr const char* kNumberAlignNames[] = {"left", "right", "center"};
+static_assert(sizeof(kNumberAlignNames) / sizeof(kNumberAlignNames[0]) ==
+                  static_cast<size_t>(NumberAlign::Center) + 1,
+              "kNumberAlignNames is indexed by NumberAlign");
+
 /**
  * @brief Layout options for @ref drawNumber (`number()`).
  *

@@ -1,5 +1,8 @@
 #include "bindings_internal.hpp"
 #include "../../include/enjin2/scripting/effect_lua.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
+#include "../../include/enjin2/graphics/numerals.hpp"
+#include "../../include/enjin2/graphics/palette.hpp"
 #include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/graphics/blit.hpp"
@@ -519,83 +522,269 @@ void LuaBindings::registerAll() {
     lua_setfield(L, LUA_REGISTRYINDEX, "enjin_event_bus");
 
     // === gfx.* namespace table ===
-    lua_newtable(L);
-
-    // Canvas
-    lua_pushcfunction(L, lua_getWidth);       lua_setfield(L, -2, "getWidth");
-    lua_pushcfunction(L, lua_getHeight);      lua_setfield(L, -2, "getHeight");
-    lua_pushcfunction(L, lua_clear);          lua_setfield(L, -2, "clear");
-
-    // Drawing state
-    lua_pushcfunction(L, lua_setColor);       lua_setfield(L, -2, "setColor");
-    lua_pushcfunction(L, lua_getColor);       lua_setfield(L, -2, "getColor");
-    lua_pushcfunction(L, lua_setLineWidth);   lua_setfield(L, -2, "setLineWidth");
-    lua_pushcfunction(L, lua_getLineWidth);   lua_setfield(L, -2, "getLineWidth");
-
-    // Primitives
-    lua_pushcfunction(L, lua_point);          lua_setfield(L, -2, "point");
-    lua_pushcfunction(L, lua_line);           lua_setfield(L, -2, "line");
-    lua_pushcfunction(L, lua_rectangle);      lua_setfield(L, -2, "rectangle");
-    lua_pushcfunction(L, lua_circle);         lua_setfield(L, -2, "circle");
-    lua_pushcfunction(L, lua_fillEllipse);    lua_setfield(L, -2, "fillEllipse");
-    lua_pushcfunction(L, lua_triangle);       lua_setfield(L, -2, "triangle");
-
-    // Pixel access
-    lua_pushcfunction(L, lua_setPixel);       lua_setfield(L, -2, "setPixel");
-    lua_pushcfunction(L, lua_getPixel);       lua_setfield(L, -2, "getPixel");
-
-    // Fast drawing
-    lua_pushcfunction(L, lua_fastFillRect);   lua_setfield(L, -2, "fastFillRect");
-    lua_pushcfunction(L, lua_fastDrawLine);   lua_setfield(L, -2, "fastDrawLine");
-
-    // Palette
-    lua_pushcfunction(L, lua_setPaletteColor); lua_setfield(L, -2, "setPaletteColor");
-    lua_pushcfunction(L, lua_getPaletteColor); lua_setfield(L, -2, "getPaletteColor");
-    lua_pushcfunction(L, lua_loadPalette);     lua_setfield(L, -2, "loadPalette");
-    lua_pushcfunction(L, lua_getPaletteSize);  lua_setfield(L, -2, "getPaletteSize");
-
-    // Sprites
-    lua_pushcfunction(L, lua_newSprite);      lua_setfield(L, -2, "newSprite");
-    lua_pushcfunction(L, lua_freeSprite);     lua_setfield(L, -2, "freeSprite");
-    lua_pushcfunction(L, lua_drawSprite);     lua_setfield(L, -2, "drawSprite");
-    lua_pushcfunction(L, lua_updateSprite);   lua_setfield(L, -2, "updateSprite");
-    lua_pushcfunction(L, lua_setFrame);       lua_setfield(L, -2, "setFrame");
-
-    // HUD numerals (#83): digit-strip number / timer draws.
-    lua_pushcfunction(L, lua_number);         lua_setfield(L, -2, "number");
-    lua_pushcfunction(L, lua_timer);          lua_setfield(L, -2, "timer");
-
-    // Layers
-    lua_pushcfunction(L, lua_setLayer);       lua_setfield(L, -2, "setLayer");
-    lua_pushcfunction(L, lua_getLayer);       lua_setfield(L, -2, "getLayer");
-    lua_pushcfunction(L, lua_clearLayer);     lua_setfield(L, -2, "clearLayer");
-    lua_pushcfunction(L, lua_getLayerCount);  lua_setfield(L, -2, "getLayerCount");
-    lua_pushcfunction(L, lua_setLayerVisible); lua_setfield(L, -2, "setLayerVisible");
-    lua_pushcfunction(L, lua_isLayerVisible); lua_setfield(L, -2, "isLayerVisible");
-
-    // Text
-    lua_pushcfunction(L, lua_text);           lua_setfield(L, -2, "text");
-    lua_pushcfunction(L, lua_textWrapped);    lua_setfield(L, -2, "textWrapped");
-    lua_pushcfunction(L, lua_textCentered);   lua_setfield(L, -2, "textCentered");
-    lua_pushcfunction(L, lua_textAligned);    lua_setfield(L, -2, "textAligned");
-    lua_pushcfunction(L, lua_setTextSize);    lua_setfield(L, -2, "setTextSize");
-    lua_pushcfunction(L, lua_getTextSize);    lua_setfield(L, -2, "getTextSize");
-    lua_pushcfunction(L, lua_setFont);        lua_setfield(L, -2, "setFont");
-    lua_pushcfunction(L, lua_getFont);        lua_setfield(L, -2, "getFont");
-    lua_pushcfunction(L, lua_getTextWidth);   lua_setfield(L, -2, "getTextWidth");
-    lua_pushcfunction(L, lua_getTextHeight);  lua_setfield(L, -2, "getTextHeight");
-
-    // Layer constants nested under gfx (Lua 1-indexed)
-    lua_pushinteger(L, 1); lua_setfield(L, -2, "LAYER_BG");
-    lua_pushinteger(L, 2); lua_setfield(L, -2, "LAYER_MID");
-    lua_pushinteger(L, 3); lua_setfield(L, -2, "LAYER_FG");
+    static constexpr LuaApiEnum kShapeMode = luaApiEnum("ShapeMode", kShapeModeNames);
+    static constexpr LuaApiEnum kAlign = luaApiEnum("Align", kNumberAlignNames);
+    static constexpr LuaApiEnum kPalettePreset = luaApiEnum("PalettePreset", kPalettePresetNames);
 
     // Palette indices are authored directly; only transparency is named.
-    lua_newtable(L);
-    lua_pushinteger(L, 15); lua_setfield(L, -2, "TRANSPARENT");
-    lua_setfield(L, -2, "COLOR");  // gfx.COLOR
+    static constexpr LuaApiEntry kGfxColor[] = {
+        luaConstant("TRANSPARENT", 15, "Palette index 15: nothing is drawn, the layers below show."),
+    };
+    static constexpr LuaApiModule kGfxColorModule = luaApiModule(
+        LuaApiScope::Table, "gfx.COLOR", "Named palette indices.", kGfxColor);
 
-    lua_setglobal(L, "gfx");
+    static constexpr LuaApiEntry kGfx[] = {
+        // Canvas
+        luaFunction("getWidth", lua_getWidth, "() -> int",
+                    "Width of the active layer in pixels; 0 with no canvas."),
+        luaFunction("getHeight", lua_getHeight, "() -> int",
+                    "Height of the active layer in pixels; 0 with no canvas."),
+        luaFunction("clear", lua_clear, "(color:int?=current) -> nil",
+                    "Fill the active layer with one colour.",
+                    "color: palette index; defaults to the current draw colour"),
+
+        // Drawing state
+        luaFunction("setColor", lua_setColor, "(color:int) -> nil",
+                    "Set the draw colour the shapes and text use.",
+                    "color: palette index; a non-number is ignored")
+            .note("Starts at 15 (transparent) after every reload."),
+        luaFunction("getColor", lua_getColor, "() -> int", "The current draw colour."),
+        luaFunction("setLineWidth", lua_setLineWidth, "(width:int) -> nil",
+                    "Set the stroke width of gfx.line and of the \"line\" shape modes.",
+                    "width: pixels, clamped to 1..255")
+            .note("Starts at 1 after every reload."),
+        luaFunction("getLineWidth", lua_getLineWidth, "() -> int", "The current stroke width."),
+
+        // Primitives
+        luaFunction("point", lua_point, "(x:number, y:number) -> nil",
+                    "Plot one pixel in the draw colour; coordinates are rounded.",
+                    "x: column\n"
+                    "y: row"),
+        luaFunction("line", lua_line, "(x1:number, y1:number, x2:number, y2:number) -> nil",
+                    "Draw a line in the draw colour, gfx.getLineWidth() pixels wide.",
+                    "x1: start column\n"
+                    "y1: start row\n"
+                    "x2: end column\n"
+                    "y2: end row"),
+        luaFunction("rectangle", lua_rectangle,
+                    "(x:number, y:number, w:int, h:int) -> nil\n"
+                    "(mode:ShapeMode, x:number, y:number, w:int, h:int) -> nil",
+                    "Draw a rectangle in the draw colour: filled, or outlined in \"line\" mode.",
+                    "x: left edge (rounded)\n"
+                    "y: top edge (rounded)\n"
+                    "w: width; a fractional number draws nothing\n"
+                    "h: height; a fractional number draws nothing\n"
+                    "mode: \"fill\", or any other name for an outline that grows inward")
+            .withEnum(kShapeMode),
+        luaFunction("circle", lua_circle,
+                    "(x:number, y:number, r:int) -> nil\n"
+                    "(mode:ShapeMode, x:number, y:number, r:int) -> nil",
+                    "Draw a circle in the draw colour: filled, or outlined in \"line\" mode.",
+                    "x: centre column (rounded)\n"
+                    "y: centre row (rounded)\n"
+                    "r: radius; a fractional number counts as 0\n"
+                    "mode: \"fill\", or any other name for a ring that grows inward")
+            .withEnum(kShapeMode),
+        luaFunction("fillEllipse", lua_fillEllipse,
+                    "(cx:number, cy:number, rx:int, ry:int) -> nil",
+                    "Draw a filled ellipse in the draw colour.",
+                    "cx: centre column (rounded)\n"
+                    "cy: centre row (rounded)\n"
+                    "rx: horizontal radius; 0 or a fractional number draws nothing\n"
+                    "ry: vertical radius; 0 or a fractional number draws nothing"),
+        luaFunction("triangle", lua_triangle,
+                    "(x1:number, y1:number, x2:number, y2:number, x3:number, y3:number) -> nil\n"
+                    "(mode:ShapeMode, x1:number, y1:number, x2:number, y2:number, x3:number, "
+                    "y3:number) -> nil",
+                    "Draw a triangle in the draw colour: filled, or outlined in \"line\" mode.",
+                    "x1: first corner column\n"
+                    "y1: first corner row\n"
+                    "x2: second corner column\n"
+                    "y2: second corner row\n"
+                    "x3: third corner column\n"
+                    "y3: third corner row\n"
+                    "mode: \"fill\", or any other name for the outline")
+            .withEnum(kShapeMode),
+
+        // Pixel access
+        luaFunction("setPixel", lua_setPixel, "(x:int, y:int, color:int) -> nil",
+                    "Set one pixel of the active layer to the given colour.",
+                    "x: column\n"
+                    "y: row\n"
+                    "color: palette index (not the draw colour)"),
+        luaFunction("getPixel", lua_getPixel, "(x:int, y:int) -> int",
+                    "The palette index of one pixel of the active layer, not of the composited frame.",
+                    "x: column\n"
+                    "y: row"),
+
+        // Fast drawing
+        luaFunction("fastFillRect", lua_fastFillRect,
+                    "(x:number, y:number, w:number, h:number, color:int?=current) -> nil",
+                    "Fill a rectangle clipped to the layer; values are truncated, not rounded.",
+                    "x: left edge\n"
+                    "y: top edge\n"
+                    "w: width\n"
+                    "h: height\n"
+                    "color: palette index; defaults to the draw colour"),
+        luaFunction("fastDrawLine", lua_fastDrawLine,
+                    "(x1:number, y1:number, x2:number, y2:number, color:int?=current) -> nil",
+                    "Draw a 1 px line clipped to the layer; values are truncated, not rounded.",
+                    "x1: start column\n"
+                    "y1: start row\n"
+                    "x2: end column\n"
+                    "y2: end row\n"
+                    "color: palette index; defaults to the draw colour"),
+
+        // Palette
+        luaFunction("setPaletteColor", lua_setPaletteColor,
+                    "(index:int, hex:string) -> nil\n"
+                    "(index:int, r:int, g:int, b:int) -> nil",
+                    "Change the colour of one palette entry.",
+                    "index: palette index; 15 is ignored and larger values wrap\n"
+                    "hex: \"#rrggbb\" (the # is optional); an invalid string sets black\n"
+                    "r: red 0..255\n"
+                    "g: green 0..255\n"
+                    "b: blue 0..255")
+            .note("The palette is global to the process, not to one applet."),
+        luaFunction("getPaletteColor", lua_getPaletteColor, "(index:int) -> r:int, g:int, b:int",
+                    "The colour of one palette entry; index 15 gives 0, 0, 0.",
+                    "index: palette index; larger values wrap"),
+        luaFunction("loadPalette", lua_loadPalette, "(name:PalettePreset) -> boolean",
+                    "Replace the palette with a built-in preset; false for an unknown name.",
+                    "name: the preset; \"gameboy\" has 4 colours, so indices wrap mod 4")
+            .withEnum(kPalettePreset)
+            .note("The palette is global to the process, not to one applet."),
+        luaFunction("getPaletteSize", lua_getPaletteSize, "() -> int",
+                    "How many colours the current palette has."),
+
+        // Sprites
+        luaFunction("newSprite", lua_newSprite,
+                    "(data:userdata, cellW:int, cellH:int, cols:int, rows:int) -> handle:int",
+                    "Make a sprite sheet from host-owned pixels; -1 when all 16 slots are busy.",
+                    "data: light userdata the C host passes; Lua values cannot supply pixels\n"
+                    "cellW: frame width\n"
+                    "cellH: frame height\n"
+                    "cols: frames per row\n"
+                    "rows: rows of frames")
+            .note("The sprite starts on frame 0, looping at 8 fps."),
+        luaFunction("freeSprite", lua_freeSprite, "(handle:int) -> nil",
+                    "Free a sprite slot; unknown handles are ignored.",
+                    "handle: the sprite")
+            .note("Pixel memory comes back only when this was the newest loaded sprite; "
+                  "otherwise at the next reload."),
+        luaFunction("drawSprite", lua_drawSprite,
+                    "(handle:int, x:int, y:int, flipH:boolean?=false, flipV:boolean?=false, "
+                    "rotate90:boolean?=false, fx:Effect?) -> nil",
+                    "Draw a sprite's current frame with its top-left at (x, y); index 15 is skipped.",
+                    "handle: the sprite; unknown handles draw nothing\n"
+                    "x: left edge; a fractional number raises\n"
+                    "y: top edge; a fractional number raises\n"
+                    "flipH: mirror left to right\n"
+                    "flipV: mirror top to bottom\n"
+                    "rotate90: turn 90 degrees clockwise\n"
+                    "fx: an index shader from gfx.effect, run at each destination pixel"),
+        luaFunction("updateSprite", lua_updateSprite, "(handle:int, dt:number) -> nil",
+                    "Advance a sprite's animation by dt seconds.",
+                    "handle: the sprite\n"
+                    "dt: elapsed seconds"),
+        luaFunction("setFrame", lua_setFrame, "(handle:int, frame:int) -> nil",
+                    "Show one frame and restart its timer.",
+                    "handle: the sprite\n"
+                    "frame: 0-based frame, clamped to the sheet"),
+
+        // HUD numerals (#83): digit-strip number / timer draws.
+        luaFunction("number", lua_number, "(x:int, y:int, value:int, opts:table) -> width:int",
+                    "Draw a number from a digit-strip sprite (frame d is digit d); returns its width.",
+                    "x: anchor column, see opts.align\n"
+                    "y: top edge\n"
+                    "value: the number; negative values draw as 0\n"
+                    "opts: {strip = sprite handle (required), pad = 0, padZeros = true, "
+                    "align = Align (\"left\"), sep = separator frame or -1, spacing = 0}")
+            .withEnum(kAlign),
+        luaFunction("timer", lua_timer, "(x:int, y:int, ms:int, opts:table) -> width:int",
+                    "Draw milliseconds as mm:ss from an 11-frame strip (digits, then ':'); returns its width.",
+                    "x: anchor column, see opts.align\n"
+                    "y: top edge\n"
+                    "ms: the time; negative values draw as 0\n"
+                    "opts: {strip = sprite handle (required), align = Align (\"left\"), "
+                    "spacing = 0}")
+            .withEnum(kAlign),
+
+        // Layers
+        luaFunction("setLayer", lua_setLayer, "(layer:int) -> nil",
+                    "Draw on another layer from now on.",
+                    "layer: 1..gfx.getLayerCount(); out of range raises"),
+        luaFunction("getLayer", lua_getLayer, "() -> int", "The active layer (1-based)."),
+        luaFunction("clearLayer", lua_clearLayer, "(layer:int?, color:int?=0) -> nil",
+                    "Fill one layer with a colour.",
+                    "layer: 1..gfx.getLayerCount(); nil means the active layer\n"
+                    "color: palette index; 0 by default, unlike gfx.clear"),
+        luaFunction("getLayerCount", lua_getLayerCount, "() -> int",
+                    "How many layers scripts can draw on."),
+        luaFunction("setLayerVisible", lua_setLayerVisible, "(layer:int, visible:boolean) -> nil",
+                    "Show or hide a layer in the composited frame.",
+                    "layer: 1..gfx.getLayerCount(); out of range raises\n"
+                    "visible: whether the layer is drawn"),
+        luaFunction("isLayerVisible", lua_isLayerVisible, "(layer:int) -> boolean",
+                    "Whether a layer is shown; true when the host has no layers.",
+                    "layer: 1..gfx.getLayerCount(); out of range raises"),
+
+        // Text
+        luaFunction("text", lua_text, "(str:string, x:int, y:int, scale:int?=current) -> nil",
+                    "Draw text at (x, y) in the current font, size and draw colour.",
+                    "str: the text\n"
+                    "x: left edge; a fractional number raises\n"
+                    "y: vertical position; a fractional number raises\n"
+                    "scale: size for this call only, 1..255"),
+        luaFunction("textWrapped", lua_textWrapped,
+                    "(str:string, x:int, y:int, maxWidth:int) -> nil",
+                    "Draw text wrapped to a width, at the current size.",
+                    "str: the text\n"
+                    "x: left edge\n"
+                    "y: vertical position of the first line\n"
+                    "maxWidth: wrap width in pixels"),
+        luaFunction("textCentered", lua_textCentered,
+                    "(str:string, y:int, scale:int?=current) -> nil",
+                    "Draw text centred across the layer's width.",
+                    "str: the text\n"
+                    "y: vertical position\n"
+                    "scale: size for this call only, 1..255"),
+        luaFunction("textAligned", lua_textAligned,
+                    "(str:string, x:int, y:int, align:Align?=left, scale:int?=current) -> nil",
+                    "Draw text with x as its left edge, centre or right edge.",
+                    "str: the text\n"
+                    "x: anchor column\n"
+                    "y: vertical position\n"
+                    "align: which edge x anchors; an unknown name anchors left\n"
+                    "scale: size for this call only, 1..255")
+            .withEnum(kAlign),
+        luaFunction("setTextSize", lua_setTextSize, "(size:int) -> nil",
+                    "Set the text scale factor.",
+                    "size: 1..255; other numbers reset it to 1")
+            .note("Starts at 1 after every reload."),
+        luaFunction("getTextSize", lua_getTextSize, "() -> int", "The current text scale factor."),
+        luaFunction("setFont", lua_setFont, "(name:string) -> nil",
+                    "Switch the text font; an unknown name keeps the current one.",
+                    "name: \"default\", \"default8\", or a font the host registered")
+            .note("Tomodachi hosts also register \"body\" and \"display\"."),
+        luaFunction("getFont", lua_getFont, "() -> string", "The current font's name."),
+        luaFunction("getTextWidth", lua_getTextWidth, "(str:string?=\"\") -> int",
+                    "Width of str in pixels at the current font and size; 0 with no canvas.",
+                    "str: the text"),
+        luaFunction("getTextHeight", lua_getTextHeight, "() -> int",
+                    "Line height in pixels at the current font and size."),
+
+        // Layer constants (Lua 1-indexed)
+        luaConstant("LAYER_BG", 1, "The back layer."),
+        luaConstant("LAYER_MID", 2, "The middle layer."),
+        luaConstant("LAYER_FG", 3, "The front layer."),
+
+        luaTable("COLOR", kGfxColorModule, "Named palette indices; only transparency is named."),
+    };
+    static constexpr LuaApiModule kGfxModule = luaApiModule(
+        LuaApiScope::Table, "gfx",
+        "Drawing onto the active layer: shapes, pixels, sprites, text and the palette.", kGfx);
+    luaApiSetGlobalTable(L, kGfxModule);
 
     // Index-shader constructors: gfx.remap / gfx.mask / gfx.effect (#36).
     // Augments the gfx table just set above; the apply site gfx.drawSprite(..,
@@ -603,7 +792,15 @@ void LuaBindings::registerAll() {
     enjin2::lua::registerEffectApi(L);
 
     // === print() stays as bare global ===
-    engine->registerFunction("print", lua_print);
+    static constexpr LuaApiEntry kPrint[] = {
+        luaFunction("print", lua_print, "(...:any) -> nil",
+                    "Write values to the log, tab-separated, ending with a newline.",
+                    "...: strings and numbers print as text; other values print as their type")
+            .note("Replaces Lua's print: print(true) writes \"(boolean)\"."),
+    };
+    static constexpr LuaApiModule kPrintModule =
+        luaApiModule(LuaApiScope::Globals, "", "The print global.", kPrint);
+    luaApiSetGlobals(L, kPrintModule);
 
     // Pre-register built-in 8pt font so setFont("default8") works
     registerFont("default8", &defaultFont8pt7b);

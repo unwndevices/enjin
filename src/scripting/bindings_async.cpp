@@ -13,7 +13,7 @@
  *   engine.async.cancelAll()             -- Cancel all active coroutines
  */
 #include "../../include/enjin2/scripting/bindings.hpp"
-#include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
 
 #include <cstdio>
 
@@ -259,16 +259,30 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
 
 // ── registerAsyncSubtable: engine.async.* (called from registerEngineTable) ──
 void LuaBindings::registerAsyncSubtable(lua_State* L) {
-    static const LuaFuncDef kAsyncFuncs[] = {
-        {"start",       lua_engine_async_start},
-        {"wait",        lua_engine_async_wait},
-        {"cancel",      lua_engine_async_cancel},
-        {"cancelAll",   lua_engine_async_cancelAll},
-        {"wait_frames", lua_engine_async_wait_frames},  // Phase 57: QOL-02
+    static constexpr LuaApiEntry kAsync[] = {
+        luaFunction("start", lua_engine_async_start, "(fn:function) -> id:int?",
+                    "Run fn as a coroutine at the next coroutine tick; nil when all 8 slots are busy.",
+                    "fn: the function to run; its return values are discarded")
+            .note("Coroutines tick after update(), so fn started in update() first runs later "
+                  "that frame. Errors are printed as [async error] and free the slot."),
+        luaFunction("wait", lua_engine_async_wait, "(seconds:number?=0) -> nil",
+                    "Suspend the calling coroutine for a number of seconds.",
+                    "seconds: how long to wait; negative counts as 0")
+            .note("Raises outside a coroutine."),
+        luaFunction("cancel", lua_engine_async_cancel, "(id:int) -> nil",
+                    "Stop a coroutine; unknown ids are ignored.",
+                    "id: the id async.start returned"),
+        luaFunction("cancelAll", lua_engine_async_cancelAll, "() -> nil",
+                    "Stop every coroutine and restart the id counter."),
+        luaFunction("wait_frames", lua_engine_async_wait_frames, "(n:int?=0) -> nil",
+                    "Suspend the calling coroutine for n ticks, counting the current one.",
+                    "n: ticks to wait; 0 or less returns without yielding")
+            .note("Raises outside a coroutine."),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kAsyncFuncs, ENJIN_ARRAY_LEN(kAsyncFuncs));
-    lua_setfield(L, -2, "async");
+    static constexpr LuaApiModule kAsyncModule = luaApiModule(
+        LuaApiScope::Table, "engine.async",
+        "Coroutines resumed once per frame, after update().", kAsync);
+    luaApiSetSubtable(L, -1, kAsyncModule);
 }
 
 } // namespace enjin2

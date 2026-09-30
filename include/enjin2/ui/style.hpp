@@ -100,12 +100,17 @@ constexpr Style kDefaultStyles[kStyleSlotCount] = {
 };
 
 /**
- * @brief Resolve a slot name to its enum, via strcmp cascade (no allocation).
+ * @brief Slot names, indexed by StyleSlot: the lower-camel ids Lua passes.
  *
- * The repo has no `luaL_checkoption`; slot names are matched with the same
- * `{name → enum}` cascade the font registry uses. Names are the lower-camel
- * slot ids: "panel", "panelSelected", "popup", "banner", "sceneObject",
- * "sceneObjectSelected".
+ * styleSlotFromName() matches against this array, and the engine.ui
+ * descriptors publish it as the StyleSlot enum.
+ */
+inline constexpr const char* kStyleSlotNames[kStyleSlotCount] = {
+    "panel", "panelSelected", "popup", "banner", "sceneObject", "sceneObjectSelected",
+};
+
+/**
+ * @brief Resolve a slot name to its enum by matching kStyleSlotNames (no allocation).
  *
  * @param name Slot name (null tolerated → false).
  * @param out  Set to the matched slot on success.

@@ -12,6 +12,7 @@
 #include "../../include/enjin2/scripting/bind_helpers.hpp"
 #include "../../include/enjin2/scripting/hud_lua.hpp"
 #include "../../include/enjin2/graphics/numerals.hpp"
+#include "../../include/enjin2/core/name_index.hpp"
 
 #include <cstring>
 
@@ -38,11 +39,8 @@ NumberAlign optAlign(lua_State* L, int t) {
     NumberAlign a = NumberAlign::Left;
     if (lua_isstring(L, -1)) {
         const char* s = lua_tostring(L, -1);
-        if (std::strcmp(s, "right") == 0) {
-            a = NumberAlign::Right;
-        } else if (std::strcmp(s, "center") == 0) {
-            a = NumberAlign::Center;
-        }
+        const int i = nameIndex(s, kNumberAlignNames);
+        if (i >= 0) a = static_cast<NumberAlign>(i);
     }
     lua_pop(L, 1);
     return a;

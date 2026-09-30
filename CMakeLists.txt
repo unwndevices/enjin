@@ -218,6 +218,8 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_tween.cpp
         src/scripting/bindings_system.cpp
         src/scripting/bindings_ui.cpp
+        src/scripting/lua_api.cpp
+        src/scripting/lua_api_signature.cpp
         src/components/lua_script.cpp
         src/components/timer.cpp
         src/components/state_machine.cpp

@@ -13,7 +13,9 @@
 #include <cstdint>
 #include <cstring>
 
+#include "../core/name_index.hpp"
 #include "../graphics/effect.hpp"
+#include "lua_api.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -65,6 +67,17 @@ inline int16_t argI16(lua_State* L, int idx, int16_t def) {
                                    : static_cast<int16_t>(luaL_checkinteger(L, idx));
 }
 
+// The kind / preset names each constructor dispatches on, indexed by the enum
+// beside it and published as that enum in the descriptors below.
+enum class RemapKind : uint8_t { Identity, Lighten, Darken, Solid, Recolor, OnRamp, Compose };
+inline constexpr const char* kRemapKindNames[] = {
+    "identity", "lighten", "darken", "solid", "recolor", "onRamp", "compose",
+};
+enum class MaskKind : uint8_t { Full, Stripe, Hlines, Bayer };
+inline constexpr const char* kMaskKindNames[] = {"full", "stripe", "hlines", "bayer"};
+enum class EffectPreset : uint8_t { Holo, Dim, Fade, Scanline, Ghost };
+inline constexpr const char* kEffectPresetNames[] = {"holo", "dim", "fade", "scanline", "ghost"};
+
 /// gfx.remap(...) — build a Remap.
 ///   remap(table16)                  raw 16-entry lut (0-based Lua 1..16)
 ///   remap("identity"|"lighten"|"darken")
@@ -84,22 +97,18 @@ inline int lua_remap(lua_State* L) {
         return 1;
     }
     const char* kind = luaL_checkstring(L, 1);
-    if (std::strcmp(kind, "identity") == 0) {
-        pushRemap(L, Remap::identity());
-    } else if (std::strcmp(kind, "lighten") == 0) {
-        pushRemap(L, Remap::lighten());
-    } else if (std::strcmp(kind, "darken") == 0) {
-        pushRemap(L, Remap::darken());
-    } else if (std::strcmp(kind, "solid") == 0) {
-        pushRemap(L, Remap::solid(argU8(L, 2)));
-    } else if (std::strcmp(kind, "recolor") == 0) {
-        pushRemap(L, Remap::recolor(argU8(L, 2), argU8(L, 3)));
-    } else if (std::strcmp(kind, "onRamp") == 0) {
-        pushRemap(L, Remap::onRamp(argU8(L, 2), checkRemap(L, 3)));
-    } else if (std::strcmp(kind, "compose") == 0) {
-        pushRemap(L, Remap::compose(checkRemap(L, 2), checkRemap(L, 3)));
-    } else {
-        return luaL_error(L, "gfx.remap: unknown kind '%s'", kind);
+    const int k = nameIndex(kind, kRemapKindNames);
+    if (k < 0) return luaL_error(L, "gfx.remap: unknown kind '%s'", kind);
+    switch (static_cast<RemapKind>(k)) {
+        case RemapKind::Identity: pushRemap(L, Remap::identity()); break;
+        case RemapKind::Lighten:  pushRemap(L, Remap::lighten()); break;
+        case RemapKind::Darken:   pushRemap(L, Remap::darken()); break;
+        case RemapKind::Solid:    pushRemap(L, Remap::solid(argU8(L, 2))); break;
+        case RemapKind::Recolor:  pushRemap(L, Remap::recolor(argU8(L, 2), argU8(L, 3))); break;
+        case RemapKind::OnRamp:   pushRemap(L, Remap::onRamp(argU8(L, 2), checkRemap(L, 3))); break;
+        case RemapKind::Compose:
+            pushRemap(L, Remap::compose(checkRemap(L, 2), checkRemap(L, 3)));
+            break;
     }
     return 1;
 }
@@ -111,18 +120,21 @@ inline int lua_remap(lua_State* L) {
 ///   mask("bayer", level)
 inline int lua_mask(lua_State* L) {
     const char* kind = luaL_checkstring(L, 1);
-    if (std::strcmp(kind, "full") == 0) {
-        pushMask(L, Mask::full());
-    } else if (std::strcmp(kind, "stripe") == 0) {
-        pushMask(L, Mask::stripe(argU8(L, 2),
-                                 lua_isnoneornil(L, 3) ? 1 : argU8(L, 3)));
-    } else if (std::strcmp(kind, "hlines") == 0) {
-        pushMask(L, Mask::hlines(argU8(L, 2),
-                                 lua_isnoneornil(L, 3) ? 1 : argU8(L, 3)));
-    } else if (std::strcmp(kind, "bayer") == 0) {
-        pushMask(L, Mask::bayer(argU8(L, 2)));
-    } else {
-        return luaL_error(L, "gfx.mask: unknown kind '%s'", kind);
+    const int k = nameIndex(kind, kMaskKindNames);
+    if (k < 0) return luaL_error(L, "gfx.mask: unknown kind '%s'", kind);
+    switch (static_cast<MaskKind>(k)) {
+        case MaskKind::Full:
+            pushMask(L, Mask::full());
+            break;
+        case MaskKind::Stripe:
+            pushMask(L, Mask::stripe(argU8(L, 2), lua_isnoneornil(L, 3) ? 1 : argU8(L, 3)));
+            break;
+        case MaskKind::Hlines:
+            pushMask(L, Mask::hlines(argU8(L, 2), lua_isnoneornil(L, 3) ? 1 : argU8(L, 3)));
+            break;
+        case MaskKind::Bayer:
+            pushMask(L, Mask::bayer(argU8(L, 2)));
+            break;
     }
     return 1;
 }
@@ -134,18 +146,16 @@ inline int lua_mask(lua_State* L) {
 inline int lua_effect(lua_State* L) {
     if (lua_isstring(L, 1) && !lua_isnumber(L, 1)) {
         const char* preset = luaL_checkstring(L, 1);
-        if (std::strcmp(preset, "holo") == 0) {
-            pushEffect(L, Effect::holo(argI16(L, 2, 0)));
-        } else if (std::strcmp(preset, "dim") == 0) {
-            pushEffect(L, Effect::dim());
-        } else if (std::strcmp(preset, "fade") == 0) {
-            pushEffect(L, Effect::fade(argU8(L, 2)));
-        } else if (std::strcmp(preset, "scanline") == 0) {
-            pushEffect(L, Effect::scanline());
-        } else if (std::strcmp(preset, "ghost") == 0) {
-            pushEffect(L, Effect::ghost(argI16(L, 2, 1), argI16(L, 3, 1)));
-        } else {
-            return luaL_error(L, "gfx.effect: unknown preset '%s'", preset);
+        const int p = nameIndex(preset, kEffectPresetNames);
+        if (p < 0) return luaL_error(L, "gfx.effect: unknown preset '%s'", preset);
+        switch (static_cast<EffectPreset>(p)) {
+            case EffectPreset::Holo:     pushEffect(L, Effect::holo(argI16(L, 2, 0))); break;
+            case EffectPreset::Dim:      pushEffect(L, Effect::dim()); break;
+            case EffectPreset::Fade:     pushEffect(L, Effect::fade(argU8(L, 2))); break;
+            case EffectPreset::Scanline: pushEffect(L, Effect::scanline()); break;
+            case EffectPreset::Ghost:
+                pushEffect(L, Effect::ghost(argI16(L, 2, 1), argI16(L, 3, 1)));
+                break;
         }
         return 1;
     }
@@ -164,6 +174,64 @@ inline int lua_effect(lua_State* L) {
 /// constructors live here; the apply sites (`gfx.shade`, shaded sprite blit)
 /// are registered by their owning host.
 inline void registerEffectApi(lua_State* L) {
+    static constexpr LuaApiEnum kRemapKind = luaApiEnum("RemapKind", detail::kRemapKindNames);
+    static constexpr LuaApiEnum kMaskKind = luaApiEnum("MaskKind", detail::kMaskKindNames);
+    static constexpr LuaApiEnum kEffectPreset =
+        luaApiEnum("EffectPreset", detail::kEffectPresetNames);
+    static constexpr LuaApiEntry kEffectApi[] = {
+        luaFunction("remap", detail::lua_remap,
+                    "(lut:table) -> Remap\n"
+                    "(kind:RemapKind) -> Remap\n"
+                    "(kind:RemapKind, index:int) -> Remap\n"
+                    "(kind:RemapKind, from:int, to:int) -> Remap\n"
+                    "(kind:RemapKind, rampId:int, inner:Remap) -> Remap\n"
+                    "(kind:RemapKind, first:Remap, second:Remap) -> Remap",
+                    "Build a colour remap: a 16-entry table or a named kind.",
+                    "lut: lut[i + 1] is the new index for colour i; a missing entry maps to 0\n"
+                    "kind: identity, lighten or darken alone; solid, recolor, onRamp and "
+                    "compose take the arguments below; unknown kinds raise\n"
+                    "index: with \"solid\", the colour every pixel becomes\n"
+                    "from: with \"recolor\", the colour to replace\n"
+                    "to: with \"recolor\", its replacement\n"
+                    "rampId: with \"onRamp\", the ramp the inner remap is confined to\n"
+                    "inner: with \"onRamp\", the remap to apply on that ramp\n"
+                    "first: with \"compose\", the remap applied first\n"
+                    "second: with \"compose\", the remap applied to its result")
+            .withEnum(kRemapKind),
+        luaFunction("mask", detail::lua_mask,
+                    "(kind:MaskKind) -> Mask\n"
+                    "(kind:MaskKind, period:int, on:int?=1) -> Mask\n"
+                    "(kind:MaskKind, period:int, thickness:int?=1) -> Mask\n"
+                    "(kind:MaskKind, level:int) -> Mask",
+                    "Build a pixel mask selecting where an effect applies.",
+                    "kind: full alone; stripe (diagonal), hlines and bayer take the arguments "
+                    "below; unknown kinds raise\n"
+                    "period: with \"stripe\" or \"hlines\", the repeat in pixels, 1..32\n"
+                    "on: with \"stripe\", pixels on per period, 0..period\n"
+                    "thickness: with \"hlines\", line thickness, 0..period\n"
+                    "level: with \"bayer\", ordered-dither density, 0..16")
+            .withEnum(kMaskKind),
+        luaFunction("effect", detail::lua_effect,
+                    "(mask:Mask, remap:Remap, phaseX:int?=0, phaseY:int?=0) -> Effect\n"
+                    "(preset:EffectPreset, phase:int?=0) -> Effect\n"
+                    "(preset:EffectPreset, level:int) -> Effect\n"
+                    "(preset:EffectPreset, dx:int?=1, dy:int?=1) -> Effect",
+                    "Build an index shader for gfx.drawSprite: a mask and remap, or a preset.",
+                    "mask: where the remap applies\n"
+                    "remap: the colour change\n"
+                    "phaseX: added to x before the mask is sampled\n"
+                    "phaseY: added to y before the mask is sampled\n"
+                    "preset: holo (with phase), dim, fade (with level), scanline or ghost "
+                    "(with dx, dy); unknown presets raise\n"
+                    "phase: with \"holo\", the stripe offset\n"
+                    "level: with \"fade\", 0..16\n"
+                    "dx: with \"ghost\", horizontal offset\n"
+                    "dy: with \"ghost\", vertical offset")
+            .withEnum(kEffectPreset),
+    };
+    static constexpr LuaApiModule kEffectModule = luaApiModule(
+        LuaApiScope::Table, "gfx", "Index-shader constructors (remap, mask, effect).", kEffectApi);
+
     luaL_newmetatable(L, remapMt());
     lua_pop(L, 1);
     luaL_newmetatable(L, maskMt());
@@ -176,12 +244,7 @@ inline void registerEffectApi(lua_State* L) {
         lua_pop(L, 1);
         lua_newtable(L);
     }
-    lua_pushcfunction(L, detail::lua_remap);
-    lua_setfield(L, -2, "remap");
-    lua_pushcfunction(L, detail::lua_mask);
-    lua_setfield(L, -2, "mask");
-    lua_pushcfunction(L, detail::lua_effect);
-    lua_setfield(L, -2, "effect");
+    luaApiSetFields(L, -1, kEffectModule);
     lua_setglobal(L, "gfx");
 }
 

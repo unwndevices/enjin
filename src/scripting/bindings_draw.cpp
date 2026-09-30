@@ -1,4 +1,4 @@
-#include "../../include/enjin2/scripting/bindings.hpp"
+#include "bindings_internal.hpp"
 #include "../../include/enjin2/graphics/palette.hpp"
 #include <algorithm>
 #include <cmath>
@@ -233,7 +233,7 @@ int LuaBindings::lua_rectangle(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
     if (lua_gettop(L) >= 4) {
-        const char* mode = "fill";
+        const char* mode = kShapeModeNames[static_cast<int>(ShapeMode::Fill)];
         if (lua_gettop(L) >= 5 && lua_type(L, 1) == LUA_TSTRING) {
             mode = lua_tostring(L, 1);
         }
@@ -244,7 +244,7 @@ int LuaBindings::lua_rectangle(lua_State* L) {
         uint16_t width = static_cast<uint16_t>(lua_tointeger(L, startIdx + 2));
         uint16_t height = static_cast<uint16_t>(lua_tointeger(L, startIdx + 3));
 
-        if (strcmp(mode, "fill") == 0) {
+        if (isFillMode(mode)) {
             bindings->currentCanvas->fillRect(x, y, width, height, bindings->currentColor);
         } else {
             strokeRect(*bindings->currentCanvas, x, y, width, height,
@@ -259,7 +259,7 @@ int LuaBindings::lua_circle(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
     if (lua_gettop(L) >= 3) {
-        const char* mode = "fill";
+        const char* mode = kShapeModeNames[static_cast<int>(ShapeMode::Fill)];
         if (lua_gettop(L) >= 4 && lua_type(L, 1) == LUA_TSTRING) {
             mode = lua_tostring(L, 1);
         }
@@ -269,7 +269,7 @@ int LuaBindings::lua_circle(lua_State* L) {
         int16_t y = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 1)));
         uint16_t radius = static_cast<uint16_t>(lua_tointeger(L, startIdx + 2));
 
-        if (strcmp(mode, "fill") == 0) {
+        if (isFillMode(mode)) {
             bindings->currentCanvas->fillCircle(x, y, radius, bindings->currentColor);
         } else {
             strokeCircle(*bindings->currentCanvas, x, y, radius,
@@ -301,7 +301,7 @@ int LuaBindings::lua_triangle(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
     if (lua_gettop(L) >= 6) {
-        const char* mode = "fill";
+        const char* mode = kShapeModeNames[static_cast<int>(ShapeMode::Fill)];
         if (lua_gettop(L) >= 7 && lua_type(L, 1) == LUA_TSTRING) {
             mode = lua_tostring(L, 1);
         }
@@ -314,7 +314,7 @@ int LuaBindings::lua_triangle(lua_State* L) {
         int16_t x3 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 4)));
         int16_t y3 = static_cast<int16_t>(lround(lua_tonumber(L, startIdx + 5)));
 
-        if (strcmp(mode, "fill") == 0) {
+        if (isFillMode(mode)) {
             bindings->currentCanvas->fillTriangle(x1, y1, x2, y2, x3, y3, bindings->currentColor);
         } else {
             strokeTriangle(*bindings->currentCanvas, x1, y1, x2, y2, x3, y3,

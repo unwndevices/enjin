@@ -1,4 +1,5 @@
-#include "../../include/enjin2/scripting/bindings.hpp"
+#include "bindings_internal.hpp"
+#include "../../include/enjin2/graphics/numerals.hpp"
 
 namespace enjin2 {
 
@@ -129,20 +130,20 @@ int LuaBindings::lua_textAligned(lua_State* L) {
     const char* str = luaL_checkstring(L, 1);
     int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 2));
     int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 3));
-    const char* align = luaL_optstring(L, 4, "left");
+    const int align = nameIndex(luaL_optstring(L, 4, "left"), kNumberAlignNames);
     uint8_t scale = b->currentTextSize;
     if (lua_gettop(L) >= 5 && lua_isnumber(L, 5)) {
         int s = static_cast<int>(lua_tointeger(L, 5));
         if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
     }
-    if (strcmp(align, "center") == 0) {
+    if (align == static_cast<int>(NumberAlign::Center)) {
         uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
         x = static_cast<int16_t>(x - static_cast<int16_t>(tw / 2));
-    } else if (strcmp(align, "right") == 0) {
+    } else if (align == static_cast<int>(NumberAlign::Right)) {
         uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
         x = static_cast<int16_t>(x - static_cast<int16_t>(tw));
     }
-    // "left" = no adjustment (default)
+    // "left" and unknown names = no adjustment
     b->currentCanvas->drawText(str, x, y, b->currentColor, scale, b->currentFont);
     return 0;
 }

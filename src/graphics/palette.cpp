@@ -1,4 +1,5 @@
 #include "../../include/enjin2/graphics/palette.hpp"
+#include "../../include/enjin2/core/name_index.hpp"
 #include <cstring>
 #include <cstdio>
 
@@ -87,19 +88,21 @@ static constexpr RGB GAMEBOY_COLORS[4] = {
 // Preset table
 // ============================================================
 struct PalettePreset {
-    const char* name;
     const RGB*  colors;
     uint8_t     size;
 };
 
+// Indexed like kPalettePresetNames.
 static const PalettePreset PRESETS[] = {
-    {"default", DEFAULT_COLORS, 15},
-    {"tomo",     TOMO_COLORS,   15},
-    {"pico8",    PICO8_COLORS,  15},
-    {"gameboy",  GAMEBOY_COLORS, 4},
+    {DEFAULT_COLORS, 15},  // "default"
+    {TOMO_COLORS,    15},  // "tomo"
+    {PICO8_COLORS,   15},  // "pico8"
+    {GAMEBOY_COLORS,  4},  // "gameboy"
 };
 
 static constexpr int PRESET_COUNT = static_cast<int>(sizeof(PRESETS) / sizeof(PRESETS[0]));
+static_assert(PRESET_COUNT == sizeof(kPalettePresetNames) / sizeof(kPalettePresetNames[0]),
+              "one preset per kPalettePresetNames entry");
 
 // ============================================================
 // Palette methods
@@ -152,19 +155,15 @@ bool Palette::isTransparent(uint8_t index) const
 
 bool Palette::loadPreset(const char* name)
 {
-    if (!name) {
+    const int i = nameIndex(name, kPalettePresetNames);
+    if (i < 0) {
         return false;
     }
-    for (int i = 0; i < PRESET_COUNT; ++i) {
-        if (strcmp(name, PRESETS[i].name) == 0) {
-            size = PRESETS[i].size;
-            for (uint8_t j = 0; j < size && j < PALETTE_MAX_ENTRIES; ++j) {
-                colors[j] = PRESETS[i].colors[j];
-            }
-            return true;
-        }
+    size = PRESETS[i].size;
+    for (uint8_t j = 0; j < size && j < PALETTE_MAX_ENTRIES; ++j) {
+        colors[j] = PRESETS[i].colors[j];
     }
-    return false;
+    return true;
 }
 
 uint8_t Palette::getSize() const

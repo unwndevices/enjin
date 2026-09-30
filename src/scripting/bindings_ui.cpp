@@ -7,7 +7,8 @@
  * All functions early-return silently when currentCanvas is nullptr (null-canvas safety).
  */
 #include "../../include/enjin2/scripting/bindings.hpp"
-#include "../../include/enjin2/scripting/bind_helpers.hpp"
+#include "../../include/enjin2/scripting/lua_api.hpp"
+#include "../../include/enjin2/core/name_index.hpp"
 #include <cstring>
 
 namespace enjin2 {
@@ -175,6 +176,13 @@ int LuaBindings::lua_engine_ui_setStyle(lua_State* L) {
     return 0;
 }
 
+// The ROM themes setTheme accepts, and their names (published as the Theme enum).
+static constexpr const Style* kUiThemes[] = {kDefaultStyles};
+static constexpr const char* kUiThemeNames[] = {"default"};
+static_assert(sizeof(kUiThemes) / sizeof(kUiThemes[0]) ==
+                  sizeof(kUiThemeNames) / sizeof(kUiThemeNames[0]),
+              "one name per theme");
+
 // ── UI-06: engine.ui.setTheme(name) ──────────────────────────────────────────
 // Swaps the active ROM theme base and clears every applet override (a new theme
 // is a fresh base). v1 ships one theme, "default".
@@ -182,11 +190,11 @@ int LuaBindings::lua_engine_ui_setTheme(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
     const char* name = luaL_checkstring(L, 1);
-    if (strcmp(name, "default") == 0) {
-        b->m_themeBase = kDefaultStyles;
-    } else {
+    const int theme = nameIndex(name, kUiThemeNames);
+    if (theme < 0) {
         return luaL_error(L, "engine.ui.setTheme: unknown theme '%s'", name);
     }
+    b->m_themeBase = kUiThemes[theme];
     b->m_styleSetMask = 0;  // a new theme is a fresh base — drop overrides
     return 0;
 }
@@ -207,17 +215,66 @@ int LuaBindings::lua_engine_ui_label(lua_State* L) {
 // ── Sub-table registration (called from registerEngineTable) ──────────────────
 void LuaBindings::registerUISubtable(lua_State* L) {
     // Assumes engine table is at top of stack
-    static const LuaFuncDef kUIFuncs[] = {
-        {"progressBar", lua_engine_ui_progressBar},
-        {"statBar",     lua_engine_ui_statBar},
-        {"panel",       lua_engine_ui_panel},
-        {"label",       lua_engine_ui_label},
-        {"setStyle",    lua_engine_ui_setStyle},
-        {"setTheme",    lua_engine_ui_setTheme},
+    static constexpr LuaApiEnum kSlot = luaApiEnum("StyleSlot", kStyleSlotNames);
+    static constexpr LuaApiEnum kTheme = luaApiEnum("Theme", kUiThemeNames);
+    static constexpr LuaApiEntry kUI[] = {
+        luaFunction("progressBar", lua_engine_ui_progressBar,
+                    "(x:int, y:int, w:int, h:int, value:number, fg:int, bg:int) -> nil",
+                    "Draw a bar filled from the left by value (0..1), with no border.",
+                    "x: left edge\n"
+                    "y: top edge\n"
+                    "w: width\n"
+                    "h: height\n"
+                    "value: fill fraction, clamped to 0..1\n"
+                    "fg: palette index of the filled part\n"
+                    "bg: palette index of the whole bar"),
+        luaFunction("statBar", lua_engine_ui_statBar,
+                    "(x:int, y:int, w:int, h:int, current:number, max:number, fg:int, bg:int) -> nil",
+                    "Draw a bar filled from the left by current / max.",
+                    "x: left edge\n"
+                    "y: top edge\n"
+                    "w: width\n"
+                    "h: height\n"
+                    "current: the stat's value\n"
+                    "max: the stat's maximum; 0 or less draws an empty bar\n"
+                    "fg: palette index of the filled part\n"
+                    "bg: palette index of the whole bar"),
+        luaFunction("panel", lua_engine_ui_panel,
+                    "(x:int, y:int, w:int, h:int, slot:StyleSlot) -> nil\n"
+                    "(x:int, y:int, w:int, h:int, bg:int, border:int) -> nil",
+                    "Draw a filled box with a border, styled by a slot or by two colours.",
+                    "x: left edge\n"
+                    "y: top edge\n"
+                    "w: width\n"
+                    "h: height\n"
+                    "slot: style slot giving fill, border, radius, kind and shadow; unknown names raise\n"
+                    "bg: palette index of the fill (drawn with a 1 px solid border)\n"
+                    "border: palette index of the border")
+            .withEnum(kSlot),
+        luaFunction("label", lua_engine_ui_label, "(x:int, y:int, text:string, fg:int) -> nil",
+                    "Draw text in the built-in font at size 1; note (x, y, text), unlike gfx.text.",
+                    "x: left edge\n"
+                    "y: top edge\n"
+                    "text: the string to draw\n"
+                    "fg: palette index of the text")
+            .note("Ignores gfx.setFont and gfx.setTextSize."),
+        luaFunction("setStyle", lua_engine_ui_setStyle, "(slot:StyleSlot, fields:table) -> nil",
+                    "Override a style slot: the given fields on top of the theme default.",
+                    "slot: the slot to override; unknown names raise\n"
+                    "fields: any of fill, text, border, borderWidth, radius, padding, "
+                    "borderKind (0 solid, 1 bevel, 2 drop shadow), shadowDx, shadowDy")
+            .withEnum(kSlot)
+            .note("Each call starts again from the theme default, not from the previous "
+                  "override. Overrides are cleared on reload."),
+        luaFunction("setTheme", lua_engine_ui_setTheme, "(name:Theme) -> nil",
+                    "Switch the ROM theme and drop every setStyle override.",
+                    "name: the theme; unknown names raise")
+            .withEnum(kTheme),
     };
-    lua_newtable(L);
-    luaBindFunctions(L, -1, kUIFuncs, ENJIN_ARRAY_LEN(kUIFuncs));
-    lua_setfield(L, -2, "ui");  // engine.ui = { ... }
+    static constexpr LuaApiModule kUIModule = luaApiModule(
+        LuaApiScope::Table, "engine.ui",
+        "Immediate-mode UI draws onto the active layer.", kUI);
+    luaApiSetSubtable(L, -1, kUIModule);
 }
 
 } // namespace enjin2

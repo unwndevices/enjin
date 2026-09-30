@@ -52,6 +52,14 @@ constexpr uint8_t PALETTE_TRANSPARENT = 15;
 constexpr uint8_t PALETTE_MAX_ENTRIES = 15;
 
 /**
+ * @brief Names of the built-in palettes Palette::loadPreset() accepts.
+ *
+ * loadPreset() matches against this array, and gfx.loadPalette's descriptor
+ * publishes it as the PalettePreset enum.
+ */
+inline constexpr const char* kPalettePresetNames[] = {"default", "tomo", "pico8", "gameboy"};
+
+/**
  * @name Ramp structure
  * @brief The 15 colour indices (0-14) are organised as 5 ramps × 3 shades.
  *

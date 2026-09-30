@@ -539,6 +539,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME math_binding_test COMMAND math_binding_test)
 
+    # Lua API descriptors: signature grammar, registration, core modules (Tomodachi #257)
+    add_executable(lua_api_test
+        lua_api_test.cpp
+    )
+    target_include_directories(lua_api_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(lua_api_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME lua_api_test COMMAND lua_api_test)
+
     # Collision binding test (engine.collision.* C++ + Lua)
     add_executable(collision_test
         collision_test.cpp
