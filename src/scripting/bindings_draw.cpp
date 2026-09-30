@@ -11,6 +11,110 @@ namespace enjin2 {
     if (!(b) || !(b)->currentCanvas) return 0
 
 //==============================================================================
+// Line-width strokes (Tomodachi #255): gfx.setLineWidth feeds gfx.line and the
+// "line" modes of rectangle/circle/triangle. Width 1 keeps the plain 1 px
+// primitives; wider strokes are built from clipped fills.
+//==============================================================================
+
+namespace {
+
+void fillSpan(LuaCanvas& c, int x, int y, int w, int h, uint8_t color) {
+    if (w <= 0 || h <= 0) return;
+    c.fillRect(static_cast<int16_t>(x), static_cast<int16_t>(y),
+               static_cast<uint16_t>(w), static_cast<uint16_t>(h), color);
+}
+
+// A width x width square pen stamped centred on each Bresenham step.
+void strokeLine(LuaCanvas& c, int x1, int y1, int x2, int y2, uint8_t color,
+                int width) {
+    if (width <= 1) {
+        c.drawLine(static_cast<int16_t>(x1), static_cast<int16_t>(y1),
+                   static_cast<int16_t>(x2), static_cast<int16_t>(y2), color);
+        return;
+    }
+    const int off = (width - 1) / 2;
+    if (y1 == y2) {
+        fillSpan(c, std::min(x1, x2) - off, y1 - off, std::abs(x2 - x1) + width, width, color);
+        return;
+    }
+    if (x1 == x2) {
+        fillSpan(c, x1 - off, std::min(y1, y2) - off, width, std::abs(y2 - y1) + width, color);
+        return;
+    }
+    const int dx = std::abs(x2 - x1), dy = std::abs(y2 - y1);
+    const int sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
+    int err = dx - dy;
+    int x = x1, y = y1;
+    while (true) {
+        fillSpan(c, x - off, y - off, width, width, color);
+        if (x == x2 && y == y2) break;
+        const int e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x += sx; }
+        if (e2 < dx) { err += dx; y += sy; }
+    }
+}
+
+// Outline rectangle whose border grows inward, so the outer edge stays put:
+// the square-cornered solid case of the computed border stroke.
+void strokeRect(LuaCanvas& c, int16_t x, int16_t y, uint16_t w, uint16_t h,
+                uint8_t color, int width) {
+    if (width <= 1) {
+        c.drawRect(x, y, w, h, color);
+        return;
+    }
+    BorderStyle style;
+    style.color = color;
+    style.thickness = static_cast<uint8_t>(width);
+    c.strokeBorder(x, y, w, h, style);
+}
+
+int circleHalfWidth(int radius, int dy) {
+    return static_cast<int>(
+        std::sqrt(static_cast<float>(radius * radius - dy * dy)) + 0.5f);
+}
+
+// Outline circle as a ring that grows inward from the radius.
+void strokeCircle(LuaCanvas& c, int cx, int cy, int radius, uint8_t color, int width) {
+    if (width <= 1) {
+        c.drawCircle(static_cast<int16_t>(cx), static_cast<int16_t>(cy),
+                     static_cast<uint16_t>(radius), color);
+        return;
+    }
+    if (width >= radius) {
+        c.fillCircle(static_cast<int16_t>(cx), static_cast<int16_t>(cy),
+                     static_cast<uint16_t>(radius), color);
+        return;
+    }
+    const int inner = radius - width;
+    for (int dy = -radius; dy <= radius; ++dy) {
+        const int ady = std::abs(dy);
+        const int outerHw = circleHalfWidth(radius, ady);
+        if (ady > inner) {
+            fillSpan(c, cx - outerHw, cy + dy, 2 * outerHw + 1, 1, color);
+            continue;
+        }
+        const int innerHw = circleHalfWidth(inner, ady);
+        fillSpan(c, cx - outerHw, cy + dy, outerHw - innerHw, 1, color);
+        fillSpan(c, cx + innerHw + 1, cy + dy, outerHw - innerHw, 1, color);
+    }
+}
+
+void strokeTriangle(LuaCanvas& c, int x1, int y1, int x2, int y2, int x3, int y3,
+                    uint8_t color, int width) {
+    if (width <= 1) {
+        c.drawTriangle(static_cast<int16_t>(x1), static_cast<int16_t>(y1),
+                       static_cast<int16_t>(x2), static_cast<int16_t>(y2),
+                       static_cast<int16_t>(x3), static_cast<int16_t>(y3), color);
+        return;
+    }
+    strokeLine(c, x1, y1, x2, y2, color, width);
+    strokeLine(c, x2, y2, x3, y3, color, width);
+    strokeLine(c, x3, y3, x1, y1, color, width);
+}
+
+}  // namespace
+
+//==============================================================================
 // Lua Drawing Functions
 //==============================================================================
 
@@ -77,7 +181,9 @@ int LuaBindings::lua_setLineWidth(lua_State* L) {
     }
 
     if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        bindings->lineWidth = static_cast<uint16_t>(lua_tointeger(L, 1));
+        // 1..255: the range the border stroke's thickness holds.
+        const lua_Integer w = lua_tointeger(L, 1);
+        bindings->lineWidth = static_cast<uint16_t>(w < 1 ? 1 : (w > 255 ? 255 : w));
     }
 
     return 0;
@@ -116,7 +222,8 @@ int LuaBindings::lua_line(lua_State* L) {
         int16_t x2 = static_cast<int16_t>(lround(lua_tonumber(L, 3)));
         int16_t y2 = static_cast<int16_t>(lround(lua_tonumber(L, 4)));
 
-        bindings->currentCanvas->drawLine(x1, y1, x2, y2, bindings->currentColor);
+        strokeLine(*bindings->currentCanvas, x1, y1, x2, y2,
+                   bindings->currentColor, bindings->lineWidth);
     }
 
     return 0;
@@ -140,7 +247,8 @@ int LuaBindings::lua_rectangle(lua_State* L) {
         if (strcmp(mode, "fill") == 0) {
             bindings->currentCanvas->fillRect(x, y, width, height, bindings->currentColor);
         } else {
-            bindings->currentCanvas->drawRect(x, y, width, height, bindings->currentColor);
+            strokeRect(*bindings->currentCanvas, x, y, width, height,
+                       bindings->currentColor, bindings->lineWidth);
         }
     }
 
@@ -164,7 +272,8 @@ int LuaBindings::lua_circle(lua_State* L) {
         if (strcmp(mode, "fill") == 0) {
             bindings->currentCanvas->fillCircle(x, y, radius, bindings->currentColor);
         } else {
-            bindings->currentCanvas->drawCircle(x, y, radius, bindings->currentColor);
+            strokeCircle(*bindings->currentCanvas, x, y, radius,
+                         bindings->currentColor, bindings->lineWidth);
         }
     }
 
@@ -208,7 +317,8 @@ int LuaBindings::lua_triangle(lua_State* L) {
         if (strcmp(mode, "fill") == 0) {
             bindings->currentCanvas->fillTriangle(x1, y1, x2, y2, x3, y3, bindings->currentColor);
         } else {
-            bindings->currentCanvas->drawTriangle(x1, y1, x2, y2, x3, y3, bindings->currentColor);
+            strokeTriangle(*bindings->currentCanvas, x1, y1, x2, y2, x3, y3,
+                           bindings->currentColor, bindings->lineWidth);
         }
     }
 
@@ -336,7 +446,8 @@ int LuaBindings::lua_fastDrawLine(lua_State* L) {
 
 int LuaBindings::lua_setPaletteColor(lua_State* L) {
     int index = luaL_checkinteger(L, 1);
-    if (lua_isstring(L, 2)) {
+    // Only a real string is the hex form; lua_isstring also accepts numbers.
+    if (lua_type(L, 2) == LUA_TSTRING) {
         // Overload: setPaletteColor(index, '#rrggbb')
         const char* hex = luaL_checkstring(L, 2);
         uint8_t r = 0, g = 0, b = 0;
