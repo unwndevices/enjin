@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790840544412,
+  "lastUpdate": 1790849601529,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -5877,6 +5877,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3636.5,
             "range": "± 0.54%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "b465ab2378252c5c8fc574ac588c7d79da060079",
+          "message": "ci(docs): fix broken doc links and ratchet the Doxygen warning gate\n\nThe docs deploy had failed on every push since July: 632 Doxygen warnings\nagainst a gate of 20.\n\n- WARN_NO_PARAMDOC off: drops ~314 \"parameters/return type not documented\"\n  warnings; @param/@return on every member is noise for this codebase.\n- Fix all 147 unresolved \\ref links. Most were unqualified names in\n  file-level comments, which Doxygen resolves from global scope (now\n  enjin2::-qualified with the same link text) or members of LayeredSprite.\n  Refs to private or unextracted symbols became code spans.\n- Fix the remaining doc errors: an html-like <T>, an unknown '\\r' command,\n  a stale @overload label, and partial @param lists in Primitives.\n- Gate becomes a ratchet at the remaining 162 \"X is not documented\"\n  warnings, so new code can't add more. Runner pinned to ubuntu-24.04\n  because the count depends on the Doxygen version (1.9.8 there).\n\nComment-only header changes; verified the full pipeline (Doxygen,\ngenerate-api-docs, Docusaurus build) in a clean container.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-10-01T12:12:29+02:00",
+          "tree_id": "a1453d5dade2820454ef3123cd1b775b9d620b60",
+          "url": "https://github.com/unwndevices/enjin/commit/b465ab2378252c5c8fc574ac588c7d79da060079"
+        },
+        "date": 1790849600666,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 130,
+            "range": "± 0.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 281,
+            "range": "± 3.1%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 84428,
+            "range": "± 0.02%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 1002,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 5399.5,
+            "range": "± 0.38%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 32220,
+            "range": "± 0.64%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 290,
+            "range": "± 0.34%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 782,
+            "range": "± 1.14%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1453,
+            "range": "± 0.69%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2756,
+            "range": "± 1.04%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3972.5,
+            "range": "± 0.5%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 81,
+            "range": "± 10.0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 90,
+            "range": "± 5.56%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 211,
+            "range": "± 4.09%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 311,
+            "range": "± 0.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 37535,
+            "range": "± 2.7%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 981.5,
+            "range": "± 2.57%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1778,
+            "range": "± 1.43%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2760.5,
+            "range": "± 1.99%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 3055.5,
+            "range": "± 2.48%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1542.5,
+            "range": "± 3.54%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3606,
+            "range": "± 0.53%",
             "unit": "ns/op"
           }
         ]
