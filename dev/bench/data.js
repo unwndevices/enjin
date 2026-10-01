@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790816613682,
+  "lastUpdate": 1790840544412,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -5685,6 +5685,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 2286,
             "range": "± 0.66%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "205b3fb7d3a9a02771cd0e199822825a8dd49afb",
+          "message": "feat(scripting): per-applet engine.store namespaces (Tomodachi #244)\n\nLuaBindings::setStoreNamespace hands the store to one owner: it empties the\nin-memory entries, drops any desktop path, and scopes the web and device\nbackends to the namespace, loading what that owner saved. localStorage uses\n'enjin2_store:<ns>'; NVS uses a fixed-length FNV-1a blob key (LuaStore::nvsKeyFor)\nbecause NVS keys are at most 15 characters. An empty namespace keeps the old\nunscoped blob.\n\nStore keys are fields inside one blob, so the 15-character device limit never\napplied to them: every host now accepts up to 63 bytes and raises past that\n(the web used to truncate silently).\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-10-01T09:41:20+02:00",
+          "tree_id": "ac1842168233bc8f7972aa28c1039f4494667927",
+          "url": "https://github.com/unwndevices/enjin/commit/205b3fb7d3a9a02771cd0e199822825a8dd49afb"
+        },
+        "date": 1790840543573,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 130,
+            "range": "± 0.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 280,
+            "range": "± 0.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 84399,
+            "range": "± 0.01%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 1002,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 5450,
+            "range": "± 0.57%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 31129,
+            "range": "± 0.29%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 291,
+            "range": "± 0.34%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 782,
+            "range": "± 1.26%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1443,
+            "range": "± 0.7%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2765,
+            "range": "± 0.71%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3948,
+            "range": "± 0.25%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 160,
+            "range": "± 6.43%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 90,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 30.5,
+            "range": "± 14.46%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 120,
+            "range": "± 4.26%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 211,
+            "range": "± 0.48%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 521,
+            "range": "± 3.7%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 37691,
+            "range": "± 3.1%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 1032,
+            "range": "± 4.04%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1823,
+            "range": "± 1.67%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2755,
+            "range": "± 1.09%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 3161,
+            "range": "± 2.45%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1502.5,
+            "range": "± 2.66%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3636.5,
+            "range": "± 0.54%",
             "unit": "ns/op"
           }
         ]
