@@ -255,7 +255,7 @@ public:
         return m_colliders;
     }
 
-    /// @overload const accessor
+    /// @overload
     const ColliderSet& colliders() const {
         return m_colliders;
     }

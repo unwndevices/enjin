@@ -7,14 +7,14 @@
  * by every instance over that asset) and adds the per-instance state an applet
  * controls: position, whole-object flips, the selected animation clip, and the
  * playback cursor. Source layers never become Enjin compositor layers:
- * @ref draw reconstructs the current frame by painting visible sprite parts in
+ * @ref enjin2::LayeredSprite::draw "draw" reconstructs the current frame by painting visible sprite parts in
  * source-layer painter order onto one caller-supplied layer.
  *
  * ## Reconstruction
  *
  * The object's position is the top-left of the **authored canvas**. Every
  * frame-part reference is offset from that origin, and every pixel is clipped
- * to the authored extent before it is placed, so @ref width / @ref height
+ * to the authored extent before it is placed, so @ref enjin2::LayeredSprite::width "width" / @ref enjin2::LayeredSprite::height "height"
  * always describe exactly the painted footprint — for every frame, no matter
  * which parts are visible. A whole-object flip mirrors parts and offsets around
  * that stable extent (not around each cropped image), so a cropped detail
@@ -23,14 +23,14 @@
  * ## Animation control
  *
  * Clips come from the asset (`CLIP` chunk) plus a synthesized looping `default`
- * clip when the asset carries none. @ref update advances timed playback by the
+ * clip when the asset carries none. @ref enjin2::LayeredSprite::update "update" advances timed playback by the
  * authored frame durations with the selected clip's once/loop/ping-pong mode.
- * @ref setFrame selects a pose explicitly; @ref setProgress enters scrubbed
+ * @ref enjin2::LayeredSprite::setFrame "setFrame" selects a pose explicitly; @ref enjin2::LayeredSprite::setProgress "setProgress" enters scrubbed
  * playback and maps a normalized `0..1` value across the clip weighted by
  * authored durations (endpoint-exact, no interpolation, monotone in either
- * direction). Calling @ref play resumes timed playback from the current frame,
+ * direction). Calling @ref enjin2::LayeredSprite::play "play" resumes timed playback from the current frame,
  * including a frame reached by scrubbing. Frame events are **polled**
- * (@ref justAdvanced / @ref justCompleted / @ref frameEvent), are latched only
+ * (@ref enjin2::LayeredSprite::justAdvanced "justAdvanced" / @ref enjin2::LayeredSprite::justCompleted "justCompleted" / @ref enjin2::LayeredSprite::frameEvent "frameEvent"), are latched only
  * when the rendered frame actually changes, and are suppressed while scrubbing.
  *
  * The class never allocates and holds no asset bytes of its own. Bind only a

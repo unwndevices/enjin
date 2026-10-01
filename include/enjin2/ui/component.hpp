@@ -132,13 +132,13 @@ struct Entity {
  * @tparam T Component type (must be default-constructible and move-assignable)
  * @tparam CAPACITY Maximum number of live components *and* the entity-id space
  *
- * Data lives in a real, per-instance member array (@ref components_) rather than
+ * Data lives in a real, per-instance member array (`components_`) rather than
  * a shared function-local static, so distinct storages never alias. Lookup is a
- * classic sparse set: @ref sparse_ maps an entity's id directly to its compact
+ * classic sparse set: `sparse_` maps an entity's id directly to its compact
  * slot (O(1), no hashing), and removal swaps the last element into the freed slot
  * to keep the packed array contiguous for cache-friendly iteration.
  *
- * The entity id is used as a direct index into @ref sparse_, so ids must satisfy
+ * The entity id is used as a direct index into `sparse_`, so ids must satisfy
  * `id < CAPACITY`; @ref World sizes its EntityManager to the same CAPACITY to
  * guarantee this. Out-of-range ids are rejected rather than silently wrapped.
  */

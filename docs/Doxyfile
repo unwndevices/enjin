@@ -26,7 +26,7 @@ EXTRACT_LOCAL_CLASSES  = NO
 # Warning settings
 WARN_IF_UNDOCUMENTED   = YES
 WARN_IF_DOC_ERROR      = YES
-WARN_NO_PARAMDOC       = YES  # Detect missing parameter documentation
+WARN_NO_PARAMDOC       = NO   # @param/@return on every member is noise for this codebase
 QUIET                  = NO   # Ensure all warnings are visible
 WARN_LOGFILE           = doxygen-warnings.log  # Capture warnings to file
 

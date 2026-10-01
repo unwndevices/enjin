@@ -14,8 +14,8 @@
  * @file label.hpp
  * @brief Multi-line centered text label on the ui ECS
  *
- * Upstreamed from Eisei's `C_Label` (#121) as a data-only @ref LabelComponent
- * (the string plus its styling) and a @ref LabelSystem that word-wraps, centers
+ * Upstreamed from Eisei's `C_Label` (#121) as a data-only @ref enjin2::LabelComponent "LabelComponent"
+ * (the string plus its styling) and a @ref enjin2::LabelSystem "LabelSystem" that word-wraps, centers
  * and draws it to an `ICanvas<Pixel4>` through a `TextRenderer<Pixel4>`.
  *
  * Like the rest of the widget layer the label is presentation-only: the text

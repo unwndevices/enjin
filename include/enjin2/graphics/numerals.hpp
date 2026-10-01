@@ -6,20 +6,20 @@
  * HUD scores and timers are drawn from fixed-width `.njn` v2 **digit strips**,
  * not a proportional text face: monospace glyphs never jitter as a value climbs.
  * A strip is a plain sheet (`META`+`PIXL`, no `CLIP`) whose frame index *is* the
- * glyph — digit `d` → frame `d`, and `:` → frame @ref kNumeralColonFrame (10) on
+ * glyph — digit `d` → frame `d`, and `:` → frame @ref enjin2::kNumeralColonFrame "kNumeralColonFrame" (10) on
  * the timer strip. Advance is the sheet's `cellW`; there is no separate monospace
  * field.
  *
  * Four helpers, all filed upstream to enjin and mirrored in Lua:
- *   - @ref drawNumber / `number()` — padded, aligned, optional thousands sep.
- *   - @ref drawTimer  / `timer()`  — `mm:ss` from a millisecond count.
- *   - @ref RollingCounter — a value that eases toward a target with a critically
- *     damped @ref Spring (ADR-0002, `bounce=0`), the score-climb tween.
- *   - @ref Timer — a millisecond countdown/​countup value object, `mm:ss` format,
- *     polled @ref Timer::done (no zero callback).
+ *   - @ref enjin2::drawNumber "drawNumber" / `number()` — padded, aligned, optional thousands sep.
+ *   - @ref enjin2::drawTimer "drawTimer"  / `timer()`  — `mm:ss` from a millisecond count.
+ *   - @ref enjin2::RollingCounter "RollingCounter" — a value that eases toward a target with a critically
+ *     damped @ref enjin2::Spring "Spring" (ADR-0002, `bounce=0`), the score-climb tween.
+ *   - @ref enjin2::Timer "Timer" — a millisecond countdown/​countup value object, `mm:ss` format,
+ *     polled @ref enjin2::Timer::done "Timer::done" (no zero callback).
  *
  * The domain is **unsigned** — HUD scores and clocks are non-negative, so there
- * is no minus glyph. Glyph layout (@ref buildNumberGlyphs / @ref buildTimerGlyphs)
+ * is no minus glyph. Glyph layout (@ref enjin2::buildNumberGlyphs "buildNumberGlyphs" / @ref enjin2::buildTimerGlyphs "buildTimerGlyphs")
  * is single-sourced here so the C++ `ICanvas` draw and the Lua `gfx.number` blit
  * select identical frames at identical positions.
  */
@@ -42,7 +42,7 @@ inline constexpr uint16_t kNumeralColonFrame = 10;
 /// Sentinel glyph meaning "advance one cell without drawing" (a blank space pad).
 inline constexpr uint16_t kNumeralBlank = 0xFFFF;
 
-/// Maximum glyph cells any single @ref buildNumberGlyphs / @ref buildTimerGlyphs
+/// Maximum glyph cells any single @ref enjin2::buildNumberGlyphs "buildNumberGlyphs" / @ref enjin2::buildTimerGlyphs "buildTimerGlyphs"
 /// call can emit (10 uint32 digits + generous pad + thousands separators).
 inline constexpr size_t kNumeralMaxCells = 24;
 
@@ -53,7 +53,7 @@ enum class NumberAlign : uint8_t {
     Center,  ///< x is the field's centre.
 };
 
-/// Lua names of @ref NumberAlign, indexed by it: gfx.number/gfx.timer (opts.align)
+/// Lua names of @ref enjin2::NumberAlign "NumberAlign", indexed by it: gfx.number/gfx.timer (opts.align)
 /// and gfx.textAligned match against this array, and their descriptors publish it.
 inline constexpr const char* kNumberAlignNames[] = {"left", "right", "center"};
 static_assert(sizeof(kNumberAlignNames) / sizeof(kNumberAlignNames[0]) ==
@@ -84,7 +84,7 @@ struct NumberStyle {
  * @param style Padding / separator options (alignment is applied at draw time).
  * @return Number of cells written (digits + pad + separators), clamped to @p cap.
  *
- * @ref kNumeralBlank entries are advance-only (blank space pad); every other
+ * @ref enjin2::kNumeralBlank "kNumeralBlank" entries are advance-only (blank space pad); every other
  * entry is a glyph frame index for the digit strip.
  */
 size_t buildNumberGlyphs(uint16_t* out, size_t cap, uint32_t value, const NumberStyle& style);
@@ -97,7 +97,7 @@ size_t buildNumberGlyphs(uint16_t* out, size_t cap, uint32_t value, const Number
  *            minutes to at least 2 digits (more if the clock exceeds 99 minutes).
  * @return Number of cells written (minute digits + colon + two second digits).
  *
- * The colon is emitted as frame @ref kNumeralColonFrame, so this needs the timer
+ * The colon is emitted as frame @ref enjin2::kNumeralColonFrame "kNumeralColonFrame", so this needs the timer
  * strip (11 frames), not the score strip.
  */
 size_t buildTimerGlyphs(uint16_t* out, size_t cap, uint32_t ms);
@@ -121,7 +121,7 @@ inline int16_t numeralStartX(int16_t x, int width, NumberAlign align) {
 
 /**
  * @brief Draw @p value from @p strip at (@p x, @p y) and return the field width.
- * @return Field width in pixels (also what @ref numeralFieldWidth would give),
+ * @return Field width in pixels (also what @ref enjin2::numeralFieldWidth "numeralFieldWidth" would give),
  *         suitable for chaining a caret. Zero for an empty/invalid strip.
  */
 int drawNumber(ICanvas<Pixel4>& canvas, const SpriteSheet& strip,
@@ -195,7 +195,7 @@ struct RollingCounter {
 // Timer — a millisecond countdown / countup value object
 // ---------------------------------------------------------------------------
 
-/// Direction a @ref Timer runs.
+/// Direction a @ref enjin2::Timer "Timer" runs.
 enum class TimerMode : uint8_t {
     CountDown, ///< Runs from the start value down to 0 (@ref Timer::done at 0).
     CountUp,   ///< Runs from 0 up to the start value (@ref Timer::done at the target).

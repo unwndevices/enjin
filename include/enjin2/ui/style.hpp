@@ -10,9 +10,9 @@ namespace enjin2 {
  * @brief A single visual style — the design tokens one drawable reads at draw
  *        time (colours as ramp indices, plus layout metrics).
  *
- * A `Style` is the per-slot half of the two-level theming model (see @ref
- * StyleSlot). It is a flat constexpr aggregate so the ROM defaults
- * (@ref kDefaultStyles) live in flash and an applet override is a plain copy.
+ * A `Style` is the per-slot half of the two-level theming model (see
+ * `StyleSlot`). It is a flat constexpr aggregate so the ROM defaults
+ * (`kDefaultStyles`) live in flash and an applet override is a plain copy.
  *
  * Colours are **role indices into the ramp palette**, never hexes: `fill` is a
  * ramp's base shade (`Palette::ramp(role, SHADE_BASE)`), so re-authoring the

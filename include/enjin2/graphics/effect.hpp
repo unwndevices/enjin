@@ -8,8 +8,8 @@ namespace enjin2 {
 
 /**
  * @file effect.hpp
- * @brief The index-shader data model: a 1-bit tileable @ref Mask × a 16-entry
- *        @ref Remap × integer phase.
+ * @brief The index-shader data model: a 1-bit tileable @ref enjin2::Mask "Mask" × a 16-entry
+ *        @ref enjin2::Remap "Remap" × integer phase.
  *
  * An *index shader* recolours pixels *inside* a layer. It is three pieces of
  * data, never bespoke code: a tileable 1-bit **mask** that says *where*, a
@@ -18,11 +18,11 @@ namespace enjin2 {
  * never relative to the shaded rect — so a lone dirty tile redraws with the same
  * pattern phase as its neighbours and no seam appears at the tile boundary.
  *
- * The two engine apply sites — @ref Canvas4::shade over a rect and @ref
- * SpriteSheet::draw through a sprite silhouette — funnel every surviving pixel
- * through the one shared stage @ref Effect::shadePixel; the Lua `gfx.drawSprite`
+ * The two engine apply sites — @ref enjin2::Canvas4::shade "Canvas4::shade" over a rect and `SpriteSheet::draw`
+ * through a sprite silhouette — funnel every surviving pixel
+ * through the one shared stage @ref enjin2::Effect::shadePixel "Effect::shadePixel"; the Lua `gfx.drawSprite`
  * binding applies that same stage inline over its flip/rotate blit. Holo, dim,
- * fade, scanline and ghost are all instances built from @ref Remap primitives
+ * fade, scanline and ghost are all instances built from @ref enjin2::Remap "Remap" primitives
  * (see the `Effect::` factories).
  */
 

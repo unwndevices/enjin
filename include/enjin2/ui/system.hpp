@@ -343,7 +343,7 @@ public:
         size_t index_;                           ///< Current position in the span
 
         /**
-         * @brief Advance @ref index_ to the next matching entity (or to the end)
+         * @brief Advance `index_` to the next matching entity (or to the end)
          *
          * Scans forward from the current position, skipping entities the predicate
          * rejects, and stops on the first match or when the span is exhausted.

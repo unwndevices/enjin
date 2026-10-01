@@ -15,7 +15,7 @@
  * @brief Circular fill-up gauge (VU meter) on the ui ECS
  *
  * Upstreamed from Eisei's `FillUpGauge`/`C_FillUpGauge` (#121) as a data-only
- * @ref GaugeComponent (value + mode) and a @ref GaugeSystem that draws the dithered
+ * @ref enjin2::GaugeComponent "GaugeComponent" (value + mode) and a @ref enjin2::GaugeSystem "GaugeSystem" that draws the dithered
  * fill, the level line and the rim to an `ICanvas<Pixel4>`.
  *
  * The old widget rendered through an offscreen canvas masked by a circle bitmap;
@@ -29,7 +29,7 @@
 namespace enjin2 {
 
 /**
- * @brief Fill direction for a @ref GaugeComponent
+ * @brief Fill direction for a @ref enjin2::GaugeComponent "GaugeComponent"
  */
 enum class GaugeMode {
     Unidirectional, ///< Fills bottom-to-top for a value in [0, 1]

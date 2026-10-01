@@ -174,8 +174,8 @@ struct Palette {
     /**
      * @brief Index of a ramp/shade pair (structural, palette-independent).
      * @param rampId Ramp (hue) 0-4.
-     * @param shade Tone within the ramp: @ref SHADE_LIGHT / @ref SHADE_BASE /
-     *              @ref SHADE_DARK.
+     * @param shade Tone within the ramp: `SHADE_LIGHT` / `SHADE_BASE` /
+     *              `SHADE_DARK`.
      * @return The palette index `rampId * RAMP_SHADES + shade`.
      */
     static constexpr uint8_t ramp(uint8_t rampId, uint8_t shade) {

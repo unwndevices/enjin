@@ -12,12 +12,12 @@
  * @brief Grayscale-bitmap icon on the ui ECS
  *
  * Upstreamed from Eisei's `Icon`/`C_Sprite` (#121) as a data-only
- * @ref IconComponent (a borrowed grayscale bitmap plus its matte) and an
- * @ref IconSystem that blits it to an `ICanvas<Pixel4>`.
+ * @ref enjin2::IconComponent "IconComponent" (a borrowed grayscale bitmap plus its matte) and an
+ * @ref enjin2::IconSystem "IconSystem" that blits it to an `ICanvas<Pixel4>`.
  *
  * The icon's size is intrinsic to its bitmap, so — unlike the list/label — the
  * entity pairs the component with just a PositionComponent (top-left); there is no
- * layout box. Pixels equal to the @ref IconComponent::matte value are treated as
+ * layout box. Pixels equal to the @ref enjin2::IconComponent::matte "IconComponent::matte" value are treated as
  * transparent (Eisei's 16-is-clear convention), so the same buffer carries both
  * the artwork (values 0..15) and its cutout.
  */

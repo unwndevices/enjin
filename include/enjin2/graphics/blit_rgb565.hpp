@@ -11,7 +11,7 @@
  * The mapping index→RGB565 is passed in as a 16-entry lookup table so the hot
  * loop stays a pure, allocation-free, palette-agnostic memory transform (this is
  * the unit-tested seam). Build the table once per palette/orientation with
- * @ref makeRgb565Lut, which folds in the panel's byte order.
+ * @ref enjin2::makeRgb565Lut "makeRgb565Lut", which folds in the panel's byte order.
  */
 
 #pragma once

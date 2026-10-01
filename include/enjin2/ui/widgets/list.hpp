@@ -18,7 +18,7 @@
  *
  * Upstreamed from Eisei's `C_List` (#121). The rewrite is deliberately not a port
  * of the old Canvas8 member API: the widget is split into a data-only
- * @ref ListComponent (state the host mutates) and a @ref ListSystem that draws it
+ * @ref enjin2::ListComponent "ListComponent" (state the host mutates) and a @ref enjin2::ListSystem "ListSystem" that draws it
  * to an `ICanvas<Pixel4>` through a `TextRenderer<Pixel4>`, themed via theme.hpp.
  *
  * Presentation-only by design: items arrive **pre-stringified** — the old

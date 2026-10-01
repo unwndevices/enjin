@@ -558,7 +558,9 @@ private:
 
     /**
      * @brief One coordinate of a curve at its turn in the other coordinate
-     * @param a Start, @p b control and @p e end value of this coordinate
+     * @param a Start value of this coordinate
+     * @param b Control value of this coordinate
+     * @param e End value of this coordinate
      * @param t,u,d The other coordinate turns at t / d, with u = d − t
      *
      * The Bezier a·(1−τ)² + 2b·τ(1−τ) + e·τ² at τ = t / d, rounded:
@@ -648,7 +650,7 @@ private:
      * @brief A sagged Span as a graph over its columns (@ref drawSaggedLine)
      *
      * Columns k = 0..w run from (x0,y0) toward the far end, @p dy rows below.
-     * @ref height is the curve's depth below y0 at half-column h (h = 2k at a
+     * `height` is the curve's depth below y0 at half-column h (h = 2k at a
      * column's centre, odd at the edge between two columns) in units of
      * 1 / (2w²) row, which makes it exact: 2w²·y(h/2) = w·dy·h + 2·sag·h·(2w − h).
      */
@@ -669,6 +671,8 @@ private:
 
     /**
      * @brief Walk a sagged Span column by column, on @ref drawLine's decisions
+     * @param span The sagged Span being walked
+     * @param stroke Pixel sink
      * @param col Start column
      * @param row Start row (relative to the Span's y0)
      * @param dc Column step, +1 or -1
@@ -805,12 +809,14 @@ private:
      * @param walk In: nextX/nextY = the end to start from. Out: the first
      *        pixel not drawn, and the last pixel drawn before @p turn
      *        (lastX/lastY unchanged if none)
+     * @param x1,y1 Control point
+     * @param x2,y2 The curve's far end
      * @param turn Column (@p turnsY) or row where the curve turns back
      * @param turnsY y turns back, so @p turn is a column; else a row
      * @return true if the walk reached @p turn, or turned within a pixel of it
      *         (the turn lies between), without leaving its quadrant
      *
-     * @ref drawQuadSegment's error terms, but for the whole curve (x2,y2 is
+     * `drawQuadSegment`'s error terms, but for the whole curve (x2,y2 is
      * the far end), so the walk tracks the true curve right up to the turn.
      */
     static bool walkQuadHalf(Stroke* stroke, HalfWalk& walk,

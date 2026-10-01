@@ -16,13 +16,13 @@
  * @file popup.hpp
  * @brief Circular modal popup on the ui ECS
  *
- * Upstreamed from Eisei's `PopUpUI` (#121) as a data-only @ref PopUpComponent (two
- * text lines, an icon glyph, and an optional auto-hide timer) and a @ref PopUpSystem
+ * Upstreamed from Eisei's `PopUpUI` (#121) as a data-only @ref enjin2::PopUpComponent "PopUpComponent" (two
+ * text lines, an icon glyph, and an optional auto-hide timer) and a @ref enjin2::PopUpSystem "PopUpSystem"
  * that draws the circular card and its icon to an `ICanvas<Pixel4>`.
  *
  * The popup is a centered modal, so — unlike the top-left widgets — its
  * PositionComponent marks the circle **center**. The auto-hide countdown is the
- * pure @ref PopUpComponent::advance seam, mirroring the list's marquee: the system
+ * pure @ref enjin2::PopUpComponent::advance "PopUpComponent::advance" seam, mirroring the list's marquee: the system
  * ticks it before drawing. Icon artwork is drawn from primitives rather than a
  * bitmap so the popup carries no assets.
  */

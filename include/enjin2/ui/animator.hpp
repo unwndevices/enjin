@@ -14,12 +14,12 @@
  *
  * Collapses the *value interpolation* of Eisei's three animators —
  * `C_PositionAnimator` (Vector2), `C_ParameterAnimator<T>` (scalar) and
- * `C_KeyframeAnimator` (Vector2) — into one data-only @ref AnimatorComponent
+ * `C_KeyframeAnimator` (Vector2) — into one data-only @ref enjin2::AnimatorComponent "AnimatorComponent"
  * parameterised on the animated value type, driven by a single
- * @ref AnimatorSystem (#121).
+ * @ref enjin2::AnimatorSystem "AnimatorSystem" (#121).
  *
  * The rewrite keeps the timeline and the clock together on the component and
- * exposes the interpolated value through a pure @ref AnimatorComponent::value
+ * exposes the interpolated value through a pure @ref enjin2::AnimatorComponent::value "AnimatorComponent::value"
  * seam. The system only advances the clock each frame; **applying** the value
  * (writing it onto a PositionComponent, an opacity, a frame index) stays at the
  * host edge, matching the presentation-only split the rest of the widgets use.
@@ -29,10 +29,10 @@
  * Two side-channels of the old animators are deliberately **not** carried here,
  * because they are no longer this type's concern:
  *   - `C_KeyframeAnimator`'s per-keyframe `AnimationState` (a sprite-frame index)
- *     is a sprite concern; the host advances the sprite alongside reading @ref
- *     value, rather than the animator reaching into an animation component.
+ *     is a sprite concern; the host advances the sprite alongside reading
+ *     `value()`, rather than the animator reaching into an animation component.
  *   - The completion callback (`SetEndCallback`) becomes the pollable
- *     @ref AnimatorComponent::finished flag; the host reacts to it in its own
+ *     @ref enjin2::AnimatorComponent::finished "AnimatorComponent::finished" flag; the host reacts to it in its own
  *     update rather than the animator invoking a stored `std::function`.
  */
 

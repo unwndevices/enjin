@@ -604,7 +604,7 @@ public:
      * The GFX-font path is Canvas8::write byte-for-byte (sweep adjudication,
      * unwn #168): the wrap predicate tests the glyph's scaled ink edge
      * (xOffset + width), not its advance; empty glyphs (space) advance the
-     * cursor but never trigger a wrap; '\r' is ignored; out-of-range
+     * cursor but never trigger a wrap; a carriage return is ignored; out-of-range
      * characters do nothing at all. The built-in 5x7 path keeps its own
      * advance-based wrap — it serves the engine's scripting API and has no
      * BASE counterpart (waived sub-range, unwn #168).

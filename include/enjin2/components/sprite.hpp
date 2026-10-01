@@ -7,14 +7,14 @@
  *
  *   - **Clips (ADR-0003 §5)** — the retained model. A clip is a per-frame list
  *     `{frameIndex, durationMs, eventId}` plus a loop mode (Once / Loop /
- *     PingPong), decoded from a `.njn` v2 CLIP chunk (@ref NjnClip). play() a
+ *     PingPong), decoded from a `.njn` v2 CLIP chunk (@ref enjin2::NjnClip "NjnClip"). play() a
  *     clip by name; lateUpdate() advances it by real per-frame durations, not a
  *     single sheet FPS. Frame events are **polled** — justAdvanced(),
  *     justCompleted(), frameEvent() — never callbacks.
  *   - **Legacy whole-sheet FPS** — the original model, kept for back-compat
  *     (setFPS / setMode / setFrame). Active only while no clip is playing.
  *
- * Flips (hflip / vflip) go through the flip-aware @ref SpriteSheet::draw; there
+ * Flips (hflip / vflip) go through the flip-aware @ref enjin2::SpriteSheet::draw "SpriteSheet::draw"; there
  * is deliberately **no runtime rot90** — rotation is authored frames, scrubbed
  * by angle via setFrameForAngle() (the flipper) or `<base>_<NN>` facings.
  *

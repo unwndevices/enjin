@@ -4,7 +4,7 @@
  *
  * The only dynamic entity in either slice (pinball ball / maze marble): a circle
  * with position, velocity, radius, restitution and drag. It steps against a
- * scene-level @ref ColliderSet (via `engine.scene.colliders()`), referenced here
+ * scene-level @ref enjin2::ColliderSet "ColliderSet" (via `engine.scene.colliders()`), referenced here
  * with setColliders() — never owned. Every `step(dt)` runs N fixed-dt substeps
  * (swept conservative-advancement TOI + depenetration+impulse, see
  * colliders.hpp) and **buffers** the resolved contacts, which the applet polls

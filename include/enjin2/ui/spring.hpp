@@ -6,7 +6,7 @@
  * @file spring.hpp
  * @brief Chrome motion substrate — a retargetable spring beside @ref animator.hpp
  *
- * The keyframe @ref AnimatorComponent is stateless about its target: a new
+ * The keyframe @ref enjin2::AnimatorComponent "AnimatorComponent" is stateless about its target: a new
  * destination restarts a timeline and cannot inherit the value's in-flight
  * velocity, so three fast encoder detents queue three animations instead of
  * bending one arc. A spring is the opposite — it holds position *and* velocity
@@ -15,7 +15,7 @@
  * (retarget-never-queue). Springs are chrome-only; the world uses none (R3).
  *
  * The integrator is **semi-implicit (symplectic) Euler** at mass 1 — `v += a·dt`
- * *then* `x += v·dt`. It is **fixed-dt sub-stepped** (@ref kSpringSubsteps = 4 at
+ * *then* `x += v·dt`. It is **fixed-dt sub-stepped** (@ref enjin2::kSpringSubsteps "kSpringSubsteps" = 4 at
  * 30 fps) because plain semi-implicit Euler diverges once `ω·dt > 2` (stiffness
  * past ~3600 at a 33 ms frame); the sub-steps keep a stiff `pop` stable where the
  * first, un-substepped cut exploded.
@@ -23,7 +23,7 @@
  * Authoring speaks **Apple's perceptual pair** (duration, bounce) while the
  * struct stores the **raw pair** (stiffness k, damping ratio ζ): `k = (2π/d)²`,
  * `ζ = 1 − bounce`. Damping is `c = ζ·2·√k` so ζ=1 is critically damped (no
- * overshoot) and ζ<1 overshoots. Presets are in @ref springpreset.
+ * overshoot) and ζ<1 overshoots. Presets are in @ref enjin2::springpreset "springpreset".
  *
  * The **settle threshold** is what makes R4 hold after motion ends: a spring is
  * settled once `|v| < velEps` *and* `|x − target| < posEps`, with
@@ -31,11 +31,11 @@
  * dirty a tile) and `velEps = posEps × 1000/16 ≈ 31 px/s` (Android's rule). Half
  * a pixel under the round makes the jitter-forever bug structurally impossible.
  *
- * Two seams: the scalar @ref Spring here is the per-key integrator the Lua tween
+ * Two seams: the scalar @ref enjin2::Spring "Spring" here is the per-key integrator the Lua tween
  * pool drives (`engine.tween.spring`), and it is deliberately free of any UI-ECS
  * include so `scripting/bindings.hpp` can hold a `Spring` by value. The ECS form
- * — `SpringComponent<T>` + `SpringSystem`, on the same priority-100 tick as
- * @ref AnimatorSystem — lives in the sibling `spring_component.hpp`, which pulls
+ * — `SpringComponent\<T\>` + `SpringSystem`, on the same priority-100 tick as
+ * @ref enjin2::AnimatorSystem "AnimatorSystem" — lives in the sibling `spring_component.hpp`, which pulls
  * in `ui/component.hpp`. They are split because enjin defines two distinct
  * `enjin2::Component` types (`core/` vs `ui/`) that cannot share a translation
  * unit; keeping the scalar core UI-free lets both the bindings and the ECS layer

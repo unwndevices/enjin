@@ -11,7 +11,7 @@
  * The scalar integrator, presets and settle thresholds live in @ref spring.hpp
  * (UI-ECS-free so `scripting/bindings.hpp` can hold a `Spring` by value). This
  * header adds the ECS wrapper for C++ consumers, mirroring
- * @ref AnimatorComponent / @ref AnimatorSystem, and is only included in
+ * @ref enjin2::AnimatorComponent "AnimatorComponent" / @ref enjin2::AnimatorSystem "AnimatorSystem", and is only included in
  * translation units that use the ui `World` (enjin defines a second, unrelated
  * `enjin2::Component` under `core/`, so the two cannot mix in one TU).
  */
@@ -22,7 +22,7 @@ namespace enjin2 {
  * @brief ECS spring for a single animated value, generic in T
  * @tparam T Animated value type (float, or an affine type with `T±T`, `T*float`)
  *
- * Data-only, like @ref AnimatorComponent: @ref SpringSystem advances it, the host
+ * Data-only, like @ref enjin2::AnimatorComponent "AnimatorComponent": @ref SpringSystem advances it, the host
  * reads @ref value and applies it wherever it belongs (an anchor offset, a
  * transform), never a position directly on the scene object. @ref retarget moves
  * the goal while keeping x+v so in-flight velocity is inherited (R1).
@@ -62,7 +62,7 @@ struct SpringComponent : public Component<SpringComponent<T>> {
  * @tparam TWorld World composing SpringComponent<T>
  * @tparam T Animated value type
  *
- * The spring analogue of @ref AnimatorSystem: it only integrates; reading
+ * The spring analogue of @ref enjin2::AnimatorSystem "AnimatorSystem": it only integrates; reading
  * @ref SpringComponent::value and applying it stays with the host. Ticks at
  * priority 100 (before drawing) so the frame sees fresh values, exactly like the
  * animator. Instantiate one per animated value type in play.

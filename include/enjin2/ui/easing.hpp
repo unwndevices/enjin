@@ -8,7 +8,7 @@
  *
  * Upstreamed from the Eisei widget layer (`Libs/enjin/utils/Easing.hpp`, #121).
  * Every function maps a normalized time @c t in [0, 1] to an eased position; the
- * animators store these by @ref EasingFunction pointer and drive keyframe
+ * animators store these by @ref enjin2::EasingFunction "EasingFunction" pointer and drive keyframe
  * interpolation with them.
  *
  * Unless noted, each curve pins its endpoints (f(0)=0, f(1)=1) so an animation
