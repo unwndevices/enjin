@@ -9,7 +9,7 @@ sidebar_label: LuaEngine
 Lua engine for embedded scripting support. 
 
 
-Provides a lightweight Lua scripting environment optimized for embedded systems. Features static memory management and love2d.graphics-style API for familiarity. 
+Provides a lightweight Lua scripting environment optimized for embedded systems. It offers a love2d.graphics-style API for familiarity. The Lua heap is uncapped. 
 
 ---
 
@@ -180,14 +180,6 @@ Lua state pointer
 ---
 
 ## Private Methods
-
-### `static void * luaAllocator(void *ud, void *ptr, size_t osize, size_t nsize)`
-
-Custom Lua allocator using static memory pool. 
-
-udUser data (LuaEngine instance) ptrPointer to reallocate osizeOriginal size nsizeNew size Allocated memory or nullptr 
-
----
 
 ### `static int luaPanic(lua_State *L)`
 

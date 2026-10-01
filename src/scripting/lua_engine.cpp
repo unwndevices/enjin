@@ -1,17 +1,9 @@
 #include "../../include/enjin2/scripting/lua_engine.hpp"
 #include "../../include/enjin2/scripting/lua_platform.hpp"
-#include <cstring>
 #include <fstream>
 #include <iostream>
-#ifdef ESP32
-#include <esp_heap_caps.h>
-#endif
 
 namespace enjin2 {
-
-// Static member definitions
-size_t LuaEngine::memoryUsed = 0;
-char* LuaEngine::memoryPool = nullptr;
 
 LuaEngine::LuaEngine() : L(nullptr), initialized(false) {
 }
@@ -24,25 +16,6 @@ bool LuaEngine::initialize() {
     if (initialized) {
         return true;
     }
-    
-    // Allocate memory pool
-#ifdef ESP32
-    // Prefer PSRAM (MALLOC_CAP_SPIRAM) on ESP32-S3 with 8MB PSRAM to keep DRAM free.
-    // Fall back to internal heap if PSRAM is unavailable.
-    memoryPool = static_cast<char*>(
-        heap_caps_malloc(LuaPlatformConfig::MEMORY_LIMIT, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
-    if (!memoryPool) {
-        memoryPool = static_cast<char*>(
-            heap_caps_malloc(LuaPlatformConfig::MEMORY_LIMIT, MALLOC_CAP_8BIT));
-    }
-    if (!memoryPool) {
-        return false;
-    }
-#else
-    memoryPool = new char[LuaPlatformConfig::MEMORY_LIMIT];
-#endif
-    memoryUsed = 0;
-    std::memset(memoryPool, 0, LuaPlatformConfig::MEMORY_LIMIT);
     
     // Create platform-appropriate Lua state
     L = LuaPlatform::createState();
@@ -70,15 +43,6 @@ void LuaEngine::shutdown() {
     }
     initialized = false;
     loadedScripts.clear();
-    memoryUsed = 0;
-    if (memoryPool) {
-#ifdef ESP32
-        free(memoryPool);
-#else
-        delete[] memoryPool;
-#endif
-        memoryPool = nullptr;
-    }
 }
 
 LuaResult LuaEngine::executeString(const std::string& code) {
@@ -207,46 +171,6 @@ size_t LuaEngine::getMemoryUsage() const {
 
 void LuaEngine::clearScripts() {
     loadedScripts.clear();
-}
-
-void* LuaEngine::luaAllocator(void* ud, void* ptr, size_t osize, size_t nsize) {
-    LuaEngine* engine = static_cast<LuaEngine*>(ud);
-    
-    if (nsize == 0) {
-        // Free memory
-        if (ptr && osize > 0) {
-            memoryUsed -= osize;
-        }
-        return nullptr;
-    }
-    
-    if (ptr == nullptr) {
-        // Allocate new memory
-        if (memoryUsed + nsize > LuaPlatformConfig::MEMORY_LIMIT) {
-            return nullptr; // Out of memory
-        }
-        
-        void* newPtr = &memoryPool[memoryUsed];
-        memoryUsed += nsize;
-        return newPtr;
-    } else {
-        // Reallocate memory
-        if (memoryUsed - osize + nsize > LuaPlatformConfig::MEMORY_LIMIT) {
-            return nullptr; // Out of memory
-        }
-        
-        if (nsize <= osize) {
-            // Shrinking, no need to move
-            memoryUsed = memoryUsed - osize + nsize;
-            return ptr;
-        } else {
-            // Growing, need to move to end of pool
-            void* newPtr = &memoryPool[memoryUsed];
-            std::memcpy(newPtr, ptr, osize);
-            memoryUsed = memoryUsed - osize + nsize;
-            return newPtr;
-        }
-    }
 }
 
 int LuaEngine::luaPanic(lua_State* L) {

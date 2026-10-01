@@ -45,12 +45,10 @@ namespace enjin2 {
  */
 struct LuaPlatformConfig {
 #ifdef VCV_RACK
-    static constexpr size_t MEMORY_LIMIT = 1024 * 1024;  ///< Memory limit for desktop (1MB)
     static constexpr bool ENABLE_ALL_LIBS = true;         ///< Enable all Lua libraries on desktop
     static constexpr bool ENABLE_FILE_IO = true;          ///< Enable file operations on desktop
     static constexpr bool ENABLE_DEBUG = true;            ///< Enable debug facilities on desktop
 #elif defined(ESP32)
-    static constexpr size_t MEMORY_LIMIT = 2 * 1024 * 1024; ///< Memory limit for ESP32 (2MB from PSRAM)
     static constexpr bool ENABLE_ALL_LIBS = false;        ///< Minimal libraries only on ESP32
     static constexpr bool ENABLE_FILE_IO = false;         ///< No file I/O on ESP32 for security
     static constexpr bool ENABLE_DEBUG = false;           ///< No debug on ESP32 to save memory

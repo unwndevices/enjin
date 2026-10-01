@@ -1,6 +1,6 @@
 /**
  * @file lua_engine.hpp
- * @brief Lua engine for embedded scripting with static memory management
+ * @brief Lua engine for embedded scripting
  *
  * Provides a lightweight Lua scripting environment optimized for embedded systems
  * with love2d.graphics-style API for familiar drawing operations.
@@ -44,17 +44,13 @@ using LuaCallback = std::function<int(lua_State*)>;
  * @brief Lua engine for embedded scripting support
  * 
  * Provides a lightweight Lua scripting environment optimized for embedded systems.
- * Features static memory management and love2d.graphics-style API for familiarity.
+ * It offers a love2d.graphics-style API for familiarity. The Lua heap is uncapped.
  */
 class LuaEngine {
 private:
     lua_State* L;                           ///< Lua state
     bool initialized;                       ///< Whether engine is initialized
     std::vector<std::string> loadedScripts; ///< List of loaded script names
-    
-    // Static memory management  
-    static size_t memoryUsed;               ///< Current memory usage
-    static char* memoryPool; ///< Memory pool pointer (PSRAM on ESP32, heap on desktop)
     
 public:
     /**
@@ -213,16 +209,6 @@ public:
     lua_State* getState() { return L; }
 
 private:
-    /**
-     * @brief Custom Lua allocator using static memory pool
-     * @param ud User data (LuaEngine instance)
-     * @param ptr Pointer to reallocate
-     * @param osize Original size
-     * @param nsize New size
-     * @return Allocated memory or nullptr
-     */
-    static void* luaAllocator(void* ud, void* ptr, size_t osize, size_t nsize);
-    
     /**
      * @brief Handle Lua panic
      * @param L Lua state

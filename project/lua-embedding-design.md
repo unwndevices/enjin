@@ -108,7 +108,7 @@ Clean separation: C++ side owns collision, drawing, and physics; Lua side owns l
 
 ### What exists
 
-- `LuaEngine` — wraps Lua/LuaJIT, uses a static memory pool (`char memoryPool[MEMORY_LIMIT]`), custom allocator, panic handler.
+- `LuaEngine` — wraps Lua/LuaJIT, panic handler. (A static memory pool and its custom allocator were here once but were never wired to Lua; removed in Tomodachi #276. The Lua heap is uncapped.)
 - `LuaBindings` — love2d-style graphics API registered as globals: `rectangle()`, `circle()`, `setColor()`, `point()`, `line()`, etc. 16-slot fixed sprite pool (`newSprite`, `drawSprite`, `updateSprite`, `setFrame`). Input polling (`isButtonHeld`, `isButtonJustPressed`, `isButtonJustReleased`, `getAxis`).
 - `C_LuaScript` — component that wraps a script. Exposes `init()`, `update(dt)`, `draw()` callbacks. Can set/get Lua variables. Has error tracking and a performance counter.
 - `LuaCanvas` — type-erased wrapper around `ICanvas<Pixel4>` or `Canvas8` that lets Lua bindings work without knowing pixel type.
@@ -120,7 +120,7 @@ Clean separation: C++ side owns collision, drawing, and physics; Lua side owns l
 3. **No object access from Lua.** A script running inside `C_LuaScript` cannot read the position of its parent Object, cannot find sibling components, cannot reach other Objects in the scene.
 4. **No script-to-script communication.** There is no message bus or equivalent.
 5. **No scene lifecycle in Lua.** Scripts don't know when the scene activates or deactivates.
-6. **GC is unmanaged.** The static memory pool bounds total heap but there is no explicit GC step control.
+6. **GC is unmanaged.** Nothing bounds the total heap and there is no explicit GC step control.
 7. **Error recovery is partial.** `C_LuaScript` tracks errors but the engine has no defined behavior for "what happens after a script error."
 
 ### Lessons from eisei usage
@@ -163,7 +163,7 @@ A script error should log, disable the offending script, and continue. This is e
 For embedded targets, automatic GC at arbitrary times causes frame drops. Expose `lua.collectgarbage()` control and document when to call it (e.g., on scene transitions, not mid-frame).
 
 **P9 — Memory budget is compile-time.**
-The current static pool approach is correct. The pool size should be a named constant in `LuaPlatformConfig` and must be documented clearly (what fits in 32 KB vs 254 KB).
+The current static pool approach is correct. The pool size should be a named constant in `LuaPlatformConfig` and must be documented clearly (what fits in 32 KB vs 254 KB). *(Superseded by Tomodachi #276: the pool was removed and the heap is uncapped.)*
 
 **P10 — Scripts should be loadable from multiple sources.**
 Embedded targets load from flash (binary). Desktop loads from filesystem. WASM loads from virtual FS. The `C_LuaScript` source abstraction should be explicit, not implicit.
@@ -345,7 +345,7 @@ end
 | Desktop (SDL) | OS-managed | 4 MB | 64 |
 | WASM | 16 MB heap | 2 MB | 32 |
 
-The static pool stays. `LuaPlatformConfig::MEMORY_LIMIT` must be set per platform in the build system, not hardcoded in header.
+Superseded (Tomodachi #276): the static pool and `LuaPlatformConfig::MEMORY_LIMIT` were removed, since the pool was never given to Lua. The Lua heap is uncapped; whether to cap it is an open decision.
 
 ---
 
