@@ -554,6 +554,78 @@ static void test_write_store_to_buffer_escaped_string() {
 }
 
 // ============================================================
+// Store namespaces (Tomodachi #244)
+// ============================================================
+static void test_store_key_length_same_on_every_host() {
+    printf("--- store key length: 63 bytes on every host ---\n");
+
+    StoreFixture f;
+    LuaResult ok = f.exec(
+        "ok20 = engine.store.save('abcdefghijklmnopqrst', 1) and 1 or 0\n"
+        "ok63 = engine.store.save(string.rep('k', 63), 2) and 1 or 0\n"
+    );
+    ASSERT(ok.success, "20- and 63-byte keys should not raise");
+    ASSERT(f.getNum("ok20") == 1.0, "a 20-character key should save");
+    ASSERT(f.getNum("ok63") == 1.0, "a 63-byte key should save");
+
+    LuaResult tooLong = f.exec("engine.store.save(string.rep('k', 64), 3)\n");
+    ASSERT(!tooLong.success, "a 64-byte key should raise");
+}
+
+static void test_store_namespace_starts_empty() {
+    printf("--- setStoreNamespace hands over an empty store ---\n");
+
+    StoreFixture f;
+    f.bindings.setStoreNamespace("first");
+    f.exec("engine.store.save('score', 10)\n");
+    ASSERT(f.bindings.getStore().count() == 1, "first applet saved one key");
+    ASSERT(strcmp(f.bindings.getStore().getNamespace(), "first") == 0, "namespace is 'first'");
+
+    f.bindings.setStoreNamespace("second");
+    LuaResult r = f.exec("leaked = (engine.store.load('score') == nil) and 1 or 0\n");
+    ASSERT(r.success, "load should not error");
+    ASSERT(f.getNum("leaked") == 1.0, "the next applet should not see the last one's keys");
+    ASSERT(strcmp(f.bindings.getStore().getNamespace(), "second") == 0, "namespace is 'second'");
+
+    f.bindings.setStoreNamespace(nullptr);
+    ASSERT(f.bindings.getStore().count() == 0, "null clears the store");
+    ASSERT(f.bindings.getStore().getNamespace()[0] == '\0', "null leaves it unscoped");
+}
+
+static void test_store_namespace_drops_desktop_path() {
+    printf("--- setStoreNamespace drops the last owner's desktop path ---\n");
+
+    const char* tmpPath = "/tmp/enjin_store_ns_test.json";
+    remove(tmpPath);
+    StoreFixture f;
+    f.exec("engine.store.path('/tmp/enjin_store_ns_test.json')\n");
+    f.bindings.setStoreNamespace("next");
+    LuaResult r = f.exec("flushed = engine.store.flush() and 1 or 0\n");
+    ASSERT(r.success, "flush should not error");
+    ASSERT(f.getNum("flushed") == 0.0, "flush has no path after a namespace change");
+    FILE* file = fopen(tmpPath, "r");
+    ASSERT(file == nullptr, "nothing was written to the previous owner's file");
+    if (file) fclose(file);
+    remove(tmpPath);
+}
+
+static void test_store_nvs_key_for_namespace() {
+    printf("--- NVS blob key per namespace ---\n");
+
+    char unscoped[16], a[16], a2[16], b[16], longId[16];
+    LuaStore::nvsKeyFor("", unscoped);
+    LuaStore::nvsKeyFor("tuner", a);
+    LuaStore::nvsKeyFor("tuner", a2);
+    LuaStore::nvsKeyFor("parrot-talkie", b);
+    LuaStore::nvsKeyFor("a-very-long-applet-identifier-well-past-fifteen", longId);
+    ASSERT(strcmp(unscoped, "store") == 0, "unscoped keeps the old 'store' blob");
+    ASSERT(strlen(a) <= 15 && strlen(longId) <= 15, "NVS keys fit 15 characters");
+    ASSERT(strcmp(a, a2) == 0, "the same id gives the same key");
+    ASSERT(strcmp(a, b) != 0, "different ids give different keys");
+    ASSERT(strcmp(a, "store") != 0, "a namespace never maps to the unscoped blob");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -584,6 +656,12 @@ int main() {
     test_write_store_to_buffer_round_trip();
     test_write_store_to_buffer_overflow();
     test_write_store_to_buffer_escaped_string();
+
+    // Tomodachi #244 — per-applet namespaces, one key limit everywhere
+    test_store_key_length_same_on_every_host();
+    test_store_namespace_starts_empty();
+    test_store_namespace_drops_desktop_path();
+    test_store_nvs_key_for_namespace();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
     return (failures == 0) ? 0 : 1;

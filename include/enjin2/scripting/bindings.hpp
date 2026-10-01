@@ -286,7 +286,8 @@ public:
  * @brief Per-script persistent key-value store.
  *
  * Fixed-capacity (16 keys), supports number/string/boolean/table values.
- * On desktop (VCV_RACK) persists to a JSON file; ESP32 NVS deferred.
+ * On desktop persists to a JSON file; on the web to localStorage and on the
+ * ESP32 to an NVS blob, one per namespace (the applet's id, Tomodachi #244).
  */
 class LuaStore {
 public:
@@ -358,6 +359,18 @@ public:
      *  @return Entry count */
     int  count() const { return m_count; }
 
+    /** @brief Scope the web and device backends to one owner (an applet id).
+     *  "" is the unscoped blob. Does not touch the entries in memory.
+     *  @param ns  Null-terminated namespace; truncated to STORE_MAX_KEY - 1 */
+    void setNamespace(const char* ns);
+    /** @brief The current namespace ("" when unscoped) */
+    const char* getNamespace() const { return m_namespace; }
+    /** @brief The NVS blob key for a namespace: "store" when unscoped, else
+     *  "s" + 8 hex digits of its FNV-1a hash (NVS keys are at most 15 chars).
+     *  @param ns   Null-terminated namespace
+     *  @param out  Buffer of at least 16 bytes */
+    static void nvsKeyFor(const char* ns, char out[16]);
+
     /** @brief Serialise the store to a JSON file
      *  @param path  File path to write
      *  @return true on success */
@@ -383,6 +396,7 @@ public:
 private:
     StoreSlot m_entries[STORE_MAX_KEYS];
     int       m_count{0};
+    char      m_namespace[STORE_MAX_KEY]{};
 
     int findIndex(const char* key) const;
     StoreSlot* findOrCreate(const char* key);
@@ -774,6 +788,21 @@ public:
         } else {
             m_storePath[0] = '\0';
         }
+    }
+
+    /**
+     * @brief Give the store to one owner (Tomodachi #244): empties it, drops any
+     * desktop path, and scopes the web/device backends to `ns` (an applet id),
+     * loading what that owner saved. "" or null leaves it empty and unscoped.
+     * @param ns Namespace, or null
+     */
+    void setStoreNamespace(const char* ns) {
+        m_store.clear();
+        m_storePath[0] = '\0';
+        m_store.setNamespace(ns ? ns : "");
+#if defined(__EMSCRIPTEN__) || defined(ESP32)
+        if (ns && ns[0]) m_store.loadFromFile(nullptr);  // no saved data is not an error
+#endif
     }
 
     /**

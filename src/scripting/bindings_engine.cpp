@@ -232,7 +232,7 @@ void LuaBindings::registerEngineTable() {
                     "(key:string, value:number|string|boolean|table) -> boolean",
                     "Store a value under key; false when all 16 keys are taken or a table does "
                     "not fit.",
-                    "key: the name; up to 63 bytes, and 15 characters on the device (longer raises)\n"
+                    "key: the name; up to 63 bytes (longer raises)\n"
                     "value: a number, a string (up to 127 bytes), a boolean, or a flat table of up "
                     "to 16 string keys holding numbers, strings or booleans (other values are "
                     "skipped); anything else raises")
@@ -256,11 +256,12 @@ void LuaBindings::registerEngineTable() {
         luaFunction("path", lua_engine_store_path, "(filepath:string) -> nil",
                     "Set the desktop save file and load what it holds.",
                     "filepath: the JSON file")
-            .note("The web and the device ignore the path and reload their saved store."),
+            .note("The web and the device ignore the path and reload the applet's saved store."),
     };
     static constexpr LuaApiModule kStoreModule = luaApiModule(
         LuaApiScope::Table, "engine.store",
-        "A small persistent key-value store: 16 keys, shared by every script the engine runs.",
+        "A small persistent key-value store of 16 keys. Each applet has its own, loaded "
+        "when it launches.",
         kStore);
     luaApiSetSubtable(L, -1, kStoreModule);
 

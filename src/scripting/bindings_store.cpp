@@ -23,6 +23,24 @@ void LuaStore::clear() {
     m_count = 0;
 }
 
+void LuaStore::setNamespace(const char* ns) {
+    strncpy(m_namespace, ns, STORE_MAX_KEY - 1);
+    m_namespace[STORE_MAX_KEY - 1] = '\0';
+}
+
+void LuaStore::nvsKeyFor(const char* ns, char out[16]) {
+    if (!ns || !ns[0]) {
+        strcpy(out, "store");
+        return;
+    }
+    uint32_t h = 2166136261u;  // FNV-1a
+    for (const char* p = ns; *p; ++p) {
+        h ^= static_cast<uint8_t>(*p);
+        h *= 16777619u;
+    }
+    snprintf(out, 16, "s%08x", static_cast<unsigned>(h));
+}
+
 bool LuaStore::exists(const char* key) const {
     return findIndex(key) >= 0;
 }
@@ -413,20 +431,20 @@ bool LuaStore::loadFromFile(const char* path) {
 #elif defined(__EMSCRIPTEN__)
 // Forward declarations — defined in wasm_storage.cpp (EM_JS)
 extern "C" {
-    void wasm_storage_write(const char* json_ptr);
-    int  wasm_storage_read(char* out_ptr, int out_cap);
+    void wasm_storage_write(const char* ns_ptr, const char* json_ptr);
+    int  wasm_storage_read(const char* ns_ptr, char* out_ptr, int out_cap);
 }
 
 bool LuaStore::saveToFile(const char*) const {
     char buf[STORE_BUFFER_MAX];
     if (!writeStoreToBuffer(buf, STORE_BUFFER_MAX)) return false;
-    wasm_storage_write(buf);
+    wasm_storage_write(m_namespace, buf);
     return true;
 }
 
 bool LuaStore::loadFromFile(const char*) {
     char buf[STORE_BUFFER_MAX];
-    if (!wasm_storage_read(buf, static_cast<int>(STORE_BUFFER_MAX))) {
+    if (!wasm_storage_read(m_namespace, buf, static_cast<int>(STORE_BUFFER_MAX))) {
         return true;  // no saved data — not an error
     }
     clear();
@@ -459,19 +477,23 @@ bool LuaStore::loadFromFile(const char*) {
 #else
 // ESP32 NVS backend (STORE-03)
 extern "C" {
-    bool esp32_storage_write(const char* json, size_t len_including_null);
-    bool esp32_storage_read(char* out, size_t cap);
+    bool esp32_storage_write(const char* key, const char* json, size_t len_including_null);
+    bool esp32_storage_read(const char* key, char* out, size_t cap);
 }
 
 bool LuaStore::saveToFile(const char*) const {
     char buf[STORE_BUFFER_MAX];
     if (!writeStoreToBuffer(buf, STORE_BUFFER_MAX)) return false;
-    return esp32_storage_write(buf, strlen(buf) + 1);
+    char key[16];
+    nvsKeyFor(m_namespace, key);
+    return esp32_storage_write(key, buf, strlen(buf) + 1);
 }
 
 bool LuaStore::loadFromFile(const char*) {
     char buf[STORE_BUFFER_MAX];
-    if (!esp32_storage_read(buf, STORE_BUFFER_MAX)) {
+    char key[16];
+    nvsKeyFor(m_namespace, key);
+    if (!esp32_storage_read(key, buf, STORE_BUFFER_MAX)) {
         return true;  // no saved data — not an error
     }
     clear();
@@ -592,12 +614,12 @@ int LuaBindings::lua_engine_store_save(lua_State* L) {
 
     const char* key = luaL_checkstring(L, 1);
 
-#ifdef ESP32
-    // NVS key limit: 15 characters max (STORE-04)
-    if (strlen(key) > 15) {
-        return luaL_error(L, "engine.store.save: key '%s' exceeds 15-character NVS limit on ESP32", key);
+    // Keys are fields inside one stored blob, so every host has the same limit
+    // (Tomodachi #244; the NVS 15-character limit applies to the blob's name only).
+    if (strlen(key) > LuaStore::STORE_MAX_KEY - 1) {
+        return luaL_error(L, "engine.store.save: key '%s' is longer than %d bytes", key,
+                          LuaStore::STORE_MAX_KEY - 1);
     }
-#endif
 
     int vtype = lua_type(L, 2);
     bool ok = false;
