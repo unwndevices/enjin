@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Spec fixes and tag mapping for ``aseprite2enjin.py`` (Tomodachi #295).
+"""Spec fixes in ``aseprite2enjin.py``'s parser (Tomodachi #295).
 
 One test per spec bug found by Tomodachi #284 (old palette chunk ``0x0004``,
 the z-index tie-break of spec NOTE.5, a 0 ms frame falling back to the header
-speed) and one per tag-mapping case of ADR-0015, run through both the sheet
-(``--v2``) and the layered (``--layered``) paths.
+speed), plus the parsed tag tuple. The tag → clip mapping lives in the C++
+importer now (``enjin_sprite_import``, Tomodachi #299).
 """
 
 import os
@@ -16,12 +16,10 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import aseprite2enjin as a2e  # noqa: E402
-from enjin_assets import emit  # noqa: E402
 
 T = 0  # Transparent source index used by the fixtures.
 
-FORWARD, REVERSE = a2e.TAG_FORWARD, a2e.TAG_REVERSE
-PINGPONG, PINGPONG_REVERSE = a2e.TAG_PINGPONG, a2e.TAG_PINGPONG_REVERSE
+PINGPONG = a2e.TAG_PINGPONG
 
 
 # ---------------------------------------------------------------------------
@@ -110,23 +108,6 @@ def _animation(tmp_path, durations, tags=(), *, layers=1, speed=100):
         chunks += [_cel_chunk(n, [i + 1]) for n in range(layers)]
         frames.append(_frame(chunks, duration))
     return _write(tmp_path, _aseprite(frames, speed=speed))
-
-
-def _sheet_clips(path):
-    data, _count, _clips = a2e.emit_njn_v2_sheet(a2e.parse_aseprite(path), grid_spec=None)
-    return emit._parse_clip_chunk(emit.parse_njn(data).chunks[emit.CHUNK_CLIP])
-
-
-def _layered_clips(path):
-    asset, _summary = a2e.build_layered_asset(a2e.parse_aseprite_layered(path))
-    return emit.parse_njn_layered(emit.build_njn_layered(asset)).clips
-
-
-CONVERTERS = {'sheet': _sheet_clips, 'layered': _layered_clips}
-
-
-def _shape(clips):
-    return [(c.name, c.loop_mode, [f[0] for f in c.frames]) for c in clips]
 
 
 # ---------------------------------------------------------------------------
@@ -218,13 +199,10 @@ def test_z_index_order_still_sorts_before_the_tie_break(tmp_path):
 # Spec bug 3: a 0 ms frame falls back to the header speed
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize('kind', CONVERTERS)
-def test_zero_duration_falls_back_to_header_speed(tmp_path, kind):
+def test_zero_duration_falls_back_to_header_speed(tmp_path):
     path = _animation(tmp_path, [80, 0, 40], speed=120)
 
     assert a2e.parse_aseprite(path)['durations'] == [80, 120, 40]
-    [clip] = CONVERTERS[kind](path)
-    assert [f[1] for f in clip.frames] == [80, 120, 40]
 
 
 def test_zero_duration_and_zero_speed_fall_back_to_100ms(tmp_path):
@@ -233,81 +211,14 @@ def test_zero_duration_and_zero_speed_fall_back_to_100ms(tmp_path):
     assert a2e.parse_aseprite(path)['durations'] == [100, 50]
 
 
-def test_layered_durations_use_the_fallback(tmp_path):
-    path = _animation(tmp_path, [0, 50], layers=2, speed=70)
-
-    asset, _summary = a2e.build_layered_asset(a2e.parse_aseprite_layered(path))
-
-    assert asset.durations == [70, 50]
-
-
 # ---------------------------------------------------------------------------
-# Tag mapping (ADR-0015), sheet and layered
+# Tags
 # ---------------------------------------------------------------------------
 
 def test_tags_carry_their_repeat_count(tmp_path):
     path = _animation(tmp_path, [100] * 3, [(0, 2, PINGPONG, 4, 'spin')])
 
     assert a2e.parse_aseprite(path)['tags'] == [(0, 2, PINGPONG, 4, 'spin')]
-
-
-TAG_CASES = {
-    'forward':           ((FORWARD, 0),          emit.LOOP_LOOP,     [0, 1, 2]),
-    'reverse':           ((REVERSE, 0),          emit.LOOP_LOOP,     [2, 1, 0]),
-    'pingpong':          ((PINGPONG, 0),         emit.LOOP_PINGPONG, [0, 1, 2]),
-    'pingpong_reverse':  ((PINGPONG_REVERSE, 0), emit.LOOP_PINGPONG, [2, 1, 0]),
-    'repeat_1':          ((FORWARD, 1),          emit.LOOP_ONCE,     [0, 1, 2]),
-    'repeat_1_reverse':  ((REVERSE, 1),          emit.LOOP_ONCE,     [2, 1, 0]),
-    'repeat_n':          ((FORWARD, 3),          emit.LOOP_ONCE,     [0, 1, 2] * 3),
-    'repeat_n_reverse':  ((REVERSE, 2),          emit.LOOP_ONCE,     [2, 1, 0] * 2),
-    # Each ping-pong pass turns around without repeating the turn frame.
-    'repeat_n_pingpong': ((PINGPONG, 3),         emit.LOOP_ONCE,     [0, 1, 2, 1, 0, 1, 2]),
-    'repeat_n_pingpong_reverse':
-                         ((PINGPONG_REVERSE, 2), emit.LOOP_ONCE,     [2, 1, 0, 1, 2]),
-    'repeat_1_pingpong': ((PINGPONG, 1),         emit.LOOP_ONCE,     [0, 1, 2]),
-}
-
-
-@pytest.mark.parametrize('kind', CONVERTERS)
-@pytest.mark.parametrize('case', TAG_CASES)
-def test_tag_mapping(tmp_path, kind, case):
-    (direction, repeat), loop_mode, frames = TAG_CASES[case]
-    path = _animation(tmp_path, [100, 150, 200], [(0, 2, direction, repeat, 'tag')],
-                      layers=1 if kind == 'sheet' else 2)
-
-    [clip] = CONVERTERS[kind](path)
-
-    assert (clip.name, clip.loop_mode, [f[0] for f in clip.frames]) == ('tag', loop_mode, frames)
-    durations = {0: 100, 1: 150, 2: 200}
-    assert [f[1] for f in clip.frames] == [durations[f] for f in frames]
-
-
-@pytest.mark.parametrize('kind', CONVERTERS)
-def test_untagged_file_gets_one_default_clip(tmp_path, kind):
-    path = _animation(tmp_path, [100, 200, 300], layers=1 if kind == 'sheet' else 2)
-
-    assert _shape(CONVERTERS[kind](path)) == [('default', emit.LOOP_LOOP, [0, 1, 2])]
-
-
-@pytest.mark.parametrize('kind', CONVERTERS)
-def test_sub_range_tags_map_independently(tmp_path, kind):
-    path = _animation(
-        tmp_path, [100] * 4,
-        [(0, 1, FORWARD, 1, 'jump'), (2, 3, REVERSE, 0, 'land')],
-        layers=1 if kind == 'sheet' else 2,
-    )
-
-    assert _shape(CONVERTERS[kind](path)) == [
-        ('jump', emit.LOOP_ONCE, [0, 1]),
-        ('land', emit.LOOP_LOOP, [3, 2]),
-    ]
-
-
-def test_tag_unrolling_past_255_frames_is_rejected(tmp_path):
-    path = _animation(tmp_path, [100] * 3, [(0, 2, FORWARD, 86, 'long')])
-
-    with pytest.raises(ValueError, match='255'):
-        _sheet_clips(path)
 
 
 if __name__ == '__main__':

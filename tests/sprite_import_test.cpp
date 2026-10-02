@@ -37,6 +37,8 @@
  *   SPI-25  An unrolled clip over 255 frames → TooLarge.
  *   SPI-26  More sheet frames than META's 255x255 grid → TooLarge, even with
  *           the frame cap raised.
+ *   SPI-27  The sprite golden corpus (tools/testdata/sprite_golden): every
+ *           MANIFEST input imports byte for byte to its committed golden.
  *
  * The re-import merge's SPR-xx tests (Tomodachi #297) live in
  * sprite_reimport_test.cpp and run from main() here.
@@ -46,6 +48,8 @@
  */
 
 #include "sprite_import_fixtures.hpp"
+
+#include <sstream>
 
 void runReimportTests();  // sprite_reimport_test.cpp (SPR-01..SPR-13)
 
@@ -465,13 +469,19 @@ static void test21_malformed() {
 
 static std::string testdata(const char* rel) { return std::string(ENJIN2_SOURCE_DIR) + "/" + rel; }
 
+/// Copies the named palette preset into @p o; false for an unknown name.
+static bool usePreset(SpriteImportOptions& o, const char* name) {
+    Palette p;
+    if (!p.loadPreset(name)) return false;
+    std::copy(std::begin(p.colors), std::end(p.colors), o.palette.begin());
+    return true;
+}
+
 static void test22_tomoTune2() {
     const Bytes src = readFile(testdata("tools/testdata/tomo_tune2.aseprite"));
     ASSERT(!src.empty(), "SPI-22 fixture readable");
-    Palette tomo;
-    tomo.loadPreset("tomo");
     SpriteImportOptions o;
-    std::copy(std::begin(tomo.colors), std::end(tomo.colors), o.palette.begin());
+    usePreset(o, "tomo");
     const auto r = run(src, o);
     ASSERT(r.ok() && r.kind == SpriteKind::Layered, "SPI-22 tomo_tune2 imports layered");
     if (!r.ok()) { fprintf(stderr, "  error: %s\n", r.error.c_str()); return; }
@@ -540,10 +550,8 @@ static void test24_corpus() {
                           "tests/testdata/sprite_import/nowplaying.aseprite"}) {
         corpus.emplace_back(f, readFile(testdata(f)));
     }
-    Palette tomo;
-    tomo.loadPreset("tomo");
     SpriteImportOptions o;
-    std::copy(std::begin(tomo.colors), std::end(tomo.colors), o.palette.begin());
+    usePreset(o, "tomo");
 
     uint32_t seed = 0x2911u;
     auto rnd = [&]() { seed = seed * 1664525u + 1013904223u; return seed >> 8; };
@@ -583,6 +591,28 @@ static void test26_sheetGridLimit() {
     o.limits.maxFrames = 0xFFFF;
     const auto r = run(a.build(), o);
     ASSERT(r.status == SpriteImportStatus::TooLarge && contains(r.error, "grid"), "SPI-26 65026 frames overflow the sheet grid");
+}
+
+static void test27_goldenCorpus() {
+    const std::string dir = testdata("tools/testdata/sprite_golden");
+    std::ifstream manifest(dir + "/MANIFEST");
+    ASSERT(static_cast<bool>(manifest), "SPI-27 MANIFEST readable");
+    size_t rows = 0;
+    std::string line;
+    while (std::getline(manifest, line)) {
+        line = line.substr(0, line.find('#'));
+        std::istringstream fields(line);
+        std::string input, kind, palette;
+        if (!(fields >> input >> kind >> palette)) continue;
+        ++rows;
+        SpriteImportOptions o;
+        o.kind = kind == "layered" ? SpriteKind::Layered : SpriteKind::Sheet;
+        if (palette != "-") ASSERT(usePreset(o, palette.c_str()), ("SPI-27 palette preset: " + palette).c_str());
+        const auto r = run(readFile(dir + "/" + input), o);
+        const std::string stem = input.substr(0, input.rfind('.'));
+        ASSERT(r.ok() && r.njn == readFile(dir + "/" + stem + ".njn"), ("SPI-27 golden matches: " + stem).c_str());
+    }
+    ASSERT(rows == 14, "SPI-27 MANIFEST lists 14 inputs");
 }
 
 static int verifyLayered(const char* path) {
@@ -626,6 +656,7 @@ int main(int argc, char** argv) {
     test24_corpus();
     test25_clipFrameLimit();
     test26_sheetGridLimit();
+    test27_goldenCorpus();
     runReimportTests();
 
     printf("sprite_import_test: %d passed, %d failed\n", passes, failures);

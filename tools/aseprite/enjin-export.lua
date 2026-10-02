@@ -3,7 +3,7 @@
 -- Usage: Place in Aseprite's scripts directory (Edit > Preferences > Scripting),
 --        then run via File > Scripts > enjin-export.
 --
--- Output format matches tools/aseprite2enjin.py exactly:
+-- Output format (the C header aseprite2enjin.py wrote before Tomodachi #299):
 --   const uint8_t name_data[] with 16 hex values per line, lower nibble masked,
 --   transparent index remapped to 15.
 
@@ -111,7 +111,7 @@ local function build_pixel_data(sprite, grid_w, grid_h)
 
         local frame_pixels = extract_frame_pixels(sprite, 1)
 
-        -- Extract cells in row-major order, matching Python's build_pixel_array grid logic
+        -- Extract cells in row-major order
         local out = {}
         for row = 0, rows - 1 do
             for col = 0, cols - 1 do

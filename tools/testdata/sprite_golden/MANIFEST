@@ -1,9 +1,9 @@
-# Sprite golden corpus (Tomodachi #295). FROZEN: see README.md.
-# Each input's golden is <stem>.njn next to it. kind: sheet = aseprite2enjin.py
-# --v2, layered = --layered; palette is the --palette .gpl, "-" for none.
+# Sprite golden corpus (Tomodachi #295, #299). See README.md.
+# Each input's golden is <stem>.njn next to it. kind is enjin_sprite_import's
+# --sheet / --layered; palette is its --palette preset, "-" for none.
 #
 # input                        kind     palette
-tomo_tune2.aseprite            layered  tomo_tune2.gpl
+tomo_tune2.aseprite            layered  tomo
 tag_forward.aseprite           sheet    -
 tag_reverse.aseprite           sheet    -
 tag_pingpong.aseprite          sheet    -

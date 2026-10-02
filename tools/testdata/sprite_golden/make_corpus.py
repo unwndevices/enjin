@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Build the sprite golden corpus (Tomodachi #295). Provenance only: it is frozen.
+"""Build the sprite golden corpus (Tomodachi #295, #299). Provenance only.
 
 1. Aseprite runs make_corpus.lua to author the minimal inputs.
 2. zero_duration.aseprite gets frame 1's duration patched to 0 ms and the
    header speed to 90 ms (Aseprite clamps a frame to at least 1 ms).
-3. tomo_tune2.aseprite and tomo_tune2.gpl are copied from ../ (the seed).
-4. aseprite2enjin.py writes each MANIFEST input's <stem>.njn golden.
+3. tomo_tune2.aseprite is copied from ../ (the seed).
+4. enjin_sprite_import writes each MANIFEST input's <stem>.njn golden.
 
-    python3 make_corpus.py --force
+    python3 make_corpus.py --force --cli build-importer/enjin_sprite_import
 
-Without --force it refuses to touch an existing corpus: the parity run
-(Tomodachi #299) compares the C++ importer against these exact bytes.
+Without --force it refuses to touch an existing corpus: sprite_import_test
+(SPI-27) pins the importer to these exact bytes (see README.md).
 """
 
 import argparse
@@ -22,7 +22,6 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTDATA = os.path.dirname(HERE)
-TOOL = os.path.join(os.path.dirname(TESTDATA), 'aseprite2enjin.py')
 
 ZERO_DURATION_FRAME = 1
 ZERO_DURATION_SPEED_MS = 90
@@ -55,6 +54,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n', 1)[0])
     parser.add_argument('--force', action='store_true',
                         help='overwrite the frozen corpus')
+    parser.add_argument('--cli', default='enjin_sprite_import',
+                        help='path to the enjin_sprite_import binary')
     args = parser.parse_args()
 
     rows = read_manifest()
@@ -65,15 +66,14 @@ def main():
     subprocess.run(['aseprite', '-b', '--script-param', f'out={HERE}',
                     '--script', os.path.join(HERE, 'make_corpus.lua')], check=True)
     patch_zero_duration(os.path.join(HERE, 'zero_duration.aseprite'))
-    for seed in ('tomo_tune2.aseprite', 'tomo_tune2.gpl'):
-        shutil.copyfile(os.path.join(TESTDATA, seed), os.path.join(HERE, seed))
+    shutil.copyfile(os.path.join(TESTDATA, 'tomo_tune2.aseprite'),
+                    os.path.join(HERE, 'tomo_tune2.aseprite'))
 
     for name, kind, palette in rows:
         src = os.path.join(HERE, name)
-        cmd = [sys.executable, TOOL, src, '--v2' if kind == 'sheet' else '--layered',
-               '--output', os.path.splitext(src)[0] + '.njn']
+        cmd = [args.cli, src, '-o', os.path.splitext(src)[0] + '.njn', f'--{kind}']
         if palette:
-            cmd += ['--palette', os.path.join(HERE, palette)]
+            cmd += ['--palette', palette]
         subprocess.run(cmd, check=True)
 
 

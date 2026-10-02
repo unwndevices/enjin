@@ -59,17 +59,11 @@ Outputs (given `--output out/base`):
 * **Flattens layers** into one banded cell grid: the bottom layer renders under
   (band 0 → L0), any upper layer over (band 1 → L2), top-most non-empty wins.
 
-## Aseprite front-end (`aseprite2enjin.py --v2`)
+## Aseprite front-end
 
-Aseprite cannot read Tiled, so it stays a separate front-end for authored art
-(the pinball slice). Its existing C-header, v1 `.njn` sprite, and v1 `.njn`+`.njm`
-tilemap paths are unchanged. The new `--v2` flag emits a **`.njn` v2 sheet** with
-a `CLIP` chunk built from **Aseprite frame tags** (per-frame durations from the
-frame headers; loop direction → Once/Loop/PingPong):
-
-```sh
-python tools/aseprite2enjin.py anim.aseprite --v2 --output out/anim.njn
-```
+Aseprite cannot read Tiled, so it stays a separate front-end for authored art. Sprites
+(`.njn` v2 sheets with a `CLIP` chunk built from **Aseprite frame tags**, and layered
+sprites) come from the C++ CLI `enjin_sprite_import`; see `README_aseprite2enjin.md`.
 
 ## Known limitation — runtime loader
 

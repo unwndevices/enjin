@@ -221,42 +221,6 @@ def test_indexed_rgba_output_rejects_missing_used_palette_color(tmp_path):
         a2e.parse_aseprite(_write(tmp_path, data), rgba_output=True)
 
 
-def test_converter_remaps_declared_transparency_to_15(tmp_path):
-    frame = _frame([
-        _layer_chunk('art'),
-        _cel_chunk(0, [0, 14], cel_type=a2e.CEL_TYPE_RAW, width=2),
-    ])
-    parsed = a2e.parse_aseprite(_write(
-        tmp_path,
-        _aseprite([frame], width=2, depth=a2e.COLOR_DEPTH_INDEXED,
-                  transparent_index=0),
-    ))
-
-    pixels, *_layout = a2e.build_pixel_array(
-        parsed['frames'], parsed['width'], parsed['height'], None,
-        parsed['transparent_index'],
-    )
-    assert pixels == bytes([15, 14])
-
-
-def test_converter_rejects_opaque_index_that_would_alias(tmp_path):
-    frame = _frame([
-        _layer_chunk('art'),
-        _cel_chunk(0, [15], cel_type=a2e.CEL_TYPE_RAW),
-    ])
-    parsed = a2e.parse_aseprite(_write(
-        tmp_path,
-        _aseprite([frame], depth=a2e.COLOR_DEPTH_INDEXED,
-                  transparent_index=0),
-    ))
-
-    with pytest.raises(ValueError, match='Opaque source palette index 15'):
-        a2e.build_pixel_array(
-            parsed['frames'], parsed['width'], parsed['height'], None,
-            parsed['transparent_index'],
-        )
-
-
 @pytest.mark.parametrize('layer_options, message', [
     ({'blend_mode': 1}, 'Unsupported blend mode 1'),
     ({'layer_type': a2e.LAYER_TYPE_GROUP}, 'Group layer semantics are unsupported'),

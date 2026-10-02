@@ -1,18 +1,15 @@
-# Aseprite to enjin Asset Conversion Tooling
+# Aseprite to enjin
 
-Tools for creating sprites in Aseprite using enjin's exact palette and exporting directly to C headers.
+Two tools take Aseprite art into enjin:
 
-## Quick Start
+- **Sprites** (`.njn` v2 sheets and layered sprites): the C++ CLI `enjin_sprite_import`
+  (`tools/sprite_import`). It runs `enjin2::importSprite()`, the same importer the Studio's
+  Sprites workspace runs (ADR-0015).
+- **Tilemaps** (a `.njn` tileset + `.njm` map): `aseprite2enjin.py --tilemap`.
 
-1. Import `tools/palettes/enjin_default.gpl` (or `enjin_gameboy.gpl`) into Aseprite
-2. Draw your sprite using indexed colors 0-14; use index 15 as transparent
-3. Run the converter:
-
-```
-python3 tools/aseprite2enjin.py player.aseprite
-```
-
-This produces `player.h` with a `const uint8_t player_data[]` array ready to include in your project.
+`aseprite2enjin.py` no longer converts sprites. Its sprite modes (the default C header and
+its `--grid` spritesheet, `--v2`, `--layered` and `--pivot`) were deleted in Tomodachi
+#299, after the C++ importer matched their output.
 
 ## Palette Setup
 
@@ -20,49 +17,34 @@ This produces `player.h` with a `const uint8_t player_data[]` array ready to inc
 2. To make it permanent, copy the `.gpl` to `~/.config/aseprite/palettes/` (Linux) or `%APPDATA%\Aseprite\palettes\` (Windows)
 3. Set new sprites to indexed color: Sprite > Color Mode > Indexed
 
-## Converter Usage
+## Sprites: `enjin_sprite_import`
 
-**Single sprite (one frame):**
-```
-python3 tools/aseprite2enjin.py player.aseprite
-```
+Build it from the enjin CMake project (host builds only):
 
-**Animation (multiple Aseprite frames):**
 ```
-python3 tools/aseprite2enjin.py walk.aseprite --name player_walk
+cmake -S . -B build && cmake --build build --target enjin_sprite_import
 ```
 
-**Spritesheet grid packed into a single image:**
 ```
-python3 tools/aseprite2enjin.py tileset.aseprite --grid 8x8 --name tiles
+enjin_sprite_import walk.aseprite -o walk.njn
+enjin_sprite_import hero_rgba.aseprite -o hero.njn --palette tomo
+enjin_sprite_import walk.aseprite --reimport walk.njn
 ```
-
-**Explicit output path:**
-```
-python3 tools/aseprite2enjin.py hero.aseprite --name hero --output src/assets/hero.h
-```
-
-**Options:**
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--name NAME` | derived from filename | C identifier for the array |
-| `--output FILE` | same dir as input, `.h` extension | Output header path |
-| `--grid WxH` | none | Cell size for spritesheet-in-image mode |
-| `--tilemap` | off | Dice under/over layers into a v1 `.njn` tileset + `.njm` map |
-| `--v2` | off | Emit a `.njn` **v2** container sheet (META+PIXL, plus a CLIP chunk from Aseprite frame tags) |
-| `--layered` | off | Emit a `.njn` **v2 layered** asset (cropped/deduplicated source-layer parts, frame-part references, durations, clips) |
-| `--palette` | none | Target Enjin `.gpl` palette (path or `tools/palettes` name); required for RGBA `--layered` sources |
-| `--pivot X,Y` | `0,0` | Static pivot point for `--layered` exports, in canvas pixel coordinates (written as an `LPIV` chunk; absent when `0,0`) |
+| `-o FILE` | none | Output `.njn` path |
+| `--layered` / `--sheet` | layered when more than one layer is visible | Override the kind |
+| `--palette NAME` | `default` (the system palette) | RGBA target palette preset: `default`, `tomo`, `pico8`, `gameboy` |
+| `--reimport FILE` | none | Replace `FILE`'s pixels and frames and keep its clips by name. Writes over `FILE` unless `-o` is given. |
 
-**`.njn` v2 animation sheet (frame tags → clips):**
-```
-python3 tools/aseprite2enjin.py walk.aseprite --v2 --output walk.njn
-```
-Each Aseprite frame becomes a sheet cell. Each frame tag becomes a named clip, and
-the per-frame durations come from the frame headers. A 0 ms frame falls back to
-the header speed, or to 100 ms if that is 0 too. Tags map like this (both `--v2`
-and `--layered`):
+A **sheet** has one cell per Aseprite frame (META + PIXL + CLIP). A **layered sprite**
+has one part per visible layer (LHDR + LIMG + LPRT + LREF + LDUR + LPIV + CLIP). It gets a
+bottom-centre pivot.
+
+Each frame tag becomes a named clip, and the per-frame durations come from the frame
+headers. A 0 ms frame falls back to the header speed, or to 100 ms if that is 0 too.
+Tags map like this:
 
 | Tag | Clip |
 |-----|------|
@@ -72,46 +54,29 @@ and `--layered`):
 | repeat 1 | `once` |
 | repeat N > 1 | the N passes unrolled, as `once`. A ping-pong pass alternates direction and doesn't repeat its turn frame. |
 
-An untagged file gets one looping `default` clip over all frames. When cels in a
-flattened frame tie on order (layer + z-index), the lower z-index paints first
-(spec NOTE.5). See `README_tiled2enjin.md` for the shared `enjin_assets` library
-and the `.njn` v2 container layout. `testdata/sprite_golden/` is the frozen
-reference corpus for these modes.
+An untagged file gets one looping `default` clip over all frames. Indexed sources keep their
+indices (index 15 is transparency). RGBA sources need binary alpha and an exact match to the
+`--palette` colours; there is no quantisation. `include/enjin2/import/sprite_import.hpp`
+has the full rules. `testdata/sprite_golden/` is the importer's golden corpus.
 
-**`.njn` v2 layered sprite (source layers → parts):**
+## Tilemaps: `aseprite2enjin.py --tilemap`
+
 ```
-python3 tools/aseprite2enjin.py hero.aseprite --layered --output hero.njn
-python3 tools/aseprite2enjin.py hero_rgba.aseprite --layered --palette enjin_default --output hero.njn
-```
-Each visible flat image layer (Normal blend, binary alpha, full opacity) becomes
-one named sprite part in bottom-to-top painter order. Cels are clipped to the
-authored canvas, tightly cropped, and deduplicated within their source layer
-(linked cels and identical artwork alike). Empty and absent cels become
-invisible frame-part references. Indexed sources map their palette indices to
-Enjin indices (index 15 is transparency); RGBA sources need `--palette` and
-match colours exactly. Groups, tilemap layers, non-Normal blending, nonzero cel
-z-index, opacity below 255, and partially transparent painted pixels are
-rejected. The converter prints an inspection summary (parts, images, reuse,
-ignored layers, clips, storage).
-
-## Using in enjin
-
-```cpp
-#include "enjin2/graphics/sprite.hpp"
-#include "assets/player.h"   // generated header
-
-// Construct the sprite sheet (non-owning pointer to static data)
-enjin2::SpriteSheet player(player_data, 8, 8, 4, 1);  // 8x8 cells, 4 cols, 1 row
-
-// Draw frame 2 at position (10, 20)
-player.draw(canvas, 2, 10, 20);
+python3 tools/aseprite2enjin.py room.aseprite --tilemap --output out/room
 ```
 
-The `SpriteSheet` constructor takes `(data, cellW, cellH, cols, rows)`. The usage comment at the bottom of each generated header gives the exact values for that sprite.
+This writes `out/room.njn` (a v1 tileset, 16x16 tiles unless `--grid WxH` is given) and
+`out/room.njm` (the map). A layer whose name contains `over` is the over band; one whose
+name contains `under`, `floor` or `base` is the under band. Without those names, the
+bottom layer is under and the top layer is over. Tiles are deduplicated. Only frame 0 is
+read, and the source must be indexed.
+
+The module's `parse_aseprite()` (flattened frames, optionally as RGBA) is also used by
+`scripts/live_preview.py` in Tomodachi.
 
 ## Palette Reference
 
-The default palette is the authored `tomo` palette with 15 colors. Index 15 is always transparent.
+This is the `tomo` preset, the authored palette that used to be the default. The system default is now the green ramp (`default`). Index 15 is always transparent.
 
 | Index | Hex | Name |
 |-------|-----|------|
@@ -133,11 +98,3 @@ The default palette is the authored `tomo` palette with 15 colors. Index 15 is a
 | 15 | `#FF00FF` | TRANSPARENT (skip when drawing) |
 
 The legacy PICO-8 variant is still selectable at runtime as the `pico8` palette preset. The gameboy palette uses indices 0-3 (four green shades); indices 4-14 are unused (black placeholders); 15 is transparent.
-
-## Limitations
-
-- Indexed-color mode only. Set Sprite > Color Mode > Indexed before exporting.
-- Only cel types 0 (raw) and 2 (compressed) are parsed; tilemap chunks are skipped.
-- No layer compositing: only the first cel chunk per frame is used.
-- Pixels are masked to lower nibble (`& 0x0F`); only indices 0-15 are valid in enjin.
-- `--grid` reads only the first Aseprite frame; additional frames are ignored.

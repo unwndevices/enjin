@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""aseprite2enjin.py — Convert indexed-color .aseprite files to enjin C headers.
+"""aseprite2enjin.py — Aseprite tilemap authoring and the .aseprite parser.
 
 Parses the Aseprite binary format (ASE file spec) using Python stdlib only.
-Outputs a C header with a const uint8_t array compatible with enjin2::SpriteSheet.
+``--tilemap`` dices index-mode under/over layers into a .njn tileset + .njm map;
+``parse_aseprite`` flattens frames for host tools (scripts/live_preview.py).
+
+Sprites (sheet and layered .njn v2) are imported by the C++ CLI
+``enjin_sprite_import`` (tools/sprite_import, ADR-0015).
 """
 
 import struct
@@ -11,8 +15,6 @@ import os
 import sys
 import argparse
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from enjin_assets import emit as _emit  # noqa: E402  (shared v2 .njn writer)
 
 # ---------------------------------------------------------------------------
 # ASE format constants
@@ -34,7 +36,7 @@ LAYER_TYPE_GROUP = 1
 LAYER_TYPE_TILEMAP = 2
 BLEND_MODE_NORMAL = 0
 
-# Aseprite tag loop directions.
+# Aseprite tag loop directions: the third field of each parse_aseprite() tag.
 TAG_FORWARD          = 0
 TAG_REVERSE          = 1
 TAG_PINGPONG         = 2
@@ -43,19 +45,11 @@ TAG_PINGPONG_REVERSE = 3
 # A frame whose duration and the header speed are both 0 holds this long.
 FALLBACK_DURATION_MS = 100
 
-# A CLIP record stores its frame count in one byte.
-MAX_CLIP_FRAMES = 255
-
 CEL_TYPE_RAW        = 0
 CEL_TYPE_LINKED     = 1
 CEL_TYPE_COMPRESSED = 2
 
 TRANSPARENT_INDEX = 15
-
-# Number of opaque Enjin palette indices (0..14); index 15 is transparency.
-# Mirrors enjin_assets.palette.OPAQUE_COUNT without importing numpy into the
-# converter's common stdlib-only path.
-OPAQUE_COLOR_COUNT = 15
 
 # ---------------------------------------------------------------------------
 # Tilemap cell packing — the single source of truth mirrors
@@ -276,16 +270,6 @@ def parse_aseprite(path: str, rgba_output=False):
         'layers':      layers,
         'warnings':    raw['warnings'],
     }
-
-
-def parse_aseprite_layered(path: str):
-    """Parse an .aseprite preserving raw per-frame cels for ``--layered``.
-
-    Unlike :func:`parse_aseprite`, this neither flattens nor rejects layer/cel
-    opacity; :func:`build_layered_asset` performs the layered path's own precise
-    validation.
-    """
-    return _read_aseprite(path)
 
 
 def _parse_palette_update(data, offset, body_size, palette):
@@ -905,569 +889,8 @@ def emit_njm_bytes(cells, map_w, map_h):
 
 
 # ---------------------------------------------------------------------------
-# .njn v2 sheet emitter — animation clips from Aseprite tags (issue #87)
-# ---------------------------------------------------------------------------
-
-def _tag_sequence(lo, hi, loop_dir, repeat, name):
-    """Frame sequence and loop mode for one tag (ADR-0015 tag mapping).
-
-    Reverse directions reverse the frames; ping-pong directions loop as
-    ``pingpong``. Repeat 0 loops, repeat 1 plays once, and repeat N > 1 is the
-    N passes Aseprite plays, unrolled, as ``once``. A ping-pong pass alternates
-    direction and does not repeat its turn frame.
-    """
-    reverse = loop_dir in (TAG_REVERSE, TAG_PINGPONG_REVERSE)
-    pingpong = loop_dir in (TAG_PINGPONG, TAG_PINGPONG_REVERSE)
-    pass_len = hi - lo + 1
-    unrolled_len = pass_len
-    if repeat > 1:
-        unrolled_len = (pass_len + (repeat - 1) * (pass_len - 1) if pingpong
-                        else pass_len * repeat)
-    if unrolled_len > MAX_CLIP_FRAMES:
-        raise ValueError(
-            f"tag {name!r} unrolls to {unrolled_len} frames; "
-            f"a clip holds at most {MAX_CLIP_FRAMES}"
-        )
-    one_pass = list(range(lo, hi + 1))
-    if reverse:
-        one_pass.reverse()
-    if repeat == 0:
-        return one_pass, _emit.LOOP_PINGPONG if pingpong else _emit.LOOP_LOOP
-
-    frames = list(one_pass)
-    for _ in range(1, repeat):
-        if pingpong:
-            one_pass.reverse()
-            frames += one_pass[1:]
-        else:
-            frames += one_pass
-    return frames, _emit.LOOP_ONCE
-
-
-def build_clips_from_tags(tags, durations, frame_count):
-    """Turn Aseprite frame tags into enjin CLIP records (per-frame durations).
-
-    Tags that clamp to no frames are dropped. When none is left (an untagged
-    file), the result is one looping ``default`` clip over every frame.
-    """
-    clips = []
-    for from_frame, to_frame, loop_dir, repeat, name in tags:
-        lo = max(0, from_frame)
-        hi = min(frame_count - 1, to_frame)
-        if hi < lo:
-            continue
-        name = name or f"clip{len(clips)}"
-        sequence, loop_mode = _tag_sequence(lo, hi, loop_dir, repeat, name)
-        clips.append(_emit.Clip(
-            name=name,
-            loop_mode=loop_mode,
-            frames=[(fi, durations[fi], 0) for fi in sequence],
-        ))
-    if not clips:
-        clips.append(_emit.Clip(
-            name="default",
-            loop_mode=_emit.LOOP_LOOP,
-            frames=[(fi, durations[fi], 0) for fi in range(frame_count)],
-        ))
-    return clips
-
-
-def emit_njn_v2_sheet(ase, grid_spec):
-    """Build a .njn v2 sheet (META + PIXL + optional CLIP) from a parsed ASE file.
-
-    Returns ``(bytes, frame_count, clips)``. Frames become sheet cells in order;
-    CLIP frame indices reference those cells, so a clip is just a run of cells.
-    """
-    pixel_data, cell_w, cell_h, cols, rows = build_pixel_array(
-        ase['frames'], ase['width'], ase['height'], grid_spec,
-        ase.get('transparent_index', TRANSPARENT_INDEX),
-    )
-    frame_count = cols * rows
-    # --grid slices one Aseprite frame into sheet cells (a static spritesheet), so
-    # frame-tag clips — which index the animation frames that grid mode discards —
-    # do not apply. Only build clips when the frames themselves are the cells.
-    if grid_spec is not None:
-        if ase.get('tags'):
-            print("Warning: --grid ignores Aseprite frame tags (no CLIP chunk emitted)",
-                  file=sys.stderr)
-        clips = None
-    else:
-        clips = build_clips_from_tags(ase['tags'], ase['durations'], frame_count)
-    data = _emit.build_njn(cell_w, cell_h, pixel_data, frame_count, clips=clips)
-    return data, frame_count, clips
-
-
-def _run_sprite_v2(args, input_path):
-    """v2 sheet authoring path: emit a .njn v2 container with animation clips."""
-    try:
-        ase = parse_aseprite(input_path)
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    if ase['color_depth'] != COLOR_DEPTH_INDEXED:
-        print("Error: .njn conversion requires indexed input; RGBA parsing does not quantize", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        data, frame_count, clips = emit_njn_v2_sheet(ase, args.grid)
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    out_path = args.output or (os.path.splitext(input_path)[0] + ".njn")
-    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-    with open(out_path, 'wb') as f:
-        f.write(data)
-    n_clips = len(clips) if clips else 0
-    print(f"Written: {out_path}  ({len(data)} bytes, .njn v2, {frame_count} frames, {n_clips} clips)")
-    if clips:
-        for c in clips:
-            print(f"  clip {c.name!r}: {len(c.frames)} frames, loop={c.loop_mode}")
-
-
-# ---------------------------------------------------------------------------
-# Layered sprite (.njn v2 layered chunks, issue #94)
-# ---------------------------------------------------------------------------
-
-def _clip_cel_pixels(pixels, cel_x, cel_y, cel_w, cel_h,
-                     canvas_w, canvas_h, bytes_per_pixel):
-    """Clip a cel to the authored canvas, returning the in-canvas rectangle.
-
-    Returns ``(w, h, pixels, origin_x, origin_y)`` with the origin in canvas
-    coordinates, or ``None`` when the cel lies wholly outside the canvas.
-    Validation and bounds operate on this region, so off-canvas artwork never
-    inflates storage, rejects a colour, or moves a part.
-    """
-    x0 = max(0, cel_x)
-    y0 = max(0, cel_y)
-    x1 = min(canvas_w, cel_x + cel_w)
-    y1 = min(canvas_h, cel_y + cel_h)
-    if x1 <= x0 or y1 <= y0:
-        return None
-
-    w = x1 - x0
-    h = y1 - y0
-    src_x = x0 - cel_x
-    src_y = y0 - cel_y
-    out = bytearray(w * h * bytes_per_pixel)
-    for row in range(h):
-        src = ((src_y + row) * cel_w + src_x) * bytes_per_pixel
-        dst = row * w * bytes_per_pixel
-        out[dst:dst + w * bytes_per_pixel] = pixels[src:src + w * bytes_per_pixel]
-    return w, h, bytes(out), x0, y0
-
-
-def _rgba_palette_lookup(parsed, visible, target_palette, canvas_w, canvas_h):
-    """Validate in-canvas RGBA pixels against a target palette.
-
-    Every painted pixel must be binary-alpha and exactly match one of the 15
-    opaque target colours.  Absent colours are collected and reported together
-    so an author can fix the palette in one pass; no quantisation is performed.
-    Off-canvas pixels are clipped away first and never influence validation.
-    """
-    palette = [tuple(int(channel) & 0xFF for channel in entry[:3])
-               for entry in target_palette]
-    if len(palette) != OPAQUE_COLOR_COUNT:
-        raise ValueError(
-            f"target palette must have {OPAQUE_COLOR_COUNT} opaque colours, "
-            f"got {len(palette)}"
-        )
-    lookup = {}
-    for index, rgb in enumerate(palette):
-        lookup.setdefault(rgb, index)
-
-    missing = set()
-    for frame_idx, _cels in enumerate(parsed['frame_cels']):
-        for layer in visible:
-            cel = _resolve_cel(frame_idx, layer['index'], parsed['frame_cels'])
-            if cel is None:
-                continue
-            clipped = _clip_cel_pixels(
-                cel['pixels'], cel['x'], cel['y'], cel['width'], cel['height'],
-                canvas_w, canvas_h, 4,
-            )
-            if clipped is None:
-                continue
-            pixels = clipped[2]
-            for pos in range(0, len(pixels), 4):
-                r, g, b, alpha = pixels[pos:pos + 4]
-                if alpha == 0:
-                    continue
-                if alpha != 255:
-                    raise ValueError(
-                        f"Partially transparent pixel (alpha {alpha}) on layer "
-                        f"{layer['name']!r} in frame {frame_idx}; only binary "
-                        "alpha is supported"
-                    )
-                if (r, g, b) not in lookup:
-                    missing.add((r, g, b))
-    if missing:
-        listing = ", ".join(
-            "#%02X%02X%02X" % color for color in sorted(missing)
-        )
-        raise ValueError(
-            f"RGBA source colours absent from target palette: {listing}; "
-            "provide a palette containing every opaque source colour"
-        )
-    return lookup
-
-
-def _cel_to_indices(pixels, color_depth, source_transparent_index, palette_lookup):
-    """Map clipped cel pixels to canonical enjin indices (15 = transparent)."""
-    if color_depth == COLOR_DEPTH_INDEXED:
-        return bytes(
-            _remap_indexed_pixel(pixel, source_transparent_index)
-            for pixel in pixels
-        )
-    out = bytearray(len(pixels) // 4)
-    for pos in range(0, len(pixels), 4):
-        if pixels[pos + 3] == 0:
-            out[pos // 4] = TRANSPARENT_INDEX
-        else:
-            out[pos // 4] = palette_lookup[
-                (pixels[pos], pixels[pos + 1], pixels[pos + 2])
-            ]
-    return bytes(out)
-
-
-def _crop_indices(indices, w, h):
-    """Tight-crop an already-clipped index image to its non-transparent bounds.
-
-    Returns ``(min_x, min_y, w, h, pixels)`` or ``None`` when fully transparent.
-    """
-    min_x = min_y = None
-    max_x = max_y = -1
-    for row in range(h):
-        row_base = row * w
-        for col in range(w):
-            if indices[row_base + col] == TRANSPARENT_INDEX:
-                continue
-            if min_x is None:
-                min_x, min_y = col, row
-            else:
-                min_x = min(min_x, col)
-                min_y = min(min_y, row)
-            max_x = max(max_x, col)
-            max_y = max(max_y, row)
-    if min_x is None:
-        return None
-
-    crop_w = max_x - min_x + 1
-    crop_h = max_y - min_y + 1
-    cropped = bytearray(crop_w * crop_h)
-    for row in range(crop_h):
-        src = (min_y + row) * w + min_x
-        cropped[row * crop_w:(row + 1) * crop_w] = indices[src:src + crop_w]
-    return min_x, min_y, crop_w, crop_h, bytes(cropped)
-
-
-def build_layered_asset(parsed, target_palette=None):
-    """Assemble an ``emit.Layered`` asset and inspection summary from raw cels.
-
-    ``parsed`` is the output of :func:`parse_aseprite_layered`.  ``target_palette``
-    is the ``OPAQUE_COLOR_COUNT``-entry ``(r, g, b)`` list required for RGBA
-    sources and ignored for indexed ones.  Raises ``ValueError`` for any source
-    feature the layered authoring contract rejects.
-    """
-    color_depth = parsed['color_depth']
-    layers = parsed['layers']
-    frame_cels = parsed['frame_cels']
-    num_frames = parsed['frame_count']
-    canvas_w = parsed['width']
-    canvas_h = parsed['height']
-
-    visible = [layer for layer in layers if layer['visible']]
-    ignored_layers = [
-        layer['name'] or f"layer{layer['index']}"
-        for layer in layers if not layer['visible']
-    ]
-    if not visible:
-        raise ValueError("no visible layers to export as sprite parts")
-
-    _validate_layers(visible)
-    for layer in visible:
-        if layer['opacity'] != 255:
-            raise ValueError(
-                f"Unsupported layer opacity {layer['opacity']} on layer "
-                f"{layer['name']!r}; only 255 is supported"
-            )
-
-    palette_lookup = None
-    if color_depth == COLOR_DEPTH_RGBA:
-        if target_palette is None:
-            raise ValueError(
-                "RGBA sources require an explicit target palette (--palette)"
-            )
-        palette_lookup = _rgba_palette_lookup(
-            parsed, visible, target_palette, canvas_w, canvas_h
-        )
-
-    resolved = [[None] * len(visible) for _ in range(num_frames)]
-    linked_refs = 0
-    for frame_idx in range(num_frames):
-        raw_cels = frame_cels[frame_idx]
-        for part_index, layer in enumerate(visible):
-            layer_index = layer['index']
-            raw_cel = raw_cels.get(layer_index)
-            if raw_cel is not None and raw_cel['type'] == CEL_TYPE_LINKED:
-                linked_refs += 1
-            cel = _resolve_cel(frame_idx, layer_index, frame_cels)
-            if cel is None:
-                continue
-            if cel['z_index'] != 0:
-                raise ValueError(
-                    f"Unsupported nonzero cel z-index {cel['z_index']} on layer "
-                    f"{layer['name']!r} in frame {frame_idx}"
-                )
-            if cel['opacity'] != 255:
-                raise ValueError(
-                    f"Unsupported cel opacity {cel['opacity']} on layer "
-                    f"{layer['name']!r} in frame {frame_idx}; only 255 is supported"
-                )
-            resolved[frame_idx][part_index] = cel
-
-    images = []
-    refs = []
-    image_keys = {}
-    reused_refs = 0
-    for frame_idx in range(num_frames):
-        for part_index, layer in enumerate(visible):
-            cel = resolved[frame_idx][part_index]
-            if cel is None:
-                refs.append((_emit.LAYERED_INVISIBLE, 0, 0))
-                continue
-            bytes_per_pixel = 1 if color_depth == COLOR_DEPTH_INDEXED else 4
-            clipped = _clip_cel_pixels(
-                cel['pixels'], cel['x'], cel['y'], cel['width'], cel['height'],
-                canvas_w, canvas_h, bytes_per_pixel,
-            )
-            if clipped is None:
-                refs.append((_emit.LAYERED_INVISIBLE, 0, 0))
-                continue
-            clip_w, clip_h, clipped_pixels, origin_x, origin_y = clipped
-            indices = _cel_to_indices(
-                clipped_pixels, color_depth, parsed['transparent_index'],
-                palette_lookup,
-            )
-            crop = _crop_indices(indices, clip_w, clip_h)
-            if crop is None:
-                refs.append((_emit.LAYERED_INVISIBLE, 0, 0))
-                continue
-            min_x, min_y, w, h, cropped = crop
-            by_layer = image_keys.setdefault(part_index, {})
-            image_index = by_layer.get((w, h, cropped))
-            if image_index is None:
-                image_index = len(images)
-                images.append(_emit.PartImage(w, h, cropped))
-                by_layer[(w, h, cropped)] = image_index
-            else:
-                reused_refs += 1
-            refs.append((image_index, origin_x + min_x, origin_y + min_y))
-
-    if not images:
-        raise ValueError("no visible artwork to export: every cel is empty")
-
-    parts = [layer['name'] or f"part{layer['index']}" for layer in visible]
-    durations = list(parsed['durations'])
-    clips = build_clips_from_tags(parsed['tags'], durations, num_frames)
-
-    asset = _emit.Layered(
-        canvas_w=canvas_w,
-        canvas_h=canvas_h,
-        images=images,
-        parts=parts,
-        refs=refs,
-        durations=durations,
-        clips=clips,
-    )
-    summary = {
-        'canvas_w': canvas_w,
-        'canvas_h': canvas_h,
-        'parts': parts,
-        'num_frames': num_frames,
-        'durations': durations,
-        'clips': [(clip.name, len(clip.frames), clip.loop_mode) for clip in clips],
-        'ignored_layers': ignored_layers,
-        'num_images': len(images),
-        'pool_pixels': sum(image.w * image.h for image in images),
-        'linked_refs': linked_refs,
-        'reused_refs': reused_refs,
-    }
-    return asset, summary
-
-
-def format_layered_summary(summary):
-    """Render the ``--layered`` inspection summary for the CLI."""
-    clip_text = ', '.join(
-        f"{name} ({count} frames)" for name, count, _loop in summary['clips']
-    ) or 'none'
-    ignored = summary['ignored_layers']
-    lines = [
-        f"Layered export: {summary['canvas_w']}x{summary['canvas_h']} canvas, "
-        f"{len(summary['parts'])} parts, {summary['num_frames']} frames, "
-        f"{summary['num_images']} images",
-        f"  parts   : {', '.join(summary['parts']) or 'none'}",
-        f"  clips   : {clip_text}",
-        f"  ignored : {', '.join(ignored) if ignored else 'none'}",
-        f"  reuse   : {summary['linked_refs']} linked refs, "
-        f"{summary['reused_refs']} duplicate refs, {summary['num_images']} images "
-        f"({summary['pool_pixels']} px)",
-        f"  storage : {summary.get('storage_bytes', 0)} bytes (.njn)",
-    ]
-    return "\n".join(lines)
-
-
-def _load_target_palette(spec):
-    """Load a 15-colour target palette from a .gpl path or tools/palettes name."""
-    from enjin_assets import palette as palette_mod
-    if os.path.isfile(spec):
-        path = spec
-    else:
-        path = os.path.join(
-            palette_mod.PALETTES_DIR,
-            spec if spec.endswith('.gpl') else spec + '.gpl',
-        )
-        if not os.path.isfile(path):
-            raise ValueError(f"target palette not found: {spec!r}")
-    loaded = palette_mod.load_gpl(path)
-    return [tuple(int(channel) for channel in rgb) for rgb in loaded.rgb.tolist()]
-
-
-def _run_layered(args, input_path):
-    """Layered authoring path: emit a .njn v2 layered asset + inspection summary."""
-    try:
-        parsed = parse_aseprite_layered(input_path)
-        target_palette = _load_target_palette(args.palette) if args.palette else None
-        asset, summary = build_layered_asset(parsed, target_palette)
-        if args.pivot is not None:
-            asset.pivot_x, asset.pivot_y = args.pivot
-        data = _emit.build_njn_layered(asset)
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    summary['storage_bytes'] = len(data)
-
-    out_path = args.output or (os.path.splitext(input_path)[0] + ".njn")
-    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-    with open(out_path, 'wb') as f:
-        f.write(data)
-    print(f"Written: {out_path}  ({len(data)} bytes, .njn v2 layered)")
-    print(format_layered_summary(summary))
-
-
-# ---------------------------------------------------------------------------
-# Grid / layout helpers
-# ---------------------------------------------------------------------------
-
-def _remap_indexed_pixel(index, source_transparent_index):
-    if index == source_transparent_index:
-        return TRANSPARENT_INDEX
-    if index > 14:
-        raise ValueError(
-            f"Opaque source palette index {index} cannot be represented in enjin's 0..14 range"
-        )
-    return index
-
-
-def build_pixel_array(frames, canvas_w, canvas_h, grid_spec,
-                      source_transparent_index=TRANSPARENT_INDEX):
-    """Return (pixel_bytes, cell_w, cell_h, cols, rows).
-
-    grid_spec is None, or (gw, gh) from --grid WxH.
-    """
-    if grid_spec is not None:
-        gw, gh = grid_spec
-        # Treat the FIRST frame's canvas as a spritesheet grid.
-        cols = canvas_w // gw
-        rows = canvas_h // gh
-        if cols == 0 or rows == 0:
-            print(f"Warning: --grid {gw}x{gh} does not fit within canvas {canvas_w}x{canvas_h}; using 1x1")
-            cols = max(1, cols)
-            rows = max(1, rows)
-
-        if canvas_w % gw != 0 or canvas_h % gh != 0:
-            print(f"Warning: grid {gw}x{gh} does not evenly divide canvas {canvas_w}x{canvas_h}; cells will be truncated")
-
-        first_frame = frames[0]
-        out = bytearray()
-        for row in range(rows):
-            for col in range(cols):
-                for py in range(gh):
-                    for px in range(gw):
-                        src_x = col * gw + px
-                        src_y = row * gh + py
-                        if src_x < canvas_w and src_y < canvas_h:
-                            out.append(_remap_indexed_pixel(
-                                first_frame[src_y * canvas_w + src_x],
-                                source_transparent_index,
-                            ))
-                        else:
-                            out.append(TRANSPARENT_INDEX)
-        return bytes(out), gw, gh, cols, rows
-
-    elif len(frames) == 1:
-        pixels = bytes(_remap_indexed_pixel(b, source_transparent_index)
-                       for b in frames[0])
-        return pixels, canvas_w, canvas_h, 1, 1
-
-    else:
-        # Multiple Aseprite frames — each frame becomes a column
-        out = bytearray()
-        for frame in frames:
-            out.extend(_remap_indexed_pixel(b, source_transparent_index)
-                       for b in frame)
-        return bytes(out), canvas_w, canvas_h, len(frames), 1
-
-
-# ---------------------------------------------------------------------------
-# C header emitter
-# ---------------------------------------------------------------------------
-
-def emit_header(pixel_data, name, cell_w, cell_h, cols, rows, source_filename):
-    """Return the C header string."""
-    total_frames = cols * rows
-    lines = []
-    lines.append(f"// Generated by aseprite2enjin.py from {source_filename}")
-    lines.append(f"// Cell: {cell_w}x{cell_h}, Grid: {cols}x{rows}, Frames: {total_frames}")
-    lines.append("#pragma once")
-    lines.append("#include <cstdint>")
-    lines.append("")
-    lines.append(f"const uint8_t {name}_data[] = {{")
-
-    frame_size = cell_w * cell_h
-    for frame_idx in range(total_frames):
-        lines.append(f"    // Frame {frame_idx}")
-        start = frame_idx * frame_size
-        end   = start + frame_size
-        chunk = pixel_data[start:end]
-        # emit 16 values per line
-        for i in range(0, len(chunk), 16):
-            segment = chunk[i:i + 16]
-            hex_vals = ", ".join(f"0x{b:02X}" for b in segment)
-            comma = "," if (i + 16 < len(chunk) or frame_idx + 1 < total_frames) else ""
-            lines.append(f"    {hex_vals}{comma}")
-
-    lines.append("};")
-    lines.append("")
-    lines.append("// Usage:")
-    lines.append("// #include \"enjin2/graphics/sprite.hpp\"")
-    lines.append(f"// enjin2::SpriteSheet {name}({name}_data, {cell_w}, {cell_h}, {cols}, {rows});")
-    lines.append("")
-    return "\n".join(lines)
-
-
-# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-
-def derive_name(path: str) -> str:
-    """Derive a C identifier from a file path."""
-    base = os.path.splitext(os.path.basename(path))[0]
-    # Replace non-identifier characters with underscores
-    ident = "".join(c if c.isalnum() or c == '_' else '_' for c in base)
-    if ident and ident[0].isdigit():
-        ident = "_" + ident
-    return ident or "sprite"
-
 
 def parse_grid(value: str):
     """Parse a WxH grid string. Returns (w, h) or raises."""
@@ -1481,18 +904,6 @@ def parse_grid(value: str):
     if w <= 0 or h <= 0:
         raise argparse.ArgumentTypeError(f"Grid dimensions must be positive, got: {value!r}")
     return (w, h)
-
-
-def parse_pivot(value: str):
-    """Parse an X,Y pivot string. Returns (x, y) or raises."""
-    parts = value.split(',')
-    if len(parts) != 2:
-        raise argparse.ArgumentTypeError(f"Pivot must be X,Y (e.g. 4,2), got: {value!r}")
-    try:
-        x, y = int(parts[0]), int(parts[1])
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"Pivot coordinates must be integers, got: {value!r}")
-    return (x, y)
 
 
 def _run_tilemap(args, input_path):
@@ -1533,94 +944,32 @@ def _run_tilemap(args, input_path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert indexed-color .aseprite files to enjin C headers."
+        description="Dice an indexed .aseprite into a .njn tileset + .njm map. "
+                    "Sprites: use enjin_sprite_import (tools/sprite_import)."
     )
     parser.add_argument("input", help="Input .aseprite file")
-    parser.add_argument("--name",   default=None,
-                        help="C identifier for the array (default: derived from filename)")
     parser.add_argument("--output", default=None,
-                        help="Output .h path (default: same directory as input, .h extension)")
+                        help="Output path; its extension is replaced by .njn and .njm "
+                             "(default: next to the input)")
     parser.add_argument("--grid",   default=None, type=parse_grid, metavar="WxH",
-                        help="Cell size for spritesheet-in-single-image mode (e.g. 8x8)")
+                        help="Tile size (default: 16x16)")
     parser.add_argument("--tilemap", action="store_true",
                         help="Tilemap authoring mode: dice under/over layers into a "
-                             ".njn tileset + .njm map (16x16 tiles unless --grid given)")
-    parser.add_argument("--v2", action="store_true",
-                        help="Emit a .njn v2 container sheet (META+PIXL, plus a CLIP "
-                             "chunk built from Aseprite frame tags) instead of a C header")
-    parser.add_argument("--layered", action="store_true",
-                        help="Emit a .njn v2 layered sprite: cropped/deduplicated "
-                             "source-layer parts, frame-part references, durations, "
-                             "and clips, plus an inspection summary")
-    parser.add_argument("--palette", default=None,
-                        help="Target Enjin palette (.gpl path or tools/palettes name) "
-                             "required for RGBA layered sources")
-    parser.add_argument("--pivot", default=None, type=parse_pivot, metavar="X,Y",
-                        help="Static pivot point for --layered exports, in canvas "
-                             "pixel coordinates (default: 0,0, written as an "
-                             "absent LPIV chunk)")
+                             ".njn tileset + .njm map (the only mode)")
 
     args = parser.parse_args()
+
+    if not args.tilemap:
+        parser.error("only --tilemap is supported; sprites are imported by "
+                     "enjin_sprite_import (tools/sprite_import, ADR-0015)")
 
     input_path = args.input
     if not os.path.isfile(input_path):
         print(f"Error: file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    if args.layered:
-        _run_layered(args, input_path)
-        return
+    _run_tilemap(args, input_path)
 
-    if args.tilemap:
-        _run_tilemap(args, input_path)
-        return
-
-    if args.v2:
-        _run_sprite_v2(args, input_path)
-        return
-
-    # Derive defaults
-    name = args.name or derive_name(input_path)
-    if args.output:
-        output_path = args.output
-    else:
-        base = os.path.splitext(input_path)[0]
-        output_path = base + ".h"
-
-    # Parse
-    try:
-        ase = parse_aseprite(input_path)
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    if ase['color_depth'] != COLOR_DEPTH_INDEXED:
-        print("Error: C header conversion requires indexed input; RGBA parsing does not quantize", file=sys.stderr)
-        sys.exit(1)
-
-    # Build pixel array
-    try:
-        pixel_data, cell_w, cell_h, cols, rows = build_pixel_array(
-            ase['frames'], ase['width'], ase['height'], args.grid,
-            ase['transparent_index'],
-        )
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    # Emit header
-    header = emit_header(
-        pixel_data, name, cell_w, cell_h, cols, rows,
-        os.path.basename(input_path)
-    )
-
-    # Write output
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
-    with open(output_path, 'w') as f:
-        f.write(header)
-
-    print(f"Written: {output_path}")
-    print(f"  Array: {name}_data  ({len(pixel_data)} bytes)")
-    print(f"  Cell:  {cell_w}x{cell_h}  Grid: {cols}x{rows}  Frames: {cols * rows}")
 
 
 if __name__ == "__main__":
