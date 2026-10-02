@@ -261,6 +261,31 @@ target_include_directories(enjin2_input
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
+# Sprite importer: .aseprite → .njn v2 (ADR-0015, Tomodachi #291). An authoring
+# tool, never on the device: the native CLI and the Studio's asset-tools worker
+# link it. Inflates compressed cels with the vendored stb_image.
+if(NOT ESP32)
+    add_library(enjin2_import STATIC)
+    target_sources(enjin2_import PRIVATE
+        src/import/aseprite_file.cpp
+        src/import/sprite_import.cpp
+        src/import/stb_zlib.cpp
+    )
+    target_include_directories(enjin2_import
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    )
+    target_link_libraries(enjin2_import PRIVATE enjin2_graphics)
+    target_compile_options(enjin2_import PRIVATE
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>)
+
+    if(NOT EMSCRIPTEN)
+        # enjin_sprite_import <in.aseprite> -o <out.njn> [--layered|--sheet] [--palette NAME]
+        add_executable(enjin_sprite_import tools/sprite_import/main.cpp)
+        target_link_libraries(enjin_sprite_import PRIVATE enjin2_import enjin2_graphics)
+    endif()
+endif()
+
 # Enable -Woverride on all engine targets to catch detached virtual overrides (DT-03)
 # -Woverride is Clang-specific; GCC enforces override keyword mismatches as hard errors natively
 foreach(tgt enjin2_core enjin2_graphics enjin2_ui enjin2_input)

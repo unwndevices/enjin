@@ -381,6 +381,30 @@ target_include_directories(njn2_layered_test PRIVATE
 )
 add_test(NAME njn2_layered_test COMMAND njn2_layered_test)
 
+# Sprite importer: .aseprite → .njn v2 (Tomodachi #291: SPI-01..SPI-25), plus the
+# CLI converting tomo_tune2.aseprite and the test re-reading its output. The
+# pre-push gate (scripts/importer-check.sh in Tomodachi) runs these under ASan.
+if(TARGET enjin_sprite_import)
+    add_executable(sprite_import_test
+        sprite_import_test.cpp
+    )
+    target_link_libraries(sprite_import_test PRIVATE enjin2_import enjin2_graphics)
+    target_compile_definitions(sprite_import_test PRIVATE
+        ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+    add_test(NAME sprite_import_test COMMAND sprite_import_test)
+
+    add_test(NAME sprite_import_cli_convert
+        COMMAND enjin_sprite_import
+            ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.aseprite
+            -o ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn
+            --palette tomo)
+    set_tests_properties(sprite_import_cli_convert PROPERTIES FIXTURES_SETUP sprite_import_cli)
+    add_test(NAME sprite_import_cli_loads
+        COMMAND sprite_import_test --verify-layered
+            ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn)
+    set_tests_properties(sprite_import_cli_loads PROPERTIES FIXTURES_REQUIRED sprite_import_cli)
+endif()
+
 # Shared C++ layered-asset owner/loader + bounded per-applet arena
 # (ADR-0004, Tomodachi #95: LAYLA-01..LAYLA-17). Links enjin2_graphics for the
 # AssetArena / LayeredAssetStore translation units.
