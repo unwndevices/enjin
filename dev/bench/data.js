@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790953708423,
+  "lastUpdate": 1790955618581,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -6835,6 +6835,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 4401.5,
             "range": "± 0.58%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "5469f0c3ce95535bc73fae779087e292a9092eef",
+          "message": "feat(import): re-import merge, keeping clips by name (Tomodachi #297)\n\nreimportSprite() imports a new sprite source at the existing .njn's kind and\nmerges it in, index-only: the source-owned chunks (META/PIXL, or LHDR/LIMG/\nLPRT/LREF/LDUR) are swapped, LPIV and unknown chunks are kept in place, and\nclips are kept by name. A follow set (clip -> tag) says which clips follow\ntheir tag: those take the tag's new frames; edited clips keep theirs minus\nframes that no longer exist; removed tags detach and flag; new tags add\nseeded clips unless the name is taken (flagged as a clash); emptied clips are\nkept and flagged. A source that no longer fits the kind fails with the new\nKindMismatch status. The report gives per-clip before -> after frame numbers,\nremoved positions and flags, the tag changes, the new follow set and\ntouchesNoClip.\n\nThe CLI gains --reimport <existing.njn> (empty follow set). The importer\ntests' fixtures move to sprite_import_fixtures.hpp so SPR-01..13 run in the\nsame sprite_import_test binary the pre-push gate builds.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-10-02T17:38:47+02:00",
+          "tree_id": "3683192a70c4bc49b7e7af05445420bb5fcbe196",
+          "url": "https://github.com/unwndevices/enjin/commit/5469f0c3ce95535bc73fae779087e292a9092eef"
+        },
+        "date": 1790955616725,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 130,
+            "range": "± 0.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 130,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 280,
+            "range": "± 0.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 84388,
+            "range": "± 0.01%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 1002,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 5521,
+            "range": "± 0.56%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 30888,
+            "range": "± 0.19%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 291,
+            "range": "± 0.34%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 782,
+            "range": "± 1.14%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1443,
+            "range": "± 0.7%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2765,
+            "range": "± 0.72%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3967.5,
+            "range": "± 0.51%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 90,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 90,
+            "range": "± 0.55%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 120,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 211,
+            "range": "± 2.28%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 311,
+            "range": "± 0.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 50845,
+            "range": "± 2.45%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 982,
+            "range": "± 2.19%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1688,
+            "range": "± 3.65%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 2705.5,
+            "range": "± 3.66%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 3035.5,
+            "range": "± 3.06%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1563,
+            "range": "± 5.07%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3587,
+            "range": "± 0.72%",
             "unit": "ns/op"
           }
         ]
