@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790850319689,
+  "lastUpdate": 1790940821655,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -6259,6 +6259,198 @@ window.BENCHMARK_DATA = {
             "name": "lua GC: full collect",
             "value": 3597,
             "range": "± 0.79%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "032709706933b0d9a254a25a2ee20fe686889463",
+          "message": "feat(import): C++ sprite importer + native CLI (Tomodachi #291)\n\nimportSprite() turns .aseprite bytes into a .njn v2 asset, for the native\nCLI (enjin_sprite_import) and the Studio's asset-tools worker (ADR-0015).\n\n- Kind: more than one visible layer → layered sprite (LHDR..LPIV + CLIP),\n  else a flat sheet (META/PIXL/CLIP); --layered/--sheet override.\n- Tags seed clips: forward/reverse/ping-pong/ping-pong-reverse; repeat 0 →\n  loop (pingpong), 1 → once, N → the N passes unrolled as once (ping-pong\n  passes alternate and don't repeat the turn frame). Untagged → one\n  \"default\" loop clip. Names: printable ASCII, 15 chars.\n- 0 ms frames fall back to the header speed; ties in the flat z-order break\n  by z-index (spec NOTE.5); old (0x0004) and new palette chunks are read.\n- Colours: indexed keeps slots 0..14; RGBA needs binary alpha and an exact\n  palette match, else PaletteMismatch with per-value pixel counts and the\n  nearest slot (Oklab). No quantisation.\n- New layered imports get a bottom-centre LPIV pivot.\n- Hardening: strict bounds-checked reader, error returns only, size caps\n  before allocating, cels inflated lazily via stb_image's zlib, output\n  re-read before it is returned; truncation/corruption corpus test.\n- CLI adds --palette NAME (preset) beyond the spec so the RGBA\n  tomo_tune2.aseprite (old \"tomo\" hue palette) converts.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-10-02T13:32:26+02:00",
+          "tree_id": "2955229fdd69e725220290c35f1240d8abd99d9e",
+          "url": "https://github.com/unwndevices/enjin/commit/032709706933b0d9a254a25a2ee20fe686889463"
+        },
+        "date": 1790940820628,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 30,
+            "range": "± 1.61%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 90.5,
+            "range": "± 0.56%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 100,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 230.5,
+            "range": "± 0.22%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 65218,
+            "range": "± 0.02%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 20,
+            "range": "± 19.05%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 661,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 4587,
+            "range": "± 0.45%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 24341.5,
+            "range": "± 0.47%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 220,
+            "range": "± 0.45%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 620,
+            "range": "± 1.47%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 1132,
+            "range": "± 0.94%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 2158.5,
+            "range": "± 0.69%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3165,
+            "range": "± 0.63%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 70,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 80,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 30,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 60,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 100,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 200,
+            "range": "± 0.5%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 290,
+            "range": "± 3.33%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 29449,
+            "range": "± 5.19%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 746,
+            "range": "± 3.47%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 1302,
+            "range": "± 3.85%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 1988,
+            "range": "± 3.27%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 2243.5,
+            "range": "± 2.19%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 1087,
+            "range": "± 3.38%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3345,
+            "range": "± 0.6%",
             "unit": "ns/op"
           }
         ]
