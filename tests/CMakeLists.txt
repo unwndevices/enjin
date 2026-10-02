@@ -382,12 +382,14 @@ target_include_directories(njn2_layered_test PRIVATE
 )
 add_test(NAME njn2_layered_test COMMAND njn2_layered_test)
 
-# Sprite importer: .aseprite → .njn v2 (Tomodachi #291: SPI-01..SPI-25), plus the
+# Sprite importer: .aseprite → .njn v2 (Tomodachi #291: SPI-01..SPI-26) and the
+# re-import merge (#297: SPR-01..SPR-13), plus the
 # CLI converting tomo_tune2.aseprite and the test re-reading its output. The
 # pre-push gate (scripts/importer-check.sh in Tomodachi) runs these under ASan.
 if(TARGET enjin_sprite_import)
     add_executable(sprite_import_test
         sprite_import_test.cpp
+        sprite_reimport_test.cpp
     )
     target_link_libraries(sprite_import_test PRIVATE enjin2_import enjin2_graphics)
     target_compile_definitions(sprite_import_test PRIVATE
@@ -404,6 +406,20 @@ if(TARGET enjin_sprite_import)
         COMMAND sprite_import_test --verify-layered
             ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn)
     set_tests_properties(sprite_import_cli_loads PROPERTIES FIXTURES_REQUIRED sprite_import_cli)
+    # --reimport (#297): the same source over the CLI's output, written to a new file.
+    add_test(NAME sprite_import_cli_reimport
+        COMMAND enjin_sprite_import
+            ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.aseprite
+            --reimport ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn
+            -o ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2_reimport.njn
+            --palette tomo)
+    set_tests_properties(sprite_import_cli_reimport PROPERTIES
+        FIXTURES_REQUIRED sprite_import_cli FIXTURES_SETUP sprite_import_cli_re
+        PASS_REGULAR_EXPRESSION "touches no clip")
+    add_test(NAME sprite_import_cli_reimport_loads
+        COMMAND sprite_import_test --verify-layered
+            ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2_reimport.njn)
+    set_tests_properties(sprite_import_cli_reimport_loads PROPERTIES FIXTURES_REQUIRED sprite_import_cli_re)
 endif()
 
 # Shared C++ layered-asset owner/loader + bounded per-applet arena

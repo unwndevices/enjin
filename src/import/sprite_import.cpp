@@ -559,6 +559,7 @@ const char* spriteImportStatusName(SpriteImportStatus s) {
     case SpriteImportStatus::Unsupported:     return "unsupported";
     case SpriteImportStatus::TooLarge:        return "too-large";
     case SpriteImportStatus::PaletteMismatch: return "palette-mismatch";
+    case SpriteImportStatus::KindMismatch:    return "kind-mismatch";
     }
     return "unknown";
 }

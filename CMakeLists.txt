@@ -269,6 +269,7 @@ if(NOT ESP32)
     target_sources(enjin2_import PRIVATE
         src/import/aseprite_file.cpp
         src/import/sprite_import.cpp
+        src/import/sprite_reimport.cpp
         src/import/stb_zlib.cpp
     )
     target_include_directories(enjin2_import
@@ -281,6 +282,7 @@ if(NOT ESP32)
 
     if(NOT EMSCRIPTEN)
         # enjin_sprite_import <in.aseprite> -o <out.njn> [--layered|--sheet] [--palette NAME]
+        #                     [--reimport <existing.njn>]  (re-import merge, Tomodachi #297)
         add_executable(enjin_sprite_import tools/sprite_import/main.cpp)
         target_link_libraries(enjin_sprite_import PRIVATE enjin2_import enjin2_graphics)
     endif()

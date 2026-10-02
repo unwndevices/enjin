@@ -68,6 +68,7 @@ enum class SpriteImportStatus : uint8_t {
     Unsupported,      ///< Readable, but uses a feature the importer rejects.
     TooLarge,         ///< Exceeds a SpriteImportLimits cap or a format limit.
     PaletteMismatch,  ///< RGBA pixels off the target palette or with partial alpha.
+    KindMismatch,     ///< Re-import only: the new source no longer fits the `.njn`'s kind.
 };
 
 /// Size caps, checked before allocating.
