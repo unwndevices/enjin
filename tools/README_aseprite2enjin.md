@@ -59,11 +59,24 @@ python3 tools/aseprite2enjin.py hero.aseprite --name hero --output src/assets/he
 ```
 python3 tools/aseprite2enjin.py walk.aseprite --v2 --output walk.njn
 ```
-Each Aseprite frame becomes a sheet cell; every frame tag becomes a named clip
-whose per-frame durations come from the frame headers and whose loop mode maps
-from the tag's direction (forward/reverse → Loop, ping-pong → PingPong). See
-`README_tiled2enjin.md` for the shared `enjin_assets` library and the `.njn` v2
-container layout.
+Each Aseprite frame becomes a sheet cell. Each frame tag becomes a named clip, and
+the per-frame durations come from the frame headers. A 0 ms frame falls back to
+the header speed, or to 100 ms if that is 0 too. Tags map like this (both `--v2`
+and `--layered`):
+
+| Tag | Clip |
+|-----|------|
+| forward / reverse | frames in order / reversed |
+| ping-pong / ping-pong-reverse | frames in order / reversed, `pingpong` |
+| repeat 0 | `loop` (`pingpong` for the ping-pong directions) |
+| repeat 1 | `once` |
+| repeat N > 1 | the N passes unrolled, as `once`. A ping-pong pass alternates direction and doesn't repeat its turn frame. |
+
+An untagged file gets one looping `default` clip over all frames. When cels in a
+flattened frame tie on order (layer + z-index), the lower z-index paints first
+(spec NOTE.5). See `README_tiled2enjin.md` for the shared `enjin_assets` library
+and the `.njn` v2 container layout. `testdata/sprite_golden/` is the frozen
+reference corpus for these modes.
 
 **`.njn` v2 layered sprite (source layers → parts):**
 ```

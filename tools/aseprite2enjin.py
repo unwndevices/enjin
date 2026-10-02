@@ -19,6 +19,7 @@ from enjin_assets import emit as _emit  # noqa: E402  (shared v2 .njn writer)
 # ---------------------------------------------------------------------------
 ASE_MAGIC        = 0xA5E0
 FRAME_MAGIC      = 0xF1FA
+CHUNK_OLD_PALETTE = 0x0004
 CHUNK_LAYER      = 0x2004
 CHUNK_CEL        = 0x2005
 CHUNK_CEL_EXTRA  = 0x2006
@@ -33,8 +34,17 @@ LAYER_TYPE_GROUP = 1
 LAYER_TYPE_TILEMAP = 2
 BLEND_MODE_NORMAL = 0
 
-# Aseprite tag loop directions → enjin NjnLoopMode (reverse folds to Loop).
-_ASE_DIR_TO_LOOP = {0: _emit.LOOP_LOOP, 1: _emit.LOOP_LOOP, 2: _emit.LOOP_PINGPONG, 3: _emit.LOOP_PINGPONG}
+# Aseprite tag loop directions.
+TAG_FORWARD          = 0
+TAG_REVERSE          = 1
+TAG_PINGPONG         = 2
+TAG_PINGPONG_REVERSE = 3
+
+# A frame whose duration and the header speed are both 0 holds this long.
+FALLBACK_DURATION_MS = 100
+
+# A CLIP record stores its frame count in one byte.
+MAX_CLIP_FRAMES = 255
 
 CEL_TYPE_RAW        = 0
 CEL_TYPE_LINKED     = 1
@@ -97,7 +107,8 @@ def _read_aseprite(path: str, want_palette: bool = False):
 
     frame_count, width, height, color_depth = struct.unpack_from('<HHHH', data, 6)
     file_flags = struct.unpack_from('<I', data, 14)[0]
-    # speed at offset+18 — skip
+    # Deprecated header speed: what a 0 ms frame holds for.
+    speed = struct.unpack_from('<H', data, 18)[0]
     transparent_index = data[28] if color_depth == COLOR_DEPTH_INDEXED else None
     # number of colors at offset+32 (2 bytes)
 
@@ -110,7 +121,7 @@ def _read_aseprite(path: str, want_palette: bool = False):
     layers = []
     frame_cels = []
     durations = []   # per-frame hold time in ms
-    tags = []        # list of (from_frame, to_frame, loop_dir, name)
+    tags = []        # list of (from_frame, to_frame, loop_dir, repeat, name)
     warnings = []
     palette = {}
     frame_palettes = []
@@ -134,6 +145,8 @@ def _read_aseprite(path: str, want_palette: bool = False):
             raise ValueError(f"Invalid or truncated frame {frame_idx}")
         chunk_offset = offset + 16  # first chunk starts after 16-byte frame header
         cels = {}
+        old_palettes = []   # 0x0004 bodies, applied only if the frame has no 0x2019
+        has_new_palette = False
 
         for _ in range(num_chunks):
             if chunk_offset + 6 > frame_end:
@@ -168,13 +181,24 @@ def _read_aseprite(path: str, want_palette: bool = False):
             elif (chunk_type == CHUNK_PALETTE
                   and color_depth == COLOR_DEPTH_INDEXED and want_palette):
                 _parse_palette_update(data, chunk_data_offset, chunk_body_size, palette)
+                has_new_palette = True
+            elif (chunk_type == CHUNK_OLD_PALETTE
+                  and color_depth == COLOR_DEPTH_INDEXED and want_palette):
+                old_palettes.append((chunk_data_offset, chunk_body_size))
 
             chunk_offset += chunk_size
 
         if chunk_offset != frame_end:
             raise ValueError(f"Frame {frame_idx} chunk data does not match its declared size")
+        # The spec says to ignore 0x0004 when a 0x2019 is present; Aseprite
+        # writes only 0x0004 for an opaque palette of <= 256 colours.
+        if not has_new_palette:
+            for old_offset, old_size in old_palettes:
+                _parse_old_palette_update(data, old_offset, old_size, palette)
         frame_cels.append(cels)
         frame_palettes.append(dict(palette))
+        if frame_duration == 0:
+            frame_duration = speed or FALLBACK_DURATION_MS
         durations.append(frame_duration)
         offset = frame_end
 
@@ -289,6 +313,35 @@ def _parse_palette_update(data, offset, body_size, palette):
             pos += name_len
     if pos != end:
         raise ValueError("Palette chunk has trailing data")
+
+
+def _parse_old_palette_update(data, offset, body_size, palette):
+    """Apply one old PALETTE chunk (0x0004) to the current palette.
+
+    Layout: WORD packets, then per packet BYTE skip, BYTE count (0 = 256),
+    and count RGB triples. Entries are opaque.
+    """
+    end = offset + body_size
+    if body_size < 2:
+        raise ValueError("Truncated old palette chunk")
+    packets = struct.unpack_from('<H', data, offset)[0]
+    pos = offset + 2
+    index = 0
+    for _ in range(packets):
+        if pos + 2 > end:
+            raise ValueError("Truncated old palette packet")
+        skip, count = data[pos], data[pos + 1]
+        pos += 2
+        index += skip
+        count = count or 256
+        if index + count > 256:
+            raise ValueError("Old palette runs past 256 colours")
+        if pos + 3 * count > end:
+            raise ValueError("Truncated old palette colour")
+        for _ in range(count):
+            palette[index] = (data[pos], data[pos + 1], data[pos + 2], 255)
+            pos += 3
+            index += 1
 
 
 def _parse_layer(data, offset, body_size, layer_opacity_valid):
@@ -462,10 +515,12 @@ def _flatten_frame(frame_idx, frame_cels, layers, width, height, color_depth,
             continue
         cel = _resolve_cel(frame_idx, layer['index'], frame_cels)
         if cel is not None:
-            render_cels.append((layer['index'] + cel['z_index'], layer['index'], layer, cel))
+            render_cels.append((layer['index'] + cel['z_index'], cel['z_index'], layer, cel))
+    # Spec NOTE.5: order = layer index + z-index; ties paint the lower z-index
+    # first. The sort is stable, so equal (order, z) keep layer order.
     render_cels.sort(key=lambda item: (item[0], item[1]))
 
-    for _order, _index, layer, cel in render_cels:
+    for _order, _z_index, layer, cel in render_cels:
         if color_depth == COLOR_DEPTH_RGBA:
             _composite_rgba(canvas, width, height, cel, layer['opacity'])
         elif output_rgba:
@@ -534,7 +589,7 @@ def _composite_rgba(canvas, canvas_w, canvas_h, cel, layer_opacity):
 
 
 def _parse_frame_tags(data, offset, body_size):
-    """Parse a FRAME_TAGS chunk (0x2018) → list of (from, to, loop_dir, name).
+    """Parse a FRAME_TAGS chunk (0x2018) → list of (from, to, loop_dir, repeat, name).
 
     Layout: WORD numTags, BYTE[8] reserved, then per tag: WORD from, WORD to,
     BYTE loopDir, WORD repeat, BYTE[6] reserved, BYTE[3] colour, BYTE extra,
@@ -551,6 +606,7 @@ def _parse_frame_tags(data, offset, body_size):
             break
         from_frame, to_frame = struct.unpack_from('<HH', data, pos)
         loop_dir = data[pos + 4]
+        repeat = struct.unpack_from('<H', data, pos + 5)[0]
         pos += 4 + 1 + 2 + 6 + 3 + 1  # from,to + dir + repeat + reserved + colour + extra
         if pos + 2 > end:
             break
@@ -562,7 +618,7 @@ def _parse_frame_tags(data, offset, body_size):
             name = raw.decode('utf-8')
         except UnicodeDecodeError:
             name = raw.decode('latin-1', 'replace')
-        out.append((from_frame, to_frame, loop_dir, name))
+        out.append((from_frame, to_frame, loop_dir, repeat, name))
     return out
 
 
@@ -852,22 +908,66 @@ def emit_njm_bytes(cells, map_w, map_h):
 # .njn v2 sheet emitter — animation clips from Aseprite tags (issue #87)
 # ---------------------------------------------------------------------------
 
+def _tag_sequence(lo, hi, loop_dir, repeat, name):
+    """Frame sequence and loop mode for one tag (ADR-0015 tag mapping).
+
+    Reverse directions reverse the frames; ping-pong directions loop as
+    ``pingpong``. Repeat 0 loops, repeat 1 plays once, and repeat N > 1 is the
+    N passes Aseprite plays, unrolled, as ``once``. A ping-pong pass alternates
+    direction and does not repeat its turn frame.
+    """
+    reverse = loop_dir in (TAG_REVERSE, TAG_PINGPONG_REVERSE)
+    pingpong = loop_dir in (TAG_PINGPONG, TAG_PINGPONG_REVERSE)
+    pass_len = hi - lo + 1
+    unrolled_len = pass_len
+    if repeat > 1:
+        unrolled_len = (pass_len + (repeat - 1) * (pass_len - 1) if pingpong
+                        else pass_len * repeat)
+    if unrolled_len > MAX_CLIP_FRAMES:
+        raise ValueError(
+            f"tag {name!r} unrolls to {unrolled_len} frames; "
+            f"a clip holds at most {MAX_CLIP_FRAMES}"
+        )
+    one_pass = list(range(lo, hi + 1))
+    if reverse:
+        one_pass.reverse()
+    if repeat == 0:
+        return one_pass, _emit.LOOP_PINGPONG if pingpong else _emit.LOOP_LOOP
+
+    frames = list(one_pass)
+    for _ in range(1, repeat):
+        if pingpong:
+            one_pass.reverse()
+            frames += one_pass[1:]
+        else:
+            frames += one_pass
+    return frames, _emit.LOOP_ONCE
+
+
 def build_clips_from_tags(tags, durations, frame_count):
-    """Turn Aseprite frame tags into enjin CLIP records (per-frame durations)."""
+    """Turn Aseprite frame tags into enjin CLIP records (per-frame durations).
+
+    Tags that clamp to no frames are dropped. When none is left (an untagged
+    file), the result is one looping ``default`` clip over every frame.
+    """
     clips = []
-    for from_frame, to_frame, loop_dir, name in tags:
+    for from_frame, to_frame, loop_dir, repeat, name in tags:
         lo = max(0, from_frame)
         hi = min(frame_count - 1, to_frame)
         if hi < lo:
             continue
-        frames = [
-            (fi, durations[fi] if fi < len(durations) else 100, 0)
-            for fi in range(lo, hi + 1)
-        ]
+        name = name or f"clip{len(clips)}"
+        sequence, loop_mode = _tag_sequence(lo, hi, loop_dir, repeat, name)
         clips.append(_emit.Clip(
-            name=name or f"clip{len(clips)}",
-            loop_mode=_ASE_DIR_TO_LOOP.get(loop_dir, _emit.LOOP_LOOP),
-            frames=frames,
+            name=name,
+            loop_mode=loop_mode,
+            frames=[(fi, durations[fi], 0) for fi in sequence],
+        ))
+    if not clips:
+        clips.append(_emit.Clip(
+            name="default",
+            loop_mode=_emit.LOOP_LOOP,
+            frames=[(fi, durations[fi], 0) for fi in range(frame_count)],
         ))
     return clips
 
@@ -892,7 +992,7 @@ def emit_njn_v2_sheet(ase, grid_spec):
                   file=sys.stderr)
         clips = None
     else:
-        clips = build_clips_from_tags(ase.get('tags', []), ase.get('durations', []), frame_count) or None
+        clips = build_clips_from_tags(ase['tags'], ase['durations'], frame_count)
     data = _emit.build_njn(cell_w, cell_h, pixel_data, frame_count, clips=clips)
     return data, frame_count, clips
 
@@ -1060,26 +1160,6 @@ def _crop_indices(indices, w, h):
     return min_x, min_y, crop_w, crop_h, bytes(cropped)
 
 
-def _layered_clips(tags, durations, num_frames):
-    """Authored tag clips, or a looping ``default`` clip over every frame.
-
-    A tagged document whose tags all clamp to nothing is treated as untagged,
-    so every layered asset remains immediately playable.
-    """
-    if tags:
-        clips = build_clips_from_tags(tags, durations, num_frames)
-        if clips:
-            return clips
-    return [_emit.Clip(
-        name="default",
-        loop_mode=_emit.LOOP_LOOP,
-        frames=[
-            (frame_idx, durations[frame_idx] if frame_idx < len(durations) else 100, 0)
-            for frame_idx in range(num_frames)
-        ],
-    )]
-
-
 def build_layered_asset(parsed, target_palette=None):
     """Assemble an ``emit.Layered`` asset and inspection summary from raw cels.
 
@@ -1188,7 +1268,7 @@ def build_layered_asset(parsed, target_palette=None):
 
     parts = [layer['name'] or f"part{layer['index']}" for layer in visible]
     durations = list(parsed['durations'])
-    clips = _layered_clips(parsed['tags'], durations, num_frames)
+    clips = build_clips_from_tags(parsed['tags'], durations, num_frames)
 
     asset = _emit.Layered(
         canvas_w=canvas_w,

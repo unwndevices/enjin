@@ -88,7 +88,7 @@ def test_v2_sheet_has_clip_with_durations():
 
     assert parsed_ase['frame_count'] == 3
     assert parsed_ase['durations'] == [100, 150, 200]
-    assert parsed_ase['tags'] == [(0, 2, 2, "spin")]
+    assert parsed_ase['tags'] == [(0, 2, 2, 0, "spin")]  # (from, to, dir, repeat, name)
 
     data, frame_count, clips = a2e.emit_njn_v2_sheet(parsed_ase, grid_spec=None)
     assert frame_count == 3
@@ -113,7 +113,8 @@ def test_v2_sheet_has_clip_with_durations():
     assert (d2[0], d2[1]) == (2, 200)
 
 
-def test_v2_sheet_without_tags_omits_clip():
+def test_v2_sheet_without_tags_gets_a_default_clip():
+    # An untagged file gets one looping clip over all frames (ADR-0015).
     w, h = 2, 2
     ase = _make_multiframe_aseprite(w, h, [bytes([0, 1, 2, 3])], [120], tags=[])
     with tempfile.TemporaryDirectory() as d:
@@ -122,9 +123,11 @@ def test_v2_sheet_without_tags_omits_clip():
             f.write(ase)
         parsed_ase = a2e.parse_aseprite(path)
     data, frame_count, clips = a2e.emit_njn_v2_sheet(parsed_ase, grid_spec=None)
-    assert clips is None
+    assert [(c.name, c.loop_mode, c.frames) for c in clips] == [
+        ("default", emit.LOOP_LOOP, [(0, 120, 0)]),
+    ]
     parsed = emit.parse_njn(data)
-    assert emit.CHUNK_CLIP not in parsed.chunks
+    assert emit.CHUNK_CLIP in parsed.chunks
 
 
 def test_v2_grid_mode_drops_clips():
@@ -143,6 +146,6 @@ def test_v2_grid_mode_drops_clips():
 
 if __name__ == "__main__":
     test_v2_sheet_has_clip_with_durations()
-    test_v2_sheet_without_tags_omits_clip()
+    test_v2_sheet_without_tags_gets_a_default_clip()
     test_v2_grid_mode_drops_clips()
     print("PASS")
