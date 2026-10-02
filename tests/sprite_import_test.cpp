@@ -48,6 +48,8 @@
  */
 
 #include "sprite_import_fixtures.hpp"
+#include "png_import_fixtures.hpp"
+#include <enjin2/import/sprite_reimport.hpp>
 
 #include <sstream>
 
@@ -630,6 +632,54 @@ static int verifyLayered(const char* path) {
 int main(int argc, char** argv) {
     if (argc == 3 && std::strcmp(argv[1], "--verify-layered") == 0) return verifyLayered(argv[2]);
 
+    const auto png = run(pngImage(3, 2, true, {0, 1, 15, 14, 2, 3}));
+    ASSERT(png.ok(), "PNG indexed source imports");
+    if (png.ok()) ASSERT((readSheet(png).pixl == Bytes{0, 1, 15, 14, 2, 3}), "PNG keeps duplicate-colour indices");
+    ASSERT(!run(pngImage(1, 1, true, {16})).ok(), "PNG out-of-palette source index rejected before colour expansion");
+    ASSERT((readSheet(run(pngImage(4, 1, true, {0x1b}, 2))).pixl == Bytes{0,1,2,3}), "PNG 2-bit indices are not grayscale-scaled");
+    ASSERT((readSheet(run(pngImage(2, 1, true, {0x12}, 4))).pixl == Bytes{1,2}), "PNG 4-bit indices unpack");
+    ASSERT((readSheet(run(pngImage(2, 1, true, {0x40}, 1))).pixl == Bytes{0,1}), "PNG 1-bit indices unpack");
+    // A 2x2 Adam7 image: pass 1 (0,0), pass 6 (1,0), pass 7's bottom row.
+    ASSERT((readSheet(run(pngImage(2, 2, true, {0,1, 0,2, 0,3,4}, 8, true))).pixl == Bytes{1,2,3,4}), "PNG Adam7 preserves original indices");
+    SpriteImportOptions capped;
+    capped.limits.maxLayers = 0;
+    ASSERT(run(pngImage(1, 1, true, {1}), capped).status == SpriteImportStatus::TooLarge, "PNG honours layer cap");
+    capped.limits.maxLayers = 1; capped.limits.maxCelSide = 1;
+    ASSERT(run(pngImage(2, 1, true, {1,2}), capped).status == SpriteImportStatus::TooLarge, "PNG honours cel-side cap");
+    SpriteImportOptions cells;
+    cells.cellW = 2; cells.cellH = 2;
+    const auto grid = pngImage(4, 4, true, {1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,0,15});
+    const auto sliced = run(grid, cells);
+    ASSERT(sliced.ok(), "PNG cell slicing imports");
+    if (sliced.ok()) {
+        const auto s = readSheet(sliced);
+        ASSERT((s.pixl == Bytes{1,2,5,6, 3,4,7,8, 9,10,13,14, 11,12,0,15}), "PNG frames cut row-major, not scanline-major");
+        ASSERT((frameIdx(s.clips[0]) == std::vector<uint16_t>{0,1,2,3}), "PNG one clip spans the cells");
+        SpriteReimportOptions ro;
+        ro.cellW = 2; ro.cellH = 2;
+        const auto merged = reimportSprite(sliced.njn.data(), sliced.njn.size(), grid.data(), grid.size(), {}, ro);
+        ASSERT(merged.ok() && merged.touchesNoClip && merged.follows.empty(), "PNG re-import keeps clips without tags");
+    }
+    cells.cellW = 3;
+    ASSERT(!run(grid, cells).ok(), "PNG non-dividing cell rejected");
+    const auto pal = systemPalette();
+    const auto rgba = pngImage(2, 1, false, {pal[2].r,pal[2].g,pal[2].b,255, 255,0,255,0});
+    const auto matched = run(rgba);
+    ASSERT(matched.ok() && readSheet(matched).pixl == Bytes({2,15}), "PNG RGBA exact colour and clear pixel");
+    const auto bad = run(pngImage(3, 1, false, {255,0,255,255, 255,0,255,255, pal[2].r,pal[2].g,pal[2].b,128}));
+    ASSERT(bad.status == SpriteImportStatus::PaletteMismatch && bad.colourIssues.size() == 2 &&
+           bad.colourIssues[0].pixels == 2 && bad.colourIssues[1].partialAlpha(), "PNG structured colour/alpha error counts");
+    for (const auto& source : {grid, rgba}) {
+        for (size_t n = 0; n < source.size(); ++n) {
+            Bytes truncated(source.begin(), source.begin() + n);
+            ASSERT(!run(truncated).ok(), "PNG truncation rejected");
+        }
+        for (size_t i = 0; i < source.size(); ++i) {
+            auto corrupt = source; corrupt[i] ^= 0xff;
+            const auto r = run(corrupt);
+            ASSERT(!r.ok() || readSheet(r).ok, "PNG corruption never crashes; success re-reads");
+        }
+    }
     test01_indexedSheetUntagged();
     test02_tagDirections();
     test03_tagRepeat();

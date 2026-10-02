@@ -541,7 +541,46 @@ std::array<RGB, PALETTE_MAX_ENTRIES> systemPalette() {
 
 SpriteImportResult importSprite(const uint8_t* data, size_t size, const SpriteImportOptions& opts) {
     ase::File f;
-    if (Error e = ase::parse(data, size, opts.limits, f)) {
+    std::vector<uint8_t> pixels, cells;
+    Error error;
+    if (ase::isPng(data, size)) {
+        bool indexed = false;
+        error = ase::decodePng(data, size, opts.limits, f.width, f.height, indexed, pixels, f.palette);
+        if (!error) {
+            const uint16_t w = f.width, h = f.height;
+            const uint16_t cw = opts.cellW ? opts.cellW : w, ch = opts.cellH ? opts.cellH : h;
+            if ((opts.cellW == 0) != (opts.cellH == 0) || w % cw || h % ch) error = ase::malformed("PNG cell size must divide the image exactly");
+            else if (opts.kind == SpriteKind::Layered) error = unsupported("PNG imports only as a sheet");
+            else if (cw > 255 || ch > 255) error = tooLarge("PNG sheet cells must be at most 255x255");
+            else if (!opts.limits.maxLayers || cw > opts.limits.maxCelSide || ch > opts.limits.maxCelSide)
+                error = tooLarge("PNG exceeds the layer or cel-size cap");
+            else {
+                const size_t count = size_t(w / cw) * (h / ch);
+                if (count > opts.limits.maxFrames || count > MAX_CLIP_FRAMES) error = tooLarge("PNG has too many animation frames for one clip");
+                else {
+                    f.width = cw; f.height = ch;
+                    f.depth = indexed ? ase::DEPTH_INDEXED : ase::DEPTH_RGBA;
+                    f.transparentIndex = 15;
+                    f.layers.push_back({"png", true});
+                    f.durations.assign(count, FALLBACK_DURATION_MS);
+                    f.cels.resize(count);
+                    cells.resize(pixels.size());
+                    const size_t bpp = f.bytesPerPixel(), cellBytes = size_t(cw) * ch * bpp;
+                    for (size_t fi = 0; fi < count; ++fi) {
+                        for (size_t y = 0; y < ch; ++y) {
+                            const size_t src = ((fi / (w / cw) * ch + y) * w + fi % (w / cw) * cw) * bpp;
+                            std::copy_n(pixels.data() + src, size_t(cw) * bpp, cells.data() + fi * cellBytes + y * cw * bpp);
+                        }
+                        ase::Cel cel;
+                        cel.present = true; cel.w = cw; cel.h = ch;
+                        cel.payload = cells.data() + fi * cellBytes; cel.payloadSize = cellBytes;
+                        f.cels[fi].push_back(cel);
+                    }
+                }
+            }
+        }
+    } else error = ase::parse(data, size, opts.limits, f);
+    if (Error e = error) {
         SpriteImportResult r;
         r.status = e.status;
         r.error = std::move(e.message);

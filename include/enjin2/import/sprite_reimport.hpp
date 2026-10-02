@@ -52,6 +52,8 @@ namespace enjin2 {
 using SpriteFollowSet = std::map<std::string, std::string>;
 
 struct SpriteReimportOptions {
+    /// PNG slicing, reused from the source sidecar.
+    uint16_t cellW = 0, cellH = 0;
     /// Target colours for RGBA sources; slot i is palette index i.
     std::array<RGB, PALETTE_MAX_ENTRIES> palette = systemPalette();
     SpriteImportLimits limits;

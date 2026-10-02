@@ -109,5 +109,10 @@ Error decodeCel(const File& f, const Cel& cel, size_t frame, size_t layer,
 /// a corrupt stream or any other output size.
 bool inflateZlib(const uint8_t* in, size_t inLen, uint8_t* out, size_t outLen);
 
+bool isPng(const uint8_t* data, size_t size);
+Error decodePng(const uint8_t* data, size_t size, const SpriteImportLimits& limits,
+                uint16_t& width, uint16_t& height, bool& indexed,
+                std::vector<uint8_t>& pixels, std::vector<std::array<uint8_t, 4>>& palette);
+
 } // namespace ase
 } // namespace enjin2

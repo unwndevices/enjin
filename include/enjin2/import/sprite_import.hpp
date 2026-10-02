@@ -1,9 +1,9 @@
 /**
  * @file sprite_import.hpp
- * @brief Sprite importer: `.aseprite` → `.njn` v2 (ADR-0015, Tomodachi #291)
+ * @brief Sprite importer: `.aseprite` / `.png` → `.njn` v2 (ADR-0015, #291, #307)
  *
- * One function, importSprite(), turns the bytes of an `.aseprite` file into the
- * bytes of a `.njn` v2 asset.  The native CLI (`tools/sprite_import`) and the
+ * One function, importSprite(), turns the bytes of an `.aseprite` or `.png`
+ * file into a `.njn` v2 asset. The native CLI (`tools/sprite_import`) and the
  * Studio's asset-tools worker call the same function.
  *
  * ## Kind
@@ -12,6 +12,9 @@
  * `LREF`/`LDUR`/`LPIV`/`CLIP`, ADR-0004/0005); otherwise a **flat sheet**
  * (`META`/`PIXL`/`CLIP`), one cell per animation frame.  SpriteImportOptions::kind
  * overrides the detection.
+ * PNG always gives a sheet: cellW/cellH cut row-major animation frames, or both
+ * zero import the whole image. Cells must divide the image and fit 255x255.
+ * Indexed PNG tRNS entries need binary alpha; fully clear pixels become 15.
  *
  * ## Clips
  *
@@ -64,7 +67,7 @@ enum class SpriteKind : uint8_t {
 /// Outcome class of an import.  Everything except Ok carries a message.
 enum class SpriteImportStatus : uint8_t {
     Ok,
-    Malformed,        ///< Not a readable `.aseprite` (bad magic, truncation, …).
+    Malformed,        ///< Not a readable source (bad magic, truncation, cell size, …).
     Unsupported,      ///< Readable, but uses a feature the importer rejects.
     TooLarge,         ///< Exceeds a SpriteImportLimits cap or a format limit.
     PaletteMismatch,  ///< RGBA pixels off the target palette or with partial alpha.
@@ -86,6 +89,8 @@ std::array<RGB, PALETTE_MAX_ENTRIES> systemPalette();
 
 struct SpriteImportOptions {
     SpriteKind kind = SpriteKind::Auto;
+    /// PNG cell dimensions; both zero means the whole image as one frame.
+    uint16_t cellW = 0, cellH = 0;
     /// Target colours for RGBA sources; slot i is palette index i.
     std::array<RGB, PALETTE_MAX_ENTRIES> palette = systemPalette();
     SpriteImportLimits limits;
@@ -136,7 +141,7 @@ struct SpriteImportResult {
 };
 
 /**
- * @brief Convert an `.aseprite` file to a `.njn` v2 asset.
+ * @brief Convert an `.aseprite` or `.png` file to a `.njn` v2 asset (detected by signature).
  * @param data  The file bytes (untrusted).
  * @param size  Byte count.
  * @param opts  Kind override, RGBA target palette, size caps.

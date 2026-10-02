@@ -151,13 +151,19 @@ SpriteReimportResult reimportSprite(const uint8_t* njn, size_t njnSize,
     r.framesBefore = ex.frames;
 
     // --- The new source, at the existing kind ---
-    ase::File file;
-    if (Error e = ase::parse(source, sourceSize, opts.limits, file)) return fail(e);
-    if (Error e = kindCheck(file, ex.kind)) return fail(e);
+    if (ase::isPng(source, sourceSize)) {
+        if (ex.kind != SpriteKind::Sheet) return fail({SpriteImportStatus::KindMismatch, "PNG source is a sheet, but the .njn is layered"});
+    } else {
+        ase::File file;
+        if (Error e = ase::parse(source, sourceSize, opts.limits, file)) return fail(e);
+        if (Error e = kindCheck(file, ex.kind)) return fail(e);
+    }
     SpriteImportOptions io;
     io.kind = ex.kind;
     io.palette = opts.palette;
     io.limits = opts.limits;
+    io.cellW = opts.cellW;
+    io.cellH = opts.cellH;
     SpriteImportResult imp = importSprite(source, sourceSize, io);
     if (!imp.ok()) {
         r.colourIssues = imp.colourIssues;
