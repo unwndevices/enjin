@@ -85,6 +85,16 @@
  *     // ...
  * }
  * // Unknown chunks: r.find() returns nullptr — reader simply moves on.
+ * for (const NjnV2Chunk& c : r.chunks()) { ... } // whole directory, in order
+ * ```
+ *
+ * ## Usage (editing one chunk)
+ *
+ * ```cpp
+ * NjnEditResult res = njn2ReplaceChunk(buf.data(), buf.size(),
+ *                                      NJN2_CHUNK_CLIP, clip.data(), clip.size());
+ * if (!res.ok()) { log(res.error); return; }
+ * buf = std::move(res.njn);  // every other chunk byte-for-byte, order kept
  * ```
  */
 #pragma once
@@ -94,6 +104,7 @@
 #include <cstring>
 #include <vector>
 #include <array>
+#include <string>
 
 #include "tilemap_asset.hpp"
 
@@ -311,6 +322,7 @@ struct NjnV2Chunk {
     NjnChunkTag     id;     ///< 4-byte tag.
     const uint8_t*  data;   ///< Pointer into the file buffer (not owned).
     uint32_t        size;   ///< Byte length of the chunk data.
+    uint32_t        offset; ///< Byte offset of the data from the start of the file.
 };
 
 /**
@@ -318,7 +330,9 @@ struct NjnV2Chunk {
  *
  * Call open() with a flat byte buffer; it validates magic/version and builds
  * an in-memory directory of chunk descriptors.  find() locates a chunk by tag;
- * unknown tags simply return nullptr so callers can skip them.
+ * unknown tags simply return nullptr so callers can skip them.  chunks() is the
+ * whole directory in file order, unknown ids included, so a caller can copy
+ * chunks it doesn't understand.
  */
 class NjnV2Reader {
 public:
@@ -328,28 +342,38 @@ public:
      * @brief Parse and validate a .njn v2 file from a raw byte buffer.
      * @param data  Pointer to the start of the file bytes.
      * @param size  Total byte count of the buffer.
+     * @param errMsg  Optional out-param receiving a static failure reason string.
      * @return true on success; false if the data is malformed.
      */
-    bool open(const uint8_t* data, size_t size) {
+    bool open(const uint8_t* data, size_t size, const char** errMsg = nullptr) {
         m_chunks.clear();
+        auto fail = [&](const char* m) -> bool {
+            m_chunks.clear();
+            if (errMsg) *errMsg = m;
+            return false;
+        };
 
         // --- File header validation ---
-        if (!data || size < NJN2_FILE_HEADER_SIZE) return false;
+        if (!data || size < NJN2_FILE_HEADER_SIZE) return fail("truncated .njn header");
 
-        if (data[0] != NJN2_MAGIC_0 || data[1] != NJN2_MAGIC_1) return false;
-        if (data[2] != NJN2_VERSION) return false;
+        if (data[0] != NJN2_MAGIC_0 || data[1] != NJN2_MAGIC_1) return fail("bad .njn magic");
+        if (data[2] != NJN2_VERSION) return fail("unsupported .njn version (expected 2)");
         // byte 3: reserved (ignored)
 
         const uint32_t numChunks = readU32LE(data + 4);
         const uint32_t fileSize  = readU32LE(data + 8);
 
-        if (fileSize != static_cast<uint32_t>(size)) return false;
+        if (fileSize != static_cast<uint32_t>(size)) {
+            return fail(".njn size does not match its header (truncated?)");
+        }
 
         // --- Directory ---
         // Guard against uint32 wrap in numChunks * NJN2_DIR_ENTRY_SIZE.
-        if (numChunks > (UINT32_MAX / NJN2_DIR_ENTRY_SIZE)) return false;
+        if (numChunks > (UINT32_MAX / NJN2_DIR_ENTRY_SIZE)) return fail("truncated .njn chunk directory");
         const uint32_t dirBytes = numChunks * NJN2_DIR_ENTRY_SIZE;
-        if (size < NJN2_FILE_HEADER_SIZE + dirBytes) return false;
+        if (size < static_cast<uint64_t>(NJN2_FILE_HEADER_SIZE) + dirBytes) {
+            return fail("truncated .njn chunk directory");
+        }
 
         for (uint32_t i = 0; i < numChunks; ++i) {
             const uint8_t* entry = data + NJN2_FILE_HEADER_SIZE + i * NJN2_DIR_ENTRY_SIZE;
@@ -359,10 +383,11 @@ public:
             const uint32_t offset = readU32LE(entry + 4);
             const uint32_t csz    = readU32LE(entry + 8);
             c.size = csz;
+            c.offset = offset;
 
             // Validate chunk bounds
-            if (offset < NJN2_FILE_HEADER_SIZE) return false;
-            if (static_cast<uint64_t>(offset) + csz > fileSize) return false;
+            if (offset < NJN2_FILE_HEADER_SIZE) return fail(".njn chunk offset inside the file header");
+            if (static_cast<uint64_t>(offset) + csz > fileSize) return fail(".njn chunk extends past the end of the file");
 
             c.data = data + offset;
             m_chunks.push_back(c);
@@ -387,6 +412,15 @@ public:
 
     /// Number of chunks in the directory.
     uint32_t chunkCount() const { return static_cast<uint32_t>(m_chunks.size()); }
+
+    /**
+     * @brief The whole chunk directory, in file order (id, offset, size, data).
+     *
+     * Unknown ids are listed like any other, so a caller can copy chunks it
+     * doesn't understand.  Empty until a successful open(); the data pointers
+     * point into the buffer given to open().
+     */
+    const std::vector<NjnV2Chunk>& chunks() const { return m_chunks; }
 
     /**
      * @brief Count the chunks with a given 4-byte tag (duplicate detection).
@@ -556,6 +590,113 @@ private:
         p[3] = static_cast<uint8_t>((v >> 24) & 0xFF);
     }
 };
+
+// ---------------------------------------------------------------------------
+// Editing: swap one chunk, keep the rest (Tomodachi #296, ADR-0015)
+// ---------------------------------------------------------------------------
+
+/// Result of a .njn edit: the new file on success, else a human-readable error.
+struct NjnEditResult {
+    std::string          error;  ///< Empty on success.
+    std::vector<uint8_t> njn;    ///< The edited .njn v2 bytes; empty on error.
+
+    bool ok() const { return error.empty() && !njn.empty(); }
+};
+
+/// A chunk tag as text, non-printable bytes shown as '?' (for error messages).
+inline std::string njn2TagString(const NjnChunkTag& tag) {
+    std::string s(4, '?');
+    for (size_t i = 0; i < 4; ++i) {
+        if (tag[i] >= 0x20 && tag[i] < 0x7F) s[i] = static_cast<char>(tag[i]);
+    }
+    return s;
+}
+
+/**
+ * @brief Replace one chunk of a .njn v2 file, or append it if absent.
+ * @param data       The source file bytes (untrusted; not modified).
+ * @param size       Source byte count.
+ * @param id         The chunk to replace (any id, unknown ones included).
+ * @param chunk      The new chunk data (may be null when @p chunkSize is 0).
+ * @param chunkSize  New chunk byte count.
+ * @return The new file in `njn` when ok(), else `error`.
+ *
+ * Every other chunk is copied byte-for-byte, in directory order, unknown ids
+ * included; the replaced chunk keeps its position, and a new one (e.g. `LPIV`)
+ * goes last.  The magic, version and reserved header byte are kept.  The
+ * output is repacked by NjnV2Writer (directory, then data blocks with no
+ * gaps), so offsets may differ from the source even when sizes don't.
+ *
+ * Fails, without a file, when the source doesn't open with NjnV2Reader, when
+ * @p id appears more than once (which copy is meant is ambiguous), when the
+ * new chunk is null with a non-zero size, when the result would pass 4 GiB,
+ * or when the result doesn't re-read with NjnV2Reader.  Never asserts.
+ */
+inline NjnEditResult njn2ReplaceChunk(const uint8_t* data, size_t size,
+                                      const NjnChunkTag& id,
+                                      const uint8_t* chunk, size_t chunkSize) {
+    auto fail = [](std::string msg) {
+        NjnEditResult r;
+        r.error = std::move(msg);
+        return r;
+    };
+    const std::string tag = njn2TagString(id);
+
+    if (!chunk && chunkSize != 0) return fail("new " + tag + " chunk has no data");
+
+    NjnV2Reader src;
+    const char* openErr = nullptr;
+    if (!src.open(data, size, &openErr)) {
+        return fail(std::string("can't read the .njn: ") + (openErr ? openErr : "malformed"));
+    }
+
+    const uint32_t matches = src.count(id);
+    if (matches > 1) {
+        return fail("the .njn has " + std::to_string(matches) + " " + tag +
+                    " chunks; can't tell which to replace");
+    }
+
+    // Size the result before copying anything (uint64: no wrap).
+    const uint64_t numChunks = static_cast<uint64_t>(src.chunkCount()) + (matches == 0 ? 1u : 0u);
+    uint64_t total = NJN2_FILE_HEADER_SIZE + numChunks * NJN2_DIR_ENTRY_SIZE + chunkSize;
+    for (const NjnV2Chunk& c : src.chunks()) {
+        if (c.id != id) total += c.size;
+    }
+    if (total > UINT32_MAX) return fail("the edited .njn would be larger than 4 GiB");
+
+    auto copyChunk = [](NjnV2Writer& w, const NjnChunkTag& t,
+                        const uint8_t* bytes, size_t len) {
+        w.beginChunk(t);
+        if (len != 0) w.writeBytes(bytes, len);
+        w.endChunk();
+    };
+
+    NjnV2Writer w;
+    for (const NjnV2Chunk& c : src.chunks()) {
+        if (c.id == id) copyChunk(w, id, chunk, chunkSize);
+        else            copyChunk(w, c.id, c.data, c.size);
+    }
+    if (matches == 0) copyChunk(w, id, chunk, chunkSize);
+
+    NjnEditResult res;
+    w.finalise(res.njn);
+    res.njn[3] = data[3];  // reserved header byte, kept as found
+
+    // Validate: the result must re-read, with the edit where we put it.
+    NjnV2Reader check;
+    const char* checkErr = nullptr;
+    if (!check.open(res.njn.data(), res.njn.size(), &checkErr)) {
+        return fail(std::string("the edited .njn failed to re-read: ") +
+                    (checkErr ? checkErr : "malformed"));
+    }
+    const NjnV2Chunk* edited = check.find(id);
+    if (check.chunkCount() != numChunks || check.count(id) != 1 || !edited ||
+        edited->size != chunkSize ||
+        (chunkSize != 0 && std::memcmp(edited->data, chunk, chunkSize) != 0)) {
+        return fail("the edited .njn failed to re-read: " + tag + " chunk not as written");
+    }
+    return res;
+}
 
 // ---------------------------------------------------------------------------
 // Convenience helpers for typed chunk content
