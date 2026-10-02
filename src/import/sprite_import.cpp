@@ -53,6 +53,8 @@ std::string asciiName(const std::string& raw) {
 
 struct ClipPlan {
     std::string name;
+    std::string tag;       ///< The source tag's name as in the file; empty for the default clip.
+    bool fromTag = false;
     NjnLoopMode mode = NjnLoopMode::Loop;
     std::vector<uint16_t> frames;
 };
@@ -100,6 +102,8 @@ Error planClips(const ase::File& f, std::vector<ClipPlan>& out) {
         if (name.empty()) name = "clip" + std::to_string(out.size());
         ClipPlan p;
         if (Error e = planTag(t, t.from, hi, name, p)) return e;
+        p.tag = t.name;
+        p.fromTag = true;
         out.push_back(std::move(p));
     }
     if (out.size() > MAX_CLIPS) {
@@ -522,7 +526,7 @@ SpriteImportResult Importer::run() {
     r.canvasW = m_file.width;
     r.canvasH = m_file.height;
     r.frames = static_cast<uint16_t>(m_file.durations.size());
-    for (const auto& c : m_clips) r.clips.push_back({c.name, c.mode, static_cast<uint16_t>(c.frames.size())});
+    for (const auto& c : m_clips) r.clips.push_back({c.name, c.mode, static_cast<uint16_t>(c.frames.size()), c.tag, c.fromTag});
     return r;
 }
 

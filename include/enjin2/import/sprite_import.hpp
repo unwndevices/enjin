@@ -104,6 +104,11 @@ struct SpriteClipSummary {
     std::string name;
     NjnLoopMode loopMode;
     uint16_t    frames;
+    /// The Aseprite tag the clip was seeded from, named as in the file (UTF-8, not
+    /// reduced or capped like `name`): the Studio's sidecar records which clips
+    /// follow which tag.  Empty for the untagged `default` clip.
+    std::string tag;
+    bool        fromTag = false;  ///< False only for the untagged `default` clip.
 };
 
 struct SpriteImportResult {

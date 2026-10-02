@@ -11,7 +11,8 @@
  *   SPI-03  Tag repeat 1 → once; repeat N > 1 → N passes unrolled, once.
  *   SPI-04  0 ms frames fall back to the header speed, then to 100 ms.
  *   SPI-05  Tags clamp to the frame range; all-empty tags → default clip.
- *   SPI-06  Clip names: printable ASCII, 15 chars, empty → clipN.
+ *   SPI-06  Clip names: printable ASCII, 15 chars, empty → clipN; the summary
+ *           keeps each clip's source tag name.
  *   SPI-07  Indexed opaque index > 14 rejected.
  *   SPI-08  Old (0x0004) and new (0x2019) palette chunks both read.
  *   SPI-09  RGBA exact palette match imports to indices.
@@ -312,6 +313,7 @@ static void test01_indexedSheetUntagged() {
         ASSERT(s.clips[0].frames[0].durationMs == 80 && s.clips[0].frames[1].durationMs == 120, "SPI-01 per-frame durations");
     }
     ASSERT(r.canvasW == 3 && r.canvasH == 2 && r.frames == 2, "SPI-01 summary");
+    ASSERT(r.clips.size() == 1 && r.clips[0].tag.empty() && !r.clips[0].fromTag, "SPI-01 the default clip follows no tag");
 }
 
 static const NjnClip* clipNamed(const std::vector<NjnClip>& clips, const char* name) {
@@ -394,6 +396,8 @@ static void test06_clipNames() {
         ASSERT(std::strcmp(s.clips[1].name, "caf_ _") == 0, "SPI-06 non-ASCII code point and control → '_'");
         ASSERT(std::strcmp(s.clips[2].name, "clip2") == 0, "SPI-06 empty name → clipN");
         ASSERT(r.clips.size() == 3 && r.clips[0].name == "a_very_long_cli", "SPI-06 summary carries written names");
+        ASSERT(r.clips.size() == 3 && r.clips[0].tag == "a_very_long_clip_name_indeed" && r.clips[1].tag == "caf\xC3\xA9 \x01" &&
+               r.clips[2].tag.empty() && r.clips[2].fromTag, "SPI-06 summary carries each clip's source tag, as named in the file");
     }
 }
 
