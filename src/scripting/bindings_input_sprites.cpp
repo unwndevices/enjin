@@ -87,6 +87,7 @@ int LuaBindings::lua_newSprite(lua_State* L) {
 int LuaBindings::lua_drawSprite(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentCanvas) return 0;
+    b->checkDrawLayer(L);
 
     int handle = static_cast<int>(luaL_checkinteger(L, 1));
     if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;

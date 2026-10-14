@@ -1,4 +1,5 @@
 #include "bindings_internal.hpp"
+#include "../../include/enjin2/scripting/layer_claims.hpp"
 #include "../../include/enjin2/scripting/effect_lua.hpp"
 #include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/graphics/numerals.hpp"
@@ -864,6 +865,11 @@ void LuaBindings::resetSpritePool() {
     strncpy(currentFontName, "default", 31);
     currentFontName[31] = '\0';
     m_rngState = 0x12345678;  // reset RNG on reload
+}
+
+void LuaBindings::checkDrawLayer(lua_State* L) const {
+    if (layerCount != 0 && activeLayer < layerCount && currentCanvas == layerCanvases[activeLayer])
+        lua::checkLayerUnclaimed(L, activeLayer, "gfx");
 }
 
 LuaBindings* LuaBindings::getBindings(lua_State* L) {

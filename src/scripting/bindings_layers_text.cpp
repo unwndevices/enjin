@@ -1,4 +1,5 @@
 #include "bindings_internal.hpp"
+#include "../../include/enjin2/scripting/layer_claims.hpp"
 #include "../../include/enjin2/graphics/numerals.hpp"
 
 namespace enjin2 {
@@ -21,6 +22,7 @@ int LuaBindings::lua_setLayer(lua_State* L) {
     if (!b || b->layerCount == 0) return 0;
 
     int cpp_idx = checkLayerIdx(L, 1, b->layerCount);
+    lua::checkLayerUnclaimed(L, cpp_idx, "gfx.setLayer");
 
     b->activeLayer   = static_cast<uint8_t>(cpp_idx);
     b->currentCanvas = b->layerCanvases[cpp_idx];
@@ -44,6 +46,7 @@ int LuaBindings::lua_clearLayer(lua_State* L) {
     int cpp_idx = lua_isnoneornil(L, 1)
         ? static_cast<int>(b->activeLayer)
         : checkLayerIdx(L, 1, b->layerCount);
+    lua::checkLayerUnclaimed(L, cpp_idx, "gfx.clearLayer");
 
     uint8_t color = static_cast<uint8_t>(luaL_optinteger(L, 2, 0));
 
@@ -94,6 +97,7 @@ int LuaBindings::lua_isLayerVisible(lua_State* L) {
 int LuaBindings::lua_text(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentCanvas) return 0;
+    b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
     lua_Integer x = luaL_checkinteger(L, 2);
     lua_Integer y = luaL_checkinteger(L, 3);
@@ -111,6 +115,7 @@ int LuaBindings::lua_text(lua_State* L) {
 int LuaBindings::lua_textCentered(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentCanvas) return 0;
+    b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
     int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
     uint8_t scale = b->currentTextSize;
@@ -127,6 +132,7 @@ int LuaBindings::lua_textCentered(lua_State* L) {
 int LuaBindings::lua_textAligned(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentCanvas) return 0;
+    b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
     int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 2));
     int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 3));
@@ -151,6 +157,7 @@ int LuaBindings::lua_textAligned(lua_State* L) {
 int LuaBindings::lua_textWrapped(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentCanvas) return 0;
+    b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
     lua_Integer x = luaL_checkinteger(L, 2);
     lua_Integer y = luaL_checkinteger(L, 3);

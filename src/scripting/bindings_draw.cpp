@@ -8,7 +8,8 @@ namespace enjin2 {
 // Replaces null-check preamble repeated across drawing functions
 #define REQUIRE_CANVAS(b, L) \
     LuaBindings* b = LuaBindings::getBindings(L); \
-    if (!(b) || !(b)->currentCanvas) return 0
+    if (!(b) || !(b)->currentCanvas) return 0; \
+    (b)->checkDrawLayer(L)
 
 //==============================================================================
 // Line-width strokes (Tomodachi #255): gfx.setLineWidth feeds gfx.line and the

@@ -99,6 +99,9 @@ target_sources(enjin2_graphics PRIVATE
     # Vector Shape fill rasterizer: Fixed rings -> 1-bpp majority mask
     # (ADR-0016, Tomodachi #329)
     src/shape/shape_raster.cpp
+    # Pack layer: a Shape pack Look assembled into a retained Shape group
+    # (ADR-0016/0017, Tomodachi #331)
+    src/shape/shape_pack_group.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_graphics

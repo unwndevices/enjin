@@ -306,46 +306,87 @@ inline bool shapePackEncodePiece(const ShapePiece& p, std::vector<uint8_t>& out,
     return true;
 }
 
-/// Decode and validate one record (the bytes of one index entry's window).
-inline bool shapePackDecodePiece(const uint8_t* data, size_t size, ShapePiece& out, const char** err = nullptr) {
-    using namespace shape_pack_detail;
-    out = ShapePiece{};
-    if (!data || size < kRecordHeader) return fail(err, "shape record: truncated header");
-    const uint8_t* h = data;
-    out.slot = static_cast<ShapeSlot>(h[0]);
-    out.binding = static_cast<ShapeBinding>(h[1]);
-    out.order = static_cast<ShapeOrder>(h[2]);
-    out.swayHz = rd16(h + 4);
-    out.swayZeta = rd16(h + 6);
-    const uint32_t nPoses = h[8], nMembers = h[9], nSockets = h[10];
-    const uint32_t nShapes = rd16(h + 12), nRings = rd16(h + 14), nPoints = rd16(h + 16);
-    const uint64_t want = uint64_t(kRecordHeader) + nPoses + nMembers * 5u + uint64_t(nPoses) * nMembers * 4u +
-                          nSockets * 6u + nShapes * 12u + nRings * 5u + nPoints * 4u;
-    if (want != size) return fail(err, "shape record: size does not match its counts");
-    const uint8_t* q = data + kRecordHeader;
-    out.poses.assign(q, q + nPoses);
-    q += nPoses;
-    out.members.resize(nMembers);
-    for (auto& m : out.members) {
-        m.side = static_cast<MemberSide>(q[0]);
-        m.home = rdPt(q + 1);
-        q += 5;
+/**
+ * @brief A validated, read-only view over one record's bytes: no allocation,
+ *        fields decoded on access.  The device keeps a Look's records as raw
+ *        bytes in its AssetArena and reads them through this.
+ */
+class ShapeRecordView {
+public:
+    /// Parse and validate @p size bytes at @p data (kept, not copied).
+    bool parse(const uint8_t* data, size_t size, const char** err = nullptr) {
+        using namespace shape_pack_detail;
+        *this = ShapeRecordView{};
+        if (!data || size < kRecordHeader) return fail(err, "shape record: truncated header");
+        const uint8_t* h = data;
+        const uint32_t nPoses = h[8], nMembers = h[9], nSockets = h[10];
+        const uint32_t nShapes = rd16(h + 12), nRings = rd16(h + 14), nPoints = rd16(h + 16);
+        const uint64_t want = uint64_t(kRecordHeader) + nPoses + nMembers * 5u + uint64_t(nPoses) * nMembers * 4u +
+                              nSockets * 6u + nShapes * 12u + nRings * 5u + nPoints * 4u;
+        if (want != size) return fail(err, "shape record: size does not match its counts");
+        ShapeRecordView v;
+        v.m_data = data;
+        v.m_size = static_cast<uint32_t>(size);
+        v.m_poses = static_cast<uint8_t>(nPoses);
+        v.m_members = static_cast<uint8_t>(nMembers);
+        v.m_sockets = static_cast<uint8_t>(nSockets);
+        v.m_shapes = static_cast<uint16_t>(nShapes);
+        v.m_rings = static_cast<uint16_t>(nRings);
+        v.m_points = static_cast<uint16_t>(nPoints);
+        uint32_t o = kRecordHeader;
+        v.m_posesOff = o;   o += nPoses;
+        v.m_membersOff = o; o += nMembers * 5u;
+        v.m_spansOff = o;   o += nPoses * nMembers * 4u;
+        v.m_socketsOff = o; o += nSockets * 6u;
+        v.m_shapesOff = o;  o += nShapes * 12u;
+        v.m_ringsOff = o;   o += nRings * 5u;
+        v.m_pointsOff = o;
+        if (!v.validate(err)) return false;
+        *this = v;
+        return true;
     }
-    out.spans.resize(nPoses * nMembers);
-    for (auto& s : out.spans) {
-        s.firstShape = rd16(q);
-        s.shapeCount = rd16(q + 2);
-        q += 4;
+
+    bool valid() const { return m_data != nullptr; }
+    const uint8_t* data() const { return m_data; }
+    uint32_t size() const { return m_size; }
+
+    ShapeSlot slot() const { return static_cast<ShapeSlot>(m_data[0]); }
+    ShapeBinding binding() const { return static_cast<ShapeBinding>(m_data[1]); }
+    ShapeOrder order() const { return static_cast<ShapeOrder>(m_data[2]); }
+    uint16_t swayHz() const { return shape_pack_detail::rd16(m_data + 4); }
+    uint16_t swayZeta() const { return shape_pack_detail::rd16(m_data + 6); }
+
+    uint8_t poseCount() const { return m_poses; }
+    uint8_t memberCount() const { return m_members; }
+    uint8_t socketCount() const { return m_sockets; }
+    uint16_t shapeCount() const { return m_shapes; }
+    uint16_t ringCount() const { return m_rings; }
+    uint16_t pointCount() const { return m_points; }
+
+    /// Slot pose (an index into the slot's fixed list) of the record's pose @p i.
+    uint8_t pose(size_t i) const { return m_data[m_posesOff + i]; }
+    /// The record's pose number holding slot pose @p slotPose, or -1 when it lacks it.
+    int findPose(uint8_t slotPose) const {
+        for (uint8_t i = 0; i < m_poses; ++i)
+            if (pose(i) == slotPose) return i;
+        return -1;
     }
-    out.sockets.resize(nSockets);
-    for (auto& s : out.sockets) {
-        s.slot = static_cast<ShapeSlot>(q[0]);
-        s.side = static_cast<SocketSide>(q[1]);
-        s.at = rdPt(q + 2);
-        q += 6;
+    ShapeMember member(size_t i) const {
+        const uint8_t* q = m_data + m_membersOff + i * 5;
+        return {static_cast<MemberSide>(q[0]), shape_pack_detail::rdPt(q + 1)};
     }
-    out.shapes.resize(nShapes);
-    for (auto& f : out.shapes) {
+    ShapeSpan span(size_t pose, size_t member) const {
+        const uint8_t* q = m_data + m_spansOff + (pose * m_members + member) * 4;
+        return {shape_pack_detail::rd16(q), shape_pack_detail::rd16(q + 2)};
+    }
+    ShapeSocket socket(size_t i) const {
+        const uint8_t* q = m_data + m_socketsOff + i * 6;
+        return {static_cast<ShapeSlot>(q[0]), static_cast<SocketSide>(q[1]), shape_pack_detail::rdPt(q + 2)};
+    }
+    ShapeFill shape(size_t i) const {
+        using shape_pack_detail::rd16;
+        const uint8_t* q = m_data + m_shapesOff + i * 12;
+        ShapeFill f;
         f.role = static_cast<ShapeRole>(q[0]);
         f.flags = q[1];
         f.dither = q[2];
@@ -355,24 +396,90 @@ inline bool shapePackDecodePiece(const uint8_t* data, size_t size, ShapePiece& o
         f.clipShape = rd16(q + 6);
         f.firstRing = rd16(q + 8);
         f.ringCount = rd16(q + 10);
-        q += 12;
+        return f;
     }
-    out.rings.resize(nRings);
-    for (auto& r : out.rings) {
-        r.firstPoint = rd16(q);
-        r.pointCount = rd16(q + 2);
-        r.flags = q[4];
-        q += 5;
+    ShapeRing ring(size_t i) const {
+        const uint8_t* q = m_data + m_ringsOff + i * 5;
+        return {shape_pack_detail::rd16(q), shape_pack_detail::rd16(q + 2), q[4]};
     }
-    out.points.resize(nPoints);
-    for (auto& pt : out.points) {
-        pt = rdPt(q);
-        q += 4;
+    ShapePoint point(size_t i) const { return shape_pack_detail::rdPt(m_data + m_pointsOff + i * 4); }
+
+private:
+    // The same rules as shape_pack_detail::validate(), over the bytes.
+    bool validate(const char** err) const {
+        using shape_pack_detail::fail;
+        if (static_cast<uint8_t>(slot()) >= SHAPE_SLOT_COUNT) return fail(err, "shape record: bad slot");
+        if (static_cast<uint8_t>(binding()) > 2) return fail(err, "shape record: bad binding");
+        if (static_cast<uint8_t>(order()) > 1) return fail(err, "shape record: bad order");
+        if (m_poses == 0) return fail(err, "shape record: bad pose count");
+        if (m_members == 0) return fail(err, "shape record: bad member count");
+        if (slot() != ShapeSlot::Body && m_sockets != 0) return fail(err, "shape record: sockets on a Feature");
+        const uint8_t nPoses = shapePoseCount(slot());
+        for (uint8_t i = 0; i < m_poses; ++i) {
+            if (pose(i) >= nPoses) return fail(err, "shape record: pose outside the slot's list");
+            for (uint8_t k = 0; k < i; ++k)
+                if (pose(k) == pose(i)) return fail(err, "shape record: duplicate pose");
+        }
+        for (uint8_t i = 0; i < m_members; ++i)
+            if (static_cast<uint8_t>(member(i).side) > 2) return fail(err, "shape record: bad member side");
+        for (uint8_t p = 0; p < m_poses; ++p)
+            for (uint8_t m = 0; m < m_members; ++m) {
+                const ShapeSpan s = span(p, m);
+                if (static_cast<uint32_t>(s.firstShape) + s.shapeCount > m_shapes)
+                    return fail(err, "shape record: span past the shapes");
+            }
+        for (uint8_t i = 0; i < m_sockets; ++i) {
+            const ShapeSocket s = socket(i);
+            if (s.slot == ShapeSlot::Body || static_cast<uint8_t>(s.slot) >= SHAPE_SLOT_COUNT ||
+                static_cast<uint8_t>(s.side) > 2)
+                return fail(err, "shape record: bad socket");
+        }
+        for (uint16_t i = 0; i < m_shapes; ++i) {
+            const ShapeFill f = shape(i);
+            if (static_cast<uint8_t>(f.role) > 3 || static_cast<uint8_t>(f.strokeRole) > 3 ||
+                static_cast<uint8_t>(f.clip) > 2 || f.dither < 1 || f.dither > SHAPE_DITHER_SOLID)
+                return fail(err, "shape record: bad paint");
+            if (f.clip == ShapeClip::Own && f.clipShape >= m_shapes)
+                return fail(err, "shape record: clip past the shapes");
+            if (static_cast<uint32_t>(f.firstRing) + f.ringCount > m_rings)
+                return fail(err, "shape record: shape past the rings");
+        }
+        for (uint16_t i = 0; i < m_rings; ++i) {
+            const ShapeRing r = ring(i);
+            if (static_cast<uint32_t>(r.firstPoint) + r.pointCount > m_points)
+                return fail(err, "shape record: ring past the points");
+            if (r.pointCount < ((r.flags & SHAPE_RING_CLOSED) ? 3 : 2))
+                return fail(err, "shape record: degenerate ring");
+        }
+        return true;
     }
-    if (!validate(out, err)) {
-        out = ShapePiece{};
-        return false;
-    }
+
+    const uint8_t* m_data = nullptr;
+    uint32_t m_size = 0;
+    uint8_t m_poses = 0, m_members = 0, m_sockets = 0;
+    uint16_t m_shapes = 0, m_rings = 0, m_points = 0;
+    uint32_t m_posesOff = 0, m_membersOff = 0, m_spansOff = 0, m_socketsOff = 0;
+    uint32_t m_shapesOff = 0, m_ringsOff = 0, m_pointsOff = 0;
+};
+
+/// Decode and validate one record (the bytes of one index entry's window).
+inline bool shapePackDecodePiece(const uint8_t* data, size_t size, ShapePiece& out, const char** err = nullptr) {
+    out = ShapePiece{};
+    ShapeRecordView v;
+    if (!v.parse(data, size, err)) return false;
+    out.slot = v.slot();
+    out.binding = v.binding();
+    out.order = v.order();
+    out.swayHz = v.swayHz();
+    out.swayZeta = v.swayZeta();
+    for (uint8_t i = 0; i < v.poseCount(); ++i) out.poses.push_back(v.pose(i));
+    for (uint8_t i = 0; i < v.memberCount(); ++i) out.members.push_back(v.member(i));
+    for (uint8_t p = 0; p < v.poseCount(); ++p)
+        for (uint8_t m = 0; m < v.memberCount(); ++m) out.spans.push_back(v.span(p, m));
+    for (uint8_t i = 0; i < v.socketCount(); ++i) out.sockets.push_back(v.socket(i));
+    for (uint16_t i = 0; i < v.shapeCount(); ++i) out.shapes.push_back(v.shape(i));
+    for (uint16_t i = 0; i < v.ringCount(); ++i) out.rings.push_back(v.ring(i));
+    for (uint16_t i = 0; i < v.pointCount(); ++i) out.points.push_back(v.point(i));
     return true;
 }
 

@@ -117,6 +117,17 @@ target_link_libraries(shape_raster_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME shape_raster_test COMMAND shape_raster_test)
 
+# Pack layer + generic Shape group (Tomodachi #331, ADR-0016/0017)
+add_executable(shape_pack_group_test
+    shape_pack_group_test.cpp
+)
+target_include_directories(shape_pack_group_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(shape_pack_group_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME shape_pack_group_test COMMAND shape_pack_group_test)
+
 # Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
 add_executable(border_stroke_test
     border_stroke_test.cpp
@@ -486,6 +497,16 @@ if(TARGET enjin2_import)
     target_compile_definitions(shape_bundle_test PRIVATE
         ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
     add_test(NAME shape_bundle_test COMMAND shape_bundle_test)
+endif()
+
+# The tracer join (Tomodachi #331): the bundled Star Kit built into a Shape
+# group and drawn. Runs under ASan in scripts/importer-check.sh.
+if(TARGET enjin2_import)
+    add_executable(shape_pack_star_test shape_pack_star_test.cpp)
+    target_link_libraries(shape_pack_star_test PRIVATE enjin2_import enjin2_graphics enjin2_core)
+    target_compile_definitions(shape_pack_star_test PRIVATE
+        ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+    add_test(NAME shape_pack_star_test COMMAND shape_pack_star_test)
 endif()
 if(TARGET enjin_shape_bundle)
     # The stand-in Kit, bundled twice with one ledger (created by the first run):
