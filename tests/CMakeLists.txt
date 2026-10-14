@@ -97,6 +97,26 @@ target_include_directories(trig_lut_test PRIVATE
 target_link_libraries(trig_lut_test PRIVATE enjin2_core)
 add_test(NAME trig_lut_test COMMAND trig_lut_test)
 
+# Fixed-point Q16.16 type (Tomodachi #329, ADR-0016): header-only.
+add_executable(fixed_test
+    fixed_test.cpp
+)
+target_include_directories(fixed_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+add_test(NAME fixed_test COMMAND fixed_test)
+
+# Shape fill rasterizer + paint (Tomodachi #329, ADR-0016)
+add_executable(shape_raster_test
+    shape_raster_test.cpp
+)
+target_include_directories(shape_raster_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(shape_raster_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME shape_raster_test COMMAND shape_raster_test)
+
 # Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
 add_executable(border_stroke_test
     border_stroke_test.cpp

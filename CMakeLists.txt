@@ -96,6 +96,9 @@ target_sources(enjin2_graphics PRIVATE
     # Retained layered-sprite instance: reconstruction + animation
     # (ADR-0004, Tomodachi #96)
     src/graphics/layered_sprite.cpp
+    # Vector Shape fill rasterizer: Fixed rings -> 1-bpp majority mask
+    # (ADR-0016, Tomodachi #329)
+    src/shape/shape_raster.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_graphics
