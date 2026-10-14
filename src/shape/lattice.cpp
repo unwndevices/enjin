@@ -354,7 +354,7 @@ bool Lattice::stepSway()
             const Fixed dy = Fixed::fromRaw(int32_t((a.dir.x.raw * sn + a.dir.y.raw * c) >> 15));
             // The pseudo-force −a on the tip, as a torque (rad/s²).
             const Fixed torque = tuning_.swayGain * ((dy * ax - dx * ay) * a.invL);
-            const int64_t f = -mul(a.kh, a.th) - mul(a.ch, a.om) + (int64_t(torque.raw) << 16) / kSubHz;
+            const int64_t f = -mul(a.kh, a.th) - mul(a.ch, a.om) + int64_t(torque.raw) * 65536 / kSubHz;
             a.om.raw += toRaw(f);
             a.th.raw += timesH(a.om.raw);
             a.th = minF(maxF(a.th, -kOneRad), kOneRad);

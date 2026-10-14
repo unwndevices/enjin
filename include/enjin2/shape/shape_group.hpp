@@ -13,10 +13,19 @@
  *
  * The group owns one Lattice (lattice.hpp) in item coordinates; whoever lays
  * out the items configures its box. A `field` item has every point moved by
- * the field's displacement there; a `rigid` (or, until #335, `sway`) item is
- * moved as a whole by the displacement at its `at`. tick() advances it from
- * the frame's dt and marks the group changed when the field moved; a move of
- * the group (setOrigin) wakes it, as does impulse().
+ * the field's displacement there; a `rigid` item is moved as a whole by the
+ * displacement at its `at`; a `sway` item likewise, then turned about `at` by
+ * the angle of the sway arm hung there (none hung: no turn). tick() advances
+ * it from the frame's dt and marks the group changed when the field moved; a
+ * move of the group (setOrigin) wakes it, as does impulse().
+ *
+ * ## The stepped drive (#335)
+ *
+ * The group also owns a SteppedDrive (stepped_drive.hpp): startDrive() runs a
+ * periodic sequence of rest-pose transforms, applied to every rest position
+ * before the Lattice displaces it (the Lattice is sampled at the rest point,
+ * so its homes move with the step). tick() steps it too; a step change marks
+ * the group changed without waking the Lattice.
  *
  * ## The retained layer
  *
