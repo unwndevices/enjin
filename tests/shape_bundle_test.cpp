@@ -24,6 +24,13 @@
  *   SHP-19  Stroke: inner width on closed shapes, a line on open paths, rounding lint, inheritance.
  *   SHP-20  Holes: even-odd and opposite-winding compound paths keep their rings and rule.
  *   SHP-21  Clip: own space (clippath-N and legacy <use>), live Body, near-Body lint, mirrored dedup.
+ *   SHP-22  Feature sheets (Tomodachi #333): slot → Feature → pose → members, any artboard, by anchors.
+ *   SHP-23  Pose fallback: a missing optional pose shows the required one, with a lint.
+ *   SHP-24  Lint pixel-tie: a filled edge on a pixel centre (Kit coordinates; a sheet's from the anchor).
+ *   SHP-25  Lint sway-without-anchor: a sway member swinging about its bbox centre.
+ *   SHP-26  Lint too-many-colours: more than 4 fill + stroke colours in one source.
+ *   SHP-27  Lint retired-id: a ledger piece no source has any more (not one an error dropped).
+ *   SHP-28  The stand-in Feature sheet (tools/testdata/shapes/sheet.svg) joins the pool with ledger ids.
  *
  * `shape_bundle_test --verify-pack <a.njn> [<b.njn>]` checks a CLI output
  * (index readable, every record decodes; with two files, identical indices).
@@ -589,9 +596,9 @@ static void test09_pullApart() {
 
     // Eyes: two drawings of one eye → one Mirrored member; the left one is stored flipped.
     ASSERT(eyes.members.size() == 1 && eyes.members[0].side == MemberSide::Mirrored, "SHP-09 mirrored eye pair → one member");
-    ASSERT(eyes.poses == std::vector<uint8_t>({0, 1}), "SHP-09 eyes poses open + closed");
+    ASSERT(eyes.poses == std::vector<uint8_t>({0, 1, 2, 3}), "SHP-09 eyes poses open + closed (+ fallbacks, SHP-23)");
     ASSERT(eyes.binding == ShapeBinding::Rigid && eyes.order == ShapeOrder::Front, "SHP-09 eyes: rigid, in front");
-    if (eyes.members.size() == 1 && eyes.poses.size() == 2) {
+    if (eyes.members.size() == 1 && eyes.poses.size() >= 2) {
         const ShapeSpan open = eyes.span(0, 0), closed = eyes.span(1, 0);
         ASSERT(open.shapeCount == 1 && closed.shapeCount == 1, "SHP-09 one Shape per pose");
         const auto o = ringPoints(eyes, open.firstShape), c = ringPoints(eyes, closed.firstShape);
@@ -618,9 +625,10 @@ static void test09_pullApart() {
     }
 
     // Mouth: implicit member, anchor object, pose fallback anchor.
-    ASSERT(mouth.members.size() == 1 && mouth.poses == std::vector<uint8_t>({0, 1}), "SHP-09 mouth: one member, neutral + happy");
+    ASSERT(mouth.members.size() == 1 && mouth.poses == std::vector<uint8_t>({0, 1, 2, 3, 4}),
+           "SHP-09 mouth: one member, neutral + happy (+ fallbacks, SHP-23)");
     ASSERT(mouth.binding == ShapeBinding::Field, "SHP-09 mouth: field");
-    if (mouth.poses.size() == 2) {
+    if (mouth.poses.size() >= 2) {
         ASSERT(samePoints(ringPoints(mouth, mouth.span(0, 0).firstShape), {q(-4, -1), q(4, -1), q(4, 1), q(-4, 1)}),
                "SHP-09 neutral relative to the anchor object, which is not drawn");
         ASSERT(samePoints(ringPoints(mouth, mouth.span(1, 0).firstShape), {q(-4, -1), q(4, -1), q(0, 3)}),
@@ -1114,7 +1122,277 @@ static void test21_clip() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// SHP-22  Feature sheets (Tomodachi #333)
+// ---------------------------------------------------------------------------
+
+/// A Feature sheet: no Body, any artboard size.
+static std::string sheetSvg(const std::string& layers, const char* viewBox = "0 0 200 100") {
+    return std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                       "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewBox=\"") +
+           viewBox + "\">" + layers + "</svg>";
+}
+
+static const char* const kSheetLayers =
+    "<g id=\"mouth\">"
+    "<g id=\"grin\">"
+    "<g id=\"neutral\"><circle id=\"anchor\" cx=\"20\" cy=\"20\" r=\".5\"/><rect x=\"16\" y=\"19\" width=\"8\" height=\"2\"/></g>"
+    "<g id=\"happy\"><rect x=\"16\" y=\"18\" width=\"8\" height=\"4\"/></g>"
+    "</g>"
+    "<g id=\"pout\"><circle id=\"anchor\" cx=\"60\" cy=\"20\" r=\".5\"/><rect x=\"58\" y=\"19\" width=\"4\" height=\"2\"/></g>"
+    "</g>"
+    "<g id=\"eyes\"><g id=\"dots\">"
+    "<g id=\"eye\"><rect x=\"100\" y=\"10\" width=\"2\" height=\"2\"/></g>"
+    "<g id=\"eye1\" data-name=\"eye\"><rect x=\"110\" y=\"10\" width=\"2\" height=\"2\"/></g>"
+    "</g></g>";
+
+static ShapeBundleResult bundleSheet(const std::string& layers, const std::string& sidecar = "") {
+    return bundleShapes({{"sheet.svg", bytesOf(sheetSvg(layers)), bytesOf(sidecar)}}, "");
+}
+
+static void test22_featureSheet() {
+    const auto r = bundleSheet(kSheetLayers);
+    ASSERT(r.ok(), "SHP-22 a Feature sheet (200x100, no Body) bundles");
+    if (!r.ok()) dumpIssues(r);
+    const auto idx = indexOf(r);
+    ASSERT(idx.size() == 3, "SHP-22 one piece per Feature: two mouths, one pair of eyes");
+    ShapePiece grin, pout, dots;
+    if (!(pieceOf(r, ShapeSlot::Mouth, 1, grin) && pieceOf(r, ShapeSlot::Mouth, 2, pout) && pieceOf(r, ShapeSlot::Eyes, 1, dots))) {
+        ASSERT(false, "SHP-22 ids per slot, Features in name order (grin 1, pout 2)");
+        return;
+    }
+    ASSERT(idOf(r, ShapeSlot::Mouth, "grin") == 1 && idOf(r, ShapeSlot::Mouth, "pout") == 2 && idOf(r, ShapeSlot::Eyes, "dots") == 1,
+           "SHP-22 a sheet piece is labelled by its Feature name");
+    ASSERT(r.ledger.find("{ \"source\": \"sheet.svg\", \"slot\": \"mouth\", \"layer\": \"mouth/grin\", \"id\": 1 }") != std::string::npos &&
+               r.ledger.find("\"layer\": \"mouth/pout\", \"id\": 2") != std::string::npos &&
+               r.ledger.find("\"layer\": \"eyes/dots\", \"id\": 1") != std::string::npos,
+           "SHP-22 ledger key: slot layer / Feature name");
+    ASSERT(samePoints(ringPoints(grin, grin.span(0, 0).firstShape), {q(-4, -1), q(4, -1), q(4, 1), q(-4, 1)}),
+           "SHP-22 rings relative to the member's anchor");
+    ASSERT(grin.poses.size() >= 2 && grin.poses[0] == 0 && grin.poses[1] == 1, "SHP-22 a sheet Feature's pose layers");
+    ASSERT(samePoints(ringPoints(pout, pout.span(0, 0).firstShape), {q(-2, -1), q(2, -1), q(2, 1), q(-2, 1)}),
+           "SHP-22 a Feature without pose layers is its required pose");
+    ASSERT(grin.sockets.empty() && pout.sockets.empty() && dots.sockets.empty(), "SHP-22 a sheet makes no sockets");
+    ASSERT(grin.members.size() == 1 && grin.members[0].home.x == 0 && grin.members[0].home.y == 0,
+           "SHP-22 a single member's home is its Feature's centre");
+    ASSERT(dots.members.size() == 1 && dots.members[0].side == MemberSide::Mirrored, "SHP-22 two same eyes: one mirrored member");
+    ASSERT(dots.members.size() == 1 && dots.members[0].home.x == q(-5, 0).x && dots.members[0].home.y == 0,
+           "SHP-22 home is relative to the Feature's centre");
+    ASSERT(grin.order == ShapeOrder::Front && dots.binding == ShapeBinding::Rigid, "SHP-22 sheet Features: in front, slot Bindings");
+
+    // Mixed with a Kit: the sheet's pieces join the pool after the Kit's.
+    const auto mixed = bundleShapes({{"sheet.svg", bytesOf(sheetSvg(kSheetLayers)), {}}, {"kit.svg", bytesOf(kPullApartKit), {}}}, "");
+    ASSERT(mixed.ok() && idOf(mixed, ShapeSlot::Mouth, "kit") == 1 && idOf(mixed, ShapeSlot::Mouth, "grin") == 2 &&
+               idOf(mixed, ShapeSlot::Mouth, "pout") == 3,
+           "SHP-22 a Kit and a sheet share each slot's ids");
+    if (!mixed.ok()) dumpIssues(mixed);
+
+    // The sidecar keys a sheet Feature by its ledger layer; `order` puts it behind.
+    const auto tuned = bundleSheet(kSheetLayers, "{\"version\":1,\"features\":{\"mouth/pout\":{\"binding\":\"rigid\",\"order\":\"behind\"}}}");
+    ShapePiece pout2;
+    ASSERT(tuned.ok() && pieceOf(tuned, ShapeSlot::Mouth, 2, pout2) && pout2.binding == ShapeBinding::Rigid &&
+               pout2.order == ShapeOrder::Behind,
+           "SHP-22 sidecar Binding and order for a sheet Feature");
+    ASSERT(hasError(bundleSheet(kSheetLayers, "{\"version\":1,\"features\":{\"mouth/pout\":{\"order\":\"under\"}}}"), "bad-sidecar"),
+           "SHP-22 order is behind or front");
+
+    // The sheet's own structure.
+    const auto dup = bundleSheet("<g id=\"mouth\"><g id=\"grin\"><rect width=\"2\" height=\"2\"/></g>"
+                                 "<g id=\"grin1\" data-name=\"grin\"><rect width=\"4\" height=\"2\"/></g></g>");
+    ASSERT(hasError(dup, "duplicate-piece") && dup.pack.empty(), "SHP-22 two Features of one name in a slot: duplicate-piece");
+    const auto stray = bundleSheet("<g id=\"mouth\"><rect width=\"2\" height=\"2\"/><g id=\"grin\"><rect width=\"4\" height=\"2\"/></g></g>");
+    ASSERT(stray.ok() && hasIssue(stray, "unknown-layer", ImportIssueSeverity::Lint) && indexOf(stray).size() == 1,
+           "SHP-22 a shape outside any Feature is ignored with a lint");
+    const auto missing = bundleSheet("<g id=\"mouth\"><g id=\"grin\"><g id=\"happy\"><rect width=\"4\" height=\"2\"/></g></g></g>");
+    ASSERT(hasError(missing, "missing-pose"), "SHP-22 a sheet Feature still needs its required pose");
+    for (const auto& i : missing.issues)
+        if (i.code == "missing-pose") ASSERT(i.layer == "mouth/grin", "SHP-22 issues name the Feature's layer path");
+    std::string wide = kitSvg("<rect width=\"10\" height=\"10\"/>");
+    wide.replace(wide.find("0 0 80 80"), 9, "0 0 90 80");
+    ASSERT(hasError(bundleOne(wide), "wrong-artboard"), "SHP-22 a Kit is still 80x80");
+    ASSERT(hasError(bundleShapes({{"sheet.svg", bytesOf("<svg xmlns=\"http://www.w3.org/2000/svg\"><g id=\"mouth\"/></svg>"), {}}}, ""),
+                    "wrong-artboard"),
+           "SHP-22 a sheet still needs a viewBox");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-23  Pose fallback (Tomodachi #333)
+// ---------------------------------------------------------------------------
+
+static size_t issueCount(const ShapeBundleResult& r, const char* code) {
+    size_t n = 0;
+    for (const auto& i : r.issues) n += i.code == code;
+    return n;
+}
+
+static const ImportIssue* issueOf(const ShapeBundleResult& r, const char* code) {
+    for (const auto& i : r.issues)
+        if (i.code == code) return &i;
+    return nullptr;
+}
+
+static void test23_poseFallback() {
+    // The pull-apart Kit's mouth draws neutral + happy; its eyes open + closed.
+    const auto r = bundleOne(kPullApartKit);
+    ShapePiece mouth, eyes, top;
+    if (!(r.ok() && firstPiece(r, ShapeSlot::Mouth, mouth) && firstPiece(r, ShapeSlot::Eyes, eyes) &&
+          firstPiece(r, ShapeSlot::Top, top))) {
+        ASSERT(false, "SHP-23 the pull-apart Kit bundles");
+        return;
+    }
+    ASSERT(mouth.poses == std::vector<uint8_t>({0, 1, 2, 3, 4}), "SHP-23 the mouth holds every pose of its slot");
+    ASSERT(eyes.poses == std::vector<uint8_t>({0, 1, 2, 3}), "SHP-23 the eyes hold every pose of theirs");
+    ASSERT(top.poses == std::vector<uint8_t>({0}), "SHP-23 a one-pose slot is unchanged");
+    bool same = mouth.spans.size() == 5;
+    for (size_t pose = 2; same && pose < 5; ++pose)
+        same = mouth.span(pose, 0).firstShape == mouth.span(0, 0).firstShape && mouth.span(pose, 0).shapeCount == mouth.span(0, 0).shapeCount;
+    ASSERT(same, "SHP-23 a missing optional pose draws the required pose's Shapes (no copy)");
+    ASSERT(mouth.span(1, 0).firstShape != mouth.span(0, 0).firstShape, "SHP-23 a drawn pose keeps its own drawing");
+    ASSERT(issueCount(r, "missing-optional-pose") == 2, "SHP-23 one lint per Feature missing optional poses");
+    const ImportIssue* lint = nullptr;
+    for (const auto& i : r.issues)
+        if (i.code == "missing-optional-pose" && i.layer == "mouth") lint = &i;
+    ASSERT(lint && lint->severity == ImportIssueSeverity::Lint && lint->message.find("sad, open, surprised") != std::string::npos &&
+               lint->message.find("neutral") != std::string::npos,
+           "SHP-23 the lint names the missing poses and the one they show");
+
+    // Every pose drawn: no lint.
+    const auto full = bundleOne(kitSvg("<rect x=\"10\" y=\"10\" width=\"60\" height=\"60\"/>",
+        "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>"
+        "<g id=\"mouth\"><g id=\"neutral\"><rect x=\"38\" y=\"44\" width=\"4\" height=\"2\"/></g>"
+        "<g id=\"happy\"><rect x=\"38\" y=\"44\" width=\"4\" height=\"3\"/></g><g id=\"sad\"><rect x=\"38\" y=\"45\" width=\"4\" height=\"2\"/></g>"
+        "<g id=\"open\"><rect x=\"38\" y=\"43\" width=\"4\" height=\"4\"/></g><g id=\"surprised\"><rect x=\"39\" y=\"43\" width=\"2\" height=\"4\"/></g></g>"));
+    ASSERT(full.ok() && issueCount(full, "missing-optional-pose") == 0, "SHP-23 a Feature with every pose drawn: no lint");
+    if (!full.ok() || issueCount(full, "missing-optional-pose")) dumpIssues(full);
+}
+
+// ---------------------------------------------------------------------------
+// SHP-24  Lint: an edge that ties on a pixel centre (Tomodachi #333)
+// ---------------------------------------------------------------------------
+
+static void test24_pixelTie() {
+    const auto tie = bundleOne(kitSvg("<circle cx=\"40\" cy=\"40\" r=\"4.5\"/>"));
+    ASSERT(tie.ok() && issueCount(tie, "pixel-tie") == 1, "SHP-24 rx 4.5 at an integer centre: one pixel-tie lint per Shape");
+    const ImportIssue* i = issueOf(tie, "pixel-tie");
+    ASSERT(i && i->severity == ImportIssueSeverity::Lint && i->layer == "body", "SHP-24 a lint, on the shape's layer");
+    ASSERT(issueCount(bundleOne(kitSvg("<circle cx=\"40\" cy=\"40\" r=\"4\"/>")), "pixel-tie") == 0, "SHP-24 r 4: no tie");
+    ASSERT(issueCount(bundleOne(kitSvg("<circle cx=\"40.5\" cy=\"40.5\" r=\"4.5\"/>")), "pixel-tie") == 0,
+           "SHP-24 r 4.5 at a pixel centre: edges on pixel lines, no tie");
+    ASSERT(issueCount(bundleOne(kitSvg("<rect x=\"10.5\" y=\"10\" width=\"20\" height=\"20\"/>")), "pixel-tie") == 1,
+           "SHP-24 a straight edge on a pixel centre ties");
+    ASSERT(issueCount(bundleOne(kitSvg("<rect x=\"10\" y=\"10\" width=\"20\" height=\"20\"/>"
+                                       "<path d=\"M10.5 50.5 L30.5 50.5\" fill=\"none\" stroke=\"#000\"/>")), "pixel-tie") == 0,
+           "SHP-24 an open line is not a filled edge");
+    // A Kit Feature is measured where its Kit draws it, not from a bbox-centre anchor on a half pixel.
+    ASSERT(issueCount(bundleOne(kitSvg("<rect x=\"10\" y=\"10\" width=\"60\" height=\"60\"/>",
+                                       "<g id=\"eyes\"><rect x=\"34\" y=\"25\" width=\"2\" height=\"3\"/></g>"
+                                       "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>")), "pixel-tie") == 0,
+           "SHP-24 a Kit Feature on whole pixels doesn't tie");
+    // A sheet Feature is measured from its member's anchor.
+    ASSERT(issueCount(bundleSheet("<g id=\"mouth\"><g id=\"m\"><circle id=\"anchor\" cx=\"20\" cy=\"20\" r=\".5\"/>"
+                                  "<rect x=\"16.5\" y=\"19\" width=\"7\" height=\"2\"/></g></g>"), "pixel-tie") == 1,
+           "SHP-24 sheet: an edge half a pixel off its anchor's grid ties");
+    ASSERT(issueCount(bundleSheet("<g id=\"mouth\"><g id=\"m\"><circle id=\"anchor\" cx=\"20.5\" cy=\"20\" r=\".5\"/>"
+                                  "<rect x=\"16.5\" y=\"19\" width=\"8\" height=\"2\"/></g></g>"), "pixel-tie") == 0,
+           "SHP-24 sheet: on its anchor's grid, no tie");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-25  Lint: a sway member without an anchor (Tomodachi #333)
+// ---------------------------------------------------------------------------
+
+static void test25_swayAnchor() {
+    const std::string body = "<rect x=\"10\" y=\"20\" width=\"60\" height=\"50\"/>";
+    const std::string face = "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>"
+                             "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>";
+    // Top sways by default: an antenna without an anchor swings about its bbox centre.
+    const auto loose = bundleOne(kitSvg(body, face + "<g id=\"top\"><g id=\"antenna\"><rect x=\"39\" y=\"8\" width=\"2\" height=\"12\"/></g></g>"));
+    ASSERT(loose.ok() && issueCount(loose, "sway-without-anchor") == 1, "SHP-25 a sway member without an anchor: one lint");
+    const ImportIssue* i = issueOf(loose, "sway-without-anchor");
+    ASSERT(i && i->severity == ImportIssueSeverity::Lint && i->layer == "top/antenna", "SHP-25 on the member's layer");
+    const auto anchored = bundleOne(kitSvg(body, face + "<g id=\"top\"><g id=\"antenna\"><circle id=\"anchor\" cx=\"40\" cy=\"20\" r=\".5\"/>"
+                                                        "<rect x=\"39\" y=\"8\" width=\"2\" height=\"12\"/></g></g>"));
+    ASSERT(anchored.ok() && issueCount(anchored, "sway-without-anchor") == 0, "SHP-25 with an anchor: no lint");
+    const auto field = bundleOne(kitSvg(body, face + "<g id=\"top\"><g id=\"cap\"><rect x=\"30\" y=\"14\" width=\"20\" height=\"8\"/></g></g>"),
+                                 "{\"version\":1,\"features\":{\"top\":{\"binding\":\"field\"}}}");
+    ASSERT(field.ok() && issueCount(field, "sway-without-anchor") == 0, "SHP-25 a top bound to the field needs no anchor");
+    const auto cheeks = bundleOne(kitSvg(body, face + "<g id=\"cheeks\"><rect x=\"20\" y=\"38\" width=\"4\" height=\"2\"/></g>"),
+                                  "{\"version\":1,\"features\":{\"cheeks\":{\"binding\":\"sway\"}}}");
+    ASSERT(cheeks.ok() && issueCount(cheeks, "sway-without-anchor") == 1, "SHP-25 sway by sidecar override counts too");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-26  Lint: more than 4 colours in a source (Tomodachi #333)
+// ---------------------------------------------------------------------------
+
+static void test26_colourCount() {
+    auto kit = [](int colours, bool stroke) {
+        std::string body;
+        static const char* const hex[] = {"#111111", "#222222", "#333333", "#444444", "#555555"};
+        for (int c = 0; c < colours; ++c)
+            body += "<rect x=\"" + std::to_string(10 + c * 10) + "\" y=\"10\" width=\"10\" height=\"60\" fill=\"" + hex[c] + "\"/>";
+        if (stroke) body += "<path d=\"M10 75 L70 75\" fill=\"none\" stroke=\"#666666\"/>";
+        return kitSvg(body);
+    };
+    const auto four = bundleOne(kit(4, false));
+    ASSERT(four.ok() && issueCount(four, "too-many-colours") == 0, "SHP-26 four colours: no lint");
+    const auto five = bundleOne(kit(5, false));
+    ASSERT(five.ok() && issueCount(five, "too-many-colours") == 1, "SHP-26 five colours: one lint for the source");
+    const ImportIssue* i = issueOf(five, "too-many-colours");
+    ASSERT(i && i->severity == ImportIssueSeverity::Lint && i->source == "kit.svg" && i->layer.empty() &&
+               i->message.find('5') != std::string::npos,
+           "SHP-26 a lint on the file, saying how many");
+    ASSERT(issueCount(bundleOne(kit(4, true)), "too-many-colours") == 1, "SHP-26 stroke colours count");
+    ASSERT(issueCount(bundleSheet(std::string("<g id=\"mouth\"><g id=\"a\"><rect width=\"2\" height=\"2\" fill=\"#111111\"/></g>"
+                                              "<g id=\"b\"><rect width=\"2\" height=\"2\" fill=\"#222222\"/></g>"
+                                              "<g id=\"c\"><rect width=\"2\" height=\"2\" fill=\"#333333\"/></g>"
+                                              "<g id=\"d\"><rect width=\"2\" height=\"2\" fill=\"#444444\"/></g>"
+                                              "<g id=\"e\"><rect width=\"2\" height=\"2\" fill=\"#555555\"/></g></g>")),
+                      "too-many-colours") == 1,
+           "SHP-26 a Feature sheet counts its colours too");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-27  Lint: an id retired since the last ledger (Tomodachi #333)
+// ---------------------------------------------------------------------------
+
+static void test27_retiredId() {
+    const ShapeSource kit{"kits/alpha.svg", bytesOf(kPullApartKit), {}};
+    const auto r1 = bundleShapes({kit}, "");
+    ASSERT(r1.ok() && issueCount(r1, "retired-id") == 0, "SHP-27 a new ledger retires nothing");
+    std::string noEyes = kPullApartKit;
+    const size_t e0 = noEyes.find("<g id=\"eyes\">"), e1 = noEyes.find("<g id=\"mouth\">");
+    noEyes.replace(e0, e1 - e0, "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>");
+    const auto r2 = bundleShapes({{"kits/alpha.svg", bytesOf(noEyes), {}}}, r1.ledger);
+    ASSERT(r2.ok() && issueCount(r2, "retired-id") == 1, "SHP-27 a vanished piece: one retired-id lint");
+    const ImportIssue* i = issueOf(r2, "retired-id");
+    ASSERT(i && i->severity == ImportIssueSeverity::Lint && i->source == "kits/alpha.svg" && i->layer == "eyes" &&
+               i->message.find("eyes 1") != std::string::npos,
+           "SHP-27 the lint names the slot + id, on the piece's source and layer");
+    ASSERT(issueCount(bundleShapes({{"kits/alpha.svg", bytesOf(noEyes), {}}}, r2.ledger), "retired-id") == 0,
+           "SHP-27 once retired, the next run is quiet");
+    const auto gone = bundleShapes({{"other.svg", bytesOf(kitSvg("<rect x=\"10\" y=\"10\" width=\"60\" height=\"60\"/>")), {}}}, r1.ledger);
+    ASSERT(gone.ok() && issueCount(gone, "retired-id") == 5, "SHP-27 a source taken out retires each of its pieces");
+
+    // Preview: a piece dropped by an error is broken, not gone, so it isn't reported retired.
+    ShapeBundleOptions preview;
+    preview.preview = true;
+    std::string broken = kPullApartKit;
+    broken.replace(broken.find("<g id=\"open\">"), 13, "<g id=\"angry\">");
+    const auto pr = bundleShapes({{"kits/alpha.svg", bytesOf(broken), {}}}, r1.ledger, preview);
+    ASSERT(hasError(pr, "missing-pose") && !pr.pack.empty() && issueCount(pr, "retired-id") == 0,
+           "SHP-27 preview: a piece an error drops is not reported retired");
+}
+
 static Bytes readFileBytes(const std::string& path);
+
+/// Exactly these issue codes, in this order (dumps the issues when not).
+static bool onlyIssues(const ShapeBundleResult& r, const std::vector<std::string>& codes) {
+    bool same = r.issues.size() == codes.size();
+    for (size_t i = 0; same && i < codes.size(); ++i) same = r.issues[i].code == codes[i];
+    if (!same) dumpIssues(r);
+    return same;
+}
 
 static std::string kitPath(const char* name) { return std::string(ENJIN2_SOURCE_DIR) + "/tools/testdata/shapes/" + name; }
 
@@ -1124,8 +1402,10 @@ static void test14_standInKit() {
     ASSERT(!svg.empty() && !sidecar.empty(), "SHP-14 stand-in Kit and sidecar present");
     const auto r = bundleShapes({{"star.svg", svg, sidecar}}, "");
     ASSERT(r.ok(), "SHP-14 the stand-in Kit bundles");
-    ASSERT(r.issues.empty(), "SHP-14 no lints: its paint is all converted (Tomodachi #332)");
-    if (!r.issues.empty()) dumpIssues(r);
+    // Its paint is all converted (Tomodachi #332); what is left are the authoring lints (#333).
+    // The tongue (ry 1.5) and the surprised mouth (r 3.5) sit on pixel centres; sad, happy and angry eyes aren't drawn.
+    ASSERT(onlyIssues(r, {"pixel-tie", "pixel-tie", "missing-optional-pose", "missing-optional-pose"}),
+           "SHP-14 lints: two pixel ties and the poses the Star doesn't draw");
     const auto idx = indexOf(r);
     ASSERT(idx.size() == 7, "SHP-14 Body + eyes, cheeks, mouth, top, arms, legs");
     for (const auto& e : idx) ASSERT(e.id == 1 && e.label == "star", "SHP-14 every piece is id 1, labelled star");
@@ -1137,10 +1417,13 @@ static void test14_standInKit() {
         return;
     }
     ASSERT(body.sockets.size() == 10, "SHP-14 ten sockets: 2 eyes, 2 cheeks, mouth, top, 2 arms, 2 legs");
-    ASSERT(eyes.poses == std::vector<uint8_t>({0, 1}) && eyes.members.size() == 1, "SHP-14 eyes: open + closed (hidden layer read), one drawing");
-    ASSERT(mouth.poses == std::vector<uint8_t>({0, 1, 3, 4}) && mouth.members.size() == 1,
-           "SHP-14 mouth: neutral, happy, open, surprised");
-    if (mouth.poses.size() == 4) {
+    ASSERT(eyes.poses == std::vector<uint8_t>({0, 1, 2, 3}) && eyes.members.size() == 1 &&
+               eyes.span(1, 0).firstShape != eyes.span(0, 0).firstShape && eyes.span(2, 0).firstShape == eyes.span(0, 0).firstShape,
+           "SHP-14 eyes: open + closed (hidden layer read), one drawing; happy, angry show open");
+    ASSERT(mouth.poses == std::vector<uint8_t>({0, 1, 2, 3, 4}) && mouth.members.size() == 1 &&
+               mouth.span(2, 0).firstShape == mouth.span(0, 0).firstShape,
+           "SHP-14 mouth: neutral, happy, open, surprised; sad shows neutral");
+    if (mouth.poses.size() == 5) {
         const ShapeFill& line = mouth.shapes[mouth.span(0, 0).firstShape];
         ASSERT(mouth.span(0, 0).shapeCount == 1 && line.role == ShapeRole::None && line.strokeWidth == 1 &&
                    line.strokeRole == ShapeRole::Ink && !(mouth.rings[line.firstRing].flags & SHAPE_RING_CLOSED),
@@ -1149,9 +1432,9 @@ static void test14_standInKit() {
         ASSERT(happy.shapeCount == 2 && mouth.shapes[happy.firstShape + 1].clip == ShapeClip::Own &&
                    mouth.shapes[mouth.shapes[happy.firstShape + 1].clipShape].role == ShapeRole::None,
                "SHP-14 happy mouth: the tongue clipped inside the mouth (own space)");
-        const ShapeFill& open = mouth.shapes[mouth.span(2, 0).firstShape];
+        const ShapeFill& open = mouth.shapes[mouth.span(3, 0).firstShape];
         ASSERT(open.ringCount == 2 && (open.flags & SHAPE_FILL_EVENODD), "SHP-14 open mouth: a ring with a hole");
-        const ShapeFill& wow = mouth.shapes[mouth.span(3, 0).firstShape];
+        const ShapeFill& wow = mouth.shapes[mouth.span(4, 0).firstShape];
         ASSERT(wow.role == ShapeRole::Accent && wow.strokeWidth == 1 && wow.strokeRole == ShapeRole::Ink,
                "SHP-14 surprised mouth: accent with a 1 px ink inner stroke");
     }
@@ -1170,11 +1453,60 @@ static void test14_standInKit() {
     const auto rc = bundleShapes({{"chestnut.svg", readFileBytes(kitPath("chestnut.svg")),
                                    readFileBytes(kitPath("chestnut.svg.shape.json"))}}, "");
     ShapePiece cap;
-    ASSERT(rc.ok() && rc.issues.empty() && firstPiece(rc, ShapeSlot::Top, cap), "SHP-14 the Chestnut Kit bundles clean");
-    if (!rc.issues.empty()) dumpIssues(rc);
+    ASSERT(rc.ok() && firstPiece(rc, ShapeSlot::Top, cap), "SHP-14 the Chestnut Kit bundles");
+    ASSERT(onlyIssues(rc, {"missing-optional-pose", "missing-optional-pose"}), "SHP-14 Chestnut lints: only its undrawn poses");
     ASSERT(cap.binding == ShapeBinding::Field && cap.shapes.size() == 1 && cap.shapes[0].clip == ShapeClip::LiveBody,
            "SHP-14 Chestnut cap: field-bound, clipped to the live Body");
     ASSERT(body.shapes.size() == 1 && body.shapes[0].role == ShapeRole::Body && body.points.size() == 16, "SHP-14 the star Body: 16 vertices");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-28  The stand-in Feature sheet joins the pool (Tomodachi #333)
+// ---------------------------------------------------------------------------
+
+static void test28_standInSheet() {
+    const std::string ledger = [] {
+        const Bytes b = readFileBytes(kitPath("ledger.json"));
+        return std::string(b.begin(), b.end());
+    }();
+    std::vector<ShapeSource> sources;
+    for (const char* name : {"star.svg", "chestnut.svg", "sheet.svg"})
+        sources.push_back({name, readFileBytes(kitPath(name)), readFileBytes(kitPath((std::string(name) + ".shape.json").c_str()))});
+    ASSERT(!sources[2].svg.empty() && !sources[2].sidecar.empty() && !ledger.empty(), "SHP-28 stand-in sheet, sidecar and ledger present");
+    const auto r = bundleShapes(sources, ledger);
+    ASSERT(r.ok() && r.ledger == ledger, "SHP-28 the Kits and the sheet bundle with the committed ledger, unchanged");
+    if (!r.ok()) dumpIssues(r);
+    struct Want { ShapeSlot slot; uint16_t id; const char* label; };
+    const Want want[] = {{ShapeSlot::Mouth, 3, "fang"}, {ShapeSlot::Mouth, 4, "grin"}, {ShapeSlot::Mouth, 5, "pout"},
+                         {ShapeSlot::Top, 3, "bow"},    {ShapeSlot::Top, 4, "sprout"}, {ShapeSlot::Top, 5, "tuft"}};
+    for (const Want& w : want) {
+        char m[80];
+        std::snprintf(m, sizeof m, "SHP-28 %s %u \"%s\" is in the pool", shapeSlotName(w.slot), w.id, w.label);
+        ASSERT(idOf(r, w.slot, w.label) == w.id, m);
+    }
+    ShapePiece grin, fang, sprout, bow, tuft;
+    if (!(pieceOf(r, ShapeSlot::Mouth, 4, grin) && pieceOf(r, ShapeSlot::Mouth, 3, fang) && pieceOf(r, ShapeSlot::Top, 4, sprout) &&
+          pieceOf(r, ShapeSlot::Top, 3, bow) && pieceOf(r, ShapeSlot::Top, 5, tuft))) {
+        ASSERT(false, "SHP-28 the sheet's pieces read");
+        return;
+    }
+    bool own = grin.poses.size() == 5;
+    for (size_t pose = 1; own && pose < 5; ++pose) own = grin.span(pose, 0).firstShape != grin.span(0, 0).firstShape;
+    ASSERT(own, "SHP-28 grin draws every mouth pose");
+    ASSERT(fang.poses.size() == 5 && fang.span(3, 0).firstShape != fang.span(0, 0).firstShape &&
+               fang.span(1, 0).firstShape == fang.span(0, 0).firstShape,
+           "SHP-28 fang: neutral + open, the rest fall back");
+    ASSERT(sprout.order == ShapeOrder::Behind && sprout.binding == ShapeBinding::Sway && bow.order == ShapeOrder::Front &&
+               bow.binding == ShapeBinding::Field && tuft.binding == ShapeBinding::Sway,
+           "SHP-28 tops: a sprout swaying behind, a field-bound bow, a tuft");
+    size_t sheetIssues = 0;
+    for (const auto& i : r.issues)
+        if (i.source == "sheet.svg") {
+            ++sheetIssues;
+            ASSERT(i.code == "missing-optional-pose" && (i.layer == "mouth/fang" || i.layer == "mouth/pout"),
+                   "SHP-28 the sheet's only lints: fang and pout fall back to neutral");
+        }
+    ASSERT(sheetIssues == 2, "SHP-28 two sheet lints");
 }
 
 /// Every result is either a pack that reads back in full, or an error with no pack.
@@ -1223,6 +1555,17 @@ static void test15_corpus() {
         Bytes sc = sidecar;
         sc[rnd() % sc.size()] = static_cast<uint8_t>(kSpecial[rnd() % (sizeof kSpecial - 1)]);
         bad += !consistent(bundleShapes({{"star.svg", svg, sc}}, m));
+    }
+    // The stand-in Feature sheet (Tomodachi #333): every truncation, and mutations, beside the Star.
+    const Bytes sheet = readFileBytes(kitPath("sheet.svg"));
+    const Bytes sheetCar = readFileBytes(kitPath("sheet.svg.shape.json"));
+    for (size_t n = 0; n < sheet.size(); ++n)
+        bad += !consistent(bundleShapes({{"star.svg", svg, sidecar}, {"sheet.svg", Bytes(sheet.begin(), sheet.begin() + n), sheetCar}}, ledger));
+    for (int i = 0; i < 1500 && !sheet.empty(); ++i) {
+        Bytes m = sheet;
+        const int edits = 1 + static_cast<int>(rnd() % 4);
+        for (int k = 0; k < edits; ++k) m[rnd() % m.size()] = static_cast<uint8_t>(kSpecial[rnd() % (sizeof kSpecial - 1)]);
+        bad += !consistent(bundleShapes({{"sheet.svg", m, sheetCar}}, ""));
     }
     ASSERT(bad == 0, "SHP-15 every truncated / mutated input gives a readable pack or an error, never a crash");
     if (bad) fprintf(stderr, "    %d inconsistent results\n", bad);
@@ -1296,28 +1639,49 @@ static Bytes readFileBytes(const std::string& path) { return readFile(path); }
 int main(int argc, char** argv) {
     if (argc >= 3 && std::strcmp(argv[1], "--verify-pack") == 0) return verifyPack(argc, argv);
 
-    test01_packRoundTrip();
-    test02_minimalKit();
-    test03_lineCommands();
-    test04_curves();
-    test05_arcs();
-    test06_elements();
-    test07_transforms();
-    test08_paint();
-    test09_pullApart();
-    test10_sidecar();
-    test11_ledger();
-    test12_names();
-    test13_hardErrors();
-    test14_standInKit();
-    test15_corpus();
-    test16_preview();
-    test17_colours();
-    test18_dither();
-    test19_stroke();
-    test20_holes();
-    test21_clip();
+    static const struct { const char* id; void (*run)(); } tests[] = {
+        {"SHP-01", test01_packRoundTrip},
+        {"SHP-02", test02_minimalKit},
+        {"SHP-03", test03_lineCommands},
+        {"SHP-04", test04_curves},
+        {"SHP-05", test05_arcs},
+        {"SHP-06", test06_elements},
+        {"SHP-07", test07_transforms},
+        {"SHP-08", test08_paint},
+        {"SHP-09", test09_pullApart},
+        {"SHP-10", test10_sidecar},
+        {"SHP-11", test11_ledger},
+        {"SHP-12", test12_names},
+        {"SHP-13", test13_hardErrors},
+        {"SHP-14", test14_standInKit},
+        {"SHP-15", test15_corpus},
+        {"SHP-16", test16_preview},
+        {"SHP-17", test17_colours},
+        {"SHP-18", test18_dither},
+        {"SHP-19", test19_stroke},
+        {"SHP-20", test20_holes},
+        {"SHP-21", test21_clip},
+        {"SHP-22", test22_featureSheet},
+        {"SHP-23", test23_poseFallback},
+        {"SHP-24", test24_pixelTie},
+        {"SHP-25", test25_swayAnchor},
+        {"SHP-26", test26_colourCount},
+        {"SHP-27", test27_retiredId},
+        {"SHP-28", test28_standInSheet},
+    };
+    // `--only SHP-nn`: one group, so each lint and the Feature sheets are a ctest of their own.
+    const char* only = argc >= 3 && std::strcmp(argv[1], "--only") == 0 ? argv[2] : nullptr;
+    bool ran = false;
+    for (const auto& t : tests)
+        if (!only || std::strcmp(only, t.id) == 0) {
+            t.run();
+            ran = true;
+        }
+    if (!ran) {
+        fprintf(stderr, "no test group %s\n", only);
+        return 1;
+    }
 
-    printf("shape_bundle_test: %d passed, %d failed\n", passes, failures);
+    printf("shape_bundle_test%s%s: %d passed, %d failed\n", only ? " " : "", only ? only : "", passes, failures);
     return failures == 0 ? 0 : 1;
 }

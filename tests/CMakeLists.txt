@@ -529,6 +529,15 @@ if(TARGET enjin2_import)
     target_compile_definitions(shape_bundle_test PRIVATE
         ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
     add_test(NAME shape_bundle_test COMMAND shape_bundle_test)
+    # Feature sheets, pose fallback and each authoring lint as a ctest of its own (Tomodachi #333).
+    foreach(_pair "sheet:SHP-22" "pose_fallback:SHP-23" "lint_pixel_tie:SHP-24" "lint_sway_without_anchor:SHP-25"
+                  "lint_too_many_colours:SHP-26" "lint_retired_id:SHP-27" "standin_sheet:SHP-28"
+                  "lint_off_level_opacity:SHP-18" "lint_fractional_stroke:SHP-19" "lint_near_body_clip:SHP-21")
+        string(REPLACE ":" ";" _pair "${_pair}")
+        list(GET _pair 0 _name)
+        list(GET _pair 1 _group)
+        add_test(NAME shape_bundle_${_name} COMMAND shape_bundle_test --only ${_group})
+    endforeach()
 endif()
 
 # The tracer join (Tomodachi #331): the bundled Star Kit built into a Shape
@@ -583,23 +592,26 @@ if(TARGET enjin_shape_bundle)
             --ledger ${_shape_dir}/refused-ledger.json -o ${_shape_dir}/refused.njn)
     set_tests_properties(shape_bundle_cli_refuses PROPERTIES WILL_FAIL TRUE)
 
-    # Paint goldens (Tomodachi #332): both stand-in Kits through the CLI with the
-    # fixture's id ledger (Star = 1, Chestnut = 2; the CLI must leave it as is),
-    # drawn by a Shape group and compared with tests/testdata/shape/paint/*.txt
-    # (`shape_paint_kit_test <pack> --update` rewrites them).
+    # Paint goldens (Tomodachi #332): both stand-in Kits and the stand-in Feature
+    # sheet (#333) through the CLI with the fixture's id ledger (Star = 1,
+    # Chestnut = 2, the sheet's pieces after; the CLI must leave it as is), drawn
+    # by a Shape group and compared with tests/testdata/shape/paint/*.txt
+    # (`shape_paint_kit_test <pack> --update` rewrites them). The stand-ins'
+    # pixel-tie and missing-optional-pose lints are expected (SHP-14, SHP-28);
+    # any other lint here means the paint didn't convert.
     set(_paint_dir ${CMAKE_CURRENT_BINARY_DIR}/shape_paint_cli)
-    foreach(_f star.svg star.svg.shape.json chestnut.svg chestnut.svg.shape.json)
+    foreach(_f star.svg star.svg.shape.json chestnut.svg chestnut.svg.shape.json sheet.svg sheet.svg.shape.json)
         configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/shapes/${_f} ${_paint_dir}/${_f} COPYONLY)
     endforeach()
     add_test(NAME shape_paint_cli_ledger COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/shapes/ledger.json ${_paint_dir}/ledger.json)
     set_tests_properties(shape_paint_cli_ledger PROPERTIES FIXTURES_SETUP shape_paint_cli_0)
     add_test(NAME shape_paint_cli_bundle
-        COMMAND enjin_shape_bundle ${_paint_dir}/star.svg ${_paint_dir}/chestnut.svg
+        COMMAND enjin_shape_bundle ${_paint_dir}/star.svg ${_paint_dir}/chestnut.svg ${_paint_dir}/sheet.svg
             --ledger ${_paint_dir}/ledger.json -o ${_paint_dir}/paint.njn)
     set_tests_properties(shape_paint_cli_bundle PROPERTIES
         FIXTURES_REQUIRED shape_paint_cli_0 FIXTURES_SETUP shape_paint_cli_1
-        FAIL_REGULAR_EXPRESSION "ledger updated|lint|error")
+        FAIL_REGULAR_EXPRESSION "ledger updated|error|lint (unmapped-colour|unsupported-paint|off-level-opacity|fractional-stroke|near-body-clip|retired-id|too-many-colours|sway-without-anchor)")
     add_executable(shape_paint_kit_test shape_paint_kit_test.cpp)
     target_link_libraries(shape_paint_kit_test PRIVATE enjin2_graphics enjin2_core)
     target_include_directories(shape_paint_kit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)

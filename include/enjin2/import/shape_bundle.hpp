@@ -1,6 +1,6 @@
 /**
  * @file shape_bundle.hpp
- * @brief Shape bundle: Kit SVGs + shape sidecars + id ledger → one Shape pack (ADR-0017, Tomodachi #330)
+ * @brief Shape bundle: Kits + Feature sheets + shape sidecars + id ledger → one Shape pack (ADR-0017, Tomodachi #330, #333)
  *
  * bundleShapes() turns every pet source into the one Shape pack an applet
  * ships (`graphics/shape_pack.hpp`).  The native CLI (`tools/shape_bundle`)
@@ -32,6 +32,24 @@
  *   drawing, one is kept.
  * - A Feature whose slot layer comes before `body` is drawn behind it.
  *
+ * ## Source (a Feature sheet: no `body` layer, any artboard size; Tomodachi #333)
+ *
+ * A source without a `body` layer is a **Feature sheet** of loose Features:
+ * slot layer → Feature (each named child; its name is the piece's label) →
+ * pose sublayers → members, as in a Kit's slot layer.  Unnamed shapes or a
+ * stray `anchor` in a slot layer are the `unknown-layer` lint; two Features of
+ * one name in a slot are `duplicate-piece`.  A sheet has no sockets; its
+ * Features are placed by their anchors alone: a Feature's centre is the middle
+ * of its members' anchors, a Mirrored member left of it is stored flipped, and
+ * `home` is relative to it.  Sheet Features are drawn in front unless the
+ * sidecar says `"order": "behind"`.  The ledger (and sidecar) key of a sheet
+ * Feature is `<slot layer>/<Feature>`, e.g. `mouth/grin`.
+ *
+ * ## Poses
+ *
+ * Every piece holds every pose of its slot: a missing optional pose shows the
+ * required one (the same Shapes, no copy) with one `missing-optional-pose` lint.
+ *
  * Rings are flattened at 0.0625 px (0.125 px at 2×) and stored Q8.8: a Feature
  * member's relative to its anchor, the Body's relative to the Kit origin.
  *
@@ -40,11 +58,14 @@
  * ```json
  * { "version": 1,
  *   "roles": { "#b18cf9": "body", "#1c1c1c": "ink" },
- *   "features": { "top": { "binding": "field" }, "arms": { "sway": { "hz": 3, "zeta": 0.3 } } } }
+ *   "features": { "top": { "binding": "field" }, "arms": { "sway": { "hz": 3, "zeta": 0.3 } },
+ *                 "top/sprout": { "order": "behind" } } }
  * ```
  * Each fill colour's role comes from `roles` (an unmapped colour is a lint
- * and paints as `body`).  `features` overrides a slot layer's Binding and sway;
- * defaults: eyes rigid, mouth and cheeks field, top/arms/legs sway 2.4 Hz ζ 0.27.
+ * and paints as `body`).  `features` overrides a Feature's Binding, sway and
+ * draw order (`front` / `behind`), keyed by its ledger layer; defaults: eyes
+ * rigid, mouth and cheeks field, top/arms/legs sway 2.4 Hz ζ 0.27, order as
+ * drawn in the Kit (a sheet: front).
  *
  * ## Id ledger (JSON, empty = new)
  *
@@ -54,18 +75,28 @@
  *   "retired": [ { "source": "old.svg", "slot": "eyes", "layer": "eyes", "id": 2 } ] }
  * ```
  * A piece is keyed by source name + slot + layer name.  A new piece takes its
- * slot's next id (from 1); a piece no source has any more is retired, and a
- * retired id is never handed out again.  The output is sorted, so the same
- * inputs give the same bytes.
+ * slot's next id (from 1); a piece no source has any more is retired (the
+ * `retired-id` lint, once, on its source and layer; in preview not for a piece
+ * an error dropped), and a retired id is never handed out again.  The output
+ * is sorted, so the same inputs give the same bytes.
  *
  * ## Issues
  *
  * Lints never stop the bundle.  Any error does (outside ShapeBundleOptions::preview):
- * the result then has no pack and returns the input ledger unchanged.  Errors: wrong artboard, unparsable
+ * the result then has no pack and returns the input ledger unchanged.  Errors: wrong artboard (a Kit
+ * not 80×80, or no viewBox), unparsable
  * SVG / sidecar / ledger, forbidden element (`text image linearGradient
  * radialGradient pattern mask filter symbol foreignObject`, `use` outside a
  * clip path), a Body without `eyes` and `mouth` sockets, a slot layer twice in
- * one source, a Feature without its required pose, and size caps.
+ * one source (or a Feature twice in a sheet's slot), a Feature without its required pose, and size caps.
+ *
+ * The authoring lints (#317 §11, ADR-0017): `pixel-tie` (a filled outline's
+ * leftmost / rightmost / top / bottom edge on a pixel centre, e.g. rx 4.5 at an
+ * integer centre: measured in Kit coordinates, a sheet's from the member's
+ * anchor; one per Shape), `sway-without-anchor` (a sway member swinging about
+ * its bbox centre), `too-many-colours` (more than 4 fill + stroke colours in a
+ * source), `missing-optional-pose`, `retired-id`, and the paint ones below
+ * (`off-level-opacity`, `fractional-stroke`, `near-body-clip`).
  *
  * ## Paint (Tomodachi #332)
  *
