@@ -38,6 +38,7 @@
 #include "lattice.hpp"
 #include "shape.hpp"
 #include "shape_raster.hpp"
+#include "stepped_drive.hpp"
 
 namespace enjin2 {
 namespace shape {
@@ -89,15 +90,36 @@ public:
     Lattice& lattice() { return lattice_; }
     const Lattice& lattice() const { return lattice_; }
 
-    /// Advance the Lattice by a frame of `dtMicros`; true (and changed())
-    /// when the field moved.
+    /// Advance the Lattice and the stepped drive by a frame of `dtMicros`;
+    /// true (and changed()) when the field moved or the drive stepped.
     bool tick(uint32_t dtMicros)
     {
-        if (!lattice_.tick(dtMicros))
+        const bool field = lattice_.tick(dtMicros);
+        const bool stepped = drive_.tick(dtMicros);
+        if (!field && !stepped)
             return false;
         changed_ = true;
         return true;
     }
+
+    /// Run a stepped drive over the rest pose (see stepped_drive.hpp). It
+    /// never wakes the Lattice; the group redraws when the drawn step changes.
+    bool startDrive(const DriveStep* steps, uint8_t count, uint32_t periodMicros, FixedVec2 pivot, FixedVec2 extent)
+    {
+        const DriveStep before = drive_.current();
+        const bool ok = drive_.start(steps, count, periodMicros, pivot, extent);
+        if (drive_.current() != before)
+            changed_ = true;
+        return ok;
+    }
+    /// Stop the drive: back to the rest pose.
+    void stopDrive()
+    {
+        if (!drive_.current().identity())
+            changed_ = true;
+        drive_.stop();
+    }
+    const SteppedDrive& drive() const { return drive_; }
 
     /// Push the jelly at layer point `at` to `velocity` px/s (wakes it).
     void impulse(FixedVec2 at, FixedVec2 velocity) { lattice_.impulse(at - origin_, velocity); }
@@ -171,9 +193,14 @@ private:
 
             // Field: each point moved by the field there; rigid: the whole
             // item by the field at its anchor.
+            // Sway: carried like rigid, turned about the anchor by its arm.
+            // The drive's step moves rest positions first (the Lattice's
+            // homes with them), so the field is sampled at the rest point.
             const Lattice& lat = c.g.lattice_;
+            const SteppedDrive& drive = c.g.drive_;
             const bool field = binding == Binding::Field && lat.configured();
-            const FixedVec2 base = c.g.origin_ + at + (field ? FixedVec2{} : lat.displacementAt(at));
+            const Fixed angle = binding == Binding::Sway ? lat.swayAngleAt(at) : Fixed{};
+            const FixedVec2 base = c.g.origin_ + (field ? FixedVec2{} : drive.apply(at) + lat.displacementAt(at));
             uint16_t n = 0;
             for (uint16_t r = 0; r < rest.ringCount; ++r)
             {
@@ -181,9 +208,14 @@ private:
                 s.rings[r] = Ring{s.points + n, in.count, in.closed};
                 for (uint16_t i = 0; i < in.count; ++i)
                 {
-                    const FixedVec2 p = in.points[i];
-                    const FixedVec2 q = {mirror ? base.x - p.x : base.x + p.x, base.y + p.y};
-                    s.points[n++] = field ? q + lat.displacementAt(q - c.g.origin_) : q;
+                    const FixedVec2 p = {mirror ? -in.points[i].x : in.points[i].x, in.points[i].y};
+                    if (field)
+                    {
+                        const FixedVec2 local = at + p;
+                        s.points[n++] = base + drive.apply(local) + lat.displacementAt(local);
+                    }
+                    else
+                        s.points[n++] = base + Lattice::turn(p, angle);
                 }
             }
             const Shape warped{s.rings, rest.ringCount, rest.paint};
@@ -223,8 +255,9 @@ private:
         std::memset(footprint_, 0, sizeof footprint_);
     }
 
-    FixedVec2 origin_{};
-    Lattice   lattice_;
+    FixedVec2    origin_{};
+    Lattice      lattice_;
+    SteppedDrive drive_;
     Remap     remap_ = Remap::identity();
     bool      changed_ = true;
     uint8_t   footprint_[kMaxTiles / 8] = {};

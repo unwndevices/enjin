@@ -28,8 +28,19 @@
  *   of everything the Look can draw (every pose of every piece at its
  *   sockets) plus a 3 px margin, so a pose swap never moves the grid; a Look
  *   whose box differs lays a new Lattice, at rest. Each piece rides it by its
- *   baked Binding (a Body is field; `sway` rides as `rigid` until #335). A
- *   pose swap and a move wake it; tick() is the frame seam the host calls.
+ *   baked Binding (a Body is field). A `sway` Feature hangs a sway arm on each
+ *   socket it sits on (#335): from the socket to the centre of the member's
+ *   points over every pose, with the record's hz / ζ (2.4 Hz, ζ 0.27 when the
+ *   record has none). A pose swap and a move wake it; tick() is the frame seam
+ *   the host calls.
+ * - **Breathing** (#335, stepped). breathe() runs the group's stepped drive:
+ *   step i of N is a squash-stretch of k = round(amplitude · sin(2πi/N)) px,
+ *   about the feet (the Body's top moves k px) or the Body's centre (its top
+ *   and feet each move k px), the sides moving in by a whole pixel each where
+ *   keeping the Body's area calls for it (ΔW = −2·round(W·ΔH / 2H)). So the
+ *   Body's box changes by whole pixels and the pet redraws only when the step
+ *   changes, with the jelly asleep. Off after build(); a new Look keeps
+ *   breathing, re-fitted to its Body.
  *
  * A bad Look is refused before anything is read, naming slot + id: a missing
  * body, eyes or mouth; an id not in the pack (unknown or retired); a filled
@@ -53,6 +64,17 @@ namespace shape {
 /// A refusal, as text (slot + id where there is one).
 struct ShapeError {
     char text[120] = {0};
+};
+
+/// Where breathing squashes and stretches about.
+enum class BreathPivot : uint8_t { Feet, Centre };
+
+/// Stepped breathing (Tomodachi #335): `steps` whole-pixel poses per period.
+struct Breath {
+    uint32_t    periodMicros = 3000000;  ///< One breath.
+    uint8_t     steps = 4;               ///< 2..16 per breath.
+    uint8_t     amplitude = 1;           ///< px the Body's top (and, about the centre, its feet) moves; 0..16.
+    BreathPivot pivot = BreathPivot::Feet;
 };
 
 /// One variant of the pet: a piece id per filled slot and the role colours.
@@ -133,6 +155,18 @@ public:
 
     bool changed() const { return group_.changed(); }
 
+    /**
+     * @brief Breathe: step the rest pose through `b.steps` poses per breath,
+     *        never waking the jelly (see the file comment). Replaces any
+     *        breath already running, from its first step. Off after build().
+     * @return false (breathing unchanged) for steps outside 2..16, a zero
+     *         period or an amplitude past 16 px.
+     */
+    bool breathe(const Breath& b, ShapeError* err);
+    /// Stop breathing: back to the rest pose.
+    void stopBreathing();
+    bool breathing() const { return breathing_; }
+
     /// Advance the jelly by a frame of `dtMicros` (the host calls this before
     /// flush()); true when the field moved and the pet needs a redraw.
     bool tick(uint32_t dtMicros) { return group_.tick(dtMicros); }
@@ -179,6 +213,7 @@ private:
     bool readSlot(ShapeSlot s, uint16_t id, ShapeError* err);
     void refreshBody();
     void refreshLattice();
+    bool startBreath();
 
     ShapePack* pack_ = nullptr;
     ShapeLook  look_;
@@ -186,6 +221,9 @@ private:
     ShapeGroup group_;
     FixedVec2  position_{};
     FixedVec2  feet_{};
+    FixedVec2  bodyMin_{}, bodyMax_{};  ///< The Body's rest box (closed rings).
+    Breath     breath_;
+    bool       breathing_ = false;
 };
 
 } // namespace shape
