@@ -87,6 +87,16 @@ target_link_libraries(primitives_quad_bezier_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME primitives_quad_bezier_test COMMAND primitives_quad_bezier_test)
 
+# TrigLUT fine-angle sine/cosine (Tomodachi #325): 1024 steps + lerp
+add_executable(trig_lut_test
+    trig_lut_test.cpp
+)
+target_include_directories(trig_lut_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(trig_lut_test PRIVATE enjin2_core)
+add_test(NAME trig_lut_test COMMAND trig_lut_test)
+
 # Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
 add_executable(border_stroke_test
     border_stroke_test.cpp
