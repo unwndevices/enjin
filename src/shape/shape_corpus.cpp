@@ -38,15 +38,26 @@ ShapeCorpusPhase phaseOf(uint16_t f)
 
 }  // namespace
 
+uint32_t shapeCrc32(uint32_t crc, const void* data, size_t size)
+{
+    const uint8_t* p = static_cast<const uint8_t*>(data);
+    uint32_t c = ~crc;
+    for (size_t i = 0; i < size; ++i) {
+        c ^= p[i];
+        for (int k = 0; k < 8; ++k) c = (c >> 1) ^ (0xEDB88320u & (0u - (c & 1u)));
+    }
+    return ~c;
+}
+
 uint32_t shapeLayerCrc(const ShapeCorpusLayer& layer)
 {
-    uint32_t c = 0xFFFFFFFFu;
-    for (int16_t y = 0; y < 160; ++y)
-        for (int16_t x = 0; x < 160; ++x) {
-            c ^= layer.getPixel(x, y).value;
-            for (int k = 0; k < 8; ++k) c = (c >> 1) ^ (0xEDB88320u & (0u - (c & 1u)));
-        }
-    return ~c;
+    uint32_t c = 0;
+    uint8_t row[160];
+    for (int16_t y = 0; y < 160; ++y) {
+        for (int16_t x = 0; x < 160; ++x) row[x] = layer.getPixel(x, y).value;
+        c = shapeCrc32(c, row, sizeof row);
+    }
+    return c;
 }
 
 const char* shapeCorpusPhaseName(ShapeCorpusPhase p)

@@ -4,6 +4,8 @@
 Reads:  bench-results/bench_canvas.json
         bench-results/bench_ecs.json
         bench-results/bench_lua.json
+        bench-results/bench_shape.json
+        bench-results/bench_lattice.json
 Writes: bench-results/bench-combined.json
 
 Each input file has structure:
@@ -17,7 +19,7 @@ import os
 import sys
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'bench-results')
-INPUT_FILES = ['bench_canvas.json', 'bench_ecs.json', 'bench_lua.json']
+INPUT_FILES = ['bench_canvas.json', 'bench_ecs.json', 'bench_lua.json', 'bench_shape.json', 'bench_lattice.json']
 OUTPUT_FILE = os.path.join(RESULTS_DIR, 'bench-combined.json')
 
 

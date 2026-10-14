@@ -57,6 +57,11 @@ using ShapeCorpusLayer = Canvas4<160, 160>;
 /// CRC-32/ISO-HDLC of the layer, a byte per pixel (see the file comment).
 uint32_t shapeLayerCrc(const ShapeCorpusLayer& layer);
 
+/// The same CRC-32 (zlib's), chained over bytes: shapeCrc32(0, ...) starts
+/// one, and feeding a run in pieces gives the CRC of the whole. The device
+/// corpus run digests its golden lines with it (Tomodachi #338).
+uint32_t shapeCrc32(uint32_t crc, const void* data, size_t size);
+
 enum class ShapeCorpusPhase : uint8_t { Draw, Rest, Kick, Drag, Pull, Breathe };
 
 /// "draw", "rest", "kick", "drag", "pull", "breathe": the golden file's names.

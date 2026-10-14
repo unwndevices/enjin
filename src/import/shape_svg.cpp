@@ -3,6 +3,7 @@
  * @brief Kit SVG reader: XML, CSS classes, the SVG subset, transforms, flattening (Tomodachi #330)
  */
 #include "shape_svg.hpp"
+#include "parse_number.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -291,11 +292,7 @@ bool number(const char*& p, const char* end, double& out) {
         }
     }
     if (p - s > 63) return false;
-    char buf[64];
-    std::memcpy(buf, s, static_cast<size_t>(p - s));
-    buf[p - s] = 0;
-    out = std::strtod(buf, nullptr);
-    return std::isfinite(out);
+    return import_detail::parseDouble(s, p, out);
 }
 
 bool number(const std::string& s, double& out) {

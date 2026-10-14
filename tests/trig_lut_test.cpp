@@ -60,7 +60,7 @@ static void testLegacy256StepApiStaysAccurate() {
     std::printf("  PASS: legacy 256-step sin/cos\n");
 }
 
-// A sway swings symmetrically about its rest pose and must settle smoothly:
+// A sway swings symmetrically about its rest shape and must settle smoothly:
 // sin16 is exactly odd, hits the cardinal values exactly, and never steps
 // backwards across the rising half (-90°..+90°), so the tail of a settling
 // sway cannot jitter.

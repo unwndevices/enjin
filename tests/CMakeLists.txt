@@ -597,6 +597,18 @@ if(TARGET enjin_shape_bundle)
         COMMAND enjin_shape_bundle ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.gpl
             --ledger ${_shape_dir}/refused-ledger.json -o ${_shape_dir}/refused.njn)
     set_tests_properties(shape_bundle_cli_refuses PROPERTIES WILL_FAIL TRUE)
+    # A ledger that can't be written ships no pack: ids the ledger didn't record
+    # could be handed out again (ADR-0017 "never reused").
+    add_test(NAME shape_bundle_cli_unrecorded_reset COMMAND ${CMAKE_COMMAND} -E rm -f ${_shape_dir}/unrecorded.njn)
+    set_tests_properties(shape_bundle_cli_unrecorded_reset PROPERTIES FIXTURES_SETUP shape_bundle_cli_u0)
+    add_test(NAME shape_bundle_cli_unrecorded
+        COMMAND enjin_shape_bundle ${_shape_dir}/star.svg
+            --ledger ${_shape_dir}/no-such-folder/ledger.json -o ${_shape_dir}/unrecorded.njn)
+    set_tests_properties(shape_bundle_cli_unrecorded PROPERTIES
+        WILL_FAIL TRUE FIXTURES_REQUIRED shape_bundle_cli_u0 FIXTURES_SETUP shape_bundle_cli_u1)
+    add_test(NAME shape_bundle_cli_unrecorded_no_pack COMMAND ${CMAKE_COMMAND} -E cat ${_shape_dir}/unrecorded.njn)
+    set_tests_properties(shape_bundle_cli_unrecorded_no_pack PROPERTIES
+        WILL_FAIL TRUE FIXTURES_REQUIRED shape_bundle_cli_u1)
 
     # Paint goldens (Tomodachi #332): both stand-in Kits and the stand-in Feature
     # sheet (#333) through the CLI with the fixture's id ledger (Star = 1,

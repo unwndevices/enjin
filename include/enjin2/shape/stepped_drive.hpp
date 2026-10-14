@@ -1,10 +1,10 @@
 /**
  * @file stepped_drive.hpp
- * @brief A stepped drive: a periodic sequence of rest-pose transforms a Shape
+ * @brief A stepped drive: a periodic sequence of rest-shape transforms a Shape
  *        group steps through (Tomodachi #335, the breath channel of #316)
  *
  * Life on a settled jelly at almost no cost: instead of springs moving every
- * frame, the group's whole rest pose steps through N transforms per period,
+ * frame, the group's whole rest shape steps through N transforms per period,
  * each a squash-stretch about a pivot plus an offset (DriveStep). The group
  * applies the current step to its items' rest positions *before* the Lattice
  * displaces them, so a step moves the Lattice's homes and its (sleeping) nodes
@@ -66,7 +66,7 @@ public:
         extent_ = extent;
         return true;
     }
-    /// Back to the rest pose (identity), not running.
+    /// Back to the rest shape (identity), not running.
     void stop()
     {
         count_ = 0;

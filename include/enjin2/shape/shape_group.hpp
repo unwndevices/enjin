@@ -22,7 +22,7 @@
  * ## The stepped drive (#335)
  *
  * The group also owns a SteppedDrive (stepped_drive.hpp): startDrive() runs a
- * periodic sequence of rest-pose transforms, applied to every rest position
+ * periodic sequence of rest-shape transforms, applied to every rest position
  * before the Lattice displaces it (the Lattice is sampled at the rest point,
  * so its homes move with the step). tick() steps it too; a step change marks
  * the group changed without waking the Lattice.
@@ -242,7 +242,7 @@ public:
         return true;
     }
 
-    /// Run a stepped drive over the rest pose (see stepped_drive.hpp). It
+    /// Run a stepped drive over the rest shape (see stepped_drive.hpp). It
     /// never wakes the Lattice; the group redraws when the drawn step changes.
     bool startDrive(const DriveStep* steps, uint8_t count, uint32_t periodMicros, FixedVec2 pivot, FixedVec2 extent)
     {
@@ -252,7 +252,7 @@ public:
             changed_ = true;
         return ok;
     }
-    /// Stop the drive: back to the rest pose.
+    /// Stop the drive: back to the rest shape.
     void stopDrive()
     {
         if (!drive_.current().identity())
