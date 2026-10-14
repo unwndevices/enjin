@@ -117,6 +117,27 @@ target_link_libraries(shape_raster_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME shape_raster_test COMMAND shape_raster_test)
 
+# Shape paint: dither, inner and open-path stroke, clip (Tomodachi #332)
+add_executable(shape_paint_test
+    shape_paint_test.cpp
+)
+target_include_directories(shape_paint_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(shape_paint_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME shape_paint_test COMMAND shape_paint_test)
+
+add_executable(shape_paint_group_test
+    shape_paint_group_test.cpp
+)
+target_include_directories(shape_paint_group_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(shape_paint_group_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME shape_paint_group_test COMMAND shape_paint_group_test)
+
 # Pack layer + generic Shape group (Tomodachi #331, ADR-0016/0017)
 add_executable(shape_pack_group_test
     shape_pack_group_test.cpp

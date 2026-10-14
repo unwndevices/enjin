@@ -125,6 +125,21 @@ public:
      */
     bool fill(const Shape& shape, const Rect& clip, RowMask& out);
 
+    /**
+     * @brief Stroke `shape`'s open rings into `out`, clipped to `clip`
+     *        (Tomodachi #332): a pixel-perfect line `shape.paint.strokeWidth`
+     *        px wide.
+     *
+     * Each point is the pixel it lies in; consecutive pixels are joined by
+     * Bresenham and walked by PixelStroke, which drops the corner of every
+     * "L". Each walked pixel stamps a w × w square whose top-left is
+     * floor((w − 1) / 2) px up and left of it. Closed rings are not walked
+     * (their stroke is innerStroke() of the fill). `out` is re-bounded to the
+     * stamped bbox ∩ clip; nothing to stroke is a success with an empty mask.
+     * @return false, with `out` empty, if refused (as fill()).
+     */
+    bool stroke(const Shape& shape, const Rect& clip, RowMask& out);
+
 private:
     /// One non-horizontal edge, stepping exactly from sub-row to sub-row.
     struct Edge {
@@ -151,13 +166,35 @@ private:
 };
 
 /**
+ * @brief The inner stroke of `fill`, `width` px wide (Tomodachi #332): the
+ *        fill's pixels within `width` 4-neighbour steps of its outside,
+ *        made as `width` rounds of word erosion. A pixel outside the mask
+ *        (past its bounds) is outside. `out` gets `fill`'s bounds (empty for
+ *        width 0).
+ * @return false, with `out` empty, if `out`'s storage is too small or the
+ *         mask is wider than Rasterizer::kMaxMaskWidth.
+ */
+bool innerStroke(const RowMask& fill, uint8_t width, RowMask& out);
+
+/// Clip: `dst &= clip`, in canvas space (a pixel outside `clip` is cleared). `dst` keeps its bounds.
+void clipMask(RowMask& dst, const RowMask& clip);
+
+/// Union: `dst |= src`, in canvas space, within `dst`'s bounds.
+void uniteMask(RowMask& dst, const RowMask& src);
+
+/**
  * @brief Paint `mask` onto `canvas` in `role`'s colour (`look.apply(role)`),
- *        one drawHLine per run. ColourRole::None paints nothing.
+ *        one span per run. ColourRole::None or Bayer level 0 paints nothing.
+ *
+ * Below kDitherSolid each run goes through Canvas4::drawHLineDither: a pixel
+ * is painted where Mask::bayer(dither) is set at its canvas coordinates
+ * (screen-anchored), the others keep what is under them.
  */
 template <uint16_t W, uint16_t H>
-void paintFill(Canvas4<W, H>& canvas, const RowMask& mask, ColourRole role, const Remap& look)
+void paintFill(Canvas4<W, H>& canvas, const RowMask& mask, ColourRole role, const Remap& look,
+               uint8_t dither = kDitherSolid)
 {
-    if (role == ColourRole::None || mask.empty())
+    if (role == ColourRole::None || mask.empty() || dither == 0)
         return;
     const Pixel4 colour(look.apply(static_cast<uint8_t>(role)));
     const int w = mask.width();
@@ -182,8 +219,12 @@ void paintFill(Canvas4<W, H>& canvas, const RowMask& mask, ColourRole role, cons
             while (word == 0 && ++wi < mask.wordsPerRow())
                 word = ~row[wi];
             const int end = word == 0 ? w : (wi << 5) + __builtin_ctz(word);
-            canvas.drawHLine(static_cast<int16_t>(mask.x() + start), y,
-                             static_cast<int16_t>(end - start), colour);
+            if (dither >= kDitherSolid)
+                canvas.drawHLine(static_cast<int16_t>(mask.x() + start), y,
+                                 static_cast<int16_t>(end - start), colour);
+            else
+                canvas.drawHLineDither(static_cast<int16_t>(mask.x() + start), y,
+                                       static_cast<int16_t>(end - start), colour, dither);
             i = end;
         }
     }
