@@ -25,6 +25,11 @@ constexpr size_t align8(size_t v) { return (v + 7) & ~size_t(7); }
 
 constexpr const char* kRoleNames[3] = {"body", "accent", "ink"};
 
+static_assert(uint8_t(Binding::Field) == uint8_t(ShapeBinding::Field) &&
+                  uint8_t(Binding::Rigid) == uint8_t(ShapeBinding::Rigid) &&
+                  uint8_t(Binding::Sway) == uint8_t(ShapeBinding::Sway),
+              "shape::Binding mirrors the pack's ShapeBinding");
+
 bool isFeature(ShapeSlot s) { return s != ShapeSlot::Body; }
 
 } // namespace
@@ -102,6 +107,10 @@ size_t ShapePack::lookBufferBytes() const
         total += slotRegionBytes(ShapeSlot(s));
     return total;
 }
+
+namespace {
+int pickMember(const ShapeRecordView& v, SocketSide side, bool& mirror);
+} // namespace
 
 // ---------------------------------------------------------------------------
 // ShapePackGroup
@@ -276,6 +285,7 @@ bool ShapePackGroup::setLook(const ShapeLook& look, ShapeError* err)
     if (pieces)
     {
         refreshBody();
+        refreshLattice();
         group_.markChanged();
     }
     return true;
@@ -319,6 +329,72 @@ void ShapePackGroup::refreshBody()
     group_.setOrigin(position_ - feet_);
 }
 
+void ShapePackGroup::refreshLattice()
+{
+    const Slot& body = slots_[uint8_t(ShapeSlot::Body)];
+    if (!body.loaded)
+        return;
+    bool any = false;
+    FixedVec2 lo{}, hi{};
+    // Every point of `slot`'s record, member `m` (all poses), placed at `at`.
+    auto add = [&](const Slot& slot, uint8_t m, FixedVec2 at, bool mirror) {
+        for (uint8_t pose = 0; pose < slot.view.poseCount(); ++pose)
+        {
+            const ShapeSpan span = slot.view.span(pose, m);
+            for (uint16_t k = 0; k < span.shapeCount; ++k)
+            {
+                const ShapeFill f = slot.view.shape(span.firstShape + k);
+                for (uint16_t r = 0; r < f.ringCount; ++r)
+                {
+                    const ShapeRing ring = slot.view.ring(f.firstRing + r);
+                    for (uint16_t i = 0; i < ring.pointCount; ++i)
+                    {
+                        const FixedVec2 p = slot.points[ring.firstPoint + i];
+                        const FixedVec2 q = {mirror ? at.x - p.x : at.x + p.x, at.y + p.y};
+                        if (!any)
+                        {
+                            lo = hi = q;
+                            any = true;
+                            continue;
+                        }
+                        if (q.x < lo.x) lo.x = q.x;
+                        if (q.y < lo.y) lo.y = q.y;
+                        if (q.x > hi.x) hi.x = q.x;
+                        if (q.y > hi.y) hi.y = q.y;
+                    }
+                }
+            }
+        }
+    };
+    add(body, 0, {}, false);
+    for (uint8_t i = 1; i < SHAPE_SLOT_COUNT; ++i)
+    {
+        const Slot& slot = slots_[i];
+        if (!slot.loaded)
+            continue;
+        for (uint8_t k = 0; k < body.view.socketCount(); ++k)
+        {
+            const ShapeSocket sk = body.view.socket(k);
+            if (uint8_t(sk.slot) != i)
+                continue;
+            bool mirror = false;
+            const int m = pickMember(slot.view, sk.side, mirror);
+            add(slot, uint8_t(m), {Fixed::fromQ8_8(sk.at.x), Fixed::fromQ8_8(sk.at.y)}, mirror);
+        }
+    }
+    Lattice& lat = group_.lattice();
+    if (!any)
+    {
+        lat = Lattice{};
+        return;
+    }
+    const FixedVec2 margin = {Fixed::fromInt(3), Fixed::fromInt(3)};
+    lo = lo - margin;
+    hi = hi + margin;
+    if (!lat.configured() || lat.boxMin() != lo || lat.boxMax() != hi)
+        lat.configure(lo, hi);
+}
+
 void ShapePackGroup::setPosition(FixedVec2 feet)
 {
     position_ = feet;
@@ -352,6 +428,7 @@ bool ShapePackGroup::setPose(ShapeSlot s, const char* name, ShapeError* err)
     {
         slot.pose = uint8_t(rec);
         group_.markChanged();
+        group_.lattice().wake();
     }
     return true;
 }
@@ -429,7 +506,10 @@ bool ShapePackGroup::forEach(ShapeDrawScratch& scratch, ShapeEmit emit, void* ct
             shape.ringCount = f.ringCount;
             shape.paint.fill = ColourRole(uint8_t(f.role));
             shape.paint.rule = (f.flags & SHAPE_FILL_EVENODD) ? FillRule::EvenOdd : FillRule::NonZero;
-            if (!emit(ctx, shape, at, mirror))
+            // A Body is field; a Feature rides by its baked Binding.
+            const Binding binding = slot.view.slot() == ShapeSlot::Body ? Binding::Field
+                                                                        : Binding(uint8_t(slot.view.binding()));
+            if (!emit(ctx, shape, at, mirror, binding))
                 ok = false;
         }
     };

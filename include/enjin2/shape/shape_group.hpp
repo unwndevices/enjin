@@ -7,8 +7,16 @@
  * slots, sockets or poses (the pack layer, shape_pack_group.hpp, does). What it
  * draws comes from a ShapeItemSource, in paint order: each item is a Shape in
  * its own rest coordinates plus where it sits (`at`, relative to the group's
- * origin) and whether it is mirrored (x → −x about `at`). This slice places
- * items rigidly; the Lattice (#334) bends them later.
+ * origin) and whether it is mirrored (x → −x about `at`), and its Binding.
+ *
+ * ## The Lattice
+ *
+ * The group owns one Lattice (lattice.hpp) in item coordinates; whoever lays
+ * out the items configures its box. A `field` item has every point moved by
+ * the field's displacement there; a `rigid` (or, until #335, `sway`) item is
+ * moved as a whole by the displacement at its `at`. tick() advances it from
+ * the frame's dt and marks the group changed when the field moved; a move of
+ * the group (setOrigin) wakes it, as does impulse().
  *
  * ## The retained layer
  *
@@ -27,6 +35,7 @@
 #include "../core/fixed.hpp"
 #include "../graphics/canvas.hpp"
 #include "../graphics/remap.hpp"
+#include "lattice.hpp"
 #include "shape.hpp"
 #include "shape_raster.hpp"
 
@@ -51,7 +60,7 @@ struct ShapeDrawScratch {
 };
 
 /// Called once per item, in paint order. Returns false if the item was refused.
-using ShapeEmit = bool (*)(void* ctx, const Shape& rest, FixedVec2 at, bool mirror);
+using ShapeEmit = bool (*)(void* ctx, const Shape& rest, FixedVec2 at, bool mirror, Binding binding);
 
 /// What a group draws. forEach() emits every item; false if any was refused.
 class ShapeItemSource {
@@ -71,9 +80,27 @@ public:
         {
             origin_ = o;
             changed_ = true;
+            lattice_.wake();
         }
     }
     FixedVec2 origin() const { return origin_; }
+
+    /// The Lattice the items ride (its box is in item coordinates).
+    Lattice& lattice() { return lattice_; }
+    const Lattice& lattice() const { return lattice_; }
+
+    /// Advance the Lattice by a frame of `dtMicros`; true (and changed())
+    /// when the field moved.
+    bool tick(uint32_t dtMicros)
+    {
+        if (!lattice_.tick(dtMicros))
+            return false;
+        changed_ = true;
+        return true;
+    }
+
+    /// Push the jelly at layer point `at` to `velocity` px/s (wakes it).
+    void impulse(FixedVec2 at, FixedVec2 velocity) { lattice_.impulse(at - origin_, velocity); }
 
     /// Role → palette index (ColourRole values index the LUT).
     void setRemap(const Remap& r)
@@ -130,7 +157,7 @@ private:
         ShapeGroup&       g;
         bool              ok;
 
-        static bool emit(void* p, const Shape& rest, FixedVec2 at, bool mirror)
+        static bool emit(void* p, const Shape& rest, FixedVec2 at, bool mirror, Binding binding)
         {
             auto& c = *static_cast<DrawCtx*>(p);
             ShapeDrawScratch& s = c.s;
@@ -142,7 +169,11 @@ private:
             if (total > ShapeDrawScratch::kMaxPoints)
                 return c.ok = false;
 
-            const FixedVec2 base = c.g.origin_ + at;
+            // Field: each point moved by the field there; rigid: the whole
+            // item by the field at its anchor.
+            const Lattice& lat = c.g.lattice_;
+            const bool field = binding == Binding::Field && lat.configured();
+            const FixedVec2 base = c.g.origin_ + at + (field ? FixedVec2{} : lat.displacementAt(at));
             uint16_t n = 0;
             for (uint16_t r = 0; r < rest.ringCount; ++r)
             {
@@ -151,7 +182,8 @@ private:
                 for (uint16_t i = 0; i < in.count; ++i)
                 {
                     const FixedVec2 p = in.points[i];
-                    s.points[n++] = {mirror ? base.x - p.x : base.x + p.x, base.y + p.y};
+                    const FixedVec2 q = {mirror ? base.x - p.x : base.x + p.x, base.y + p.y};
+                    s.points[n++] = field ? q + lat.displacementAt(q - c.g.origin_) : q;
                 }
             }
             const Shape warped{s.rings, rest.ringCount, rest.paint};
@@ -192,6 +224,7 @@ private:
     }
 
     FixedVec2 origin_{};
+    Lattice   lattice_;
     Remap     remap_ = Remap::identity();
     bool      changed_ = true;
     uint8_t   footprint_[kMaxTiles / 8] = {};
