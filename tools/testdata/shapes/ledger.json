@@ -1,11 +1,17 @@
 {
   "version": 1,
-  "next": { "body": 3, "eyes": 3, "cheeks": 2, "mouth": 3, "top": 3, "arms": 2, "legs": 2 },
+  "next": { "body": 3, "eyes": 3, "cheeks": 2, "mouth": 6, "top": 6, "arms": 2, "legs": 2 },
   "pieces": [
     { "source": "chestnut.svg", "slot": "body", "layer": "body", "id": 2 },
     { "source": "chestnut.svg", "slot": "eyes", "layer": "eyes", "id": 2 },
     { "source": "chestnut.svg", "slot": "mouth", "layer": "mouth", "id": 2 },
     { "source": "chestnut.svg", "slot": "top", "layer": "top", "id": 2 },
+    { "source": "sheet.svg", "slot": "mouth", "layer": "mouth/fang", "id": 3 },
+    { "source": "sheet.svg", "slot": "mouth", "layer": "mouth/grin", "id": 4 },
+    { "source": "sheet.svg", "slot": "mouth", "layer": "mouth/pout", "id": 5 },
+    { "source": "sheet.svg", "slot": "top", "layer": "top/bow", "id": 3 },
+    { "source": "sheet.svg", "slot": "top", "layer": "top/sprout", "id": 4 },
+    { "source": "sheet.svg", "slot": "top", "layer": "top/tuft", "id": 5 },
     { "source": "star.svg", "slot": "body", "layer": "body", "id": 1 },
     { "source": "star.svg", "slot": "eyes", "layer": "eyes", "id": 1 },
     { "source": "star.svg", "slot": "cheeks", "layer": "cheeks", "id": 1 },

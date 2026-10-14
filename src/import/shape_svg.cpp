@@ -873,7 +873,7 @@ public:
                                                 "foreignObject", "video", "audio", "iframe", "canvas"};
         for (const char* f : forbidden)
             if (n == f) {
-                issue(ImportIssueSeverity::Error, "forbidden-element", "<" + n + "> is not allowed in a Kit", path);
+                issue(ImportIssueSeverity::Error, "forbidden-element", "<" + n + "> is not allowed in a pet source", path);
                 return;
             }
         if (n == "use") {
@@ -930,7 +930,7 @@ public:
         if (!geometry(e, b, here)) return;
         b.finish();
         if (b.overflow()) {
-            issue(ImportIssueSeverity::Error, "too-large", "the Kit has too many points", here);
+            issue(ImportIssueSeverity::Error, "too-large", "the source has too many points", here);
             return;
         }
         parent.children.push_back(std::move(node));
@@ -1239,16 +1239,18 @@ bool readSvg(const uint8_t* data, size_t size, const std::string& source, const 
         skipWsComma(p, end);
         vbOk = vbOk && p == end;
     }
-    if (!vbOk || std::fabs(v[2] - 80) > 1e-6 || std::fabs(v[3] - 80) > 1e-6)
-        return error("wrong-artboard", "a Kit needs an 80x80 viewBox (one 80x80 artboard)");
+    if (!vbOk || !(v[2] > 0) || !(v[3] > 0) || !std::isfinite(v[2]) || !std::isfinite(v[3]))
+        return error("wrong-artboard", "the SVG needs a viewBox (one artboard)");
+    root.viewW = v[2];
+    root.viewH = v[3];
 
     Walker w(source, limits, issues);
     std::string css;
     collectStyles(doc, css);
     stylesheet(css, w.rules);
     Matrix origin;
-    origin.e = -(v[0] + 40);
-    origin.f = -(v[1] + 40);
+    origin.e = -(v[0] + v[2] / 2);
+    origin.f = -(v[1] + v[3] / 2);
     // The root walks as a group: its presentation attributes and transform apply to everything.
     XmlElem g;
     g.name = "g";

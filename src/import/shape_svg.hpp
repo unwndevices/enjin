@@ -54,10 +54,13 @@ struct Node {
     Paint             paint;
     /// Root only: the geometry of each clip-path a drawable refers to (Paint::clip), Kit coordinates.
     std::vector<std::vector<Ring>> clipPaths;
+    /// Root only: the artboard (viewBox) size; coordinates are relative to its centre.
+    double viewW = 0, viewH = 0;
 };
 
-/// Read a Kit.  Appends issues (with @p source) and returns false on an error.
-/// @p root is a group holding the `<svg>` element's drawable descendants.
+/// Read a pet source (a Kit or a Feature sheet).  Appends issues (with @p source) and returns
+/// false on an error.  @p root is a group holding the `<svg>` element's drawable descendants,
+/// in coordinates relative to the artboard centre.  The artboard size is the bundle's to check.
 bool readSvg(const uint8_t* data, size_t size, const std::string& source, const ShapeBundleLimits& limits,
              Node& root, std::vector<ImportIssue>& issues);
 
