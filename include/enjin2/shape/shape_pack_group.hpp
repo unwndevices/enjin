@@ -17,9 +17,10 @@
  *   has for it, in socket order. A socket on the left gets the Feature's `_l`
  *   member, else its single member mirrored; a right socket the `_r` member,
  *   else the single one; a centre socket the single or `_r` member, unmirrored.
- *   Paint order: Features drawn behind the Body, the Body, then the Features in
- *   front; within each, slots in pack order (eyes, cheeks, mouth, top, arms,
- *   legs), members by socket, a member's Shapes in their record order.
+ *   Paint order (#317 decision 6): Features drawn behind the Body (limbs,
+ *   then top), the Body, then the Features in front (top, limbs, cheeks,
+ *   mouth, eyes: eyes always on top); limbs are arms, then legs. Within a
+ *   slot, members by socket, a member's Shapes in their record order.
  * - **Poses.** A new Feature starts in its slot's default pose (the first of
  *   the fixed list). A pose swap reads nothing: a record holds all its poses.
  * - **Position** is the Body's feet line: the bottom-centre of its rest
