@@ -10,6 +10,8 @@
 
 #include "enjin2/shape/shape_raster.hpp"
 
+#include "enjin2/graphics/pixel_stroke.hpp"
+
 #include <cstring>
 
 namespace enjin2 {
@@ -294,6 +296,205 @@ bool Rasterizer::fill(const Shape& shape, const Rect& clip, RowMask& out)
             }
             dst[wi] = res;
         }
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Paint (Tomodachi #332): word operations on masks
+// ---------------------------------------------------------------------------
+
+namespace {
+constexpr uint16_t kMaxRowWords = Rasterizer::kMaxMaskWidth / 32;
+
+// 32 bits of a mask row starting at mask-local column c (zeros off the row).
+inline uint32_t window(const uint32_t* row, int wpr, int c)
+{
+    const int wi = c >= 0 ? c >> 5 : -((31 - c) >> 5);
+    const int sh = c - wi * 32;
+    const uint32_t lo = (wi >= 0 && wi < wpr) ? row[wi] : 0u;
+    if (sh == 0)
+        return lo;
+    const uint32_t hi = (wi + 1 >= 0 && wi + 1 < wpr) ? row[wi + 1] : 0u;
+    return (lo >> sh) | (hi << (32 - sh));
+}
+} // namespace
+
+bool Rasterizer::stroke(const Shape& shape, const Rect& clip, RowMask& out)
+{
+    out.clear();
+    const int w = shape.paint.strokeWidth;
+    const int32_t lim = kMaxCoordPx * Fixed::kOne;
+    int32_t minX = 0, minY = 0, maxX = 0, maxY = 0;
+    bool any = false;
+    for (uint16_t ri = 0; w > 0 && ri < shape.ringCount; ++ri)
+    {
+        const Ring& ring = shape.rings[ri];
+        if (ring.closed)
+            continue;
+        for (uint16_t i = 0; i < ring.count; ++i)
+        {
+            const int32_t x = ring.points[i].x.raw, y = ring.points[i].y.raw;
+            if (x < -lim || x > lim || y < -lim || y > lim)
+                return false;
+            const int32_t cx = floorPx(x), cy = floorPx(y);
+            if (!any)
+            {
+                minX = maxX = cx;
+                minY = maxY = cy;
+                any = true;
+                continue;
+            }
+            if (cx < minX) minX = cx;
+            if (cx > maxX) maxX = cx;
+            if (cy < minY) minY = cy;
+            if (cy > maxY) maxY = cy;
+        }
+    }
+    // The stamp of pixel (x, y) covers [x − o, x − o + w) × [y − o, y − o + w).
+    const int o = (w - 1) / 2;
+    int32_t px0 = minX - o, px1 = maxX - o + w, py0 = minY - o, py1 = maxY - o + w;
+    if (px0 < clip.x) px0 = clip.x;
+    if (py0 < clip.y) py0 = clip.y;
+    if (px1 > int32_t(clip.x) + clip.width) px1 = int32_t(clip.x) + clip.width;
+    if (py1 > int32_t(clip.y) + clip.height) py1 = int32_t(clip.y) + clip.height;
+    if (!any || px1 <= px0 || py1 <= py0)
+    {
+        out.reset(int16_t(clip.x), int16_t(clip.y), 0, 0);
+        return true;
+    }
+    if (px1 - px0 > kMaxMaskWidth || !out.reset(int16_t(px0), int16_t(py0), uint16_t(px1 - px0), uint16_t(py1 - py0)))
+    {
+        out.clear();
+        return false;
+    }
+    for (uint16_t r = 0; r < out.height(); ++r)
+        std::memset(out.row(r), 0, size_t(out.wordsPerRow()) * 4);
+
+    struct Stamp {
+        RowMask* m;
+        int w, o;
+        void operator()(int64_t x, int64_t y) const
+        {
+            int64_t x0 = x - o - m->x(), x1 = x0 + w, y0 = y - o - m->y(), y1 = y0 + w;
+            if (x0 < 0) x0 = 0;
+            if (y0 < 0) y0 = 0;
+            if (x1 > m->width()) x1 = m->width();
+            if (y1 > m->height()) y1 = m->height();
+            if (x0 >= x1)
+                return;
+            for (int64_t r = y0; r < y1; ++r)
+                setBits(m->row(uint16_t(r)), int(x0), int(x1));
+        }
+    };
+    for (uint16_t ri = 0; ri < shape.ringCount; ++ri)
+    {
+        const Ring& ring = shape.rings[ri];
+        if (ring.closed || ring.count == 0)
+            continue;
+        PixelStroke<Stamp> walk(Stamp{&out, w, o});
+        int64_t lx = floorPx(ring.points[0].x.raw), ly = floorPx(ring.points[0].y.raw);
+        walk.plot(lx, ly);
+        for (uint16_t i = 1; i < ring.count; ++i)
+        {
+            const int64_t x = floorPx(ring.points[i].x.raw), y = floorPx(ring.points[i].y.raw);
+            walk.line(lx, ly, x, y);
+            lx = x;
+            ly = y;
+        }
+        walk.finish();
+    }
+    return true;
+}
+
+void clipMask(RowMask& dst, const RowMask& clip)
+{
+    const uint16_t wpr = dst.wordsPerRow();
+    for (uint16_t r = 0; r < dst.height(); ++r)
+    {
+        uint32_t* row = dst.row(r);
+        const int cr = int(dst.y()) + r - clip.y();
+        if (clip.empty() || cr < 0 || cr >= clip.height())
+        {
+            std::memset(row, 0, size_t(wpr) * 4);
+            continue;
+        }
+        const uint32_t* src = clip.row(uint16_t(cr));
+        const int base = int(dst.x()) - clip.x();
+        for (uint16_t wi = 0; wi < wpr; ++wi)
+            row[wi] &= window(src, clip.wordsPerRow(), base + wi * 32);
+    }
+}
+
+void uniteMask(RowMask& dst, const RowMask& src)
+{
+    if (dst.empty() || src.empty())
+        return;
+    const uint16_t wpr = dst.wordsPerRow();
+    const int tailBits = dst.width() & 31;
+    const uint32_t tail = tailBits ? ~0u >> (32 - tailBits) : ~0u;
+    for (uint16_t r = 0; r < src.height(); ++r)
+    {
+        const int dr = int(src.y()) + r - dst.y();
+        if (dr < 0 || dr >= dst.height())
+            continue;
+        uint32_t* row = dst.row(uint16_t(dr));
+        const uint32_t* s = src.row(r);
+        const int base = int(dst.x()) - src.x();
+        for (uint16_t wi = 0; wi < wpr; ++wi)
+            row[wi] |= window(s, src.wordsPerRow(), base + wi * 32);
+        row[wpr - 1] &= tail;
+    }
+}
+
+bool innerStroke(const RowMask& fill, uint8_t width, RowMask& out)
+{
+    out.clear();
+    if (fill.empty() || width == 0)
+    {
+        out.reset(fill.x(), fill.y(), 0, 0);
+        return true;
+    }
+    const uint16_t wpr = fill.wordsPerRow(), h = fill.height();
+    if (wpr > kMaxRowWords || !out.reset(fill.x(), fill.y(), fill.width(), h))
+    {
+        out.clear();
+        return false;
+    }
+    // out = the fill, eroded in place `width` times (one row of look-back).
+    for (uint16_t r = 0; r < h; ++r)
+        std::memcpy(out.row(r), fill.row(r), size_t(wpr) * 4);
+    uint32_t prev[kMaxRowWords], cur[kMaxRowWords];
+    for (uint8_t k = 0; k < width; ++k)
+    {
+        bool any = false;
+        std::memset(prev, 0, sizeof prev);
+        for (uint16_t r = 0; r < h; ++r)
+        {
+            uint32_t* row = out.row(r);
+            std::memcpy(cur, row, size_t(wpr) * 4);
+            const uint32_t* below = r + 1 < h ? out.row(uint16_t(r + 1)) : nullptr;
+            for (uint16_t wi = 0; wi < wpr; ++wi)
+            {
+                const uint32_t c = cur[wi];
+                const uint32_t left = (c << 1) | (wi > 0 ? cur[wi - 1] >> 31 : 0u);
+                const uint32_t right = (c >> 1) | (wi + 1 < wpr ? cur[wi + 1] << 31 : 0u);
+                const uint32_t e = c & left & right & prev[wi] & (below ? below[wi] : 0u);
+                row[wi] = e;
+                any = any || e != 0;
+            }
+            std::memcpy(prev, cur, size_t(wpr) * 4);
+        }
+        if (!any)
+            break;
+    }
+    // Stroke = fill minus its erosion.
+    for (uint16_t r = 0; r < h; ++r)
+    {
+        uint32_t* row = out.row(r);
+        const uint32_t* f = fill.row(r);
+        for (uint16_t wi = 0; wi < wpr; ++wi)
+            row[wi] = f[wi] & ~row[wi];
     }
     return true;
 }

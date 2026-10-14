@@ -801,10 +801,23 @@ struct Inherited {
     Paint::Fill fill = Paint::Fill::Colour;
     uint32_t    rgb = 0;
     bool        evenOdd = false;
-    bool        stroke = false;
-    bool        fillOpacity = false;
-    bool        clip = false;  // not inherited in CSS, but it applies to the subtree
+    Paint::Fill stroke = Paint::Fill::None;
+    uint32_t    strokeRgb = 0;
+    double      strokeWidth = 1;
+    double      fillOpacity = 1;
+    int         clip = -1;  // not inherited in CSS, but it applies to the subtree
 };
+
+/// The id in `url(#id)` (quotes allowed), or "".
+std::string urlId(const std::string& v) {
+    const std::string t = trim(v);
+    if (t.size() < 5 || t.compare(0, 4, "url(") != 0 || t.back() != ')') return "";
+    std::string in = trim(t.substr(4, t.size() - 5));
+    if (in.size() >= 2 && (in[0] == '\'' || in[0] == '"') && in.back() == in[0]) in = in.substr(1, in.size() - 2);
+    return in.size() > 1 && in[0] == '#' ? in.substr(1) : "";
+}
+
+double scaleOf(const Matrix& m) { return std::sqrt(std::fabs(m.a * m.d - m.b * m.c)); }
 
 // ---------------------------------------------------------------------------
 // The walk: SVG elements → layer tree
@@ -821,7 +834,19 @@ public:
         : source_(source), limits_(limits), issues_(issues), budget_(kMaxDocPoints), commands_(limits.maxPathCommands) {}
 
     std::vector<ClassRule> rules;
+    std::vector<std::pair<std::string, const XmlElem*>> ids;  ///< Every element's raw id.
+    std::vector<std::vector<Ring>>* clips = nullptr;           ///< The root's clipPaths.
     bool errors = false;
+
+    void collectIds(const XmlElem& e) {
+        if (const std::string* id = e.attr("id")) ids.emplace_back(*id, &e);
+        for (const auto& k : e.kids) collectIds(k);
+    }
+    const XmlElem* byId(const std::string& id) const {
+        for (const auto& [k, v] : ids)
+            if (k == id) return v;
+        return nullptr;
+    }
 
     void issue(ImportIssueSeverity sev, const char* code, const std::string& msg, const std::string& layer) {
         if (sev == ImportIssueSeverity::Error) errors = true;
@@ -893,7 +918,7 @@ public:
             m = parentM * local;
         }
         Inherited in = parentIn;
-        style(e, in, node.paint, here);
+        if (!style(e, isGroup, m, in, node.paint, here)) return;
 
         if (isGroup) {
             children(e, m, in, node, here, mode);
@@ -1018,7 +1043,8 @@ private:
     }
 
     /// Computed style: presentation attributes < class rules (sheet order) < style="".
-    void style(const XmlElem& e, Inherited& in, Paint& paint, const std::string& here) {
+    /// false on an error (opacity on a group).
+    bool style(const XmlElem& e, bool isGroup, const Matrix& m, Inherited& in, Paint& paint, const std::string& here) {
         Decls props;
         static const char* const presentation[] = {"fill", "fill-rule", "stroke", "stroke-width", "opacity",
                                                    "fill-opacity", "clip-path"};
@@ -1040,48 +1066,111 @@ private:
         }
         if (const std::string* st = e.attr("style")) declarations(*st, props);
 
-        bool opacity = false;
-        double strokeWidth = -1;
-        bool strokeOn = in.stroke;
+        double opacity = 1;
+        std::string clipRef;
+        auto paintOf = [&](const std::string& value, Paint::Fill& kind, uint32_t& rgb, const char* what) {
+            const std::string v = lower(value);
+            uint32_t c = 0;
+            if (v == "none" || v == "transparent") {
+                kind = Paint::Fill::None;
+            } else if (colour(value, c)) {
+                kind = Paint::Fill::Colour;
+                rgb = c;
+            } else {
+                kind = Paint::Fill::Unsupported;
+                if (v.compare(0, 4, "url(") != 0)
+                    issue(ImportIssueSeverity::Lint, "bad-colour", std::string(what) + " \"" + value + "\" is not a colour", here);
+            }
+        };
         for (const auto& [key, value] : props) {
             if (value == "inherit") continue;
             if (key == "fill") {
-                const std::string v = lower(value);
-                uint32_t rgb = 0;
-                if (v == "none" || v == "transparent") {
-                    in.fill = Paint::Fill::None;
-                } else if (colour(value, rgb)) {
-                    in.fill = Paint::Fill::Colour;
-                    in.rgb = rgb;
-                } else {
-                    in.fill = Paint::Fill::Unsupported;
-                    if (v.compare(0, 4, "url(") != 0)
-                        issue(ImportIssueSeverity::Lint, "bad-colour", "fill \"" + value + "\" is not a colour", here);
-                }
+                paintOf(value, in.fill, in.rgb, "fill");
             } else if (key == "fill-rule") {
                 in.evenOdd = lower(value) == "evenodd";
             } else if (key == "stroke") {
-                strokeOn = lower(value) != "none";
+                paintOf(value, in.stroke, in.strokeRgb, "stroke");
             } else if (key == "stroke-width") {
                 double w = 0;
-                if (number(value, w)) strokeWidth = w;
+                if (number(value, w) && w >= 0) in.strokeWidth = w;
             } else if (key == "opacity") {
                 double o = 1;
-                if (number(value, o) && o < 1) opacity = true;
+                if (number(value, o)) opacity = std::clamp(o, 0.0, 1.0);
             } else if (key == "fill-opacity") {
                 double o = 1;
-                in.fillOpacity = number(value, o) && o < 1;
+                if (number(value, o)) in.fillOpacity = std::clamp(o, 0.0, 1.0);
             } else if (key == "clip-path") {
-                if (lower(value) != "none") in.clip = true;
+                clipRef = lower(value) == "none" ? "" : value;
             }
         }
-        in.stroke = strokeOn && strokeWidth != 0;
+        if (isGroup && opacity < 1) {
+            issue(ImportIssueSeverity::Error, "group-opacity",
+                  "opacity on a group is not allowed; set it on each shape (it dithers the fill)", here);
+            return false;
+        }
+        if (!clipRef.empty()) {
+            const int clip = resolveClip(urlId(clipRef), m, here);
+            if (clip >= 0 && in.clip >= 0)
+                issue(ImportIssueSeverity::Lint, "nested-clip", "a clip inside a clip: only the inner one is used", here);
+            if (clip >= 0) in.clip = clip;
+        }
         paint.fill = in.fill;
         paint.rgb = in.rgb;
         paint.evenOdd = in.evenOdd;
+        paint.opacity = opacity * in.fillOpacity;
         paint.stroke = in.stroke;
-        paint.opacity = opacity || in.fillOpacity;
+        paint.strokeRgb = in.strokeRgb;
+        paint.strokeWidth = in.strokeWidth * scaleOf(m);
         paint.clip = in.clip;
+        return true;
+    }
+
+    /// The geometry of clipPath `id` used by an element with transform @p m: a new clipPaths
+    /// entry, or -1 (a lint) when there is no such clip path.
+    int resolveClip(const std::string& id, const Matrix& m, const std::string& here) {
+        const XmlElem* cp = id.empty() ? nullptr : byId(id);
+        if (!cp || cp->name != "clipPath" || !clips) {
+            issue(ImportIssueSeverity::Lint, "missing-clip",
+                  "clip-path \"" + id + "\" names no <clipPath>; the shape is not clipped", here);
+            return -1;
+        }
+        Matrix cm = m;
+        if (const std::string* t = cp->attr("transform")) {
+            Matrix local;
+            if (transform(*t, local)) cm = m * local;
+        }
+        std::vector<Ring> rings;
+        for (const auto& k : cp->kids) {
+            const XmlElem* shape = &k;
+            Matrix km = cm;
+            if (const std::string* t = k.attr("transform")) {
+                Matrix local;
+                if (transform(*t, local)) km = cm * local;
+            }
+            if (k.name == "use") {
+                const std::string* href = k.attr("href");
+                if (!href) href = k.attr("xlink:href");
+                shape = href && href->size() > 1 && (*href)[0] == '#' ? byId(href->substr(1)) : nullptr;
+                if (!shape || shape->name == "clipPath" || shape->name == "use") {
+                    issue(ImportIssueSeverity::Lint, "missing-clip", "a clip path's <use> names no shape", here);
+                    continue;
+                }
+                bool bad = false;
+                Matrix at;
+                at.e = attrNum(k, "x", 0, bad);
+                at.f = attrNum(k, "y", 0, bad);
+                km = km * at;
+                if (const std::string* t = shape->attr("transform")) {
+                    Matrix local;
+                    if (transform(*t, local)) km = km * local;
+                }
+            }
+            Builder b(km, rings, budget_);
+            if (!geometry(*shape, b, here)) continue;
+            b.finish();
+        }
+        clips->push_back(std::move(rings));
+        return static_cast<int>(clips->size() - 1);
     }
 };
 
@@ -1166,6 +1255,8 @@ bool readSvg(const uint8_t* data, size_t size, const std::string& source, const 
     for (const auto& a : doc.attrs)
         if (a.first != "id" && a.first != "data-name" && a.first != "viewBox") g.attrs.push_back(a);
     g.kids = std::move(doc.kids);
+    w.collectIds(g);
+    w.clips = &root.clipPaths;
     Node scratch;
     w.element(g, origin, Inherited{}, scratch, "", 0);
     if (!scratch.children.empty()) root.children = std::move(scratch.children.front().children);

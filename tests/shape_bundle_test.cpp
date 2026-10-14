@@ -20,6 +20,10 @@
  *   SHP-15  Truncation / mutation corpus over the Kit, sidecar, ledger and pack: never crashes.
  *   SHP-16  Preview (Tomodachi #340): a hard error drops its piece, or its whole source; the rest packs.
  *   SHP-17  Each source's fill colours come back, in first-use order, mapped or not.
+ *   SHP-18  Dither (Tomodachi #332): opacity / fill-opacity → quarters, off-level lint, group opacity error.
+ *   SHP-19  Stroke: inner width on closed shapes, a line on open paths, rounding lint, inheritance.
+ *   SHP-20  Holes: even-odd and opposite-winding compound paths keep their rings and rule.
+ *   SHP-21  Clip: own space (clippath-N and legacy <use>), live Body, near-Body lint, mirrored dedup.
  *
  * `shape_bundle_test --verify-pack <a.njn> [<b.njn>]` checks a CLI output
  * (index readable, every record decodes; with two files, identical indices).
@@ -892,6 +896,223 @@ static void test17_colours() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// SHP-18  Dither: opacity → quarters of coverage (Tomodachi #332)
+// ---------------------------------------------------------------------------
+
+static void test18_dither() {
+    ShapePiece p;
+    bodyRing("<rect opacity=\".5\" width=\"10\" height=\"10\"/>"
+             "<rect fill-opacity=\"0.75\" width=\"10\" height=\"10\"/>"
+             "<rect class=\"q\" width=\"10\" height=\"10\"/>"
+             "<rect opacity=\"1\" width=\"10\" height=\"10\"/>"
+             "<rect opacity=\".5\" fill-opacity=\".5\" width=\"10\" height=\"10\"/>"
+             "<g fill-opacity=\".5\"><rect width=\"10\" height=\"10\"/></g>"
+             "<rect style=\"opacity:0.6\" width=\"10\" height=\"10\"/>",
+             "SHP-18", 0, &p, "<defs><style>.q{opacity:.25}</style></defs>");
+    ASSERT(p.shapes.size() == 7, "SHP-18 seven shapes");
+    if (p.shapes.size() != 7) return;
+    ASSERT(p.shapes[0].dither == 2, "SHP-18 opacity 50 % → 2 quarters");
+    ASSERT(p.shapes[1].dither == 3, "SHP-18 fill-opacity 75 % → 3");
+    ASSERT(p.shapes[2].dither == 1, "SHP-18 class opacity 25 % → 1");
+    ASSERT(p.shapes[3].dither == SHAPE_DITHER_SOLID, "SHP-18 opacity 1 → solid");
+    ASSERT(p.shapes[4].dither == 1, "SHP-18 opacity × fill-opacity: 50 % × 50 % → 25 %");
+    ASSERT(p.shapes[5].dither == 2, "SHP-18 fill-opacity inherits from a group");
+    ASSERT(p.shapes[6].dither == 2, "SHP-18 off-level 60 % snaps to 50 %");
+
+    const auto off = bundleOne(kitSvg("<rect opacity=\".6\" width=\"10\" height=\"10\"/>"));
+    ASSERT(off.ok() && hasIssue(off, "off-level-opacity", ImportIssueSeverity::Lint), "SHP-18 off-level opacity is a lint");
+    const auto on = bundleOne(kitSvg("<rect opacity=\".75\" width=\"10\" height=\"10\"/>"));
+    ASSERT(on.ok() && !hasIssue(on, "off-level-opacity", ImportIssueSeverity::Lint), "SHP-18 an on-level opacity is not");
+    const auto group = bundleOne(kitSvg("<g opacity=\".5\"><rect width=\"10\" height=\"10\"/></g>"));
+    ASSERT(hasError(group, "group-opacity") && group.pack.empty(), "SHP-18 opacity on a group is an error");
+    for (const auto& r : {off, on})
+        ASSERT(!hasIssue(r, "unsupported-paint", ImportIssueSeverity::Lint), "SHP-18 opacity is converted, not linted");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-19  Stroke: inner width on closed shapes, a line on open paths
+// ---------------------------------------------------------------------------
+
+static void test19_stroke() {
+    const std::string sidecar = "{\"version\":1,\"roles\":{\"#b18cf9\":\"body\",\"#1c1c1c\":\"ink\",\"#b5dc6c\":\"accent\"}}";
+    ShapePiece p;
+    bodyRing("<rect fill=\"#b18cf9\" stroke=\"#1c1c1c\" stroke-width=\"2\" width=\"10\" height=\"10\"/>"
+             "<rect stroke=\"#b5dc6c\" width=\"10\" height=\"10\"/>"
+             "<rect stroke=\"#1c1c1c\" stroke-width=\"1.5\" width=\"10\" height=\"10\"/>"
+             "<g transform=\"scale(2)\"><rect stroke=\"#1c1c1c\" width=\"5\" height=\"5\"/></g>"
+             "<g stroke=\"#1c1c1c\" stroke-width=\"3\"><rect width=\"10\" height=\"10\"/></g>"
+             "<path fill=\"none\" stroke=\"#1c1c1c\" d=\"M10 10 L20 10 L20 14\"/>"
+             "<rect stroke=\"none\" width=\"10\" height=\"10\"/>"
+             "<rect fill=\"none\" stroke=\"#b5dc6c\" width=\"10\" height=\"10\"/>",
+             "SHP-19", 0, &p, "", sidecar);
+    ASSERT(p.shapes.size() == 8, "SHP-19 eight shapes");
+    if (p.shapes.size() != 8) return;
+    ASSERT(p.shapes[0].role == ShapeRole::Body && p.shapes[0].strokeWidth == 2 && p.shapes[0].strokeRole == ShapeRole::Ink,
+           "SHP-19 stroke-width is the inner width; stroke colour → its role");
+    ASSERT(p.shapes[1].strokeWidth == 1 && p.shapes[1].strokeRole == ShapeRole::Accent, "SHP-19 default stroke-width 1");
+    ASSERT(p.shapes[2].strokeWidth == 2, "SHP-19 a non-integer width rounds to whole px");
+    ASSERT(p.shapes[3].strokeWidth == 2, "SHP-19 the width scales with the transform");
+    ASSERT(p.shapes[4].strokeWidth == 3 && p.shapes[4].strokeRole == ShapeRole::Ink, "SHP-19 stroke and width inherit");
+    ASSERT(p.shapes[5].role == ShapeRole::None && p.shapes[5].strokeWidth == 1 && p.shapes[5].strokeRole == ShapeRole::Ink &&
+               p.shapes[5].ringCount == 1 && !(p.rings[p.shapes[5].firstRing].flags & SHAPE_RING_CLOSED),
+           "SHP-19 an open path: no fill, an open ring, a 1 px line");
+    ASSERT(p.shapes[6].strokeWidth == 0 && p.shapes[6].strokeRole == ShapeRole::None, "SHP-19 stroke none");
+    ASSERT(p.shapes[7].role == ShapeRole::None && p.shapes[7].strokeRole == ShapeRole::Accent, "SHP-19 stroke without fill");
+
+    const auto frac = bundleOne(kitSvg("<rect stroke=\"#000\" stroke-width=\"1.5\" width=\"10\" height=\"10\"/>"));
+    ASSERT(frac.ok() && hasIssue(frac, "fractional-stroke", ImportIssueSeverity::Lint), "SHP-19 non-integer width is a lint");
+    const auto whole = bundleOne(kitSvg("<rect stroke=\"#000\" stroke-width=\"2\" width=\"10\" height=\"10\"/>"));
+    ASSERT(whole.ok() && !hasIssue(whole, "fractional-stroke", ImportIssueSeverity::Lint) &&
+               !hasIssue(whole, "unsupported-paint", ImportIssueSeverity::Lint),
+           "SHP-19 a whole width is not, and strokes are converted");
+    ShapePiece thin;
+    const auto hair = bundleOne(kitSvg("<rect stroke=\"#000\" stroke-width=\".25\" width=\"10\" height=\"10\"/>"));
+    ASSERT(hair.ok() && pieceOf(hair, ShapeSlot::Body, 1, thin) && thin.shapes[0].strokeWidth == 0 &&
+               thin.shapes[0].strokeRole == ShapeRole::None && hasIssue(hair, "fractional-stroke", ImportIssueSeverity::Lint),
+           "SHP-19 a width that rounds to 0 strokes nothing (lint)");
+    ASSERT((bundleShapes({{"kit.svg", bytesOf(kitSvg("<rect fill=\"#b18cf9\" stroke=\"#123456\" width=\"10\" height=\"10\"/>")), {}}}, "")
+                .colours[0].rgb == std::vector<uint32_t>{0xb18cf9, 0x123456}),
+           "SHP-19 stroke colours are source colours too (the Studio asks their role)");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-20  Holes: compound paths reach the fill rule
+// ---------------------------------------------------------------------------
+
+static double signedArea(const std::vector<ShapePoint>& v) {
+    double a = 0;
+    for (size_t i = 0; i < v.size(); ++i) {
+        const ShapePoint p = v[i], q2 = v[(i + 1) % v.size()];
+        a += double(p.x) * q2.y - double(q2.x) * p.y;
+    }
+    return a / 2;
+}
+
+static void test20_holes() {
+    ShapePiece p;
+    bodyRing("<path fill-rule=\"evenodd\" d=\"M0 0H20V20H0Z M5 5H15V15H5Z\"/>"
+             "<path d=\"M0 0H20V20H0Z M5 5V15H15V5Z\"/>",
+             "SHP-20", 0, &p);
+    ASSERT(p.shapes.size() == 2, "SHP-20 two compound paths, one Shape each");
+    if (p.shapes.size() != 2) return;
+    ASSERT(p.shapes[0].ringCount == 2 && (p.shapes[0].flags & SHAPE_FILL_EVENODD), "SHP-20 even-odd: two rings, even-odd rule");
+    ASSERT(p.shapes[1].ringCount == 2 && !(p.shapes[1].flags & SHAPE_FILL_EVENODD), "SHP-20 non-zero: two rings");
+    const double outer = signedArea(ringPoints(p, 1, 0)), inner = signedArea(ringPoints(p, 1, 1));
+    ASSERT(outer * inner < 0, "SHP-20 non-zero: the hole keeps its opposite winding");
+}
+
+// ---------------------------------------------------------------------------
+// SHP-21  Clip: own space, the live Body, the legacy <use> form
+// ---------------------------------------------------------------------------
+
+/// The shapes no span of @p p draws.
+static std::vector<size_t> unspanned(const ShapePiece& p) {
+    std::vector<bool> drawn(p.shapes.size());
+    for (const auto& s : p.spans)
+        for (uint16_t i = 0; i < s.shapeCount; ++i) drawn[s.firstShape + i] = true;
+    std::vector<size_t> out;
+    for (size_t i = 0; i < drawn.size(); ++i)
+        if (!drawn[i]) out.push_back(i);
+    return out;
+}
+
+static void test21_clip() {
+    const std::string body = "<path d=\"M10 20H70V70H10Z\"/>";
+    const std::string eyes = "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>";
+    // Teeth clipped in the mouth's own space (Illustrator 29.x: <clipPath id="clippath-N"> holding a copy).
+    {
+        const std::string svg = kitSvg(body, eyes +
+            "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"0.5\"/>"
+            "<rect x=\"36\" y=\"44\" width=\"8\" height=\"4\"/>"
+            "<g clip-path=\"url(#clippath-1)\"><rect x=\"34\" y=\"46\" width=\"12\" height=\"6\"/>"
+            "<rect x=\"30\" y=\"40\" width=\"2\" height=\"2\"/></g></g>",
+            "<defs><clipPath id=\"clippath-1\"><rect x=\"36\" y=\"44\" width=\"8\" height=\"4\"/></clipPath></defs>");
+        const auto r = bundleOne(svg);
+        ShapePiece m;
+        ASSERT(r.ok() && firstPiece(r, ShapeSlot::Mouth, m), "SHP-21 own clip bundles");
+        if (!r.ok()) dumpIssues(r);
+        ASSERT(!hasIssue(r, "unsupported-paint", ImportIssueSeverity::Lint), "SHP-21 the clip is converted, not linted");
+        const auto extra = unspanned(m);
+        ASSERT(m.span(0, 0).shapeCount == 3 && extra.size() == 1, "SHP-21 the clip is one more Shape, outside every span");
+        if (m.span(0, 0).shapeCount == 3 && extra.size() == 1) {
+            const ShapeFill& lip = m.shapes[m.span(0, 0).firstShape];
+            const ShapeFill& teeth = m.shapes[m.span(0, 0).firstShape + 1];
+            const ShapeFill& stray = m.shapes[m.span(0, 0).firstShape + 2];
+            ASSERT(lip.clip == ShapeClip::None, "SHP-21 outside the clip group: unclipped");
+            ASSERT(teeth.clip == ShapeClip::Own && teeth.clipShape == extra[0] && stray.clip == ShapeClip::Own &&
+                       stray.clipShape == extra[0],
+                   "SHP-21 both shapes of the clip group share the one clip Shape");
+            ASSERT(m.shapes[extra[0]].role == ShapeRole::None, "SHP-21 the clip Shape paints nothing");
+            ASSERT(samePoints(ringPoints(m, extra[0]), {q(-4, -1), q(4, -1), q(4, 3), q(-4, 3)}),
+                   "SHP-21 the clip is relative to the member's anchor");
+        }
+    }
+    // The legacy form: <clipPath><use xlink:href="#path"/></clipPath>, the path in <defs>.
+    {
+        const std::string svg = kitSvg(body, eyes +
+            "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"0.5\"/>"
+            "<g style=\"clip-path:url(#SVGID_2_)\"><rect x=\"34\" y=\"46\" width=\"12\" height=\"6\"/></g></g>",
+            "<defs><rect id=\"SVGID_1_\" x=\"36\" y=\"44\" width=\"8\" height=\"4\"/></defs>"
+            "<clipPath id=\"SVGID_2_\"><use xlink:href=\"#SVGID_1_\" style=\"overflow:visible\"/></clipPath>");
+        const auto r = bundleOne(svg);
+        ShapePiece m;
+        ASSERT(r.ok() && firstPiece(r, ShapeSlot::Mouth, m), "SHP-21 legacy <use> clip bundles");
+        if (!r.ok()) dumpIssues(r);
+        const auto extra = unspanned(m);
+        ASSERT(extra.size() == 1 && m.shapes[0].clip == ShapeClip::Own &&
+                   samePoints(ringPoints(m, extra[0]), {q(-4, -1), q(4, -1), q(4, 3), q(-4, 3)}),
+               "SHP-21 legacy <use> clip: the referenced geometry");
+    }
+    // A clip that matches the Body binds to the live Body; one that almost does is a lint.
+    {
+        auto cap = [&](const std::string& clipD) {
+            return bundleOne(kitSvg(body, eyes +
+                "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>"
+                "<g id=\"top\"><circle id=\"anchor\" cx=\"40\" cy=\"20\" r=\"0.5\"/>"
+                "<g class=\"c\"><rect x=\"0\" y=\"10\" width=\"80\" height=\"20\"/></g></g>",
+                "<defs><style>.c{clip-path:url(#clippath)}</style>"
+                "<clipPath id=\"clippath\"><path d=\"" + clipD + "\"/></clipPath></defs>"));
+        };
+        const auto live = cap("M10 20H70V70H10Z");
+        ShapePiece top;
+        ASSERT(live.ok() && firstPiece(live, ShapeSlot::Top, top), "SHP-21 body clip bundles");
+        ASSERT(top.shapes.size() == 1 && top.shapes[0].clip == ShapeClip::LiveBody, "SHP-21 matches the Body → the live Body, no clip Shape");
+        ASSERT(!hasIssue(live, "near-body-clip", ImportIssueSeverity::Lint), "SHP-21 an exact match is not a lint");
+        const auto near = cap("M10 21H70V70H10Z");
+        ASSERT(near.ok() && firstPiece(near, ShapeSlot::Top, top), "SHP-21 near-body clip bundles");
+        ASSERT(hasIssue(near, "near-body-clip", ImportIssueSeverity::Lint), "SHP-21 a clip that almost matches the Body is a lint");
+        ASSERT(top.shapes.size() == 2 && top.shapes[0].clip == ShapeClip::Own, "SHP-21 ... and clips in its own space");
+        const auto far = cap("M30 10H50V30H30Z");
+        ASSERT(far.ok() && firstPiece(far, ShapeSlot::Top, top) && top.shapes[0].clip == ShapeClip::Own &&
+                   !hasIssue(far, "near-body-clip", ImportIssueSeverity::Lint),
+               "SHP-21 an unrelated clip: own space, no lint");
+        const auto missing = bundleOne(kitSvg(body, eyes +
+            "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/>"
+            "<rect clip-path=\"url(#nope)\" x=\"38\" y=\"44\" width=\"4\" height=\"2\"/></g>"));
+        ShapePiece mm;
+        ASSERT(missing.ok() && hasIssue(missing, "missing-clip", ImportIssueSeverity::Lint) &&
+                   firstPiece(missing, ShapeSlot::Mouth, mm) && mm.shapes[0].clip == ShapeClip::None,
+               "SHP-21 a clip-path to nothing: a lint, unclipped");
+    }
+    // A mirrored pair with the same clipped drawing keeps one member, and its clip.
+    {
+        const std::string svg = kitSvg(body, eyes +
+            "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>"
+            "<g id=\"cheeks\">"
+            "<g id=\"c1\" data-name=\"cheek\"><g clip-path=\"url(#k1)\"><rect x=\"20\" y=\"38\" width=\"6\" height=\"4\"/></g></g>"
+            "<g id=\"c2\" data-name=\"cheek\"><g clip-path=\"url(#k2)\"><rect x=\"54\" y=\"38\" width=\"6\" height=\"4\"/></g></g></g>",
+            "<defs><clipPath id=\"k1\"><rect x=\"22\" y=\"38\" width=\"4\" height=\"4\"/></clipPath>"
+            "<clipPath id=\"k2\"><rect x=\"54\" y=\"38\" width=\"4\" height=\"4\"/></clipPath></defs>");
+        const auto r = bundleOne(svg);
+        ShapePiece c;
+        ASSERT(r.ok() && firstPiece(r, ShapeSlot::Cheeks, c), "SHP-21 clipped cheeks bundle");
+        if (!r.ok()) dumpIssues(r);
+        ASSERT(c.members.size() == 1 && c.shapes.size() == 2 && c.shapes[c.span(0, 0).firstShape].clip == ShapeClip::Own &&
+                   unspanned(c).size() == 1 && c.shapes[c.span(0, 0).firstShape].clipShape == unspanned(c)[0],
+               "SHP-21 one mirrored member kept, its clip Shape with it");
+    }
+}
 
 static Bytes readFileBytes(const std::string& path);
 
@@ -903,9 +1124,8 @@ static void test14_standInKit() {
     ASSERT(!svg.empty() && !sidecar.empty(), "SHP-14 stand-in Kit and sidecar present");
     const auto r = bundleShapes({{"star.svg", svg, sidecar}}, "");
     ASSERT(r.ok(), "SHP-14 the stand-in Kit bundles");
-    for (const auto& i : r.issues)
-        ASSERT(i.severity == ImportIssueSeverity::Lint && i.code == "unsupported-paint",
-               "SHP-14 its only lint is the clip on the happy mouth (Tomodachi #332)");
+    ASSERT(r.issues.empty(), "SHP-14 no lints: its paint is all converted (Tomodachi #332)");
+    if (!r.issues.empty()) dumpIssues(r);
     const auto idx = indexOf(r);
     ASSERT(idx.size() == 7, "SHP-14 Body + eyes, cheeks, mouth, top, arms, legs");
     for (const auto& e : idx) ASSERT(e.id == 1 && e.label == "star", "SHP-14 every piece is id 1, labelled star");
@@ -918,13 +1138,42 @@ static void test14_standInKit() {
     }
     ASSERT(body.sockets.size() == 10, "SHP-14 ten sockets: 2 eyes, 2 cheeks, mouth, top, 2 arms, 2 legs");
     ASSERT(eyes.poses == std::vector<uint8_t>({0, 1}) && eyes.members.size() == 1, "SHP-14 eyes: open + closed (hidden layer read), one drawing");
-    ASSERT(mouth.poses == std::vector<uint8_t>({0, 1}) && mouth.members.size() == 1, "SHP-14 mouth: neutral + happy");
-    ASSERT(mouth.span(1, 0).shapeCount == 2, "SHP-14 happy mouth: hole + tongue");
+    ASSERT(mouth.poses == std::vector<uint8_t>({0, 1, 3, 4}) && mouth.members.size() == 1,
+           "SHP-14 mouth: neutral, happy, open, surprised");
+    if (mouth.poses.size() == 4) {
+        const ShapeFill& line = mouth.shapes[mouth.span(0, 0).firstShape];
+        ASSERT(mouth.span(0, 0).shapeCount == 1 && line.role == ShapeRole::None && line.strokeWidth == 1 &&
+                   line.strokeRole == ShapeRole::Ink && !(mouth.rings[line.firstRing].flags & SHAPE_RING_CLOSED),
+               "SHP-14 neutral mouth: a 1 px ink curve (open path)");
+        const ShapeSpan happy = mouth.span(1, 0);
+        ASSERT(happy.shapeCount == 2 && mouth.shapes[happy.firstShape + 1].clip == ShapeClip::Own &&
+                   mouth.shapes[mouth.shapes[happy.firstShape + 1].clipShape].role == ShapeRole::None,
+               "SHP-14 happy mouth: the tongue clipped inside the mouth (own space)");
+        const ShapeFill& open = mouth.shapes[mouth.span(2, 0).firstShape];
+        ASSERT(open.ringCount == 2 && (open.flags & SHAPE_FILL_EVENODD), "SHP-14 open mouth: a ring with a hole");
+        const ShapeFill& wow = mouth.shapes[mouth.span(3, 0).firstShape];
+        ASSERT(wow.role == ShapeRole::Accent && wow.strokeWidth == 1 && wow.strokeRole == ShapeRole::Ink,
+               "SHP-14 surprised mouth: accent with a 1 px ink inner stroke");
+    }
     ASSERT(top.order == ShapeOrder::Behind && top.binding == ShapeBinding::Sway && top.swayHz == 2 * 4096 &&
            top.swayZeta == static_cast<uint16_t>(std::lround(0.2 * 4096)), "SHP-14 top: behind, sidecar sway tuning");
     ASSERT(legs.order == ShapeOrder::Behind && legs.members.size() == 1, "SHP-14 legs: behind, one mirrored foot");
     ASSERT(arms.members.size() == 2 && arms.members[0].side == MemberSide::Left, "SHP-14 arms: arm_l / arm_r");
-    ASSERT(cheeks.members.size() == 1 && cheeks.shapes.size() == 1 && cheeks.shapes[0].role == ShapeRole::Accent, "SHP-14 cheeks: accent");
+    ASSERT(cheeks.members.size() == 1 && cheeks.shapes.size() == 1 && cheeks.shapes[0].role == ShapeRole::Accent &&
+               cheeks.shapes[0].dither == 2,
+           "SHP-14 cheeks: accent, 50 % dithered");
+    ASSERT(top.shapes.size() == 2 && top.shapes[0].role == ShapeRole::None && top.shapes[0].strokeWidth == 1 &&
+               top.shapes[0].strokeRole == ShapeRole::Body,
+           "SHP-14 antenna: a stroked stem (open path) + the bulb");
+
+    // The Chestnut Kit: a cap clipped to its Body (legacy <use> form) binds to the live Body.
+    const auto rc = bundleShapes({{"chestnut.svg", readFileBytes(kitPath("chestnut.svg")),
+                                   readFileBytes(kitPath("chestnut.svg.shape.json"))}}, "");
+    ShapePiece cap;
+    ASSERT(rc.ok() && rc.issues.empty() && firstPiece(rc, ShapeSlot::Top, cap), "SHP-14 the Chestnut Kit bundles clean");
+    if (!rc.issues.empty()) dumpIssues(rc);
+    ASSERT(cap.binding == ShapeBinding::Field && cap.shapes.size() == 1 && cap.shapes[0].clip == ShapeClip::LiveBody,
+           "SHP-14 Chestnut cap: field-bound, clipped to the live Body");
     ASSERT(body.shapes.size() == 1 && body.shapes[0].role == ShapeRole::Body && body.points.size() == 16, "SHP-14 the star Body: 16 vertices");
 }
 
@@ -1064,6 +1313,10 @@ int main(int argc, char** argv) {
     test15_corpus();
     test16_preview();
     test17_colours();
+    test18_dither();
+    test19_stroke();
+    test20_holes();
+    test21_clip();
 
     printf("shape_bundle_test: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

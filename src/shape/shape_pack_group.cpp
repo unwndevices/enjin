@@ -611,23 +611,70 @@ bool ShapePackGroup::forEach(ShapeDrawScratch& scratch, ShapeEmit emit, void* ct
         return true;
     bool ok = true;
 
+    // A record Shape's rest rings into `rings` (room checked at readSlot).
+    auto restShape = [](const Slot& slot, const ShapeFill& f, Ring* rings, Shape& out) {
+        for (uint16_t r = 0; r < f.ringCount; ++r)
+        {
+            const ShapeRing ring = slot.view.ring(f.firstRing + r);
+            rings[r] = Ring{slot.points + ring.firstPoint, ring.pointCount, (ring.flags & SHAPE_RING_CLOSED) != 0};
+        }
+        out = Shape{};
+        out.rings = rings;
+        out.ringCount = f.ringCount;
+        out.paint.fill = ColourRole(uint8_t(f.role));
+        out.paint.rule = (f.flags & SHAPE_FILL_EVENODD) ? FillRule::EvenOdd : FillRule::NonZero;
+        out.paint.dither = uint8_t(f.dither * 4);  // quarters of coverage → Bayer level
+        out.paint.strokeWidth = f.strokeWidth;
+        out.paint.stroke = ColourRole(uint8_t(f.strokeRole));
+    };
+
+    // The live Body clip: the Body's Shapes as drawn, in group coordinates.
+    uint16_t liveCount = 0;
+    bool liveOk = true;
+    {
+        const ShapeSpan span = body.view.span(body.pose, 0);
+        uint16_t rings = 0;
+        for (uint16_t k = 0; k < span.shapeCount && liveOk; ++k)
+        {
+            const ShapeFill f = body.view.shape(span.firstShape + k);
+            if (liveCount == ShapeDrawScratch::kMaxClipShapes || rings + f.ringCount > ShapeDrawScratch::kMaxRings)
+            {
+                liveOk = false;
+                break;
+            }
+            restShape(body, f, scratch.liveRestRings + rings, scratch.liveRest[liveCount++]);
+            rings = uint16_t(rings + f.ringCount);
+        }
+    }
+
     // Emit one member's Shapes in its current pose.
     auto emitMember = [&](const Slot& slot, uint8_t member, FixedVec2 at, bool mirror) {
         const ShapeSpan span = slot.view.span(slot.pose, member);
         for (uint16_t k = 0; k < span.shapeCount; ++k)
         {
             const ShapeFill f = slot.view.shape(span.firstShape + k);
-            for (uint16_t r = 0; r < f.ringCount; ++r)
-            {
-                const ShapeRing ring = slot.view.ring(f.firstRing + r);
-                scratch.restRings[r] = Ring{slot.points + ring.firstPoint, ring.pointCount,
-                                            (ring.flags & SHAPE_RING_CLOSED) != 0};
-            }
             Shape shape;
-            shape.rings = scratch.restRings;
-            shape.ringCount = f.ringCount;
-            shape.paint.fill = ColourRole(uint8_t(f.role));
-            shape.paint.rule = (f.flags & SHAPE_FILL_EVENODD) ? FillRule::EvenOdd : FillRule::NonZero;
+            restShape(slot, f, scratch.restRings, shape);
+            if (f.clip == ShapeClip::Own)
+            {
+                restShape(slot, slot.view.shape(f.clipShape), scratch.clipRestRings, scratch.clipRest);
+                shape.clip = &scratch.clipRest;
+                shape.clipCount = 1;
+                shape.clipSpace = ClipSpace::Item;
+            }
+            else if (f.clip == ShapeClip::LiveBody)
+            {
+                if (!liveOk)
+                {
+                    ok = false;
+                    continue;
+                }
+                if (liveCount == 0)
+                    continue;  // a Body that draws nothing clips everything away
+                shape.clip = scratch.liveRest;
+                shape.clipCount = liveCount;
+                shape.clipSpace = ClipSpace::Group;
+            }
             // A Body is field; a Feature rides by its baked Binding.
             const Binding binding = slot.view.slot() == ShapeSlot::Body ? Binding::Field
                                                                         : Binding(uint8_t(slot.view.binding()));

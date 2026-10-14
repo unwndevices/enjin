@@ -44,20 +44,32 @@ namespace enjin2 {
 namespace shape {
 
 /**
- * @brief Working memory a group redraws with (about 30 KB): the one
- *        Rasterizer, its mask words and the warped points. Keep one per
- *        applet and share it between groups; it is not reentrant.
+ * @brief Working memory a group redraws with (about 60 KB): the one
+ *        Rasterizer, its masks and the warped points. Keep one per applet and
+ *        share it between groups; it is not reentrant.
  */
 struct ShapeDrawScratch {
-    static constexpr uint16_t kMaxPoints = 512;  ///< Points per Shape (all its rings).
-    static constexpr uint16_t kMaxRings  = 64;   ///< Rings per Shape.
+    static constexpr uint16_t kMaxPoints     = 512;  ///< Points per Shape (all its rings).
+    static constexpr uint16_t kMaxRings      = 64;   ///< Rings per Shape.
+    static constexpr uint16_t kMaxClipShapes = 8;    ///< Shapes one clip is the union of.
     static constexpr size_t   kMaskWords = RowMask::wordsFor(256, 256);
 
     Rasterizer raster;
-    uint32_t   mask[kMaskWords];
-    FixedVec2  points[kMaxPoints];  ///< One item's warped points.
-    Ring       rings[kMaxRings];    ///< One item's warped rings.
-    Ring       restRings[kMaxRings];///< One item's rest rings (filled by the source).
+    uint32_t   mask[kMaskWords];        ///< One item's fill.
+    uint32_t   strokeMask[kMaskWords];  ///< One item's stroke (and union scratch).
+    uint32_t   clipMask[kMaskWords];    ///< One item's own-space clip.
+    uint32_t   liveMask[kMaskWords];    ///< The group-space (live Body) clip, once per redraw.
+    FixedVec2  points[kMaxPoints];      ///< One item's warped points.
+    Ring       rings[kMaxRings];        ///< One item's warped rings.
+    FixedVec2  clipPoints[kMaxPoints];  ///< One clip Shape's warped points.
+    Ring       clipRings[kMaxRings];    ///< One clip Shape's warped rings.
+
+    // Filled by the source (ShapeItemSource::forEach):
+    Ring  restRings[kMaxRings];      ///< One item's rest rings.
+    Ring  clipRestRings[kMaxRings];  ///< One item's own clip Shape's rest rings.
+    Shape clipRest;                  ///< That clip Shape.
+    Ring  liveRestRings[kMaxRings];  ///< The live clip Shapes' rest rings (all of them).
+    Shape liveRest[kMaxClipShapes];  ///< The live clip Shapes (the Body).
 };
 
 /// Called once per item, in paint order. Returns false if the item was refused.
@@ -178,65 +190,155 @@ private:
         ShapeDrawScratch& s;
         ShapeGroup&       g;
         bool              ok;
+        const Shape*      live = nullptr;  ///< The group-space clip liveView holds (this redraw).
+        uint16_t          liveCount = 0;
+        RowMask           liveView{};      ///< Over ShapeDrawScratch::liveMask.
 
-        static bool emit(void* p, const Shape& rest, FixedVec2 at, bool mirror, Binding binding)
+        /// Rest Shape → layer coordinates: placed at `at`, mirrored x → −x,
+        /// then moved by the drive's step and the Lattice. `field`: each point
+        /// by the field there; else the whole Shape by the field at `at`,
+        /// turned about it by `angle` (a sway arm's; 0 for rigid). The drive
+        /// moves rest positions first (the Lattice's homes with them), so the
+        /// field is sampled at the rest point.
+        bool warp(const Shape& rest, FixedVec2 at, bool mirror, bool field, Fixed angle, FixedVec2* points,
+                  Ring* rings, Shape& out) const
         {
-            auto& c = *static_cast<DrawCtx*>(p);
-            ShapeDrawScratch& s = c.s;
+            const Lattice& lat = g.lattice_;
+            const SteppedDrive& drive = g.drive_;
             if (rest.ringCount > ShapeDrawScratch::kMaxRings)
-                return c.ok = false;
+                return false;
             uint32_t total = 0;
             for (uint16_t r = 0; r < rest.ringCount; ++r)
                 total += rest.rings[r].count;
             if (total > ShapeDrawScratch::kMaxPoints)
-                return c.ok = false;
-
-            // Field: each point moved by the field there; rigid: the whole
-            // item by the field at its anchor.
-            // Sway: carried like rigid, turned about the anchor by its arm.
-            // The drive's step moves rest positions first (the Lattice's
-            // homes with them), so the field is sampled at the rest point.
-            const Lattice& lat = c.g.lattice_;
-            const SteppedDrive& drive = c.g.drive_;
-            const bool field = binding == Binding::Field && lat.configured();
-            const Fixed angle = binding == Binding::Sway ? lat.swayAngleAt(at) : Fixed{};
-            const FixedVec2 base = c.g.origin_ + (field ? FixedVec2{} : drive.apply(at) + lat.displacementAt(at));
+                return false;
+            const FixedVec2 base = g.origin_ + (field ? FixedVec2{} : drive.apply(at) + lat.displacementAt(at));
             uint16_t n = 0;
             for (uint16_t r = 0; r < rest.ringCount; ++r)
             {
                 const Ring& in = rest.rings[r];
-                s.rings[r] = Ring{s.points + n, in.count, in.closed};
+                rings[r] = Ring{points + n, in.count, in.closed};
                 for (uint16_t i = 0; i < in.count; ++i)
                 {
                     const FixedVec2 p = {mirror ? -in.points[i].x : in.points[i].x, in.points[i].y};
                     if (field)
                     {
                         const FixedVec2 local = at + p;
-                        s.points[n++] = base + drive.apply(local) + lat.displacementAt(local);
+                        points[n++] = base + drive.apply(local) + lat.displacementAt(local);
                     }
                     else
-                        s.points[n++] = base + Lattice::turn(p, angle);
+                        points[n++] = base + Lattice::turn(p, angle);
                 }
             }
-            const Shape warped{s.rings, rest.ringCount, rest.paint};
-            RowMask mask(s.mask, ShapeDrawScratch::kMaskWords);
-            if (!s.raster.fill(warped, Rect(0, 0, W, H), mask))
-                return c.ok = false;
-            if (mask.empty() || rest.paint.fill == ColourRole::None)
-                return true;
-            paintFill(c.layer, mask, rest.paint.fill, c.g.remap_);
-            // Footprint: the tiles under the mask's bbox.
+            out = rest;
+            out.rings = rings;
+            return true;
+        }
+
+        /// The union of `count` clip Shapes' fills, warped as warp() does, into `dst`.
+        bool clipUnion(const Shape* clip, uint16_t count, FixedVec2 at, bool mirror, bool field, Fixed angle,
+                       uint32_t* dst, RowMask& out)
+        {
+            out = RowMask(dst, ShapeDrawScratch::kMaskWords);
+            Shape w;
+            if (count == 1)
+                return warp(clip[0], at, mirror, field, angle, s.clipPoints, s.clipRings, w) &&
+                       s.raster.fill(w, Rect(0, 0, W, H), out);
+            if (count > ShapeDrawScratch::kMaxClipShapes || !out.reset(0, 0, W, H))
+                return false;
+            for (uint16_t r = 0; r < H; ++r)
+                std::memset(out.row(r), 0, size_t(out.wordsPerRow()) * 4);
+            for (uint16_t k = 0; k < count; ++k)
+            {
+                RowMask one(s.strokeMask, ShapeDrawScratch::kMaskWords);
+                if (!warp(clip[k], at, mirror, field, angle, s.clipPoints, s.clipRings, w) ||
+                    !s.raster.fill(w, Rect(0, 0, W, H), one))
+                    return false;
+                uniteMask(out, one);
+            }
+            return true;
+        }
+
+        /// Mark the tiles under `m`'s bbox dirty and in the footprint.
+        void touch(const RowMask& m)
+        {
+            if (m.empty())
+                return;
             constexpr uint16_t TS = Canvas4<W, H>::TILE_SIZE, TX = Canvas4<W, H>::TILES_X;
-            const uint16_t tx0 = uint16_t(mask.x() / TS), ty0 = uint16_t(mask.y() / TS);
-            const uint16_t tx1 = uint16_t((mask.x() + mask.width() - 1) / TS);
-            const uint16_t ty1 = uint16_t((mask.y() + mask.height() - 1) / TS);
+            const uint16_t tx0 = uint16_t(m.x() / TS), ty0 = uint16_t(m.y() / TS);
+            const uint16_t tx1 = uint16_t((m.x() + m.width() - 1) / TS);
+            const uint16_t ty1 = uint16_t((m.y() + m.height() - 1) / TS);
             for (uint16_t ty = ty0; ty <= ty1; ++ty)
                 for (uint16_t tx = tx0; tx <= tx1; ++tx)
                 {
                     const uint32_t t = uint32_t(ty) * TX + tx;
-                    c.g.footprint_[t >> 3] |= uint8_t(1u << (t & 7));
-                    c.layer.invalidateTile(tx, ty);
+                    g.footprint_[t >> 3] |= uint8_t(1u << (t & 7));
+                    layer.invalidateTile(tx, ty);
                 }
+        }
+
+        static bool emit(void* p, const Shape& rest, FixedVec2 at, bool mirror, Binding binding)
+        {
+            auto& c = *static_cast<DrawCtx*>(p);
+            ShapeDrawScratch& s = c.s;
+            const Paint& paint = rest.paint;
+            const bool stroked = paint.strokeWidth > 0 && paint.stroke != ColourRole::None;
+            if (paint.fill == ColourRole::None && !stroked)
+                return true;
+            // Field: each point moved by the field there; rigid: the whole
+            // item by the field at its anchor; sway: that, turned about the
+            // anchor by its arm (see warp()).
+            const Lattice& lat = c.g.lattice_;
+            const bool field = binding == Binding::Field && lat.configured();
+            const Fixed angle = binding == Binding::Sway ? lat.swayAngleAt(at) : Fixed{};
+            Shape warped;
+            if (!c.warp(rest, at, mirror, field, angle, s.points, s.rings, warped))
+                return c.ok = false;
+            const Rect canvasRect(0, 0, W, H);
+            RowMask fill(s.mask, ShapeDrawScratch::kMaskWords);
+            if (!s.raster.fill(warped, canvasRect, fill))
+                return c.ok = false;
+
+            // The clip: the item's own (warped with it) or the group's live one.
+            const RowMask* clip = nullptr;
+            RowMask own;
+            if (rest.clipSpace == ClipSpace::Item && rest.clipCount > 0)
+            {
+                if (!c.clipUnion(rest.clip, rest.clipCount, at, mirror, field, angle, s.clipMask, own))
+                    return c.ok = false;
+                clip = &own;
+            }
+            else if (rest.clipSpace == ClipSpace::Group && rest.clipCount > 0)
+            {
+                if (c.live != rest.clip || c.liveCount != rest.clipCount)
+                {
+                    c.live = nullptr;
+                    // The live Body is field-bound: clip to it as the field drew it.
+                    if (!c.clipUnion(rest.clip, rest.clipCount, {}, false, lat.configured(), Fixed{}, s.liveMask,
+                                     c.liveView))
+                        return c.ok = false;
+                    c.live = rest.clip;
+                    c.liveCount = rest.clipCount;
+                }
+                clip = &c.liveView;
+            }
+            if (clip)
+                clipMask(fill, *clip);
+
+            paintFill(c.layer, fill, paint.fill, c.g.remap_, paint.dither);
+            c.touch(fill);
+            if (!stroked)
+                return true;
+            RowMask stroke(s.strokeMask, ShapeDrawScratch::kMaskWords);
+            if (!innerStroke(fill, paint.strokeWidth, stroke))
+                return c.ok = false;
+            paintFill(c.layer, stroke, paint.stroke, c.g.remap_);
+            if (!s.raster.stroke(warped, canvasRect, stroke))
+                return c.ok = false;
+            if (clip)
+                clipMask(stroke, *clip);
+            paintFill(c.layer, stroke, paint.stroke, c.g.remap_);
+            c.touch(stroke);
             return true;
         }
     };
