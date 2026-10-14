@@ -16,6 +16,8 @@
  *   SHP-11  Id ledger: assign from 1, stable across runs, retire, never reuse, sorted output.
  *   SHP-12  Layer names: data-name over id, _xHH_ escapes, legacy _N_ suffix.
  *   SHP-13  Hard errors: no pack, ledger unchanged.
+ *   SHP-14  The stand-in Star Kit (tools/testdata/shapes) bundles into the expected pieces.
+ *   SHP-15  Truncation / mutation corpus over the Kit, sidecar, ledger and pack: never crashes.
  *
  * `shape_bundle_test --verify-pack <a.njn> [<b.njn>]` checks a CLI output
  * (index readable, every record decodes; with two files, identical indices).
@@ -806,6 +808,115 @@ static void test13_hardErrors() {
     ASSERT(lint.ok() && path, "SHP-13 an unknown top-level layer is a lint with its layer path");
 }
 
+
+static Bytes readFileBytes(const std::string& path);
+
+static std::string kitPath(const char* name) { return std::string(ENJIN2_SOURCE_DIR) + "/tools/testdata/shapes/" + name; }
+
+static void test14_standInKit() {
+    const Bytes svg = readFileBytes(kitPath("star.svg"));
+    const Bytes sidecar = readFileBytes(kitPath("star.svg.shape.json"));
+    ASSERT(!svg.empty() && !sidecar.empty(), "SHP-14 stand-in Kit and sidecar present");
+    const auto r = bundleShapes({{"star.svg", svg, sidecar}}, "");
+    ASSERT(r.ok(), "SHP-14 the stand-in Kit bundles");
+    for (const auto& i : r.issues)
+        ASSERT(i.severity == ImportIssueSeverity::Lint && i.code == "unsupported-paint",
+               "SHP-14 its only lint is the clip on the happy mouth (Tomodachi #332)");
+    const auto idx = indexOf(r);
+    ASSERT(idx.size() == 7, "SHP-14 Body + eyes, cheeks, mouth, top, arms, legs");
+    for (const auto& e : idx) ASSERT(e.id == 1 && e.label == "star", "SHP-14 every piece is id 1, labelled star");
+    ShapePiece body, eyes, mouth, top, arms, legs, cheeks;
+    if (!(firstPiece(r, ShapeSlot::Body, body) && firstPiece(r, ShapeSlot::Eyes, eyes) && firstPiece(r, ShapeSlot::Mouth, mouth) &&
+          firstPiece(r, ShapeSlot::Top, top) && firstPiece(r, ShapeSlot::Arms, arms) && firstPiece(r, ShapeSlot::Legs, legs) &&
+          firstPiece(r, ShapeSlot::Cheeks, cheeks))) {
+        ASSERT(false, "SHP-14 every piece reads");
+        return;
+    }
+    ASSERT(body.sockets.size() == 10, "SHP-14 ten sockets: 2 eyes, 2 cheeks, mouth, top, 2 arms, 2 legs");
+    ASSERT(eyes.poses == std::vector<uint8_t>({0, 1}) && eyes.members.size() == 1, "SHP-14 eyes: open + closed (hidden layer read), one drawing");
+    ASSERT(mouth.poses == std::vector<uint8_t>({0, 1}) && mouth.members.size() == 1, "SHP-14 mouth: neutral + happy");
+    ASSERT(mouth.span(1, 0).shapeCount == 2, "SHP-14 happy mouth: hole + tongue");
+    ASSERT(top.order == ShapeOrder::Behind && top.binding == ShapeBinding::Sway && top.swayHz == 2 * 4096 &&
+           top.swayZeta == static_cast<uint16_t>(std::lround(0.2 * 4096)), "SHP-14 top: behind, sidecar sway tuning");
+    ASSERT(legs.order == ShapeOrder::Behind && legs.members.size() == 1, "SHP-14 legs: behind, one mirrored foot");
+    ASSERT(arms.members.size() == 2 && arms.members[0].side == MemberSide::Left, "SHP-14 arms: arm_l / arm_r");
+    ASSERT(cheeks.members.size() == 1 && cheeks.shapes.size() == 1 && cheeks.shapes[0].role == ShapeRole::Accent, "SHP-14 cheeks: accent");
+    ASSERT(body.shapes.size() == 1 && body.shapes[0].role == ShapeRole::Body && body.points.size() == 16, "SHP-14 the star Body: 16 vertices");
+}
+
+/// Every result is either a pack that reads back in full, or an error with no pack.
+static bool consistent(const ShapeBundleResult& r) {
+    bool err = false;
+    for (const auto& i : r.issues) err = err || i.severity == ImportIssueSeverity::Error;
+    if (err) return r.pack.empty();
+    if (r.pack.empty()) return false;
+    ShapePackMemory mem(r.pack.data(), r.pack.size());
+    ShapePackIndex index;
+    if (!index.open(mem)) return false;
+    for (const auto& e : index.pieces()) {
+        ShapePiece p;
+        if (!index.readPiece(mem, e, p)) return false;
+    }
+    return true;
+}
+
+static void test15_corpus() {
+    const Bytes svg = readFileBytes(kitPath("star.svg"));
+    const Bytes sidecar = readFileBytes(kitPath("star.svg.shape.json"));
+    if (svg.empty()) return;
+    const auto good = bundleShapes({{"star.svg", svg, sidecar}}, "");
+    const std::string ledger = good.ledger;
+    int bad = 0;
+    // Every truncation of the SVG, the sidecar and the ledger.
+    for (size_t n = 0; n < svg.size(); ++n)
+        bad += !consistent(bundleShapes({{"star.svg", Bytes(svg.begin(), svg.begin() + n), sidecar}}, ledger));
+    for (size_t n = 0; n < sidecar.size(); ++n)
+        bad += !consistent(bundleShapes({{"star.svg", svg, Bytes(sidecar.begin(), sidecar.begin() + n)}}, ledger));
+    for (size_t n = 0; n < ledger.size(); ++n)
+        bad += !consistent(bundleShapes({{"star.svg", svg, sidecar}}, ledger.substr(0, n)));
+    // Seeded mutations: overwrite bytes with characters that matter to the parsers.
+    static const char kSpecial[] = "<>/=\"'&;#-.eE0123456789MmLlCcAaZz ,()[]{}:\\\x00\xff";
+    uint32_t seed = 330;
+    auto rnd = [&seed]() { return seed = seed * 1664525u + 1013904223u; };
+    for (int i = 0; i < 3000; ++i) {
+        Bytes m = svg;
+        const int edits = 1 + static_cast<int>(rnd() % 4);
+        for (int k = 0; k < edits; ++k) m[rnd() % m.size()] = static_cast<uint8_t>(kSpecial[rnd() % (sizeof kSpecial - 1)]);
+        bad += !consistent(bundleShapes({{"star.svg", m, sidecar}}, ledger));
+    }
+    for (int i = 0; i < 500; ++i) {
+        std::string m = ledger;
+        m[rnd() % m.size()] = kSpecial[rnd() % (sizeof kSpecial - 1)];
+        Bytes sc = sidecar;
+        sc[rnd() % sc.size()] = static_cast<uint8_t>(kSpecial[rnd() % (sizeof kSpecial - 1)]);
+        bad += !consistent(bundleShapes({{"star.svg", svg, sc}}, m));
+    }
+    ASSERT(bad == 0, "SHP-15 every truncated / mutated input gives a readable pack or an error, never a crash");
+    if (bad) fprintf(stderr, "    %d inconsistent results\n", bad);
+
+    // The pack reader on every truncation and on mutations of a real pack.
+    const Bytes& pack = good.pack;
+    int opened = 0;
+    for (size_t n = 0; n < pack.size(); ++n) {
+        ShapePackMemory mem(pack.data(), n);
+        ShapePackIndex index;
+        opened += index.open(mem);
+    }
+    ASSERT(opened == 0, "SHP-15 no truncated pack opens");
+    for (int i = 0; i < 4000; ++i) {
+        Bytes m = pack;
+        m[rnd() % m.size()] = static_cast<uint8_t>(rnd());
+        ShapePackMemory mem(m.data(), m.size());
+        ShapePackIndex index;
+        if (!index.open(mem)) continue;
+        for (const auto& e : index.pieces()) {
+            ShapePiece p;
+            index.readPiece(mem, e, p);
+        }
+    }
+    ASSERT(true, "SHP-15 mutated packs read without a crash");
+}
+
 // ---------------------------------------------------------------------------
 
 static Bytes readFile(const std::string& path) {
@@ -847,6 +958,8 @@ static int verifyPack(int argc, char** argv) {
     return 0;
 }
 
+static Bytes readFileBytes(const std::string& path) { return readFile(path); }
+
 int main(int argc, char** argv) {
     if (argc >= 3 && std::strcmp(argv[1], "--verify-pack") == 0) return verifyPack(argc, argv);
 
@@ -863,6 +976,8 @@ int main(int argc, char** argv) {
     test11_ledger();
     test12_names();
     test13_hardErrors();
+    test14_standInKit();
+    test15_corpus();
 
     printf("shape_bundle_test: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

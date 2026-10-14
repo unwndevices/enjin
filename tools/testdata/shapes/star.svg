@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 80 80">
+  <!-- Generator: Adobe Illustrator 29.2.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 116)  -->
+  <!-- Stand-in Kit (Tomodachi #330), hand-written in Illustrator 29.x "Save a Copy > SVG" form
+       from the prototype Star and docs/design/pet/concept-sheet.jpg. Replaced by the artist's Kit (#343). -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #b18cf9;
+      }
+
+      .st1 {
+        fill: #b5dc6c;
+      }
+
+      .st2 {
+        fill: #1c1c1c;
+      }
+
+      .st3 {
+        fill: none;
+      }
+
+      .st4 {
+        clip-path: url(#clippath);
+      }
+    </style>
+    <clipPath id="clippath">
+      <path d="M35,32h10c0,4-2.2,6-5,6s-5-2-5-6Z"/>
+    </clipPath>
+  </defs>
+  <g id="top">
+    <g id="antenna">
+      <circle id="anchor" class="st3" cx="40" cy="20" r=".5"/>
+      <rect class="st0" x="39" y="12" width="2" height="9"/>
+      <path class="st0" d="M40,13c-3.9-2.6-5.4-5.3-5-8,.4-2.7,2.1-4,5-4s4.6,1.3,5,4c.4,2.7-1.1,5.4-5,8Z"/>
+    </g>
+  </g>
+  <g id="legs">
+    <g id="foot">
+      <circle id="anchor1" data-name="anchor" class="st3" cx="34" cy="60" r=".5"/>
+      <ellipse class="st0" cx="34" cy="63" rx="4" ry="3"/>
+    </g>
+    <g id="foot1" data-name="foot">
+      <circle id="anchor2" data-name="anchor" class="st3" cx="46" cy="60" r=".5"/>
+      <ellipse class="st0" cx="46" cy="63" rx="4" ry="3"/>
+    </g>
+  </g>
+  <g id="body">
+    <polygon class="st0" points="21 11 40 19 59 11 60 24 76 27 66 40 75 53 60 56 59 68 40 61 21 68 20 56 5 53 14 40 4 27 20 24 21 11"/>
+  </g>
+  <g id="arms">
+    <g id="arm_x5F_l">
+      <circle id="anchor3" data-name="anchor" class="st3" cx="15" cy="47" r=".5"/>
+      <rect class="st1" x="8" y="46" width="8" height="3" rx="1.5" ry="1.5" transform="translate(-15.52 6.97) rotate(-20)"/>
+      <circle class="st1" cx="7" cy="50" r="3"/>
+    </g>
+    <g id="arm_x5F_r">
+      <circle id="anchor4" data-name="anchor" class="st3" cx="65" cy="47" r=".5"/>
+      <rect class="st1" x="64" y="46" width="8" height="3" rx="1.5" ry="1.5" transform="translate(20.35 -20.39) rotate(20)"/>
+      <circle class="st1" cx="73" cy="50" r="3"/>
+    </g>
+  </g>
+  <g id="cheeks">
+    <g id="cheek">
+      <circle class="st1" cx="25" cy="31" r="2"/>
+    </g>
+    <g id="cheek1" data-name="cheek">
+      <circle class="st1" cx="55" cy="31" r="2"/>
+    </g>
+  </g>
+  <g id="mouth">
+    <g id="neutral">
+      <circle id="anchor5" data-name="anchor" class="st3" cx="40" cy="33" r=".5"/>
+      <path class="st2" d="M37,33c2-1.3,4-1.3,6,0v1c-2-1.3-4-1.3-6,0v-1Z"/>
+    </g>
+    <g id="happy" style="display: none;">
+      <path class="st2" d="M35,32h10c0,4-2.2,6-5,6s-5-2-5-6Z"/>
+      <g class="st4">
+        <ellipse class="st1" cx="40" cy="37" rx="3" ry="1.5"/>
+      </g>
+    </g>
+  </g>
+  <g id="eyes">
+    <g id="open">
+      <g id="eye">
+        <rect class="st2" x="34" y="25" width="2" height="3"/>
+      </g>
+      <g id="eye1" data-name="eye">
+        <rect class="st2" x="44" y="25" width="2" height="3"/>
+      </g>
+    </g>
+    <g id="closed" style="display: none;">
+      <g id="eye2" data-name="eye">
+        <rect class="st2" x="33" y="26" width="4" height="1"/>
+      </g>
+      <g id="eye3" data-name="eye">
+        <rect class="st2" x="43" y="26" width="4" height="1"/>
+      </g>
+    </g>
+  </g>
+</svg>

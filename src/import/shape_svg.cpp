@@ -1042,7 +1042,7 @@ private:
 
         bool opacity = false;
         double strokeWidth = -1;
-        bool strokeSet = false, strokeOn = in.stroke;
+        bool strokeOn = in.stroke;
         for (const auto& [key, value] : props) {
             if (value == "inherit") continue;
             if (key == "fill") {
@@ -1061,7 +1061,6 @@ private:
             } else if (key == "fill-rule") {
                 in.evenOdd = lower(value) == "evenodd";
             } else if (key == "stroke") {
-                strokeSet = true;
                 strokeOn = lower(value) != "none";
             } else if (key == "stroke-width") {
                 double w = 0;
@@ -1076,7 +1075,6 @@ private:
                 if (lower(value) != "none") in.clip = true;
             }
         }
-        (void)strokeSet;
         in.stroke = strokeOn && strokeWidth != 0;
         paint.fill = in.fill;
         paint.rgb = in.rgb;
@@ -1162,28 +1160,14 @@ bool readSvg(const uint8_t* data, size_t size, const std::string& source, const 
     Matrix origin;
     origin.e = -(v[0] + 40);
     origin.f = -(v[1] + 40);
-    Inherited in;
-    Paint rootPaint;
-    // The root's own presentation attributes apply to everything.
-    XmlElem rootStyle;
-    rootStyle.attrs = doc.attrs;
-    rootStyle.name = "g";
-    Matrix rootM = origin;
-    if (const std::string* t = doc.attr("transform")) {
-        Matrix local;
-        if (transform(*t, local)) rootM = origin * local;
-    }
-    // Reuse the walker's style resolution for the root.
+    // The root walks as a group: its presentation attributes and transform apply to everything.
+    XmlElem g;
+    g.name = "g";
+    for (const auto& a : doc.attrs)
+        if (a.first != "id" && a.first != "data-name" && a.first != "viewBox") g.attrs.push_back(a);
+    g.kids = std::move(doc.kids);
     Node scratch;
-    {
-        // style() is private; apply via a synthetic group walk.
-        XmlElem g;
-        g.name = "g";
-        for (const auto& a : doc.attrs)
-            if (a.first != "id" && a.first != "data-name" && a.first != "transform" && a.first != "viewBox") g.attrs.push_back(a);
-        g.kids = doc.kids;
-        w.element(g, rootM, in, scratch, "", 0);
-    }
+    w.element(g, origin, Inherited{}, scratch, "", 0);
     if (!scratch.children.empty()) root.children = std::move(scratch.children.front().children);
     return !w.errors;
 }
