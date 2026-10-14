@@ -85,3 +85,16 @@ if(TARGET enjin2_lua)
         ENJIN2_ALLOC_VERIFICATION=1
     )
 endif()
+
+# bench_shape — Shape fill rasterizer + paint on the prototype Star at rest
+# (Tomodachi #329, ADR-0016). Reuses the test golden for its rings.
+add_executable(bench_shape bench_shape.cpp)
+target_include_directories(bench_shape PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/tests
+)
+target_link_libraries(bench_shape PRIVATE
+    nanobench_vendor
+    enjin2_core
+    enjin2_graphics
+)
