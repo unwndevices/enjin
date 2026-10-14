@@ -422,6 +422,18 @@ if(TARGET enjin_sprite_import)
     set_tests_properties(sprite_import_cli_reimport_loads PROPERTIES FIXTURES_REQUIRED sprite_import_cli_re)
 endif()
 
+# Shape pack format + bundle function: Kit SVG → Shape pack (Tomodachi #330:
+# SHP-xx), plus the CLI bundling the stand-in Kit twice with one ledger and the
+# test checking the two indices match. The pre-push gate
+# (scripts/importer-check.sh in Tomodachi) runs these under ASan.
+if(TARGET enjin2_import)
+    add_executable(shape_bundle_test shape_bundle_test.cpp)
+    target_link_libraries(shape_bundle_test PRIVATE enjin2_import)
+    target_compile_definitions(shape_bundle_test PRIVATE
+        ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+    add_test(NAME shape_bundle_test COMMAND shape_bundle_test)
+endif()
+
 # Shared C++ layered-asset owner/loader + bounded per-applet arena
 # (ADR-0004, Tomodachi #95: LAYLA-01..LAYLA-17). Links enjin2_graphics for the
 # AssetArena / LayeredAssetStore translation units.
