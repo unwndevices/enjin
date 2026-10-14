@@ -556,6 +556,31 @@ if(TARGET enjin_shape_bundle)
         COMMAND enjin_shape_bundle ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.gpl
             --ledger ${_shape_dir}/refused-ledger.json -o ${_shape_dir}/refused.njn)
     set_tests_properties(shape_bundle_cli_refuses PROPERTIES WILL_FAIL TRUE)
+
+    # Paint goldens (Tomodachi #332): both stand-in Kits through the CLI with the
+    # fixture's id ledger (Star = 1, Chestnut = 2; the CLI must leave it as is),
+    # drawn by a Shape group and compared with tests/testdata/shape/paint/*.txt
+    # (`shape_paint_kit_test <pack> --update` rewrites them).
+    set(_paint_dir ${CMAKE_CURRENT_BINARY_DIR}/shape_paint_cli)
+    foreach(_f star.svg star.svg.shape.json chestnut.svg chestnut.svg.shape.json)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/shapes/${_f} ${_paint_dir}/${_f} COPYONLY)
+    endforeach()
+    add_test(NAME shape_paint_cli_ledger COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/shapes/ledger.json ${_paint_dir}/ledger.json)
+    set_tests_properties(shape_paint_cli_ledger PROPERTIES FIXTURES_SETUP shape_paint_cli_0)
+    add_test(NAME shape_paint_cli_bundle
+        COMMAND enjin_shape_bundle ${_paint_dir}/star.svg ${_paint_dir}/chestnut.svg
+            --ledger ${_paint_dir}/ledger.json -o ${_paint_dir}/paint.njn)
+    set_tests_properties(shape_paint_cli_bundle PROPERTIES
+        FIXTURES_REQUIRED shape_paint_cli_0 FIXTURES_SETUP shape_paint_cli_1
+        FAIL_REGULAR_EXPRESSION "ledger updated|lint|error")
+    add_executable(shape_paint_kit_test shape_paint_kit_test.cpp)
+    target_link_libraries(shape_paint_kit_test PRIVATE enjin2_graphics enjin2_core)
+    target_include_directories(shape_paint_kit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+    target_compile_definitions(shape_paint_kit_test PRIVATE
+        ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+    add_test(NAME shape_paint_kit_test COMMAND shape_paint_kit_test ${_paint_dir}/paint.njn)
+    set_tests_properties(shape_paint_kit_test PROPERTIES FIXTURES_REQUIRED shape_paint_cli_1)
 endif()
 
 # Shared C++ layered-asset owner/loader + bounded per-applet arena

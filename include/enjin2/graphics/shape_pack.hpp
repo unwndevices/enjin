@@ -46,9 +46,13 @@
  * in paint order.  MemberSide::Mirrored is the single right-facing member,
  * mirrored on left sockets; Left/Right members go on sockets of their side.
  *
- * Paint fields reserved for later tickets (Tomodachi #332): `dither` (quarters
- * of coverage, 4 = solid), `strokeWidth` + `strokeRole` (inner / open-path
- * stroke), `clip` + `clipShape`.  The bundle writes 4 / 0 / None for now.
+ * Paint (Tomodachi #332): `dither` is quarters of coverage (4 = solid; the
+ * Bayer level is dither × 4), `strokeWidth` + `strokeRole` the stroke (inner on
+ * closed rings, a line on open ones; width 0 or role None = none).  `clip`
+ * LiveBody cuts the Shape to the Body as drawn; Own cuts it to Shape
+ * `clipShape` of the same record, placed (and mirrored) with the member.  The
+ * bundle writes clip Shapes with role None after every span, so no pose draws
+ * them.
  */
 #pragma once
 

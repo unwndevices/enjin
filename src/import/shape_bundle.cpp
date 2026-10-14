@@ -372,15 +372,28 @@ std::vector<MemberDraw> poseMembers(const Node& pose, const std::string& path, c
     return members;
 }
 
+/// An own-space clip waiting for its Shape: appended after every span of the piece.
+struct PendingClip {
+    size_t                               shape;  ///< The clipped Shape.
+    std::vector<std::vector<ShapePoint>> rings;  ///< The clip, relative to the member's anchor.
+};
+
 struct Context {
     const std::string&       source;
     const Sidecar&           sidecar;
     const ShapeBundleLimits& limits;
     Sink&                    sink;
-    std::vector<uint32_t>&   colours;   ///< Every fill colour read, first use first.
+    std::vector<uint32_t>&   colours;   ///< Every fill and stroke colour read, first use first.
     std::vector<uint32_t>    unmapped;  ///< Colours already linted.
-    bool lintedPaint = false, lintedRange = false;
+    const std::vector<std::vector<Ring>>* clips = nullptr;  ///< The source's clip paths (Kit coordinates).
+    std::vector<Ring>        bodyRings;  ///< The Kit's Body as drawn (Kit coordinates), for live-Body clips.
+    bool                     inBody = false;  ///< Building the Body piece (its clips are its own).
+    std::vector<PendingClip> pending;
+    bool lintedRange = false;
 };
+
+/// Clip within this of the Body (px, both ways) binds to the live Body; within kNearBodyClip is a lint.
+constexpr double kLiveBodyClip = 0.25, kNearBodyClip = 2.0;
 
 int16_t q88(double v, Context& cx, const std::string& path) {
     const double s = std::round(v * 256);
@@ -394,35 +407,90 @@ int16_t q88(double v, Context& cx, const std::string& path) {
 
 ShapePoint qpt(Pt p, Context& cx, const std::string& path) { return {q88(p.x, cx, path), q88(p.y, cx, path)}; }
 
-ShapeRole roleOf(const shape_svg::Paint& paint, Context& cx, const std::string& path) {
-    if (paint.fill != shape_svg::Paint::Fill::Colour) return ShapeRole::None;
-    if (std::find(cx.colours.begin(), cx.colours.end(), paint.rgb) == cx.colours.end()) cx.colours.push_back(paint.rgb);
-    const auto it = cx.sidecar.roles.find(paint.rgb);
+ShapeRole roleOf(shape_svg::Paint::Fill kind, uint32_t rgb, Context& cx, const std::string& path) {
+    if (kind != shape_svg::Paint::Fill::Colour) return ShapeRole::None;
+    if (std::find(cx.colours.begin(), cx.colours.end(), rgb) == cx.colours.end()) cx.colours.push_back(rgb);
+    const auto it = cx.sidecar.roles.find(rgb);
     if (it != cx.sidecar.roles.end()) return it->second;
-    if (std::find(cx.unmapped.begin(), cx.unmapped.end(), paint.rgb) == cx.unmapped.end()) {
-        cx.unmapped.push_back(paint.rgb);
+    if (std::find(cx.unmapped.begin(), cx.unmapped.end(), rgb) == cx.unmapped.end()) {
+        cx.unmapped.push_back(rgb);
         char hex[8];
-        std::snprintf(hex, sizeof hex, "#%06x", static_cast<unsigned>(paint.rgb));
+        std::snprintf(hex, sizeof hex, "#%06x", static_cast<unsigned>(rgb));
         cx.sink.lint("unmapped-colour", std::string("colour ") + hex + " has no role in the shape sidecar; it paints as body",
                      cx.source, path);
     }
     return ShapeRole::Body;
 }
 
+// Distance from a point to the closed rings' outline.
+double outlineDist(Pt p, const std::vector<Ring>& rings) {
+    double best = 1e300;
+    for (const Ring& r : rings) {
+        const size_t n = r.pts.size();
+        for (size_t i = 0; i < n; ++i) {
+            const Pt a = r.pts[i], b = r.pts[(i + 1) % n];
+            const double dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+            double t = l2 > 0 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2 : 0;
+            t = std::clamp(t, 0.0, 1.0);
+            best = std::min(best, std::hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy)));
+        }
+    }
+    return best;
+}
+
+/// Symmetric Hausdorff distance between two ring sets' outlines (vertex-sampled).
+double outlineDistance(const std::vector<Ring>& a, const std::vector<Ring>& b) {
+    if (a.empty() || b.empty()) return 1e300;
+    double d = 0;
+    for (const Ring& r : a)
+        for (const Pt& p : r.pts) d = std::max(d, outlineDist(p, b));
+    for (const Ring& r : b)
+        for (const Pt& p : r.pts) d = std::max(d, outlineDist(p, a));
+    return d;
+}
+
+/// The paint of @p n into @p f: roles, rule, dither, stroke (lints as it goes).
+void paintOf(const Node& n, ShapeFill& f, Context& cx, const std::string& path) {
+    const shape_svg::Paint& paint = n.paint;
+    f.role = roleOf(paint.fill, paint.rgb, cx, path);
+    f.flags = paint.evenOdd ? SHAPE_FILL_EVENODD : 0;
+
+    // Dither: opacity snapped to quarters of coverage.
+    const double op = paint.opacity;
+    const int quarters = std::clamp(static_cast<int>(std::lround(op * 4)), 1, 4);
+    f.dither = static_cast<uint8_t>(quarters);
+    if (std::fabs(op - quarters / 4.0) > 0.005) {
+        char m[120];
+        std::snprintf(m, sizeof m, "opacity %.0f %% is not 25, 50, 75 or 100 %%; it dithers at %d %%", op * 100, quarters * 25);
+        cx.sink.lint("off-level-opacity", m, cx.source, path);
+    }
+
+    // Stroke: the inner width (closed rings) or the line width (open), in whole px.
+    if (paint.stroke == shape_svg::Paint::Fill::Colour) {
+        const double w = paint.strokeWidth;
+        const long px = std::lround(w);
+        if (std::fabs(w - static_cast<double>(px)) > 0.01) {
+            char m[120];
+            std::snprintf(m, sizeof m, "stroke-width %.2f is not a whole number of px; it strokes %ld px", w, px);
+            cx.sink.lint("fractional-stroke", m, cx.source, path);
+        }
+        if (px > 0) {
+            f.strokeWidth = static_cast<uint8_t>(std::min(px, 255L));
+            f.strokeRole = roleOf(paint.stroke, paint.strokeRgb, cx, path);
+        }
+    }
+}
+
 /// Append @p shapes (Kit coordinates) to @p piece relative to @p anchor, mirrored when @p flip.
-/// Returns the number of Shapes added.
+/// Returns the number of Shapes added.  Own-space clips go to cx.pending (see appendClips()).
 uint16_t addShapes(ShapePiece& piece, const std::vector<const Node*>& shapes, Pt anchor, bool flip, Context& cx,
                    const std::string& path) {
     uint16_t added = 0;
+    auto local = [&](const Pt& p) { return qpt({flip ? anchor.x - p.x : p.x - anchor.x, p.y - anchor.y}, cx, path); };
     for (const Node* n : shapes) {
-        if ((n->paint.stroke || n->paint.opacity || n->paint.clip) && !cx.lintedPaint) {
-            cx.lintedPaint = true;
-            cx.sink.lint("unsupported-paint", "stroke, opacity and clip paint are not converted yet; fills only", cx.source,
-                         join(path, n->name));
-        }
+        const std::string here = join(path, n->name);
         ShapeFill f;
-        f.role = roleOf(n->paint, cx, join(path, n->name));
-        f.flags = n->paint.evenOdd ? SHAPE_FILL_EVENODD : 0;
+        paintOf(*n, f, cx, here);
         f.firstRing = static_cast<uint16_t>(piece.rings.size());
         for (const Ring& r : n->rings) {
             ShapeRing ring;
@@ -430,7 +498,7 @@ uint16_t addShapes(ShapePiece& piece, const std::vector<const Node*>& shapes, Pt
             ring.flags = r.closed ? SHAPE_RING_CLOSED : 0;
             std::vector<ShapePoint> pts;
             for (const Pt& p : r.pts) {
-                const ShapePoint s = qpt({flip ? anchor.x - p.x : p.x - anchor.x, p.y - anchor.y}, cx, path);
+                const ShapePoint s = local(p);
                 if (pts.empty() || pts.back().x != s.x || pts.back().y != s.y) pts.push_back(s);
             }
             if (r.closed && pts.size() > 1 && pts.back().x == pts.front().x && pts.back().y == pts.front().y) pts.pop_back();
@@ -445,13 +513,82 @@ uint16_t addShapes(ShapePiece& piece, const std::vector<const Node*>& shapes, Pt
         }
         f.ringCount = static_cast<uint16_t>(piece.rings.size() - f.firstRing);
         if (f.ringCount == 0) {
-            cx.sink.lint("empty-shape", "a shape with no area is dropped", cx.source, join(path, n->name));
+            cx.sink.lint("empty-shape", "a shape with no area is dropped", cx.source, here);
             continue;
+        }
+
+        // Clip: the live Body when it matches the Kit's Body, else the Feature's own space.
+        if (n->paint.clip >= 0 && cx.clips && static_cast<size_t>(n->paint.clip) < cx.clips->size()) {
+            const std::vector<Ring>& clip = (*cx.clips)[static_cast<size_t>(n->paint.clip)];
+            const double d = cx.inBody ? 1e300 : outlineDistance(clip, cx.bodyRings);
+            if (d <= kLiveBodyClip) {
+                f.clip = ShapeClip::LiveBody;
+            } else {
+                if (d <= kNearBodyClip) {
+                    char m[140];
+                    std::snprintf(m, sizeof m, "the clip is %.2f px off the Body; it clips in the Feature's own space "
+                                  "(redraw it from the Body to follow the Body)", d);
+                    cx.sink.lint("near-body-clip", m, cx.source, here);
+                }
+                PendingClip pc;
+                pc.shape = piece.shapes.size();
+                for (const Ring& r : clip) {
+                    std::vector<ShapePoint> pts;
+                    for (const Pt& p : r.pts) {
+                        const ShapePoint q = local(p);
+                        if (pts.empty() || pts.back().x != q.x || pts.back().y != q.y) pts.push_back(q);
+                    }
+                    if (pts.size() > 1 && pts.back().x == pts.front().x && pts.back().y == pts.front().y) pts.pop_back();
+                    if (pts.size() >= 3) pc.rings.push_back(std::move(pts));
+                }
+                f.clip = ShapeClip::Own;
+                cx.pending.push_back(std::move(pc));
+            }
         }
         piece.shapes.push_back(f);
         ++added;
     }
     return added;
+}
+
+/// Append the pending own-space clips as Shapes of role None after every span (one per distinct
+/// geometry) and point their clipped Shapes at them.
+void appendClips(ShapePiece& piece, Context& cx) {
+    std::vector<std::pair<const PendingClip*, uint16_t>> made;
+    for (const PendingClip& pc : cx.pending) {
+        int found = -1;
+        for (const auto& [other, index] : made)
+            if (other->rings.size() == pc.rings.size()) {
+                bool same = true;
+                for (size_t r = 0; same && r < pc.rings.size(); ++r) {
+                    const auto& x = pc.rings[r];
+                    const auto& y = other->rings[r];
+                    same = x.size() == y.size();
+                    for (size_t k = 0; same && k < x.size(); ++k) same = x[k].x == y[k].x && x[k].y == y[k].y;
+                }
+                if (same) found = index;
+            }
+        if (found < 0) {
+            ShapeFill c;
+            c.role = ShapeRole::None;
+            c.firstRing = static_cast<uint16_t>(piece.rings.size());
+            for (const auto& pts : pc.rings) {
+                if (piece.points.size() + pts.size() > cx.limits.maxPiecePoints) {
+                    cx.sink.error("too-large", "a piece has more points than the cap", cx.source, "");
+                    return;
+                }
+                piece.rings.push_back({static_cast<uint16_t>(piece.points.size()), static_cast<uint16_t>(pts.size()),
+                                       SHAPE_RING_CLOSED});
+                piece.points.insert(piece.points.end(), pts.begin(), pts.end());
+            }
+            c.ringCount = static_cast<uint16_t>(piece.rings.size() - c.firstRing);
+            found = static_cast<int>(piece.shapes.size());
+            piece.shapes.push_back(c);
+            made.emplace_back(&pc, static_cast<uint16_t>(found));
+        }
+        piece.shapes[pc.shape].clipShape = static_cast<uint16_t>(found);
+    }
+    cx.pending.clear();
 }
 
 struct Built {
@@ -465,16 +602,14 @@ struct KitSocket {
     Pt        at;
 };
 
-/// Are members @p a and @p b the same drawing in every pose?
-bool sameDrawing(const ShapePiece& p, size_t a, size_t b) {
-    for (size_t pose = 0; pose < p.poses.size(); ++pose) {
-        const ShapeSpan& sa = p.span(pose, a);
-        const ShapeSpan& sb = p.span(pose, b);
-        if (sa.shapeCount != sb.shapeCount) return false;
-        for (uint16_t i = 0; i < sa.shapeCount; ++i) {
-            const ShapeFill& fa = p.shapes[sa.firstShape + i];
-            const ShapeFill& fb = p.shapes[sb.firstShape + i];
-            if (fa.role != fb.role || fa.flags != fb.flags || fa.ringCount != fb.ringCount) return false;
+/// Are Shapes @p ia and @p ib the same drawing (paint, rings, own clip)?
+bool sameShape(const ShapePiece& p, size_t ia, size_t ib, bool clip = true) {
+            const ShapeFill& fa = p.shapes[ia];
+            const ShapeFill& fb = p.shapes[ib];
+            if (fa.role != fb.role || fa.flags != fb.flags || fa.ringCount != fb.ringCount || fa.dither != fb.dither ||
+                fa.strokeWidth != fb.strokeWidth || fa.strokeRole != fb.strokeRole || fa.clip != fb.clip)
+                return false;
+            if (clip && fa.clip == ShapeClip::Own && !sameShape(p, fa.clipShape, fb.clipShape, false)) return false;
             for (uint16_t r = 0; r < fa.ringCount; ++r) {
                 const ShapeRing& ra = p.rings[fa.firstRing + r];
                 const ShapeRing& rb = p.rings[fb.firstRing + r];
@@ -494,7 +629,17 @@ bool sameDrawing(const ShapePiece& p, size_t a, size_t b) {
                 };
                 if (!covered(ra, rb) || !covered(rb, ra)) return false;
             }
-        }
+            return true;
+}
+
+/// Are members @p a and @p b the same drawing in every pose?
+bool sameDrawing(const ShapePiece& p, size_t a, size_t b) {
+    for (size_t pose = 0; pose < p.poses.size(); ++pose) {
+        const ShapeSpan& sa = p.span(pose, a);
+        const ShapeSpan& sb = p.span(pose, b);
+        if (sa.shapeCount != sb.shapeCount) return false;
+        for (uint16_t i = 0; i < sa.shapeCount; ++i)
+            if (!sameShape(p, sa.firstShape + i, sb.firstShape + i)) return false;
     }
     return true;
 }
@@ -507,23 +652,38 @@ void keepFirstMember(ShapePiece& p) {
     out.shapes.clear();
     out.rings.clear();
     out.points.clear();
+    auto copy = [&](size_t i) {
+        ShapeFill f = p.shapes[i];
+        const uint16_t firstRing = static_cast<uint16_t>(out.rings.size());
+        for (uint16_t r = 0; r < f.ringCount; ++r) {
+            ShapeRing ring = p.rings[f.firstRing + r];
+            const uint16_t firstPoint = static_cast<uint16_t>(out.points.size());
+            for (uint16_t k = 0; k < ring.pointCount; ++k) out.points.push_back(p.points[ring.firstPoint + k]);
+            ring.firstPoint = firstPoint;
+            out.rings.push_back(ring);
+        }
+        f.firstRing = firstRing;
+        out.shapes.push_back(f);
+    };
     for (size_t pose = 0; pose < p.poses.size(); ++pose) {
         const ShapeSpan s = p.span(pose, 0);
         ShapeSpan ns{static_cast<uint16_t>(out.shapes.size()), s.shapeCount};
-        for (uint16_t i = 0; i < s.shapeCount; ++i) {
-            ShapeFill f = p.shapes[s.firstShape + i];
-            const uint16_t firstRing = static_cast<uint16_t>(out.rings.size());
-            for (uint16_t r = 0; r < f.ringCount; ++r) {
-                ShapeRing ring = p.rings[f.firstRing + r];
-                const uint16_t firstPoint = static_cast<uint16_t>(out.points.size());
-                for (uint16_t k = 0; k < ring.pointCount; ++k) out.points.push_back(p.points[ring.firstPoint + k]);
-                ring.firstPoint = firstPoint;
-                out.rings.push_back(ring);
-            }
-            f.firstRing = firstRing;
-            out.shapes.push_back(f);
-        }
+        for (uint16_t i = 0; i < s.shapeCount; ++i) copy(s.firstShape + i);
         out.spans.push_back(ns);
+    }
+    // Own clips after every span, each once.
+    std::map<uint16_t, uint16_t> clipAt;
+    const size_t drawn = out.shapes.size();
+    for (size_t i = 0; i < drawn; ++i) {
+        ShapeFill& f = out.shapes[i];
+        if (f.clip != ShapeClip::Own) continue;
+        auto it = clipAt.find(f.clipShape);
+        if (it == clipAt.end()) {
+            const uint16_t old = f.clipShape;
+            copy(old);  // may reallocate out.shapes
+            it = clipAt.emplace(old, static_cast<uint16_t>(out.shapes.size() - 1)).first;
+        }
+        out.shapes[i].clipShape = it->second;
     }
     p = std::move(out);
 }
@@ -625,6 +785,8 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
     p.swayHz = q412(hz);
     p.swayZeta = q412(zeta);
 
+    cx.pending.clear();
+    cx.inBody = false;
     std::vector<bool> flip(base.size());
     for (size_t m = 0; m < base.size(); ++m) {
         const std::string& n = base[m].name;
@@ -667,6 +829,7 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
                     cx.sink.lint("unknown-member", "member \"" + draws[i][k].name + "\" is not in the required pose; it is ignored",
                                  src, draws[i][k].path);
     }
+    appendClips(p, cx);
     if (cx.sink.errors) return false;
 
     // One drawing for every Mirrored member: keep one.
@@ -688,8 +851,12 @@ bool buildBody(const Node& layer, Context& cx, Built& out) {
     std::vector<const Node*> shapes;
     const Node* anchor = nullptr;
     collectShapes(layer, shapes, anchor);
+    cx.pending.clear();
+    cx.inBody = true;
     const uint16_t n = addShapes(p, shapes, {0, 0}, false, cx, layer.name);
     p.spans = {{0, n}};
+    appendClips(p, cx);
+    cx.inBody = false;
     out.hasShapes = n > 0;
     out.layer = layer.name;
     if (!out.hasShapes) cx.sink.lint("empty-shape", "the body layer draws nothing", cx.source, layer.name);
@@ -726,7 +893,7 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
         sink.errors = true;
         return false;
     }
-    Context cx{src.name, sidecar, lim, sink, colours, {}};
+    Context cx{src.name, sidecar, lim, sink, colours, {}, &root.clipPaths, {}, false, {}, false};
     // Runs one piece's build with the error flag scoped to it: did it fail?
     auto failed = [&](auto&& build) {
         const bool before = sink.errors;
@@ -772,6 +939,15 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
     const SlotLayer* body = nullptr;
     for (const auto& l : layers)
         if (l.slot == ShapeSlot::Body) body = &l;
+    if (body) {
+        // The Body as drawn: what a live-Body clip must match.
+        std::vector<const Node*> shapes;
+        const Node* anchor = nullptr;
+        collectShapes(*body->node, shapes, anchor);
+        for (const Node* n : shapes)
+            for (const Ring& r : n->rings)
+                if (r.closed) cx.bodyRings.push_back(r);
+    }
 
     std::vector<KitSocket> sockets;
     std::vector<Built> built;

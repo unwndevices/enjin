@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 80 80">
+  <!-- Generator: Adobe Illustrator 29.2.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 116)  -->
+  <!-- Stand-in Kit (Tomodachi #332), hand-written from the prototype Chestnut (look-and-feel.html):
+       a capped top clipped to the Body, in the legacy clipping-mask form (<clipPath> holding a
+       <use> of the Body path from <defs>). The cap binds to the live Body, so on any Body it is
+       cut to that Body's outline. Replaced by the artist's Kits (#343). -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #d9a066;
+      }
+
+      .st1 {
+        fill: #8f5636;
+      }
+
+      .st2 {
+        fill: #1c1c1c;
+      }
+
+      .st3 {
+        fill: none;
+      }
+
+      .st4 {
+        fill: none;
+        stroke: #1c1c1c;
+        stroke-miterlimit: 10;
+      }
+    </style>
+    <path id="SVGID_1_" d="M40,10c6,8,26,12,28,28,2,18-10,28-28,28s-30-10-28-28c2-16,22-20,28-28Z"/>
+  </defs>
+  <g id="body">
+    <path class="st0" d="M40,10c6,8,26,12,28,28,2,18-10,28-28,28s-30-10-28-28c2-16,22-20,28-28Z"/>
+  </g>
+  <g id="top">
+    <g id="cap">
+      <circle id="anchor" class="st3" cx="40" cy="20" r=".5"/>
+      <clipPath id="SVGID_2_">
+        <use xlink:href="#SVGID_1_" style="overflow: visible;"/>
+      </clipPath>
+      <g style="clip-path: url(#SVGID_2_);">
+        <path class="st1" d="M6,36c4.7,6,9.3,6,14,1,4,5.3,8.3,5.7,13,1,4.7,4.7,9.3,4.7,14,0,4.7,4.7,9,4.3,13-1,4.7,5,9.3,4.7,14-1V0H6v36Z"/>
+      </g>
+    </g>
+  </g>
+  <g id="eyes">
+    <g id="eye">
+      <rect class="st2" x="34" y="48" width="2" height="2"/>
+    </g>
+    <g id="eye1" data-name="eye">
+      <rect class="st2" x="44" y="48" width="2" height="2"/>
+    </g>
+  </g>
+  <g id="mouth">
+    <circle id="anchor1" data-name="anchor" class="st3" cx="40" cy="54" r=".5"/>
+    <path class="st4" d="M37.5,54.5c1.7,1.3,3.3,1.3,5,0"/>
+  </g>
+</svg>

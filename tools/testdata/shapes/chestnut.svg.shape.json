@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "roles": {
+    "#d9a066": "body",
+    "#8f5636": "accent",
+    "#1c1c1c": "ink"
+  },
+  "features": {
+    "top": { "binding": "field" }
+  }
+}
