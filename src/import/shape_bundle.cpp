@@ -32,7 +32,8 @@ using shape_svg::Ring;
 using json = shape_json::Value;
 
 constexpr double kCentreBand = 0.5;  ///< |x| below this is on the centre line.
-constexpr int kSameDrawing = 2;      ///< Q8.8 units two members' points may differ by and still be one drawing.
+constexpr int kSameDrawing = 2;
+constexpr double kDefaultSwayHz = 2.4, kDefaultSwayZeta = 0.27;      ///< Q8.8 units two members' points may differ by and still be one drawing.
 
 // ---------------------------------------------------------------------------
 // Issues
@@ -476,11 +477,20 @@ bool sameDrawing(const ShapePiece& p, size_t a, size_t b) {
                 const ShapeRing& ra = p.rings[fa.firstRing + r];
                 const ShapeRing& rb = p.rings[fb.firstRing + r];
                 if (ra.pointCount != rb.pointCount || ra.flags != rb.flags) return false;
-                for (uint16_t k = 0; k < ra.pointCount; ++k) {
-                    const ShapePoint& pa = p.points[ra.firstPoint + k];
-                    const ShapePoint& pb = p.points[rb.firstPoint + k];
-                    if (std::abs(pa.x - pb.x) > kSameDrawing || std::abs(pa.y - pb.y) > kSameDrawing) return false;
-                }
+                // Order-insensitive (a mirrored copy winds the other way): each point has a twin.
+                auto covered = [&](const ShapeRing& x, const ShapeRing& y) {
+                    for (uint16_t k = 0; k < x.pointCount; ++k) {
+                        const ShapePoint& px = p.points[x.firstPoint + k];
+                        bool twin = false;
+                        for (uint16_t j = 0; j < y.pointCount && !twin; ++j) {
+                            const ShapePoint& py = p.points[y.firstPoint + j];
+                            twin = std::abs(px.x - py.x) <= kSameDrawing && std::abs(px.y - py.y) <= kSameDrawing;
+                        }
+                        if (!twin) return false;
+                    }
+                    return true;
+                };
+                if (!covered(ra, rb) || !covered(rb, ra)) return false;
             }
         }
     }
@@ -524,8 +534,8 @@ void defaults(ShapeSlot slot, ShapeBinding& binding, double& hz, double& zeta) {
         case ShapeSlot::Arms:
         case ShapeSlot::Legs:
             binding = ShapeBinding::Sway;
-            hz = 2.4;
-            zeta = 0.27;
+            hz = kDefaultSwayHz;
+            zeta = kDefaultSwayZeta;
             break;
         default: binding = ShapeBinding::Field; break;
     }
@@ -603,7 +613,12 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
             zeta = ov->second.zeta;
         }
     }
-    if (binding != ShapeBinding::Sway) hz = zeta = 0;
+    if (binding != ShapeBinding::Sway) {
+        hz = zeta = 0;
+    } else if (hz == 0) {  // sway by override on a slot that doesn't sway by default
+        hz = kDefaultSwayHz;
+        zeta = kDefaultSwayZeta;
+    }
     p.binding = binding;
     p.swayHz = q412(hz);
     p.swayZeta = q412(zeta);
