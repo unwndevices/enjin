@@ -17,7 +17,8 @@ namespace enjin2 {
 // Retrieves LuaBindings*, returns 0 if null or no active canvas.
 #define REQUIRE_CANVAS(b, L) \
     LuaBindings* b = LuaBindings::getBindings(L); \
-    if (!(b) || !(b)->currentCanvas) return 0
+    if (!(b) || !(b)->currentCanvas) return 0; \
+    (b)->checkDrawLayer(L)
 
 // ── UI-01: engine.ui.progressBar(x, y, w, h, value, fg, bg) ──────────────────
 // Draws a filled progress bar. value is clamped to [0, 1].

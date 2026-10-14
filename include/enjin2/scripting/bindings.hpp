@@ -621,6 +621,12 @@ public:
     LuaCanvas* getCanvas() const { return currentCanvas; }
 
     /**
+     * @brief Raise if immediate drawing would land on an applet layer a Shape
+     *        group owns (enjin2/scripting/layer_claims.hpp, Tomodachi #331).
+     */
+    void checkDrawLayer(lua_State* L) const;
+
+    /**
      * @brief Resolve a style slot to the Style a drawable should read.
      * @param slot The slot id (out-of-range -> Panel default, never UB).
      * @return The applet override if its mask bit is set, else the ROM default.

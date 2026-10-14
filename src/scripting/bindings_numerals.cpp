@@ -85,6 +85,7 @@ int blitGlyphRun(LuaCanvas* canvas, const SpriteSheet& sheet,
 int LuaBindings::lua_number(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushinteger(L, 0); return 1; }
+    b->checkDrawLayer(L);
 
     const int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 1));
     const int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
@@ -125,6 +126,7 @@ int LuaBindings::lua_number(lua_State* L) {
 int LuaBindings::lua_timer(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushinteger(L, 0); return 1; }
+    b->checkDrawLayer(L);
 
     const int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 1));
     const int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
