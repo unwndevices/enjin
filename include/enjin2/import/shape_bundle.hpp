@@ -60,8 +60,8 @@
  *
  * ## Issues
  *
- * Lints never stop the bundle.  Any error does: the result then has no pack
- * and returns the input ledger unchanged.  Errors: wrong artboard, unparsable
+ * Lints never stop the bundle.  Any error does (outside ShapeBundleOptions::preview):
+ * the result then has no pack and returns the input ledger unchanged.  Errors: wrong artboard, unparsable
  * SVG / sidecar / ledger, forbidden element (`text image linearGradient
  * radialGradient pattern mask filter symbol foreignObject`, `use` outside a
  * clip path), a Body without `eyes` and `mouth` sockets, a slot layer twice in
@@ -111,12 +111,27 @@ struct ShapeBundleLimits {
 
 struct ShapeBundleOptions {
     ShapeBundleLimits limits;
+    /// The Studio's preview (Tomodachi #340): an error drops only what it is about instead of
+    /// the whole bundle.  A piece-level error drops its piece (a Body that loses a socket with
+    /// it goes too); a file-level one (unparsable SVG or sidecar, wrong artboard, a slot layer
+    /// twice) drops its source; a bad ledger is read as empty; a source listed twice is kept
+    /// once.  The rest still packs and gets ids.  The issues are the same, so ok() stays false.
+    bool preview = false;
+};
+
+/// The fill colours one source draws with: distinct 0xRRGGBB, in first-use order (Features in
+/// layer order, then the Body), whether the shape sidecar maps them or not.
+struct ShapeSourceColours {
+    std::string           source;
+    std::vector<uint32_t> rgb;
 };
 
 struct ShapeBundleResult {
-    std::vector<uint8_t>     pack;    ///< Empty on an error.
-    std::string              ledger;  ///< The updated ledger (the input one on an error).
+    std::vector<uint8_t>     pack;    ///< Empty on an error (in preview: only when nothing packs).
+    std::string              ledger;  ///< The updated ledger (the input one when there is no pack).
     std::vector<ImportIssue> issues;
+    /// One entry per source read, in source order: what the Studio offers roles for.
+    std::vector<ShapeSourceColours> colours;
 
     bool ok() const {
         for (const auto& i : issues)
