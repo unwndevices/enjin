@@ -40,7 +40,9 @@
  * All coordinates are **Q8.8** logical pixels, y down.  A Feature member's
  * rings are relative to that member's anchor; a Body's to the Kit origin (the
  * artboard centre).  A member's `home` is where its anchor sat in its source
- * (Kit coordinates), for previews.  A socket is a member's anchor on the Body.
+ * (Kit coordinates; on a Feature sheet, from the Feature's centre), for previews.
+ * Every Feature record lists every pose of its slot (Tomodachi #333): a pose
+ * the source doesn't draw has the required pose's spans.  A socket is a member's anchor on the Body.
  *
  * A pose's member spans name the Shapes drawn for that member in that pose,
  * in paint order.  MemberSide::Mirrored is the single right-facing member,

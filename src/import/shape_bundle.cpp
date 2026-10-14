@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <map>
 #include <tuple>
 
@@ -33,6 +34,7 @@ using json = shape_json::Value;
 
 constexpr double kCentreBand = 0.5;  ///< |x| below this is on the centre line.
 constexpr int kSameDrawing = 2;
+constexpr size_t kMaxColours = 4;  ///< Distinct fill + stroke colours a source may draw with (#317 §7).
 constexpr double kDefaultSwayHz = 2.4, kDefaultSwayZeta = 0.27;      ///< Q8.8 units two members' points may differ by and still be one drawing.
 
 // ---------------------------------------------------------------------------
@@ -93,6 +95,8 @@ struct FeatureOverride {
     ShapeBinding binding = ShapeBinding::Field;
     bool         hasSway = false;
     double       hz = 0, zeta = 0;
+    bool         hasOrder = false;
+    ShapeOrder   order = ShapeOrder::Front;
 };
 
 struct Sidecar {
@@ -156,6 +160,12 @@ bool parseSidecar(const std::vector<uint8_t>& bytes, const std::string& source, 
                 o.hasSway = true;
                 o.hz = hz->n;
                 o.zeta = zeta->n;
+            }
+            if (const json* ord = f.get("order")) {
+                if (!ord->isString() || (ord->s != "front" && ord->s != "behind"))
+                    return bad("order of \"" + layer + "\" is not front or behind");
+                o.hasOrder = true;
+                o.order = ord->s == "behind" ? ShapeOrder::Behind : ShapeOrder::Front;
             }
             out.features[layer] = o;
         }
@@ -390,7 +400,38 @@ struct Context {
     bool                     inBody = false;  ///< Building the Body piece (its clips are its own).
     std::vector<PendingClip> pending;
     bool lintedRange = false;
+    bool sheet = false;  ///< A Feature sheet: no Body, Features placed by their anchors alone.
 };
+
+/// `pixel-tie`: a filled outline whose leftmost, rightmost, top or bottom edge lies on a pixel
+/// centre (x.5), e.g. rx 4.5 at an integer centre.  That pixel is exactly half covered, so the
+/// majority rule's tie-break decides it and any nudge flips it.  Measured where the source
+/// draws it (Kit coordinates, pixel corners on integers); a sheet's from @p origin, the member's
+/// anchor.  Open rings (lines) are not filled edges.  One lint per Shape.
+void lintPixelTie(const Node& n, Pt origin, Context& cx, const std::string& path) {
+    auto onCentre = [](double v) { return std::fabs(v - std::floor(v) - 0.5) < 1.0 / 512; };
+    for (const Ring& r : n.rings) {
+        if (!r.closed || r.pts.size() < 3) continue;
+        double lo[2] = {1e300, 1e300}, hi[2] = {-1e300, -1e300};
+        for (const Pt& p : r.pts) {
+            const double v[2] = {p.x - origin.x, p.y - origin.y};
+            for (int a = 0; a < 2; ++a) {
+                lo[a] = std::min(lo[a], v[a]);
+                hi[a] = std::max(hi[a], v[a]);
+            }
+        }
+        for (int a = 0; a < 2; ++a)
+            for (double v : {lo[a], hi[a]})
+                if (onCentre(v)) {
+                    char m[200];
+                    std::snprintf(m, sizeof m, "an edge lies on a pixel centre (%c = %.1f%s): that pixel is half covered and "
+                                  "flips at the slightest bend; move the edge by half a pixel", a ? 'y' : 'x', v,
+                                  cx.sheet ? " from the anchor" : "");
+                    cx.sink.lint("pixel-tie", m, cx.source, path);
+                    return;
+                }
+    }
+}
 
 /// Clip within this of the Body (px, both ways) binds to the live Body; within kNearBodyClip is a lint.
 constexpr double kLiveBodyClip = 0.25, kNearBodyClip = 2.0;
@@ -516,6 +557,7 @@ uint16_t addShapes(ShapePiece& piece, const std::vector<const Node*>& shapes, Pt
             cx.sink.lint("empty-shape", "a shape with no area is dropped", cx.source, here);
             continue;
         }
+        lintPixelTie(*n, cx.sheet ? anchor : Pt{}, cx, here);
 
         // Clip: the live Body when it matches the Kit's Body, else the Feature's own space.
         if (n->paint.clip >= 0 && cx.clips && static_cast<size_t>(n->paint.clip) < cx.clips->size()) {
@@ -593,7 +635,8 @@ void appendClips(ShapePiece& piece, Context& cx) {
 
 struct Built {
     ShapePiece  piece;
-    std::string layer;
+    std::string layer;  ///< Ledger key: the slot layer (Kit) or slot layer / Feature name (sheet).
+    std::string label;  ///< "" = the source's name.
     bool        hasShapes = false;
 };
 
@@ -703,11 +746,41 @@ void defaults(ShapeSlot slot, ShapeBinding& binding, double& hz, double& zeta) {
     }
 }
 
+/// Give the piece every pose of its slot: a missing optional pose shows the required one (its
+/// spans, not a copy of its Shapes), with one `missing-optional-pose` lint naming them all.
+void fillPoses(ShapePiece& p, Context& cx, const std::string& path) {
+    const uint8_t count = shapePoseCount(p.slot);
+    if (p.poses.size() >= count) return;
+    const size_t members = p.members.size();
+    std::vector<uint8_t> poses;
+    std::vector<ShapeSpan> spans;
+    std::string missing;
+    for (uint8_t pose = 0; pose < count; ++pose) {
+        size_t from = 0;  // the required pose, always drawn
+        bool drawn = false;
+        for (size_t k = 0; k < p.poses.size() && !drawn; ++k)
+            if (p.poses[k] == pose) {
+                from = k;
+                drawn = true;
+            }
+        if (!drawn) missing += std::string(missing.empty() ? "" : ", ") + shapePoseName(p.slot, pose);
+        poses.push_back(pose);
+        for (size_t m = 0; m < members; ++m) spans.push_back(p.span(from, m));
+    }
+    p.poses = std::move(poses);
+    p.spans = std::move(spans);
+    const bool one = missing.find(',') == std::string::npos;
+    cx.sink.lint("missing-optional-pose", std::string("pose") + (one ? " " : "s ") + missing + (one ? " is" : " are") +
+                 " not drawn; " + (one ? "it shows " : "they show ") + shapePoseName(p.slot, 0), cx.source, path);
+}
+
 uint16_t q412(double v) { return static_cast<uint16_t>(std::lround(std::clamp(v, 0.0, 65535.0 / 4096.0) * 4096)); }
 
-/// One Feature slot layer → a piece (if it draws anything) + its sockets.
-bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, Built& out,
-                  std::vector<KitSocket>& sockets) {
+/// One Feature → a piece (if it draws anything) + its sockets.  @p layer is a Kit's slot layer, or
+/// a Feature group on a Feature sheet (@p sheet: no sockets, placed by its anchors alone); @p path
+/// is its layer path, the ledger and sidecar key.
+bool buildFeature(const Node& layer, const std::string& path, ShapeSlot slot, bool behind, bool sheet, Context& cx,
+                  Built& out, std::vector<KitSocket>& sockets) {
     const std::string& src = cx.source;
     // Pose layers.
     std::vector<std::pair<int, const Node*>> poses;
@@ -716,7 +789,7 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
         if (pose >= 0) {
             for (const auto& p : poses)
                 if (p.first == pose) {
-                    cx.sink.error("duplicate-piece", "pose \"" + k.name + "\" appears twice", src, join(layer.name, k.name));
+                    cx.sink.error("duplicate-piece", "pose \"" + k.name + "\" appears twice", src, join(path, k.name));
                     return false;
                 }
             poses.emplace_back(pose, &k);
@@ -728,23 +801,23 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
         for (const auto& k : layer.children)
             if (!(k.group && poseByName(slot, k.name) >= 0))
                 cx.sink.lint("unknown-pose", "\"" + (k.name.empty() ? k.element : k.name) + "\" is not a pose of " +
-                             shapeSlotName(slot) + "; it is ignored", src, join(layer.name, k.name));
+                             shapeSlotName(slot) + "; it is ignored", src, join(path, k.name));
     }
     std::sort(poses.begin(), poses.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
     if (poses[0].first != 0) {
         cx.sink.error("missing-pose", std::string("the required pose \"") + shapePoseName(slot, 0) + "\" is missing", src,
-                      layer.name);
+                      path);
         return false;
     }
     auto posePath = [&](size_t i) {
-        return poses[i].second == &layer ? layer.name : join(layer.name, poses[i].second->name);
+        return poses[i].second == &layer ? path : join(path, poses[i].second->name);
     };
 
     std::vector<std::vector<MemberDraw>> draws;
     for (size_t i = 0; i < poses.size(); ++i) draws.push_back(poseMembers(*poses[i].second, posePath(i), src, cx.sink));
     std::vector<MemberDraw>& base = draws[0];
     if (base.empty()) {
-        cx.sink.lint("empty-shape", "the slot layer draws nothing", src, layer.name);
+        cx.sink.lint("empty-shape", sheet ? "the Feature draws nothing" : "the slot layer draws nothing", src, path);
         return true;
     }
 
@@ -758,7 +831,19 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
             for (const Node* n : base[m].shapes) b.add(*n);
             anchor0[m] = b.empty() ? Pt{} : b.centre();
         }
-        sockets.push_back({slot, anchor0[m]});
+        if (!sheet) sockets.push_back({slot, anchor0[m]});
+    }
+    // A Kit's Features sit on its artboard centre; a sheet Feature's centre is its anchors'.
+    Pt centre;
+    if (sheet) {
+        Box b;
+        for (const Pt& a : anchor0) {
+            b.x0 = std::min(b.x0, a.x);
+            b.y0 = std::min(b.y0, a.y);
+            b.x1 = std::max(b.x1, a.x);
+            b.y1 = std::max(b.y1, a.y);
+        }
+        centre = b.centre();
     }
 
     ShapePiece& p = out.piece;
@@ -767,13 +852,14 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
     ShapeBinding binding;
     double hz, zeta;
     defaults(slot, binding, hz, zeta);
-    const auto ov = cx.sidecar.features.find(layer.name);
+    const auto ov = cx.sidecar.features.find(path);
     if (ov != cx.sidecar.features.end()) {
         if (ov->second.hasBinding) binding = ov->second.binding;
         if (ov->second.hasSway) {
             hz = ov->second.hz;
             zeta = ov->second.zeta;
         }
+        if (ov->second.hasOrder) p.order = ov->second.order;
     }
     if (binding != ShapeBinding::Sway) {
         hz = zeta = 0;
@@ -784,6 +870,11 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
     p.binding = binding;
     p.swayHz = q412(hz);
     p.swayZeta = q412(zeta);
+    if (binding == ShapeBinding::Sway)
+        for (const MemberDraw& m : base)
+            if (!m.hasAnchor && !m.shapes.empty())
+                cx.sink.lint("sway-without-anchor", "a sway member without an anchor swings about its bounding-box centre; "
+                             "put an object named anchor where it hangs", src, m.path);
 
     cx.pending.clear();
     cx.inBody = false;
@@ -793,10 +884,10 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
         MemberSide side = MemberSide::Mirrored;
         if (n.size() > 2 && n[n.size() - 2] == '_' && n.back() == 'l') side = MemberSide::Left;
         if (n.size() > 2 && n[n.size() - 2] == '_' && n.back() == 'r') side = MemberSide::Right;
-        flip[m] = side == MemberSide::Mirrored && anchor0[m].x < -kCentreBand;
+        flip[m] = side == MemberSide::Mirrored && anchor0[m].x - centre.x < -kCentreBand;
         ShapeMember mem;
         mem.side = side;
-        mem.home = qpt(anchor0[m], cx, layer.name);
+        mem.home = qpt({anchor0[m].x - centre.x, anchor0[m].y - centre.y}, cx, path);
         p.members.push_back(mem);
     }
 
@@ -838,7 +929,8 @@ bool buildFeature(const Node& layer, ShapeSlot slot, bool behind, Context& cx, B
     bool same = allMirrored;
     for (size_t m = 1; same && m < p.members.size(); ++m) same = sameDrawing(p, 0, m);
     if (same) keepFirstMember(p);
-    out.layer = layer.name;
+    if (out.hasShapes) fillPoses(p, cx, path);  // an anchor-only slot makes sockets, not a piece
+    out.layer = path;
     return true;
 }
 
@@ -903,11 +995,24 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
         return bad;
     };
 
-    // Slot layers: top-level named nodes (a layer of one object may be that object).
+    // A layer of one object may be that object: wrap it in a group of its name.
+    std::deque<Node> wrapped;
+    auto asGroup = [&](const Node& k) -> const Node* {
+        if (k.group) return &k;
+        Node g;
+        g.group = true;
+        g.name = k.name;
+        g.element = "g";
+        Node child = k;
+        child.name.clear();
+        g.children.push_back(std::move(child));
+        wrapped.push_back(std::move(g));
+        return &wrapped.back();
+    };
+
+    // Slot layers: top-level named nodes.
     struct SlotLayer { ShapeSlot slot; const Node* node; size_t index; };
     std::vector<SlotLayer> layers;
-    std::vector<Node> wrapped;
-    wrapped.reserve(root.children.size());
     for (size_t i = 0; i < root.children.size(); ++i) {
         const Node& k = root.children[i];
         ShapeSlot slot;
@@ -921,24 +1026,20 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
                 sink.error("duplicate-piece", "slot layer \"" + k.name + "\" appears twice", src.name, k.name);
                 return false;
             }
-        const Node* node = &k;
-        if (!k.group) {
-            Node g;
-            g.group = true;
-            g.name = k.name;
-            g.element = "g";
-            Node child = k;
-            child.name.clear();
-            g.children.push_back(std::move(child));
-            wrapped.push_back(std::move(g));
-            node = &wrapped.back();
-        }
-        layers.push_back({slot, node, i});
+        layers.push_back({slot, asGroup(k), i});
     }
 
+    // A source with a Body is a Kit (one 80x80 artboard); without, a Feature sheet (any size).
     const SlotLayer* body = nullptr;
     for (const auto& l : layers)
         if (l.slot == ShapeSlot::Body) body = &l;
+    const bool sheet = body == nullptr;
+    cx.sheet = sheet;
+    if (!sheet && (std::fabs(root.viewW - 80) > 1e-6 || std::fabs(root.viewH - 80) > 1e-6)) {
+        sink.error("wrong-artboard", "a Kit needs an 80x80 viewBox (one 80x80 artboard); only a Feature sheet (no body layer) "
+                   "may be another size", src.name);
+        return false;
+    }
     if (body) {
         // The Body as drawn: what a live-Body clip must match.
         std::vector<const Node*> shapes;
@@ -951,14 +1052,38 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
 
     std::vector<KitSocket> sockets;
     std::vector<Built> built;
+    // One Feature: a Kit's slot layer, or one named group of a sheet's slot layer.  False: drop the source.
+    auto feature = [&](const Node& node, const std::string& path, ShapeSlot slot, bool behind, const std::string& label) {
+        Built b;
+        b.label = label;
+        if (failed([&] { return buildFeature(node, path, slot, behind, sheet, cx, b, sockets); })) return preview;
+        if (b.hasShapes) built.push_back(std::move(b));
+        return true;
+    };
     for (const auto& l : layers) {
         if (l.slot == ShapeSlot::Body) continue;
-        Built b;
-        if (failed([&] { return buildFeature(*l.node, l.slot, body && l.index < body->index, cx, b, sockets); })) {
-            if (!preview) return false;
+        if (!sheet) {
+            if (!feature(*l.node, l.node->name, l.slot, body && l.index < body->index, "")) return false;
             continue;
         }
-        if (b.hasShapes) built.push_back(std::move(b));
+        std::vector<std::string> names;
+        for (const Node& k : l.node->children) {
+            if (k.name.empty() || k.name == "anchor") {
+                sink.lint("unknown-layer", "\"" + (k.name.empty() ? k.element : k.name) + "\" is not a Feature (a named "
+                          "group in the slot layer); it is ignored", src.name, l.node->name);
+                continue;
+            }
+            const std::string path = join(l.node->name, k.name);
+            if (std::find(names.begin(), names.end(), k.name) != names.end()) {
+                sink.error("duplicate-piece", "Feature \"" + k.name + "\" appears twice in " + l.node->name, src.name, path);
+                if (!preview) return false;
+                continue;
+            }
+            names.push_back(k.name);
+            if (!goodName(k.name))
+                sink.lint("bad-name", "Feature name \"" + k.name + "\" is not [a-z][a-z0-9-]*", src.name, path);
+            if (!feature(*asGroup(k), path, l.slot, false, k.name)) return false;
+        }
     }
     Built b;
     if (body && failed([&] { return buildBody(*body->node, cx, b) && finishBody(b, sockets, *body->node, src, cx); })) {
@@ -967,8 +1092,12 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
     }
     if (body) built.insert(built.begin(), std::move(b));
     if (sink.errors && !preview) return false;
+    if (colours.size() > kMaxColours)
+        sink.lint("too-many-colours", "the source draws with " + std::to_string(colours.size()) + " colours; a pet source "
+                  "uses at most " + std::to_string(kMaxColours) + " (one per role)", src.name);
     const std::string label = labelOf(src.name);
-    for (auto& piece : built) out.push_back({src.name, piece.layer, label, std::move(piece.piece)});
+    for (auto& piece : built)
+        out.push_back({src.name, piece.layer, piece.label.empty() ? label : labelOf(piece.label), std::move(piece.piece)});
     return true;
 }
 
@@ -1093,8 +1222,19 @@ ShapeBundleResult bundleShapes(const std::vector<ShapeSource>& sources, const st
         next.pieces.push_back({sp.source, sp.layer, slot, static_cast<uint16_t>(id)});
         packIn.push_back({slot, static_cast<uint16_t>(id), sp.label, std::move(sp.piece)});
     }
-    for (size_t k = 0; k < ledger.pieces.size(); ++k)
-        if (!seen[k]) next.retired.push_back(ledger.pieces[k]);
+    // A piece no source has any more is retired.  (In preview, one an error dropped is broken,
+    // not gone: its id leaves this ledger, which the Studio never writes, but isn't reported.)
+    std::vector<std::string> failedSources;
+    for (const auto& i : r.issues)
+        if (i.severity == ImportIssueSeverity::Error) failedSources.push_back(i.source);
+    for (size_t k = 0; k < ledger.pieces.size(); ++k) {
+        if (seen[k]) continue;
+        const LedgerEntry& e = ledger.pieces[k];
+        next.retired.push_back(e);
+        if (std::find(failedSources.begin(), failedSources.end(), e.source) == failedSources.end())
+            sink.lint("retired-id", std::string(shapeSlotName(e.slot)) + " " + std::to_string(e.id) + " is gone from " + e.source +
+                      ": its id is retired and never handed out again (a Look naming it stops resolving)", e.source, e.layer);
+    }
     for (const auto* list : {&next.pieces, &next.retired})
         for (const auto& e : *list) {
             uint32_t& n = next.next[static_cast<uint8_t>(e.slot)];
