@@ -196,14 +196,14 @@ public:
     bool changed() const { return group_.changed(); }
 
     /**
-     * @brief Breathe: step the rest pose through `b.steps` poses per breath,
+     * @brief Breathe: step the rest shape through `b.steps` steps per breath,
      *        never waking the jelly (see the file comment). Replaces any
      *        breath already running, from its first step. Off after build().
      * @return false (breathing unchanged) for steps outside 2..16, a zero
      *         period or an amplitude past 16 px.
      */
     bool breathe(const Breath& b, ShapeError* err);
-    /// Stop breathing: back to the rest pose.
+    /// Stop breathing: back to the rest shape.
     void stopBreathing();
     bool breathing() const { return breathing_; }
 

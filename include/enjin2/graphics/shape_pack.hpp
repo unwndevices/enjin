@@ -164,6 +164,13 @@ inline const char* shapeSlotName(ShapeSlot s) {
     return i < SHAPE_SLOT_COUNT ? names[i] : "?";
 }
 
+/// A Colour role's name, as the shape sidecar and a Look's `colours` spell it.
+inline const char* shapeRoleName(ShapeRole r) {
+    static const char* const names[] = {"body", "accent", "ink", "none"};
+    const auto i = static_cast<uint8_t>(r);
+    return i < 4 ? names[i] : "?";
+}
+
 /// Number of poses in a slot's fixed list (pose 0 is the required one).
 inline uint8_t shapePoseCount(ShapeSlot s) {
     switch (s) {

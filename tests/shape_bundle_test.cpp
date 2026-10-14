@@ -812,7 +812,12 @@ static void test13_hardErrors() {
                    "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>"
                    "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>"
                    "<g id=\"eyes1\" data-name=\"eyes\"><rect width=\"2\" height=\"2\"/></g>"),
-            "duplicate-piece", "SHP-13 a slot layer twice in one source");
+            "duplicate-slot-layer", "SHP-13 a slot layer twice in one source");
+    refused(kitSvg("<rect width=\"10\" height=\"10\"/>",
+                   "<g id=\"eyes\"><g id=\"open\"><rect x=\"30\" y=\"28\" width=\"2\" height=\"2\"/></g>"
+                   "<g id=\"open1\" data-name=\"open\"><rect x=\"30\" y=\"28\" width=\"3\" height=\"2\"/></g></g>"
+                   "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>"),
+            "duplicate-pose", "SHP-13 a pose twice in one Feature");
     refused(kitSvg("<rect width=\"10\" height=\"10\"/>",
                    "<g id=\"eyes\"><g id=\"closed\"><rect width=\"2\" height=\"2\"/></g></g>"
                    "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>"),
@@ -900,7 +905,7 @@ static void test16_preview() {
     {
         const Bytes svg = bytesOf(kitSvg("<rect width=\"10\" height=\"10\"/>", anchors));
         const auto r = previewBundle({{"kit.svg", svg, {}}, {"kit.svg", svg, {}}});
-        ASSERT(hasError(r, "duplicate-piece") && indexOf(r).size() == 1, "SHP-16 a source listed twice packs once");
+        ASSERT(hasError(r, "duplicate-source") && indexOf(r).size() == 1, "SHP-16 a source listed twice packs once");
     }
     // Without preview the same input still fails the whole bundle (the CLI's contract).
     {
@@ -1226,7 +1231,7 @@ static void test22_featureSheet() {
     // The sheet's own structure.
     const auto dup = bundleSheet("<g id=\"mouth\"><g id=\"grin\"><rect width=\"2\" height=\"2\"/></g>"
                                  "<g id=\"grin1\" data-name=\"grin\"><rect width=\"4\" height=\"2\"/></g></g>");
-    ASSERT(hasError(dup, "duplicate-piece") && dup.pack.empty(), "SHP-22 two Features of one name in a slot: duplicate-piece");
+    ASSERT(hasError(dup, "duplicate-feature") && dup.pack.empty(), "SHP-22 two Features of one name in a slot: duplicate-feature");
     const auto stray = bundleSheet("<g id=\"mouth\"><rect width=\"2\" height=\"2\"/><g id=\"grin\"><rect width=\"4\" height=\"2\"/></g></g>");
     ASSERT(stray.ok() && hasIssue(stray, "unknown-layer", ImportIssueSeverity::Lint) && indexOf(stray).size() == 1,
            "SHP-22 a shape outside any Feature is ignored with a lint");

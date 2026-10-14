@@ -33,9 +33,9 @@ using shape_svg::Ring;
 using json = shape_json::Value;
 
 constexpr double kCentreBand = 0.5;  ///< |x| below this is on the centre line.
-constexpr int kSameDrawing = 2;
+constexpr int kSameDrawing = 2;  ///< Q8.8 units two members' points may differ by and still be one drawing.
 constexpr size_t kMaxColours = 4;  ///< Distinct fill + stroke colours a source may draw with (#317 §7).
-constexpr double kDefaultSwayHz = 2.4, kDefaultSwayZeta = 0.27;      ///< Q8.8 units two members' points may differ by and still be one drawing.
+constexpr double kDefaultSwayHz = 2.4, kDefaultSwayZeta = 0.27;  ///< The default sway spring (top, arms, legs; a sway set without one).
 
 // ---------------------------------------------------------------------------
 // Issues
@@ -141,10 +141,9 @@ bool parseSidecar(const std::vector<uint8_t>& bytes, const std::string& source, 
                 rgb = (rgb << 4) | static_cast<uint32_t>(d < 0 ? 0 : d);
             }
             if (!ok) return bad("role key \"" + hex + "\" is not #rrggbb");
-            static const char* const names[] = {"body", "accent", "ink", "none"};
             int r = -1;
             for (int i = 0; i < 4; ++i)
-                if (role.isString() && role.s == names[i]) r = i;
+                if (role.isString() && role.s == shapeRoleName(static_cast<ShapeRole>(i))) r = i;
             if (r < 0) return bad("role of " + hex + " is not body, accent, ink or none");
             out.roles[rgb] = static_cast<ShapeRole>(r);
         }
@@ -815,7 +814,7 @@ bool buildFeature(const Node& layer, const std::string& path, ShapeSlot slot, bo
         if (pose >= 0) {
             for (const auto& p : poses)
                 if (p.first == pose) {
-                    cx.sink.error("duplicate-piece", "pose \"" + k.name + "\" appears twice", src, join(path, k.name));
+                    cx.sink.error("duplicate-pose", "pose \"" + k.name + "\" appears twice", src, join(path, k.name));
                     return false;
                 }
             poses.emplace_back(pose, &k);
@@ -1049,7 +1048,7 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
         }
         for (const auto& l : layers)
             if (l.slot == slot) {
-                sink.error("duplicate-piece", "slot layer \"" + k.name + "\" appears twice", src.name, k.name);
+                sink.error("duplicate-slot-layer", "slot layer \"" + k.name + "\" appears twice", src.name, k.name);
                 return false;
             }
         layers.push_back({slot, asGroup(k), i});
@@ -1112,7 +1111,7 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
             }
             const std::string path = join(l.node->name, k.name);
             if (std::find(names.begin(), names.end(), k.name) != names.end()) {
-                sink.error("duplicate-piece", "Feature \"" + k.name + "\" appears twice in " + l.node->name, src.name, path);
+                sink.error("duplicate-feature", "Feature \"" + k.name + "\" appears twice in " + l.node->name, src.name, path);
                 if (!preview) return false;
                 continue;
             }
@@ -1198,7 +1197,7 @@ ShapeBundleResult bundleShapes(const std::vector<ShapeSource>& sources, const st
     for (size_t i = 0; i < sources.size(); ++i)
         for (size_t k = 0; k < i && listed[i]; ++k)
             if (sources[i].name == sources[k].name) {
-                sink.error("duplicate-piece", "the same source is listed twice", sources[i].name);
+                sink.error("duplicate-source", "the same source is listed twice", sources[i].name);
                 if (!preview) return r;
                 listed[i] = false;
             }

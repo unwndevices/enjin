@@ -26,8 +26,6 @@ void setError(ShapeError* err, const char* fmt, ...)
 
 constexpr size_t align8(size_t v) { return (v + 7) & ~size_t(7); }
 
-constexpr const char* kRoleNames[3] = {"body", "accent", "ink"};
-
 static_assert(uint8_t(Binding::Field) == uint8_t(ShapeBinding::Field) &&
                   uint8_t(Binding::Rigid) == uint8_t(ShapeBinding::Rigid) &&
                   uint8_t(Binding::Sway) == uint8_t(ShapeBinding::Sway),
@@ -230,7 +228,7 @@ bool ShapePackGroup::validate(const ShapeLook& look, ShapeError* err) const
     for (uint8_t r = 0; r < 3; ++r)
         if (look.colour[r] > 14)
         {
-            setError(err, "Look: colours.%s %u is outside the palette (0..14; 15 is transparent)", kRoleNames[r],
+            setError(err, "Look: colours.%s %u is outside the palette (0..14; 15 is transparent)", shapeRoleName(ShapeRole(r)),
                      unsigned(look.colour[r]));
             return false;
         }

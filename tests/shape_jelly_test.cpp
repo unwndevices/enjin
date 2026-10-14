@@ -378,7 +378,7 @@ static void testStarBreathes() {
            "the default breath: 3 s, 4 steps, 1 px, feet");
     ASSERT(s.pet.breathe(b, &e), e.text);
     ASSERT(s.pet.breathing(), "breathing");
-    ASSERT(!s.pet.changed(), "breath step 0 is the rest pose: nothing to redraw yet");
+    ASSERT(!s.pet.changed(), "breath step 0 is the rest shape: nothing to redraw yet");
 
     const uint32_t steps = lat.steps();
     std::vector<uint32_t> crcs;
@@ -425,7 +425,7 @@ static void testStarBreathes() {
     // Off: back to rest at once, then nothing.
     s.pet.stopBreathing();
     ASSERT(!s.pet.breathing(), "stopped");
-    ASSERT(s.pet.flush(layer, scratch) && layerCrc(layer) == restCrc, "stopping redraws the rest pose once");
+    ASSERT(s.pet.flush(layer, scratch) && layerCrc(layer) == restCrc, "stopping redraws the rest shape once");
     int later = 0;
     for (int f = 0; f < 180; ++f) {
         s.pet.tick(16667);

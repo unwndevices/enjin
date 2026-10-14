@@ -8,6 +8,9 @@
 #define ANKERL_NANOBENCH_IMPLEMENT
 #include <nanobench.h>
 
+#include <fstream>
+#include <sys/stat.h>
+
 #include <enjin2/graphics/canvas.hpp>
 #include <enjin2/shape/shape_raster.hpp>
 
@@ -83,5 +86,10 @@ int main()
         }
         ankerl::nanobench::doNotOptimizeAway(canvas.getPixel(80, 90));
     });
+
+    // Write JSON results (scripts/convert-bench.py reads them)
+    mkdir("bench-results", 0755);
+    std::ofstream out("bench-results/bench_shape.json");
+    ankerl::nanobench::render(ankerl::nanobench::templates::json(), bench, out);
     return 0;
 }
