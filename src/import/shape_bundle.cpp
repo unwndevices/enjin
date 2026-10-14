@@ -69,11 +69,17 @@ bool slotByName(const std::string& n, ShapeSlot& out) {
     return false;
 }
 
+/// Only these slots may be drawn behind the Body (#317 §6); eyes, mouth and cheeks are always in front.
+bool mayBeBehind(ShapeSlot s) { return s == ShapeSlot::Arms || s == ShapeSlot::Legs || s == ShapeSlot::Top; }
+
 int poseByName(ShapeSlot slot, const std::string& n) {
     for (uint8_t i = 0; i < shapePoseCount(slot); ++i)
         if (n == shapePoseName(slot, i)) return i;
     return -1;
 }
+
+/// What goodName() accepts, as the `bad-name` lint states it.
+constexpr const char* kNameRule = "[a-z][a-z0-9-]*, optionally ending _l or _r (a left or right member)";
 
 /// `[a-z][a-z0-9-]*`, optionally ending `_l` / `_r`.
 bool goodName(const std::string& n) {
@@ -117,6 +123,12 @@ bool parseSidecar(const std::vector<uint8_t>& bytes, const std::string& source, 
     if (!shape_json::parse(reinterpret_cast<const char*>(bytes.data()), bytes.size(), doc, err)) return bad(err);
     if (!doc.isObject()) return bad("not a JSON object");
     if (const json* v = doc.get("version"); v && (!v->isNumber() || v->n != 1)) return bad("unsupported version");
+    // Keys the bundle doesn't read do nothing: say so, rather than drop them silently.
+    // `unconfirmed` is the Studio's (#340): colours whose role is still a guess.
+    std::vector<std::pair<std::string, std::string>> unread;  // key, where
+    for (const auto& kv : doc.members)
+        if (kv.first != "version" && kv.first != "roles" && kv.first != "features" && kv.first != "unconfirmed")
+            unread.emplace_back(kv.first, "");
     if (const json* roles = doc.get("roles")) {
         if (!roles->isObject()) return bad("\"roles\" is not an object");
         for (const auto& [hex, role] : roles->members) {
@@ -141,6 +153,8 @@ bool parseSidecar(const std::vector<uint8_t>& bytes, const std::string& source, 
         if (!feats->isObject()) return bad("\"features\" is not an object");
         for (const auto& [layer, f] : feats->members) {
             if (!f.isObject()) return bad("feature \"" + layer + "\" is not an object");
+            for (const auto& kv : f.members)
+                if (kv.first != "binding" && kv.first != "sway" && kv.first != "order") unread.emplace_back(kv.first, layer);
             FeatureOverride o;
             if (const json* b = f.get("binding")) {
                 static const char* const names[] = {"field", "rigid", "sway"};
@@ -170,6 +184,12 @@ bool parseSidecar(const std::vector<uint8_t>& bytes, const std::string& source, 
             out.features[layer] = o;
         }
     }
+    for (const auto& [key, where] : unread)
+        sink.lint("unknown-sidecar-key",
+                  where.empty() ? "shape sidecar: \"" + key + "\" is not a sidecar key (version, roles, features); it is ignored"
+                                : "shape sidecar: feature \"" + where + "\" key \"" + key + "\" is not binding, sway or order; it "
+                                  "is ignored",
+                  source);
     return true;
 }
 
@@ -378,7 +398,7 @@ std::vector<MemberDraw> poseMembers(const Node& pose, const std::string& path, c
     }
     for (const auto& m : members)
         if (!m.name.empty() && !goodName(m.name))
-            sink.lint("bad-name", "member name \"" + m.name + "\" is not [a-z][a-z0-9-]*", source, m.path);
+            sink.lint("bad-name", "member name \"" + m.name + "\" is not " + kNameRule, source, m.path);
     return members;
 }
 
@@ -1058,18 +1078,29 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
 
     std::vector<KitSocket> sockets;
     std::vector<Built> built;
+    std::vector<std::string> features;  // The Feature layer paths drawn (or refused): what sidecar features may key.
     // One Feature: a Kit's slot layer, or one named group of a sheet's slot layer.  False: drop the source.
     auto feature = [&](const Node& node, const std::string& path, ShapeSlot slot, bool behind, const std::string& label) {
         Built b;
         b.label = label;
-        if (failed([&] { return buildFeature(node, path, slot, behind, sheet, cx, b, sockets); })) return preview;
+        const bool bad = failed([&] { return buildFeature(node, path, slot, behind, sheet, cx, b, sockets); });
+        if (bad || b.hasShapes) features.push_back(path);
+        if (bad) return preview;
         if (b.hasShapes) built.push_back(std::move(b));
         return true;
     };
     for (const auto& l : layers) {
         if (l.slot == ShapeSlot::Body) continue;
         if (!sheet) {
-            if (!feature(*l.node, l.node->name, l.slot, body && l.index < body->index, "")) return false;
+            const bool behind = body && l.index < body->index;
+            if (behind && !mayBeBehind(l.slot)) {
+                features.push_back(l.node->name);
+                sink.error("drawn-behind-body", "\"" + l.node->name + "\" is drawn behind the Body; only arms, legs and top "
+                           "may be (move the layer above the body layer)", src.name, l.node->name);
+                if (!preview) return false;
+                continue;
+            }
+            if (!feature(*l.node, l.node->name, l.slot, behind, "")) return false;
             continue;
         }
         std::vector<std::string> names;
@@ -1087,7 +1118,7 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
             }
             names.push_back(k.name);
             if (!goodName(k.name))
-                sink.lint("bad-name", "Feature name \"" + k.name + "\" is not [a-z][a-z0-9-]*", src.name, path);
+                sink.lint("bad-name", "Feature name \"" + k.name + "\" is not " + kNameRule, src.name, path);
             if (!feature(*asGroup(k), path, l.slot, false, k.name)) return false;
         }
     }
@@ -1098,6 +1129,11 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool previe
     }
     if (body) built.insert(built.begin(), std::move(b));
     if (sink.errors && !preview) return false;
+    for (const auto& kv : sidecar.features)
+        if (std::find(features.begin(), features.end(), kv.first) == features.end())
+            sink.lint("unmatched-feature", "shape sidecar: features \"" + kv.first + "\" matches no Feature layer in the source "
+                      "(a Kit keys its slot layer, e.g. \"top\"; a sheet its slot/Feature, e.g. \"mouth/grin\"); it is ignored",
+                      src.name);
     if (colours.size() > kMaxColours)
         sink.lint("too-many-colours", "the source draws with " + std::to_string(colours.size()) + " colours; a pet source "
                   "uses at most " + std::to_string(kMaxColours) + " (one per role)", src.name);

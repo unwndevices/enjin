@@ -32,6 +32,8 @@
  *   SHP-27  Lint retired-id: a ledger piece no source has any more (not one an error dropped).
  *   SHP-28  The stand-in Feature sheet (tools/testdata/shapes/sheet.svg) joins the pool with ledger ids.
  *   SHP-29  Non-finite geometry (an overflowing transform) is a hard error, not a cast.
+ *   SHP-31  Only arms, legs and top may be drawn behind the Body (#317 §6); eyes, mouth, cheeks are an error.
+ *   SHP-32  Sidecar keys the bundle doesn't read (top-level, per Feature, a Feature no layer has) are lints.
  *   SHP-30  Numbers parse the same under a decimal-comma C locale (skipped when none is installed).
  *
  * `shape_bundle_test --verify-pack <a.njn> [<b.njn>]` checks a CLI output
@@ -748,6 +750,22 @@ static void test12_names() {
     if (!r.ok()) dumpIssues(r);
     ASSERT(eyes.members.size() == 2 && eyes.members[0].side == MemberSide::Left && eyes.members[1].side == MemberSide::Right,
            "SHP-12 _x5F_ decodes to '_' (eye_l / eye_r), data-name beats id, body_1_ is body");
+
+    // bad-name states the rule as implemented: [a-z][a-z0-9-]*, optionally ending _l or _r.
+    auto badNameText = [](const ShapeBundleResult& b, const char* name) {
+        for (const auto& i : b.issues)
+            if (i.code == "bad-name" && i.message.find(name) != std::string::npos)
+                return i.message.find("[a-z][a-z0-9-]*, optionally ending _l or _r") != std::string::npos;
+        return false;
+    };
+    const auto member = bundleOne(kitSvg("<rect x=\"10\" y=\"10\" width=\"60\" height=\"60\"/>",
+                                         "<g id=\"eyes\"><g id=\"Eye_l\"><rect x=\"20\" y=\"30\" width=\"2\" height=\"2\"/></g>"
+                                         "<g id=\"eye_r\"><rect x=\"58\" y=\"30\" width=\"2\" height=\"2\"/></g></g>"
+                                         "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>"));
+    ASSERT(badNameText(member, "Eye_l"), "SHP-12 a member's bad-name names the _l/_r member suffix in its rule");
+    const auto sheet = bundleOne("<svg viewBox=\"0 0 40 40\"><g id=\"mouth\"><g id=\"Grin\"><rect x=\"10\" y=\"10\" width=\"8\" "
+                                 "height=\"2\"/></g></g></svg>");
+    ASSERT(badNameText(sheet, "Grin"), "SHP-12 a sheet Feature's bad-name states the same rule");
 }
 
 static void test13_hardErrors() {
@@ -1661,6 +1679,74 @@ static void test29_nonFinite() {
 }
 
 // ---------------------------------------------------------------------------
+// SHP-31  Behind the Body: only arms, legs and top (#317 §6)
+// ---------------------------------------------------------------------------
+
+static void test31_behindBody() {
+    const std::string eyes = "<g id=\"eyes\"><rect x=\"30\" y=\"28\" width=\"4\" height=\"4\"/></g>";
+    const std::string mouth = "<g id=\"mouth\"><rect x=\"36\" y=\"44\" width=\"8\" height=\"2\"/></g>";
+    const std::string cheeks = "<g id=\"cheeks\"><rect x=\"24\" y=\"40\" width=\"4\" height=\"2\"/></g>";
+    const std::string body = "<rect x=\"10\" y=\"10\" width=\"60\" height=\"60\"/>";
+    const std::string eyesAnchor = "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>";
+    const std::string mouthAnchor = "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>";
+    struct Case { const char* slot; std::string before, after; };
+    for (const Case& c : {Case{"eyes", eyes, mouthAnchor}, Case{"mouth", mouth, eyesAnchor},
+                          Case{"cheeks", cheeks, eyesAnchor + mouthAnchor}}) {
+        const auto r = bundleOne(kitSvg(body, c.after, c.before));
+        bool named = false;
+        for (const auto& i : r.issues)
+            named = named || (i.code == "drawn-behind-body" && i.severity == ImportIssueSeverity::Error && i.layer == c.slot &&
+                              i.message.find(c.slot) != std::string::npos);
+        ASSERT(!r.ok() && r.pack.empty() && named,
+               (std::string("SHP-31 ") + c.slot + " drawn behind the Body is a hard error naming the layer").c_str());
+        if (!named) dumpIssues(r);
+    }
+    for (const char* slot : {"arms", "legs", "top"}) {
+        const std::string behind = std::string("<g id=\"") + slot + "\"><rect x=\"4\" y=\"30\" width=\"8\" height=\"4\"/></g>";
+        const auto r = bundleOne(kitSvg(body, eyesAnchor + mouthAnchor, behind));
+        ASSERT(r.ok(), (std::string("SHP-31 ") + slot + " may be drawn behind the Body").c_str());
+        if (!r.ok()) dumpIssues(r);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SHP-32  Sidecar keys the bundle doesn't read are lints, not silence
+// ---------------------------------------------------------------------------
+
+static bool hasLint(const ShapeBundleResult& r, const char* code, const char* inMessage) {
+    for (const auto& i : r.issues)
+        if (i.code == code && i.severity == ImportIssueSeverity::Lint && i.message.find(inMessage) != std::string::npos)
+            return true;
+    return false;
+}
+
+static void test32_sidecarKeys() {
+    const std::string top = "<g id=\"top\"><rect x=\"36\" y=\"2\" width=\"8\" height=\"8\"/></g>";
+    const std::string kit = kitSvg("<rect x=\"10\" y=\"10\" width=\"60\" height=\"60\"/>",
+                                   "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>"
+                                   "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>" + top);
+    // #321's example: "kind" where the bundle reads "binding".
+    const auto r = bundleOne(kit, "{\"version\":1,\"colours\":{},\"features\":{\"top\":{\"kind\":\"field\"},"
+                                  "\"tail\":{\"binding\":\"sway\"},\"mouth\":{\"binding\":\"rigid\"}}}");
+    ASSERT(r.ok(), "SHP-32 unread sidecar keys don't refuse the bundle");
+    ASSERT(hasLint(r, "unknown-sidecar-key", "\"colours\""), "SHP-32 an unknown top-level key is a lint naming it");
+    ASSERT(hasLint(r, "unknown-sidecar-key", "\"kind\"") && hasLint(r, "unknown-sidecar-key", "top"),
+           "SHP-32 an unknown per-feature key is a lint naming key and Feature");
+    ASSERT(hasLint(r, "unmatched-feature", "\"tail\""), "SHP-32 a features key matching no layer is a lint");
+    ASSERT(hasLint(r, "unmatched-feature", "\"mouth\""), "SHP-32 a features key for an anchor-only slot matches no Feature");
+    for (const auto& i : r.issues)
+        ASSERT(i.code != "unmatched-feature" || i.message.find("features \"top\"") == std::string::npos, "SHP-32 top matches its layer");
+    if (!r.ok()) dumpIssues(r);
+    // What the Studio writes reads clean: version, roles, features, unconfirmed; binding, sway, order.
+    const auto clean = bundleOne(kit, "{\"version\":1,\"roles\":{\"#000000\":\"body\"},\"unconfirmed\":[\"#000000\"],"
+                                      "\"features\":{\"top\":{\"binding\":\"sway\",\"sway\":{\"hz\":2,\"zeta\":0.3},\"order\":\"front\"}}}");
+    bool none = clean.ok();
+    for (const auto& i : clean.issues) none = none && i.code != "unknown-sidecar-key" && i.code != "unmatched-feature";
+    ASSERT(none, "SHP-32 the keys the bundle and the Studio use are not linted");
+    if (!none) dumpIssues(clean);
+}
+
+// ---------------------------------------------------------------------------
 // SHP-30  Number parsing ignores the C locale
 // ---------------------------------------------------------------------------
 
@@ -1721,6 +1807,8 @@ int main(int argc, char** argv) {
         {"SHP-28", test28_standInSheet},
         {"SHP-29", test29_nonFinite},
         {"SHP-30", test30_locale},
+        {"SHP-31", test31_behindBody},
+        {"SHP-32", test32_sidecarKeys},
     };
     // `--only SHP-nn`: one group, so each lint and the Feature sheets are a ctest of their own.
     const char* only = argc >= 3 && std::strcmp(argv[1], "--only") == 0 ? argv[2] : nullptr;
