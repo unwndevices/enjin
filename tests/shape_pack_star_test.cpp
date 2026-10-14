@@ -67,7 +67,8 @@ int main() {
 
     ShapePackGroup pet;
     ASSERT(pet.build(pack, look, arena, &e), e.text);
-    ASSERT(arena.used() <= pack.lookBufferBytes() + AssetArena::ALIGNMENT, "one Look buffer from the arena");
+    ASSERT(arena.used() <= pack.lookBufferBytes() + sizeof(ShapeHitStore) + 2 * AssetArena::ALIGNMENT,
+           "one Look buffer and one hit store (#336) from the arena");
     for (uint8_t s = 0; s < SHAPE_SLOT_COUNT; ++s)
         ASSERT(pet.poseName(ShapeSlot(s)) != nullptr, "every slot of the full Look is loaded");
 

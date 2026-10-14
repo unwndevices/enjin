@@ -43,6 +43,15 @@
  *   changes, with the jelly asleep. Off after build(); a new Look keeps
  *   breathing, re-fitted to its Body.
  *
+ * - **Grab, pull, drag, hit** (#336). build() also carves the group's
+ *   ShapeHitStore, so hit() answers slot + member (the socket's place among
+ *   the slot's sockets, so a mirrored left member is member 0 and the right
+ *   one 1) from the last drawn masks. grab() takes what is drawn at a
+ *   point: on a `sway` Feature its arm, on anything else (the Body, a
+ *   `field` or `rigid` Feature) the nearest Lattice node; nothing drawn
+ *   there, no grab. moveTo() drags the feet line through the position
+ *   spring; setPosition() snaps it.
+ *
  * A bad Look is refused before anything is read, naming slot + id: a missing
  * body, eyes or mouth; an id not in the pack (unknown or retired); a filled
  * slot the Body has no socket for; a colour outside 0..14 (15 is transparent).
@@ -150,9 +159,31 @@ public:
     /// The poses slot `s`'s Feature has (fixed-list names), up to `max`; 0 if empty.
     uint8_t poseNames(ShapeSlot s, const char** out, uint8_t max) const;
 
-    /// Put the Body's feet line at `feet` (layer pixels).
+    /// Put the Body's feet line at `feet` (layer pixels): a snap.
     void setPosition(FixedVec2 feet);
-    FixedVec2 position() const { return position_; }
+    /// Drag the feet line toward `feet` through the position spring: the
+    /// jelly lags behind. Call it every frame while dragging.
+    void moveTo(FixedVec2 feet);
+    /// Where the feet line is now (moving while a drag carries it).
+    FixedVec2 position() const { return group_.origin() + feet_; }
+
+    /**
+     * @brief Grab what the last redraw drew at layer point `at`: a sway
+     *        Feature's arm, else the nearest Lattice node. Wakes the jelly.
+     * @return a handle, or -1 when nothing is drawn there (or the grab
+     *         slots are full).
+     */
+    int grab(FixedVec2 at);
+    /// Pull grab `handle` toward `target` (layer pixels).
+    void pull(int handle, FixedVec2 target) { group_.moveGrab(handle, target); }
+    /// Let go, throwing at `velocity` px/s.
+    void release(int handle, FixedVec2 velocity) { group_.releaseGrab(handle, velocity); }
+
+    /**
+     * @brief What the last redraw drew topmost at layer pixel (x, y).
+     * @return false when nothing; else the slot and member (socket place).
+     */
+    bool hit(int x, int y, ShapeSlot& slot, uint8_t& member) const;
 
     bool changed() const { return group_.changed(); }
 
@@ -220,7 +251,7 @@ private:
     ShapeLook  look_;
     Slot       slots_[SHAPE_SLOT_COUNT];
     ShapeGroup group_;
-    FixedVec2  position_{};
+    FixedVec2  carryFeet_{};  ///< Where the last moveTo() heads.
     FixedVec2  feet_{};
     FixedVec2  bodyMin_{}, bodyMax_{};  ///< The Body's rest box (closed rings).
     Breath     breath_;

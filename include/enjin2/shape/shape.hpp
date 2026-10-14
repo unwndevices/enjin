@@ -83,6 +83,9 @@ struct Shape {
     const Shape* clip      = nullptr;
     uint16_t     clipCount = 0;
     ClipSpace    clipSpace = ClipSpace::None;
+    /// The owner's name for what this Shape belongs to; a Shape group's hit
+    /// test answers with it (Tomodachi #336).
+    uint16_t     tag = 0;
 };
 
 } // namespace shape

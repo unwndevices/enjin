@@ -340,6 +340,111 @@ static void testSwayArmSwingsAndSettles() {
     ASSERT(l.addSway(px(0, 0), arm) < 0, "past kMaxSway arms: refused");
 }
 
+// ---------------------------------------------------------------------------
+// Pull and drag (Tomodachi #336)
+// ---------------------------------------------------------------------------
+
+static void testPullANode() {
+    Lattice l = makeLattice();
+    // The top edge's middle node is (2, 0), home at (0, -60). Grab just off it.
+    const int h = l.grabNode(px(2, -57));
+    ASSERT(h >= 0, "a grab on a configured Lattice gives a handle");
+    ASSERT(l.grabbed() && !l.asleep(), "a grab wakes it");
+    const int other = l.grabNode(px(0, 0));
+    ASSERT(other >= 0 && other != h && l.grabCount() == 2, "the C++ keeps the handle form: two grabs at once");
+    l.releaseGrab(other, FixedVec2{});
+    ASSERT(l.grabCount() == 1, "a release frees its handle only");
+
+    // Pull it 10 px up: it gets there and the feet (bottom row) barely move.
+    l.moveGrab(h, px(0, -70));
+    for (int t = 0; t < 30; ++t) l.tick(33334);
+    const FixedVec2 top = l.node(2, 0);
+    ASSERT(std::fabs(toPx(top.x)) < 0.01 && std::fabs(toPx(top.y) + 10) < 0.6, "the pulled node sits near its target");
+    ASSERT(std::fabs(toPx(l.node(2, 1).y)) > 1, "its neighbours stretch along");
+    ASSERT(std::fabs(toPx(l.node(2, 4).y)) < 0.5, "the feet stay (the bottom row is held)");
+    ASSERT(!l.asleep(), "held, it never sleeps");
+
+    // Pull far: the stretch is rubbery, never past the reach (26 px).
+    l.moveGrab(h, px(0, -160));
+    for (int t = 0; t < 30; ++t) l.tick(33334);
+    const double far = -toPx(l.node(2, 0).y);
+    ASSERT(far > 20 && far <= 26, "a 100 px pull stretches 26 px at most");
+    ASSERT(l.maxDisplacement() < Fixed::fromInt(30), "and the grid stays bounded");
+
+    // Release with a throw: it springs back, settles and sleeps at rest.
+    l.releaseGrab(h, px(0, 300));
+    ASSERT(!l.grabbed(), "released");
+    ASSERT(std::fabs(toPx(l.velocityAt(px(0, -60)).y) - 300) < 0.5, "the release velocity throws the node");
+    int ticks = 0;
+    while (!l.asleep() && ticks < 300) {
+        l.tick(33334);
+        ++ticks;
+    }
+    ASSERT(l.asleep() && ticks < 120, "it settles within 4 s");
+    ASSERT(l.maxDisplacement() == Fixed{}, "snapped home");
+    l.moveGrab(h, px(0, -80));
+    ASSERT(l.asleep(), "a stale handle moves nothing");
+    Lattice none;
+    ASSERT(none.grabNode(px(0, 0)) < 0, "an unconfigured Lattice has nothing to grab");
+}
+
+static void testPullASwayArm() {
+    const FixedVec2 anchor = px(0, -60), arm = px(0, -12);
+    Lattice l = makeLattice();
+    l.addSway(anchor, arm);
+    ASSERT(l.swayIndexAt(anchor) == 0 && l.swayIndexAt(px(1, -60)) < 0, "the arm hung at an anchor");
+    ASSERT(l.grabSway(7) < 0, "no such arm: no grab");
+    const int h = l.grabSway(0);
+    ASSERT(h >= 0 && !l.asleep(), "grabbing an arm wakes the Lattice");
+    // Pull the tip to the right: the arm turns clockwise (+), the grid stays home.
+    l.moveGrab(h, px(12, -72));
+    for (int t = 0; t < 30; ++t) l.tick(33334);
+    const double th = toPx(l.swayAngle(0));
+    ASSERT(th > 0.4 && th < 0.8, "pulled 45 degrees over, the arm leans most of the way");
+    ASSERT(l.maxDisplacement() == Fixed{}, "pulling an arm leaves the grid alone");
+    l.releaseGrab(h, px(-200, 0));
+    int ticks = 0;
+    while (!l.asleep() && ticks < 300) {
+        l.tick(33334);
+        ++ticks;
+    }
+    ASSERT(l.asleep() && l.swayAngle(0) == Fixed{}, "released, it swings back and sleeps at rest");
+}
+
+static void testCarryLags() {
+    Lattice l = makeLattice();
+    l.setFrame(px(80, 140));
+    ASSERT(l.frame() == px(80, 140) && l.asleep(), "a snapped frame does not wake it");
+    l.carryTo(px(110, 140));
+    ASSERT(!l.asleep() && l.carrying(), "a carry wakes it");
+    double lag = 0, feet = 0;
+    for (int t = 0; t < 15; ++t) {
+        l.tick(33334);
+        lag = std::fmax(lag, -toPx(l.node(2, 0).x));
+        feet = std::fmax(feet, std::fabs(toPx(l.node(2, 4).x)));
+    }
+    ASSERT(toPx(l.frame().x) > 100, "the frame follows its target through the position spring");
+    ASSERT(lag > 2, "the top lags behind");
+    ASSERT(feet < 0.01, "the feet ride the frame");
+    int ticks = 0;
+    while (!l.asleep() && ticks < 300) {
+        l.tick(33334);
+        ++ticks;
+    }
+    ASSERT(l.asleep() && ticks < 120, "it arrives, settles and sleeps");
+    ASSERT(l.frame() == px(110, 140) && l.maxDisplacement() == Fixed{}, "exactly on the target, at rest");
+    // Frame-rate independent: 60 fps steps the 30 fps path.
+    Lattice a = makeLattice(), b = makeLattice();
+    a.carryTo(px(30, 0));
+    b.carryTo(px(30, 0));
+    for (int t = 0; t < 20; ++t) {
+        a.tick(33334);
+        b.tick(16667);
+        b.tick(16667);
+    }
+    ASSERT(a.frame() == b.frame() && a.node(2, 0) == b.node(2, 0), "the same carry at 30 and 60 fps");
+}
+
 int main() {
     testSwayArmSwingsAndSettles();
     testRestIsAsleep();
@@ -348,6 +453,9 @@ int main() {
     testFrameRateIndependent();
     testSettlesSnapsAndSleeps();
     testStiffnessClampedStable();
+    testPullANode();
+    testPullASwayArm();
+    testCarryLags();
     printf("shape_lattice_test: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
 }

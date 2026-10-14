@@ -34,6 +34,20 @@
  * draws every item, and leaves the old ∪ new tiles dirty, so the compositor
  * recomposites exactly those. The footprint is the union of the tiles under
  * each drawn mask's bounding box.
+ *
+ * ## Grab, pull, drag and hit (#336)
+ *
+ * The group's origin is its Lattice's frame (lattice.hpp): setOrigin() snaps
+ * it, moveTo() makes it follow a target through the whole-group position
+ * spring so the jelly lags behind (a drag), and tick() moves the origin as
+ * the carry goes. grabNode() / grabSway() / moveGrab() / releaseGrab() pull a
+ * Lattice node or a sway arm, in layer pixels.
+ *
+ * Given a ShapeHitStore, each redraw keeps a copy of every mask it painted
+ * (fill, inner stroke, open stroke) with the Shape's tag, in paint order.
+ * hit() tests those **last drawn masks**, topmost first: pixel-exact, so it
+ * follows the jelly, and it answers for what is on screen even when the
+ * state has moved on since.
  */
 #pragma once
 
@@ -81,6 +95,68 @@ struct ShapeDrawScratch {
     Shape liveRest[kMaxClipShapes];  ///< The live clip Shapes (the Body).
 };
 
+/**
+ * @brief Where a group keeps its last drawn masks for hit() (about 9 KB).
+ *        One per group; the owner allocates it (a pet's comes from its
+ *        AssetArena). Masks past its room are not kept: they never hit.
+ */
+struct ShapeHitStore {
+    static constexpr uint8_t kMaxMasks = 48;
+    static constexpr size_t  kWords = 2048;
+
+    struct Mask {
+        int16_t  x = 0, y = 0;
+        uint16_t w = 0, h = 0, wpr = 0;
+        uint16_t tag = 0;
+        uint32_t offset = 0;  ///< Into words.
+    };
+
+    Mask     masks[kMaxMasks];
+    uint8_t  count = 0;
+    uint32_t used = 0;     ///< Words taken.
+    bool     full = false; ///< A mask did not fit at the last redraw.
+    uint32_t words[kWords];
+
+    void clear()
+    {
+        count = 0;
+        used = 0;
+        full = false;
+    }
+
+    /// Keep a copy of `m` under `tag` (nothing for an empty mask).
+    void keep(const RowMask& m, uint16_t tag)
+    {
+        if (m.empty())
+            return;
+        const uint32_t n = uint32_t(m.wordsPerRow()) * m.height();
+        if (count == kMaxMasks || used + n > kWords)
+        {
+            full = true;
+            return;
+        }
+        Mask& k = masks[count++];
+        k = Mask{m.x(), m.y(), m.width(), m.height(), m.wordsPerRow(), tag, used};
+        std::memcpy(words + used, m.row(0), size_t(n) * 4);
+        used += n;
+    }
+
+    /// The tag of the topmost kept mask covering pixel (x, y), or -1.
+    int32_t hit(int x, int y) const
+    {
+        for (int i = int(count) - 1; i >= 0; --i)
+        {
+            const Mask& k = masks[i];
+            const int c = x - k.x, r = y - k.y;
+            if (c < 0 || r < 0 || c >= k.w || r >= k.h)
+                continue;
+            if ((words[k.offset + uint32_t(r) * k.wpr + uint32_t(c >> 5)] >> (c & 31)) & 1u)
+                return k.tag;
+        }
+        return -1;
+    }
+};
+
 /// Called once per item, in paint order. Returns false if the item was refused.
 using ShapeEmit = bool (*)(void* ctx, const Shape& rest, FixedVec2 at, bool mirror, Binding binding);
 
@@ -95,9 +171,11 @@ class ShapeGroup {
 public:
     static constexpr uint16_t kMaxTiles = 256;  ///< Footprint bitmap size (a 256×256 canvas).
 
-    /// Where the items' coordinate origin lands on the layer.
+    /// Where the items' coordinate origin lands on the layer (a snap: it
+    /// stops a moveTo()).
     void setOrigin(FixedVec2 o)
     {
+        lattice_.setFrame(o);
         if (o != origin_)
         {
             origin_ = o;
@@ -106,6 +184,35 @@ public:
         }
     }
     FixedVec2 origin() const { return origin_; }
+
+    /// Drag: the origin follows `o` through the position spring and the jelly
+    /// lags behind (call it every frame while dragging). With no Lattice it
+    /// snaps.
+    void moveTo(FixedVec2 o)
+    {
+        if (!lattice_.configured())
+            setOrigin(o);
+        else
+            lattice_.carryTo(o);
+    }
+
+    /// Pull (layer pixels): the Lattice node nearest `at`, or sway arm `arm`.
+    /// @return a handle, or -1.
+    int grabNode(FixedVec2 at) { return lattice_.grabNode(at); }
+    int grabSway(uint8_t arm) { return lattice_.grabSway(arm); }
+    void moveGrab(int handle, FixedVec2 target) { lattice_.moveGrab(handle, target); }
+    void releaseGrab(int handle, FixedVec2 velocity) { lattice_.releaseGrab(handle, velocity); }
+
+    /// Keep the last drawn masks in `store` for hit() (nullptr: none).
+    void setHitStore(ShapeHitStore* store)
+    {
+        hits_ = store;
+        if (hits_)
+            hits_->clear();
+    }
+    /// The tag of the topmost Shape drawn at layer pixel (x, y) by the last
+    /// redraw, or -1 (nothing there, or no hit store).
+    int32_t hit(int x, int y) const { return hits_ ? hits_->hit(x, y) : -1; }
 
     /// The Lattice the items ride (its box is in item coordinates).
     Lattice& lattice() { return lattice_; }
@@ -117,6 +224,8 @@ public:
     {
         const bool field = lattice_.tick(dtMicros);
         const bool stepped = drive_.tick(dtMicros);
+        if (lattice_.configured())
+            origin_ = lattice_.frame();  // a drag carries it
         if (!field && !stepped)
             return false;
         changed_ = true;
@@ -178,6 +287,8 @@ public:
         static_assert(Canvas4<W, H>::TILE_COUNT <= kMaxTiles, "canvas too large for the footprint bitmap");
         static_assert(size_t(((W + 31) / 32)) * H <= ShapeDrawScratch::kMaskWords, "canvas too large for the mask");
         eraseFootprint(layer);
+        if (hits_)
+            hits_->clear();
         DrawCtx<W, H> ctx{layer, scratch, *this, true};
         const bool sourced = source.forEach(scratch, &DrawCtx<W, H>::emit, &ctx);
         changed_ = false;
@@ -189,6 +300,8 @@ public:
     void erase(Canvas4<W, H>& layer)
     {
         eraseFootprint(layer);
+        if (hits_)
+            hits_->clear();
         changed_ = true;
     }
 
@@ -336,18 +449,25 @@ private:
 
             paintFill(c.layer, fill, paint.fill, c.g.remap_, paint.dither);
             c.touch(fill);
+            ShapeHitStore* hits = c.g.hits_;
+            if (hits && paint.fill != ColourRole::None)
+                hits->keep(fill, rest.tag);
             if (!stroked)
                 return true;
             RowMask stroke(s.strokeMask, ShapeDrawScratch::kMaskWords);
             if (!innerStroke(fill, paint.strokeWidth, stroke))
                 return c.ok = false;
             paintFill(c.layer, stroke, paint.stroke, c.g.remap_);
+            if (hits && paint.fill == ColourRole::None)
+                hits->keep(stroke, rest.tag);  // within the fill otherwise
             if (!s.raster.stroke(warped, canvasRect, stroke))
                 return c.ok = false;
             if (clip)
                 clipMask(stroke, *clip);
             paintFill(c.layer, stroke, paint.stroke, c.g.remap_);
             c.touch(stroke);
+            if (hits)
+                hits->keep(stroke, rest.tag);
             return true;
         }
     };
@@ -367,6 +487,7 @@ private:
     }
 
     FixedVec2    origin_{};
+    ShapeHitStore* hits_ = nullptr;
     Lattice      lattice_;
     SteppedDrive drive_;
     Remap     remap_ = Remap::identity();

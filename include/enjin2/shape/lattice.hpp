@@ -57,6 +57,36 @@
  * when every arm's tip is also within ε (|θ| < ε/L, |θ'| < ε/L per tick), and
  * the snap puts the arms home too. The drawn angle has the same dead zone as
  * the nodes, so the snap never pops a swinging Feature either.
+ *
+ * ## Pull (Tomodachi #336)
+ *
+ * grabNode() takes the node nearest a point, grabSway() an arm; each returns
+ * a handle (up to kMaxGrabs at once). moveGrab() sets where the grab heads:
+ *
+ * - **A node** is held kinematically: each tick it moves to its target over
+ *   the 4 sub-steps (its velocity is the move), and its neighbours follow
+ *   through their springs, so holding it is as stable as the grid. The
+ *   stretch from its home is rubbery: a pull of L px stretches it
+ *   reach·tanh(L / reach) px (reach 26 px, the prototype's), as an integer
+ *   Padé tanh. While a node is held the bottom row is held home the same
+ *   way, so the feet stay put (the prototype's pull, made exact).
+ * - **An arm** is pulled toward the target by a 5 Hz, ζ 0.7 angle spring on
+ *   the sine of the angle between the arm and the target (from its anchor):
+ *   it leans most of the way, its own spring holding it back.
+ *
+ * releaseGrab() lets go with a velocity: a node takes it, an arm the angular
+ * velocity it gives the tip. A grabbed Lattice never sleeps.
+ *
+ * ## The frame and the carry (drag)
+ *
+ * The Lattice knows where the group's origin is (its **frame**, in the
+ * coordinates targets are given in): setFrame() snaps it there and nothing
+ * lags. carryTo() makes the frame follow a target through a whole-group
+ * position spring (3 Hz, ζ 0.7), stepped with the grid. The pet is carried
+ * by its feet: the bottom row is held home, and the frame's acceleration
+ * pushes every other node back as an inertial pseudo-force, so the jelly
+ * above lags behind. Sway arms feel the frame's acceleration too. The carried frame settles under ε like the nodes (with the same dead
+ * zone on what is drawn), snaps onto its target and lets the Lattice sleep.
  */
 #pragma once
 
@@ -88,6 +118,9 @@ struct LatticeTuning {
     Fixed   sleepEpsilon = Fixed::fromRatio(1, 16);    ///< px, and px per tick for the speed.
     uint8_t sleepTicks   = 6;                          ///< Ticks under ε before the snap.
     Fixed   swayGain     = Fixed::fromRatio(35, 100);  ///< How hard the anchor's acceleration swings an arm.
+    Fixed   pullReach    = Fixed::fromInt(26);         ///< px: the most a pulled node stretches.
+    Fixed   carryHz      = Fixed::fromInt(3);          ///< The position spring a carry follows through.
+    Fixed   carryDamping = Fixed::fromRatio(70, 100);  ///< Its ζ.
 };
 
 class Lattice {
@@ -162,8 +195,44 @@ public:
     /// Sub-steps simulated since configure() (a test counter).
     uint32_t steps() const { return steps_; }
 
+    // ── Pull (#336) ─────────────────────────────────────────────────────────
+    static constexpr uint8_t kMaxGrabs = 4;
+
+    /// Grab the node nearest `at` (frame coordinates: frame() + group
+    /// coordinates), where it is drawn. Wakes the Lattice.
+    /// @return a handle, or -1 when unconfigured or kMaxGrabs are held.
+    int grabNode(FixedVec2 at);
+    /// Grab sway arm `arm`. @return a handle, or -1 (no such arm, or full).
+    int grabSway(uint8_t arm);
+    /// Head grab `handle` for `target` (frame coordinates). A stale handle does nothing.
+    void moveGrab(int handle, FixedVec2 target);
+    /// Let go, throwing at `velocity` px/s. A stale handle does nothing.
+    void releaseGrab(int handle, FixedVec2 velocity);
+    bool grabbed() const { return grabCount() != 0; }
+    uint8_t grabCount() const;
+    /// The arm hung at exactly `anchor`, or -1.
+    int swayIndexAt(FixedVec2 anchor) const;
+
+    // ── The frame and the carry (#336) ──────────────────────────────────────
+    /// Snap the frame (the group's origin) to `at`: no lag, no wake, no carry.
+    void setFrame(FixedVec2 at);
+    /// Follow `target` through the position spring; the jelly lags (wakes).
+    void carryTo(FixedVec2 target);
+    /// The frame as drawn (on its target once within ε of it).
+    FixedVec2 frame() const { return frameShown_; }
+    /// A carry is under way (not yet settled on its target).
+    bool carrying() const { return carrying_; }
+
 private:
     static constexpr uint8_t kMaxNodes = kMaxSide * kMaxSide;
+
+    enum class GrabKind : uint8_t { Free, Node, Arm };
+    struct Grab {
+        GrabKind  kind = GrabKind::Free;
+        uint8_t   index = 0;
+        uint16_t  serial = 0;
+        FixedVec2 target{};
+    };
 
     struct Arm {
         FixedVec2 anchor{}, dir{};  ///< dir = arm / L.
@@ -174,8 +243,12 @@ private:
     };
 
     bool      stepTick();
-    bool      stepSway();
-    bool      subStep();
+    bool      stepSway(int64_t frameAccX, int64_t frameAccY);
+    bool      subStep(uint8_t s);
+    int       newGrab(GrabKind kind, uint8_t index, FixedVec2 target);
+    Grab*     findGrab(int handle);
+    FixedVec2 pullGoal(uint8_t node, FixedVec2 target) const;
+    FixedVec2 home(int k) const;
     FixedVec2 shown(FixedVec2 d) const;
     FixedVec2 sample(const FixedVec2* field, FixedVec2 p) const;
     int       index(int i, int j) const { return j * nx_ + i; }
@@ -183,6 +256,7 @@ private:
     uint8_t   nx_ = 0, ny_ = 0;
     FixedVec2 min_{}, max_{};
     Fixed     invCw_{}, invCh_{};
+    Fixed     cw_{}, ch_{};
     Fixed     hz_{};
     LatticeTuning tuning_{};
 
@@ -196,6 +270,15 @@ private:
 
     Arm     arms_[kMaxSway] = {};
     uint8_t armCount_ = 0;
+
+    Grab     grabs_[kMaxGrabs] = {};
+    uint16_t grabSerial_ = 0;
+    Fixed    kCarry_{}, cCarry_{};  ///< The position spring, per sub-step.
+    Fixed    kPull_{}, cPull_{};    ///< The arm pull spring, per sub-step.
+
+    FixedVec2 framePos_{}, frameVel_{}, frameTarget_{}, frameShown_{};
+    FixedVec2 frameStep_{};         ///< How far the carry moved the frame last tick.
+    bool      carrying_ = false;
 
     uint64_t acc_ = 0;     ///< µs × kTickHz; a tick is due at 1e6.
     uint32_t steps_ = 0;

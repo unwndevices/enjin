@@ -7,6 +7,7 @@
 #include "enjin2/shape/lattice.hpp"
 
 #include "enjin2/core/math.hpp"
+#include <cstdint>
 
 namespace enjin2 {
 namespace shape {
@@ -66,6 +67,23 @@ uint16_t turn16(Fixed radians)
 constexpr Fixed    kSwayAccMax = Fixed::fromInt(4000);  // px/s², the anchor's acceleration clamp
 constexpr Fixed    kSwayMinArm = Fixed::fromInt(3);     // px, the shortest lever
 constexpr Fixed    kOneRad = Fixed::fromInt(1);         // the angle clamp
+constexpr Fixed    kPullHz = Fixed::fromInt(5);         // the arm pull spring
+constexpr Fixed    kPullZeta = Fixed::fromRatio(70, 100);
+constexpr Fixed    kMaxThrowRad = Fixed::fromInt(30);   // rad/s, a thrown arm's spin
+
+// reach · tanh(L / reach) for L, reach in raw Fixed units: Padé (3, 2),
+// x(27 + x²) / (27 + 9x²), which is exactly 1 at x = 3 and held there.
+int64_t rubbery(int64_t L, int64_t reach)
+{
+    if (reach <= 0)
+        return 0;
+    const int64_t x = (L << 16) / reach;  // Q16
+    if (x >= 3 * 65536)
+        return reach;
+    const int64_t x2 = (x * x) >> 16;
+    const int64_t t = (x * (27 * 65536 + x2)) / (27 * 65536 + 9 * x2);  // Q16
+    return (reach * t) >> 16;
+}
 
 // The worst mode's h²ω² + 2hc, for spring-Laplacian eigenvalue `lam`.
 Fixed stabilityScore(Fixed hz, Fixed zeta, Fixed lam)
@@ -80,7 +98,17 @@ Fixed stabilityScore(Fixed hz, Fixed zeta, Fixed lam)
 
 bool Lattice::configure(FixedVec2 min, FixedVec2 max, uint8_t nx, uint8_t ny, const LatticeTuning& tuning)
 {
+    // The frame (and a carry under way) outlives a new grid; grabs do not.
+    const FixedVec2 pos = framePos_, vel = frameVel_, target = frameTarget_, shownFrame = frameShown_;
+    const bool carrying = carrying_;
+    const uint16_t serial = grabSerial_;
     *this = Lattice{};
+    framePos_ = pos;
+    frameVel_ = vel;
+    frameTarget_ = target;
+    frameShown_ = shownFrame;
+    carrying_ = carrying;
+    grabSerial_ = serial;
     if (nx < 2 || ny < 2 || nx > kMaxSide || ny > kMaxSide || !(min.x < max.x) || !(min.y < max.y))
         return false;
     const Fixed cw = Fixed::fromRaw(int32_t((int64_t(max.x.raw) - min.x.raw) / (nx - 1)));
@@ -100,6 +128,8 @@ bool Lattice::configure(FixedVec2 min, FixedVec2 max, uint8_t nx, uint8_t ny, co
     tuning_ = tuning;
     invCw_ = Fixed::fromInt(1) / cw;
     invCh_ = Fixed::fromInt(1) / ch;
+    cw_ = cw;
+    ch_ = ch;
 
     const Fixed zeta = minF(maxF(tuning.damping, Fixed{}), Fixed::fromInt(2));
     Fixed hz = minF(maxF(tuning.stiffnessHz, Fixed{}), Fixed::fromInt(kMaxStiffnessHz));
@@ -133,12 +163,66 @@ bool Lattice::configure(FixedVec2 min, FixedVec2 max, uint8_t nx, uint8_t ny, co
     cxx_ = cs * exx;
     cxy_ = cs * exy;
     cyy_ = cs * eyy;
+
+    // Pull and carry (#336).
+    const Fixed carryHz = minF(maxF(tuning.carryHz, Fixed{}), Fixed::fromInt(kMaxStiffnessHz));
+    const Fixed carryZeta = minF(maxF(tuning.carryDamping, Fixed{}), Fixed::fromInt(2));
+    const Fixed wc = kTwoPi * carryHz, wp = kTwoPi * kPullHz;
+    kCarry_ = perSub(wc * wc);
+    cCarry_ = perSub((carryZeta + carryZeta) * wc);
+    kPull_ = perSub(wp * wp);
+    cPull_ = perSub((kPullZeta + kPullZeta) * wp);
+    if (carrying_)
+        wake();
     return true;
 }
 
-bool Lattice::subStep()
+bool Lattice::subStep(uint8_t s)
 {
     const int n = nx_ * ny_;
+
+    // The carry: the frame steps on its position spring; its velocity change
+    // is an inertial push back on every free node (below).
+    int32_t dvx = 0, dvy = 0;
+    if (carrying_)
+    {
+        dvx = toRaw(mul(kCarry_, frameTarget_.x - framePos_.x) - mul(cCarry_, frameVel_.x));
+        dvy = toRaw(mul(kCarry_, frameTarget_.y - framePos_.y) - mul(cCarry_, frameVel_.y));
+        frameVel_.x.raw += dvx;
+        frameVel_.y.raw += dvy;
+        framePos_.x.raw += timesH(frameVel_.x.raw);
+        framePos_.y.raw += timesH(frameVel_.y.raw);
+    }
+
+    // Held nodes move kinematically to their goal over the tick's sub-steps:
+    // grabbed ones to their pull, and while anything pulls or carries the
+    // pet, the feet (the bottom row) home, so they stay put.
+    bool held[kMaxNodes] = {};
+    FixedVec2 goal[kMaxNodes];
+    bool holdFeet = carrying_;
+    for (const Grab& g : grabs_)
+        if (g.kind == GrabKind::Node)
+        {
+            held[g.index] = true;
+            goal[g.index] = pullGoal(g.index, g.target);
+            holdFeet = true;
+        }
+    const int32_t left = int32_t(kSubSteps - s);
+    for (int k = 0; k < n; ++k)
+    {
+        if (!held[k])
+        {
+            if (!holdFeet || k < n - nx_)
+                continue;
+            held[k] = true;
+            goal[k] = {};
+        }
+        const FixedVec2 next = {Fixed::fromRaw(d_[k].x.raw + (goal[k].x.raw - d_[k].x.raw) / left),
+                                Fixed::fromRaw(d_[k].y.raw + (goal[k].y.raw - d_[k].y.raw) / left)};
+        v_[k] = {Fixed::fromRaw((next.x.raw - d_[k].x.raw) * kSubHz), Fixed::fromRaw((next.y.raw - d_[k].y.raw) * kSubHz)};
+        d_[k] = next;
+    }
+
     int64_t f[2 * kMaxNodes];  // Q32.32 velocity change (force × h)
     for (int k = 0; k < n; ++k)
     {
@@ -180,10 +264,14 @@ bool Lattice::subStep()
     bool moved = false;
     for (int k = 0; k < n; ++k)
     {
-        v_[k].x.raw += toRaw(f[2 * k]);
-        v_[k].y.raw += toRaw(f[2 * k + 1]);
-        d_[k].x.raw += timesH(v_[k].x.raw);
-        d_[k].y.raw += timesH(v_[k].y.raw);
+        if (!held[k])
+        {
+            // The carry's inertial push: the frame sped up, the node did not.
+            v_[k].x.raw += toRaw(f[2 * k]) - dvx;
+            v_[k].y.raw += toRaw(f[2 * k + 1]) - dvy;
+            d_[k].x.raw += timesH(v_[k].x.raw);
+            d_[k].y.raw += timesH(v_[k].y.raw);
+        }
         const FixedVec2 drawn = shown(d_[k]);
         moved = moved || drawn != s_[k];
         s_[k] = drawn;
@@ -195,12 +283,34 @@ bool Lattice::subStep()
 bool Lattice::stepTick()
 {
     bool changed = false;
+    const FixedVec2 before = framePos_;
     for (uint8_t s = 0; s < kSubSteps; ++s)
-        changed = subStep() || changed;
-    changed = stepSway() || changed;
+        changed = subStep(s) || changed;
+    // The carry's acceleration over the tick, for the arms (px/s²).
+    const FixedVec2 step = framePos_ - before;
+    constexpr int32_t kTick2 = int32_t(kTickHz * kTickHz);
+    const int64_t fax = (int64_t(step.x.raw) - frameStep_.x.raw) * kTick2;
+    const int64_t fay = (int64_t(step.y.raw) - frameStep_.y.raw) * kTick2;
+    frameStep_ = step;
+    changed = stepSway(fax, fay) || changed;
     const Fixed eps = tuning_.sleepEpsilon;
     const Fixed vEps = Fixed::fromRaw(eps.raw * int32_t(kTickHz));  // ε per tick, in px/s
-    bool quiet = true;
+    if (carrying_)
+    {
+        // The frame is drawn on its target once within ε of it (no pop at the snap).
+        const FixedVec2 off = frameTarget_ - framePos_;
+        const FixedVec2 drawn = {absF(off.x) < eps ? frameTarget_.x : framePos_.x,
+                                 absF(off.y) < eps ? frameTarget_.y : framePos_.y};
+        changed = changed || drawn != frameShown_;
+        frameShown_ = drawn;
+    }
+    bool quiet = !grabbed();
+    if (carrying_)
+    {
+        const FixedVec2 off = frameTarget_ - framePos_;
+        quiet = quiet && absF(off.x) < eps && absF(off.y) < eps && absF(frameVel_.x) < vEps &&
+                absF(frameVel_.y) < vEps;
+    }
     for (int k = 0, n = nx_ * ny_; k < n && quiet; ++k)
         quiet = absF(d_[k].x) < eps && absF(d_[k].y) < eps && absF(v_[k].x) < vEps && absF(v_[k].y) < vEps;
     for (uint8_t k = 0; k < armCount_ && quiet; ++k)
@@ -265,6 +375,16 @@ bool Lattice::snap()
         a.th = a.om = a.shown = Fixed{};
         a.d1 = a.d2 = FixedVec2{};
     }
+    for (Grab& g : grabs_)
+        g.kind = GrabKind::Free;
+    if (carrying_)
+    {
+        moved = moved || frameShown_ != frameTarget_;
+        framePos_ = frameShown_ = frameTarget_;
+        frameVel_ = {};
+        carrying_ = false;
+    }
+    frameStep_ = {};
     asleep_ = true;
     still_ = 0;
     acc_ = 0;
@@ -319,19 +439,20 @@ int Lattice::addSway(FixedVec2 anchor, FixedVec2 arm, const SwaySpring& spring)
     return armCount_++;
 }
 
-bool Lattice::stepSway()
+bool Lattice::stepSway(int64_t frameAccX, int64_t frameAccY)
 {
     bool moved = false;
     const int64_t lim = kSwayAccMax.raw;
     for (uint8_t k = 0; k < armCount_; ++k)
     {
         Arm& a = arms_[k];
-        // The anchor's acceleration over the last tick (px/s²), clamped.
+        // The anchor's acceleration over the last tick (px/s²), with the
+        // carried frame's, clamped.
         const FixedVec2 d = sample(d_, a.anchor);
         constexpr int64_t kTick2 = int64_t(kTickHz) * kTickHz;
-        int64_t accX = (int64_t(d.x.raw) - 2 * int64_t(a.d1.x.raw) + a.d2.x.raw) * kTick2;
-        int64_t accY = (int64_t(d.y.raw) - 2 * int64_t(a.d1.y.raw) + a.d2.y.raw) * kTick2;
-        if (accX > lim * 64 || accX < -lim * 64 || accY > lim * 64 || accY < -lim * 64)
+        int64_t accX = (int64_t(d.x.raw) - 2 * int64_t(a.d1.x.raw) + a.d2.x.raw) * kTick2 + frameAccX;
+        int64_t accY = (int64_t(d.y.raw) - 2 * int64_t(a.d1.y.raw) + a.d2.y.raw) * kTick2 + frameAccY;
+        while (accX > lim * 64 || accX < -lim * 64 || accY > lim * 64 || accY < -lim * 64)
         {
             // Far past the clamp: shrink first so the squares stay in range.
             accX /= 64;
@@ -346,6 +467,16 @@ bool Lattice::stepSway()
         a.d2 = a.d1;
         a.d1 = d;
         const Fixed ax = Fixed::fromRaw(int32_t(accX)), ay = Fixed::fromRaw(int32_t(accY));
+        // A pull: toward the target, seen from the anchor where it is now.
+        int64_t relX = 0, relY = 0, relL = 0;
+        for (const Grab& g : grabs_)
+            if (g.kind == GrabKind::Arm && g.index == k)
+            {
+                relX = int64_t(g.target.x.raw) - framePos_.x.raw - a.anchor.x.raw - d.x.raw;
+                relY = int64_t(g.target.y.raw) - framePos_.y.raw - a.anchor.y.raw - d.y.raw;
+                relL = int64_t(isqrt(uint64_t(relX * relX + relY * relY)));
+            }
+        const bool pulled = relL >= 65536;  // a target under a pixel from the anchor pulls nowhere
         for (uint8_t s = 0; s < kSubSteps; ++s)
         {
             const uint16_t turn = turn16(a.th);
@@ -354,7 +485,15 @@ bool Lattice::stepSway()
             const Fixed dy = Fixed::fromRaw(int32_t((a.dir.x.raw * sn + a.dir.y.raw * c) >> 15));
             // The pseudo-force −a on the tip, as a torque (rad/s²).
             const Fixed torque = tuning_.swayGain * ((dy * ax - dx * ay) * a.invL);
-            const int64_t f = -mul(a.kh, a.th) - mul(a.ch, a.om) + int64_t(torque.raw) * 65536 / kSubHz;
+            int64_t f = -mul(a.kh, a.th) - mul(a.ch, a.om) + int64_t(torque.raw) * 65536 / kSubHz;
+            if (pulled)
+            {
+                // The sine of the angle from the arm to the target (±1 past a right angle).
+                Fixed sine = Fixed::fromRaw(int32_t((dx.raw * relY - dy.raw * relX) / relL));
+                if (dx.raw * relX + dy.raw * relY < 0)
+                    sine = Fixed::fromInt(sine.raw < 0 ? -1 : 1);
+                f += mul(kPull_, sine) - mul(cPull_, a.om);
+            }
             a.om.raw += toRaw(f);
             a.th.raw += timesH(a.om.raw);
             a.th = minF(maxF(a.th, -kOneRad), kOneRad);
@@ -422,6 +561,157 @@ Fixed Lattice::maxDisplacement() const
     for (int k = 0, n = nx_ * ny_; k < n; ++k)
         m = maxF(m, maxF(absF(d_[k].x), absF(d_[k].y)));
     return m;
+}
+
+// ---------------------------------------------------------------------------
+// Pull (#336)
+// ---------------------------------------------------------------------------
+
+FixedVec2 Lattice::home(int k) const
+{
+    const int i = k % nx_, j = k / nx_;
+    return {Fixed::fromRaw(min_.x.raw + cw_.raw * i), Fixed::fromRaw(min_.y.raw + ch_.raw * j)};
+}
+
+// Where held node `k` goes for `target`: its stretch from home, made rubbery.
+FixedVec2 Lattice::pullGoal(uint8_t k, FixedVec2 target) const
+{
+    const FixedVec2 h = home(k);
+    const int64_t rx = int64_t(target.x.raw) - framePos_.x.raw - h.x.raw;
+    const int64_t ry = int64_t(target.y.raw) - framePos_.y.raw - h.y.raw;
+    const int64_t L = int64_t(isqrt(uint64_t(rx * rx + ry * ry)));
+    if (L == 0)
+        return {};
+    const int64_t Lc = rubbery(L, tuning_.pullReach.raw);
+    return {Fixed::fromRaw(int32_t(rx * Lc / L)), Fixed::fromRaw(int32_t(ry * Lc / L))};
+}
+
+int Lattice::newGrab(GrabKind kind, uint8_t index, FixedVec2 target)
+{
+    for (uint8_t i = 0; i < kMaxGrabs; ++i)
+    {
+        Grab& g = grabs_[i];
+        if (g.kind != GrabKind::Free)
+            continue;
+        grabSerial_ = uint16_t(grabSerial_ % 0x3FFF + 1);
+        g.kind = kind;
+        g.index = index;
+        g.serial = grabSerial_;
+        g.target = target;
+        wake();
+        return int(g.serial) << 2 | i;
+    }
+    return -1;
+}
+
+Lattice::Grab* Lattice::findGrab(int handle)
+{
+    if (handle < 0)
+        return nullptr;
+    Grab& g = grabs_[handle & 3];
+    return g.kind != GrabKind::Free && g.serial == uint16_t(handle >> 2) ? &g : nullptr;
+}
+
+int Lattice::grabNode(FixedVec2 at)
+{
+    if (!configured())
+        return -1;
+    const FixedVec2 local = at - framePos_;
+    int best = 0;
+    int64_t bestD = INT64_MAX;
+    for (int k = 0, n = nx_ * ny_; k < n; ++k)
+    {
+        const FixedVec2 p = home(k) + s_[k];
+        const int64_t dx = int64_t(local.x.raw) - p.x.raw, dy = int64_t(local.y.raw) - p.y.raw;
+        const int64_t d2 = dx * dx + dy * dy;
+        if (d2 < bestD)
+        {
+            bestD = d2;
+            best = k;
+        }
+    }
+    // It heads for where it is: grabbing alone moves nothing.
+    return newGrab(GrabKind::Node, uint8_t(best), framePos_ + home(best) + d_[best]);
+}
+
+int Lattice::grabSway(uint8_t arm)
+{
+    if (!configured() || arm >= armCount_)
+        return -1;
+    const Arm& a = arms_[arm];
+    const FixedVec2 tip = framePos_ + a.anchor + sample(d_, a.anchor) + turn(a.dir, a.th);
+    return newGrab(GrabKind::Arm, arm, tip);
+}
+
+void Lattice::moveGrab(int handle, FixedVec2 target)
+{
+    Grab* g = findGrab(handle);
+    if (!g || g->target == target)
+        return;
+    g->target = target;
+    wake();
+}
+
+void Lattice::releaseGrab(int handle, FixedVec2 velocity)
+{
+    Grab* g = findGrab(handle);
+    if (!g)
+        return;
+    if (g->kind == GrabKind::Node)
+        v_[g->index] = velocity;
+    else
+    {
+        // The tip's speed across the arm, as spin.
+        Arm& a = arms_[g->index];
+        const FixedVec2 d = turn(a.dir, a.th);
+        const Fixed across = Fixed::fromRaw(int32_t((int64_t(d.x.raw) * velocity.y.raw - int64_t(d.y.raw) * velocity.x.raw) >> 16));
+        a.om = minF(maxF(across * a.invL, -kMaxThrowRad), kMaxThrowRad);
+    }
+    g->kind = GrabKind::Free;
+    wake();
+}
+
+uint8_t Lattice::grabCount() const
+{
+    uint8_t n = 0;
+    for (const Grab& g : grabs_)
+        n = uint8_t(n + (g.kind != GrabKind::Free));
+    return n;
+}
+
+int Lattice::swayIndexAt(FixedVec2 anchor) const
+{
+    for (uint8_t k = 0; k < armCount_; ++k)
+        if (arms_[k].anchor == anchor)
+            return k;
+    return -1;
+}
+
+// ---------------------------------------------------------------------------
+// The frame and the carry (#336)
+// ---------------------------------------------------------------------------
+
+void Lattice::setFrame(FixedVec2 at)
+{
+    framePos_ = frameTarget_ = frameShown_ = at;
+    frameVel_ = frameStep_ = {};
+    carrying_ = false;
+}
+
+void Lattice::carryTo(FixedVec2 target)
+{
+    if (!configured())
+    {
+        setFrame(target);
+        return;
+    }
+    // The same target again (moveTo every frame) is nothing new: the settle
+    // count keeps running.
+    if (carrying_ ? target == frameTarget_ : target == framePos_)
+        return;
+    frameTarget_ = target;
+    carrying_ = true;
+    wake();
 }
 
 } // namespace shape
