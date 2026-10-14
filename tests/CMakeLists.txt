@@ -456,6 +456,46 @@ if(TARGET enjin_sprite_import)
     set_tests_properties(sprite_import_cli_reimport_loads PROPERTIES FIXTURES_REQUIRED sprite_import_cli_re)
 endif()
 
+# Shape pack format + bundle function: Kit SVG → Shape pack (Tomodachi #330:
+# SHP-xx), plus the CLI bundling the stand-in Kit twice with one ledger and the
+# test checking the two indices match. The pre-push gate
+# (scripts/importer-check.sh in Tomodachi) runs these under ASan.
+if(TARGET enjin2_import)
+    add_executable(shape_bundle_test shape_bundle_test.cpp)
+    target_link_libraries(shape_bundle_test PRIVATE enjin2_import)
+    target_compile_definitions(shape_bundle_test PRIVATE
+        ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+    add_test(NAME shape_bundle_test COMMAND shape_bundle_test)
+endif()
+if(TARGET enjin_shape_bundle)
+    # The stand-in Kit, bundled twice with one ledger (created by the first run):
+    # both packs must list the same pieces with the same ids.
+    set(_shape_dir ${CMAKE_CURRENT_BINARY_DIR}/shape_bundle_cli)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/shapes/star.svg ${_shape_dir}/star.svg COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/shapes/star.svg.shape.json
+                   ${_shape_dir}/star.svg.shape.json COPYONLY)
+    add_test(NAME shape_bundle_cli_reset COMMAND ${CMAKE_COMMAND} -E rm -f ${_shape_dir}/ledger.json)
+    set_tests_properties(shape_bundle_cli_reset PROPERTIES FIXTURES_SETUP shape_bundle_cli_0)
+    add_test(NAME shape_bundle_cli_first
+        COMMAND enjin_shape_bundle ${_shape_dir}/star.svg --ledger ${_shape_dir}/ledger.json -o ${_shape_dir}/a.njn)
+    set_tests_properties(shape_bundle_cli_first PROPERTIES
+        FIXTURES_REQUIRED shape_bundle_cli_0 FIXTURES_SETUP shape_bundle_cli_1
+        PASS_REGULAR_EXPRESSION "ledger updated")
+    add_test(NAME shape_bundle_cli_second
+        COMMAND enjin_shape_bundle ${_shape_dir}/star.svg --ledger ${_shape_dir}/ledger.json -o ${_shape_dir}/b.njn)
+    set_tests_properties(shape_bundle_cli_second PROPERTIES
+        FIXTURES_REQUIRED shape_bundle_cli_1 FIXTURES_SETUP shape_bundle_cli_2
+        FAIL_REGULAR_EXPRESSION "ledger updated")
+    add_test(NAME shape_bundle_cli_stable_ids
+        COMMAND shape_bundle_test --verify-pack ${_shape_dir}/a.njn ${_shape_dir}/b.njn)
+    set_tests_properties(shape_bundle_cli_stable_ids PROPERTIES FIXTURES_REQUIRED shape_bundle_cli_2)
+    # A hard error exits non-zero and writes nothing.
+    add_test(NAME shape_bundle_cli_refuses
+        COMMAND enjin_shape_bundle ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.gpl
+            --ledger ${_shape_dir}/refused-ledger.json -o ${_shape_dir}/refused.njn)
+    set_tests_properties(shape_bundle_cli_refuses PROPERTIES WILL_FAIL TRUE)
+endif()
+
 # Shared C++ layered-asset owner/loader + bounded per-applet arena
 # (ADR-0004, Tomodachi #95: LAYLA-01..LAYLA-17). Links enjin2_graphics for the
 # AssetArena / LayeredAssetStore translation units.

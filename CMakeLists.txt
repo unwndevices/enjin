@@ -268,6 +268,9 @@ if(NOT ESP32)
     add_library(enjin2_import STATIC)
     target_sources(enjin2_import PRIVATE
         src/import/aseprite_file.cpp
+        src/import/shape_bundle.cpp
+        src/import/shape_json.cpp
+        src/import/shape_svg.cpp
         src/import/sprite_import.cpp
         src/import/sprite_reimport.cpp
         src/import/stb_zlib.cpp
@@ -285,6 +288,9 @@ if(NOT ESP32)
         #                     [--reimport <existing.njn>]  (re-import merge, Tomodachi #297)
         add_executable(enjin_sprite_import tools/sprite_import/main.cpp)
         target_link_libraries(enjin_sprite_import PRIVATE enjin2_import enjin2_graphics)
+        # enjin_shape_bundle <sources.svg...> --ledger <ledger.json> -o <pack.njn>  (Tomodachi #330)
+        add_executable(enjin_shape_bundle tools/shape_bundle/main.cpp)
+        target_link_libraries(enjin_shape_bundle PRIVATE enjin2_import)
     endif()
 endif()
 
