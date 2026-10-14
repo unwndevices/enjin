@@ -388,6 +388,81 @@ namespace enjin2
         }
 
         /**
+         * @brief Bayer-dithered horizontal span: fill `[x, x+width)` on row `y`
+         *        with `color` wherever `Mask::bayer(level)` is set.
+         *
+         * Paints exactly the pixels the per-pixel path
+         * `Mask::bayer(level).sample(ax + phaseX, y + phaseY)` would, so the
+         * pattern is screen-anchored (R4 "one grid") and a span split across
+         * dirty tiles stays seamless. Unmasked pixels are left untouched. The
+         * 4×4 row is resolved once per call into two nibble-select bytes, and
+         * the span is written byte-wise, so there is no per-pixel matrix lookup.
+         * Dirty tiles are marked as @ref drawHLine does; a span that paints
+         * nothing (level 0, or a row with no set bits) marks nothing.
+         *
+         * @param x      Starting x coordinate.
+         * @param y      Y coordinate.
+         * @param width  Span width in pixels.
+         * @param color  Fill colour.
+         * @param level  Bayer coverage 0..16 (clamped): 0 = none, 16 = solid.
+         * @param phaseX Absolute x offset added before sampling the pattern.
+         * @param phaseY Absolute y offset added before sampling the pattern.
+         */
+        void drawHLineDither(int16_t x, int16_t y, int16_t width, Pixel4 color,
+                             uint8_t level, int16_t phaseX = 0, int16_t phaseY = 0)
+        {
+            if (y < 0 || y >= HEIGHT || x >= WIDTH || width <= 0)
+                return;
+
+            // Clip in int so a far-off-left start can't wrap int16.
+            int x0 = x;
+            int x1 = static_cast<int>(x) + width; // exclusive
+            if (x0 < 0)
+                x0 = 0;
+            if (x1 > WIDTH)
+                x1 = WIDTH;
+            if (x0 >= x1)
+                return;
+
+            // The pattern row for this y. `& 3` is the positive modulo for
+            // negatives too; int16 wrap in Mask::sample is a multiple of 4,
+            // so it agrees with this.
+            const uint32_t rowBits =
+                Mask::bayer(level).rows[(static_cast<int>(y) + phaseY) & 3];
+            if (rowBits == 0)
+                return;
+
+            // pat bit k = mask value for pixels with (ax & 3) == k.
+            uint8_t pat = 0;
+            for (int k = 0; k < 4; ++k)
+                pat |= static_cast<uint8_t>(((rowBits >> ((k + phaseX) & 3)) & 1u) << k);
+
+            // Nibble-select per byte: a byte holds pixels 2b (low) and 2b+1
+            // (high), so even bytes take pat bits 0/1 and odd bytes bits 2/3.
+            const uint8_t sel[2] = {
+                static_cast<uint8_t>(((pat & 1u) ? 0x0Fu : 0u) | ((pat & 2u) ? 0xF0u : 0u)),
+                static_cast<uint8_t>(((pat & 4u) ? 0x0Fu : 0u) | ((pat & 8u) ? 0xF0u : 0u)),
+            };
+
+            invalidate(static_cast<int16_t>(x0), y, static_cast<int16_t>(x1 - x0), 1);
+
+            const uint8_t packed = static_cast<uint8_t>((color.value << 4) | color.value);
+            PackedPixel4 *row = &buffer[getIndex(0, y)];
+            const int bFirst = x0 >> 1;
+            const int bLast = (x1 - 1) >> 1;
+            for (int b = bFirst; b <= bLast; ++b)
+            {
+                uint8_t m = sel[b & 1];
+                if (b == bFirst && (x0 & 1))
+                    m &= 0xF0u; // span starts on the high nibble
+                if (b == bLast && !((x1 - 1) & 1))
+                    m &= 0x0Fu; // span ends on the low nibble
+                const uint8_t v = row[b].getByte();
+                row[b] = PackedPixel4(static_cast<uint8_t>((v & ~m) | (packed & m)));
+            }
+        }
+
+        /**
          * @brief Optimized vertical line drawing
          * @param x X coordinate
          * @param y Starting y coordinate
