@@ -105,6 +105,9 @@ target_sources(enjin2_graphics PRIVATE
     # Lattice deformer: spring grid, fixed tick, sleep + snap
     # (ADR-0016, Tomodachi #334)
     src/shape/lattice.cpp
+    # Bit-identity corpus: one scripted pet run, a layer CRC per frame
+    # (ADR-0016, Tomodachi #337)
+    src/shape/shape_corpus.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_graphics
