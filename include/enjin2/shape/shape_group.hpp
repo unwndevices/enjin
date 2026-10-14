@@ -141,8 +141,9 @@ private:
         ShapeDrawScratch& s;
         ShapeGroup&       g;
         bool              ok;
-        const Shape*      live = nullptr;  ///< The group-space clip liveMask holds (this redraw).
+        const Shape*      live = nullptr;  ///< The group-space clip liveView holds (this redraw).
         uint16_t          liveCount = 0;
+        RowMask           liveView{};      ///< Over ShapeDrawScratch::liveMask.
 
         /// Rest Shape → layer coordinates: placed at origin + at, mirrored x → −x.
         static bool warp(const Shape& rest, FixedVec2 base, bool mirror, FixedVec2* points, Ring* rings, Shape& out)
@@ -268,8 +269,6 @@ private:
             c.touch(stroke);
             return true;
         }
-
-        RowMask liveView;
     };
 
     template <uint16_t W, uint16_t H>
