@@ -142,11 +142,19 @@ private:
 class ShapePackGroup : private ShapeItemSource {
 public:
     /**
-     * @brief Carve the Look buffer from `arena` and read `look` into it.
-     *        All or nothing: on failure the arena is rolled back.
+     * @brief Read `look` into the Look buffer, carving the buffer and the hit
+     *        masks from `arena` only when this group has none big enough
+     *        yet: a clear() → build() loop reuses them and never grows the
+     *        arena (#323 §4). All or nothing: on failure the arena is rolled
+     *        back and the group is cleared.
      */
     bool build(ShapePack& pack, const ShapeLook& look, AssetArena& arena, ShapeError* err);
     bool built() const { return pack_ != nullptr; }
+    /// Forget the pet (not built any more), keeping its Look buffer and hit
+    /// masks for the next build(). Resets in place: no temporary group.
+    void clear();
+    /// clear(), and forget that memory too (its arena is being reclaimed).
+    void reset();
 
     /// Switch to `look` in place. On failure the group keeps its old Look.
     bool setLook(const ShapeLook& look, ShapeError* err);
@@ -246,6 +254,11 @@ private:
     void refreshBody();
     void refreshLattice();
     bool startBreath();
+
+    // The arena memory build() carved, kept across clear() for the next build().
+    uint8_t*       buffer_ = nullptr;
+    size_t         bufferBytes_ = 0;
+    ShapeHitStore* hits_ = nullptr;
 
     ShapePack* pack_ = nullptr;
     ShapeLook  look_;

@@ -8,7 +8,10 @@
  * will call.  Each source's shape sidecar is `<source>.shape.json` next to it
  * (optional).  Sources are keyed in the ledger by their path relative to the
  * ledger's folder.  A missing ledger starts a new one; the updated ledger is
- * written back only when it changed.  Issues go to stderr; on any error
+ * written back only when it changed, and before the pack: a pack never carries
+ * ids its ledger didn't record (ADR-0017 "never reused"); a failed pack write
+ * after the ledger only burns ids.  Each file goes to a temp file first, then is
+ * renamed over the target.  Issues go to stderr; when the bundle is refused
  * nothing is written.  Exit status: 0 ok, 1 refused, 2 usage or I/O error.
  */
 #include <enjin2/graphics/shape_pack.hpp>
@@ -40,10 +43,24 @@ bool readAll(const fs::path& path, std::vector<uint8_t>& out) {
     return !in.bad();
 }
 
+// Write to <path>.tmp, then rename it over <path>: a failed write leaves the old file whole.
 bool writeAll(const fs::path& path, const void* data, size_t size) {
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    out.write(static_cast<const char*>(data), static_cast<std::streamsize>(size));
-    return static_cast<bool>(out);
+    fs::path tmp = path;
+    tmp += ".tmp";
+    {
+        std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+        out.write(static_cast<const char*>(data), static_cast<std::streamsize>(size));
+        out.close();
+        if (!out) {
+            std::error_code ec;
+            fs::remove(tmp, ec);
+            return false;
+        }
+    }
+    std::error_code ec;
+    fs::rename(tmp, path, ec);
+    if (ec) fs::remove(tmp, ec);
+    return !ec;
 }
 
 }  // namespace
@@ -115,18 +132,23 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "error: Shape pack not written (%zu error%s)\n", errors, errors == 1 ? "" : "s");
         return 1;
     }
-    if (!writeAll(output, r.pack.data(), r.pack.size())) {
-        std::fprintf(stderr, "error: cannot write %s\n", output.c_str());
+    // Ledger first: the pack must never ship ids the ledger didn't record.
+    if (r.ledger != ledger && !writeAll(ledgerFile, r.ledger.data(), r.ledger.size())) {
+        std::fprintf(stderr, "error: cannot write %s; Shape pack not written\n", ledgerPath.c_str());
         return 2;
     }
-    if (r.ledger != ledger && !writeAll(ledgerFile, r.ledger.data(), r.ledger.size())) {
-        std::fprintf(stderr, "error: cannot write %s\n", ledgerPath.c_str());
+    if (!writeAll(output, r.pack.data(), r.pack.size())) {
+        std::fprintf(stderr, "error: cannot write %s\n", output.c_str());
         return 2;
     }
 
     ShapePackMemory mem(r.pack.data(), r.pack.size());
     ShapePackIndex index;
-    index.open(mem);
+    const char* err = nullptr;
+    if (!index.open(mem, &err)) {
+        std::fprintf(stderr, "error: the written Shape pack doesn't read back: %s\n", err ? err : "unknown");
+        return 2;
+    }
     std::printf("Shape pack: %s  (%zu bytes, %zu pieces)%s\n", output.c_str(), r.pack.size(), index.pieces().size(),
                 r.ledger != ledger ? "  ledger updated" : "");
     for (const auto& e : index.pieces())

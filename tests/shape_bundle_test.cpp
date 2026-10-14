@@ -31,6 +31,8 @@
  *   SHP-26  Lint too-many-colours: more than 4 fill + stroke colours in one source.
  *   SHP-27  Lint retired-id: a ledger piece no source has any more (not one an error dropped).
  *   SHP-28  The stand-in Feature sheet (tools/testdata/shapes/sheet.svg) joins the pool with ledger ids.
+ *   SHP-29  Non-finite geometry (an overflowing transform) is a hard error, not a cast.
+ *   SHP-30  Numbers parse the same under a decimal-comma C locale (skipped when none is installed).
  *
  * `shape_bundle_test --verify-pack <a.njn> [<b.njn>]` checks a CLI output
  * (index readable, every record decodes; with two files, identical indices).
@@ -39,6 +41,7 @@
 #include <enjin2/graphics/shape_pack.hpp>
 #include <enjin2/import/shape_bundle.hpp>
 
+#include <clocale>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -171,6 +174,12 @@ static void test01_packRoundTrip() {
     ShapePiece body;
     ASSERT(index.readPiece(mem, index.pieces()[0], body, &err), "SHP-01 body record reads");
     ASSERT(samePiece(body, sampleBody()), "SHP-01 body record round-trips (sockets)");
+    // An entry over the record cap is refused before any buffer is sized for it.
+    ShapePackEntry huge = index.pieces()[0];
+    huge.size = 0xFFFFFFFFu;
+    err = nullptr;
+    ASSERT(!index.readPiece(mem, huge, got, &err) && err && std::strcmp(err, "shape pack: record too large") == 0,
+           "SHP-01 an entry over the record cap is refused as too large");
 
     // The record bytes are exactly the index's offset/size window in the file.
     Bytes rec(pack.begin() + eyes->offset, pack.begin() + eyes->offset + eyes->size);
@@ -1636,6 +1645,48 @@ static int verifyPack(int argc, char** argv) {
 
 static Bytes readFileBytes(const std::string& path) { return readFile(path); }
 
+// ---------------------------------------------------------------------------
+// SHP-29  Non-finite geometry is a hard error, never a cast
+// ---------------------------------------------------------------------------
+
+static void test29_nonFinite() {
+    // Two transforms that overflow a double: inf, and inf - inf = NaN, before Q8.8.
+    for (const char* body : {"<g transform=\"scale(1e300)\"><rect transform=\"scale(1e300)\" width=\"10\" height=\"10\"/></g>",
+                             "<g transform=\"scale(1e300)\"><path transform=\"matrix(1e10 0 -1e10 1 0 0)\" "
+                             "d=\"M10 10 L70 10 L70 70 Z\"/></g>"}) {
+        const auto r = bundleOne(kitSvg(body));
+        ASSERT(!r.ok() && r.pack.empty() && hasError(r, "non-finite"), "SHP-29 a non-finite coordinate is a hard error");
+        if (r.ok()) dumpIssues(r);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SHP-30  Number parsing ignores the C locale
+// ---------------------------------------------------------------------------
+
+static void test30_locale() {
+    const Bytes svg = readFileBytes(kitPath("star.svg"));
+    const Bytes sidecar = readFileBytes(kitPath("star.svg.shape.json"));
+    const auto c = bundleShapes({{"star.svg", svg, sidecar}}, "");
+    const auto half = bundleOne(kitSvg("<path d=\"M10.5 10 L70 10 L70 70 Z\"/>"));
+    const char* comma = nullptr;
+    for (const char* name : {"de_DE.UTF-8", "de_DE.utf8", "fr_FR.UTF-8", "it_IT.UTF-8"})
+        if (std::setlocale(LC_NUMERIC, name)) {
+            comma = name;
+            break;
+        }
+    if (!comma) {
+        printf("SHP-30 skipped: no decimal-comma locale installed\n");
+        return;
+    }
+    const auto de = bundleShapes({{"star.svg", svg, sidecar}}, "");
+    const auto halfDe = bundleOne(kitSvg("<path d=\"M10.5 10 L70 10 L70 70 Z\"/>"));
+    std::setlocale(LC_NUMERIC, "C");
+    ASSERT(c.ok() && de.ok() && c.pack == de.pack && c.ledger == de.ledger,
+           "SHP-30 the Star bundles to the same bytes under a decimal-comma locale");
+    ASSERT(half.ok() && halfDe.ok() && half.pack == halfDe.pack, "SHP-30 '10.5' is 10.5 under a decimal-comma locale");
+}
+
 int main(int argc, char** argv) {
     if (argc >= 3 && std::strcmp(argv[1], "--verify-pack") == 0) return verifyPack(argc, argv);
 
@@ -1668,6 +1719,8 @@ int main(int argc, char** argv) {
         {"SHP-26", test26_colourCount},
         {"SHP-27", test27_retiredId},
         {"SHP-28", test28_standInSheet},
+        {"SHP-29", test29_nonFinite},
+        {"SHP-30", test30_locale},
     };
     // `--only SHP-nn`: one group, so each lint and the Feature sheets are a ctest of their own.
     const char* only = argc >= 3 && std::strcmp(argv[1], "--only") == 0 ? argv[2] : nullptr;

@@ -3,6 +3,7 @@
  * @brief Tiny JSON reader for the Shape bundle (Tomodachi #330)
  */
 #include "shape_json.hpp"
+#include "parse_number.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -228,12 +229,8 @@ private:
             while (p_ < end_ && *p_ >= '0' && *p_ <= '9') ++p_;
         }
         if (p_ - s > 64) return fail("number too long");
-        char buf[72];
-        std::memcpy(buf, s, static_cast<size_t>(p_ - s));
-        buf[p_ - s] = 0;
         v.type = Value::Type::Number;
-        v.n = std::strtod(buf, nullptr);
-        if (!std::isfinite(v.n)) return fail("number out of range");
+        if (!import_detail::parseDouble(s, p_, v.n)) return fail("number out of range");
         return true;
     }
 };

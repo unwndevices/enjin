@@ -400,6 +400,7 @@ struct Context {
     bool                     inBody = false;  ///< Building the Body piece (its clips are its own).
     std::vector<PendingClip> pending;
     bool lintedRange = false;
+    bool nonFinite = false;  ///< `non-finite` already raised.
     bool sheet = false;  ///< A Feature sheet: no Body, Features placed by their anchors alone.
 };
 
@@ -437,6 +438,11 @@ void lintPixelTie(const Node& n, Pt origin, Context& cx, const std::string& path
 constexpr double kLiveBodyClip = 0.25, kNearBodyClip = 2.0;
 
 int16_t q88(double v, Context& cx, const std::string& path) {
+    if (!std::isfinite(v)) {
+        if (!cx.nonFinite) cx.sink.error("non-finite", "geometry is not a finite number (a transform overflows)", cx.source, path);
+        cx.nonFinite = true;
+        return 0;
+    }
     const double s = std::round(v * 256);
     if (s > 32767 || s < -32768) {
         if (!cx.lintedRange) cx.sink.lint("out-of-range", "geometry more than 127 px from its anchor is clamped", cx.source, path);

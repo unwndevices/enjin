@@ -676,8 +676,9 @@ public:
     /// Read @p e's record from @p src and decode it into @p out.
     bool readPiece(ShapePackSource& src, const ShapePackEntry& e, ShapePiece& out, const char** err = nullptr) const {
         using namespace shape_pack_detail;
+        if (e.size > SHAPE_PACK_MAX_RECORD) return fail(err, "shape pack: record too large");
         std::vector<uint8_t> rec(e.size);
-        if (e.size > SHAPE_PACK_MAX_RECORD || !src.readAt(e.offset, rec.data(), e.size))
+        if (!src.readAt(e.offset, rec.data(), e.size))
             return fail(err, "shape pack: cannot read the record");
         if (!shapePackDecodePiece(rec.data(), rec.size(), out, err)) return false;
         if (out.slot != e.slot) {

@@ -119,9 +119,28 @@ int pickMember(const ShapeRecordView& v, SocketSide side, bool& mirror);
 // ShapePackGroup
 // ---------------------------------------------------------------------------
 
+void ShapePackGroup::clear()
+{
+    uint8_t* const buffer = buffer_;
+    const size_t bytes = bufferBytes_;
+    ShapeHitStore* const hits = hits_;
+    reset();
+    buffer_ = buffer;
+    bufferBytes_ = bytes;
+    hits_ = hits;
+}
+
+void ShapePackGroup::reset()
+{
+    // In place: a whole-group temporary (the Lattice and every slot) would
+    // sit on the caller's stack, the Lua task's on the device.
+    this->~ShapePackGroup();
+    new (this) ShapePackGroup();
+}
+
 bool ShapePackGroup::build(ShapePack& pack, const ShapeLook& look, AssetArena& arena, ShapeError* err)
 {
-    *this = ShapePackGroup{};
+    clear();
     if (!pack.source())
     {
         setError(err, "shape pack: not open");
@@ -129,37 +148,52 @@ bool ShapePackGroup::build(ShapePack& pack, const ShapeLook& look, AssetArena& a
     }
     const size_t total = pack.lookBufferBytes();
     const AssetArena::Mark mark = arena.mark();
-    uint8_t* buf = total ? arena.allocate(total, 8) : nullptr;
-    if (total && !buf)
-    {
-        setError(err, "shape pack: the asset arena has no room for a %u-byte Look buffer", unsigned(total));
+    uint8_t* const keptBuffer = buffer_;
+    const size_t keptBytes = bufferBytes_;
+    ShapeHitStore* const keptHits = hits_;
+    // All or nothing: undo what this build carved, keep what it reused.
+    auto fail = [&] {
+        arena.rollback(mark);
+        reset();
+        buffer_ = keptBuffer;
+        bufferBytes_ = keptBytes;
+        hits_ = keptHits;
         return false;
+    };
+    if (total > bufferBytes_)
+    {
+        uint8_t* buf = arena.allocate(total, 8);
+        if (!buf)
+        {
+            setError(err, "shape pack: the asset arena has no room for a %u-byte Look buffer", unsigned(total));
+            return fail();
+        }
+        buffer_ = buf;
+        bufferBytes_ = total;
     }
     size_t off = 0;
     for (uint8_t s = 0; s < SHAPE_SLOT_COUNT; ++s)
     {
         slots_[s].capacity = pack.slotRegionBytes(ShapeSlot(s));
-        slots_[s].region = buf ? buf + off : nullptr;
+        slots_[s].region = total ? buffer_ + off : nullptr;
         off += slots_[s].capacity;
     }
     // The last drawn masks, for hit() and grab() (#336).
-    uint8_t* hits = arena.allocate(sizeof(ShapeHitStore), 8);
-    if (!hits)
+    if (!hits_)
     {
-        arena.rollback(mark);
-        *this = ShapePackGroup{};
-        setError(err, "shape pack: the asset arena has no room for the pet's hit masks (%u bytes)",
-                 unsigned(sizeof(ShapeHitStore)));
-        return false;
+        uint8_t* hits = arena.allocate(sizeof(ShapeHitStore), 8);
+        if (!hits)
+        {
+            setError(err, "shape pack: the asset arena has no room for the pet's hit masks (%u bytes)",
+                     unsigned(sizeof(ShapeHitStore)));
+            return fail();
+        }
+        hits_ = reinterpret_cast<ShapeHitStore*>(hits);
     }
-    group_.setHitStore(new (hits) ShapeHitStore());
+    group_.setHitStore(new (hits_) ShapeHitStore());
     pack_ = &pack;
     if (!setLook(look, err))
-    {
-        *this = ShapePackGroup{};
-        arena.rollback(mark);
-        return false;
-    }
+        return fail();
     return true;
 }
 
