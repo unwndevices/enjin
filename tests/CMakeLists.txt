@@ -200,6 +200,18 @@ target_link_libraries(canvas4_odd_width_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME canvas4_odd_width_test COMMAND canvas4_odd_width_test)
 
+# Packed Bayer-dithered span fill (Tomodachi #324): span == per-pixel
+# Mask::bayer sample for every parity/level/phase; dirty tiles like drawHLine.
+add_executable(canvas4_dither_span_test
+    canvas4_dither_span_test.cpp
+)
+target_include_directories(canvas4_dither_span_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(canvas4_dither_span_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME canvas4_dither_span_test COMMAND canvas4_dither_span_test)
+
 # Visual parity bench (unwn M1 #164 / M3 #166, epic #163): one-binary
 # call-path differential harness — BASE (Canvas8 member algorithms) vs HEAD
 # (Primitives/TextRenderer/blit) vs HEAD @4bpp, byte-exact memcmp on the
