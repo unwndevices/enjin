@@ -268,6 +268,9 @@ if(NOT ESP32)
     add_library(enjin2_import STATIC)
     target_sources(enjin2_import PRIVATE
         src/import/aseprite_file.cpp
+        src/import/shape_bundle.cpp
+        src/import/shape_json.cpp
+        src/import/shape_svg.cpp
         src/import/sprite_import.cpp
         src/import/sprite_reimport.cpp
         src/import/stb_zlib.cpp
