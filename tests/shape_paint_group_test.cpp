@@ -277,7 +277,7 @@ static void testOwnClip() {
 }
 
 // A cap clipped to the live Body: drawn only where the Body is, wherever the
-// group moves.
+// group moves, and under the face.
 static void testLiveBodyClip() {
     Fixture f({{ShapeSlot::Body, 1, "box", boxBody()},
                {ShapeSlot::Eyes, 1, "dot", dotEyes()},
@@ -297,8 +297,10 @@ static void testLiveBodyClip() {
                 const bool body = px >= x - 8 && px < x + 8 && py >= y - 16 && py < y;
                 const bool cap = body && py < y - 10;
                 const uint8_t v = layer.getPixel(int16_t(px), int16_t(py)).value;
-                if (px == x && py == y - 4) continue;  // the mouth (the eyes are under the cap)
-                ok = ok && v == (cap ? 4 : body ? 9 : 15);
+                // The face paints over the cap (#317 decision 6): eyes at
+                // (x - 5, y - 12) (mirrored) and (x + 4, y - 12), the mouth at (x, y - 4).
+                const bool face = (py == y - 12 && (px == x - 5 || px == x + 4)) || (px == x && py == y - 4);
+                ok = ok && v == (face ? 0 : cap ? 4 : body ? 9 : 15);
             }
         ASSERT(ok, "the cap is cut to the Body where the Body is now");
     }
