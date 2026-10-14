@@ -560,9 +560,19 @@ bool ShapePackGroup::forEach(ShapeDrawScratch& scratch, ShapeEmit emit, void* ct
                 ok = false;
         }
     };
+    // Paint order of the Feature slots on each side of the Body (#317
+    // decision 6). Behind: limbs, then top. In front: top, limbs, cheeks,
+    // mouth, eyes (eyes always on top). Limbs are arms, then legs.
+    static constexpr ShapeSlot kBehind[] = {ShapeSlot::Arms,   ShapeSlot::Legs,  ShapeSlot::Top,
+                                            ShapeSlot::Cheeks, ShapeSlot::Mouth, ShapeSlot::Eyes};
+    static constexpr ShapeSlot kFront[] = {ShapeSlot::Top,    ShapeSlot::Arms,  ShapeSlot::Legs,
+                                           ShapeSlot::Cheeks, ShapeSlot::Mouth, ShapeSlot::Eyes};
+    static_assert(sizeof(kBehind) == SHAPE_SLOT_COUNT - 1 && sizeof(kFront) == SHAPE_SLOT_COUNT - 1,
+                  "every Feature slot paints once per side");
     auto emitFeatures = [&](ShapeOrder order) {
-        for (uint8_t i = 1; i < SHAPE_SLOT_COUNT; ++i)
+        for (const ShapeSlot ps : order == ShapeOrder::Behind ? kBehind : kFront)
         {
+            const uint8_t i = uint8_t(ps);
             const Slot& slot = slots_[i];
             if (!slot.loaded || slot.view.order() != order)
                 continue;
