@@ -287,6 +287,72 @@ static void testDrawOrderBehindAndInFront() {
     ASSERT(expectPicture(layer, 68, 92, 8, 1, "44444499", "arms in front"), "in front: the arm paints over the Body");
 }
 
+// Body 2 "capped": the box with a top socket at its crown (0, -16) and an arms
+// socket on the left (-8, -8). Top 1 "cap" (in front) and top 2 "hood"
+// (behind) are accent; arms 3 "fist" is ink, [-2, 4) × [0, 2) mirrored.
+static std::vector<ShapePackPieceIn> cappedPieces() {
+    std::vector<ShapePackPieceIn> pieces = basicPieces();
+    ShapePiece b = boxBody();
+    b.sockets.push_back(sock(ShapeSlot::Top, SocketSide::Centre, 0, -16));
+    pieces.push_back({ShapeSlot::Body, 2, "capped", b});
+    // The cap covers the whole Body: [-8, 8) × [0, 16) from the crown.
+    pieces.push_back({ShapeSlot::Top, 1, "cap",
+                      makePiece(ShapeSlot::Top, ShapeOrder::Front, {0},
+                                {{{MemberSide::Mirrored, {{-8, 0, 8, 16}}, ShapeRole::Accent}}})});
+    // The hood is wider than the Body: [-12, 12) × [0, 16) from the crown.
+    pieces.push_back({ShapeSlot::Top, 2, "hood",
+                      makePiece(ShapeSlot::Top, ShapeOrder::Behind, {0},
+                                {{{MemberSide::Mirrored, {{-12, 0, 12, 16}}, ShapeRole::Accent}}})});
+    pieces.push_back({ShapeSlot::Arms, 3, "fist",
+                      makePiece(ShapeSlot::Arms, ShapeOrder::Front, {0},
+                                {{{MemberSide::Mirrored, {{-2, 0, 4, 2}}, ShapeRole::Ink}}})});
+    pieces.push_back({ShapeSlot::Arms, 4, "fist-back",
+                      makePiece(ShapeSlot::Arms, ShapeOrder::Behind, {0},
+                                {{{MemberSide::Mirrored, {{-2, 0, 4, 2}}, ShapeRole::Ink}}})});
+    return pieces;
+}
+
+// #317 decision 6: in front, top paints first, then limbs, cheeks, mouth, and
+// the eyes last. A cap drawn over the whole Body leaves the face on top.
+static void testAnInFrontTopPaintsUnderTheFace() {
+    Fixture f(cappedPieces());
+    ShapePackGroup pet;
+    Layer& layer = *drawBasic(pet, f);
+    ShapeLook l = basicLook();
+    l.set(ShapeSlot::Body, 2);
+    l.set(ShapeSlot::Top, 1);
+    ShapeError e;
+    ASSERT(pet.setLook(l, &e), e.text);
+    pet.redraw(layer, *scratch());
+    std::string want = kBasicPicture;
+    for (char& c : want)
+        if (c == '9') c = '4';
+    ASSERT(expectPicture(layer, 72, 86, 16, 12, want.c_str(), "cap under the face"), "eyes and mouth paint over the cap");
+}
+
+// #317 decision 6: behind the Body, limbs paint first and the top over them;
+// in front, the limbs paint over the top.
+static void testLimbsAndTopKeepTheirOrderOnEachSide() {
+    Fixture f(cappedPieces());
+    ShapePackGroup pet;
+    Layer& layer = *drawBasic(pet, f);
+    ShapeLook l = basicLook();
+    l.set(ShapeSlot::Body, 2);
+    l.set(ShapeSlot::Top, 2);
+    l.set(ShapeSlot::Arms, 4);
+    ShapeError e;
+    ASSERT(pet.setLook(l, &e), e.text);
+    pet.redraw(layer, *scratch());
+    // The hood spans x 68..91; the arm 68..73 is under it, the Body over both.
+    ASSERT(expectPicture(layer, 66, 92, 10, 1, "..44449999", "behind: hood over arm"), "behind: the top paints over the limbs");
+    l.set(ShapeSlot::Top, 1);
+    l.set(ShapeSlot::Arms, 3);
+    ASSERT(pet.setLook(l, &e), e.text);
+    pet.redraw(layer, *scratch());
+    // The cap covers the Body at 72..87; the arm 68..73 paints over it.
+    ASSERT(expectPicture(layer, 66, 92, 10, 1, "..00000044", "in front: arm over cap"), "in front: the limbs paint over the top");
+}
+
 static bool refuses(Fixture& f, const ShapeLook& l, const char* want) {
     ShapePackGroup pet;
     ShapeError e;
@@ -441,6 +507,8 @@ int main() {
     testFeaturesSitOnTheirSockets();
     testSideMembersGoOnTheirSide();
     testDrawOrderBehindAndInFront();
+    testAnInFrontTopPaintsUnderTheFace();
+    testLimbsAndTopKeepTheirOrderOnEachSide();
     testBadLooksAreRefusedNamingSlotAndId();
     testASlotWithNoSocketIsRefused();
     printf("shape_pack_group_test: %d passed, %d failed\n", passes, failures);
