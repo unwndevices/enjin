@@ -98,3 +98,16 @@ target_link_libraries(bench_shape PRIVATE
     enjin2_core
     enjin2_graphics
 )
+
+# bench_lattice — the Lattice deformer per 30 Hz tick: 5×5 sim, warp of the
+# Star's points, and a whole moving-pet frame (Tomodachi #334, ADR-0016).
+add_executable(bench_lattice bench_lattice.cpp)
+target_include_directories(bench_lattice PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/tests
+)
+target_link_libraries(bench_lattice PRIVATE
+    nanobench_vendor
+    enjin2_core
+    enjin2_graphics
+)

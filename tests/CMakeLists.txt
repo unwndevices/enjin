@@ -128,6 +128,17 @@ target_link_libraries(shape_pack_group_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME shape_pack_group_test COMMAND shape_pack_group_test)
 
+# Lattice deformer: spring grid, fixed tick, sleep + snap (Tomodachi #334, ADR-0016)
+add_executable(shape_lattice_test
+    shape_lattice_test.cpp
+)
+target_include_directories(shape_lattice_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(shape_lattice_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME shape_lattice_test COMMAND shape_lattice_test)
+
 # Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
 add_executable(border_stroke_test
     border_stroke_test.cpp
@@ -507,6 +518,15 @@ if(TARGET enjin2_import)
     target_compile_definitions(shape_pack_star_test PRIVATE
         ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
     add_test(NAME shape_pack_star_test COMMAND shape_pack_star_test)
+endif()
+# The Star bent by its Lattice (Tomodachi #334): Bindings, wake, and the
+# kick → settle goldens. Runs under ASan in scripts/importer-check.sh.
+if(TARGET enjin2_import)
+    add_executable(shape_jelly_test shape_jelly_test.cpp)
+    target_link_libraries(shape_jelly_test PRIVATE enjin2_import enjin2_graphics enjin2_core)
+    target_compile_definitions(shape_jelly_test PRIVATE
+        ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+    add_test(NAME shape_jelly_test COMMAND shape_jelly_test)
 endif()
 if(TARGET enjin_shape_bundle)
     # The stand-in Kit, bundled twice with one ledger (created by the first run):

@@ -102,6 +102,9 @@ target_sources(enjin2_graphics PRIVATE
     # Pack layer: a Shape pack Look assembled into a retained Shape group
     # (ADR-0016/0017, Tomodachi #331)
     src/shape/shape_pack_group.cpp
+    # Lattice deformer: spring grid, fixed tick, sleep + snap
+    # (ADR-0016, Tomodachi #334)
+    src/shape/lattice.cpp
 )
 # Private include directories for strict isolation
 target_include_directories(enjin2_graphics

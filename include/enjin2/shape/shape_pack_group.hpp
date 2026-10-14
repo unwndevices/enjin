@@ -24,6 +24,12 @@
  *   the fixed list). A pose swap reads nothing: a record holds all its poses.
  * - **Position** is the Body's feet line: the bottom-centre of its rest
  *   drawing's closed rings, in layer pixels.
+ * - **Jelly** (#334). The group's Lattice (default 5×5) is laid over the box
+ *   of everything the Look can draw (every pose of every piece at its
+ *   sockets) plus a 3 px margin, so a pose swap never moves the grid; a Look
+ *   whose box differs lays a new Lattice, at rest. Each piece rides it by its
+ *   baked Binding (a Body is field; `sway` rides as `rigid` until #335). A
+ *   pose swap and a move wake it; tick() is the frame seam the host calls.
  *
  * A bad Look is refused before anything is read, naming slot + id: a missing
  * body, eyes or mouth; an id not in the pack (unknown or retired); a filled
@@ -127,6 +133,15 @@ public:
 
     bool changed() const { return group_.changed(); }
 
+    /// Advance the jelly by a frame of `dtMicros` (the host calls this before
+    /// flush()); true when the field moved and the pet needs a redraw.
+    bool tick(uint32_t dtMicros) { return group_.tick(dtMicros); }
+    /// Push the jelly at layer point `at` to `velocity` px/s; wakes it.
+    void impulse(FixedVec2 at, FixedVec2 velocity) { group_.impulse(at, velocity); }
+    /// Settled and snapped to rest: no sim steps, no redraws.
+    bool asleep() const { return group_.lattice().asleep(); }
+    const Lattice& lattice() const { return group_.lattice(); }
+
     /// Redraw onto `layer` (see ShapeGroup::redraw).
     template <uint16_t W, uint16_t H>
     bool redraw(Canvas4<W, H>& layer, ShapeDrawScratch& scratch)
@@ -163,6 +178,7 @@ private:
     bool validate(const ShapeLook& look, ShapeError* err) const;
     bool readSlot(ShapeSlot s, uint16_t id, ShapeError* err);
     void refreshBody();
+    void refreshLattice();
 
     ShapePack* pack_ = nullptr;
     ShapeLook  look_;
