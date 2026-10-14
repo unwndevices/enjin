@@ -363,28 +363,28 @@ namespace enjin2
             if (width <= 0)
                 return;
 
-            // Mark the row's tile span dirty (covers both the memset fast path,
-            // which bypasses setPixel, and the fallback).
+            // Mark the row's tile span dirty (the packed writes below bypass
+            // setPixel).
             invalidate(x, y, width, 1);
 
-            // Fast path for even alignment and even width
-            if ((x & 1) == 0 && (width & 1) == 0)
+            // Nibble-aware span writer, any start/width parity: an odd start
+            // owns the high nibble of its byte, the byte-aligned middle is one
+            // memset, and an odd remainder owns the low nibble of the last byte.
+            PackedPixel4 *p = &buffer[getIndex(x, y)];
+            if (x & 1)
             {
-                size_t startIndex = getIndex(x, y);
-                uint8_t packed = (color.value << 4) | color.value;
-                size_t count = width / 2;
-
-                // Batch set using memset for uniform color
-                memset(&buffer[startIndex], packed, count);
+                (p++)->setHigh(color);
+                --width;
             }
-            else
+            const size_t pairs = static_cast<size_t>(width) >> 1;
+            if (pairs != 0)
             {
-                // Fallback to individual pixel setting
-                for (int16_t i = 0; i < width; ++i)
-                {
-                    setPixel(x + i, y, color);
-                }
+                const uint8_t packed = static_cast<uint8_t>((color.value << 4) | color.value);
+                memset(p, packed, pairs);
+                p += pairs;
             }
+            if (width & 1)
+                p->setLow(color);
         }
 
         /**

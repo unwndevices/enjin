@@ -212,6 +212,18 @@ target_link_libraries(canvas4_dither_span_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME canvas4_dither_span_test COMMAND canvas4_dither_span_test)
 
+# Canvas4::drawHLine nibble-aware spans (Tomodachi #318): every start/width
+# parity matches the per-pixel setPixel reference (pixels + dirty tiles).
+add_executable(canvas4_hline_span_test
+    canvas4_hline_span_test.cpp
+)
+target_include_directories(canvas4_hline_span_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(canvas4_hline_span_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME canvas4_hline_span_test COMMAND canvas4_hline_span_test)
+
 # Visual parity bench (unwn M1 #164 / M3 #166, epic #163): one-binary
 # call-path differential harness — BASE (Canvas8 member algorithms) vs HEAD
 # (Primitives/TextRenderer/blit) vs HEAD @4bpp, byte-exact memcmp on the
