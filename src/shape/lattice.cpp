@@ -6,6 +6,8 @@
 
 #include "enjin2/shape/lattice.hpp"
 
+#include "enjin2/core/math.hpp"
+
 namespace enjin2 {
 namespace shape {
 
@@ -34,6 +36,36 @@ constexpr int32_t toRaw(int64_t q32) { return int32_t((q32 + 0x8000) >> 16); }
 constexpr Fixed absF(Fixed f) { return f.raw < 0 ? -f : f; }
 constexpr Fixed minF(Fixed a, Fixed b) { return a < b ? a : b; }
 constexpr Fixed maxF(Fixed a, Fixed b) { return a < b ? b : a; }
+
+// Integer square root of a non-negative int64 (floor).
+uint64_t isqrt(uint64_t v)
+{
+    uint64_t r = 0, bit = uint64_t(1) << 62;
+    while (bit > v)
+        bit >>= 2;
+    while (bit)
+    {
+        if (v >= r + bit)
+        {
+            v -= r + bit;
+            r = (r >> 1) + bit;
+        }
+        else
+            r >>= 1;
+        bit >>= 2;
+    }
+    return r;
+}
+
+// Radians (Fixed) → the TrigLUT's 65536ths of a turn: × 65536 / 2π.
+uint16_t turn16(Fixed radians)
+{
+    return uint16_t(int32_t((int64_t(radians.raw) * 683565276LL) >> 32));
+}
+
+constexpr Fixed    kSwayAccMax = Fixed::fromInt(4000);  // px/s², the anchor's acceleration clamp
+constexpr Fixed    kSwayMinArm = Fixed::fromInt(3);     // px, the shortest lever
+constexpr Fixed    kOneRad = Fixed::fromInt(1);         // the angle clamp
 
 // The worst mode's h²ω² + 2hc, for spring-Laplacian eigenvalue `lam`.
 Fixed stabilityScore(Fixed hz, Fixed zeta, Fixed lam)
@@ -165,11 +197,14 @@ bool Lattice::stepTick()
     bool changed = false;
     for (uint8_t s = 0; s < kSubSteps; ++s)
         changed = subStep() || changed;
+    changed = stepSway() || changed;
     const Fixed eps = tuning_.sleepEpsilon;
     const Fixed vEps = Fixed::fromRaw(eps.raw * int32_t(kTickHz));  // ε per tick, in px/s
     bool quiet = true;
     for (int k = 0, n = nx_ * ny_; k < n && quiet; ++k)
         quiet = absF(d_[k].x) < eps && absF(d_[k].y) < eps && absF(v_[k].x) < vEps && absF(v_[k].y) < vEps;
+    for (uint8_t k = 0; k < armCount_ && quiet; ++k)
+        quiet = absF(arms_[k].th) < arms_[k].eps && absF(arms_[k].om) < arms_[k].vEps;
     still_ = quiet ? uint8_t(still_ + 1) : uint8_t(0);
     if (quiet && still_ >= tuning_.sleepTicks)
         changed = snap() || changed;
@@ -223,6 +258,13 @@ bool Lattice::snap()
         s_[k] = {};
         v_[k] = {};
     }
+    for (uint8_t k = 0; k < armCount_; ++k)
+    {
+        Arm& a = arms_[k];
+        moved = moved || a.shown != Fixed{};
+        a.th = a.om = a.shown = Fixed{};
+        a.d1 = a.d2 = FixedVec2{};
+    }
     asleep_ = true;
     still_ = 0;
     acc_ = 0;
@@ -254,6 +296,93 @@ void Lattice::impulse(FixedVec2 at, FixedVec2 velocity)
         v_[k[q]].x += (w[q] * velocity.x) / s;
         v_[k[q]].y += (w[q] * velocity.y) / s;
     }
+}
+
+int Lattice::addSway(FixedVec2 anchor, FixedVec2 arm, const SwaySpring& spring)
+{
+    if (!configured() || armCount_ >= kMaxSway)
+        return -1;
+    Arm a;
+    a.anchor = anchor;
+    const int64_t ax = arm.x.raw, ay = arm.y.raw;
+    const Fixed len = maxF(Fixed::fromRaw(int32_t(isqrt(uint64_t(ax * ax + ay * ay)))), kSwayMinArm);
+    a.dir = {arm.x / len, arm.y / len};
+    a.invL = Fixed::fromInt(1) / len;
+    a.eps = tuning_.sleepEpsilon / len;  // the tip within ε
+    a.vEps = Fixed::fromRaw(a.eps.raw * int32_t(kTickHz));
+    const Fixed hz = minF(maxF(spring.hz, Fixed{}), Fixed::fromInt(kMaxStiffnessHz));
+    const Fixed zeta = minF(maxF(spring.damping, Fixed{}), Fixed::fromInt(2));
+    const Fixed ws = kTwoPi * hz;
+    a.kh = perSub(ws * ws);
+    a.ch = perSub((zeta + zeta) * ws);
+    arms_[armCount_] = a;
+    return armCount_++;
+}
+
+bool Lattice::stepSway()
+{
+    bool moved = false;
+    const int64_t lim = kSwayAccMax.raw;
+    for (uint8_t k = 0; k < armCount_; ++k)
+    {
+        Arm& a = arms_[k];
+        // The anchor's acceleration over the last tick (px/s²), clamped.
+        const FixedVec2 d = sample(d_, a.anchor);
+        constexpr int64_t kTick2 = int64_t(kTickHz) * kTickHz;
+        int64_t accX = (int64_t(d.x.raw) - 2 * int64_t(a.d1.x.raw) + a.d2.x.raw) * kTick2;
+        int64_t accY = (int64_t(d.y.raw) - 2 * int64_t(a.d1.y.raw) + a.d2.y.raw) * kTick2;
+        if (accX > lim * 64 || accX < -lim * 64 || accY > lim * 64 || accY < -lim * 64)
+        {
+            // Far past the clamp: shrink first so the squares stay in range.
+            accX /= 64;
+            accY /= 64;
+        }
+        const int64_t m = int64_t(isqrt(uint64_t(accX * accX + accY * accY)));
+        if (m > lim)
+        {
+            accX = accX * lim / m;
+            accY = accY * lim / m;
+        }
+        a.d2 = a.d1;
+        a.d1 = d;
+        const Fixed ax = Fixed::fromRaw(int32_t(accX)), ay = Fixed::fromRaw(int32_t(accY));
+        for (uint8_t s = 0; s < kSubSteps; ++s)
+        {
+            const uint16_t turn = turn16(a.th);
+            const int64_t c = math::TrigLUT::cos16(turn), sn = math::TrigLUT::sin16(turn);
+            const Fixed dx = Fixed::fromRaw(int32_t((a.dir.x.raw * c - a.dir.y.raw * sn) >> 15));
+            const Fixed dy = Fixed::fromRaw(int32_t((a.dir.x.raw * sn + a.dir.y.raw * c) >> 15));
+            // The pseudo-force −a on the tip, as a torque (rad/s²).
+            const Fixed torque = tuning_.swayGain * ((dy * ax - dx * ay) * a.invL);
+            const int64_t f = -mul(a.kh, a.th) - mul(a.ch, a.om) + int64_t(torque.raw) * 65536 / kSubHz;
+            a.om.raw += toRaw(f);
+            a.th.raw += timesH(a.om.raw);
+            a.th = minF(maxF(a.th, -kOneRad), kOneRad);
+        }
+        const Fixed drawn = absF(a.th) < a.eps ? Fixed{} : a.th;
+        moved = moved || drawn != a.shown;
+        a.shown = drawn;
+    }
+    return moved;
+}
+
+FixedVec2 Lattice::turn(FixedVec2 v, Fixed radians)
+{
+    if (radians == Fixed{})
+        return v;
+    const uint16_t t = turn16(radians);
+    const int64_t c = math::TrigLUT::cos16(t), s = math::TrigLUT::sin16(t);
+    // Rounded to nearest: Q15 × raw, half away from zero.
+    auto q15 = [](int64_t x) { return int32_t(x >= 0 ? (x + 16384) >> 15 : -((-x + 16384) >> 15)); };
+    return {Fixed::fromRaw(q15(v.x.raw * c - v.y.raw * s)), Fixed::fromRaw(q15(v.x.raw * s + v.y.raw * c))};
+}
+
+Fixed Lattice::swayAngleAt(FixedVec2 anchor) const
+{
+    for (uint8_t k = 0; k < armCount_; ++k)
+        if (arms_[k].anchor == anchor)
+            return arms_[k].shown;
+    return Fixed{};
 }
 
 FixedVec2 Lattice::shown(FixedVec2 d) const

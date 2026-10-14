@@ -42,6 +42,21 @@
  * every node is under ε, the drawn field is exactly the rest field, the quiet
  * ticks before the snap redraw nothing, and the snap itself changes nothing.
  * The sim state is never rounded (only what is drawn).
+ *
+ * ## Sway arms (Tomodachi #335)
+ *
+ * A `sway` Feature is carried at its anchor like a `rigid` one, then swings
+ * about the anchor on a damped angle spring of its own (hz, ζ from the pack;
+ * 2.4 Hz, ζ 0.27 by default), driven by the anchor's acceleration: the
+ * prototype's secondary sway (#314), without its field-rotation term. Each
+ * tick, after the grid's sub-steps, an arm takes the second difference of the
+ * field's displacement at its anchor (clamped to 4000 px/s²) and steps its
+ * angle 4 times: θ'' = −ws²θ − 2ζ·ws·θ' + gain·(d × −a)/L, with d the arm's
+ * direction turned by θ (the 1024-step TrigLUT) and L its length (≥ 3 px);
+ * θ stays within ±1 rad. Arms take part in sleep: the Lattice sleeps only
+ * when every arm's tip is also within ε (|θ| < ε/L, |θ'| < ε/L per tick), and
+ * the snap puts the arms home too. The drawn angle has the same dead zone as
+ * the nodes, so the snap never pops a swinging Feature either.
  */
 #pragma once
 
@@ -56,9 +71,15 @@ namespace shape {
  * @brief How a Feature rides the Lattice (glossary › Binding). Same values as
  *        the Shape pack's ShapeBinding, so a record converts with a cast.
  *
- * `Sway` rides as `Rigid` until its own spring lands (Tomodachi #335).
+ * `Sway` is `Rigid` plus an angle spring of its own about the anchor.
  */
 enum class Binding : uint8_t { Field = 0, Rigid = 1, Sway = 2 };
+
+/// A sway arm's own spring (the pack's sway fields; 2.4 Hz, ζ 0.27 by default).
+struct SwaySpring {
+    Fixed hz      = Fixed::fromRatio(24, 10);   ///< 0..8 Hz (clamped).
+    Fixed damping = Fixed::fromRatio(27, 100);  ///< ζ, 0..2 (clamped).
+};
 
 /// The Lattice's feel and its sleep test.
 struct LatticeTuning {
@@ -66,6 +87,7 @@ struct LatticeTuning {
     Fixed   damping      = Fixed::fromRatio(55, 100);  ///< ζ, 0..2.
     Fixed   sleepEpsilon = Fixed::fromRatio(1, 16);    ///< px, and px per tick for the speed.
     uint8_t sleepTicks   = 6;                          ///< Ticks under ε before the snap.
+    Fixed   swayGain     = Fixed::fromRatio(35, 100);  ///< How hard the anchor's acceleration swings an arm.
 };
 
 class Lattice {
@@ -76,6 +98,7 @@ public:
     static constexpr uint8_t  kSubSteps          = 4;
     static constexpr uint8_t  kMaxTicksPerUpdate = 4;  ///< A longer frame drops the rest.
     static constexpr int32_t  kMaxStiffnessHz    = 8;
+    static constexpr uint8_t  kMaxSway           = 16; ///< Sway arms per Lattice.
 
     /**
      * @brief Lay an nx × ny grid over the box [min, max], at rest and asleep.
@@ -118,13 +141,40 @@ public:
     /// Largest |component| of any node's displacement.
     Fixed maxDisplacement() const;
 
+    /**
+     * @brief Hang a sway arm at `anchor` (group coordinates). `arm` runs from
+     *        the anchor to the swinging Feature's centre; its length is the
+     *        lever. The arm starts at rest. configure() drops every arm.
+     * @return the arm's index, or -1 when unconfigured or full.
+     */
+    int addSway(FixedVec2 anchor, FixedVec2 arm, const SwaySpring& spring = SwaySpring{});
+    void clearSway() { armCount_ = 0; }
+    uint8_t swayCount() const { return armCount_; }
+    /// Arm k's angle as simulated (radians; + turns x toward y, clockwise on screen).
+    Fixed swayAngle(uint8_t k) const { return k < armCount_ ? arms_[k].th : Fixed{}; }
+    /// The drawn angle of the arm hung at exactly `anchor` (dead zone as for
+    /// the nodes); zero when no arm hangs there.
+    Fixed swayAngleAt(FixedVec2 anchor) const;
+    /// `v` turned by `radians` (TrigLUT, integer only): how a sway Feature's
+    /// points turn about its anchor.
+    static FixedVec2 turn(FixedVec2 v, Fixed radians);
+
     /// Sub-steps simulated since configure() (a test counter).
     uint32_t steps() const { return steps_; }
 
 private:
     static constexpr uint8_t kMaxNodes = kMaxSide * kMaxSide;
 
+    struct Arm {
+        FixedVec2 anchor{}, dir{};  ///< dir = arm / L.
+        Fixed     invL{}, eps{}, vEps{};
+        Fixed     kh{}, ch{};       ///< ws²·h and 2ζ·ws·h.
+        Fixed     th{}, om{}, shown{};
+        FixedVec2 d1{}, d2{};       ///< The anchor's displacement one and two ticks ago.
+    };
+
     bool      stepTick();
+    bool      stepSway();
     bool      subStep();
     FixedVec2 shown(FixedVec2 d) const;
     FixedVec2 sample(const FixedVec2* field, FixedVec2 p) const;
@@ -143,6 +193,9 @@ private:
     FixedVec2 d_[kMaxNodes] = {};  ///< Displacement from home, px.
     FixedVec2 v_[kMaxNodes] = {};  ///< Velocity, px/s.
     FixedVec2 s_[kMaxNodes] = {};  ///< Drawn displacement: d_ with the ε dead zone.
+
+    Arm     arms_[kMaxSway] = {};
+    uint8_t armCount_ = 0;
 
     uint64_t acc_ = 0;     ///< µs × kTickHz; a tick is due at 1e6.
     uint32_t steps_ = 0;

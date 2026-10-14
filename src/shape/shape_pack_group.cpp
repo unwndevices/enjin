@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "enjin2/core/math.hpp"
+
 namespace enjin2 {
 namespace shape {
 
@@ -286,6 +288,8 @@ bool ShapePackGroup::setLook(const ShapeLook& look, ShapeError* err)
     {
         refreshBody();
         refreshLattice();
+        if (breathing_)
+            breathing_ = startBreath();
         group_.markChanged();
     }
     return true;
@@ -295,10 +299,11 @@ void ShapePackGroup::refreshBody()
 {
     const Slot& b = slots_[uint8_t(ShapeSlot::Body)];
     feet_ = {};
+    bodyMin_ = bodyMax_ = {};
     if (!b.loaded)
         return;
     bool any = false;
-    Fixed minX, maxX, maxY;
+    Fixed minX, maxX, minY, maxY;
     const ShapeSpan span = b.view.span(b.pose, 0);
     for (uint16_t k = 0; k < span.shapeCount; ++k)
     {
@@ -314,19 +319,90 @@ void ShapePackGroup::refreshBody()
                 if (!any)
                 {
                     minX = maxX = p.x;
-                    maxY = p.y;
+                    minY = maxY = p.y;
                     any = true;
                     continue;
                 }
                 if (p.x < minX) minX = p.x;
                 if (p.x > maxX) maxX = p.x;
                 if (p.y > maxY) maxY = p.y;
+                if (p.y < minY) minY = p.y;
             }
         }
     }
     if (any)
+    {
         feet_ = {Fixed::fromRaw(int32_t((int64_t(minX.raw) + maxX.raw) / 2)), maxY};
+        bodyMin_ = {minX, minY};
+        bodyMax_ = {maxX, maxY};
+    }
     group_.setOrigin(position_ - feet_);
+}
+
+namespace {
+
+// round(n / d), half away from zero (d > 0).
+int64_t roundDiv(int64_t n, int64_t d) { return n >= 0 ? (n + d / 2) / d : -((-n + d / 2) / d); }
+
+} // namespace
+
+bool ShapePackGroup::startBreath()
+{
+    const Fixed w = bodyMax_.x - bodyMin_.x, h = bodyMax_.y - bodyMin_.y;
+    if (w.raw <= 0 || h.raw <= 0)
+        return false;
+    const bool centre = breath_.pivot == BreathPivot::Centre;
+    const FixedVec2 pivot = centre ? FixedVec2{feet_.x, Fixed::fromRaw(int32_t((int64_t(bodyMin_.y.raw) + bodyMax_.y.raw) / 2))}
+                                   : feet_;
+    DriveStep steps[SteppedDrive::kMaxSteps];
+    for (uint8_t i = 0; i < breath_.steps; ++i)
+    {
+        const uint16_t turn = uint16_t((uint32_t(i) << 16) / breath_.steps);
+        const int32_t k = int32_t(roundDiv(int64_t(breath_.amplitude) * math::TrigLUT::sin16(turn), 32767));
+        const int32_t dh = centre ? 2 * k : k;  // the box's height change, px
+        // The sides move in by whole pixels each, as the area asks.
+        const int32_t dw = -2 * int32_t(roundDiv(int64_t(w.raw) * dh, 2 * int64_t(h.raw)));
+        // About the feet the top is a whole box height from the pivot; about
+        // the centre top and feet are half of it each.
+        steps[i].grow = {Fixed::fromInt(dw), Fixed::fromInt(dh)};
+    }
+    return group_.startDrive(steps, breath_.steps, breath_.periodMicros, pivot, {w, h});
+}
+
+bool ShapePackGroup::breathe(const Breath& b, ShapeError* err)
+{
+    if (!pack_)
+    {
+        setError(err, "breathe: the pet is not built");
+        return false;
+    }
+    if (b.steps < SteppedDrive::kMinSteps || b.steps > SteppedDrive::kMaxSteps)
+    {
+        setError(err, "breathe: steps %u is outside %u..%u", unsigned(b.steps), unsigned(SteppedDrive::kMinSteps),
+                 unsigned(SteppedDrive::kMaxSteps));
+        return false;
+    }
+    if (b.periodMicros == 0)
+    {
+        setError(err, "breathe: the period must be longer than 0 s");
+        return false;
+    }
+    if (b.amplitude > 16)
+    {
+        setError(err, "breathe: amplitude %u is past 16 px", unsigned(b.amplitude));
+        return false;
+    }
+    breath_ = b;
+    breathing_ = startBreath();
+    if (!breathing_)
+        setError(err, "breathe: the Body has no closed outline to breathe");
+    return breathing_;
+}
+
+void ShapePackGroup::stopBreathing()
+{
+    breathing_ = false;
+    group_.stopDrive();
 }
 
 void ShapePackGroup::refreshLattice()
@@ -393,6 +469,52 @@ void ShapePackGroup::refreshLattice()
     hi = hi + margin;
     if (!lat.configured() || lat.boxMin() != lo || lat.boxMax() != hi)
         lat.configure(lo, hi);
+
+    // A sway arm per socket a sway Feature sits on: from the socket to the
+    // centre of the member's points (every pose, mirrored as drawn).
+    lat.clearSway();
+    for (uint8_t i = 1; i < SHAPE_SLOT_COUNT; ++i)
+    {
+        const Slot& slot = slots_[i];
+        if (!slot.loaded || slot.view.binding() != ShapeBinding::Sway)
+            continue;
+        SwaySpring spring;
+        if (slot.view.swayHz() != 0)
+            spring.hz = Fixed::fromRaw(int32_t(slot.view.swayHz()) << 4);  // Q4.12 → Q16.16
+        if (slot.view.swayHz() != 0 || slot.view.swayZeta() != 0)
+            spring.damping = Fixed::fromRaw(int32_t(slot.view.swayZeta()) << 4);
+        for (uint8_t k = 0; k < body.view.socketCount(); ++k)
+        {
+            const ShapeSocket sk = body.view.socket(k);
+            if (uint8_t(sk.slot) != i)
+                continue;
+            bool mirror = false;
+            const int m = pickMember(slot.view, sk.side, mirror);
+            int64_t sx = 0, sy = 0, count = 0;
+            for (uint8_t pose = 0; pose < slot.view.poseCount(); ++pose)
+            {
+                const ShapeSpan span = slot.view.span(pose, uint8_t(m));
+                for (uint16_t s = 0; s < span.shapeCount; ++s)
+                {
+                    const ShapeFill f = slot.view.shape(span.firstShape + s);
+                    for (uint16_t r = 0; r < f.ringCount; ++r)
+                    {
+                        const ShapeRing ring = slot.view.ring(f.firstRing + r);
+                        for (uint16_t q = 0; q < ring.pointCount; ++q)
+                        {
+                            const FixedVec2 p = slot.points[ring.firstPoint + q];
+                            sx += mirror ? -p.x.raw : p.x.raw;
+                            sy += p.y.raw;
+                            ++count;
+                        }
+                    }
+                }
+            }
+            const FixedVec2 arm = count ? FixedVec2{Fixed::fromRaw(int32_t(sx / count)), Fixed::fromRaw(int32_t(sy / count))}
+                                        : FixedVec2{};
+            lat.addSway({Fixed::fromQ8_8(sk.at.x), Fixed::fromQ8_8(sk.at.y)}, arm, spring);
+        }
+    }
 }
 
 void ShapePackGroup::setPosition(FixedVec2 feet)

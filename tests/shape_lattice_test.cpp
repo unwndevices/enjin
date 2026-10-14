@@ -251,7 +251,97 @@ static void testStiffnessClampedStable() {
         }
 }
 
+// The prototype's updateSecondaries() (#314, look-and-feel.html @ e105b7d), in
+// double, without the field's local rotation (a sway arm is carried like a
+// rigid Feature, then swings on its own spring): driven by the same anchor
+// displacements, it is the reference the Fixed arm is held to.
+struct ProtoSway {
+    double hz, zeta, gain = 0.35, L, dir[2], th = 0, om = 0, a1[2] = {0, 0}, a2[2] = {0, 0};
+    ProtoSway(double armX, double armY, double hz_, double zeta_) : hz(hz_), zeta(zeta_) {
+        L = std::fmax(3, std::hypot(armX, armY));
+        dir[0] = armX / L;
+        dir[1] = armY / L;
+    }
+    void tick(double ax0, double ay0) {  // the anchor's displacement this tick
+        const double dt = 1.0 / 30;
+        double ax = (ax0 - 2 * a1[0] + a2[0]) / (dt * dt), ay = (ay0 - 2 * a1[1] + a2[1]) / (dt * dt);
+        const double am = std::hypot(ax, ay);
+        if (am > 4000) { ax *= 4000 / am; ay *= 4000 / am; }
+        a2[0] = a1[0]; a2[1] = a1[1];
+        a1[0] = ax0; a1[1] = ay0;
+        const double ws = 2 * M_PI * hz, h = dt / 4;
+        for (int k = 0; k < 4; ++k) {
+            const double c = std::cos(th), s = std::sin(th);
+            const double d[2] = {dir[0] * c - dir[1] * s, dir[0] * s + dir[1] * c};
+            const double torque = (d[0] * -ay - d[1] * -ax) / L * gain;
+            om += (-ws * ws * th - 2 * zeta * ws * om + torque) * h;
+            th = std::fmax(-1, std::fmin(1, th + om * h));
+        }
+    }
+};
+
+static void testSwayArmSwingsAndSettles() {
+    // An antenna on the top edge's middle node (2, 0), 12 px long, pointing up;
+    // the top edge kicked sideways.
+    const FixedVec2 anchor = px(0, -60), arm = px(0, -12);
+    Lattice l = makeLattice();
+    ASSERT(l.addSway(anchor, arm) == 0, "the first sway arm is arm 0");
+    ASSERT(l.swayCount() == 1, "one arm");
+    ASSERT(l.swayAngleAt(anchor) == Fixed{} && l.swayAngle(0) == Fixed{}, "an arm hangs at rest");
+    ASSERT(l.swayAngleAt(px(5, -60)) == Fixed{}, "no arm elsewhere: no angle");
+    l.impulse(anchor, px(900, 0));
+    ProtoSway p(0, -12, 2.4, 0.27);
+    double worst = 0, peak = 0;
+    int ticks = 0;
+    for (; ticks < 150 && !l.asleep(); ++ticks) {
+        l.tick(33334);
+        if (l.asleep()) break;
+        const FixedVec2 d = l.node(2, 0);
+        p.tick(toPx(d.x), toPx(d.y));
+        const double th = l.swayAngle(0).raw / 65536.0;
+        worst = std::fmax(worst, std::fabs(th - p.th));
+        peak = std::fmax(peak, std::fabs(p.th));
+    }
+    ASSERT(peak > 0.05, "a hard kick swings the arm by more than 0.05 rad (0.6 px at its tip)");
+    ASSERT(worst < 0.005, "the arm tracks the prototype's float spring within 0.005 rad");
+    ASSERT(l.asleep() && ticks < 150, "and it settles and sleeps within 5 s");
+    ASSERT(l.swayAngle(0) == Fixed{} && l.swayAngleAt(anchor) == Fixed{}, "snapped exactly home");
+    if (getenv("LATTICE_VERBOSE") || worst >= 0.005)
+        fprintf(stderr, "  sway worst %.5f rad (peak %.3f), asleep after %d ticks\n", worst, peak, ticks);
+
+    // The arm takes part in sleep: a slow, loose arm keeps the Lattice awake
+    // after the grid itself has gone quiet.
+    Lattice bare = makeLattice(), loose = makeLattice();
+    SwaySpring slow;
+    slow.hz = Fixed::fromInt(1);
+    slow.damping = Fixed::fromRatio(5, 100);
+    loose.addSway(anchor, arm, slow);
+    bare.impulse(anchor, px(300, 0));
+    loose.impulse(anchor, px(300, 0));
+    int bareTicks = 0, looseTicks = 0;
+    while (!bare.asleep() && bareTicks < 900) {
+        bare.tick(33334);
+        ++bareTicks;
+    }
+    bool swungLate = false;
+    while (!loose.asleep() && looseTicks < 900) {
+        loose.tick(33334);
+        ++looseTicks;
+        if (looseTicks > bareTicks && loose.swayAngleAt(anchor) != Fixed{}) swungLate = true;
+    }
+    ASSERT(loose.asleep(), "a loose arm settles too");
+    ASSERT(looseTicks > bareTicks + 15 && swungLate, "the Lattice stays awake while its arm still swings");
+    ASSERT(loose.swayAngle(0) == Fixed{}, "and snaps the arm home with the grid");
+
+    // Arms are cleared, and a full set refuses more.
+    l.clearSway();
+    ASSERT(l.swayCount() == 0, "clearSway drops every arm");
+    for (int k = 0; k < Lattice::kMaxSway; ++k) l.addSway(px(k, -60), arm);
+    ASSERT(l.addSway(px(0, 0), arm) < 0, "past kMaxSway arms: refused");
+}
+
 int main() {
+    testSwayArmSwingsAndSettles();
     testRestIsAsleep();
     testImpulseMovesTheJellyThere();
     testMatchesThePrototypeLattice();

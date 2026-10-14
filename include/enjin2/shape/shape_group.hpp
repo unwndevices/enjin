@@ -13,10 +13,19 @@
  *
  * The group owns one Lattice (lattice.hpp) in item coordinates; whoever lays
  * out the items configures its box. A `field` item has every point moved by
- * the field's displacement there; a `rigid` (or, until #335, `sway`) item is
- * moved as a whole by the displacement at its `at`. tick() advances it from
- * the frame's dt and marks the group changed when the field moved; a move of
- * the group (setOrigin) wakes it, as does impulse().
+ * the field's displacement there; a `rigid` item is moved as a whole by the
+ * displacement at its `at`; a `sway` item likewise, then turned about `at` by
+ * the angle of the sway arm hung there (none hung: no turn). tick() advances
+ * it from the frame's dt and marks the group changed when the field moved; a
+ * move of the group (setOrigin) wakes it, as does impulse().
+ *
+ * ## The stepped drive (#335)
+ *
+ * The group also owns a SteppedDrive (stepped_drive.hpp): startDrive() runs a
+ * periodic sequence of rest-pose transforms, applied to every rest position
+ * before the Lattice displaces it (the Lattice is sampled at the rest point,
+ * so its homes move with the step). tick() steps it too; a step change marks
+ * the group changed without waking the Lattice.
  *
  * ## The retained layer
  *
@@ -38,6 +47,7 @@
 #include "lattice.hpp"
 #include "shape.hpp"
 #include "shape_raster.hpp"
+#include "stepped_drive.hpp"
 
 namespace enjin2 {
 namespace shape {
@@ -101,15 +111,36 @@ public:
     Lattice& lattice() { return lattice_; }
     const Lattice& lattice() const { return lattice_; }
 
-    /// Advance the Lattice by a frame of `dtMicros`; true (and changed())
-    /// when the field moved.
+    /// Advance the Lattice and the stepped drive by a frame of `dtMicros`;
+    /// true (and changed()) when the field moved or the drive stepped.
     bool tick(uint32_t dtMicros)
     {
-        if (!lattice_.tick(dtMicros))
+        const bool field = lattice_.tick(dtMicros);
+        const bool stepped = drive_.tick(dtMicros);
+        if (!field && !stepped)
             return false;
         changed_ = true;
         return true;
     }
+
+    /// Run a stepped drive over the rest pose (see stepped_drive.hpp). It
+    /// never wakes the Lattice; the group redraws when the drawn step changes.
+    bool startDrive(const DriveStep* steps, uint8_t count, uint32_t periodMicros, FixedVec2 pivot, FixedVec2 extent)
+    {
+        const DriveStep before = drive_.current();
+        const bool ok = drive_.start(steps, count, periodMicros, pivot, extent);
+        if (drive_.current() != before)
+            changed_ = true;
+        return ok;
+    }
+    /// Stop the drive: back to the rest pose.
+    void stopDrive()
+    {
+        if (!drive_.current().identity())
+            changed_ = true;
+        drive_.stop();
+    }
+    const SteppedDrive& drive() const { return drive_; }
 
     /// Push the jelly at layer point `at` to `velocity` px/s (wakes it).
     void impulse(FixedVec2 at, FixedVec2 velocity) { lattice_.impulse(at - origin_, velocity); }
@@ -172,12 +203,17 @@ private:
         uint16_t          liveCount = 0;
         RowMask           liveView{};      ///< Over ShapeDrawScratch::liveMask.
 
-        /// Rest Shape → layer coordinates: placed at `base` (origin + at), mirrored
-        /// x → −x, and, if `field`, each point moved by the Lattice there.
-        bool warp(const Shape& rest, FixedVec2 base, bool mirror, bool field, FixedVec2* points, Ring* rings,
-                  Shape& out) const
+        /// Rest Shape → layer coordinates: placed at `at`, mirrored x → −x,
+        /// then moved by the drive's step and the Lattice. `field`: each point
+        /// by the field there; else the whole Shape by the field at `at`,
+        /// turned about it by `angle` (a sway arm's; 0 for rigid). The drive
+        /// moves rest positions first (the Lattice's homes with them), so the
+        /// field is sampled at the rest point.
+        bool warp(const Shape& rest, FixedVec2 at, bool mirror, bool field, Fixed angle, FixedVec2* points,
+                  Ring* rings, Shape& out) const
         {
             const Lattice& lat = g.lattice_;
+            const SteppedDrive& drive = g.drive_;
             if (rest.ringCount > ShapeDrawScratch::kMaxRings)
                 return false;
             uint32_t total = 0;
@@ -185,6 +221,7 @@ private:
                 total += rest.rings[r].count;
             if (total > ShapeDrawScratch::kMaxPoints)
                 return false;
+            const FixedVec2 base = g.origin_ + (field ? FixedVec2{} : drive.apply(at) + lat.displacementAt(at));
             uint16_t n = 0;
             for (uint16_t r = 0; r < rest.ringCount; ++r)
             {
@@ -192,9 +229,14 @@ private:
                 rings[r] = Ring{points + n, in.count, in.closed};
                 for (uint16_t i = 0; i < in.count; ++i)
                 {
-                    const FixedVec2 p = in.points[i];
-                    const FixedVec2 q = {mirror ? base.x - p.x : base.x + p.x, base.y + p.y};
-                    points[n++] = field ? q + lat.displacementAt(q - g.origin_) : q;
+                    const FixedVec2 p = {mirror ? -in.points[i].x : in.points[i].x, in.points[i].y};
+                    if (field)
+                    {
+                        const FixedVec2 local = at + p;
+                        points[n++] = base + drive.apply(local) + lat.displacementAt(local);
+                    }
+                    else
+                        points[n++] = base + Lattice::turn(p, angle);
                 }
             }
             out = rest;
@@ -202,14 +244,14 @@ private:
             return true;
         }
 
-        /// The union of `count` clip Shapes' fills, warped by (base, mirror, field), into `dst`.
-        bool clipUnion(const Shape* clip, uint16_t count, FixedVec2 base, bool mirror, bool field, uint32_t* dst,
-                       RowMask& out)
+        /// The union of `count` clip Shapes' fills, warped as warp() does, into `dst`.
+        bool clipUnion(const Shape* clip, uint16_t count, FixedVec2 at, bool mirror, bool field, Fixed angle,
+                       uint32_t* dst, RowMask& out)
         {
             out = RowMask(dst, ShapeDrawScratch::kMaskWords);
             Shape w;
             if (count == 1)
-                return warp(clip[0], base, mirror, field, s.clipPoints, s.clipRings, w) &&
+                return warp(clip[0], at, mirror, field, angle, s.clipPoints, s.clipRings, w) &&
                        s.raster.fill(w, Rect(0, 0, W, H), out);
             if (count > ShapeDrawScratch::kMaxClipShapes || !out.reset(0, 0, W, H))
                 return false;
@@ -218,7 +260,7 @@ private:
             for (uint16_t k = 0; k < count; ++k)
             {
                 RowMask one(s.strokeMask, ShapeDrawScratch::kMaskWords);
-                if (!warp(clip[k], base, mirror, field, s.clipPoints, s.clipRings, w) ||
+                if (!warp(clip[k], at, mirror, field, angle, s.clipPoints, s.clipRings, w) ||
                     !s.raster.fill(w, Rect(0, 0, W, H), one))
                     return false;
                 uniteMask(out, one);
@@ -253,12 +295,13 @@ private:
             if (paint.fill == ColourRole::None && !stroked)
                 return true;
             // Field: each point moved by the field there; rigid: the whole
-            // item by the field at its anchor.
+            // item by the field at its anchor; sway: that, turned about the
+            // anchor by its arm (see warp()).
             const Lattice& lat = c.g.lattice_;
             const bool field = binding == Binding::Field && lat.configured();
-            const FixedVec2 base = c.g.origin_ + at + (field ? FixedVec2{} : lat.displacementAt(at));
+            const Fixed angle = binding == Binding::Sway ? lat.swayAngleAt(at) : Fixed{};
             Shape warped;
-            if (!c.warp(rest, base, mirror, field, s.points, s.rings, warped))
+            if (!c.warp(rest, at, mirror, field, angle, s.points, s.rings, warped))
                 return c.ok = false;
             const Rect canvasRect(0, 0, W, H);
             RowMask fill(s.mask, ShapeDrawScratch::kMaskWords);
@@ -270,7 +313,7 @@ private:
             RowMask own;
             if (rest.clipSpace == ClipSpace::Item && rest.clipCount > 0)
             {
-                if (!c.clipUnion(rest.clip, rest.clipCount, base, mirror, field, s.clipMask, own))
+                if (!c.clipUnion(rest.clip, rest.clipCount, at, mirror, field, angle, s.clipMask, own))
                     return c.ok = false;
                 clip = &own;
             }
@@ -280,7 +323,7 @@ private:
                 {
                     c.live = nullptr;
                     // The live Body is field-bound: clip to it as the field drew it.
-                    if (!c.clipUnion(rest.clip, rest.clipCount, c.g.origin_, false, lat.configured(), s.liveMask,
+                    if (!c.clipUnion(rest.clip, rest.clipCount, {}, false, lat.configured(), Fixed{}, s.liveMask,
                                      c.liveView))
                         return c.ok = false;
                     c.live = rest.clip;
@@ -323,8 +366,9 @@ private:
         std::memset(footprint_, 0, sizeof footprint_);
     }
 
-    FixedVec2 origin_{};
-    Lattice   lattice_;
+    FixedVec2    origin_{};
+    Lattice      lattice_;
+    SteppedDrive drive_;
     Remap     remap_ = Remap::identity();
     bool      changed_ = true;
     uint8_t   footprint_[kMaxTiles / 8] = {};
