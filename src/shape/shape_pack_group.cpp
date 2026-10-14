@@ -5,6 +5,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <new>
 
 #include "enjin2/core/math.hpp"
 
@@ -141,6 +142,17 @@ bool ShapePackGroup::build(ShapePack& pack, const ShapeLook& look, AssetArena& a
         slots_[s].region = buf ? buf + off : nullptr;
         off += slots_[s].capacity;
     }
+    // The last drawn masks, for hit() and grab() (#336).
+    uint8_t* hits = arena.allocate(sizeof(ShapeHitStore), 8);
+    if (!hits)
+    {
+        arena.rollback(mark);
+        *this = ShapePackGroup{};
+        setError(err, "shape pack: the asset arena has no room for the pet's hit masks (%u bytes)",
+                 unsigned(sizeof(ShapeHitStore)));
+        return false;
+    }
+    group_.setHitStore(new (hits) ShapeHitStore());
     pack_ = &pack;
     if (!setLook(look, err))
     {
@@ -297,6 +309,9 @@ bool ShapePackGroup::setLook(const ShapeLook& look, ShapeError* err)
 
 void ShapePackGroup::refreshBody()
 {
+    // The feet line stays where it is (and a drag keeps going) across a new Body.
+    const FixedVec2 at = position();
+    const bool carrying = group_.lattice().carrying();
     const Slot& b = slots_[uint8_t(ShapeSlot::Body)];
     feet_ = {};
     bodyMin_ = bodyMax_ = {};
@@ -336,7 +351,9 @@ void ShapePackGroup::refreshBody()
         bodyMin_ = {minX, minY};
         bodyMax_ = {maxX, maxY};
     }
-    group_.setOrigin(position_ - feet_);
+    group_.setOrigin(at - feet_);
+    if (carrying)
+        group_.moveTo(carryFeet_ - feet_);
 }
 
 namespace {
@@ -519,8 +536,59 @@ void ShapePackGroup::refreshLattice()
 
 void ShapePackGroup::setPosition(FixedVec2 feet)
 {
-    position_ = feet;
-    group_.setOrigin(position_ - feet_);
+    carryFeet_ = feet;
+    group_.setOrigin(feet - feet_);
+}
+
+void ShapePackGroup::moveTo(FixedVec2 feet)
+{
+    carryFeet_ = feet;
+    group_.moveTo(feet - feet_);
+}
+
+namespace {
+
+// A drawn Shape's hit tag: its slot and its socket's place among the slot's.
+constexpr uint16_t hitTag(ShapeSlot s, uint8_t member) { return uint16_t(uint8_t(s) << 8 | member); }
+
+} // namespace
+
+bool ShapePackGroup::hit(int x, int y, ShapeSlot& slot, uint8_t& member) const
+{
+    const int32_t tag = group_.hit(x, y);
+    if (tag < 0)
+        return false;
+    slot = ShapeSlot(uint8_t(tag >> 8));
+    member = uint8_t(tag & 0xFF);
+    return true;
+}
+
+int ShapePackGroup::grab(FixedVec2 at)
+{
+    ShapeSlot s;
+    uint8_t member;
+    if (!pack_ || !hit(at.x.floorToInt(), at.y.floorToInt(), s, member))
+        return -1;
+    const Slot& slot = slots_[uint8_t(s)];
+    if (s != ShapeSlot::Body && slot.loaded && slot.view.binding() == ShapeBinding::Sway)
+    {
+        // That member's socket, and the arm hung on it.
+        const Slot& body = slots_[uint8_t(ShapeSlot::Body)];
+        uint8_t place = 0;
+        for (uint8_t k = 0; k < body.view.socketCount(); ++k)
+        {
+            const ShapeSocket sk = body.view.socket(k);
+            if (sk.slot != s)
+                continue;
+            if (place++ != member)
+                continue;
+            const int arm = group_.lattice().swayIndexAt({Fixed::fromQ8_8(sk.at.x), Fixed::fromQ8_8(sk.at.y)});
+            if (arm >= 0)
+                return group_.grabSway(uint8_t(arm));
+            break;
+        }
+    }
+    return group_.grabNode(at);
 }
 
 bool ShapePackGroup::setPose(ShapeSlot s, const char* name, ShapeError* err)
@@ -648,13 +716,14 @@ bool ShapePackGroup::forEach(ShapeDrawScratch& scratch, ShapeEmit emit, void* ct
     }
 
     // Emit one member's Shapes in its current pose.
-    auto emitMember = [&](const Slot& slot, uint8_t member, FixedVec2 at, bool mirror) {
+    auto emitMember = [&](const Slot& slot, uint8_t member, FixedVec2 at, bool mirror, uint16_t tag) {
         const ShapeSpan span = slot.view.span(slot.pose, member);
         for (uint16_t k = 0; k < span.shapeCount; ++k)
         {
             const ShapeFill f = slot.view.shape(span.firstShape + k);
             Shape shape;
             restShape(slot, f, scratch.restRings, shape);
+            shape.tag = tag;
             if (f.clip == ShapeClip::Own)
             {
                 restShape(slot, slot.view.shape(f.clipShape), scratch.clipRestRings, scratch.clipRest);
@@ -698,6 +767,7 @@ bool ShapePackGroup::forEach(ShapeDrawScratch& scratch, ShapeEmit emit, void* ct
             const Slot& slot = slots_[i];
             if (!slot.loaded || slot.view.order() != order)
                 continue;
+            uint8_t place = 0;
             for (uint8_t k = 0; k < body.view.socketCount(); ++k)
             {
                 const ShapeSocket sk = body.view.socket(k);
@@ -705,13 +775,14 @@ bool ShapePackGroup::forEach(ShapeDrawScratch& scratch, ShapeEmit emit, void* ct
                     continue;
                 bool mirror = false;
                 const int m = pickMember(slot.view, sk.side, mirror);
-                emitMember(slot, uint8_t(m), {Fixed::fromQ8_8(sk.at.x), Fixed::fromQ8_8(sk.at.y)}, mirror);
+                emitMember(slot, uint8_t(m), {Fixed::fromQ8_8(sk.at.x), Fixed::fromQ8_8(sk.at.y)}, mirror,
+                           hitTag(ps, place++));
             }
         }
     };
 
     emitFeatures(ShapeOrder::Behind);
-    emitMember(body, 0, {}, false);
+    emitMember(body, 0, {}, false, hitTag(ShapeSlot::Body, 0));
     emitFeatures(ShapeOrder::Front);
     return ok;
 }

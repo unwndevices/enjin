@@ -548,6 +548,12 @@ if(TARGET enjin2_import)
     target_compile_definitions(shape_jelly_test PRIVATE
         ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
     add_test(NAME shape_jelly_test COMMAND shape_jelly_test)
+    # Grab, pull, drag and hit (Tomodachi #336): the Star's goldens.
+    add_executable(shape_grab_test shape_grab_test.cpp)
+    target_link_libraries(shape_grab_test PRIVATE enjin2_import enjin2_graphics enjin2_core)
+    target_compile_definitions(shape_grab_test PRIVATE
+        ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+    add_test(NAME shape_grab_test COMMAND shape_grab_test)
 endif()
 if(TARGET enjin_shape_bundle)
     # The stand-in Kit, bundled twice with one ledger (created by the first run):
