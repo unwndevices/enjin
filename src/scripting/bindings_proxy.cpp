@@ -14,6 +14,14 @@
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/core/scene.hpp"
 #include <cctype>
+#ifdef ESP32
+#include "esp_attr.h"
+// Static scratch that is cold on device goes to PSRAM (zero-initialised
+// storage only; needs CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY).
+#define ENJIN2_PSRAM_BSS EXT_RAM_BSS_ATTR
+#else
+#define ENJIN2_PSRAM_BSS
+#endif
 
 namespace enjin2 {
 
@@ -644,7 +652,9 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     // Unpack cells (clamped to the component's fixed grid).
     uint8_t mw = mh.mapW > C_Tilemap::MAX_MAP_W ? C_Tilemap::MAX_MAP_W : mh.mapW;
     uint8_t mhgt = mh.mapH > C_Tilemap::MAX_MAP_H ? C_Tilemap::MAX_MAP_H : mh.mapH;
-    static uint16_t cells[C_Tilemap::MAX_MAP_W * C_Tilemap::MAX_MAP_H];
+    // 8 KB of load-time scratch: static to stay off the Lua thread's stack,
+    // and in PSRAM on device because it is only touched here.
+    static ENJIN2_PSRAM_BSS uint16_t cells[C_Tilemap::MAX_MAP_W * C_Tilemap::MAX_MAP_H];
     for (uint8_t ty = 0; ty < mhgt; ++ty) {
         for (uint8_t tx = 0; tx < mw; ++tx) {
             cells[ty * mw + tx] = njmCellAt(njmData, mh, tx, ty);
