@@ -18,6 +18,8 @@
  *   SHP-13  Hard errors: no pack, ledger unchanged.
  *   SHP-14  The stand-in Star Kit (tools/testdata/shapes) bundles into the expected pieces.
  *   SHP-15  Truncation / mutation corpus over the Kit, sidecar, ledger and pack: never crashes.
+ *   SHP-16  Preview (Tomodachi #340): a hard error drops its piece, or its whole source; the rest packs.
+ *   SHP-17  Each source's fill colours come back, in first-use order, mapped or not.
  *
  * `shape_bundle_test --verify-pack <a.njn> [<b.njn>]` checks a CLI output
  * (index readable, every record decodes; with two files, identical indices).
@@ -808,6 +810,88 @@ static void test13_hardErrors() {
     ASSERT(lint.ok() && path, "SHP-13 an unknown top-level layer is a lint with its layer path");
 }
 
+// ---------------------------------------------------------------------------
+// SHP-16  Preview: an error drops its piece or its source, never the bundle
+// ---------------------------------------------------------------------------
+
+static ShapeBundleResult previewBundle(const std::vector<ShapeSource>& sources, const std::string& ledger = "") {
+    ShapeBundleOptions o;
+    o.preview = true;
+    return bundleShapes(sources, ledger, o);
+}
+
+static void test16_preview() {
+    const std::string anchors =
+        "<g id=\"eyes\"><circle id=\"anchor\" cx=\"40\" cy=\"30\" r=\"1\"/></g>"
+        "<g id=\"mouth\"><circle id=\"anchor\" cx=\"40\" cy=\"45\" r=\"1\"/></g>";
+    // A Feature without its required pose: that Feature goes, its sibling stays; the Body, which
+    // lost its eyes socket with it, goes too (missing-socket).
+    {
+        const std::string svg = kitSvg("<rect width=\"10\" height=\"10\"/>",
+            "<g id=\"eyes\"><g id=\"closed\"><rect width=\"2\" height=\"2\"/></g></g>"
+            "<g id=\"mouth\"><rect x=\"38\" y=\"44\" width=\"4\" height=\"2\"/></g>");
+        const auto r = previewBundle({{"kit.svg", bytesOf(svg), {}}});
+        ShapePiece body, mouth, eyes;
+        ASSERT(hasError(r, "missing-pose") && !r.ok(), "SHP-16 the error is still reported");
+        ASSERT(!r.pack.empty() && firstPiece(r, ShapeSlot::Mouth, mouth) && !firstPiece(r, ShapeSlot::Eyes, eyes),
+               "SHP-16 the broken Feature is dropped, its sibling packs");
+        ASSERT(hasError(r, "missing-socket") && !firstPiece(r, ShapeSlot::Body, body), "SHP-16 a Body without eyes is dropped");
+        if (r.pack.empty()) dumpIssues(r);
+    }
+    // A file-level error drops the whole source; another source still packs.
+    {
+        const auto r = previewBundle({{"good.svg", bytesOf(kPullApartKit), {}}, {"bad.svg", bytesOf("<svg"), {}}});
+        ASSERT(hasError(r, "unparsable") && !r.pack.empty(), "SHP-16 an unparsable source doesn't stop the others");
+        bool badPiece = false;
+        for (const auto& e : indexOf(r)) badPiece = badPiece || e.label == "bad";
+        ASSERT(!badPiece && !indexOf(r).empty(), "SHP-16 nothing of the bad source packs");
+    }
+    {
+        const auto r = previewBundle({{"good.svg", bytesOf(kPullApartKit), bytesOf("{not json")}});
+        ASSERT(hasError(r, "bad-sidecar") && r.pack.empty(), "SHP-16 a bad sidecar drops its source (here: all of it)");
+        ASSERT(hasError(r, "unparsable"), "SHP-16 with nothing left, the empty bundle is still an error");
+    }
+    // A bad ledger: every piece is provisional (ids from 1), the bundle goes on.
+    {
+        const auto r = previewBundle({{"kit.svg", bytesOf(kitSvg("<rect width=\"10\" height=\"10\"/>", anchors)), {}}}, "{oops");
+        ShapePiece body;
+        ASSERT(hasError(r, "bad-ledger") && pieceOf(r, ShapeSlot::Body, 1, body), "SHP-16 a bad ledger is read as empty");
+    }
+    // The same source twice: the second is dropped.
+    {
+        const Bytes svg = bytesOf(kitSvg("<rect width=\"10\" height=\"10\"/>", anchors));
+        const auto r = previewBundle({{"kit.svg", svg, {}}, {"kit.svg", svg, {}}});
+        ASSERT(hasError(r, "duplicate-piece") && indexOf(r).size() == 1, "SHP-16 a source listed twice packs once");
+    }
+    // Without preview the same input still fails the whole bundle (the CLI's contract).
+    {
+        const auto r = bundleShapes({{"good.svg", bytesOf(kPullApartKit), {}}, {"bad.svg", bytesOf("<svg"), {}}}, "");
+        ASSERT(r.pack.empty(), "SHP-16 the CLI's bundle still fails on any error");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SHP-17  Source colours
+// ---------------------------------------------------------------------------
+
+static void test17_colours() {
+    const std::string svg = kitSvg(
+        "<rect fill=\"#B18CF9\" width=\"10\" height=\"10\"/><rect fill=\"#1c1c1c\" width=\"5\" height=\"5\"/>",
+        "<g id=\"eyes\"><circle fill=\"#1c1c1c\" cx=\"34\" cy=\"30\" r=\"2\"/></g>"
+        "<g id=\"mouth\"><rect fill=\"#c8e86b\" x=\"38\" y=\"44\" width=\"4\" height=\"2\"/>"
+        "<rect fill=\"none\" x=\"38\" y=\"44\" width=\"4\" height=\"2\"/></g>");
+    const auto r = bundleShapes({{"kit.svg", bytesOf(svg), bytesOf("{\"roles\":{\"#b18cf9\":\"body\"}}")},
+                                 {"other.svg", bytesOf(kitSvg("<rect width=\"10\" height=\"10\"/>")), {}}}, "");
+    ASSERT(r.colours.size() == 2, "SHP-17 one colour list per source");
+    if (r.colours.size() == 2) {
+        ASSERT(r.colours[0].source == "kit.svg" && r.colours[1].source == "other.svg", "SHP-17 in source order");
+        // Features are read before the Body: eyes, mouth, then body.
+        ASSERT((r.colours[0].rgb == std::vector<uint32_t>{0x1c1c1c, 0xc8e86b, 0xb18cf9}),
+               "SHP-17 distinct fills in first-use order, mapped or not; no fill isn't a colour");
+        ASSERT((r.colours[1].rgb == std::vector<uint32_t>{0x000000}), "SHP-17 the default fill is black");
+    }
+}
+
 
 static Bytes readFileBytes(const std::string& path);
 
@@ -978,6 +1062,8 @@ int main(int argc, char** argv) {
     test13_hardErrors();
     test14_standInKit();
     test15_corpus();
+    test16_preview();
+    test17_colours();
 
     printf("shape_bundle_test: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

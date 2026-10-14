@@ -377,6 +377,7 @@ struct Context {
     const Sidecar&           sidecar;
     const ShapeBundleLimits& limits;
     Sink&                    sink;
+    std::vector<uint32_t>&   colours;   ///< Every fill colour read, first use first.
     std::vector<uint32_t>    unmapped;  ///< Colours already linted.
     bool lintedPaint = false, lintedRange = false;
 };
@@ -395,6 +396,7 @@ ShapePoint qpt(Pt p, Context& cx, const std::string& path) { return {q88(p.x, cx
 
 ShapeRole roleOf(const shape_svg::Paint& paint, Context& cx, const std::string& path) {
     if (paint.fill != shape_svg::Paint::Fill::Colour) return ShapeRole::None;
+    if (std::find(cx.colours.begin(), cx.colours.end(), paint.rgb) == cx.colours.end()) cx.colours.push_back(paint.rgb);
     const auto it = cx.sidecar.roles.find(paint.rgb);
     if (it != cx.sidecar.roles.end()) return it->second;
     if (std::find(cx.unmapped.begin(), cx.unmapped.end(), paint.rgb) == cx.unmapped.end()) {
@@ -711,8 +713,12 @@ struct SourcePiece {
     ShapePiece  piece;
 };
 
-/// One source → its pieces.
-bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, Sink& sink, std::vector<SourcePiece>& out) {
+bool finishBody(Built& b, const std::vector<KitSocket>& sockets, const Node& bodyNode, const ShapeSource& src, Context& cx);
+
+/// One source → its pieces.  In @p preview a piece-level error drops only its piece; a false
+/// return (a file-level error, or any error outside preview) drops the whole source.
+bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, bool preview, Sink& sink,
+               std::vector<uint32_t>& colours, std::vector<SourcePiece>& out) {
     Sidecar sidecar;
     if (!parseSidecar(src.sidecar, src.name, lim, sidecar, sink)) return false;
     Node root;
@@ -720,7 +726,15 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, Sink& sink,
         sink.errors = true;
         return false;
     }
-    Context cx{src.name, sidecar, lim, sink, {}};
+    Context cx{src.name, sidecar, lim, sink, colours, {}};
+    // Runs one piece's build with the error flag scoped to it: did it fail?
+    auto failed = [&](auto&& build) {
+        const bool before = sink.errors;
+        sink.errors = false;
+        const bool bad = !build() || sink.errors;
+        sink.errors = before || sink.errors;
+        return bad;
+    };
 
     // Slot layers: top-level named nodes (a layer of one object may be that object).
     struct SlotLayer { ShapeSlot slot; const Node* node; size_t index; };
@@ -764,17 +778,35 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, Sink& sink,
     for (const auto& l : layers) {
         if (l.slot == ShapeSlot::Body) continue;
         Built b;
-        if (!buildFeature(*l.node, l.slot, body && l.index < body->index, cx, b, sockets)) return false;
+        if (failed([&] { return buildFeature(*l.node, l.slot, body && l.index < body->index, cx, b, sockets); })) {
+            if (!preview) return false;
+            continue;
+        }
         if (b.hasShapes) built.push_back(std::move(b));
     }
-    if (body) {
-        Built b;
-        if (!buildBody(*body->node, cx, b)) return false;
+    Built b;
+    if (body && failed([&] { return buildBody(*body->node, cx, b) && finishBody(b, sockets, *body->node, src, cx); })) {
+        if (!preview) return false;
+        body = nullptr;
+    }
+    if (body) built.insert(built.begin(), std::move(b));
+    if (sink.errors && !preview) return false;
+    const std::string label = labelOf(src.name);
+    for (auto& piece : built) out.push_back({src.name, piece.layer, label, std::move(piece.piece)});
+    return true;
+}
+
+/// The Body's sockets, one per Feature member drawn (or anchor) in the source; false if the
+/// Body lacks the eyes and mouth ones.
+bool finishBody(Built& b, const std::vector<KitSocket>& sockets, const Node& bodyNode, const ShapeSource& src, Context& cx) {
+    Sink& sink = cx.sink;
+    const Node* const body = &bodyNode;
+    {
         for (const auto& s : sockets) {
             ShapeSocket so;
             so.slot = s.slot;
             so.side = s.at.x < -kCentreBand ? SocketSide::Left : s.at.x > kCentreBand ? SocketSide::Right : SocketSide::Centre;
-            so.at = qpt(s.at, cx, body->node->name);
+            so.at = qpt(s.at, cx, body->name);
             b.piece.sockets.push_back(so);
         }
         std::stable_sort(b.piece.sockets.begin(), b.piece.sockets.end(),
@@ -786,18 +818,14 @@ bool pullApart(const ShapeSource& src, const ShapeBundleLimits& lim, Sink& sink,
         }
         if (!eyes || !mouth) {
             sink.error("missing-socket", std::string("the Body has no ") + (!eyes ? "eyes" : "mouth") +
-                       " socket: draw that Feature or put an anchor in its slot layer", src.name, body->node->name);
+                       " socket: draw that Feature or put an anchor in its slot layer", src.name, body->name);
             return false;
         }
         if (sockets.size() > 255) {
-            sink.error("too-large", "the Body has more than 255 sockets", src.name, body->node->name);
+            sink.error("too-large", "the Body has more than 255 sockets", src.name, body->name);
             return false;
         }
-        built.insert(built.begin(), std::move(b));
     }
-    if (sink.errors) return false;
-    const std::string label = labelOf(src.name);
-    for (auto& b : built) out.push_back({src.name, b.layer, label, std::move(b.piece)});
     return true;
 }
 
@@ -813,23 +841,32 @@ ShapeBundleResult bundleShapes(const std::vector<ShapeSource>& sources, const st
         sink.error("too-large", "more sources than the cap", "");
         return r;
     }
+    const bool preview = opts.preview;
     Ledger ledger;
-    if (!parseLedger(ledgerJson, lim, ledger, sink)) return r;
+    if (!parseLedger(ledgerJson, lim, ledger, sink)) {
+        if (!preview) return r;
+        ledger = Ledger{};  // every piece is new: provisional ids
+    }
+    std::vector<bool> listed(sources.size(), true);
     for (size_t i = 0; i < sources.size(); ++i)
-        for (size_t k = 0; k < i; ++k)
+        for (size_t k = 0; k < i && listed[i]; ++k)
             if (sources[i].name == sources[k].name) {
                 sink.error("duplicate-piece", "the same source is listed twice", sources[i].name);
-                return r;
+                if (!preview) return r;
+                listed[i] = false;
             }
 
     std::vector<SourcePiece> pieces;
-    for (const auto& s : sources) {
+    for (size_t i = 0; i < sources.size(); ++i) {
+        if (!listed[i]) continue;
+        const ShapeSource& s = sources[i];
+        r.colours.push_back({s.name, {}});
         std::vector<SourcePiece> mine;
-        if (pullApart(s, lim, sink, mine)) {
+        if (pullApart(s, lim, preview, sink, r.colours.back().rgb, mine)) {
             for (auto& p : mine) pieces.push_back(std::move(p));
         }
     }
-    if (sink.errors) return r;
+    if (sink.errors && !preview) return r;
 
     // Ids: keep the ledger's, give new pieces their slot's next free id, retire the vanished.
     std::vector<std::vector<bool>> taken(SHAPE_SLOT_COUNT);
