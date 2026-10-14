@@ -67,9 +67,27 @@
  * clip path), a Body without `eyes` and `mouth` sockets, a slot layer twice in
  * one source, a Feature without its required pose, and size caps.
  *
- * Out of scope here (Tomodachi #332): dither, stroke and clip paint.  Strokes,
- * opacity and `clip-path` are read past (a lint); shapes inside `<clipPath>`
- * are not drawn.
+ * ## Paint (Tomodachi #332)
+ *
+ * - **Dither:** `opacity` × `fill-opacity` snaps to 25 / 50 / 75 / 100 % (the
+ *   record's `dither`, in quarters); an off-level value is the
+ *   `off-level-opacity` lint.  `opacity` on a group is the `group-opacity` error.
+ * - **Stroke:** a `stroke` colour gets a role like a fill (stroke colours are
+ *   source colours too); `stroke-width` (default 1, scaled by the transform)
+ *   rounds to whole px (`fractional-stroke` lint when it isn't one; 0 strokes
+ *   nothing).  On closed rings it is the inner stroke width, on open ones the
+ *   line width.
+ * - **Holes:** a compound path is one Shape of several rings, under its
+ *   fill-rule (even-odd, or non-zero with the hole wound the other way).
+ * - **Clip:** `clip-path: url(#id)` on a shape or group names a `<clipPath>`
+ *   (its shapes, or the legacy `<use href>` of one; geometry in the clipped
+ *   element's space).  A clip within 0.25 px of the Kit's Body (both ways,
+ *   outline to outline) binds to the **live Body** (`ShapeClip::LiveBody`);
+ *   otherwise it becomes a Shape of role `none` after every span, relative to
+ *   the member's anchor (`ShapeClip::Own` + `clipShape`), and within 2 px of the
+ *   Body it is the `near-body-clip` lint.  A clip-path naming nothing is the
+ *   `missing-clip` lint; a clip inside a clip keeps the inner one (`nested-clip`).
+ *   Shapes inside `<clipPath>` are never drawn.
  */
 #pragma once
 
@@ -119,8 +137,8 @@ struct ShapeBundleOptions {
     bool preview = false;
 };
 
-/// The fill colours one source draws with: distinct 0xRRGGBB, in first-use order (Features in
-/// layer order, then the Body), whether the shape sidecar maps them or not.
+/// The fill and stroke colours one source draws with: distinct 0xRRGGBB, in first-use order
+/// (Features in layer order, then the Body), whether the shape sidecar maps them or not.
 struct ShapeSourceColours {
     std::string           source;
     std::vector<uint32_t> rgb;

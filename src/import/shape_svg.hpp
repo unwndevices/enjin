@@ -33,12 +33,15 @@ struct Ring {
 
 /// What the bundle needs of a Shape's computed style.
 struct Paint {
-    enum class Fill : uint8_t { None, Colour, Unsupported } fill = Fill::Colour;
+    enum class Fill : uint8_t { None, Colour, Unsupported };
+    Fill     fill = Fill::Colour;
     uint32_t rgb = 0;            ///< 0xRRGGBB when fill == Colour (SVG's default fill is black).
     bool     evenOdd = false;
-    bool     stroke = false;     ///< A stroke other than `none` (Tomodachi #332).
-    bool     opacity = false;    ///< opacity / fill-opacity below 1 (Tomodachi #332).
-    bool     clip = false;       ///< clip-path on it or an ancestor (Tomodachi #332).
+    double   opacity = 1;        ///< opacity × fill-opacity (Tomodachi #332).
+    Fill     stroke = Fill::None;
+    uint32_t strokeRgb = 0;      ///< 0xRRGGBB when stroke == Colour.
+    double   strokeWidth = 1;    ///< In Kit px: stroke-width scaled by the element's transform.
+    int      clip = -1;          ///< Index into the root's clipPaths, or -1 (clip-path on it or an ancestor).
 };
 
 /// One node of the layer tree: a group or a drawable.
@@ -49,6 +52,8 @@ struct Node {
     std::vector<Node> children; ///< Groups only.
     std::vector<Ring> rings;    ///< Drawables only, Kit coordinates.
     Paint             paint;
+    /// Root only: the geometry of each clip-path a drawable refers to (Paint::clip), Kit coordinates.
+    std::vector<std::vector<Ring>> clipPaths;
 };
 
 /// Read a Kit.  Appends issues (with @p source) and returns false on an error.
