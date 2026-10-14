@@ -66,6 +66,10 @@
 namespace enjin2 {
 namespace shape {
 
+/// A free-running tick counter (a CPU cycle counter on the device) the cost
+/// split reads; only differences matter, so it may wrap (Tomodachi #338).
+using ShapeClock = uint32_t (*)();
+
 /**
  * @brief Working memory a group redraws with (about 60 KB): the one
  *        Rasterizer, its masks and the warped points. Keep one per applet and
@@ -93,6 +97,12 @@ struct ShapeDrawScratch {
     Shape clipRest;                  ///< That clip Shape.
     Ring  liveRestRings[kMaxRings];  ///< The live clip Shapes' rest rings (all of them).
     Shape liveRest[kMaxClipShapes];  ///< The live clip Shapes (the Body).
+
+    // The cost split (Tomodachi #338): with a clock set, every redraw adds the
+    // ticks it spent writing pixels (the footprint erase and each paintFill)
+    // to paintTicks; the rest of a redraw is raster. Null: no reads at all.
+    ShapeClock clock = nullptr;
+    uint32_t   paintTicks = 0;
 };
 
 /**
@@ -286,7 +296,10 @@ public:
     {
         static_assert(Canvas4<W, H>::TILE_COUNT <= kMaxTiles, "canvas too large for the footprint bitmap");
         static_assert(size_t(((W + 31) / 32)) * H <= ShapeDrawScratch::kMaskWords, "canvas too large for the mask");
+        const uint32_t t0 = scratch.clock ? scratch.clock() : 0;
         eraseFootprint(layer);
+        if (scratch.clock)
+            scratch.paintTicks += scratch.clock() - t0;
         if (hits_)
             hits_->clear();
         DrawCtx<W, H> ctx{layer, scratch, *this, true};
@@ -315,6 +328,15 @@ private:
         const Shape*      live = nullptr;  ///< The group-space clip liveView holds (this redraw).
         uint16_t          liveCount = 0;
         RowMask           liveView{};      ///< Over ShapeDrawScratch::liveMask.
+
+        /// paintFill, its ticks added to the scratch's paintTicks (#338).
+        void paint(const RowMask& m, ColourRole role, uint8_t dither = kDitherSolid)
+        {
+            const uint32_t t0 = s.clock ? s.clock() : 0;
+            paintFill(layer, m, role, g.remap_, dither);
+            if (s.clock)
+                s.paintTicks += s.clock() - t0;
+        }
 
         /// Rest Shape → layer coordinates: placed at `at`, mirrored x → −x,
         /// then moved by the drive's step and the Lattice. `field`: each point
@@ -447,7 +469,7 @@ private:
             if (clip)
                 clipMask(fill, *clip);
 
-            paintFill(c.layer, fill, paint.fill, c.g.remap_, paint.dither);
+            c.paint(fill, paint.fill, paint.dither);
             c.touch(fill);
             ShapeHitStore* hits = c.g.hits_;
             if (hits && paint.fill != ColourRole::None)
@@ -457,14 +479,14 @@ private:
             RowMask stroke(s.strokeMask, ShapeDrawScratch::kMaskWords);
             if (!innerStroke(fill, paint.strokeWidth, stroke))
                 return c.ok = false;
-            paintFill(c.layer, stroke, paint.stroke, c.g.remap_);
+            c.paint(stroke, paint.stroke);
             if (hits && paint.fill == ColourRole::None)
                 hits->keep(stroke, rest.tag);  // within the fill otherwise
             if (!s.raster.stroke(warped, canvasRect, stroke))
                 return c.ok = false;
             if (clip)
                 clipMask(stroke, *clip);
-            paintFill(c.layer, stroke, paint.stroke, c.g.remap_);
+            c.paint(stroke, paint.stroke);
             c.touch(stroke);
             if (hits)
                 hits->keep(stroke, rest.tag);

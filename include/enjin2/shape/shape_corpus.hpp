@@ -70,6 +70,12 @@ struct ShapeCorpusFrame {
     bool             asleep = false;  ///< The jelly, after the tick.
     uint32_t         crc = 0;         ///< shapeLayerCrc of the layer.
 
+    // The frame's cost in the scratch clock's ticks (Tomodachi #338), all 0
+    // without a clock. Not part of the golden line.
+    uint32_t simTicks = 0;     ///< The tick (0 on frame 0, which does not tick).
+    uint32_t rasterTicks = 0;  ///< The redraw less its paint (0 without a redraw).
+    uint32_t paintTicks = 0;   ///< The redraw's pixel writes (0 without a redraw).
+
     /// Room for formatShapeCorpusFrame's longest line and its NUL.
     static constexpr size_t kLineMax = 32;
 };
@@ -102,7 +108,8 @@ public:
     bool begin(ShapePack& pack, AssetArena& arena, ShapeError* err);
 
     /// Run the next frame onto `layer` (frame 0 clears it first) and report
-    /// it in `out`. False once all kFrames ran, before begin(), or when the
+    /// it in `out`, timed when `scratch.clock` is set (the CRC is not timed).
+    /// False once all kFrames ran, before begin(), or when the
     /// script's grab finds nothing drawn (failed() then says so).
     bool step(ShapeCorpusLayer& layer, ShapeDrawScratch& scratch, ShapeCorpusFrame& out);
 

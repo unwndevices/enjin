@@ -55,7 +55,7 @@ struct Run {
     FixedVec2 endFeet{};
 };
 
-static Run runCorpus(const std::vector<uint8_t>& bytes) {
+static Run runCorpus(const std::vector<uint8_t>& bytes, ShapeClock clock = nullptr) {
     Run run;
     ShapePackMemory src(bytes.data(), bytes.size());
     ShapePack pack;
@@ -70,8 +70,10 @@ static Run runCorpus(const std::vector<uint8_t>& bytes) {
     }
     static ShapeCorpusLayer layer;
     layer.clear(Pixel4(3));  // frame 0 clears it to transparent
+    scratch.clock = clock;
     ShapeCorpusFrame f;
     while (corpus->step(layer, scratch, f)) run.frames.push_back(f);
+    scratch.clock = nullptr;
     run.failed = corpus->failed();
     run.endFeet = corpus->pet().position();
     return run;
@@ -185,6 +187,38 @@ static void testScript() {
     ASSERT(same, "a second run gives the same CRCs");
 }
 
+// A clock that moves on at every read: any timed stretch reads at least one tick.
+static uint32_t fakeTicks = 0;
+static uint32_t fakeClock() { return fakeTicks += 7; }
+
+// The cost split (Tomodachi #338): with a clock on the scratch, each frame says
+// what its tick (sim), its redraw's mask work (raster) and its pixel writes
+// (paint) cost, without changing a pixel.
+static void testCost() {
+    const std::vector<uint8_t> bytes = starPack();
+    const Run plain = runCorpus(bytes);
+    const Run timed = runCorpus(bytes, fakeClock);
+    ASSERT(timed.frames.size() == ShapeCorpus::kFrames && plain.frames.size() == ShapeCorpus::kFrames,
+           "a timed run runs every frame");
+    if (timed.frames.size() != plain.frames.size()) return;
+    bool same = true, untimed = true, redrawCosts = true, idleFree = true, simTimed = true;
+    for (size_t i = 0; i < timed.frames.size(); ++i) {
+        const ShapeCorpusFrame& t = timed.frames[i];
+        const ShapeCorpusFrame& p = plain.frames[i];
+        same = same && t.crc == p.crc && t.redrew == p.redrew && t.asleep == p.asleep;
+        untimed = untimed && p.simTicks == 0 && p.rasterTicks == 0 && p.paintTicks == 0;
+        if (t.redrew) redrawCosts = redrawCosts && t.rasterTicks > 0 && t.paintTicks > 0;
+        else idleFree = idleFree && t.rasterTicks == 0 && t.paintTicks == 0;
+        if (i > 0) simTimed = simTimed && t.simTicks > 0;
+    }
+    ASSERT(same, "timing changes no pixel, redraw or sleep");
+    ASSERT(untimed, "no clock: every cost reads 0");
+    ASSERT(redrawCosts, "a frame that redrew costs raster and paint");
+    ASSERT(idleFree, "a frame that did not redraw costs no raster or paint");
+    ASSERT(timed.frames[0].simTicks == 0, "frame 0 does not tick");
+    ASSERT(simTimed, "every later frame's tick is timed");
+}
+
 static void testRefusals() {
     ShapeCorpus corpus;
     static ShapeCorpusLayer layer;
@@ -213,6 +247,7 @@ int main() {
     testCrc();
     testFrameLine();
     testScript();
+    testCost();
     testRefusals();
     printf("shape_corpus_test: %d passed, %d failed\n", passes, failures);
     return failures ? 1 : 0;

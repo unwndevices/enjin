@@ -94,6 +94,8 @@ bool ShapeCorpus::step(ShapeCorpusLayer& layer, ShapeDrawScratch& scratch, Shape
 {
     if (!begun_ || failed_ || next_ >= kFrames) return false;
     const uint16_t f = next_;
+    const ShapeClock clock = scratch.clock;
+    out.simTicks = out.rasterTicks = out.paintTicks = 0;
 
     if (f == 0) {
         layer.clear(Pixel4(15));
@@ -121,12 +123,20 @@ bool ShapeCorpus::step(ShapeCorpusLayer& layer, ShapeDrawScratch& scratch, Shape
             ShapeError e;
             pet_.breathe(Breath{}, &e);  // the defaults are in range
         }
+        const uint32_t t0 = clock ? clock() : 0;
         pet_.tick(kFrameMicros);
+        if (clock) out.simTicks = clock() - t0;
     }
 
     out.index = f;
     out.phase = phaseOf(f);
+    const uint32_t paint0 = scratch.paintTicks;
+    const uint32_t t0 = clock ? clock() : 0;
     out.redrew = pet_.flush(layer, scratch);
+    if (clock && out.redrew) {
+        out.paintTicks = scratch.paintTicks - paint0;
+        out.rasterTicks = (clock() - t0) - out.paintTicks;
+    }
     out.asleep = pet_.asleep();
     out.crc = shapeLayerCrc(layer);
     ++next_;
