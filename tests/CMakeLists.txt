@@ -87,6 +87,16 @@ target_link_libraries(primitives_quad_bezier_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME primitives_quad_bezier_test COMMAND primitives_quad_bezier_test)
 
+# TrigLUT fine-angle sine/cosine (Tomodachi #325): 1024 steps + lerp
+add_executable(trig_lut_test
+    trig_lut_test.cpp
+)
+target_include_directories(trig_lut_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(trig_lut_test PRIVATE enjin2_core)
+add_test(NAME trig_lut_test COMMAND trig_lut_test)
+
 # Span-walker border stroke test (Tomodachi #39): solid/bevel/drop-shadow ring
 add_executable(border_stroke_test
     border_stroke_test.cpp
@@ -211,6 +221,18 @@ target_include_directories(canvas4_dither_span_test PRIVATE
 target_link_libraries(canvas4_dither_span_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME canvas4_dither_span_test COMMAND canvas4_dither_span_test)
+
+# Canvas4::drawHLine nibble-aware spans (Tomodachi #318): every start/width
+# parity matches the per-pixel setPixel reference (pixels + dirty tiles).
+add_executable(canvas4_hline_span_test
+    canvas4_hline_span_test.cpp
+)
+target_include_directories(canvas4_hline_span_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(canvas4_hline_span_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME canvas4_hline_span_test COMMAND canvas4_hline_span_test)
 
 # Visual parity bench (unwn M1 #164 / M3 #166, epic #163): one-binary
 # call-path differential harness — BASE (Canvas8 member algorithms) vs HEAD

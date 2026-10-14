@@ -75,6 +75,19 @@
 // re-affirmed unchanged. text.println (Retired) shares the head pin and is
 // bumped in lockstep. canvas.hpp base pin unchanged (no Canvas8 text method
 // touched).
+//
+// Re-pin 2026-10-14 (Tomodachi #318, nibble-aware drawHLine): canvas.hpp base
+// pin bumped to 0x670637d149f03789 (was 0x8eae76df2a5304ac). Only
+// Canvas4::drawHLine changed (head nibble + memset + tail nibble for every
+// start/width parity, replacing the per-pixel fallback); no Canvas8 text
+// method touched, glcd sub-ranges re-affirmed. Bench summary identical before
+// and after (geom.fillRect GREEN). The text_renderer.hpp head pin was already
+// stale before this change and is left for its own re-pin.
+//
+// Re-pin 2026-10-14 (integ/vector-pet merge of #318 onto #324): canvas.hpp
+// base pin bumped to 0x7a427ace51e12781 (was 0x670637d149f03789, #318 alone).
+// The merged header carries both #324's packed Bayer span fill and #318's
+// drawHLine; no Canvas8 text method touched. Bench geom.fillRect GREEN.
 
 #include <array>
 #include <cstddef>
@@ -188,34 +201,34 @@ namespace parity
     inline constexpr std::array<Waiver, 6> kWaivers{{
         {"text.drawChar", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
-         "canvas.hpp", 0x8eae76df2a5304acull,
+         "canvas.hpp", 0x7a427ace51e12781ull,
          "text_renderer.hpp", 0x25008f0e5f5a5650ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.print", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 1812,
-         "canvas.hpp", 0x8eae76df2a5304acull,
+         "canvas.hpp", 0x7a427ace51e12781ull,
          "text_renderer.hpp", 0x25008f0e5f5a5650ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.println", WaiverStatus::Retired,
          "pair retired: HEAD '\\n' yAdvance ratified; no BASE call sites", nullptr, 0,
-         "canvas.hpp", 0x8eae76df2a5304acull,
+         "canvas.hpp", 0x7a427ace51e12781ull,
          "text_renderer.hpp", 0x25008f0e5f5a5650ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"blit.canvasOpacity", WaiverStatus::Retired,
          "pair retired: 4-bit source cannot carry BASE's out-of-band matte", nullptr, 0,
-         "canvas.hpp", 0x8eae76df2a5304acull,
+         "canvas.hpp", 0x7a427ace51e12781ull,
          "blit.hpp", 0x8ccf79c81069dae7ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"blit.pattern", WaiverStatus::Retired,
          "pair retired: HEAD samples the pattern at absolute canvas coords (R4 "
          "one-grid), BASE anchors it to the rect origin", nullptr, 0,
-         "canvas.hpp", 0x8eae76df2a5304acull,
+         "canvas.hpp", 0x7a427ace51e12781ull,
          "blit.hpp", 0x8ccf79c81069dae7ull,
          "unwndevices/Tomodachi#36", "claude+ciro", "2026-09-07"},
         {"geom.drawRoundRect", WaiverStatus::Retired,
          "pair retired: HEAD replaces the corner-arc annulus with the #39 "
          "span-walker border stroke; the annulus is deleted", nullptr, 0,
-         "canvas.hpp", 0x8eae76df2a5304acull,
+         "canvas.hpp", 0x7a427ace51e12781ull,
          "primitives.hpp", 0x7b4f2bcb50064a6bull,
          "unwndevices/Tomodachi#39", "claude+ciro", "2026-09-07"},
     }};
