@@ -27,7 +27,16 @@
  * |         |           | (-300, 300) px/s                                         |
  * | breathe | 271..320  | 271: breathe(Breath{}) (3 s, 4 steps, 1 px, feet): two   |
  * |         |           | breath steps, the jelly asleep throughout                |
+ * | tap     | 321..400  | 321: stopBreathing(); pointer down at feet + (0, -20);   |
+ * |         |           | 322: pointer up there: a tap, the Feel's poke            |
+ * | feel    | 401..540  | 401: pointer down at feet + (0, -20); 402..431: the      |
+ * |         |           | finger moves (+1, -1) a frame, a pull that comes loose   |
+ * |         |           | into a drag past 12 px; 432..440: held still; 441:       |
+ * |         |           | pointer up: a throw (the finger had stopped, so at       |
+ * |         |           | rest); the feet stay where the drag carried them         |
  *
+ * The tap and feel phases run the Feel (ADR-0019, shape_feel.hpp) with its
+ * default tunables, so the one feel is locked across hosts too.
  * Every frame is dt = 33334 µs. A frame's record is taken after its flush.
  * On the Star the jelly sleeps 20+ frames before each phase ends (run
  * shape_corpus_test with SHAPE_VERBOSE=1 for the margins).
@@ -62,9 +71,10 @@ uint32_t shapeLayerCrc(const ShapeCorpusLayer& layer);
 /// corpus run digests its golden lines with it (Tomodachi #338).
 uint32_t shapeCrc32(uint32_t crc, const void* data, size_t size);
 
-enum class ShapeCorpusPhase : uint8_t { Draw, Rest, Kick, Drag, Pull, Breathe };
+enum class ShapeCorpusPhase : uint8_t { Draw, Rest, Kick, Drag, Pull, Breathe, Tap, Feel };
 
-/// "draw", "rest", "kick", "drag", "pull", "breathe": the golden file's names.
+/// "draw", "rest", "kick", "drag", "pull", "breathe", "tap", "feel": the
+/// golden file's names.
 const char* shapeCorpusPhaseName(ShapeCorpusPhase p);
 
 /// One frame of the corpus, after its flush.
@@ -101,7 +111,7 @@ size_t formatShapeCorpusFrame(const ShapeCorpusFrame& f, char* out, size_t n);
  */
 class ShapeCorpus {
 public:
-    static constexpr uint16_t kFrames = 321;
+    static constexpr uint16_t kFrames = 541;
     static constexpr uint32_t kFrameMicros = 33334;
 
     ShapeCorpus() = default;
@@ -127,6 +137,7 @@ private:
     ShapePackGroup pet_;
     int            grab_ = -1;
     FixedVec2      grabAt_{};
+    FixedVec2      feelAt_{};  ///< Where the feel phase's finger landed.
     uint16_t       next_ = 0;
     bool           begun_ = false;
     bool           failed_ = false;

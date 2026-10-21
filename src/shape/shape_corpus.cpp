@@ -19,7 +19,11 @@ constexpr uint16_t kDragEnd = 110;  // last frame that moves the carry target
 constexpr uint16_t kPull = 171;
 constexpr uint16_t kRelease = 191;
 constexpr uint16_t kBreathe = 271;
-static_assert(ShapeCorpus::kFrames == 321, "the script ends at frame 320");
+constexpr uint16_t kTap = 321;       // pointer down; up the frame after
+constexpr uint16_t kFeel = 401;      // pointer down
+constexpr uint16_t kFeelMoveEnd = 431;  // last frame the finger moves
+constexpr uint16_t kThrow = 441;     // pointer up
+static_assert(ShapeCorpus::kFrames == 541, "the script ends at frame 540");
 
 constexpr int kFeetX = 80;
 constexpr int kFeetY = 140;
@@ -33,7 +37,9 @@ ShapeCorpusPhase phaseOf(uint16_t f)
     if (f < kDrag) return ShapeCorpusPhase::Kick;
     if (f < kPull) return ShapeCorpusPhase::Drag;
     if (f < kBreathe) return ShapeCorpusPhase::Pull;
-    return ShapeCorpusPhase::Breathe;
+    if (f < kTap) return ShapeCorpusPhase::Breathe;
+    if (f < kFeel) return ShapeCorpusPhase::Tap;
+    return ShapeCorpusPhase::Feel;
 }
 
 }  // namespace
@@ -69,6 +75,8 @@ const char* shapeCorpusPhaseName(ShapeCorpusPhase p)
         case ShapeCorpusPhase::Drag: return "drag";
         case ShapeCorpusPhase::Pull: return "pull";
         case ShapeCorpusPhase::Breathe: return "breathe";
+        case ShapeCorpusPhase::Tap: return "tap";
+        case ShapeCorpusPhase::Feel: return "feel";
     }
     return "?";
 }
@@ -133,6 +141,26 @@ bool ShapeCorpus::step(ShapeCorpusLayer& layer, ShapeDrawScratch& scratch, Shape
         if (f == kBreathe) {
             ShapeError e;
             pet_.breathe(Breath{}, &e);  // the defaults are in range
+        }
+        // The Feel (ADR-0019): a tap, then a press that comes loose into a drag
+        // and is let go, all through pointer() with the default tunables.
+        if (f == kTap) {
+            pet_.stopBreathing();
+            const FixedVec2 feet = pet_.position();
+            pet_.pointer({feet.x, feet.y - Fixed::fromInt(20)}, true);
+        }
+        if (f == kTap + 1) pet_.pointer(pet_.position() - px(0, 20), false);
+        if (f == kFeel) {
+            feelAt_ = pet_.position() - px(0, 20);
+            pet_.pointer(feelAt_, true);
+        }
+        if (f > kFeel && f < kThrow) {
+            const int k = f <= kFeelMoveEnd ? f - kFeel : kFeelMoveEnd - kFeel;
+            pet_.pointer({feelAt_.x + Fixed::fromInt(k), feelAt_.y - Fixed::fromInt(k)}, true);
+        }
+        if (f == kThrow) {
+            const int k = kFeelMoveEnd - kFeel;
+            pet_.pointer({feelAt_.x + Fixed::fromInt(k), feelAt_.y - Fixed::fromInt(k)}, false);
         }
         const uint32_t t0 = clock ? clock() : 0;
         pet_.tick(kFrameMicros);

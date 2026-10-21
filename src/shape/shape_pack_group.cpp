@@ -276,9 +276,14 @@ bool ShapePackGroup::readSlot(ShapeSlot s, uint16_t id, ShapeError* err)
         pts[i] = {Fixed::fromQ8_8(p.x), Fixed::fromQ8_8(p.y)};
     }
     slot.points = pts;
-    // A new Feature starts in its slot's default pose (the first of the list).
+    // A new Feature starts in its slot's default pose (the first of the list),
+    // as its base, with no Reaction over it.
     const int def = slot.view.findPose(0);
     slot.pose = uint8_t(def < 0 ? 0 : def);
+    base_[uint8_t(s)] = slot.pose;
+    reaction_[uint8_t(s)] = Reaction{};
+    if (s == ShapeSlot::Eyes)
+        closedEyes_ = slot.view.findPose(1);  // "closed", the eyes' second pose
     slot.loaded = true;
     return true;
 }
@@ -304,6 +309,9 @@ bool ShapePackGroup::setLook(const ShapeLook& look, ShapeError* err)
         if (!look.has(s))
         {
             slots_[i].loaded = false;
+            reaction_[i] = Reaction{};
+            if (s == ShapeSlot::Eyes)
+                closedEyes_ = -1;
             continue;
         }
         if (!readSlot(s, look.get(s), err))
@@ -336,7 +344,138 @@ bool ShapePackGroup::setLook(const ShapeLook& look, ShapeError* err)
             breathing_ = startBreath();
         group_.markChanged();
     }
+    // A new Look lets go of a held pet; the finger does nothing until it lifts.
+    pointer_.release(*this);
+    if (blink_.enabled() && closedEyes_ < 0)
+        blink_.stop();
+    refreshShown(ShapeSlot::Eyes);
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// The one grab, the Feel, Reactions and Blinks (ADR-0019, #365)
+// ---------------------------------------------------------------------------
+
+bool ShapePackGroup::hold(FixedVec2 at)
+{
+    if (held_ >= 0)
+        release(held_, {});
+    held_ = grab(at);
+    return held_ >= 0;
+}
+
+void ShapePackGroup::pullTo(FixedVec2 target)
+{
+    if (held_ >= 0)
+        pull(held_, target);
+}
+
+void ShapePackGroup::letGo(FixedVec2 velocity)
+{
+    if (held_ >= 0)
+        release(held_, velocity);
+    held_ = -1;
+}
+
+int ShapePackGroup::findPose(ShapeSlot s, const char* name, const char* what, ShapeError* err) const
+{
+    const Slot& slot = slots_[uint8_t(s)];
+    if (uint8_t(s) >= SHAPE_SLOT_COUNT || !slot.loaded)
+    {
+        setError(err, "%s: no %s in this Look", what, shapeSlotName(s));
+        return -1;
+    }
+    int slotPose = -1;
+    for (uint8_t i = 0; i < shapePoseCount(s); ++i)
+        if (name && std::strcmp(shapePoseName(s, i), name) == 0)
+            slotPose = i;
+    if (slotPose < 0)
+    {
+        setError(err, "%s: %s has no pose \"%s\"", what, shapeSlotName(s), name ? name : "");
+        return -1;
+    }
+    const int rec = slot.view.findPose(uint8_t(slotPose));
+    if (rec < 0)
+        setError(err, "%s: %s %u has no \"%s\" pose", what, shapeSlotName(s), unsigned(look_.get(s)), name);
+    return rec;
+}
+
+void ShapePackGroup::refreshShown(ShapeSlot s)
+{
+    Slot& slot = slots_[uint8_t(s)];
+    if (!slot.loaded)
+        return;
+    const Reaction& re = reaction_[uint8_t(s)];
+    uint8_t rec = re.on ? re.pose : base_[uint8_t(s)];
+    if (s == ShapeSlot::Eyes && blink_.shut() && closedEyes_ >= 0)
+        rec = uint8_t(closedEyes_);
+    if (slot.pose != rec)
+    {
+        slot.pose = rec;
+        group_.markChanged();
+        group_.lattice().wake();
+    }
+}
+
+bool ShapePackGroup::react(ShapeSlot s, const char* name, uint32_t micros, ShapeError* err)
+{
+    const int rec = findPose(s, name, "react", err);
+    if (rec < 0)
+        return false;
+    Reaction& re = reaction_[uint8_t(s)];
+    re.on = micros > 0;
+    re.pose = uint8_t(rec);
+    re.until = clock_ + micros;
+    refreshShown(s);
+    return true;
+}
+
+bool ShapePackGroup::blink(const Blink& b, ShapeError* err)
+{
+    if (!pack_)
+    {
+        setError(err, "blink: the pet is not built");
+        return false;
+    }
+    if (closedEyes_ < 0)
+    {
+        setError(err, "blink: the eyes have no \"closed\" pose");
+        return false;
+    }
+    if (b.everyMax < b.everyMin || b.twicePermille > 1000)
+    {
+        setError(err, "blink: every must be a range lo <= hi, twice within 0..1");
+        return false;
+    }
+    Blink spec = b;
+    if (spec.seed == 0)
+        spec.seed = uint32_t(clock_ ^ (clock_ >> 32)) * 2654435761u + 0x9E3779B9u;
+    blink_.start(spec, clock_);
+    refreshShown(ShapeSlot::Eyes);
+    return true;
+}
+
+void ShapePackGroup::stopBlinking()
+{
+    blink_.stop();
+    refreshShown(ShapeSlot::Eyes);
+}
+
+bool ShapePackGroup::tick(uint32_t dtMicros)
+{
+    clock_ += dtMicros;
+    for (uint8_t i = 0; i < SHAPE_SLOT_COUNT; ++i)
+    {
+        Reaction& re = reaction_[i];
+        if (re.on && clock_ >= re.until)
+        {
+            re.on = false;
+            refreshShown(ShapeSlot(i));
+        }
+    }
+    if (blink_.tick(clock_))
+        refreshShown(ShapeSlot::Eyes);
+    return group_.tick(dtMicros);
 }
 
 void ShapePackGroup::refreshBody()
@@ -625,33 +764,11 @@ int ShapePackGroup::grab(FixedVec2 at)
 
 bool ShapePackGroup::setPose(ShapeSlot s, const char* name, ShapeError* err)
 {
-    Slot& slot = slots_[uint8_t(s)];
-    if (uint8_t(s) >= SHAPE_SLOT_COUNT || !slot.loaded)
-    {
-        setError(err, "pose: no %s in this Look", shapeSlotName(s));
-        return false;
-    }
-    int slotPose = -1;
-    for (uint8_t i = 0; i < shapePoseCount(s); ++i)
-        if (name && std::strcmp(shapePoseName(s, i), name) == 0)
-            slotPose = i;
-    if (slotPose < 0)
-    {
-        setError(err, "pose: %s has no pose \"%s\"", shapeSlotName(s), name ? name : "");
-        return false;
-    }
-    const int rec = slot.view.findPose(uint8_t(slotPose));
+    const int rec = findPose(s, name, "pose", err);
     if (rec < 0)
-    {
-        setError(err, "pose: %s %u has no \"%s\" pose", shapeSlotName(s), unsigned(look_.get(s)), name);
         return false;
-    }
-    if (slot.pose != rec)
-    {
-        slot.pose = uint8_t(rec);
-        group_.markChanged();
-        group_.lattice().wake();
-    }
+    base_[uint8_t(s)] = uint8_t(rec);
+    refreshShown(s);
     return true;
 }
 
