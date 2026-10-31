@@ -41,8 +41,10 @@ def _layer_chunk(name):
     return struct.pack('<IH', len(body) + 6, a2e.CHUNK_LAYER) + body
 
 
-def make_aseprite(width, height, layers):
-    """Serialise a minimal indexed .aseprite. `layers` = [(name, pixels)] bottom→top."""
+def make_aseprite(width, height, layers, grid=(0, 0)):
+    """Serialise a minimal indexed .aseprite. `layers` = [(name, pixels)] bottom→top.
+
+    `grid` is the header's grid size (offsets 40/42; 0x0 = no grid saved)."""
     chunks = b''
     for name, _px in layers:
         chunks += _layer_chunk(name)
@@ -59,6 +61,7 @@ def make_aseprite(width, height, layers):
     header = bytearray(128)
     struct.pack_into('<IH', header, 0, 128 + len(frame), a2e.ASE_MAGIC)
     struct.pack_into('<HHHH', header, 6, 1, width, height, a2e.COLOR_DEPTH_INDEXED)
+    struct.pack_into('<HH', header, 40, grid[0], grid[1])
     return bytes(header) + frame
 
 
@@ -151,10 +154,61 @@ def test_cli_writes_both_files(tmp_path=None):
         assert f.read(2) == b'NJ'
 
 
+# ---------------------------------------------------------------------------
+# 8 px tiles (#372): the tile size comes from --grid, else the file's grid
+# ---------------------------------------------------------------------------
+
+def _build_8px_fixture(grid):
+    """A 16x8 canvas = two 8x8 cells: under floor (1) in both, over canopy (2) on the right."""
+    W, H, T = 16, 8, 8
+    TRANSP = a2e.TRANSPARENT_INDEX
+    under = bytes([1] * (W * H))
+    over = bytes((2 if x >= T else TRANSP) for _y in range(H) for x in range(W))
+    return make_aseprite(W, H, [("under", under), ("over", over)], grid=grid)
+
+
+def _cli(ase_bytes, *extra):
+    import subprocess
+    d = tempfile.mkdtemp()
+    ase_path = io_write(d, "maze.aseprite", ase_bytes)
+    out_base = os.path.join(d, "maze")
+    tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aseprite2enjin.py")
+    subprocess.check_call([sys.executable, tool, ase_path, "--tilemap",
+                           "--output", out_base + ".njn", *extra],
+                          stdout=subprocess.DEVNULL)
+    with open(out_base + ".njn", 'rb') as f:
+        njn = f.read()
+    with open(out_base + ".njm", 'rb') as f:
+        njm = f.read()
+    return njn, njm
+
+
+def test_tile_size_comes_from_the_files_grid():
+    njn, njm = _cli(_build_8px_fixture(grid=(8, 8)))
+    assert njn[:8] == struct.pack('<2sBBBBBB', b'NJ', 1, 8, 8, 3, 1, 0)
+    assert njn[8:] == bytes([0x0F]) * 64 + bytes([0x01]) * 64 + bytes([0x02]) * 64
+    assert njm == struct.pack('<2sBBBBBB', b'NM', 1, 0, 2, 1, 0, 0) \
+        + struct.pack('<HH', 0x0001, 0x8002)
+
+
+def test_grid_flag_overrides_the_files_grid():
+    njn, njm = _cli(_build_8px_fixture(grid=(16, 16)), "--grid", "8x8")
+    assert njn[3:5] == bytes([8, 8])
+    assert njm[4:6] == bytes([2, 1])
+
+
+def test_no_grid_in_the_file_defaults_to_16px():
+    njn, _njm = _cli(_build_fixture())
+    assert njn[3:5] == bytes([16, 16])
+
+
 def _main():
     tests = [test_pack_cell_matches_bit_layout,
              test_tilemap_njn_and_njm_bytes,
-             test_cli_writes_both_files]
+             test_cli_writes_both_files,
+             test_tile_size_comes_from_the_files_grid,
+             test_grid_flag_overrides_the_files_grid,
+             test_no_grid_in_the_file_defaults_to_16px]
     failures = 0
     for t in tests:
         try:

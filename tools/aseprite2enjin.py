@@ -703,6 +703,8 @@ def parse_aseprite_layers(path):
 
     Returns a dict:
         width, height  -- canvas size in pixels
+        grid           -- (w, h) of the file's saved grid, or None when the
+                          header has none (0x0)
         layers         -- list of {'name': str, 'pixels': bytes} in file order
                           (bottom layer first, top layer last)
     """
@@ -722,6 +724,9 @@ def parse_aseprite_layers(path):
             f"Only indexed-color sprites are supported (found {color_depth}-bit). "
             f"In Aseprite: Sprite > Color Mode > Indexed."
         )
+    # Header grid size (WORD width at 40, WORD height at 42; 0 = no grid saved).
+    grid_w, grid_h = struct.unpack_from('<HH', data, 40)
+    grid = (grid_w, grid_h) if grid_w and grid_h else None
 
     # --- Frame 0 only ---
     offset = 128
@@ -768,7 +773,7 @@ def parse_aseprite_layers(path):
             px = bytearray([TRANSPARENT_INDEX] * (width * height))
         layers.append({'name': name, 'pixels': bytes(px)})
 
-    return {'width': width, 'height': height, 'layers': layers}
+    return {'width': width, 'height': height, 'grid': grid, 'layers': layers}
 
 
 # ---------------------------------------------------------------------------
@@ -907,13 +912,21 @@ def parse_grid(value: str):
 
 
 def _run_tilemap(args, input_path):
-    """Tilemap authoring path: emit a .njn tileset + a .njm map (issue #41)."""
-    tile_w, tile_h = args.grid if args.grid else (16, 16)
+    """Tilemap authoring path: emit a .njn tileset + a .njm map (issue #41).
 
+    The tile size is --grid, else the grid saved in the .aseprite (View > Grid
+    Settings; 8x8 for an 8 px tileset, #372), else 16x16.
+    """
     try:
         parsed = parse_aseprite_layers(input_path)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    tile_w, tile_h = args.grid or parsed['grid'] or (16, 16)
+    if tile_w > 255 or tile_h > 255:
+        print(f"Error: tile size {tile_w}x{tile_h} exceeds the 255x255 .njn limit",
+              file=sys.stderr)
         sys.exit(1)
 
     if not parsed['layers']:
@@ -952,7 +965,7 @@ def main():
                         help="Output path; its extension is replaced by .njn and .njm "
                              "(default: next to the input)")
     parser.add_argument("--grid",   default=None, type=parse_grid, metavar="WxH",
-                        help="Tile size (default: 16x16)")
+                        help="Tile size (default: the file's grid, else 16x16)")
     parser.add_argument("--tilemap", action="store_true",
                         help="Tilemap authoring mode: dice under/over layers into a "
                              ".njn tileset + .njm map (the only mode)")

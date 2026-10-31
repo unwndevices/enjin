@@ -360,16 +360,17 @@ public:
     uint16_t tileAtPixel(int16_t px, int16_t py) const;
 
     /**
-     * @brief Paint a single 16×16 cell into a canvas, filtered by band.
+     * @brief Paint a single map cell into a canvas, filtered by band.
      *
      * The presenter's under/over restore filter (issue #34/#41): the under-band
      * layer (L0) restores with band Under, the over-band layer (L2) with band
-     * Over; actors on L1 render between the two. For compositor tile (tx,ty)
-     * this fills the cell's screen region with @p clearColor, then — only if the
-     * cell's band matches @p band and its tile id is non-zero — draws the tile
-     * over it (index 15 within the tile stays transparent, letting clearColor
-     * show through). Cells of the other band, or empty cells, leave just the
-     * clear fill. Honors the tilemap scroll offset like draw().
+     * Over; actors on L1 render between the two. For map cell (tx,ty) this
+     * fills the cell's screen region (tileset cell size, scroll applied) with
+     * @p clearColor, then — only if the cell's band matches @p band and its tile
+     * id is non-zero — draws the tile over it (index 15 within the tile stays
+     * transparent, letting clearColor show through). Cells of the other band,
+     * or empty cells, leave just the clear fill. Honors the tilemap scroll
+     * offset like draw().
      *
      * @param canvas     Target 4-bit canvas (a compositor layer).
      * @param tx         Grid column of the cell.
@@ -380,37 +381,45 @@ public:
      */
     void drawCellBand(ICanvas<Pixel4>& canvas, uint16_t tx, uint16_t ty,
                       Band band, Pixel4 clearColor) const {
-        const int16_t tileW = static_cast<int16_t>(m_sheet.cellW);
-        const int16_t tileH = static_cast<int16_t>(m_sheet.cellH);
-        if (tileW == 0 || tileH == 0) {
+        paintCellBand(canvas, tx, ty, band, clearColor);
+    }
+
+    /**
+     * @brief Paint a screen region from the map, filtered by band (#372).
+     *
+     * The compositor restore source: a dirty compositor tile is a fixed-size
+     * screen square (16 logical px) that need not match the tileset's cell size,
+     * so this paints every map cell overlapping [x, x+w) × [y, y+h) (screen px,
+     * scroll applied) with drawCellBand's rules. Cells outside the map get the
+     * clear fill. Whole cells are painted, so a cell straddling the region edge
+     * also repaints its part outside the region — with the same pixels, as the
+     * map is the layer's source.
+     *
+     * @param canvas     Target 4-bit canvas (a compositor layer).
+     * @param x          Region left edge (screen px).
+     * @param y          Region top edge (screen px).
+     * @param w          Region width.
+     * @param h          Region height.
+     * @param band       Which band this call paints.
+     * @param clearColor Fill for cells this band skips.
+     */
+    void drawRegionBand(ICanvas<Pixel4>& canvas, int16_t x, int16_t y,
+                        uint16_t w, uint16_t h, Band band, Pixel4 clearColor) const {
+        const int tileW = m_sheet.cellW;
+        const int tileH = m_sheet.cellH;
+        if (tileW == 0 || tileH == 0 || w == 0 || h == 0) {
             return;
         }
-        const int16_t px = static_cast<int16_t>((tx * tileW) - m_scrollX);
-        const int16_t py = static_cast<int16_t>((ty * tileH) - m_scrollY);
-
-        // Reset the cell region to the clear colour (setPixel bounds-checks).
-        for (int16_t yy = 0; yy < tileH; ++yy) {
-            for (int16_t xx = 0; xx < tileW; ++xx) {
-                canvas.setPixel(static_cast<int16_t>(px + xx),
-                                static_cast<int16_t>(py + yy), clearColor);
+        const int wx0 = x + m_scrollX;
+        const int wy0 = y + m_scrollY;
+        const int cx0 = cellFloorDiv(wx0, tileW);
+        const int cy0 = cellFloorDiv(wy0, tileH);
+        const int cx1 = cellFloorDiv(wx0 + w - 1, tileW);
+        const int cy1 = cellFloorDiv(wy0 + h - 1, tileH);
+        for (int cy = cy0; cy <= cy1; ++cy) {
+            for (int cx = cx0; cx <= cx1; ++cx) {
+                paintCellBand(canvas, cx, cy, band, clearColor);
             }
-        }
-
-        if (tx >= m_mapW || ty >= m_mapH) {
-            return;
-        }
-        const uint16_t cell = m_tiles[(ty * m_mapW) + tx];
-        const uint16_t tileId = cellTileId(cell);
-        if (tileId == 0) {                                    // transparent cell
-            return;
-        }
-        if (cellBand(cell) != static_cast<uint8_t>(band)) {   // other band
-            return;
-        }
-        if (m_sheet.data != nullptr) {
-            m_sheet.draw(canvas, tileId, px, py,
-                         cellHFlip(cell), cellVFlip(cell),
-                         m_palbanks[cellPalbank(cell) & 0x0F]);
         }
     }
 
@@ -447,6 +456,45 @@ public:
     bool continueToDraw() const override;
 
 private:
+    static int cellFloorDiv(int a, int b) { return (a >= 0) ? a / b : -((-a + b - 1) / b); }
+
+    // drawCellBand for any (possibly off-map, possibly negative) cell index.
+    void paintCellBand(ICanvas<Pixel4>& canvas, int tx, int ty,
+                       Band band, Pixel4 clearColor) const {
+        const int tileW = m_sheet.cellW;
+        const int tileH = m_sheet.cellH;
+        if (tileW == 0 || tileH == 0) {
+            return;
+        }
+        const int16_t px = static_cast<int16_t>((tx * tileW) - m_scrollX);
+        const int16_t py = static_cast<int16_t>((ty * tileH) - m_scrollY);
+
+        // Reset the cell region to the clear colour (setPixel bounds-checks).
+        for (int16_t yy = 0; yy < tileH; ++yy) {
+            for (int16_t xx = 0; xx < tileW; ++xx) {
+                canvas.setPixel(static_cast<int16_t>(px + xx),
+                                static_cast<int16_t>(py + yy), clearColor);
+            }
+        }
+
+        if (tx < 0 || ty < 0 || tx >= m_mapW || ty >= m_mapH) {
+            return;
+        }
+        const uint16_t cell = m_tiles[(ty * m_mapW) + tx];
+        const uint16_t tileId = cellTileId(cell);
+        if (tileId == 0) {                                    // transparent cell
+            return;
+        }
+        if (cellBand(cell) != static_cast<uint8_t>(band)) {   // other band
+            return;
+        }
+        if (m_sheet.data != nullptr) {
+            m_sheet.draw(canvas, tileId, px, py,
+                         cellHFlip(cell), cellVFlip(cell),
+                         m_palbanks[cellPalbank(cell) & 0x0F]);
+        }
+    }
+
     uint16_t    m_tiles[MAX_MAP_W * MAX_MAP_H];  ///< 8192 bytes, zero-alloc on stack
     SpriteSheet m_sheet;                          ///< Tileset (value copy)
     uint8_t     m_mapW{0};                        ///< Active map width in tiles

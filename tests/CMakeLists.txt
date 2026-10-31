@@ -1111,6 +1111,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME tilemap_attr_test COMMAND tilemap_attr_test)
 
+    # Tilemap with an 8x8 tileset: the Marble Maze shape (#372: TM8-01..TM8-07)
+    add_executable(tilemap_8px_test
+        tilemap_8px_test.cpp
+    )
+    target_include_directories(tilemap_8px_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(tilemap_8px_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME tilemap_8px_test COMMAND tilemap_8px_test)
+
     # Tilemap Lua binding test (Phase 43: TMAP-05..TMAP-08)
     add_executable(tilemap_lua_test
         tilemap_lua_test.cpp
