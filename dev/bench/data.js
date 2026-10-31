@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792619848574,
+  "lastUpdate": 1793444463649,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -7939,6 +7939,246 @@ window.BENCHMARK_DATA = {
             "name": "resting Star frame: redraw only (reference)",
             "value": 25678,
             "range": "± 0.31%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": true,
+          "id": "7f50ad78e9a1a2b7854a08ae917b9b595448940e",
+          "message": "Merge Tomodachi integ/maracas-maze (#367: 8 px tiles #372, proxy lifetime fix) into main",
+          "timestamp": "2026-10-31T11:58:23+01:00",
+          "tree_id": "e58b0957d64a0afe98c5b2203f62bd67113fe9fc",
+          "url": "https://github.com/unwndevices/enjin/commit/7f50ad78e9a1a2b7854a08ae917b9b595448940e"
+        },
+        "date": 1793444462564,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 20,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 60,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 60,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 170.5,
+            "range": "± 0.29%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 41209.5,
+            "range": "± 0.21%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 20,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 501,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 2524,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 16306,
+            "range": "± 0.12%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 141,
+            "range": "± 0.71%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 430,
+            "range": "± 2.14%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 791,
+            "range": "± 1.25%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 1552,
+            "range": "± 0.65%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 2294,
+            "range": "± 0.48%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 50,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 50,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 20,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 40,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 60,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 110,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 280.5,
+            "range": "± 6.81%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 20276.5,
+            "range": "± 5.14%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 556,
+            "range": "± 4.71%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 926.5,
+            "range": "± 3.26%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 1552,
+            "range": "± 2.31%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 1773,
+            "range": "± 3.98%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 866,
+            "range": "± 3.4%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 1916.0294,
+            "range": "± 0.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star body: fill",
+            "value": 3956,
+            "range": "± 0.51%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star body: paint",
+            "value": 661,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star (13 Shapes): fill",
+            "value": 10947,
+            "range": "± 0.46%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star (13 Shapes): fill + paint",
+            "value": 12390,
+            "range": "± 0.31%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "5x5 sim: one 30 Hz tick (4 sub-steps)",
+            "value": 1061,
+            "range": "± 1.82%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "warp: the Star's points (13 Shapes)",
+            "value": 1152,
+            "range": "± 0.23%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "moving Star frame: tick + warp + fill + paint",
+            "value": 16521,
+            "range": "± 1.42%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "resting Star frame: redraw only (reference)",
+            "value": 14327.5,
+            "range": "± 0.38%",
             "unit": "ns/op"
           }
         ]
