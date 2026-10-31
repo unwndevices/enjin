@@ -11,10 +11,11 @@ class Component;  // Forward declaration only
  * and bindings.hpp. Component::~Component() sets valid = false before the component
  * is freed, preventing dangling-pointer access from stale Lua proxy references.
  *
- * Only one ComponentProxy should be active per Component at a time.
- * If self:get() is called multiple times for the same Component, the last
- * call overwrites Component::m_luaProxy — previous proxies will not receive
- * destructor notification (accepted v1.6 limitation, documented in STATE.md).
+ * One ComponentProxy per Component: get/add hand out the component's live
+ * proxy again (a weak registry cache in bindings_proxy.cpp), so every Lua
+ * reference goes stale together. The proxy's __gc clears
+ * Component::m_luaProxy, so a component that outlives its collected proxy
+ * does not write into freed Lua memory.
  */
 struct ComponentProxy {
     Component* component;   ///< Non-owning. Do NOT dereference if valid == false.

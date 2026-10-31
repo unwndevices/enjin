@@ -65,6 +65,11 @@ class Object;
 // add("C_Position", {x=5, y=6}) routes to the C++ setters. Fields a component's
 // proxy does not write are silently ignored.
 int pushComponentGet(lua_State* L, Object* owner, const char* typeName);
+
+// Push the Object's ObjectProxy (nil for nullptr) and return 1. One proxy per
+// Object and per Component: these hand out the live proxy again, so every Lua
+// reference goes stale with the thing (bindings_proxy.cpp).
+int pushObjectProxy(lua_State* L, Object* obj);
 int pushComponentAdd(lua_State* L, Object* owner, const char* typeName, int paramsIdx);
 
 class ColliderSet;

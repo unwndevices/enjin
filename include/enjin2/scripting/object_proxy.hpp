@@ -11,10 +11,9 @@ class Object;  // Forward declaration only
  * and bindings.hpp. Object::~Object() sets valid = false before the Object is
  * freed, preventing dangling-pointer access from stale Lua proxy references.
  *
- * Only one ObjectProxy should be active per Object at a time. If
- * engine.scene.find() is called multiple times for the same Object, the last
- * call overwrites Object::m_luaProxy — the previous proxy is NOT invalidated,
- * but also will not receive the destructor notification.
+ * One ObjectProxy per Object: find/spawn hand out the Object's live proxy
+ * again (a weak registry cache in bindings_proxy.cpp), so every Lua reference
+ * goes stale together. The proxy's __gc clears Object::m_luaProxy.
  */
 struct ObjectProxy {
     Object* object;   ///< Non-owning. Do NOT dereference if valid == false.

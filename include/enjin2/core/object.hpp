@@ -246,13 +246,15 @@ public:
 
     /**
      * @brief Register the Lua ObjectProxy associated with this Object.
-     * Called by engine.scene.find() when it wraps this Object in an ObjectProxy
-     * userdata. The destructor will set proxy->valid = false when the Object is
-     * freed. Only one proxy should be active per Object at a time — the last call
-     * overwrites any previous registration.
+     * Called when the bindings wrap this Object in a new ObjectProxy userdata,
+     * and with nullptr by its __gc. The destructor will set proxy->valid = false
+     * when the Object is freed. The bindings keep one proxy per Object.
      * @param proxy Non-owning pointer to the ObjectProxy userdata; nullptr to clear.
      */
     void setLuaProxy(ObjectProxy* proxy) { m_luaProxy = proxy; }
+
+    /// The Lua proxy this Object invalidates when it dies, or nullptr.
+    ObjectProxy* getLuaProxy() const { return m_luaProxy; }
     
     /**
      * @brief Get total number of components

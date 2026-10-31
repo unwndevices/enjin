@@ -691,18 +691,7 @@ int LuaBindings::lua_engine_scene_find(lua_State* L) {
         return 1;
     }
 
-    // Allocate ObjectProxy userdata and attach the "ObjectProxy" metatable
-    auto* proxy = static_cast<enjin2::ObjectProxy*>(
-        lua_newuserdata(L, sizeof(enjin2::ObjectProxy)));
-    proxy->object = obj;
-    proxy->valid  = true;
-    luaL_getmetatable(L, "ObjectProxy");
-    lua_setmetatable(L, -2);
-
-    // Register proxy with Object so its destructor can set valid = false
-    obj->setLuaProxy(proxy);
-
-    return 1;
+    return pushObjectProxy(L, obj);
 }
 
 // --- engine.scene.colliders() — ADR-0003 §4, Tomodachi #80 ---
@@ -799,18 +788,7 @@ int LuaBindings::lua_engine_scene_spawn(lua_State* L) {
         (void)ref;  // ref keeps string alive; leaked intentionally (lives until lua_close)
     }
 
-    // Allocate ObjectProxy userdata and attach the "ObjectProxy" metatable
-    auto* proxy = static_cast<enjin2::ObjectProxy*>(
-        lua_newuserdata(L, sizeof(enjin2::ObjectProxy)));
-    proxy->object = obj;
-    proxy->valid  = true;
-    luaL_getmetatable(L, "ObjectProxy");
-    lua_setmetatable(L, -2);
-
-    // Register proxy with Object so its destructor can set valid = false
-    obj->setLuaProxy(proxy);
-
-    return 1;
+    return pushObjectProxy(L, obj);
 }
 
 // --- engine.scene.destroy(proxy) ---

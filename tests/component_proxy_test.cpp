@@ -8,8 +8,12 @@
  *   PROXY-03: Component destructor sets ComponentProxy.valid = false (C++ level)
  *   PROXY-04: Stale ComponentProxy access raises luaL_error containing "component has been destroyed"
  *   PROXY-04b: "get" key is checked before all other ScriptProxy properties (collision prevention)
+ *   PROXY-05: a dropped proxy, once collected, leaves no back-pointer for the component's destructor
+ *   PROXY-06: every get/add of one component gives the same proxy, so all of them go stale with it
  */
 #include <enjin2/core/object.hpp>
+#include <enjin2/core/scene.hpp>
+#include <enjin2/components/body.hpp>
 #include <enjin2/components/lua_script.hpp>
 #include <enjin2/components/position.hpp>
 #include <enjin2/scripting/component_proxy.hpp>
@@ -288,12 +292,116 @@ static void test_proxy04b_get_priority_over_properties()
     ASSERT(gotViaGet, "PROXY-04b: calling self.get(self, 'C_Position') should return non-nil proxy");
 }
 
+// A bare VM with the proxies and an active scene the test can kill at will.
+struct SceneVm {
+    LuaEngine engine;
+    LuaBindings bindings;
+    Scene* scene = new Scene(1u);
+
+    SceneVm() : bindings(&engine) {
+        engine.initialize();
+        bindings.setFeatures(LuaFeatures::all());
+        bindings.registerAll();
+        bindings.setActiveScene(scene);
+    }
+    ~SceneVm() { killScene(); }
+    void killScene() {
+        bindings.setActiveScene(nullptr);
+        delete scene;
+        scene = nullptr;
+    }
+    bool run(const char* code) { return engine.executeString(code).success; }
+};
+
+// ============================================================
+// PROXY-05: a dropped component proxy is collected before its component dies
+//
+// An applet that drops obj:add()'s result (engine.scene.spawn('x'):add(...))
+// lets the GC free the proxy while the component lives on. The component's
+// destructor must not then write `valid = false` into the freed userdata
+// (a heap-use-after-free under ASan): the proxy's __gc detaches it first.
+// ============================================================
+static void test_proxy05_collected_proxy_detaches()
+{
+    printf("--- PROXY-05: a collected proxy detaches from its component ---\n");
+    SceneVm vm;
+    ASSERT(vm.run("engine.scene.spawn('dropped'):add('C_Body', { radius = 2 })\n"
+                  "engine.scene.spawn('kept'):get('C_Position')\n"
+                  "collectgarbage(); collectgarbage()\n"),
+           "PROXY-05: Lua runs");
+
+    Object* dropped = vm.scene->findByName("dropped");
+    Object* kept = vm.scene->findByName("kept");
+    ASSERT(dropped && kept, "PROXY-05: both objects are in the scene");
+    if (dropped) {
+        ASSERT(dropped->getComponent<C_Body>()->getLuaProxy() == nullptr,
+               "PROXY-05: the collected C_Body proxy no longer hangs off its component");
+    }
+    if (kept) {
+        ASSERT(kept->getPosition()->getLuaProxy() == nullptr,
+               "PROXY-05: the collected C_Position proxy no longer hangs off its component");
+    }
+    // The components die after their proxies were freed: ASan flags any write.
+    vm.killScene();
+}
+
+// ============================================================
+// PROXY-06: one proxy per component
+//
+// get() twice used to make two proxies, and only the last went stale when
+// the component died: the first kept a dangling pointer. Every get/add of a
+// component now returns the one live proxy.
+// ============================================================
+static void test_proxy06_one_proxy_per_component()
+{
+    printf("--- PROXY-06: get/add of one component give one proxy ---\n");
+    SceneVm vm;
+    ASSERT(vm.run("o = engine.scene.spawn('ball')\n"
+                  "a = o:add('C_Body', { radius = 2 })\n"
+                  "b = o:get('C_Body')\n"
+                  "same = rawequal(a, b)\n"
+                  "o:destroy()\n"
+                  "okA = pcall(function() return a.x end)\n"
+                  "okB = pcall(function() return b.x end)\n"),
+           "PROXY-06: Lua runs");
+    ASSERT(vm.engine.getGlobalBool("same", false), "PROXY-06: add then get return the same proxy");
+    ASSERT(!vm.engine.getGlobalBool("okA", true), "PROXY-06: the first proxy went stale with the body");
+    ASSERT(!vm.engine.getGlobalBool("okB", true), "PROXY-06: the second proxy went stale with the body");
+}
+
+// ============================================================
+// PROXY-07: a component that dies and a new one at the same address
+//
+// The proxy cache is keyed by the component's address. A new component the
+// allocator puts at a dead one's address must get a fresh, live proxy, not the
+// dead one's stale proxy.
+// ============================================================
+static void test_proxy07_reused_address_gets_a_fresh_proxy()
+{
+    printf("--- PROXY-07: a reused component address gets a fresh proxy ---\n");
+    SceneVm vm;
+    ASSERT(vm.run("old = {}\n"
+                  "for i = 1, 8 do\n"
+                  "  local o = engine.scene.spawn('b')\n"
+                  "  old[i] = o:add('C_Body', { radius = 2 })\n"
+                  "  o:destroy()\n"
+                  "end\n"
+                  "fresh = engine.scene.spawn('b'):add('C_Body', { radius = 3 })\n"
+                  "ok, r = pcall(function() return fresh.radius end)\n"),
+           "PROXY-07: Lua runs");
+    ASSERT(vm.engine.getGlobalBool("ok", false), "PROXY-07: the new body's proxy is live");
+    ASSERT(vm.engine.getGlobalNumber("r", -1) == 3, "PROXY-07: and reads the new body");
+}
+
 int main() {
     test_proxy01_get_returns_proxy();
     test_proxy02_typed_methods();
     test_proxy03_destructor_invalidation();
     test_proxy04_stale_raises_error();
     test_proxy04b_get_priority_over_properties();
+    test_proxy05_collected_proxy_detaches();
+    test_proxy06_one_proxy_per_component();
+    test_proxy07_reused_address_gets_a_fresh_proxy();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;

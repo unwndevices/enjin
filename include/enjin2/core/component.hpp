@@ -74,7 +74,8 @@ public:
 
     /**
      * @brief Register a Lua-side ComponentProxy for destructor invalidation.
-     * Called by lua_proxy_get_component_impl when allocating a ComponentProxy userdata.
+     * Called when the bindings push a new ComponentProxy userdata, and with nullptr
+     * by its __gc.
      * @param proxy Non-owning pointer to the Lua userdata struct; may be nullptr to clear.
      */
     void setLuaProxy(ComponentProxy* proxy) {
@@ -87,6 +88,9 @@ public:
 #endif
         m_luaProxy = proxy;
     }
+
+    /// The Lua proxy this component invalidates when it dies, or nullptr.
+    ComponentProxy* getLuaProxy() const { return m_luaProxy; }
 
     /**
      * @brief Get the owner object

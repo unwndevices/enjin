@@ -9,6 +9,7 @@
  *   OBJ-PROXY-04: Stale ObjectProxy: Object destructor sets proxy.valid = false
  *   OBJ-PROXY-05: engine.scene.find() returns nil for unknown name (via Lua)
  *   OBJ-PROXY-06: proxy.enable = false disables C_LuaScript; proxy.enable = true re-enables it (C++ level)
+ *   OBJ-PROXY-07: spawn and find of one Object give one proxy, which goes stale with it
  */
 #include <enjin2/core/object.hpp>
 #include <enjin2/core/scene.hpp>
@@ -205,6 +206,41 @@ static void test_objproxy06_enable_disable_cpp_level()
            "OBJ-PROXY-06: getComponent<C_LuaScript>() should return the same component instance");
 }
 
+// ============================================================
+// OBJ-PROXY-07: spawn and find of one Object give one proxy
+// Two proxies of one Object used to leave the first with a dangling pointer
+// once the Object died (only the last was invalidated), and its __gc read it.
+// ============================================================
+static void test_objproxy07_one_proxy_per_object()
+{
+    printf("--- OBJ-PROXY-07: spawn and find give one proxy, stale together ---\n");
+    LuaEngine engine;
+    LuaBindings bindings(&engine);
+    engine.initialize();
+    bindings.setFeatures(LuaFeatures::all());
+    bindings.registerAll();
+    auto* scene = new Scene(1u);
+    bindings.setActiveScene(scene);
+
+    LuaResult r = engine.executeString(
+        "a = engine.scene.spawn('Brick')\n"
+        "b = engine.scene.find('Brick')\n"
+        "same = rawequal(a, b)\n"
+        "a:destroy()\n"
+        "okA = pcall(function() return a.name end)\n"
+        "okB = pcall(function() return b.name end)\n"
+        "c = engine.scene.spawn('Brick')\n"
+        "fresh = rawequal(c, engine.scene.find('Brick')) and c.name == 'Brick'\n");
+    ASSERT(r.success, "OBJ-PROXY-07: Lua runs");
+    ASSERT(engine.getGlobalBool("same", false), "OBJ-PROXY-07: spawn then find return one proxy");
+    ASSERT(!engine.getGlobalBool("okA", true), "OBJ-PROXY-07: the spawn proxy went stale");
+    ASSERT(!engine.getGlobalBool("okB", true), "OBJ-PROXY-07: the find proxy went stale");
+    ASSERT(engine.getGlobalBool("fresh", false), "OBJ-PROXY-07: a new Object gets a live proxy");
+
+    bindings.setActiveScene(nullptr);
+    delete scene;  // the Objects die before the VM; ASan flags a dangling __gc read
+}
+
 int main() {
     test_objproxy01_find_returns_nil_no_scene();
     test_objproxy02_hastag_cpp_level();
@@ -212,6 +248,7 @@ int main() {
     test_objproxy04_stale_proxy_raises_error();
     test_objproxy05_find_returns_nil_for_unknown();
     test_objproxy06_enable_disable_cpp_level();
+    test_objproxy07_one_proxy_per_object();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

@@ -40,21 +40,91 @@ static constexpr const char* kBodyMethods        = "C_Body.methods";
 // (a ComponentProxy userdata, or nil) and return 1.
 //==============================================================================
 
-// Allocate a ComponentProxy userdata for `comp`, attach its per-type metatable,
-// and register it for destructor invalidation. Pushes nil for a null component.
-static int pushComponentProxyUserdata(lua_State* L, Component* comp, const char* metaName) {
-    if (!comp) { lua_pushnil(L); return 1; }
-    auto* cproxy = static_cast<enjin2::ComponentProxy*>(
-        lua_newuserdata(L, sizeof(enjin2::ComponentProxy)));
-    cproxy->component = comp;
-    cproxy->valid = true;
+// One proxy per engine thing. An Object or a Component knows one Lua proxy,
+// the one it invalidates when it dies, so a second proxy for it would keep a
+// dangling pointer (which its __gc would then read). A weak-valued registry
+// table per kind maps the thing's address to its live proxy, and find, spawn,
+// get and add hand that proxy out again.
+static constexpr const char* kObjectProxyCache    = "enjin2.ObjectProxy.cache";
+static constexpr const char* kComponentProxyCache = "enjin2.ComponentProxy.cache";
+
+static void pushProxyCache(lua_State* L, const char* cacheKey) {
+    if (lua_getfield(L, LUA_REGISTRYINDEX, cacheKey) == LUA_TTABLE) return;
+    lua_pop(L, 1);
+    lua_newtable(L);
+    lua_newtable(L);
+    lua_pushliteral(L, "v");
+    lua_setfield(L, -2, "__mode");
+    lua_setmetatable(L, -2);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, LUA_REGISTRYINDEX, cacheKey);
+}
+
+// Push `thing`'s proxy: its live one, else a new `Proxy` userdata with the
+// metatable `metaName`, registered with the thing for destructor invalidation.
+// `field` is the proxy's pointer back to the thing.
+template <typename Proxy, typename Thing>
+static void pushSoleProxy(lua_State* L, const char* cacheKey, Thing* thing,
+                          const char* metaName, Thing* Proxy::*field) {
+    pushProxyCache(L, cacheKey);
+    lua_rawgetp(L, -1, thing);
+    // The address may belong to a dead thing whose stale proxy is still cached;
+    // only the proxy the thing itself holds is its live one.
+    void* cached = lua_touserdata(L, -1);
+    if (cached != nullptr && cached == thing->getLuaProxy()) {
+        lua_remove(L, -2);  // the cache
+        return;
+    }
+    lua_pop(L, 1);
+
+    auto* proxy = static_cast<Proxy*>(lua_newuserdata(L, sizeof(Proxy)));
+    proxy->*field = thing;
+    proxy->valid = true;
     luaL_getmetatable(L, metaName);
     lua_setmetatable(L, -2);
-    // Overwrites any previous proxy (single-proxy-per-component constraint —
-    // accepted v1.6 limitation, matching self:get()).
-    comp->setLuaProxy(cproxy);
+    // A proxy the thing still holds but the cache lost is unreachable and
+    // waiting for its __gc (weak values go before finalizers run): retire it,
+    // so that __gc leaves the new one alone.
+    if (Proxy* old = thing->getLuaProxy()) {
+        old->valid = false;
+        thing->setLuaProxy(nullptr);
+    }
+    thing->setLuaProxy(proxy);
+    lua_pushvalue(L, -1);
+    lua_rawsetp(L, -3, thing);
+    lua_remove(L, -2);  // the cache
+}
+
+int pushObjectProxy(lua_State* L, Object* obj) {
+    if (!obj) { lua_pushnil(L); return 1; }
+    pushSoleProxy<ObjectProxy, Object>(L, kObjectProxyCache, obj, OBJECT_PROXY_METATABLE,
+                                       &ObjectProxy::object);
     return 1;
 }
+
+// Push the ComponentProxy userdata of `comp`; nil for a null component.
+static int pushComponentProxyUserdata(lua_State* L, Component* comp, const char* metaName) {
+    if (!comp) { lua_pushnil(L); return 1; }
+    pushSoleProxy<ComponentProxy, Component>(L, kComponentProxyCache, comp, metaName,
+                                             &ComponentProxy::component);
+    return 1;
+}
+
+// __gc of every component proxy: a collected proxy detaches from its component,
+// so the component's destructor does not write into freed Lua memory.
+static int lua_component_proxy_gc(lua_State* L) {
+    auto* proxy = static_cast<enjin2::ComponentProxy*>(lua_touserdata(L, 1));
+    if (proxy && proxy->valid && proxy->component &&
+        proxy->component->getLuaProxy() == proxy) {
+        proxy->component->setLuaProxy(nullptr);
+    }
+    return 0;
+}
+
+static constexpr LuaApiEntry kComponentProxyGc =
+    luaFunction("__gc", lua_component_proxy_gc, "(c:Component) -> nil",
+                "Detach the component from a collected proxy.",
+                "c: the proxy");
 
 int pushComponentGet(lua_State* L, Object* owner, const char* typeName) {
     if (!owner) { lua_pushnil(L); return 1; }
@@ -1507,7 +1577,7 @@ static int lua_objproxy_newindex_impl(lua_State* L) {
 static int lua_objproxy_gc_impl(lua_State* L) {
     enjin2::ObjectProxy* proxy = static_cast<enjin2::ObjectProxy*>(
         luaL_testudata(L, 1, OBJECT_PROXY_METATABLE));
-    if (proxy && proxy->valid && proxy->object) {
+    if (proxy && proxy->valid && proxy->object && proxy->object->getLuaProxy() == proxy) {
         // Clear the back-pointer so Object::~Object() does not try to
         // write to this proxy's memory after it has been freed by the GC.
         proxy->object->setLuaProxy(nullptr);
@@ -1596,6 +1666,7 @@ static void registerPositionProxy(lua_State* L) {
                     "p: the component\n"
                     "key: \"x\" or \"y\"\n"
                     "value: the new coordinate"),
+        kComponentProxyGc,
     };
     static constexpr LuaApiModule kMetaModule = luaApiModule(
         LuaApiScope::Metatable, "C_Position", "An object's position.", kMeta);
@@ -1622,6 +1693,7 @@ static void registerTimerProxy(lua_State* L) {
         LuaApiScope::Methods, "C_Timer", "Timer methods, called as timer:name(...).", kMethods);
     static constexpr LuaApiEntry kMeta[] = {
         luaTable("__index", kMethodsModule, "The methods; each raises once the component is destroyed."),
+        kComponentProxyGc,
     };
     static constexpr LuaApiModule kMetaModule = luaApiModule(
         LuaApiScope::Metatable, "C_Timer", "An object's callback timers.", kMeta);
@@ -1648,6 +1720,7 @@ static void registerStateMachineProxy(lua_State* L) {
         kMethods);
     static constexpr LuaApiEntry kMeta[] = {
         luaTable("__index", kMethodsModule, "The methods; each raises once the component is destroyed."),
+        kComponentProxyGc,
     };
     static constexpr LuaApiModule kMetaModule = luaApiModule(
         LuaApiScope::Metatable, "C_StateMachine", "An object's state machine.", kMeta);
@@ -1687,6 +1760,7 @@ static void registerCameraProxy(lua_State* L) {
         LuaApiScope::Methods, "C_Camera", "Camera methods, called as cam:name(...).", kMethods);
     static constexpr LuaApiEntry kMeta[] = {
         luaTable("__index", kMethodsModule, "The methods; each raises once the camera is destroyed."),
+        kComponentProxyGc,
     };
     static constexpr LuaApiModule kMetaModule = luaApiModule(
         LuaApiScope::Metatable, "C_Camera", "A scene camera component.", kMeta);
@@ -1752,6 +1826,7 @@ static void registerSpriteProxy(lua_State* L) {
                     "sp: the component\n"
                     "key: the field\n"
                     "value: the new flag"),
+        kComponentProxyGc,
     };
     static constexpr LuaApiModule kMetaModule = luaApiModule(
         LuaApiScope::Metatable, "C_Sprite", "A retained, clip-animated sprite.", kMeta);
@@ -1797,6 +1872,7 @@ static void registerBodyProxy(lua_State* L) {
                     "body: the component\n"
                     "key: the field\n"
                     "value: the new value; a non-number raises, whatever the key"),
+        kComponentProxyGc,
     };
     static constexpr LuaApiModule kMetaModule = luaApiModule(
         LuaApiScope::Metatable, "C_Body", "The single dynamic circle body.", kMeta);
@@ -1893,6 +1969,7 @@ void LuaBindings::registerComponentProxyMetatable() {
     // same methods as the scene-free map handle (engine.tilemap.load, #256).
     static constexpr LuaApiEntry kTilemapProxyMeta[] = {
         luaTable("__index", kTilemapMethodsModule, "The map's methods."),
+        kComponentProxyGc,
     };
     static constexpr LuaApiModule kTilemapProxyMetaModule = luaApiModule(
         LuaApiScope::Metatable, "C_Tilemap", "Map method lookup.", kTilemapProxyMeta);
