@@ -159,10 +159,20 @@ static void testScript() {
     const uint32_t rest = last(ShapeCorpusPhase::Rest).crc;
     ASSERT(last(ShapeCorpusPhase::Kick).crc == rest, "kicked, it settles back to the rest frame");
     ASSERT(first(ShapeCorpusPhase::Drag).crc != rest, "the drag moves it");
-    // The drag carried the feet to (110, 140), and the pull leaves them there.
-    ASSERT(run.endFeet.x == Fixed::fromInt(110) && run.endFeet.y == Fixed::fromInt(140), "the drag ends at (110, 140)");
     const uint32_t moved = last(ShapeCorpusPhase::Drag).crc;
     ASSERT(last(ShapeCorpusPhase::Pull).crc == moved, "pulled and thrown, it settles back to the moved rest frame");
+
+    // The Feel (ADR-0019): the tap wakes and settles back; the finger's pull
+    // comes loose into a drag that carries the feet from (110, 140) by
+    // (+30, -30), clamped to the default bounds' right edge (136), and the
+    // throw leaves them there.
+    ASSERT(first(ShapeCorpusPhase::Tap).index == 321 && !first(ShapeCorpusPhase::Tap).asleep, "the tap's touch wakes it");
+    ASSERT(last(ShapeCorpusPhase::Tap).crc == moved, "tapped, it settles back to the moved rest frame");
+    ASSERT(first(ShapeCorpusPhase::Feel).index == 401 && !first(ShapeCorpusPhase::Feel).asleep, "the finger wakes it");
+    ASSERT(last(ShapeCorpusPhase::Feel).crc != moved, "the drag carried it");
+    ASSERT(!run.frames[440].asleep && !run.frames[441].asleep, "held, then thrown at 441: awake both sides");
+    ASSERT(run.endFeet.x == Fixed::fromInt(136) && run.endFeet.y == Fixed::fromInt(110),
+           "the finger's drag ends at (136, 110)");
 
     // Breathing: two step changes, two redraws, and the jelly never wakes.
     int breathRedraws = 0;
