@@ -58,11 +58,20 @@ struct BodyState {
     float drag{0};        ///< Velocity damping /s (rolling friction).
 };
 
+/// A static collider's handle within its ColliderSet (#384): handed out by the
+/// add* calls, carried by every Contact the collider makes, and taken by
+/// ColliderSet::remove / setEnabled. Never 0 and never reused by the set (not
+/// even after clear()), so a stale id finds nothing. 0 = no id (flippers, which
+/// are addressed by their index).
+using ColliderId = uint32_t;
+
 /// Static line segment (pinball walls; freeform authoring).
 struct SegCollider {
     float ax{0}, ay{0}, bx{0}, by{0};
     float restitution{0.5f};
     uint8_t kind{ColliderKinds::Wall};
+    ColliderId id{0};
+    bool enabled{true};   ///< false: the step skips it (it stays in the set).
 };
 
 /// Static circle (bumpers, posts, goals).
@@ -70,6 +79,8 @@ struct CircleCollider {
     float cx{0}, cy{0}, r{0};
     float restitution{0.5f};
     uint8_t kind{ColliderKinds::Wall};
+    ColliderId id{0};
+    bool enabled{true};
 };
 
 /// Static axis-aligned box (maze walls, derived from SOLID tiles).
@@ -77,6 +88,8 @@ struct AabbCollider {
     float minx{0}, miny{0}, maxx{0}, maxy{0};
     float restitution{0.1f};
     uint8_t kind{ColliderKinds::Wall};
+    ColliderId id{0};
+    bool enabled{true};
 };
 
 /**
@@ -118,8 +131,11 @@ struct ColliderSet {
     std::vector<CircleCollider> circles;
     std::vector<AabbCollider>   aabbs;
     std::vector<Flipper>        flippers;
+    /// The last id handed out; ids count up from 1 for the set's lifetime.
+    ColliderId lastId{0};
 
-    /// Discard every collider (keeps capacity).
+    /// Discard every collider (keeps capacity). Ids are not reset, so an id
+    /// from before the clear finds nothing afterwards.
     void clear() {
         segments.clear();
         circles.clear();
@@ -129,24 +145,42 @@ struct ColliderSet {
     bool empty() const {
         return segments.empty() && circles.empty() && aabbs.empty() && flippers.empty();
     }
+    /// Every collider, disabled ones included.
     size_t count() const {
         return segments.size() + circles.size() + aabbs.size() + flippers.size();
     }
 
-    // ── Freeform sources ──────────────────────────────────────────────────────
+    // ── Freeform sources (each returns the new collider's id) ────────────────
 
-    void addSeg(float ax, float ay, float bx, float by,
-                float restitution = 0.5f, uint8_t kind = ColliderKinds::Wall) {
-        segments.push_back({ax, ay, bx, by, restitution, kind});
+    ColliderId addSeg(float ax, float ay, float bx, float by,
+                      float restitution = 0.5f, uint8_t kind = ColliderKinds::Wall) {
+        segments.push_back({ax, ay, bx, by, restitution, kind, ++lastId});
+        return lastId;
     }
-    void addCircle(float cx, float cy, float r,
-                   float restitution = 0.5f, uint8_t kind = ColliderKinds::Wall) {
-        circles.push_back({cx, cy, r, restitution, kind});
+    ColliderId addCircle(float cx, float cy, float r,
+                         float restitution = 0.5f, uint8_t kind = ColliderKinds::Wall) {
+        circles.push_back({cx, cy, r, restitution, kind, ++lastId});
+        return lastId;
     }
     /// Append an AABB collider by its min/max corners.
-    void addAabb(float minx, float miny, float maxx, float maxy,
-                 float restitution = 0.1f, uint8_t kind = ColliderKinds::Wall) {
-        aabbs.push_back({minx, miny, maxx, maxy, restitution, kind});
+    ColliderId addAabb(float minx, float miny, float maxx, float maxy,
+                       float restitution = 0.1f, uint8_t kind = ColliderKinds::Wall) {
+        aabbs.push_back({minx, miny, maxx, maxy, restitution, kind, ++lastId});
+        return lastId;
+    }
+
+    // ── One collider by id (#384): a brick leaves the wall, a gate opens ─────
+
+    /// Take the collider out of the set; false when no collider has this id.
+    /// The others keep their ids and their order.
+    bool remove(ColliderId id) {
+        return eraseId(segments, id) || eraseId(circles, id) || eraseId(aabbs, id);
+    }
+    /// Switch a collider off (the step passes through it) or back on, keeping
+    /// it in the set; false when no collider has this id.
+    bool setEnabled(ColliderId id, bool on) {
+        return enableId(segments, id, on) || enableId(circles, id, on) ||
+               enableId(aabbs, id, on);
     }
     /// Append a flipper at rest; returns its index for setFlipperActive().
     size_t addFlipper(float pivotX, float pivotY, float length,
@@ -163,13 +197,18 @@ struct ColliderSet {
     // ── Tile-derived source (ADR-0003 §3 → §4) ────────────────────────────────
 
     /// Append one AABB per rect from C_Tilemap::buildSolidRects() — the
-    /// tile-derived half of §4's two collider sources. Returns the count added.
+    /// tile-derived half of §4's two collider sources. Returns the count added;
+    /// when @p ids is given, each new collider's id is appended to it, in rect
+    /// order.
     size_t addSolidRects(const std::vector<Rect>& rects,
-                         float restitution = 0.1f, uint8_t kind = ColliderKinds::Wall) {
+                         float restitution = 0.1f, uint8_t kind = ColliderKinds::Wall,
+                         std::vector<ColliderId>* ids = nullptr) {
         for (const auto& r : rects) {
-            addAabb(static_cast<float>(r.x), static_cast<float>(r.y),
-                    static_cast<float>(r.x + r.width),
-                    static_cast<float>(r.y + r.height), restitution, kind);
+            const ColliderId id =
+                addAabb(static_cast<float>(r.x), static_cast<float>(r.y),
+                        static_cast<float>(r.x + r.width),
+                        static_cast<float>(r.y + r.height), restitution, kind);
+            if (ids) ids->push_back(id);
         }
         return rects.size();
     }
@@ -193,6 +232,28 @@ struct ColliderSet {
         flippers[i].snapAngle(angle);
         return true;
     }
+
+private:
+    template <typename C>
+    static bool eraseId(std::vector<C>& v, ColliderId id) {
+        if (id == 0) return false;
+        for (auto it = v.begin(); it != v.end(); ++it) {
+            if (it->id != id) continue;
+            v.erase(it);
+            return true;
+        }
+        return false;
+    }
+    template <typename C>
+    static bool enableId(std::vector<C>& v, ColliderId id, bool on) {
+        if (id == 0) return false;
+        for (auto& c : v) {
+            if (c.id != id) continue;
+            c.enabled = on;
+            return true;
+        }
+        return false;
+    }
 };
 
 /// One resolved hit this step. The step buffers these; the applet reads the
@@ -204,6 +265,7 @@ struct Contact {
     float nx{0};       ///< Contact normal (unit, points away from collider).
     float ny{0};
     float relSpeed{0}; ///< Approach speed along the normal (for SFX/score scaling).
+    ColliderId id{0};  ///< Which collider was hit; 0 for a flipper.
 };
 
 /// Per-frame step health counters.
@@ -219,6 +281,7 @@ struct SweepHit {
     uint8_t kind{0};
     float restitution{0};
     const Flipper* flipper{nullptr};  ///< Non-null when the surface is a moving segment.
+    ColliderId id{0};
 };
 
 namespace detail {
@@ -373,7 +436,7 @@ inline void flipperSeg(const Flipper& f, float& ax, float& ay, float& bx, float&
 /// when the body is already separating (vn ≥ 0), so a polled relSpeed is
 /// always ≥ 0. Shared by the swept TOI loop and the depenetration pass.
 inline bool impulse(BodyState& body, float nx, float ny, float e,
-                    uint8_t kind, float sx, float sy,
+                    uint8_t kind, ColliderId id, float sx, float sy,
                     std::vector<Contact>& contacts) {
     float rvx = body.vx - sx, rvy = body.vy - sy;
     const float vn = rvx * nx + rvy * ny;
@@ -383,21 +446,21 @@ inline bool impulse(BodyState& body, float nx, float ny, float e,
     body.vx = rvx + sx;
     body.vy = rvy + sy;
     contacts.push_back({kind, body.x - nx * body.radius, body.y - ny * body.radius,
-                        nx, ny, -vn});
+                        nx, ny, -vn, id});
     return true;
 }
 
 /// Push the ball out of penetration along the normal, then apply the impulse.
 /// This is the depenetration+impulse step swept alone lacks.
 inline void resolveContact(BodyState& body, float nx, float ny, float pen, float e,
-                           uint8_t kind, float sx, float sy,
+                           uint8_t kind, ColliderId id, float sx, float sy,
                            std::vector<Contact>& contacts) {
     constexpr float SLOP = 0.005f;
     if (pen > SLOP) {
         body.x += nx * pen;
         body.y += ny * pen;
     }
-    impulse(body, nx, ny, e, kind, sx, sy, contacts);
+    impulse(body, nx, ny, e, kind, id, sx, sy, contacts);
 }
 
 /// Static depenetration pass over the whole set at its current pose (flippers
@@ -406,6 +469,7 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
                         std::vector<Contact>& contacts) {
     const float r = body.radius;
     for (const auto& cc : set.circles) {
+        if (!cc.enabled) continue;
         const float dx = body.x - cc.cx, dy = body.y - cc.cy;
         const float d = std::hypot(dx, dy);
         const float sum = cc.r + r;
@@ -413,10 +477,11 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
             const float nx = d > 1e-6f ? dx / d : 1.0f;
             const float ny = d > 1e-6f ? dy / d : 0.0f;
             resolveContact(body, nx, ny, sum - d, bounce(body, cc.restitution),
-                           cc.kind, 0.0f, 0.0f, contacts);
+                           cc.kind, cc.id, 0.0f, 0.0f, contacts);
         }
     }
     for (const auto& s : set.segments) {
+        if (!s.enabled) continue;
         float cx, cy;
         closestOnSeg(body.x, body.y, s.ax, s.ay, s.bx, s.by, cx, cy);
         const float dx = body.x - cx, dy = body.y - cy;
@@ -425,10 +490,11 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
             const float nx = d > 1e-6f ? dx / d : 1.0f;
             const float ny = d > 1e-6f ? dy / d : 0.0f;
             resolveContact(body, nx, ny, r - d, bounce(body, s.restitution),
-                           s.kind, 0.0f, 0.0f, contacts);
+                           s.kind, s.id, 0.0f, 0.0f, contacts);
         }
     }
     for (const auto& a : set.aabbs) {
+        if (!a.enabled) continue;
         const float cx = a.minx > body.x ? a.minx : (body.x < a.maxx ? body.x : a.maxx);
         const float cy = a.miny > body.y ? a.miny : (body.y < a.maxy ? body.y : a.maxy);
         if (cx == body.x && cy == body.y) {
@@ -442,13 +508,13 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
             else if (m == dt) ny = -1.0f;
             else ny = 1.0f;
             resolveContact(body, nx, ny, m + r, bounce(body, a.restitution),
-                           a.kind, 0.0f, 0.0f, contacts);
+                           a.kind, a.id, 0.0f, 0.0f, contacts);
         } else {
             const float dx = body.x - cx, dy = body.y - cy;
             const float d = std::hypot(dx, dy);
             if (d < r && d > 1e-6f) {
                 resolveContact(body, dx / d, dy / d, r - d, bounce(body, a.restitution),
-                               a.kind, 0.0f, 0.0f, contacts);
+                               a.kind, a.id, 0.0f, 0.0f, contacts);
             }
         }
     }
@@ -465,7 +531,7 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
             float svx, svy;
             flipperSurfaceVel(f, cx, cy, svx, svy);
             resolveContact(body, nx, ny, r - d, bounce(body, f.restitution),
-                           f.kind, svx, svy, contacts);
+                           f.kind, 0, svx, svy, contacts);
         }
     }
 }
@@ -535,35 +601,38 @@ inline void stepFrame(BodyState& body, ColliderSet& set,
             SweepHit best;
             bool any = false;
             auto consider = [&](float t, float nx, float ny, uint8_t kind, float rest,
-                                const Flipper* flipper) {
+                                const Flipper* flipper, ColliderId id) {
                 if (!any || t < best.t) {
-                    best = {t, nx, ny, kind, rest, flipper};
+                    best = {t, nx, ny, kind, rest, flipper, id};
                     any = true;
                 }
             };
 
             float tt, nx, ny;
             for (const auto& s : set.segments) {
-                if (detail::sweepSegment(body.x, body.y, dx, dy, body.radius,
+                if (s.enabled &&
+                    detail::sweepSegment(body.x, body.y, dx, dy, body.radius,
                                          s.ax, s.ay, s.bx, s.by, tt, nx, ny))
-                    consider(tt, nx, ny, s.kind, s.restitution, nullptr);
+                    consider(tt, nx, ny, s.kind, s.restitution, nullptr, s.id);
             }
             for (const auto& cc : set.circles) {
-                if (detail::raySphere(body.x, body.y, dx, dy, cc.cx, cc.cy,
+                if (cc.enabled &&
+                    detail::raySphere(body.x, body.y, dx, dy, cc.cx, cc.cy,
                                       cc.r + body.radius, tt, nx, ny))
-                    consider(tt, nx, ny, cc.kind, cc.restitution, nullptr);
+                    consider(tt, nx, ny, cc.kind, cc.restitution, nullptr, cc.id);
             }
             for (const auto& a : set.aabbs) {
-                if (detail::sweepAabb(body.x, body.y, dx, dy, body.radius,
+                if (a.enabled &&
+                    detail::sweepAabb(body.x, body.y, dx, dy, body.radius,
                                       a.minx, a.miny, a.maxx, a.maxy, tt, nx, ny))
-                    consider(tt, nx, ny, a.kind, a.restitution, nullptr);
+                    consider(tt, nx, ny, a.kind, a.restitution, nullptr, a.id);
             }
             for (const auto& f : set.flippers) {
                 float sax, say, sbx, sby;
                 detail::flipperSeg(f, sax, say, sbx, sby);
                 if (detail::sweepSegment(body.x, body.y, dx, dy, body.radius,
                                          sax, say, sbx, sby, tt, nx, ny))
-                    consider(tt, nx, ny, f.kind, f.restitution, &f);
+                    consider(tt, nx, ny, f.kind, f.restitution, &f, 0);
             }
 
             if (!any) {
@@ -591,7 +660,7 @@ inline void stepFrame(BodyState& body, ColliderSet& set,
             }
             if (!detail::impulse(body, best.nx, best.ny,
                                  detail::bounce(body, best.restitution),
-                                 best.kind, sx, sy, contacts)) {
+                                 best.kind, best.id, sx, sy, contacts)) {
                 // Separating hit: only a flipper whose surface is moving away
                 // faster than the ball can produce one, since static sweeps only
                 // report approaching hits. There is nothing to reflect; finish the

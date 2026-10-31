@@ -16,6 +16,7 @@
 #include <enjin2/graphics/sprite.hpp>
 #include <enjin2/scripting/bindings.hpp>
 #include <enjin2/scripting/lua_engine.hpp>
+#include <enjin2/scripting/tilemap_lua.hpp>
 #include <cstdio>
 #include <cmath>
 
@@ -179,6 +180,71 @@ static void test_flipper_launch_lua() {
     ASSERT(f.num("finalY") < 146.0, "ball left the flipper after launch");
 }
 
+static void test_collider_ids_lua() {
+    printf("--- BODY-LUA-05: collider ids, contact.id, remove and setEnabled (#384) ---\n");
+    Fixture f;
+
+    // A brick above a floor: the ball lands on the brick until it is switched
+    // off or removed, and each contact names the collider it hit.
+    f.exec(
+        "col = engine.scene.colliders()\n"
+        "brick = col:addAabb(0, 100, 160, 104, 0.2, 0)\n"
+        "floor = col:addSeg(0, 140, 160, 140, 0.2, 0)\n"
+        "post = col:addCircle(300, 300, 4)\n"
+        "o = engine.scene.spawn()\n"
+        "body = o:add('C_Body', {radius=4, restitution=0.2})\n"
+        "body:setColliders(col)\n"
+        "body:setGravity(0, 320)\n"
+        "function drop()\n"
+        "  body.x, body.y, body.vx, body.vy = 80, 80, 0, 0\n"
+        "  local first = nil\n"
+        "  for i = 1, 60 do\n"
+        "    body:step(1/30)\n"
+        "    if not first and body:numContacts() > 0 then first = body:contact(1).id end\n"
+        "  end\n"
+        "  return first, body.y\n"
+        "end\n"
+        "hit1, y1 = drop()\n"
+        "off = col:setEnabled(brick, false)\n"
+        "hit2, y2 = drop()\n"
+        "on = col:setEnabled(brick, true)\n"
+        "hit3 = drop()\n"
+        "removed = col:remove(brick)\n"
+        "again = col:remove(brick)\n"
+        "hit4 = drop()\n"
+        "distinct = brick ~= floor and floor ~= post\n"
+    );
+
+    // Two solid tiles apart on one row: two rects, two ids.
+    lua_State* L = f.engine.getState();
+    C_Tilemap* tm = lua::pushTilemap(L);
+    static uint8_t sheetData[16 * 16] = {0};
+    tm->setSheet(SpriteSheet(sheetData, 16, 16, 1, 1));
+    TileAttr attrs[2] = {};
+    attrs[1].flags |= TileAttr::FLAG_SOLID;
+    tm->setAttrs(attrs, 2);
+    uint8_t cells[3] = {1, 0, 1};
+    tm->setTiles(cells, 3, 1);
+    lua_setglobal(L, "map");
+    f.exec("n, ids = col:addSolidRects(map, 0.1, 0)\n");
+
+    ASSERT(f.b("distinct") && f.num("brick") > 0, "addAabb/addSeg/addCircle return distinct ids");
+    ASSERT(f.num("hit1") == f.num("brick"), "contact.id names the brick the ball landed on");
+    ASSERT(std::fabs(f.num("y1") - 96.0) < 1.0, "the ball rests on the brick");
+    ASSERT(f.b("off"), "setEnabled(id, false) returns true for a known id");
+    ASSERT(f.num("hit2") == f.num("floor"), "a disabled brick lets the ball through to the floor");
+    ASSERT(std::fabs(f.num("y2") - 136.0) < 1.0, "the ball rests on the floor");
+    ASSERT(f.b("on") && f.num("hit3") == f.num("brick"), "setEnabled(id, true) brings it back");
+    ASSERT(f.b("removed") && !f.b("again"), "remove(id) is true once, then false");
+    ASSERT(f.num("hit4") == f.num("floor"), "after remove the floor is hit");
+
+    LuaResult r = f.engine.executeString(
+        "assert(n == 2 and type(ids) == 'table' and #ids == 2)\n"
+        "assert(ids[1] ~= ids[2] and ids[1] > post)\n"
+        "assert(col:remove(ids[2]))\n");
+    ASSERT(r.success, "addSolidRects returns its count and a table of the ids it gave out");
+}
+
 // ---------------------------------------------------------------------------
 // Tile-derived colliders (ADR-0003 §4): C_Tilemap::buildSolidRects() over SOLID
 // attrs feeds the ColliderSet via addSolidRects — the maze (tile) half of the
@@ -232,6 +298,7 @@ int main() {
     test_floor_rest_lua();
     test_bouncy_contact_poll();
     test_flipper_launch_lua();
+    test_collider_ids_lua();
     test_tile_derived_colliders();
 
     printf("\n%d passed, %d failed\n", passes, failures);

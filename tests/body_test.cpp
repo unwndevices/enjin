@@ -10,6 +10,8 @@
 //   PHYS-BODY-04  ball slides along a floor; contacts report the surface point
 //   PHYS-BODY-05  C_Body (the component) polls contacts from C++
 //   PHYS-BODY-06  a flipper moving away from the ball does not stall the TOI loop
+//   PHYS-BODY-07  every collider has an id: contacts carry it, remove(id) and
+//                 setEnabled(id, on) take one collider out (#384)
 #include <enjin2/core/colliders.hpp>
 #include <enjin2/core/object.hpp>
 #include <enjin2/components/body.hpp>
@@ -264,6 +266,83 @@ static void test_flipper_moving_away() {
     ASSERT(stats.toiIters < 40, msg);
 }
 
+// A ball dropped onto two stacked floors; the upper one (a brick) is what the
+// ball hits, until it is removed or disabled.
+static void test_collider_ids() {
+    printf("--- PHYS-BODY-07: collider ids in contacts, remove and setEnabled (#384) ---\n");
+    ColliderSet set;
+    const uint32_t brick = set.addAabb(-100, 100, 100, 104, 0.2f, ColliderKinds::Wall);
+    const uint32_t floor = set.addSeg(-100, 140, 100, 140, 0.2f);
+    const uint32_t post  = set.addCircle(300, 300, 4, 0.5f);
+    ASSERT(brick != 0 && floor != 0 && post != 0, "addAabb/addSeg/addCircle return a non-zero id");
+    ASSERT(brick != floor && floor != post && brick != post, "ids are distinct across kinds");
+
+    auto dropOnto = [&](uint32_t& firstHitId, float& restY) {
+        BodyState b;
+        b.x = 0; b.y = 80; b.radius = 4; b.restitution = 0.2f;
+        firstHitId = 0;
+        run(b, set, 0.0f, 320.0f, 60, 4, true, [&](int, const std::vector<Contact>& cs) {
+            if (firstHitId == 0 && !cs.empty()) firstHitId = cs.front().id;
+        });
+        restY = b.y;
+    };
+
+    uint32_t hit = 0;
+    float restY = 0;
+    dropOnto(hit, restY);
+    ASSERT(hit == brick, "the contact carries the id of the collider hit (the brick)");
+    ASSERT(std::fabs(restY - 96.0f) < 1.0f, "the ball rests on the brick");
+
+    ASSERT(set.setEnabled(brick, false), "setEnabled(id, false) finds the brick");
+    dropOnto(hit, restY);
+    ASSERT(hit == floor, "a disabled brick is passed through: the floor is hit");
+    ASSERT(std::fabs(restY - 136.0f) < 1.0f, "the ball rests on the floor below the disabled brick");
+    ASSERT(set.count() == 3, "a disabled collider is still in the set");
+
+    ASSERT(set.setEnabled(brick, true), "setEnabled(id, true) brings it back");
+    dropOnto(hit, restY);
+    ASSERT(hit == brick, "the re-enabled brick is hit again");
+
+    ASSERT(set.remove(brick), "remove(id) finds the brick");
+    ASSERT(!set.remove(brick), "a second remove of the same id finds nothing");
+    ASSERT(!set.setEnabled(brick, true), "setEnabled of a removed id finds nothing");
+    ASSERT(set.count() == 2, "remove takes the collider out of the set");
+    dropOnto(hit, restY);
+    ASSERT(hit == floor, "after remove the floor is hit");
+
+    // Ids are never reused, even after clear(): a stale id cannot hit a new collider.
+    set.clear();
+    const uint32_t fresh = set.addAabb(0, 0, 1, 1);
+    ASSERT(fresh != brick && fresh != floor && fresh != post, "ids are not reused after clear()");
+    ASSERT(!set.remove(floor), "a stale id from before clear() removes nothing");
+    ASSERT(set.count() == 1, "the new collider survived the stale remove");
+
+    // addSolidRects reports the ids it gave out.
+    std::vector<uint32_t> ids;
+    std::vector<Rect> rects(2);
+    rects[0].x = 0;  rects[0].y = 0; rects[0].width = 16; rects[0].height = 16;
+    rects[1].x = 32; rects[1].y = 0; rects[1].width = 16; rects[1].height = 16;
+    const size_t n = set.addSolidRects(rects, 0.1f, ColliderKinds::Wall, &ids);
+    ASSERT(n == 2 && ids.size() == 2, "addSolidRects hands back one id per rect");
+    ASSERT(ids.size() == 2 && ids[0] != ids[1] && ids[0] != fresh, "solid-rect ids are distinct");
+    ASSERT(ids.size() == 2 && set.remove(ids[1]) && set.count() == 2,
+           "a solid rect can be removed by id");
+
+    // Flipper contacts carry id 0: a flipper is addressed by its index.
+    BodyState b;
+    b.x = 65; b.y = 146; b.radius = 4; b.restitution = 0.2f;
+    ColliderSet fs = makeFlipperSet();
+    bool sawFlipper = false, flipperIdZero = true;
+    run(b, fs, 0.0f, 320.0f, 30, 4, true, [&](int, const std::vector<Contact>& cs) {
+        for (const auto& c : cs) {
+            if (c.kind != ColliderKinds::Flipper) continue;
+            sawFlipper = true;
+            if (c.id != 0) flipperIdZero = false;
+        }
+    });
+    ASSERT(sawFlipper && flipperIdZero, "a flipper's contacts carry id 0");
+}
+
 int main() {
     test_rest_no_tunnel();
     test_swept_vs_naive();
@@ -271,6 +350,7 @@ int main() {
     test_slide_and_contact_point();
     test_component_contact_poll();
     test_flipper_moving_away();
+    test_collider_ids();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;

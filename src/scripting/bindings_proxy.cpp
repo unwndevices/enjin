@@ -1205,14 +1205,15 @@ static int lua_body_numContacts(lua_State* L) {
     return 1;
 }
 
-// body:contact(i) -> {kind, x, y, nx, ny, relSpeed} | nil
+// body:contact(i) -> {kind, id, x, y, nx, ny, relSpeed} | nil
 static int lua_body_contact(lua_State* L) {
     CBODY_PROXY_CHECK(L, body);
     const size_t i = static_cast<size_t>(luaL_checkinteger(L, 2));
     const enjin2::Contact* c = body->contact(i - 1);  // 1-based from Lua
     if (!c) { lua_pushnil(L); return 1; }
-    lua_createtable(L, 0, 5);
+    lua_createtable(L, 0, 7);
     lua_pushinteger(L, c->kind);          lua_setfield(L, -2, "kind");
+    lua_pushinteger(L, static_cast<lua_Integer>(c->id)); lua_setfield(L, -2, "id");
     lua_pushnumber(L, c->px);             lua_setfield(L, -2, "x");
     lua_pushnumber(L, c->py);             lua_setfield(L, -2, "y");
     lua_pushnumber(L, c->nx);             lua_setfield(L, -2, "nx");
@@ -1282,54 +1283,84 @@ static size_t luaFlipperIndex(lua_State* L, int arg, const enjin2::ColliderSet& 
     return static_cast<size_t>(i - 1);
 }
 
-// colliders:addSeg(ax, ay, bx, by, restitution, kind)
+// colliders:addSeg(ax, ay, bx, by, restitution, kind) -> id
 static int lua_colliders_addSeg(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
-    set->addSeg(static_cast<float>(luaL_checknumber(L, 2)),
-                static_cast<float>(luaL_checknumber(L, 3)),
-                static_cast<float>(luaL_checknumber(L, 4)),
-                static_cast<float>(luaL_checknumber(L, 5)),
-                static_cast<float>(luaL_optnumber(L, 6, 0.5f)),
-                static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
-    return 0;
+    const enjin2::ColliderId id = set->addSeg(
+        static_cast<float>(luaL_checknumber(L, 2)),
+        static_cast<float>(luaL_checknumber(L, 3)),
+        static_cast<float>(luaL_checknumber(L, 4)),
+        static_cast<float>(luaL_checknumber(L, 5)),
+        static_cast<float>(luaL_optnumber(L, 6, 0.5f)),
+        static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
+    lua_pushinteger(L, static_cast<lua_Integer>(id));
+    return 1;
 }
 
-// colliders:addCircle(cx, cy, r, restitution, kind)
+// colliders:addCircle(cx, cy, r, restitution, kind) -> id
 static int lua_colliders_addCircle(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
-    set->addCircle(static_cast<float>(luaL_checknumber(L, 2)),
-                   static_cast<float>(luaL_checknumber(L, 3)),
-                   static_cast<float>(luaL_checknumber(L, 4)),
-                   static_cast<float>(luaL_optnumber(L, 5, 0.5f)),
-                   static_cast<uint8_t>(luaL_optinteger(L, 6, enjin2::ColliderKinds::Wall)));
-    return 0;
+    const enjin2::ColliderId id = set->addCircle(
+        static_cast<float>(luaL_checknumber(L, 2)),
+        static_cast<float>(luaL_checknumber(L, 3)),
+        static_cast<float>(luaL_checknumber(L, 4)),
+        static_cast<float>(luaL_optnumber(L, 5, 0.5f)),
+        static_cast<uint8_t>(luaL_optinteger(L, 6, enjin2::ColliderKinds::Wall)));
+    lua_pushinteger(L, static_cast<lua_Integer>(id));
+    return 1;
 }
 
-// colliders:addAabb(minx, miny, maxx, maxy, restitution, kind) — min/max
+// colliders:addAabb(minx, miny, maxx, maxy, restitution, kind) -> id — min/max
 // corners, the same argument order as ColliderSet::addAabb.
 static int lua_colliders_addAabb(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
-    set->addAabb(static_cast<float>(luaL_checknumber(L, 2)),
-                 static_cast<float>(luaL_checknumber(L, 3)),
-                 static_cast<float>(luaL_checknumber(L, 4)),
-                 static_cast<float>(luaL_checknumber(L, 5)),
-                 static_cast<float>(luaL_optnumber(L, 6, 0.1f)),
-                 static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
-    return 0;
+    const enjin2::ColliderId id = set->addAabb(
+        static_cast<float>(luaL_checknumber(L, 2)),
+        static_cast<float>(luaL_checknumber(L, 3)),
+        static_cast<float>(luaL_checknumber(L, 4)),
+        static_cast<float>(luaL_checknumber(L, 5)),
+        static_cast<float>(luaL_optnumber(L, 6, 0.1f)),
+        static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
+    lua_pushinteger(L, static_cast<lua_Integer>(id));
+    return 1;
 }
 
-// colliders:addSolidRects(map, restitution, kind) -> int
+// colliders:addSolidRects(map, restitution, kind) -> int, ids
 // Derive AABBs from a tilemap's SOLID attrs (ADR-0003 §3 buildSolidRects) and
 // append them to the set — the "tile-derived AABBs" half of §4's two collider
-// sources. Returns the number of rects added.
+// sources. Returns the number of rects added and a list of their ids.
 static int lua_colliders_addSolidRects(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
     auto* tm = lua::checkTilemap(L, 2);
-    const size_t n = set->addSolidRects(
-        tm->buildSolidRects(),
-        static_cast<float>(luaL_optnumber(L, 3, 0.1f)),
-        static_cast<uint8_t>(luaL_optinteger(L, 4, enjin2::ColliderKinds::Wall)));
+    const float restitution = static_cast<float>(luaL_optnumber(L, 3, 0.1f));
+    const auto kind = static_cast<uint8_t>(luaL_optinteger(L, 4, enjin2::ColliderKinds::Wall));
+    // The set hands out consecutive ids, so the list is first..first+n-1; the
+    // rect vector dies before any Lua allocation (which could longjmp past it).
+    const enjin2::ColliderId first = set->lastId + 1;
+    const size_t n = set->addSolidRects(tm->buildSolidRects(), restitution, kind);
     lua_pushinteger(L, static_cast<lua_Integer>(n));
+    lua_createtable(L, static_cast<int>(n), 0);
+    for (size_t i = 0; i < n; ++i) {
+        lua_pushinteger(L, static_cast<lua_Integer>(first + i));
+        lua_rawseti(L, -2, static_cast<lua_Integer>(i + 1));
+    }
+    return 2;
+}
+
+// colliders:remove(id) -> boolean
+static int lua_colliders_remove(lua_State* L) {
+    COLLIDERSET_PROXY_CHECK(L, set);
+    const lua_Integer id = luaL_checkinteger(L, 2);
+    lua_pushboolean(L, id > 0 && set->remove(static_cast<enjin2::ColliderId>(id)));
+    return 1;
+}
+
+// colliders:setEnabled(id, on) -> boolean
+static int lua_colliders_setEnabled(lua_State* L) {
+    COLLIDERSET_PROXY_CHECK(L, set);
+    const lua_Integer id = luaL_checkinteger(L, 2);
+    const bool on = lua_toboolean(L, 3) != 0;
+    lua_pushboolean(L, id > 0 && set->setEnabled(static_cast<enjin2::ColliderId>(id), on));
     return 1;
 }
 
@@ -1854,8 +1885,10 @@ static void registerBodyProxy(lua_State* L) {
         luaFunction("numContacts", lua_body_numContacts, "() -> int",
                     "How many contacts the last step made."),
         luaFunction("contact", lua_body_contact, "(i:int) -> contact:table?",
-                    "A contact of the last step: {kind, x, y, nx, ny, relSpeed}; nil past the end.",
-                    "i: the contact, from 1"),
+                    "A contact of the last step: {kind, id, x, y, nx, ny, relSpeed}; nil past "
+                    "the end.",
+                    "i: the contact, from 1")
+            .note("id is the collider hit, as its add call returned it (0 for a flipper)."),
     };
     static constexpr LuaApiModule kMethodsModule = luaApiModule(
         LuaApiScope::Methods, "C_Body", "Body methods, called as body:name(...).", kMethods);
@@ -1885,8 +1918,8 @@ static void registerColliderSetProxy(lua_State* L) {
     static constexpr LuaApiEntry kMethods[] = {
         luaFunction("addSeg", lua_colliders_addSeg,
                     "(ax:number, ay:number, bx:number, by:number, restitution:number?=0.5, "
-                    "kind:int?=0) -> nil",
-                    "Add a line segment collider.",
+                    "kind:int?=0) -> id:int",
+                    "Add a line segment collider; returns its id.",
                     "ax: start column\n"
                     "ay: start row\n"
                     "bx: end column\n"
@@ -1894,8 +1927,9 @@ static void registerColliderSetProxy(lua_State* L) {
                     "restitution: bounciness, 0..1\n"
                     "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
         luaFunction("addCircle", lua_colliders_addCircle,
-                    "(cx:number, cy:number, r:number, restitution:number?=0.5, kind:int?=0) -> nil",
-                    "Add a circle collider.",
+                    "(cx:number, cy:number, r:number, restitution:number?=0.5, kind:int?=0) "
+                    "-> id:int",
+                    "Add a circle collider; returns its id.",
                     "cx: centre column\n"
                     "cy: centre row\n"
                     "r: radius\n"
@@ -1903,8 +1937,8 @@ static void registerColliderSetProxy(lua_State* L) {
                     "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
         luaFunction("addAabb", lua_colliders_addAabb,
                     "(minX:number, minY:number, maxX:number, maxY:number, "
-                    "restitution:number?=0.1, kind:int?=0) -> nil",
-                    "Add a rectangle collider by its corners.",
+                    "restitution:number?=0.1, kind:int?=0) -> id:int",
+                    "Add a rectangle collider by its corners; returns its id.",
                     "minX: left edge\n"
                     "minY: top edge\n"
                     "maxX: right edge\n"
@@ -1912,11 +1946,23 @@ static void registerColliderSetProxy(lua_State* L) {
                     "restitution: bounciness, 0..1\n"
                     "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
         luaFunction("addSolidRects", lua_colliders_addSolidRects,
-                    "(map:Tilemap, restitution:number?=0.1, kind:int?=0) -> int",
-                    "Add rectangles covering a map's solid tiles; returns how many.",
+                    "(map:Tilemap, restitution:number?=0.1, kind:int?=0) -> n:int, ids:table",
+                    "Add rectangles covering a map's solid tiles; returns how many, and a "
+                    "list of their ids.",
                     "map: a map handle or a scene C_Tilemap\n"
                     "restitution: bounciness, 0..1\n"
                     "kind: 0 wall, 1 bouncy, 2 hazard, 3 goal, 4 flipper; reported in contacts"),
+        luaFunction("remove", lua_colliders_remove, "(id:int) -> boolean",
+                    "Take one collider out of the set; false when no collider has the id.",
+                    "id: as an add call returned it")
+            .note("Ids are never reused, even after clear(), so a stale id removes nothing. "
+                  "Flippers have no id and stay until clear()."),
+        luaFunction("setEnabled", lua_colliders_setEnabled, "(id:int, on:boolean) -> boolean",
+                    "Switch a collider off (the body passes through it) or back on; false when "
+                    "no collider has the id.",
+                    "id: as an add call returned it\n"
+                    "on: false to pass through, true to collide again")
+            .note("A switched-off collider still counts in count()."),
         luaFunction("addFlipper", lua_colliders_addFlipper,
                     "(pivotX:number, pivotY:number, length:number, restAngle:number, "
                     "activeAngle:number, restitution:number?=0.2) -> int",
