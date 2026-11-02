@@ -2,19 +2,18 @@ GIMP Palette
 Name: tomo-tune2
 Columns: 8
 #
-  0   0   0	0 black
-137 137 137	1 grey
-255 255 255	2 white
- 26  28  44	3 navy
- 93  39  93	4 purple
-177  62  83	5 red
-239 125  87	6 orange
-255 205 117	7 yellow
-167 240 112	8 light green
- 56 183 100	9 green
- 37 113 121	10 teal
- 59  93 201	11 blue
-115 239 247	12 cyan
- 86 108 134	13 slate
- 51  60  87	14 dark slate
+# The tomo_tune2 art's palette in Palette role order (ADR-0022): the 8 roles
+# the importer targets. The art is black, grey and white, re-indexed once by
+# luminance onto the roles' order in the house default: black bg, grey muted,
+# white text. The other roles are the old tomo hues the art never uses. The
+# last row is the magenta stand-in for transparent (15), as in the Studio's
+# .gpl download; the importer reads only the first 8 rows.
+  0   0   0	0 bg (black)
+ 26  28  44	1 surface (navy)
+137 137 137	2 muted (grey)
+255 255 255	3 text (white)
+255 205 117	4 accent (yellow)
+239 125  87	5 accent2 (orange)
+115 239 247	6 accent3 (cyan)
+177  62  83	7 accent4 (red)
 255   0 255	15 TRANSPARENT

@@ -153,9 +153,9 @@ static ShapeLook basicLook() {
     l.set(ShapeSlot::Body, 1);
     l.set(ShapeSlot::Eyes, 1);
     l.set(ShapeSlot::Mouth, 1);
-    l.colour[0] = 9;  // body
-    l.colour[1] = 4;  // accent
-    l.colour[2] = 0;  // ink
+    l.colour[0] = ROLE_ACCENT2;  // body
+    l.colour[1] = ROLE_ACCENT;  // accent
+    l.colour[2] = ROLE_BG;  // ink
     return l;
 }
 
@@ -198,8 +198,8 @@ static void testBodyStandsOnItsFeetLine() {
     pet.setPosition({Fixed::fromInt(80), Fixed::fromInt(100)});
     ASSERT(pet.redraw(layer, *scratch()), "redraw");
     // The Body fills x 72..87, y 84..99; its bottom row sits just above y 100.
-    ASSERT(layer.getPixel(72, 99).value == 9, "body bottom-left in body colour");
-    ASSERT(layer.getPixel(87, 84).value == 9, "body top-right in body colour");
+    ASSERT(layer.getPixel(72, 99).value == ROLE_ACCENT2, "body bottom-left in body colour");
+    ASSERT(layer.getPixel(87, 84).value == ROLE_ACCENT2, "body top-right in body colour");
     ASSERT(layer.getPixel(71, 99).value == 15, "left of the body is transparent");
     ASSERT(layer.getPixel(80, 100).value == 15, "the feet line itself is below the body");
     ASSERT(layer.getPixel(88, 90).value == 15, "right of the body is transparent");
@@ -207,18 +207,18 @@ static void testBodyStandsOnItsFeetLine() {
 
 // The basic Look at (80, 100) over the Body's window x 72..87, y 86..97.
 static const char* kBasicPicture =
-    "9999999999999999\n"
-    "9999999999999999\n"
-    "9900999999990099\n"  // eyes: left (mirrored about x 76) at 74..75, right at 84..85
-    "9900999999990099\n"
-    "9999999999999999\n"
-    "9999999999999999\n"
-    "9999999999999999\n"
-    "9999999999999999\n"
-    "9999999999999999\n"
-    "9999999999999999\n"
-    "9999990000999999\n"  // mouth at the centre socket: 78..81
-    "9999999999999999";
+    "5555555555555555\n"
+    "5555555555555555\n"
+    "5500555555550055\n"  // eyes: left (mirrored about x 76) at 74..75, right at 84..85
+    "5500555555550055\n"
+    "5555555555555555\n"
+    "5555555555555555\n"
+    "5555555555555555\n"
+    "5555555555555555\n"
+    "5555555555555555\n"
+    "5555555555555555\n"
+    "5555550000555555\n"  // mouth at the centre socket: 78..81
+    "5555555555555555";
 
 static Layer* drawBasic(ShapePackGroup& pet, Fixture& f) {
     static Layer layer;
@@ -254,7 +254,7 @@ static void testSideMembersGoOnTheirSide() {
     ASSERT(pet.setLook(l, &e), e.text);
     pet.redraw(layer, *scratch());
     // Left socket x 76: the 1-px left member at 76; right socket x 84: 84..85.
-    ASSERT(expectPicture(layer, 72, 88, 16, 1, "9999099999990099", "side members"), "side members unmirrored");
+    ASSERT(expectPicture(layer, 72, 88, 16, 1, "5555055555550055", "side members"), "side members unmirrored");
 }
 
 // Arms 1 is drawn behind the Body, arms 2 in front; both [-2, 4) × [0, 2) in
@@ -280,11 +280,11 @@ static void testDrawOrderBehindAndInFront() {
     ASSERT(pet.setLook(l, &e), e.text);
     pet.redraw(layer, *scratch());
     // Mirrored [-2, 4) is [-4, 2) about x 72: 68..73; the Body covers 72..73.
-    ASSERT(expectPicture(layer, 68, 92, 8, 1, "44449999", "arms behind"), "behind: the Body paints over the arm");
+    ASSERT(expectPicture(layer, 68, 92, 8, 1, "44445555", "arms behind"), "behind: the Body paints over the arm");
     l.set(ShapeSlot::Arms, 2);
     ASSERT(pet.setLook(l, &e), e.text);
     pet.redraw(layer, *scratch());
-    ASSERT(expectPicture(layer, 68, 92, 8, 1, "44444499", "arms in front"), "in front: the arm paints over the Body");
+    ASSERT(expectPicture(layer, 68, 92, 8, 1, "44444455", "arms in front"), "in front: the arm paints over the Body");
 }
 
 // Body 2 "capped": the box with a top socket at its crown (0, -16) and an arms
@@ -326,7 +326,7 @@ static void testAnInFrontTopPaintsUnderTheFace() {
     pet.redraw(layer, *scratch());
     std::string want = kBasicPicture;
     for (char& c : want)
-        if (c == '9') c = '4';
+        if (c == '5') c = '4';
     ASSERT(expectPicture(layer, 72, 86, 16, 12, want.c_str(), "cap under the face"), "eyes and mouth paint over the cap");
 }
 
@@ -344,7 +344,7 @@ static void testLimbsAndTopKeepTheirOrderOnEachSide() {
     ASSERT(pet.setLook(l, &e), e.text);
     pet.redraw(layer, *scratch());
     // The hood spans x 68..91; the arm 68..73 is under it, the Body over both.
-    ASSERT(expectPicture(layer, 66, 92, 10, 1, "..44449999", "behind: hood over arm"), "behind: the top paints over the limbs");
+    ASSERT(expectPicture(layer, 66, 92, 10, 1, "..44445555", "behind: hood over arm"), "behind: the top paints over the limbs");
     l.set(ShapeSlot::Top, 1);
     l.set(ShapeSlot::Arms, 3);
     ASSERT(pet.setLook(l, &e), e.text);
@@ -383,8 +383,11 @@ static void testBadLooksAreRefusedNamingSlotAndId() {
     l.set(ShapeSlot::Legs, 1);
     ASSERT(refuses(f, l, "Look: legs 1 is not in the Shape pack (unknown or retired id)"), "id in no slot");
     l = basicLook();
+    l.colour[0] = 8;
+    ASSERT(refuses(f, l, "Look: colours.body 8 is not a Palette role (0..7)"), "8..14 are no roles");
+    l = basicLook();
     l.colour[2] = 15;
-    ASSERT(refuses(f, l, "Look: colours.ink 15 is outside the palette (0..14; 15 is transparent)"), "colour");
+    ASSERT(refuses(f, l, "Look: colours.ink 15 is not a Palette role (0..7)"), "transparent is no colour");
 }
 
 static void testASlotWithNoSocketIsRefused() {
@@ -436,14 +439,14 @@ static void testColoursOnlyChangeReadsNothing() {
     ASSERT(!pet.changed(), "clean after a redraw");
     f.src->reads = 0;
     ShapeLook l = basicLook();
-    l.colour[0] = 3;
-    l.colour[2] = 12;
+    l.colour[0] = ROLE_TEXT;
+    l.colour[2] = ROLE_ACCENT4;
     ShapeError e;
     ASSERT(pet.setLook(l, &e), e.text);
     ASSERT(f.src->reads == 0, "a colours-only change does no I/O");
     ASSERT(pet.changed(), "a colours-only change redraws");
     pet.flush(layer, *scratch());
-    ASSERT(expectPicture(layer, 72, 88, 16, 1, "33cc33333333cc33", "recoloured"), "body and ink recoloured");
+    ASSERT(expectPicture(layer, 72, 88, 16, 1, "3377333333337733", "recoloured"), "body and ink recoloured");
 }
 
 static void testPoseSwapsTheWholeFeatureWithoutIo() {
@@ -458,7 +461,7 @@ static void testPoseSwapsTheWholeFeatureWithoutIo() {
     ASSERT(pet.setPose(ShapeSlot::Eyes, "closed", &e), e.text);
     ASSERT(f.src->reads == 0, "a pose swap does no I/O");
     pet.flush(layer, *scratch());
-    ASSERT(expectPicture(layer, 72, 88, 16, 2, "9999999999999999\n9900999999990099", "closed eyes"), "closed eyes drawn");
+    ASSERT(expectPicture(layer, 72, 88, 16, 2, "5555555555555555\n5500555555550055", "closed eyes"), "closed eyes drawn");
 
     ASSERT(!pet.setPose(ShapeSlot::Eyes, "wink", &e), "unknown pose");
     ASSERT(std::strcmp(e.text, "pose: eyes has no pose \"wink\"") == 0, e.text);
@@ -477,7 +480,7 @@ static void testMovingClearsTheOldFootprint() {
     pet.setPosition({Fixed::fromInt(40), Fixed::fromInt(100)});
     ASSERT(pet.flush(layer, *scratch()), "a move redraws");
     ASSERT(layer.getPixel(80, 90).value == 15, "the old spot is transparent again");
-    ASSERT(layer.getPixel(40, 90).value == 9, "the new spot is drawn");
+    ASSERT(layer.getPixel(40, 90).value == ROLE_ACCENT2, "the new spot is drawn");
     ASSERT(layer.isTileDirty(5, 5) && layer.isTileDirty(5, 6), "old tiles dirty");
     ASSERT(layer.isTileDirty(2, 5) && layer.isTileDirty(2, 6), "new tiles dirty (x 32..47)");
     ASSERT(!layer.isTileDirty(8, 0), "untouched tiles stay clean");

@@ -92,11 +92,8 @@ export interface Enjin2Module extends EmscriptenModule {
   drawLinesBatch(canvas: Canvas4, lines: number[]): void;
   fillRectsBatch(canvas: Canvas4, rects: number[]): void;
 
-  // Palette
+  // Palette: the 8 Palette roles, r g b each (24 bytes)
   getPaletteRGB(): Uint8Array;
-  setPaletteColor(index: number, r: number, g: number, b: number): void;
-  loadPalette(name: string): boolean;
-  getPaletteSize(): number;
 }
 
 export interface EmscriptenModule {

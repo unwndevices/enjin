@@ -48,9 +48,8 @@ int LuaBindings::lua_clearLayer(lua_State* L) {
         : checkLayerIdx(L, 1, b->layerCount);
     lua::checkLayerUnclaimed(L, cpp_idx, "gfx.clearLayer");
 
-    uint8_t color = static_cast<uint8_t>(luaL_optinteger(L, 2, 0));
-
     LuaCanvas* target = b->layerCanvases[cpp_idx];
+    uint8_t color = lua::optCanvasColour(L, 2, ROLE_BG, indexedColours(target));
     if (target) {
         target->clear(color);
     }

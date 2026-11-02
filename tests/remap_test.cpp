@@ -63,43 +63,30 @@ static void test_constexpr_usable()
     ASSERT(true, "constexpr usage compiled");
 }
 
-static void test_lighten()
+static void test_toward_bg()
 {
-    printf("--- lighten() ---\n");
-    Remap r = Remap::lighten();
-    // shade 1 (base) and 2 (dark) step toward light; shade 0 holds.
-    ASSERT(r.apply(0) == 0, "lighten: ramp0 light holds");
-    ASSERT(r.apply(1) == 0, "lighten: ramp0 base -> light");
-    ASSERT(r.apply(2) == 1, "lighten: ramp0 dark -> base");
-    ASSERT(r.apply(3) == 3, "lighten: ramp1 light holds");
-    ASSERT(r.apply(14) == 13, "lighten: ramp4 dark -> base");
-    ASSERT(r.apply(15) == 15, "lighten: transparency passes through");
+    printf("--- towardBg() ---\n");
+    Remap r = Remap::towardBg();
+    // bg <- surface <- muted <- text; bg holds; accents step into muted.
+    ASSERT(r.apply(ROLE_BG) == ROLE_BG, "towardBg: bg holds");
+    ASSERT(r.apply(ROLE_SURFACE) == ROLE_BG, "towardBg: surface -> bg");
+    ASSERT(r.apply(ROLE_MUTED) == ROLE_SURFACE, "towardBg: muted -> surface");
+    ASSERT(r.apply(ROLE_TEXT) == ROLE_MUTED, "towardBg: text -> muted");
+    ASSERT(r.apply(ROLE_ACCENT) == ROLE_MUTED, "towardBg: accent -> muted");
+    ASSERT(r.apply(ROLE_ACCENT4) == ROLE_MUTED, "towardBg: accent4 -> muted");
+    ASSERT(r.apply(15) == 15, "towardBg: transparency passes through");
 }
 
-static void test_darken()
+static void test_toward_text()
 {
-    printf("--- darken() ---\n");
-    Remap r = Remap::darken();
-    ASSERT(r.apply(0) == 1, "darken: ramp0 light -> base");
-    ASSERT(r.apply(1) == 2, "darken: ramp0 base -> dark");
-    ASSERT(r.apply(2) == 2, "darken: ramp0 dark holds");
-    ASSERT(r.apply(12) == 13, "darken: ramp4 light -> base");
-    ASSERT(r.apply(14) == 14, "darken: ramp4 dark holds");
-    ASSERT(r.apply(15) == 15, "darken: transparency passes through");
-}
-
-static void test_on_ramp()
-{
-    printf("--- onRamp() ---\n");
-    // Lighten, but only ramp 3 (indices 9,10,11); everything else identity.
-    Remap r = Remap::onRamp(3, Remap::lighten());
-    ASSERT(r.apply(9) == 9, "onRamp(3,lighten): ramp3 light holds");
-    ASSERT(r.apply(10) == 9, "onRamp(3,lighten): ramp3 base -> light");
-    ASSERT(r.apply(11) == 10, "onRamp(3,lighten): ramp3 dark -> base");
-    // Off-ramp indices are untouched even though lighten() would move them.
-    ASSERT(r.apply(1) == 1, "onRamp(3,lighten): ramp0 base untouched");
-    ASSERT(r.apply(14) == 14, "onRamp(3,lighten): ramp4 dark untouched");
-    ASSERT(r.apply(15) == 15, "onRamp: transparency passes through");
+    printf("--- towardText() ---\n");
+    Remap r = Remap::towardText();
+    ASSERT(r.apply(ROLE_BG) == ROLE_SURFACE, "towardText: bg -> surface");
+    ASSERT(r.apply(ROLE_SURFACE) == ROLE_MUTED, "towardText: surface -> muted");
+    ASSERT(r.apply(ROLE_MUTED) == ROLE_TEXT, "towardText: muted -> text");
+    ASSERT(r.apply(ROLE_TEXT) == ROLE_TEXT, "towardText: text holds");
+    ASSERT(r.apply(ROLE_ACCENT2) == ROLE_TEXT, "towardText: accent2 -> text");
+    ASSERT(r.apply(15) == 15, "towardText: transparency passes through");
 }
 
 static void test_recolor()
@@ -118,30 +105,31 @@ static void test_recolor()
 static void test_compose()
 {
     printf("--- compose() ---\n");
-    // do darken, then lighten -> back toward base (base holds under both).
-    Remap r = Remap::compose(Remap::darken(), Remap::lighten());
-    ASSERT(r.apply(1) == 1, "compose(darken,lighten): base -> dark -> base");
+    // Two steps toward bg: text -> muted -> surface.
+    Remap twice = Remap::compose(Remap::towardBg(), Remap::towardBg());
+    ASSERT(twice.apply(ROLE_TEXT) == ROLE_SURFACE, "compose(towardBg,towardBg): text -> surface");
+    // towardBg then towardText: an accent lands on text (accent -> muted -> text).
+    Remap r = Remap::compose(Remap::towardBg(), Remap::towardText());
+    ASSERT(r.apply(ROLE_ACCENT) == ROLE_TEXT, "compose(towardBg,towardText): accent -> muted -> text");
     // Order matters: solid(3) then recolor(3->7) yields solid(7) over 0-14.
     Remap ordered = Remap::compose(Remap::solid(3), Remap::recolor(3, 7));
     ASSERT(ordered.apply(0) == 7, "compose(solid(3),recolor(3,7)): 0 -> 3 -> 7");
     ASSERT(ordered.apply(10) == 7, "compose: every source funnels 3 -> 7");
     // Composing with identity is a no-op either side.
-    Remap li = Remap::compose(Remap::lighten(), Remap::identity());
-    ASSERT(li.apply(1) == 0, "compose(lighten,identity) == lighten");
-    Remap il = Remap::compose(Remap::identity(), Remap::lighten());
-    ASSERT(il.apply(1) == 0, "compose(identity,lighten) == lighten");
+    Remap ti = Remap::compose(Remap::towardText(), Remap::identity());
+    ASSERT(ti.apply(ROLE_BG) == ROLE_SURFACE, "compose(towardText,identity) == towardText");
+    Remap it = Remap::compose(Remap::identity(), Remap::towardText());
+    ASSERT(it.apply(ROLE_BG) == ROLE_SURFACE, "compose(identity,towardText) == towardText");
 }
 
-static void test_ramp_ctors_constexpr()
+static void test_chain_ctors_constexpr()
 {
-    printf("--- ramp ctors constexpr ---\n");
-    static_assert(Remap::lighten().lut[2] == 1, "lighten() constexpr");
-    static_assert(Remap::darken().lut[0] == 1, "darken() constexpr");
-    static_assert(Remap::onRamp(3, Remap::lighten()).lut[10] == 9, "onRamp() constexpr");
-    static_assert(Remap::onRamp(3, Remap::lighten()).lut[1] == 1, "onRamp() off-ramp identity constexpr");
+    printf("--- chain ctors constexpr ---\n");
+    static_assert(Remap::towardBg().lut[ROLE_TEXT] == ROLE_MUTED, "towardBg() constexpr");
+    static_assert(Remap::towardText().lut[ROLE_BG] == ROLE_SURFACE, "towardText() constexpr");
     static_assert(Remap::recolor(4, 9).lut[4] == 9, "recolor() constexpr");
     static_assert(Remap::compose(Remap::solid(3), Remap::recolor(3, 7)).lut[0] == 7, "compose() constexpr");
-    ASSERT(true, "ramp ctors usable at compile time");
+    ASSERT(true, "chain ctors usable at compile time");
 }
 
 int main()
@@ -154,12 +142,11 @@ int main()
     test_solid();
     test_apply_masks_low_nibble();
     test_constexpr_usable();
-    test_lighten();
-    test_darken();
-    test_on_ramp();
+    test_toward_bg();
+    test_toward_text();
     test_recolor();
     test_compose();
-    test_ramp_ctors_constexpr();
+    test_chain_ctors_constexpr();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

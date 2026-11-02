@@ -515,7 +515,7 @@ static void test_tmap10_band_filtered_restore() {
     Canvas4<64, 64> canvas;
 
     // --- Under-band pass (L0 semantics: clear to background 0) ---
-    canvas.clear(Pixel4(9));  // sentinel
+    canvas.clear(Pixel4(ROLE_ACCENT3));  // sentinel
     tm->drawCellBand(canvas, 0, 0, C_Tilemap::Band::Under, Pixel4(0));
     tm->drawCellBand(canvas, 1, 0, C_Tilemap::Band::Under, Pixel4(0));
 
@@ -527,7 +527,7 @@ static void test_tmap10_band_filtered_restore() {
            "TMAP-10: under pass leaves the over cell as clear (background)");
 
     // --- Over-band pass (L2 semantics: clear to transparent 15) ---
-    canvas.clear(Pixel4(9));
+    canvas.clear(Pixel4(ROLE_ACCENT3));
     tm->drawCellBand(canvas, 0, 0, C_Tilemap::Band::Over, Pixel4(15));
     tm->drawCellBand(canvas, 1, 0, C_Tilemap::Band::Over, Pixel4(15));
 

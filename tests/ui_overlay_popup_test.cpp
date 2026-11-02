@@ -9,6 +9,7 @@
 // removed with presenter ticket #34: full-frame dimming is now expressed as a
 // per-layer tint Remap on the compositor, not a canvas-walking ECS system.
 #include <enjin2/ui/component.hpp>
+#include <enjin2/graphics/palette.hpp>
 #include <enjin2/ui/components.hpp>
 #include <enjin2/ui/world.hpp>
 #include <enjin2/ui/widgets/popup.hpp>
@@ -68,18 +69,18 @@ static void test_popup_render() {
     popup->setIcon(PopUpComponent::Icon::Warning);
     world.add<PositionComponent>(e, Point(32, 32)); // card center
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     popup->show();
     system.update(0.016f);
 
     bool anyRim = false;
     for (int16_t y = 0; y < 64; ++y)
         for (int16_t x = 0; x < 64; ++x)
-            if (canvas.getPixel(x, y) == 6) anyRim = true;
+            if (canvas.getPixel(x, y) == ROLE_MUTED) anyRim = true;
     ASSERT(anyRim, "popup: a shown popup strokes its rim");
 
     // Hide it and redraw onto a clean canvas: nothing should land.
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     popup->hide();
     system.update(0.016f);
     bool anyInk = false;

@@ -97,9 +97,9 @@ bool ShapeCorpus::begin(ShapePack& pack, AssetArena& arena, ShapeError* err)
 {
     ShapeLook look;
     for (uint8_t k = 0; k < SHAPE_SLOT_COUNT; ++k) look.set(ShapeSlot(k), 1);
-    look.colour[0] = 9;
-    look.colour[1] = 4;
-    look.colour[2] = 0;
+    look.colour[0] = ROLE_ACCENT2;
+    look.colour[1] = ROLE_ACCENT;
+    look.colour[2] = ROLE_BG;
     begun_ = pet_.build(pack, look, arena, err);
     if (!begun_) return false;
     pet_.setPosition(px(kFeetX, kFeetY));

@@ -1,5 +1,5 @@
 -- scripts/e2e_parity.lua
--- E2E parity test: 15-color palette grid + button input indicators.
+-- E2E parity test: the 8 Palette roles as a grid + button input indicators.
 -- Runs identically on SDL3, WASM, and ESP32.
 -- Host calls update(dt) and draw() each frame.
 
@@ -8,9 +8,9 @@ local CELL_W = 24
 local CELL_H = 24
 
 local function draw_color_grid()
-    -- 5x3 grid: 15 cells covering palette indices 0-14.
-    -- Positioned at top-left (0, 0) -- occupies 120x72 canvas pixels.
-    for i = 0, 14 do
+    -- 5x2 grid: 8 cells, the Palette roles 0-7 (8-14 are no colour, ADR-0022).
+    -- Positioned at top-left (0, 0) -- occupies 120x48 canvas pixels.
+    for i = 0, 7 do
         local col = i % COLS
         local row = math.floor(i / COLS)
         gfx.setColor(i)

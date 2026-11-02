@@ -90,11 +90,11 @@ static void test_source_15_transparent_regardless_of_tint()
     Comp c;
     CountingPresenter p;
     // Layer 0 draws index 4 at (5,5). Layer 1 is transparent (15) there but
-    // tinted solid(9): the compositor must ignore layer1's 15 source and show
+    // tinted solid(6): the compositor must ignore layer1's 15 source and show
     // layer0's 4.
     c.beginFrame();
     c.layers[0].setPixel(5, 5, Pixel4(4));
-    c.setTint(1, Remap::solid(9));
+    c.setTint(1, Remap::solid(6));
     c.compositeDirty();
     ASSERT(c.output.getPixel(5, 5).value == 4,
            "layer1 transparent source ignored despite solid tint -> shows layer0");
@@ -186,9 +186,9 @@ static void test_visibility_toggle_recomposites()
     // Layer 2 (opaque) covers a pixel over layer 1.
     c.beginFrame();
     c.layers[1].setPixel(5, 5, Pixel4(4));
-    c.layers[2].setPixel(5, 5, Pixel4(9)); // tile (0,0), on top
+    c.layers[2].setPixel(5, 5, Pixel4(6)); // tile (0,0), on top
     c.compositeDirty();
-    ASSERT(c.output.getPixel(5, 5).value == 9, "top layer shows while visible");
+    ASSERT(c.output.getPixel(5, 5).value == 6, "top layer shows while visible");
     c.present(p);
     c.endFrame();
 
@@ -204,7 +204,7 @@ static void test_visibility_toggle_recomposites()
     c.setVisible(2, true);
     c.beginFrame();
     c.compositeDirty();
-    ASSERT(c.output.getPixel(5, 5).value == 9, "un-hiding repaints the top layer");
+    ASSERT(c.output.getPixel(5, 5).value == 6, "un-hiding repaints the top layer");
     c.present(p);
     c.endFrame();
 }

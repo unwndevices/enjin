@@ -189,10 +189,10 @@ inline SpriteImportResult run(const Bytes& b, const SpriteImportOptions& o = {})
     return importSprite(b.data(), b.size(), o);
 }
 
-/// The palette used by RGBA fixtures: slot i = (i*10, i*10, i*10).
-inline std::array<RGB, PALETTE_MAX_ENTRIES> greyPalette() {
-    std::array<RGB, PALETTE_MAX_ENTRIES> p{};
-    for (uint8_t i = 0; i < PALETTE_MAX_ENTRIES; ++i) p[i] = RGB(i * 10, i * 10, i * 10);
+/// The palette used by RGBA fixtures: role i = (i*10, i*10, i*10).
+inline std::array<RGB, ROLE_COUNT> greyPalette() {
+    std::array<RGB, ROLE_COUNT> p{};
+    for (uint8_t i = 0; i < ROLE_COUNT; ++i) p[i] = RGB(i * 10, i * 10, i * 10);
     return p;
 }
 inline SpriteImportOptions greyOpts(SpriteKind k = SpriteKind::Auto) {

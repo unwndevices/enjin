@@ -13,13 +13,13 @@ Both layered goldens differed by one deliberate change only: the C++ importer gi
 layered import a bottom-centre `LPIV` pivot, and Python wrote none. These two goldens
 were then rewritten by the CLI, and Python's sprite modes were deleted (ADR-0015).
 
-`MANIFEST` lists each input with its kind (`sheet` or `layered`) and its palette preset.
+`MANIFEST` lists each input with its kind (`sheet` or `layered`) and its palette (a `.gpl`).
 `make_corpus.lua` and `make_corpus.py` record how the corpus was built (Aseprite 1.3.18).
 They refuse to overwrite it without `--force`.
 
 | Input | Kind | Covers |
 |-------|------|--------|
-| `tomo_tune2` | layered | The seed: a copy of `../tomo_tune2.aseprite`. It's RGBA, so it needs the `tomo` palette preset. Untagged, so it gets a `default` loop clip. |
+| `tomo_tune2` | layered | The seed: a copy of `../tomo_tune2.aseprite`. It's RGBA black, grey and white, so it needs its own palette, `../tomo_tune2.gpl`, which puts them at bg, muted and text (Tomodachi #422). Untagged, so it gets a `default` loop clip. |
 | `tag_forward` | sheet | Forward, repeat 0 → frames in order, `loop` |
 | `tag_reverse` | sheet | Reverse, repeat 0 → reversed frames, `loop` |
 | `tag_pingpong` | sheet | Ping-pong, repeat 0 → `pingpong` |
@@ -34,4 +34,5 @@ They refuse to overwrite it without `--force`.
 | `sheet` | sheet | Hidden layer, linked cel, empty frame, cels clipped by the canvas, two sub-range tags |
 | `layered` | layered | Hidden layer, linked cels, a moving part, a missing part, ping-pong-reverse repeat 2 |
 
-Every minimal input is indexed with transparent index 0, and its art uses slots 1..14.
+Every minimal input is indexed with transparent index 0, and its art uses the Palette roles
+1..7: the importer refuses 8..14, which are not roles (ADR-0022, Tomodachi #426).

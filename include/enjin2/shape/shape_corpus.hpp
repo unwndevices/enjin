@@ -10,9 +10,9 @@
  * suite, the WASM build and the device (Tomodachi #338) run this same code on
  * the same pack and compare against one committed golden file.
  *
- * **The fixed Look.** Piece 1 in every slot (the stand-in Star Kit), colours
- * body 9, accent 4, ink 0; feet line at (80, 140) on a 160×160 layer cleared
- * to 15 (transparent).
+ * **The fixed Look.** Piece 1 in every slot (the stand-in Star Kit), in
+ * Palette roles: body accent2, accent accent, ink bg (Tomodachi #420); feet
+ * line at (80, 140) on a 160×160 layer cleared to 15 (transparent).
  *
  * **The script** (frame numbers; each phase ends with the jelly asleep):
  *

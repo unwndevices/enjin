@@ -313,8 +313,11 @@ target_include_directories(visual_parity_bench PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
 )
+# Its colour plane is Eisei's 16 grey levels (the identity on 0-15), not the
+# Palette roles, so Pixel4's debug role check (ADR-0022) is off here.
 target_compile_definitions(visual_parity_bench PRIVATE
-    ENJIN_GRAPHICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../include/enjin2/graphics")
+    ENJIN_GRAPHICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../include/enjin2/graphics"
+    ENJIN2_PIXEL4_ASSERT=0)
 target_link_libraries(visual_parity_bench PRIVATE
     enjin2_core enjin2_graphics)
 
@@ -334,20 +337,6 @@ target_compile_definitions(waiver_machinery_test PRIVATE
 target_link_libraries(waiver_machinery_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME waiver_machinery_test COMMAND waiver_machinery_test)
-
-# blitCanvasOpacity contract (M5 #168): the retired blit.canvasOpacity pair's
-# replacement guard — BASE's out-of-band matte cannot exist in a Pixel4
-# source, so the ratified HEAD contract (transparent skip, absolute fade,
-# clipping) is pinned here instead of by the bench.
-add_executable(blit_semantics_test
-    blit_semantics_test.cpp
-)
-target_include_directories(blit_semantics_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-target_link_libraries(blit_semantics_test PRIVATE
-    enjin2_core enjin2_graphics)
-add_test(NAME blit_semantics_test COMMAND blit_semantics_test)
 
 # Image comparison test for shadow mode verification
 add_executable(image_comparison_test
@@ -497,7 +486,7 @@ if(TARGET enjin_sprite_import)
         COMMAND enjin_sprite_import
             ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.aseprite
             -o ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn
-            --palette tomo)
+            --palette ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.gpl)
     set_tests_properties(sprite_import_cli_convert PROPERTIES FIXTURES_SETUP sprite_import_cli)
     add_test(NAME sprite_import_cli_loads
         COMMAND sprite_import_test --verify-layered
@@ -509,7 +498,7 @@ if(TARGET enjin_sprite_import)
             ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.aseprite
             --reimport ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn
             -o ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2_reimport.njn
-            --palette tomo)
+            --palette ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.gpl)
     set_tests_properties(sprite_import_cli_reimport PROPERTIES
         FIXTURES_REQUIRED sprite_import_cli FIXTURES_SETUP sprite_import_cli_re
         PASS_REGULAR_EXPRESSION "touches no clip")
@@ -726,7 +715,7 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME layer_binding_test COMMAND layer_binding_test)
 
-    # Draw-state bindings: setPaletteColor forms + setLineWidth primitives (Tomodachi #255)
+    # Draw-state bindings: the read-only palette (Tomodachi #417) + setLineWidth primitives (#255)
     add_executable(draw_state_binding_test
         draw_state_binding_test.cpp
     )
@@ -738,6 +727,34 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME draw_state_binding_test COMMAND draw_state_binding_test)
+
+    # The palette contract's seal (Tomodachi ADR-0022, #426): gfx.*, the .njn
+    # loaders and the palette refuse indices 8-14, naming them
+    add_executable(palette_seal_test
+        palette_seal_test.cpp
+    )
+    target_include_directories(palette_seal_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(palette_seal_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME palette_seal_test COMMAND palette_seal_test)
+
+    # Palette files: name, credits and the 8 Palette roles from a Lua table
+    # (Tomodachi ADR-0022, #423)
+    add_executable(palette_file_test
+        palette_file_test.cpp
+    )
+    target_include_directories(palette_file_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(palette_file_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME palette_file_test COMMAND palette_file_test)
 
     # Script sandbox: identical on every platform (Tomodachi ADR-0012, #251)
     add_executable(lua_sandbox_test

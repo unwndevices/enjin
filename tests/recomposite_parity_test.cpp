@@ -31,7 +31,11 @@ struct Rng {
     uint32_t s;
     explicit Rng(uint32_t seed) : s(seed ? seed : 0x1234567u) {}
     uint32_t next() { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return s; }
-    uint8_t nibble() { return static_cast<uint8_t>(next() & 0x0F); }
+    /// A random valid index: a Palette role or 15 (ADR-0022: 8-14 are invalid).
+    uint8_t nibble() {
+        static constexpr uint8_t kValid[9] = {0, 1, 2, 3, 4, 5, 6, 7, PALETTE_TRANSPARENT};
+        return kValid[next() % 9];
+    }
 };
 
 // Independent reference: naive full-canvas composite, per pixel, all layers.
@@ -66,7 +70,7 @@ static void checkSize(const char* label, uint32_t seed) {
 
     // A mix of tints across the layers, plus one hidden layer if there is room.
     if (ENJIN_LAYER_COUNT >= 2) c->setTint(1, Remap::solid(3));
-    if (ENJIN_LAYER_COUNT >= 3) c->setTint(2, Remap::darken());
+    if (ENJIN_LAYER_COUNT >= 3) c->setTint(2, Remap::towardBg());
     if (ENJIN_LAYER_COUNT >= 4) c->setVisible(2, false);
 
     // Force a full-frame recomposite through the real path.

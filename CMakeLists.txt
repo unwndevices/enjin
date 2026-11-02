@@ -30,7 +30,6 @@ endif()
 
 # Options
 option(ENJIN2_BUILD_TESTS "Build tests" ON)
-option(ENJIN2_BUILD_EXAMPLES "Build examples" ON)
 option(ENJIN2_BUILD_LUA "Build Lua bindings" ON)
 option(ENJIN2_BUILD_WASM "Build for WebAssembly" OFF)
 option(ENJIN2_USE_SIMD "Use SIMD optimizations" ON)
@@ -131,7 +130,6 @@ target_sources(enjin2_ui PRIVATE
     # UI ECS translation units (Phase 2, #120): static ID counters + EntityManager.
     src/ui/component.cpp
     src/ui/system.cpp
-    src/ui/theme.cpp
     src/ui/style.cpp
     src/ui/dialog.cpp
 )
@@ -241,6 +239,10 @@ if(ENJIN2_BUILD_LUA)
         # Skin-pack loader seam (Tomodachi #154): a graphics seam whose manifest
         # reader needs Lua, so it lives here (enjin2_graphics stays Lua-free).
         src/graphics/skin_pack.cpp
+        # Palette files (Tomodachi #423): presets as a Lua table of the 8 roles.
+        src/graphics/palette_file.cpp
+        # The "return a table" sandbox both of them read through.
+        src/graphics/table_file.cpp
     )
     target_include_directories(enjin2_lua
         PRIVATE
@@ -401,11 +403,6 @@ if(ENJIN2_BUILD_WASM)
         OUTPUT_NAME "enjin2"
         SUFFIX ".js"
     )
-endif()
-
-# Examples
-if(ENJIN2_BUILD_EXAMPLES)
-    add_subdirectory(examples)
 endif()
 
 # SDL3 desktop runner

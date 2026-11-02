@@ -13,9 +13,13 @@ its `--grid` spritesheet, `--v2`, `--layered` and `--pivot`) were deleted in Tom
 
 ## Palette Setup
 
-1. In Aseprite: Palettes panel > menu > Load Palette > select `tools/palettes/enjin_default.gpl`
-2. To make it permanent, copy the `.gpl` to `~/.config/aseprite/palettes/` (Linux) or `%APPDATA%\Aseprite\palettes\` (Windows)
-3. Set new sprites to indexed color: Sprite > Color Mode > Indexed
+Draw in the 8 Palette roles (ADR-0022): index 0 `bg`, 1 `surface`, 2 `muted`, 3 `text`,
+4 `accent`, 5 `accent2`, 6 `accent3`, 7 `accent4`, 15 transparent. Any palette that puts
+colours at those indices works in Aseprite; the device recolours them from the palette
+picked in Settings.
+
+1. Set new sprites to indexed color: Sprite > Color Mode > Indexed
+2. Load or build an 8-colour palette in the role order above
 
 ## Sprites: `enjin_sprite_import`
 

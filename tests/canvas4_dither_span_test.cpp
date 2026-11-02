@@ -28,7 +28,7 @@ static void fillNoise(Canvas4<W, H> &c)
 {
     for (int16_t y = 0; y < H; ++y)
         for (int16_t x = 0; x < W; ++x)
-            c.setPixel(x, y, Pixel4(static_cast<uint8_t>((x * 7 + y * 3 + 1) % 15)));
+            c.setPixel(x, y, Pixel4(static_cast<uint8_t>((x * 7 + y * 3 + 1) % ROLE_COUNT)));
 }
 
 // Reference: the per-pixel path, one Mask::sample per pixel.
@@ -76,7 +76,7 @@ static void test_matches_per_pixel_mask()
                         {
                             fillNoise(got);
                             fillNoise(want);
-                            const uint8_t color = static_cast<uint8_t>(level % 16 == 0 ? 14 : level);
+                            const uint8_t color = static_cast<uint8_t>(1 + level % 7);  // a non-bg role
                             got.drawHLineDither(x, y, w, Pixel4(color), level, px, py);
                             referenceSpan(want, x, y, w, color, level, px, py);
                             ++cases;
@@ -100,12 +100,12 @@ static void test_screen_anchored_default_phase()
     Canvas4<16, 4> c;
     c.clear(Pixel4(0));
     // Level 8 row 0 of the Bayer matrix {0,8,2,10} sets columns 0 and 2.
-    c.drawHLineDither(1, 0, 4, Pixel4(9), 8);
+    c.drawHLineDither(1, 0, 4, Pixel4(ROLE_ACCENT3), 8);
     ASSERT(c.getPixel(0, 0).value == 0, "x=0 outside the span");
     ASSERT(c.getPixel(1, 0).value == 0, "x=1 (column 1, threshold 8) not set at level 8");
-    ASSERT(c.getPixel(2, 0).value == 9, "x=2 (column 2, threshold 2) set at level 8");
+    ASSERT(c.getPixel(2, 0).value == ROLE_ACCENT3, "x=2 (column 2, threshold 2) set at level 8");
     ASSERT(c.getPixel(3, 0).value == 0, "x=3 (column 3, threshold 10) not set");
-    ASSERT(c.getPixel(4, 0).value == 9, "x=4 wraps to column 0 (threshold 0), set");
+    ASSERT(c.getPixel(4, 0).value == ROLE_ACCENT3, "x=4 wraps to column 0 (threshold 0), set");
     ASSERT(c.getPixel(5, 0).value == 0, "x=5 outside the span");
 }
 

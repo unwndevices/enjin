@@ -3,7 +3,7 @@
 // One-binary call-path differential harness (Visual-Parity-Bench-Design):
 // this tree contains both sides of the Eisei enjin migration — Canvas8 with
 // every BASE drawing algorithm intact, plus Canvas4 / Primitives<TPixel> /
-// TextRenderer / the blit compositor — so BASE and HEAD run in-process and
+// TextRenderer — so BASE and HEAD run in-process and
 // comparison is an in-process memcmp. The unit of test is the *substitution
 // pair*: (what BASE Eisei actually called, what HEAD Eisei actually calls) —
 // a call-site substitution, never a name match (§ 2).
@@ -12,11 +12,10 @@
 // exists:
 //   A: BASE algorithm @8bpp (Canvas8 member)
 //   B: HEAD algorithm @8bpp (Primitives<uint8_t> / TextRenderer<uint8_t>)
-//   C: HEAD algorithm @4bpp (Primitives<Pixel4> / TextRenderer<Pixel4> /
-//      enjin::blit* on Canvas4)
-// A!=B labels ALGORITHM, B!=C labels DEPTH. The blit compositor is
-// Pixel4-native, so its 11 pairs compare A vs C only and their failures are
-// labelled accordingly (axes entangled).
+//   C: HEAD algorithm @4bpp (Primitives<Pixel4> / TextRenderer<Pixel4>)
+// A!=B labels ALGORITHM, B!=C labels DEPTH. The blit compositor's grey-level
+// pairs are gone with the blits themselves (Tomodachi #426: the palette is 8
+// roles, ADR-0022, so 16-grey arithmetic on Pixel4 has no meaning).
 //
 // Comparison plane (§ 5): BASE = Canvas8 buffer & 0x0F (Eisei ships the
 // Canvas8 buffer straight to Adafruit_SSD1327, whose drawPixel at _bpp == 4
@@ -59,7 +58,6 @@
 // the execution epic. The waiver machinery itself is CI-tested in
 // tests/waiver_machinery_test.cpp.
 
-#include <enjin2/graphics/blit.hpp>
 #include <enjin2/graphics/canvas.hpp>
 #include <enjin2/graphics/primitives.hpp>
 #include <enjin2/graphics/text_renderer.hpp>
@@ -67,8 +65,6 @@
 #include "visual_parity/bench_support.hpp"
 #include "visual_parity/png_review.hpp"
 
-#include "visual_parity/assets/advanced_icons.h"
-#include "visual_parity/assets/lock.h"
 #include "visual_parity/fonts/fonts.hpp"
 
 #include <cmath>
@@ -617,437 +613,6 @@ namespace
         endPair();
     }
 
-    // --- Tier 1: the 11 compositing pairs ----------------------------------
-    //
-    // BASE composites raw 8-bit values into Canvas8 (the panel's & 0xF is the
-    // only reduction); HEAD's blit family is Pixel4-native and reduces every
-    // source sample >> 4 on ingestion. The #158 derivation flagged exactly
-    // this: for Eisei's shipped 4-bit-range assets (advanced_icons max 0x01,
-    // lock max 0x0a) BASE yields n where HEAD yields 0, and for 0-255 data
-    // BASE yields n & 15 where HEAD yields n >> 4. These sweeps put numbers
-    // and pixels on that finding; adjudication happens on the epic.
-
-    struct Src
-    {
-        const char *name;
-        const uint8_t *data;
-        int16_t w, h;
-    };
-
-    uint8_t enum256[256];
-    uint8_t synth255[23 * 19];
-
-    std::vector<Src> sources()
-    {
-        for (int i = 0; i < 256; ++i)
-            enum256[i] = static_cast<uint8_t>(i);
-        for (int y = 0; y < 19; ++y)
-            for (int x = 0; x < 23; ++x)
-                synth255[y * 23 + x] =
-                    static_cast<uint8_t>((x * 255 / 22 + y * 255 / 18) / 2);
-        return {
-            {"enum256", enum256, 16, 16},        // every 8-bit value once
-            {"adv_icon", adv_icon_off, 16, 16},  // shipped asset, values {0,1}
-            {"lock", lock_18x18, 18, 18},        // shipped asset, values {0,1,10}
-            {"synth255", synth255, 23, 19},      // full-range gradient
-        };
-    }
-
-    // 9 fully on-canvas, 8 partial-clip (each edge + each corner), 4 fully off.
-    const std::pair<int16_t, int16_t> kPlacements[] = {
-        {2, 2}, {54, 2}, {104, 2}, {2, 54}, {54, 54}, {104, 54}, {2, 104}, {54, 104}, {104, 104},
-        {-8, 30}, {120, 30}, {30, -8}, {30, 118}, {-8, -8}, {120, -8}, {-8, 118}, {120, 118},
-        {-40, -40}, {200, 10}, {10, 200}, {-40, 140}};
-
-    const uint8_t kPrefills[] = {0, 5};
-    const int kMattes[] = {0, 1, 16, 255};
-    const int kDivisors[] = {1, 2, 3, 4, 8};
-
-    // HEAD-side source ingestion: on HEAD, offscreen Pixel4 sources are built
-    // from the same 8-bit data through blitGray8 (>> 4) — that is the call
-    // path, so the pair drives it, not a hand-made conversion.
-    struct SmallCanvas4 : ICanvas<Pixel4>
-    {
-        int16_t w_, h_;
-        std::vector<uint8_t> px;
-        SmallCanvas4(int16_t w, int16_t h) : w_(w), h_(h), px(static_cast<size_t>(w) * h, 0) {}
-        uint16_t getWidth() const override { return w_; }
-        uint16_t getHeight() const override { return h_; }
-        void setPixel(int16_t x, int16_t y, Pixel4 c) override
-        {
-            if (x < 0 || x >= w_ || y < 0 || y >= h_)
-                return;
-            px[static_cast<size_t>(y) * w_ + x] = c.value;
-        }
-        Pixel4 getPixel(int16_t x, int16_t y) const override
-        {
-            if (x < 0 || x >= w_ || y < 0 || y >= h_)
-                return Pixel4(0);
-            return Pixel4(px[static_cast<size_t>(y) * w_ + x]);
-        }
-        void clear(Pixel4 c = Pixel4(0)) override
-        {
-            std::fill(px.begin(), px.end(), c.value);
-        }
-        void fill(const Rect &, Pixel4) override {}
-    };
-
-    SmallCanvas4 ingest(const Src &s)
-    {
-        SmallCanvas4 c(s.w, s.h);
-        blitGray8(c, 0, 0, s.data, s.w, s.h);
-        return c;
-    }
-
-    // 1-bpp mask adapter over BASE's 8-bit mask plane (maskValue > 0 draws) —
-    // the shape blitCanvasMasked templates on (GFXcanvas1-like getPixel).
-    struct MaskView
-    {
-        const uint8_t *data;
-        int16_t w, h;
-        bool getPixel(int16_t x, int16_t y) const
-        {
-            if (x < 0 || x >= w || y < 0 || y >= h)
-                return false;
-            return data[static_cast<size_t>(y) * w + x] > 0;
-        }
-    };
-
-    std::vector<uint8_t> makeMask(int kind, int16_t w, int16_t h)
-    {
-        std::vector<uint8_t> m(static_cast<size_t>(w) * h, 0);
-        for (int16_t y = 0; y < h; ++y)
-            for (int16_t x = 0; x < w; ++x)
-            {
-                bool on = false;
-                if (kind == 0)
-                    on = true; // full
-                else if (kind == 1)
-                    on = ((x + y) & 1) != 0; // checkerboard
-                else
-                {
-                    const int dx = x - w / 2, dy = y - h / 2;
-                    const int r2 = dx * dx + dy * dy;
-                    const int lim = (w / 2) * (w / 2);
-                    on = r2 <= lim && r2 >= lim / 4; // ring
-                }
-                m[static_cast<size_t>(y) * w + x] = on ? 255 : 0;
-            }
-        return m;
-    }
-
-    void sweepBlitGray8()
-    {
-        auto srcs = sources();
-
-        bench.beginPair({"blit.gray8", "TIER1",
-                         "Canvas8::drawGrayscaleBitmap(x,y,bmp,w,h)", "enjin::blitGray8"});
-        if (!bench.cur->retired)
-        {
-            for (size_t si = 0; si < srcs.size(); ++si)
-                for (size_t pi = 0; pi < std::size(kPlacements); ++pi)
-                {
-                    const Src &s = srcs[si];
-                    auto [x, y] = kPlacements[pi];
-                    runPixelCase(bench,
-                                 {{"src", static_cast<int32_t>(si)}, {"x", x}, {"y", y}},
-                                 [=](Base8 &c) { c.drawGrayscaleBitmap(x, y, s.data, s.w, s.h); },
-                                 nullptr,
-                                 [=](Head4 &c) { blitGray8(c, x, y, s.data, s.w, s.h); });
-                }
-        }
-        endPair();
-
-        bench.beginPair({"blit.gray8Matte", "TIER1",
-                         "Canvas8::drawGrayscaleBitmap(..,matte,..)", "enjin::blitGray8Matte"});
-        if (!bench.cur->retired)
-        {
-            for (size_t si = 0; si < srcs.size(); ++si)
-                for (size_t pi = 0; pi < std::size(kPlacements); ++pi)
-                    for (int matte : kMattes)
-                        for (uint8_t pre : kPrefills)
-                        {
-                            const Src &s = srcs[si];
-                            auto [x, y] = kPlacements[pi];
-                            const uint8_t m = static_cast<uint8_t>(matte);
-                            runPixelCase(bench,
-                                         {{"src", static_cast<int32_t>(si)}, {"x", x}, {"y", y}, {"matte", matte}, {"prefill", pre}},
-                                         [=](Base8 &c) { c.drawGrayscaleBitmap(x, y, s.data, m, static_cast<uint8_t>(s.w), static_cast<uint8_t>(s.h)); },
-                                         nullptr,
-                                         [=](Head4 &c) { blitGray8Matte(c, x, y, s.data, m, s.w, s.h); },
-                                         pre);
-                        }
-        }
-        endPair();
-
-        bench.beginPair({"blit.gray8Opacity", "TIER1",
-                         "Canvas8::drawGrayscaleBitmap(..,matte,..,divisor)", "enjin::blitGray8Opacity"});
-        if (!bench.cur->retired)
-        {
-            for (size_t si = 0; si < srcs.size(); ++si)
-                for (size_t pi = 0; pi < std::size(kPlacements); ++pi)
-                    for (int matte : kMattes)
-                        for (int div : kDivisors)
-                            for (uint8_t pre : kPrefills)
-                            {
-                                const Src &s = srcs[si];
-                                auto [x, y] = kPlacements[pi];
-                                const uint8_t m = static_cast<uint8_t>(matte);
-                                const uint8_t d = static_cast<uint8_t>(div);
-                                runPixelCase(bench,
-                                             {{"src", static_cast<int32_t>(si)}, {"x", x}, {"y", y}, {"matte", matte}, {"divisor", div}, {"prefill", pre}},
-                                             [=](Base8 &c) { c.drawGrayscaleBitmap(x, y, s.data, m, static_cast<uint8_t>(s.w), static_cast<uint8_t>(s.h), d); },
-                                             nullptr,
-                                             [=](Head4 &c) { blitGray8Opacity(c, x, y, s.data, m, s.w, s.h, d); },
-                                             pre);
-                            }
-        }
-        endPair();
-    }
-
-    void sweepBlitCanvas()
-    {
-        auto srcs = sources();
-
-        bench.beginPair({"blit.canvasMasked", "TIER1",
-                         "Canvas8::drawGrayscaleBitmap(..,mask,..)", "enjin::blitCanvasMasked"});
-        if (!bench.cur->retired)
-        {
-            for (size_t si = 0; si < srcs.size(); ++si)
-            {
-                const Src &s = srcs[si];
-                SmallCanvas4 srcCanvas = ingest(s);
-                for (int maskKind = 0; maskKind < 3; ++maskKind)
-                {
-                    std::vector<uint8_t> mask = makeMask(maskKind, s.w, s.h);
-                    const MaskView mv{mask.data(), s.w, s.h};
-                    for (size_t pi = 0; pi < std::size(kPlacements); ++pi)
-                        for (uint8_t pre : kPrefills)
-                        {
-                            auto [x, y] = kPlacements[pi];
-                            runPixelCase(bench,
-                                         {{"src", static_cast<int32_t>(si)}, {"mask", maskKind}, {"x", x}, {"y", y}, {"prefill", pre}},
-                                         [=, &mask](Base8 &c) { c.drawGrayscaleBitmap(x, y, s.data, mask.data(), static_cast<uint8_t>(s.w), static_cast<uint8_t>(s.h)); },
-                                         nullptr,
-                                         [=, &srcCanvas](Head4 &c) { blitCanvasMasked(c, srcCanvas, mv, x, y); },
-                                         pre);
-                        }
-                }
-            }
-        }
-        endPair();
-
-        bench.beginPair({"blit.canvasOpacity", "TIER1",
-                         "Canvas8::drawGrayscaleBitmap(..,matte,..,divisor)", "enjin::blitCanvasOpacity"});
-        if (!bench.cur->retired)
-        {
-            // BASE tested transparency against the 8-bit matte; HEAD tests the
-            // ingested Pixel4 source against a Pixel4(0) default (#158
-            // structural finding: the transparency plane moved).
-            for (size_t si = 0; si < srcs.size(); ++si)
-            {
-                const Src &s = srcs[si];
-                SmallCanvas4 srcCanvas = ingest(s);
-                for (size_t pi = 0; pi < std::size(kPlacements); ++pi)
-                    for (int matte : {0, 16})
-                        for (int div : kDivisors)
-                            for (uint8_t pre : kPrefills)
-                            {
-                                auto [x, y] = kPlacements[pi];
-                                const uint8_t m = static_cast<uint8_t>(matte);
-                                const uint8_t d = static_cast<uint8_t>(div);
-                                runPixelCase(bench,
-                                             {{"src", static_cast<int32_t>(si)}, {"x", x}, {"y", y}, {"matte", matte}, {"divisor", div}, {"prefill", pre}},
-                                             [=](Base8 &c) { c.drawGrayscaleBitmap(x, y, s.data, m, static_cast<uint8_t>(s.w), static_cast<uint8_t>(s.h), d); },
-                                             nullptr,
-                                             [=, &srcCanvas](Head4 &c) { blitCanvasOpacity(c, srcCanvas, x, y, d); },
-                                             pre);
-                            }
-            }
-        }
-        endPair();
-    }
-
-    // Full-canvas textures for the origin-anchored blend pairs.
-    std::vector<uint8_t> blendTexture(int kind)
-    {
-        std::vector<uint8_t> t(PLANE);
-        for (int16_t y = 0; y < H; ++y)
-            for (int16_t x = 0; x < W; ++x)
-            {
-                uint8_t v = 0;
-                switch (kind)
-                {
-                case 0: v = static_cast<uint8_t>((x + y) & 15); break;          // 0-15 identity range
-                case 1: v = static_cast<uint8_t>((x * 2 + y) & 0xFF); break;    // full 8-bit range
-                case 2: v = static_cast<uint8_t>((y % 16) * 16 + (x % 16)); break; // tiled enum256
-                default: v = lock_18x18[(y % 18) * 18 + (x % 18)]; break;       // tiled shipped asset
-                }
-                t[static_cast<size_t>(y) * W + x] = v;
-            }
-        return t;
-    }
-
-    void sweepBlendGray8()
-    {
-        bench.beginPair({"blit.addGray8", "TIER1",
-                         "Canvas8::add(const uint8_t*)", "enjin::addGray8"});
-        if (!bench.cur->retired)
-        {
-            for (int kind = 0; kind < 4; ++kind)
-            {
-                std::vector<uint8_t> tex = blendTexture(kind);
-                for (int pre = 0; pre < 16; ++pre)
-                    runPixelCase(bench, {{"texture", kind}, {"prefill", pre}},
-                                 [&tex](Base8 &c) { c.add(tex.data()); },
-                                 nullptr,
-                                 [&tex](Head4 &c) { addGray8(c, tex.data(), W, H); },
-                                 static_cast<uint8_t>(pre));
-            }
-        }
-        endPair();
-
-        bench.beginPair({"blit.subtractGray8", "TIER1",
-                         "Canvas8::subtract(const uint8_t*)", "enjin::subtractGray8"});
-        if (!bench.cur->retired)
-        {
-            for (int kind = 0; kind < 4; ++kind)
-            {
-                std::vector<uint8_t> tex = blendTexture(kind);
-                for (int pre = 0; pre < 16; ++pre)
-                    runPixelCase(bench, {{"texture", kind}, {"prefill", pre}},
-                                 [&tex](Base8 &c) { c.subtract(tex.data()); },
-                                 nullptr,
-                                 [&tex](Head4 &c) { subtractGray8(c, tex.data(), W, H); },
-                                 static_cast<uint8_t>(pre));
-            }
-        }
-        endPair();
-
-        bench.beginPair({"blit.differenceGray8", "TIER1",
-                         "Canvas8::difference(x,y,tex,w,h)", "enjin::differenceGray8"});
-        if (!bench.cur->retired)
-        {
-            auto srcs = sources();
-            for (size_t si = 0; si < srcs.size(); ++si)
-                for (size_t pi = 0; pi < std::size(kPlacements); ++pi)
-                    for (int pre = 0; pre < 16; ++pre)
-                    {
-                        const Src &s = srcs[si];
-                        auto [x, y] = kPlacements[pi];
-                        runPixelCase(bench,
-                                     {{"src", static_cast<int32_t>(si)}, {"x", x}, {"y", y}, {"prefill", pre}},
-                                     [=](Base8 &c) { c.difference(x, y, s.data, static_cast<uint8_t>(s.w), static_cast<uint8_t>(s.h)); },
-                                     nullptr,
-                                     [=](Head4 &c) { differenceGray8(c, x, y, s.data, s.w, s.h); },
-                                     static_cast<uint8_t>(pre));
-                    }
-        }
-        endPair();
-    }
-
-    // Overlay canvases for the canvas-flavoured blends. On both branches the
-    // overlays Eisei blends are drawn with 0-15 literals, so the pair paints
-    // both sides with the identical 0-15 pattern (identity correspondence,
-    // § 5) and the divergence under test is the blend arithmetic itself:
-    // BASE blends at 8-bit and lets the panel mask the sum (15+10=25 -> 9);
-    // HEAD clamps at 15.
-    void paintOverlayPattern(int kind, Base8 &o8, Head4 &o4)
-    {
-        for (int16_t y = 0; y < H; ++y)
-            for (int16_t x = 0; x < W; ++x)
-            {
-                uint8_t v = 0;
-                switch (kind)
-                {
-                case 0: v = 8; break;
-                case 1: v = static_cast<uint8_t>((x + y) & 15); break;
-                case 2: v = static_cast<uint8_t>((x * 7 + y * 13) & 15); break;
-                default:
-                {
-                    const int dx = x - 63, dy = y - 63;
-                    v = (dx * dx + dy * dy <= 40 * 40) ? 15 : 0;
-                    break;
-                }
-                }
-                o8.setPixel(x, y, v);
-                o4.setPixel(x, y, Pixel4(v));
-            }
-    }
-
-    void sweepBlendCanvas()
-    {
-        static auto overlay8 = std::make_unique<Base8>();
-        static auto overlay4 = std::make_unique<Head4>();
-
-        bench.beginPair({"blit.addCanvas", "TIER1",
-                         "Canvas8::add(Canvas8*)", "enjin::addCanvas"});
-        if (!bench.cur->retired)
-        {
-            for (int kind = 0; kind < 4; ++kind)
-            {
-                paintOverlayPattern(kind, *overlay8, *overlay4);
-                for (int pre = 0; pre < 16; ++pre)
-                    runPixelCase(bench, {{"pattern", kind}, {"prefill", pre}},
-                                 [](Base8 &c) { c.add(overlay8.get()); },
-                                 nullptr,
-                                 [](Head4 &c) { addCanvas(c, *overlay4); },
-                                 static_cast<uint8_t>(pre));
-            }
-        }
-        endPair();
-
-        bench.beginPair({"blit.subtractCanvas", "TIER1",
-                         "Canvas8::subtract(Canvas8*)", "enjin::subtractCanvas"});
-        if (!bench.cur->retired)
-        {
-            for (int kind = 0; kind < 4; ++kind)
-            {
-                paintOverlayPattern(kind, *overlay8, *overlay4);
-                for (int pre = 0; pre < 16; ++pre)
-                    runPixelCase(bench, {{"pattern", kind}, {"prefill", pre}},
-                                 [](Base8 &c) { c.subtract(overlay8.get()); },
-                                 nullptr,
-                                 [](Head4 &c) { subtractCanvas(c, *overlay4); },
-                                 static_cast<uint8_t>(pre));
-            }
-        }
-        endPair();
-    }
-
-    void sweepFillRectWithPattern()
-    {
-        bench.beginPair({"blit.pattern", "TIER1",
-                         "Canvas8::fillRectWithPattern", "enjin::fillRectWithPattern"});
-        if (!bench.cur->retired)
-        {
-            static const uint8_t checker15[4] = {0, 15, 15, 0};
-            static const uint8_t checker255[4] = {0, 255, 255, 0};
-            static const uint8_t dither4[4] = {0, 8, 4, 12};
-            for (int i = 0; i < 256; ++i)
-                enum256[i] = static_cast<uint8_t>(i);
-            const Src patterns[] = {
-                {"checker15", checker15, 2, 2},
-                {"checker255", checker255, 2, 2},
-                {"enum256", enum256, 16, 16},
-                {"dither4", dither4, 2, 2}};
-            const std::pair<int16_t, int16_t> sizes[] = {
-                {1, 1}, {8, 8}, {16, 16}, {48, 32}, {127, 127}, {0, 0}, {-3, 5}, {5, -3}, {130, 130}};
-            for (size_t pi = 0; pi < std::size(patterns); ++pi)
-                for (auto [x, y] : kPlacements)
-                    for (auto [w, h] : sizes)
-                    {
-                        const Src &p = patterns[pi];
-                        runPixelCase(bench,
-                                     {{"pattern", static_cast<int32_t>(pi)}, {"x", x}, {"y", y}, {"w", w}, {"h", h}},
-                                     [=](Base8 &c) { c.fillRectWithPattern(x, y, w, h, p.data, p.w, p.h); },
-                                     nullptr,
-                                     [=](Head4 &c) { fillRectWithPattern(c, x, y, w, h, p.data, p.w, p.h); });
-                    }
-        }
-        endPair();
-    }
-
     // --- Tier 1 + Tier 2: text ---------------------------------------------
 
     struct FontFixture
@@ -1365,7 +930,7 @@ int main(int argc, char **argv)
     {
         printf("implementation-pin hashes (FNV-1a-64 of the graphics headers) —\n"
                "copy the relevant pair into a new tests/waivers.hpp entry:\n");
-        for (const char *f : {"canvas.hpp", "primitives.hpp", "text_renderer.hpp", "blit.hpp"})
+        for (const char *f : {"canvas.hpp", "primitives.hpp", "text_renderer.hpp"})
             printf("  %-18s 0x%016llx\n", f,
                    static_cast<unsigned long long>(pinHash(f)));
         return 0;
@@ -1374,7 +939,7 @@ int main(int argc, char **argv)
     printf("visual_parity_bench — full pair sweep, M3 (unwn #166, epic #163)\n");
     printf("plane: memcmp(Canvas8 & 0x0F, Canvas4 unpacked) on 127x127; identity on 0-15\n");
     printf("A: BASE algo @8bpp   B: HEAD algo @8bpp   C: HEAD algo @4bpp\n");
-    printf("A!=B labels ALGORITHM, B!=C labels DEPTH; blit pairs are Pixel4-native (A vs C only)\n\n");
+    printf("A!=B labels ALGORITHM, B!=C labels DEPTH\n\n");
 
     selfcheckSubstrateIdentity();
     selfcheckCrossPathLine();
@@ -1393,11 +958,6 @@ int main(int argc, char **argv)
     sweepFillTriangle();
     sweepCircleGuards();
     sweepDrawArc();
-    sweepBlitGray8();
-    sweepBlitCanvas();
-    sweepBlendGray8();
-    sweepBlendCanvas();
-    sweepFillRectWithPattern();
     sweepTextDrawChar();
     sweepTextPrint();
     sweepTextPrintln();

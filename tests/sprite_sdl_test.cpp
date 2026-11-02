@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
         : "Enjin2 Sprite Test (C++)";
 
     printf("Sprite SDL3 test — mode: %s\n", use_lua ? "Lua" : "C++");
-    printf("Pikachu: 38x38 sprite, 1 frame, palette indices 0-14\n");
+    printf("Pikachu: 38x38 sprite, 1 frame, in Palette roles\n");
 
     // SDL init
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
         enjin2::LuaResult r = g_lua.loadScript(script_path);
         if (!r.success) {
             std::cerr << "Lua load error: " << r.error << "\n";
-            g_canvas.clear(enjin2::Pixel4(14));
+            g_canvas.clear(enjin2::Pixel4(enjin2::ROLE_ACCENT4));  // an error: the alert role
         }
     }
 #else

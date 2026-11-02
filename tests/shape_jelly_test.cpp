@@ -221,9 +221,9 @@ static bool openStar(Star& s) {
     if (!s.pack.open(*s.src, &e)) return false;
     s.arena.allocateBacking(64 * 1024);
     for (uint8_t k = 0; k < SHAPE_SLOT_COUNT; ++k) s.look.set(ShapeSlot(k), 1);
-    s.look.colour[0] = 9;
-    s.look.colour[1] = 4;
-    s.look.colour[2] = 0;
+    s.look.colour[0] = ROLE_ACCENT2;
+    s.look.colour[1] = ROLE_ACCENT;
+    s.look.colour[2] = ROLE_BG;
     if (!s.pet.build(s.pack, s.look, s.arena, &e)) return false;
     s.pet.setPosition(px(80, 150));
     return true;
@@ -355,8 +355,8 @@ static void testStarBreathes() {
     bare.set(ShapeSlot::Body, 1);
     bare.set(ShapeSlot::Eyes, 1);
     bare.set(ShapeSlot::Mouth, 1);
-    bare.colour[0] = 9;
-    bare.colour[1] = 4;
+    bare.colour[0] = ROLE_ACCENT2;
+    bare.colour[1] = ROLE_ACCENT;
     ShapeError e;
     ASSERT(s.pet.setLook(bare, &e), e.text);
     static Layer layer, rest;

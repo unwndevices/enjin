@@ -82,12 +82,12 @@ public:
      * @param h Height of the label in pixels
      * @param textFont Font to use (nullptr for default)
      * @param fontSize Font size multiplier
-     * @param textColor Text color (0-15 for 4-bit grayscale)
+     * @param textColor Text color, a Palette role
      * @param backgroundColor Background color (0 for transparent)
      * @param pointerHeight Height of tooltip pointer (0 for no pointer)
      */
     Label(Object* owner, uint16_t w, uint16_t h, const GFXfont* textFont = nullptr, 
-          uint8_t fontSize = 1, uint8_t textColor = 14, uint8_t backgroundColor = 0, 
+          uint8_t fontSize = 1, uint8_t textColor = ROLE_TEXT, uint8_t backgroundColor = 0, 
           uint8_t pointerHeight = 0)
         : Component(owner)
         , width(w)

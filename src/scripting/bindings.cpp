@@ -445,7 +445,7 @@ uint8_t LuaCanvas::measureTextHeight(uint8_t size, const ::GFXfont* font) {
 //==============================================================================
 
 LuaBindings::LuaBindings(LuaEngine* luaEngine)
-    : engine(luaEngine), currentCanvas(nullptr), currentInput(nullptr), currentColor(15), lineWidth(1) {
+    : engine(luaEngine), currentCanvas(nullptr), currentInput(nullptr), currentColor(ROLE_TEXT), lineWidth(1) {
     g_currentBindings = this;
 }
 
@@ -456,7 +456,7 @@ void LuaBindings::registerAll() {
 
     // Reset all per-reload state so every load starts clean
     resetSpritePool();
-    currentColor = 15;
+    currentColor = ROLE_TEXT;
     lineWidth = 1;
     // Style slots (#19/#37): a fresh applet starts on the ROM theme defaults —
     // clearing the mask discards every override without touching the values.
@@ -511,14 +511,32 @@ void LuaBindings::registerAll() {
     // === gfx.* namespace table ===
     static constexpr LuaApiEnum kShapeMode = luaApiEnum("ShapeMode", kShapeModeNames);
     static constexpr LuaApiEnum kAlign = luaApiEnum("Align", kNumberAlignNames);
-    static constexpr LuaApiEnum kPalettePreset = luaApiEnum("PalettePreset", kPalettePresetNames);
-
-    // Palette indices are authored directly; only transparency is named.
+    // The 8 Palette roles (ADR-0022) and transparency. The numbers 0-7 and 15
+    // stay legal wherever a colour is taken.
     static constexpr LuaApiEntry kGfxColor[] = {
-        luaConstant("TRANSPARENT", 15, "Palette index 15: nothing is drawn, the layers below show."),
+        luaConstant("BG", ROLE_BG, "Palette index 0, the bg role: the canvas background, the empty screen."),
+        luaConstant("SURFACE", ROLE_SURFACE, "Palette index 1, the surface role: panels, list rows, cards."),
+        luaConstant("MUTED", ROLE_MUTED,
+                    "Palette index 2, the muted role: secondary and disabled text, borders, "
+                    "dividers, shadows."),
+        luaConstant("TEXT", ROLE_TEXT, "Palette index 3, the text role: main text and icons."),
+        luaConstant("ACCENT", ROLE_ACCENT,
+                    "Palette index 4, the accent role: selection, focus, the main action; "
+                    "content on it is BG."),
+        luaConstant("ACCENT2", ROLE_ACCENT2,
+                    "Palette index 5, the accent2 role: a second hue for art and games; never "
+                    "carries content."),
+        luaConstant("ACCENT3", ROLE_ACCENT3,
+                    "Palette index 6, the accent3 role: a third hue for art and games; never "
+                    "carries content."),
+        luaConstant("ACCENT4", ROLE_ACCENT4,
+                    "Palette index 7, the accent4 role: alerts (low battery, recording, errors, "
+                    "danger); content on it is BG."),
+        luaConstant("TRANSPARENT", PALETTE_TRANSPARENT,
+                    "Palette index 15: nothing is drawn, the layers below show."),
     };
     static constexpr LuaApiModule kGfxColorModule = luaApiModule(
-        LuaApiScope::Table, "gfx.COLOR", "Named palette indices.", kGfxColor);
+        LuaApiScope::Table, "gfx.COLOR", "The Palette roles, named by their job.", kGfxColor);
 
     static constexpr LuaApiEntry kGfx[] = {
         // Canvas
@@ -528,15 +546,15 @@ void LuaBindings::registerAll() {
                     "Height of the active layer in pixels; 0 with no canvas."),
         luaFunction("clear", lua_clear, "(color:int?=current) -> nil",
                     "Fill the active layer with one colour.",
-                    "color: palette index; defaults to the current draw colour")
-            .note("The draw colour starts at 15 (transparent) after every reload, so a bare "
-                  "gfx.clear() clears to transparent until gfx.setColor picks another."),
+                    "color: a gfx.COLOR role or 15; defaults to the current draw colour")
+            .note("The draw colour starts at gfx.COLOR.TEXT after every reload, so a bare "
+                  "gfx.clear() fills with text until gfx.setColor picks another."),
 
         // Drawing state
         luaFunction("setColor", lua_setColor, "(color:int) -> nil",
                     "Set the draw colour the shapes and text use.",
-                    "color: palette index; a non-number is ignored")
-            .note("Starts at 15 (transparent) after every reload."),
+                    "color: a gfx.COLOR role or 15 (8-14 raise); a non-number is ignored")
+            .note("Starts at gfx.COLOR.TEXT (3) after every reload."),
         luaFunction("getColor", lua_getColor, "() -> int", "The current draw colour."),
         luaFunction("setLineWidth", lua_setLineWidth, "(width:int) -> nil",
                     "Set the stroke width of gfx.line and of the \"line\" shape modes.",
@@ -600,7 +618,7 @@ void LuaBindings::registerAll() {
                     "Set one pixel of the active layer to the given colour.",
                     "x: column\n"
                     "y: row\n"
-                    "color: palette index (not the draw colour)"),
+                    "color: a gfx.COLOR role or 15 (not the draw colour)"),
         luaFunction("getPixel", lua_getPixel, "(x:int, y:int) -> int",
                     "The palette index of one pixel of the active layer, not of the composited frame.",
                     "x: column\n"
@@ -614,7 +632,7 @@ void LuaBindings::registerAll() {
                     "y: top edge\n"
                     "w: width\n"
                     "h: height\n"
-                    "color: palette index; defaults to the draw colour"),
+                    "color: a gfx.COLOR role or 15; defaults to the draw colour"),
         luaFunction("fastDrawLine", lua_fastDrawLine,
                     "(x1:number, y1:number, x2:number, y2:number, color:int?=current) -> nil",
                     "Draw a 1 px line clipped to the layer; values are truncated, not rounded.",
@@ -622,30 +640,13 @@ void LuaBindings::registerAll() {
                     "y1: start row\n"
                     "x2: end column\n"
                     "y2: end row\n"
-                    "color: palette index; defaults to the draw colour"),
+                    "color: a gfx.COLOR role or 15; defaults to the draw colour"),
 
-        // Palette
-        luaFunction("setPaletteColor", lua_setPaletteColor,
-                    "(index:int, hex:string) -> nil\n"
-                    "(index:int, r:int, g:int, b:int) -> nil",
-                    "Change the colour of one palette entry.",
-                    "index: palette index; 15 is ignored and larger values wrap\n"
-                    "hex: \"#rrggbb\" (the # is optional); an invalid string sets black\n"
-                    "r: red 0..255\n"
-                    "g: green 0..255\n"
-                    "b: blue 0..255")
-            .note("The palette is global to the process, not to one applet."),
+        // Palette: read-only, the system sets it (Settings)
         luaFunction("getPaletteColor", lua_getPaletteColor, "(index:int) -> r:int, g:int, b:int",
                     "The colour of one palette entry; index 15 gives 0, 0, 0.",
-                    "index: palette index; larger values wrap"),
-        luaFunction("loadPalette", lua_loadPalette, "(name:PalettePreset) -> boolean",
-                    "Replace the palette with a built-in preset; false for an unknown name.",
-                    "name: the preset; \"gameboy\" has 4 colours, so indices wrap mod 4")
-            .withEnum(kPalettePreset)
-            .note("The palette is global to the process, not to one applet."),
-        luaFunction("getPaletteSize", lua_getPaletteSize, "() -> int",
-                    "How many colours the current palette has."),
-
+                    "index: a gfx.COLOR role, or 15 (black); 8-14 raise")
+            .note("The user picks the palette in Settings; an applet cannot change it."),
         // Sprites
         luaFunction("newSprite", lua_newSprite,
                     "(data:userdata, cellW:int, cellH:int, cols:int, rows:int) -> handle:int",
@@ -707,7 +708,7 @@ void LuaBindings::registerAll() {
         luaFunction("clearLayer", lua_clearLayer, "(layer:int?, color:int?=0) -> nil",
                     "Fill one layer with a colour.",
                     "layer: 1..gfx.getLayerCount(); nil means the active layer\n"
-                    "color: palette index; 0 by default, unlike gfx.clear"),
+                    "color: a gfx.COLOR role or 15; 0 by default, unlike gfx.clear"),
         luaFunction("getLayerCount", lua_getLayerCount, "() -> int",
                     "How many layers scripts can draw on."),
         luaFunction("setLayerVisible", lua_setLayerVisible, "(layer:int, visible:boolean) -> nil",
@@ -768,7 +769,7 @@ void LuaBindings::registerAll() {
         luaConstant("LAYER_MID", 2, "The middle layer."),
         luaConstant("LAYER_FG", 3, "The front layer."),
 
-        luaTable("COLOR", kGfxColorModule, "Named palette indices; only transparency is named."),
+        luaTable("COLOR", kGfxColorModule, "The Palette roles, named by their job, and TRANSPARENT."),
     };
     static constexpr LuaApiModule kGfxModule = luaApiModule(
         LuaApiScope::Table, "gfx",

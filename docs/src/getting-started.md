@@ -52,7 +52,8 @@ function draw()
 end
 ```
 
-Drawing colours are palette indices 0–14; `gfx.COLOR.TRANSPARENT` is 15.
+Drawing colours are the 8 Palette roles 0–7, named by `gfx.COLOR` (`BG`, `SURFACE`, `MUTED`,
+`TEXT`, `ACCENT` … `ACCENT4`); `gfx.COLOR.TRANSPARENT` is 15. A colour 8–14 raises an error.
 
 ## Next Steps
 

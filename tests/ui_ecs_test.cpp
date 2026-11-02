@@ -13,7 +13,6 @@
 #include <enjin2/ui/system.hpp>
 #include <enjin2/ui/world.hpp>
 #include <enjin2/ui/systems.hpp>
-#include <enjin2/ui/theme.hpp>
 #include <enjin2/graphics/canvas.hpp>
 #include <cstdio>
 
@@ -375,12 +374,6 @@ int main() {
     test_animation_system_loop();
     test_input_system();
     test_render_system();
-
-    // Theme: the default is a real, populated theme (not the old empty placeholder).
-    ASSERT((uint8_t)kDefaultTheme.background == 0, "theme: default background is black");
-    ASSERT((uint8_t)kDefaultTheme.foreground == 15, "theme: default foreground is white");
-    ASSERT(kDefaultTheme.itemHeight > 0, "theme: default item height is non-zero");
-    ASSERT((uint8_t)Theme::dark().accent == 15, "theme: dark() accent is bright");
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

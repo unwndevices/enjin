@@ -25,7 +25,7 @@ const config = {
     components: {
       classes: [
         'ButtonDial', 'C_Draw', 'C_Drawable', 'C_ImageCache', 'C_LuaScript',
-        'C_Planet', 'C_Position', 'C_Probe', 'C_Satellite', 'C_Sprite',
+        'C_Position', 'C_Sprite',
         'FillUpGauge', 'ImageCacheException', 'Label', 'Slider', 'Tickmarks'
       ],
       description: 'Component types for game objects',

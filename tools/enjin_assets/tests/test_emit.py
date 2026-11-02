@@ -15,10 +15,10 @@ from enjin_assets import emit  # noqa: E402
 
 
 def _frames(n, cell=4):
-    """n frames of a cell*cell tile, each filled with its index (low nibble)."""
+    """n frames of a cell*cell tile, each filled with a Palette role (its index mod 8)."""
     out = bytearray()
     for i in range(n):
-        out += bytes([i & 0x0F]) * (cell * cell)
+        out += bytes([i % 8]) * (cell * cell)
     return bytes(out)
 
 
@@ -34,6 +34,17 @@ def test_njn_header_and_roundtrip():
     cw, ch, cols, rows = struct.unpack("<BBBB", parsed.chunks[emit.CHUNK_META])
     assert (cw, ch, cols, rows) == (4, 4, 3, 1)
     assert len(parsed.chunks[emit.CHUNK_PIXL]) == 3 * 16
+
+
+def test_pixels_off_the_roles_are_refused():
+    # 8..14 are not Palette roles (ADR-0022): the engine refuses such a file, so emit does too.
+    for build in (lambda px: emit.build_njn(1, 1, px, tile_count=1),):
+        try:
+            build(bytes([9]))
+            assert False, "expected ValueError"
+        except ValueError as e:
+            assert "pixel index 9 is not a Palette role" in str(e)
+    assert emit.parse_njn(emit.build_njn(1, 1, bytes([7]), tile_count=1))
 
 
 def test_meta_geometry_matches_grid_and_pixel_padding():

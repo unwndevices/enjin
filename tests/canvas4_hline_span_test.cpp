@@ -24,12 +24,15 @@ static int failures = 0;
 
 // A busy background so a span that over- or under-writes a neighbouring
 // nibble shows up as a mismatch.
+// Every valid index (the 8 Palette roles and transparent, ADR-0022).
+static constexpr uint8_t kValid[9] = {0, 1, 2, 3, 4, 5, 6, 7, PALETTE_TRANSPARENT};
+
 template <uint16_t W, uint16_t H>
 static void paintBackground(Canvas4<W, H>& c)
 {
     for (int16_t y = 0; y < H; ++y)
         for (int16_t x = 0; x < W; ++x)
-            c.setPixel(x, y, Pixel4(static_cast<uint8_t>((x * 7 + y * 3 + 1) % 16)));
+            c.setPixel(x, y, Pixel4(kValid[(x * 7 + y * 3 + 1) % 9]));
     c.clearDirty();
 }
 
@@ -60,7 +63,7 @@ static size_t sweepMismatches()
 {
     static Canvas4<W, H> fast, ref;
     size_t bad = 0;
-    const Pixel4 colours[] = {Pixel4(0), Pixel4(13)};
+    const Pixel4 colours[] = {Pixel4(0), Pixel4(ROLE_ACCENT4)};
     for (Pixel4 colour : colours)
     {
         for (int16_t x = -5; x <= static_cast<int16_t>(W) + 2; ++x)
@@ -100,8 +103,8 @@ static void test_full_row_spans()
     static Canvas4<47, 20> fast, ref;
     paintBackground(fast);
     paintBackground(ref);
-    fast.drawHLine(-3, 4, 60, Pixel4(9));
-    referenceHLine(ref, -3, 4, 60, Pixel4(9));
+    fast.drawHLine(-3, 4, 60, Pixel4(ROLE_ACCENT4));
+    referenceHLine(ref, -3, 4, 60, Pixel4(ROLE_ACCENT4));
     fast.fillRect(1, 8, 45, 5, Pixel4(6));
     for (int16_t r = 0; r < 5; ++r)
         referenceHLine(ref, 1, static_cast<int16_t>(8 + r), 45, Pixel4(6));

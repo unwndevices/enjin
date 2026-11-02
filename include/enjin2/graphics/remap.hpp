@@ -22,11 +22,9 @@ namespace enjin2 {
  * that must honour transparency check the source index for 15 first (the
  * compositor does exactly this).
  *
- * The compositor ticket shipped the skeleton constructors `identity()` and
- * `solid()`; the ramp palette ticket adds the ramp-derived `lighten()`,
- * `darken()` and `onRamp()`, built on the ramp structure in @ref Palette. The
- * shader-composition constructors (`recolor`, `compose`) land with the index
- * shader; they build on this same `lut[16]` representation.
+ * Constructors: `identity()`, `solid()`, `recolor()`, `compose()`, and the
+ * shade-chain steps `towardBg()` / `towardText()` built on the Palette roles
+ * (@ref Palette::towardBg). All share this same `lut[16]` representation.
  */
 struct Remap {
     /// The lookup table: `lut[i]` is the index that source index `i` maps to.
@@ -47,8 +45,8 @@ struct Remap {
      * Entry 15 is left as transparent passthrough (`lut[15] == 15`), so a solid
      * tint recolours a whole layer to one index without filling its holes.
      *
-     * @param index The palette index (0-15) every source 0-14 maps to.
-     * @return A `Remap` mapping 0-14 → `index`, 15 → 15.
+     * @param index The Palette role every non-transparent source maps to.
+     * @return A `Remap` mapping 0-14 → `index` (8-14 never occur), 15 → 15.
      */
     static constexpr Remap solid(uint8_t index) {
         Remap r{};
@@ -61,56 +59,36 @@ struct Remap {
     }
 
     /**
-     * @brief A ramp-wide lighten: every index maps one shade lighter.
+     * @brief One shade-chain step toward `bg` for every index.
      *
-     * Each entry is @ref Palette::lighten of its source index, so the whole
-     * frame steps toward the light end of its ramp while staying on-ramp
-     * (already-light shades hold; transparency stays transparent).
+     * Each entry is @ref Palette::towardBg of its source index: `text ->
+     * muted -> surface -> bg`, `bg` holds, an accent steps into `muted`,
+     * transparency stays transparent. Compose it to step further; three steps
+     * reach `bg` from anywhere.
      *
-     * @return A `Remap` where `lut[i] == Palette::lighten(i)`.
+     * @return A `Remap` where `lut[i] == Palette::towardBg(i)`.
      */
-    static constexpr Remap lighten() {
+    static constexpr Remap towardBg() {
         Remap r{};
         for (uint8_t i = 0; i < 16; ++i) {
-            r.lut[i] = Palette::lighten(i);
+            r.lut[i] = Palette::towardBg(i);
         }
         return r;
     }
 
     /**
-     * @brief A ramp-wide darken: every index maps one shade darker.
+     * @brief One shade-chain step toward `text` for every index.
      *
-     * The dark-end mirror of @ref lighten — each entry is @ref Palette::darken
-     * of its source index.
+     * The mirror of @ref towardBg — each entry is @ref Palette::towardText of
+     * its source index (`bg -> surface -> muted -> text`, an accent steps
+     * into `text`).
      *
-     * @return A `Remap` where `lut[i] == Palette::darken(i)`.
+     * @return A `Remap` where `lut[i] == Palette::towardText(i)`.
      */
-    static constexpr Remap darken() {
+    static constexpr Remap towardText() {
         Remap r{};
         for (uint8_t i = 0; i < 16; ++i) {
-            r.lut[i] = Palette::darken(i);
-        }
-        return r;
-    }
-
-    /**
-     * @brief Restrict another remap to a single ramp; pass everything else
-     *        through unchanged.
-     *
-     * Indices on ramp `rampId` (i.e. `i / RAMP_SHADES == rampId`) take
-     * `inner`'s mapping; all other indices — including transparency (15, which
-     * is on no ramp) — map to themselves. This is how a shader clips an effect
-     * to one hue, e.g. `Remap::onRamp(3, Remap::lighten())` lightens only the
-     * scenery ramp.
-     *
-     * @param rampId Ramp (hue) 0-4 the inner remap applies to.
-     * @param inner The remap applied to indices on that ramp.
-     * @return The ramp-clipped `Remap`.
-     */
-    static constexpr Remap onRamp(uint8_t rampId, const Remap& inner) {
-        Remap r{};
-        for (uint8_t i = 0; i < 16; ++i) {
-            r.lut[i] = (i / RAMP_SHADES == rampId) ? inner.lut[i] : i;
+            r.lut[i] = Palette::towardText(i);
         }
         return r;
     }
@@ -137,7 +115,7 @@ struct Remap {
      *
      * Sequential composition in call order: the result maps `i` to
      * `second.apply(first.apply(i))`, so `compose(a, b)` reads "do a, then b".
-     * This is how the presets stack passes — e.g. clip to a ramp then lighten —
+     * This is how passes stack — e.g. two `towardBg` steps for a deeper dim —
      * as a single `Remap` with no per-pixel double lookup.
      *
      * @param first  The remap applied first.

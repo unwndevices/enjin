@@ -94,7 +94,7 @@ end
 
 ## Drawing
 
-`draw()` runs after every `update` call. Start each frame with `gfx.clear()` to erase the previous frame, then set a palette index with `gfx.setColor()` before each draw command. Drawing functions live under `gfx.*`.
+`draw()` runs after every `update` call. Start each frame with `gfx.clear(gfx.COLOR.BG)` to erase the previous frame (a bare `gfx.clear()` fills with the current draw colour, `text` after a reload), then set a colour with `gfx.setColor()` before each draw command. Drawing functions live under `gfx.*`.
 
 ```lua
 -- tamagotchi.lua lines 130–136
@@ -109,7 +109,7 @@ function draw()
     gfx.text("HUNGER:", 10, 34)
 ```
 
-Opaque colours use palette indices 0–14, whose RGB values depend on the current palette. Only transparency is named: `gfx.COLOR.TRANSPARENT` (15).
+Opaque colours are the 8 Palette roles 0–7, whose RGB values depend on the current palette; `gfx.COLOR` names them by job (`gfx.COLOR.TEXT` is 3) and names transparency, `gfx.COLOR.TRANSPARENT` (15). A colour 8–14 is no role and raises an error.
 
 ## Time
 

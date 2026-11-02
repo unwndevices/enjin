@@ -3,7 +3,6 @@
 #include "../component.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
-#include "../theme.hpp"
 #include "../../core/types.hpp"
 #include "../../graphics/canvas.hpp"
 #include "../../graphics/primitives.hpp"
@@ -45,16 +44,16 @@ enum class GaugeMode {
  */
 struct GaugeComponent : public Component<GaugeComponent> {
     uint16_t diameter = 0;             ///< Gauge width == height (a circle)
-    Pixel4 rimColor = Pixel4(13);      ///< Rim and center-line color
+    Pixel4 rimColor = Pixel4(ROLE_MUTED);  ///< Rim and center-line color (a border: muted)
     GaugeMode mode = GaugeMode::Unidirectional; ///< Fill direction
 
-    /// @brief Grayscale value the dithered fill paints with.
-    static constexpr uint8_t kFillValue = 8;
-    /// @brief Grayscale value the level line paints with.
-    static constexpr uint8_t kLineValue = 8;
+    /// @brief Palette role the dithered fill paints with (a progress fill: accent).
+    static constexpr uint8_t kFillValue = ROLE_ACCENT;
+    /// @brief Palette role the level line paints with (the fill's edge: accent).
+    static constexpr uint8_t kLineValue = ROLE_ACCENT;
 
     /// @brief Construct with a diameter, color and mode.
-    GaugeComponent(uint16_t d = 0, Pixel4 color = Pixel4(13),
+    GaugeComponent(uint16_t d = 0, Pixel4 color = Pixel4(ROLE_MUTED),
                    GaugeMode m = GaugeMode::Unidirectional)
         : diameter(d), rimColor(color), mode(m) {}
 

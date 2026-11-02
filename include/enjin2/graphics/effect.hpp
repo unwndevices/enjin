@@ -153,8 +153,8 @@ struct Mask {
  *
  * The mask decides *where* the remap applies; unmasked pixels pass through
  * untouched. The colour stage is the shared @ref Remap primitive, so an effect
- * clips by hue for free (`Remap::onRamp`) and stacks passes for free
- * (`Remap::compose`). Sampling is at absolute coordinates plus phase, the R4
+ * steps along the shade chain for free (`Remap::towardBg` / `towardText`)
+ * and stacks passes for free (`Remap::compose`). Sampling is at absolute coordinates plus phase, the R4
  * "one grid" rule that keeps dirty tiles seamless.
  */
 struct Effect {
@@ -198,38 +198,40 @@ struct Effect {
     // --- Presets: each is a Mask + a Remap primitive, never bespoke code. ---
 
     /**
-     * @brief Holo foil: a diagonal lighten band that travels with `phase`.
+     * @brief Holo foil: a diagonal band, one step toward `text`, that travels
+     *        with `phase`.
      * @param phase Absolute x phase; advance it per frame for the shimmer.
      */
     static constexpr Effect holo(int16_t phase = 0) {
-        return Effect(Mask::stripe(6, 2), Remap::lighten(), phase, 0);
+        return Effect(Mask::stripe(6, 2), Remap::towardText(), phase, 0);
     }
 
-    /// @brief Dim: darken the whole shaded region by one shade.
+    /// @brief Dim: the whole shaded region one step toward `bg`.
     static constexpr Effect dim() {
-        return Effect(Mask::full(), Remap::darken());
+        return Effect(Mask::full(), Remap::towardBg());
     }
 
     /**
-     * @brief Dither fade: darken an ordered-dither fraction of the region.
+     * @brief Dither fade: an ordered-dither fraction of the region one step
+     *        toward `bg`.
      * @param level Bayer coverage 0..16 — animate this (not phase) to dissolve.
      */
     static constexpr Effect fade(uint8_t level) {
-        return Effect(Mask::bayer(level), Remap::darken());
+        return Effect(Mask::bayer(level), Remap::towardBg());
     }
 
-    /// @brief Scanline: darken every other horizontal line.
+    /// @brief Scanline: every other horizontal line one step toward `bg`.
     static constexpr Effect scanline() {
-        return Effect(Mask::hlines(2, 1), Remap::darken());
+        return Effect(Mask::hlines(2, 1), Remap::towardBg());
     }
 
     /**
-     * @brief Ghost: a displaced half-tone lighten smear.
+     * @brief Ghost: a displaced half-tone smear, one step toward `text`.
      * @param dx Phase x offset of the smear.
      * @param dy Phase y offset of the smear.
      */
     static constexpr Effect ghost(int16_t dx = 1, int16_t dy = 1) {
-        return Effect(Mask::bayer(8), Remap::lighten(), dx, dy);
+        return Effect(Mask::bayer(8), Remap::towardText(), dx, dy);
     }
 };
 

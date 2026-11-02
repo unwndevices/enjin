@@ -2,6 +2,7 @@
 
 #include "../core/types.hpp"
 #include "../core/memory.hpp"
+#include "palette.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -681,8 +682,8 @@ namespace enjin2
         // Text cursor and color state
         int16_t cursor_x = 0;
         int16_t cursor_y = 0;
-        uint8_t textcolor = 15;  // Default to white in 4-bit grayscale
-        uint8_t textbgcolor = 0; // Default to black background
+        uint8_t textcolor = ROLE_TEXT;  // Default to the text Palette role
+        uint8_t textbgcolor = ROLE_BG;  // Default to the bg Palette role
         uint8_t textsize_x = 1;  // Text size scaling
         uint8_t textsize_y = 1;
         bool wrap = true;                            // Text wrapping

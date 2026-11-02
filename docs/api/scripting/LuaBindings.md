@@ -319,19 +319,7 @@ Stored via "enjin_bindings" key during registerAll(). Used by static Lua C-funct
 
 ---
 
-### `static int lua_setPaletteColor(lua_State *L)`
-
----
-
 ### `static int lua_getPaletteColor(lua_State *L)`
-
----
-
-### `static int lua_loadPalette(lua_State *L)`
-
----
-
-### `static int lua_getPaletteSize(lua_State *L)`
 
 ---
 

@@ -105,43 +105,51 @@ static void test_shade_pixel_shader_paints_hole()
 static void test_presets()
 {
     printf("--- presets ---\n");
-    // dim: full mask, darken -> base(1) darkens to dark(2), everywhere.
+    // dim: full mask, one step toward bg -> text(3) dims to muted(2), everywhere.
     Effect d = Effect::dim();
-    ASSERT(d.shadePixel(1, 0, 0) == 2, "dim: base -> dark at origin");
-    ASSERT(d.shadePixel(1, 9, 5) == 2, "dim: base -> dark everywhere (full mask)");
+    ASSERT(d.shadePixel(ROLE_TEXT, 0, 0) == ROLE_MUTED, "dim: text -> muted at origin");
+    ASSERT(d.shadePixel(ROLE_TEXT, 9, 5) == ROLE_MUTED, "dim: text -> muted everywhere (full mask)");
+    ASSERT(d.shadePixel(ROLE_SURFACE, 0, 0) == ROLE_BG, "dim: surface -> bg");
+    ASSERT(d.shadePixel(ROLE_ACCENT, 0, 0) == ROLE_MUTED, "dim: accent -> muted");
     ASSERT(d.shadePixel(15, 0, 0) == 15, "dim: transparency held");
 
-    // scanline: only every other row darkens.
+    // scanline: only every other row steps toward bg.
     Effect s = Effect::scanline();
-    ASSERT(s.shadePixel(1, 0, 0) == 2, "scanline: even row darkens");
-    ASSERT(s.shadePixel(1, 0, 1) == 1, "scanline: odd row untouched");
+    ASSERT(s.shadePixel(ROLE_TEXT, 0, 0) == ROLE_MUTED, "scanline: even row dims");
+    ASSERT(s.shadePixel(ROLE_TEXT, 0, 1) == ROLE_TEXT, "scanline: odd row untouched");
 
-    // fade(0) is a no-op; fade(16) darkens the whole region.
+    // fade(0) is a no-op; fade(16) dims the whole region toward bg.
     Effect f0 = Effect::fade(0);
-    ASSERT(f0.shadePixel(1, 2, 2) == 1, "fade(0): no coverage, source held");
+    ASSERT(f0.shadePixel(ROLE_TEXT, 2, 2) == ROLE_TEXT, "fade(0): no coverage, source held");
     Effect f16 = Effect::fade(16);
-    ASSERT(f16.shadePixel(1, 2, 2) == 2, "fade(16): full coverage, darkened");
+    ASSERT(f16.shadePixel(ROLE_TEXT, 2, 2) == ROLE_MUTED, "fade(16): full coverage, toward bg");
 
-    // holo/ghost are real (non no-op) effects somewhere in their period.
+    // holo/ghost step toward text somewhere in their period, and only there.
     Effect h = Effect::holo(0);
     bool holoActive = false;
-    for (int16_t x = 0; x < 12 && !holoActive; ++x)
-        holoActive = (h.shadePixel(1, x, 0) != 1);
-    ASSERT(holoActive, "holo: lightens somewhere along its stripe");
+    for (int16_t x = 0; x < 12; ++x) {
+        const uint8_t v = h.shadePixel(ROLE_SURFACE, x, 0);
+        ASSERT(v == ROLE_SURFACE || v == ROLE_MUTED, "holo: surface stays or steps toward text");
+        if (v == ROLE_MUTED) holoActive = true;
+    }
+    ASSERT(holoActive, "holo: steps toward text somewhere along its stripe");
 
     Effect g = Effect::ghost();
     bool ghostActive = false;
-    for (int16_t y = 0; y < 4 && !ghostActive; ++y)
-        for (int16_t x = 0; x < 4 && !ghostActive; ++x)
-            ghostActive = (g.shadePixel(1, x, y) != 1);
-    ASSERT(ghostActive, "ghost: lightens somewhere in its dither");
+    for (int16_t y = 0; y < 4; ++y)
+        for (int16_t x = 0; x < 4; ++x) {
+            const uint8_t v = g.shadePixel(ROLE_BG, x, y);
+            ASSERT(v == ROLE_BG || v == ROLE_SURFACE, "ghost: bg stays or steps toward text");
+            if (v == ROLE_SURFACE) ghostActive = true;
+        }
+    ASSERT(ghostActive, "ghost: steps toward text somewhere in its dither");
 }
 
 static void test_constexpr_usable()
 {
     printf("--- constexpr usability ---\n");
     constexpr Effect e = Effect::dim();
-    static_assert(e.shadePixel(1, 0, 0) == 2, "dim constexpr darkens base");
+    static_assert(e.shadePixel(ROLE_TEXT, 0, 0) == ROLE_MUTED, "dim constexpr steps text toward bg");
     static_assert(Mask::bayer(0).sample(0, 0) == false, "bayer(0) constexpr empty");
     static_assert(Mask::full().sample(-3, 7) == true, "full constexpr set on negatives");
     ASSERT(true, "constexpr usage compiled");

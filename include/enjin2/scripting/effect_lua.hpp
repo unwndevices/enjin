@@ -16,6 +16,7 @@
 #include "../core/name_index.hpp"
 #include "../graphics/effect.hpp"
 #include "lua_api.hpp"
+#include "palette_arg.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -69,9 +70,9 @@ inline int16_t argI16(lua_State* L, int idx, int16_t def) {
 
 // The kind / preset names each constructor dispatches on, indexed by the enum
 // beside it and published as that enum in the descriptors below.
-enum class RemapKind : uint8_t { Identity, Lighten, Darken, Solid, Recolor, OnRamp, Compose };
+enum class RemapKind : uint8_t { Identity, TowardBg, TowardText, Solid, Recolor, Compose };
 inline constexpr const char* kRemapKindNames[] = {
-    "identity", "lighten", "darken", "solid", "recolor", "onRamp", "compose",
+    "identity", "towardBg", "towardText", "solid", "recolor", "compose",
 };
 enum class MaskKind : uint8_t { Full, Stripe, Hlines, Bayer };
 inline constexpr const char* kMaskKindNames[] = {"full", "stripe", "hlines", "bayer"};
@@ -79,18 +80,20 @@ enum class EffectPreset : uint8_t { Holo, Dim, Fade, Scanline, Ghost };
 inline constexpr const char* kEffectPresetNames[] = {"holo", "dim", "fade", "scanline", "ghost"};
 
 /// gfx.remap(...) — build a Remap.
-///   remap(table16)                  raw 16-entry lut (0-based Lua 1..16)
-///   remap("identity"|"lighten"|"darken")
+///   remap(table16)                  raw 16-entry lut (0-based Lua 1..16); the
+///                                   entries for roles and 15 must be roles or 15,
+///                                   the ones for 8..14 (no role) are ignored
+///   remap("identity"|"towardBg"|"towardText")
 ///   remap("solid", index)
 ///   remap("recolor", from, to)
-///   remap("onRamp", rampId, innerRemap)
 ///   remap("compose", first, second)
 inline int lua_remap(lua_State* L) {
     if (lua_istable(L, 1)) {
-        Remap r;
+        Remap r;  // identity: what the unused 8..14 entries keep
         for (int i = 0; i < 16; ++i) {
+            if (!isPaletteIndex(static_cast<unsigned>(i))) continue;
             lua_rawgeti(L, 1, i + 1);  // Lua arrays are 1-based
-            r.lut[i] = static_cast<uint8_t>(lua_tointeger(L, -1) & 0x0F);
+            r.lut[i] = paletteIndexOrError(L, lua_tointeger(L, -1), "gfx.remap: entry");
             lua_pop(L, 1);
         }
         pushRemap(L, r);
@@ -101,11 +104,10 @@ inline int lua_remap(lua_State* L) {
     if (k < 0) return luaL_error(L, "gfx.remap: unknown kind '%s'", kind);
     switch (static_cast<RemapKind>(k)) {
         case RemapKind::Identity: pushRemap(L, Remap::identity()); break;
-        case RemapKind::Lighten:  pushRemap(L, Remap::lighten()); break;
-        case RemapKind::Darken:   pushRemap(L, Remap::darken()); break;
-        case RemapKind::Solid:    pushRemap(L, Remap::solid(argU8(L, 2))); break;
-        case RemapKind::Recolor:  pushRemap(L, Remap::recolor(argU8(L, 2), argU8(L, 3))); break;
-        case RemapKind::OnRamp:   pushRemap(L, Remap::onRamp(argU8(L, 2), checkRemap(L, 3))); break;
+        case RemapKind::TowardBg:   pushRemap(L, Remap::towardBg()); break;
+        case RemapKind::TowardText: pushRemap(L, Remap::towardText()); break;
+        case RemapKind::Solid:    pushRemap(L, Remap::solid(checkPaletteIndex(L, 2))); break;
+        case RemapKind::Recolor:  pushRemap(L, Remap::recolor(checkPaletteIndex(L, 2), checkPaletteIndex(L, 3))); break;
         case RemapKind::Compose:
             pushRemap(L, Remap::compose(checkRemap(L, 2), checkRemap(L, 3)));
             break;
@@ -184,17 +186,15 @@ inline void registerEffectApi(lua_State* L) {
                     "(kind:RemapKind) -> Remap\n"
                     "(kind:RemapKind, index:int) -> Remap\n"
                     "(kind:RemapKind, from:int, to:int) -> Remap\n"
-                    "(kind:RemapKind, rampId:int, inner:Remap) -> Remap\n"
                     "(kind:RemapKind, first:Remap, second:Remap) -> Remap",
                     "Build a colour remap: a 16-entry table or a named kind.",
                     "lut: lut[i + 1] is the new index for colour i; a missing entry maps to 0\n"
-                    "kind: identity, lighten or darken alone; solid, recolor, onRamp and "
-                    "compose take the arguments below; unknown kinds raise\n"
+                    "kind: identity, towardBg or towardText alone (one step along the shade "
+                    "chain bg, surface, muted, text; an accent steps to muted or text); "
+                    "solid, recolor and compose take the arguments below; unknown kinds raise\n"
                     "index: with \"solid\", the colour every pixel becomes\n"
                     "from: with \"recolor\", the colour to replace\n"
                     "to: with \"recolor\", its replacement\n"
-                    "rampId: with \"onRamp\", the ramp the inner remap is confined to\n"
-                    "inner: with \"onRamp\", the remap to apply on that ramp\n"
                     "first: with \"compose\", the remap applied first\n"
                     "second: with \"compose\", the remap applied to its result")
             .withEnum(kRemapKind),

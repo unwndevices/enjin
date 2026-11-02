@@ -22,11 +22,15 @@ static int failures = 0;
 
 // Source: 8x8, value = column+1 (1..8) so a horizontal position maps to a known
 // index — lets us assert the warp preserves left-to-right order.
+// Column sx holds kColumn[sx]: non-zero, rising left to right, all Palette roles
+// (ADR-0022: only 7 non-bg roles, so two middle columns share a value; the ends
+// stay unique).
+static constexpr uint8_t kColumn[8] = {1, 2, 3, 4, 4, 5, 6, 7};
 static void paintSource(Canvas4<8, 8>& src) {
     src.clear(Pixel4(0));
     for (int16_t sy = 0; sy < 8; ++sy)
         for (int16_t sx = 0; sx < 8; ++sx)
-            src.setPixel(sx, sy, Pixel4(static_cast<uint8_t>(sx + 1)));
+            src.setPixel(sx, sy, Pixel4(kColumn[sx]));
 }
 
 // quad == the exact source rect at (x,y): warp is an identity copy.
@@ -41,7 +45,7 @@ static void test_identity_quad_copies_1to1() {
     warpCanvas(dst, src, quad, Pixel4(0));
 
     ASSERT(dst.getPixel(10, 10) == 1, "warp identity: TL texel lands at the origin");
-    ASSERT(dst.getPixel(17, 10) == 8, "warp identity: last column lands at the far edge");
+    ASSERT(dst.getPixel(17, 10) == 7, "warp identity: last column lands at the far edge");
     ASSERT(dst.getPixel(13, 13) == dst.getPixel(13, 15),
            "warp identity: a column holds one value down its height");
 }
@@ -109,7 +113,7 @@ static void test_keystone_trapezoid() {
 // Transparent source pixels are skipped, leaving the destination untouched.
 static void test_transparent_skipped() {
     Canvas4<32, 32> dst;
-    dst.clear(Pixel4(9));
+    dst.clear(Pixel4(ROLE_ACCENT3));
     Canvas4<8, 8> src;
     src.clear(Pixel4(PALETTE_TRANSPARENT));
     src.setPixel(0, 0, Pixel4(3));  // one opaque texel at TL
@@ -118,7 +122,7 @@ static void test_transparent_skipped() {
     warpCanvas(dst, src, quad);  // default transparent = PALETTE_TRANSPARENT
 
     ASSERT(dst.getPixel(4, 4) == 3, "warp transparent: opaque texel drawn");
-    ASSERT(dst.getPixel(10, 10) == 9, "warp transparent: transparent texels keep dst");
+    ASSERT(dst.getPixel(10, 10) == ROLE_ACCENT3, "warp transparent: transparent texels keep dst");
 }
 
 int main() {

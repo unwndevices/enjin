@@ -213,7 +213,7 @@ public:
         if (!canvas || !world_) return;
 
         // Clear canvas
-        canvas->clear(Colors::BLACK);
+        canvas->clear(Pixel4(ROLE_BG));
 
         // Collect renderable entities.
         sortedEntities.clear();

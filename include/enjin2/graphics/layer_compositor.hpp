@@ -66,7 +66,7 @@ struct LayerCompositor {
     void clearAll() {
         layers[0].clear(Pixel4(0));
         for (uint8_t i = 1; i < ENJIN_LAYER_COUNT; ++i) {
-            layers[i].clear(Pixel4(15));
+            layers[i].clear(Pixel4(PALETTE_TRANSPARENT));
         }
     }
 
@@ -170,7 +170,7 @@ struct LayerCompositor {
     void resetDirtyState() {
         layers[0].clear(Pixel4(0));
         for (uint8_t l = 1; l < ENJIN_LAYER_COUNT; ++l) {
-            layers[l].clear(Pixel4(15));
+            layers[l].clear(Pixel4(PALETTE_TRANSPARENT));
         }
         for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
             tint[l] = Remap::identity();

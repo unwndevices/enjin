@@ -127,8 +127,8 @@ static void test_registerAll_resets_drawing_state()
     // Verify defaults are restored
     LuaResult rd = f.exec("c2 = gfx.getColor(); w2 = gfx.getLineWidth()");
     ASSERT(rd.success, "gfx.getColor/gfx.getLineWidth after registerAll should succeed");
-    ASSERT(f.getNum("c2") == 15.0,
-           "after registerAll, color should be reset to 15");
+    ASSERT(f.getNum("c2") == 3.0,
+           "after registerAll, color should be reset to the text role (3)");
     ASSERT(f.getNum("w2") == 1.0,
            "after registerAll, lineWidth should be reset to 1");
 }
@@ -194,12 +194,12 @@ static void test_reload_cycle_preserves_bindings()
     f.compositor.clearAll();
 
     // Verify bindings still work after reload cycle
-    LuaResult r1 = f.exec("gfx.setLayer(3); gfx.setColor(9); gfx.setPixel(7, 7, 9)");
+    LuaResult r1 = f.exec("gfx.setLayer(3); gfx.setColor(6); gfx.setPixel(7, 7, 6)");
     ASSERT(r1.success, "post-reload gfx.setLayer/gfx.setPixel should succeed");
 
     uint8_t post = f.compositor.layers[2].getPixel(7, 7).value;
-    ASSERT(post == 9,
-           "post-reload: pixel (7,7) on layer 3 should be 9");
+    ASSERT(post == 6,
+           "post-reload: pixel (7,7) on layer 3 should be 6");
 
     // Verify gfx.getLayer reports correct layer
     f.exec("result = gfx.getLayer()");

@@ -143,11 +143,11 @@ Oklab toOklab(uint8_t r8, uint8_t g8, uint8_t b8) {
             0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s};
 }
 
-uint8_t nearestSlot(const std::array<RGB, PALETTE_MAX_ENTRIES>& pal, uint8_t r, uint8_t g, uint8_t b) {
+uint8_t nearestSlot(const std::array<RGB, ROLE_COUNT>& pal, uint8_t r, uint8_t g, uint8_t b) {
     const Oklab c = toOklab(r, g, b);
     uint8_t best = 0;
     float bestD = 0;
-    for (uint8_t i = 0; i < PALETTE_MAX_ENTRIES; ++i) {
+    for (uint8_t i = 0; i < ROLE_COUNT; ++i) {
         const Oklab p = toOklab(pal[i].r, pal[i].g, pal[i].b);
         const float d = (p.L - c.L) * (p.L - c.L) + (p.a - c.a) * (p.a - c.a) + (p.b - c.b) * (p.b - c.b);
         if (i == 0 || d < bestD) { best = i; bestD = d; }
@@ -176,7 +176,8 @@ struct Use {
 class Importer {
 public:
     Importer(const ase::File& f, const SpriteImportOptions& o)
-        : m_file(f), m_opts(o), m_budget(o.limits.maxPixelBytes) {}
+        : m_file(f), m_opts(o),
+          m_budget(o.limits.maxPixelBytes) {}
 
     SpriteImportResult run();
 
@@ -211,7 +212,7 @@ Error Importer::convert(const ase::Cel& cel, size_t frame, size_t layer, IndexCe
     if (m_file.depth == ase::DEPTH_INDEXED) {
         for (size_t i = 0; i < n; ++i) {
             const uint8_t v = px[i];
-            out.idx[i] = v == m_file.transparentIndex ? CLEAR : (v < PALETTE_MAX_ENTRIES ? v : BAD);
+            out.idx[i] = v == m_file.transparentIndex ? CLEAR : (v < ROLE_COUNT ? v : BAD);
             anyBad = anyBad || out.idx[i] == BAD;
         }
     } else {
@@ -221,7 +222,7 @@ Error Importer::convert(const ase::Cel& cel, size_t frame, size_t layer, IndexCe
             if (p[3] == 0) {
                 v = CLEAR;
             } else if (p[3] == 255) {
-                for (uint8_t s = 0; s < PALETTE_MAX_ENTRIES; ++s) {
+                for (uint8_t s = 0; s < ROLE_COUNT; ++s) {
                     const RGB& c = m_opts.palette[s];
                     if (c.r == p[0] && c.g == p[1] && c.b == p[2]) { v = s; break; }
                 }
@@ -298,8 +299,8 @@ Error Importer::badPixelError(SpriteImportResult& r) const {
         for (const auto& [index, count] : m_bad) {
             list += (list.empty() ? "" : ", ") + std::to_string(index) + " (" + std::to_string(count) + " px)";
         }
-        return unsupported("opaque palette indices outside 0..14: " + list +
-                           "; enjin sprites use slots 0..14 and 15 is transparent");
+        return unsupported("opaque palette indices that are not Palette roles: " + list +
+                           "; sprites use the roles 0..7 (8..14 are not roles) and 15 is transparent");
     }
     for (const auto& [key, count] : m_bad) {
         SpriteColourIssue i{static_cast<uint8_t>(key >> 24), static_cast<uint8_t>(key >> 16),
@@ -532,9 +533,9 @@ SpriteImportResult Importer::run() {
 
 } // namespace
 
-std::array<RGB, PALETTE_MAX_ENTRIES> systemPalette() {
+std::array<RGB, ROLE_COUNT> houseDefaultPalette() {
     const Palette p;
-    std::array<RGB, PALETTE_MAX_ENTRIES> out{};
+    std::array<RGB, ROLE_COUNT> out{};
     std::copy(std::begin(p.colors), std::end(p.colors), out.begin());
     return out;
 }

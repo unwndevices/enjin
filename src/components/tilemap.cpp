@@ -43,17 +43,6 @@ void C_Tilemap::setAttrs(const TileAttr* attrs, uint16_t count) {
     }
 }
 
-void C_Tilemap::setPalbank(uint8_t index, const Remap& remap) {
-    m_palbanks[index & 0x0F] = remap;
-}
-
-void C_Tilemap::setPalbanks(const Remap* banks, uint8_t count) {
-    if (!banks || count == 0) return;
-    for (uint8_t i = 0; i < count && i < TM_PALBANK_COUNT; ++i) {
-        m_palbanks[i] = banks[i];
-    }
-}
-
 TileAttr C_Tilemap::attrAt(uint8_t tx, uint8_t ty) const {
     if (tx >= m_mapW || ty >= m_mapH) {
         return TileAttr{};
@@ -437,12 +426,12 @@ void C_Tilemap::draw(ICanvas<Pixel4>& canvas) {
             // Tile id (low 9 bits) used as frameIndex:
             //   tile 0 = skip (transparent); tile 1 = frame 1; etc.
             // Frame 0 in the tileset is intentionally "wasted" — this removes
-            // an off-by-one subtract from the hot rendering path. Flip + palbank
-            // bits render here (ADR-0003 §3); band is honored by the compositor
+            // an off-by-one subtract from the hot rendering path. Flip bits
+            // render here (ADR-0003 §3); the palbank bits are stored, not drawn
+            // (one global palette, ADR-0022); band is honored by the compositor
             // restore filter (drawCellBand), not this bulk draw.
             m_sheet.draw(canvas, tileId, px, py,
-                         cellHFlip(cell), cellVFlip(cell),
-                         m_palbanks[cellPalbank(cell) & 0x0F]);
+                         cellHFlip(cell), cellVFlip(cell), Remap::identity());
         }
     }
 }

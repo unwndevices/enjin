@@ -1,8 +1,27 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <cmath>
+
+#include "../graphics/palette.hpp"
+
+/**
+ * @brief Pixel4's debug check (ADR-0022): 1 makes `Pixel4(v)` assert that `v` is a
+ * Palette role (0-7) or transparent (15).
+ *
+ * On by default in debug host builds (native tests, a debug WASM build); off when
+ * NDEBUG is set and on the device, where it would sit in every pixel write.
+ * Define it to 0 or 1 to override.
+ */
+#ifndef ENJIN2_PIXEL4_ASSERT
+#  if !defined(NDEBUG) && !defined(ESP_PLATFORM)
+#    define ENJIN2_PIXEL4_ASSERT 1
+#  else
+#    define ENJIN2_PIXEL4_ASSERT 0
+#  endif
+#endif
 
 namespace enjin2 {
 
@@ -237,20 +256,27 @@ struct Rect {
 /**
  * @brief 4-bit pixel type for memory-efficient graphics
  * 
- * Represents a pixel value in the range 0-15, using only 4 bits of storage.
- * Provides automatic conversion to/from 8-bit values for compatibility.
+ * Holds a palette index in 4 bits of storage: a Palette role (0-7) or
+ * transparent (15). 8-14 are invalid (ADR-0022); constructing one asserts in
+ * host debug builds (ENJIN2_PIXEL4_ASSERT; never on the device, where it would
+ * sit in every pixel write).
  */
 struct Pixel4 {
-    uint8_t value : 4; ///< 4-bit pixel value (0-15)
+    uint8_t value : 4; ///< Palette index: a role 0-7, or 15 = transparent
     
-    /** @brief Default constructor initializes to black (value 0) */
+    /** @brief Default constructor initializes to bg (value 0) */
     constexpr Pixel4() : value(0) {}
     
     /**
-     * @brief Constructor from 8-bit value
-     * @param v Value to convert, automatically clamped to 4-bit range
+     * @brief Constructor from a palette index
+     * @param v A Palette role (0-7) or PALETTE_TRANSPARENT (15); stored in the
+     *          low 4 bits. Anything else asserts in host debug builds.
      */
-    constexpr Pixel4(uint8_t v) : value(v & 0x0F) {}
+    constexpr Pixel4(uint8_t v) : value(v & 0x0F) {
+#if ENJIN2_PIXEL4_ASSERT
+        assert(isPaletteIndex(v) && "Pixel4: not a Palette role (0-7) or transparent (15)");
+#endif
+    }
     
     /**
      * @brief Implicit conversion to uint8_t
@@ -322,16 +348,5 @@ public:
      */
     uint8_t getByte() const { return data; }
 };
-
-/**
- * @brief Predefined color constants for 4-bit grayscale graphics
- */
-namespace Colors {
-    constexpr Pixel4 BLACK = Pixel4(0);      ///< Black (value 0)
-    constexpr Pixel4 DARK_GRAY = Pixel4(4);  ///< Dark gray (value 4)
-    constexpr Pixel4 GRAY = Pixel4(8);       ///< Medium gray (value 8)
-    constexpr Pixel4 LIGHT_GRAY = Pixel4(12); ///< Light gray (value 12)
-    constexpr Pixel4 WHITE = Pixel4(15);     ///< White (value 15)
-}
 
 } // namespace enjin2

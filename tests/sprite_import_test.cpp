@@ -13,10 +13,13 @@
  *   SPI-05  Tags clamp to the frame range; all-empty tags → default clip.
  *   SPI-06  Clip names: printable ASCII, 15 chars, empty → clipN; the summary
  *           keeps each clip's source tag name.
- *   SPI-07  Indexed opaque index > 14 rejected.
+ *   SPI-07  Indexed opaque index that is not a Palette role (8..14, or > 15)
+ *           rejected, naming it (ADR-0022).
  *   SPI-08  Old (0x0004) and new (0x2019) palette chunks both read.
  *   SPI-09  RGBA exact palette match imports to indices.
  *   SPI-10  RGBA mismatch: colour and alpha issues, counts, nearest slot.
+ *   SPI-10b RGBA against the 8 Palette roles (Tomodachi #425/#426): a colour
+ *           in a slot past the roles is off the palette.
  *   SPI-11  RGBA issues ignore off-canvas pixels and count a linked cel once.
  *   SPI-12  Two visible layers → layered: parts, crop, dedupe, invisible
  *           refs, bottom-centre pivot; decodes through njn2DecodeLayered.
@@ -29,9 +32,9 @@
  *   SPI-19  Linked cel without a source, or out of range, rejected.
  *   SPI-20  Size caps and format limits → TooLarge.
  *   SPI-21  Malformed headers, frames and chunks rejected.
- *   SPI-22  tomo_tune2.aseprite imports with the "tomo" palette and matches
+ *   SPI-22  tomo_tune2.aseprite imports with its tomo_tune2.gpl palette and matches
  *           the committed tomo_tune2.njn part for part.
- *   SPI-23  tomo_tune2.aseprite against the system palette → PaletteMismatch.
+ *   SPI-23  tomo_tune2.aseprite against the house default palette → PaletteMismatch.
  *   SPI-24  Truncation/corruption corpus: never crashes; every ok result
  *           re-reads (run under ASan by scripts/importer-check.sh).
  *   SPI-25  An unrolled clip over 255 frames → TooLarge.
@@ -66,14 +69,14 @@ static void test01_indexedSheetUntagged() {
     a.frames[1].duration = 120;
     a.add(0, AseBuilder::layer("body"));
     a.add(0, AseBuilder::cel(0, 0, 0, 3, 2, {1, 0, 2, 3, 4, 0}));
-    a.add(1, AseBuilder::cel(0, 1, 1, 1, 1, {14}));
+    a.add(1, AseBuilder::cel(0, 1, 1, 1, 1, {7}));
     const auto r = run(a.build());
     ASSERT(r.ok(), "SPI-01 indexed sheet imports");
     ASSERT(r.kind == SpriteKind::Sheet, "SPI-01 one visible layer → sheet");
     const Sheet s = readSheet(r);
     ASSERT(s.ok, "SPI-01 META/PIXL/CLIP decode");
     ASSERT(s.cellW == 3 && s.cellH == 2 && s.cols == 2 && s.rows == 1, "SPI-01 META = canvas cell, one cell per frame");
-    const Bytes want = {1, 15, 2, 3, 4, 15,   15, 15, 15, 15, 14, 15};
+    const Bytes want = {1, 15, 2, 3, 4, 15,   15, 15, 15, 15, 7, 15};
     ASSERT(s.pixl == want, "SPI-01 PIXL frame-major, source transparent → 15");
     ASSERT(s.clips.size() == 1, "SPI-01 one clip");
     if (s.clips.size() == 1) {
@@ -178,6 +181,18 @@ static void test07_indexedOutOfRange() {
     const auto r = run(a.build());
     ASSERT(r.status == SpriteImportStatus::Unsupported, "SPI-07 opaque index 20 rejected");
     ASSERT(contains(r.error, "20"), "SPI-07 error names the index");
+    // 8..14 are not Palette roles (ADR-0022, Tomodachi #426): an index 9 is refused too.
+    AseBuilder nine(3, 1, 8);
+    nine.add(0, AseBuilder::layer("body"));
+    nine.add(0, AseBuilder::cel(0, 0, 0, 3, 1, {3, 9, 9}));
+    const auto r9 = run(nine.build());
+    ASSERT(r9.status == SpriteImportStatus::Unsupported && r9.njn.empty(), "SPI-07 opaque index 9 rejected");
+    ASSERT(contains(r9.error, "9 (2 px)") && contains(r9.error, "Palette role"), "SPI-07 error names index 9 and the roles");
+    // So is index 15 when it is not the source's transparent index.
+    AseBuilder fifteen(2, 1, 8);
+    fifteen.add(0, AseBuilder::layer("body"));
+    fifteen.add(0, AseBuilder::cel(0, 0, 0, 2, 1, {3, 15}));
+    ASSERT(run(fifteen.build()).status == SpriteImportStatus::Unsupported, "SPI-07 opaque index 15 rejected");
     // The source's transparent index may itself be > 14.
     AseBuilder b(2, 1, 8);
     b.transparent = 200;
@@ -213,12 +228,12 @@ static void test09_rgbaMatch() {
     a.add(0, AseBuilder::layer("body"));
     a.add(0, AseBuilder::cel(0, 0, 0, 2, 2, {
         30, 30, 30, 255,   0, 0, 0, 0,
-        140, 140, 140, 255, 77, 1, 2, 0,   // fully transparent pixels can be any colour
+        70, 70, 70, 255,   77, 1, 2, 0,    // fully transparent pixels can be any colour
     }));
     const auto r = run(a.build(), greyOpts());
     ASSERT(r.ok(), "SPI-09 RGBA on the palette imports");
     const Sheet s = readSheet(r);
-    ASSERT(s.ok && s.pixl == (Bytes{3, 15, 14, 15}), "SPI-09 RGBA → palette slots, alpha 0 → 15");
+    ASSERT(s.ok && s.pixl == (Bytes{3, 15, 7, 15}), "SPI-09 RGBA → role indices, alpha 0 → 15");
 }
 
 static void test10_rgbaMismatch() {
@@ -237,12 +252,34 @@ static void test10_rgbaMismatch() {
         bool sawAlpha = false, sawRed = false;
         for (const auto& i : r.colourIssues) {
             if (i.a == 128) sawAlpha = i.partialAlpha() && i.pixels == 1 && i.nearestSlot == 2;
-            if (i.r == 200) sawRed = i.pixels == 1 && i.nearestSlot < PALETTE_MAX_ENTRIES;
+            if (i.r == 200) sawRed = i.pixels == 1 && i.nearestSlot < ROLE_COUNT;
         }
         ASSERT(sawAlpha, "SPI-10 partial alpha reported with its value and count");
         ASSERT(sawRed, "SPI-10 off-palette red reported");
     }
     ASSERT(!r.error.empty() && r.njn.empty(), "SPI-10 message, no output");
+}
+
+// The target is the preset's 8 roles (ADR-0022, Tomodachi #425/#426): only roles 0..7 are
+// targets, for the match and the nearest slot alike; there is no slot 8..14 to match.
+static void test10b_rgbaRoleSlots() {
+    AseBuilder a(3, 1, 32);
+    a.add(0, AseBuilder::layer("body"));
+    a.add(0, AseBuilder::cel(0, 0, 0, 3, 1, {
+        30, 30, 30, 255,   70, 70, 70, 255,   140, 140, 140, 255,   // roles 3, 7, then the old slot 14's grey
+    }));
+    const SpriteImportOptions roles = greyOpts();
+    const auto r = run(a.build(), roles);
+    ASSERT(r.status == SpriteImportStatus::PaletteMismatch && r.colourIssues.size() == 1, "SPI-10b the old slot 14's colour is off the 8 roles");
+    ASSERT(r.colourIssues.size() == 1 && r.colourIssues[0].r == 140 && r.colourIssues[0].nearestSlot == 7, "SPI-10b its nearest slot is a role");
+
+    AseBuilder b(2, 1, 32);
+    b.add(0, AseBuilder::layer("body"));
+    b.add(0, AseBuilder::cel(0, 0, 0, 2, 1, {30, 30, 30, 255, 70, 70, 70, 255}));
+    const auto ok = run(b.build(), roles);
+    ASSERT(ok.ok(), "SPI-10b role colours import");
+    const Sheet s = readSheet(ok);
+    ASSERT(s.ok && s.pixl == (Bytes{3, 7}), "SPI-10b role colours → role indices");
 }
 
 static void test11_rgbaCounting() {
@@ -471,19 +508,39 @@ static void test21_malformed() {
 
 static std::string testdata(const char* rel) { return std::string(ENJIN2_SOURCE_DIR) + "/" + rel; }
 
-/// Copies the named palette preset into @p o; false for an unknown name.
-static bool usePreset(SpriteImportOptions& o, const char* name) {
-    Palette p;
-    if (!p.loadPreset(name)) return false;
+/// The tomo_tune2 reference asset's palette, tools/testdata/tomo_tune2.gpl: its black, grey
+/// and white in Palette role order (bg, muted, text; ADR-0022). Reads the first
+/// ROLE_COUNT colour rows into @p o, as the CLI's --palette does; false when short.
+static bool useGpl(SpriteImportOptions& o, const std::string& path) {
+    std::ifstream in(path);
+    std::string line;
+    size_t n = 0;
+    while (n < ROLE_COUNT && std::getline(in, line)) {
+        unsigned r = 0, g = 0, b = 0;
+        if (line.empty() || line[0] == '#') continue;
+        if (std::sscanf(line.c_str(), " %u %u %u", &r, &g, &b) != 3) continue;
+        o.palette[n++] = RGB(uint8_t(r), uint8_t(g), uint8_t(b));
+    }
+    return n == ROLE_COUNT;
+}
+
+/// Copies the named target palette into @p o: a `.gpl` path (relative to @p dir), or an
+/// engine preset; false for an unknown name.
+static bool usePreset(SpriteImportOptions& o, const std::string& name, const std::string& dir = "") {
+    if (name.size() > 4 && name.compare(name.size() - 4, 4, ".gpl") == 0) return useGpl(o, dir + "/" + name);
+    if (name != "default") return false;  // the one engine preset, the house default
+    const Palette p;
     std::copy(std::begin(p.colors), std::end(p.colors), o.palette.begin());
     return true;
 }
+
+static const std::string kTomoTune2Gpl = "tools/testdata/tomo_tune2.gpl";
 
 static void test22_tomoTune2() {
     const Bytes src = readFile(testdata("tools/testdata/tomo_tune2.aseprite"));
     ASSERT(!src.empty(), "SPI-22 fixture readable");
     SpriteImportOptions o;
-    usePreset(o, "tomo");
+    ASSERT(usePreset(o, kTomoTune2Gpl, ENJIN2_SOURCE_DIR), "SPI-22 tomo_tune2.gpl reads");
     const auto r = run(src, o);
     ASSERT(r.ok() && r.kind == SpriteKind::Layered, "SPI-22 tomo_tune2 imports layered");
     if (!r.ok()) { fprintf(stderr, "  error: %s\n", r.error.c_str()); return; }
@@ -511,7 +568,7 @@ static void test22_tomoTune2() {
 
 static void test23_tomoTune2SystemPalette() {
     const auto r = run(readFile(testdata("tools/testdata/tomo_tune2.aseprite")));
-    ASSERT(r.status == SpriteImportStatus::PaletteMismatch, "SPI-23 hue art vs the green ramp → mismatch");
+    ASSERT(r.status == SpriteImportStatus::PaletteMismatch, "SPI-23 black/grey/white art vs the house default → mismatch");
     bool counted = !r.colourIssues.empty();
     for (size_t i = 0; i < r.colourIssues.size(); ++i) {
         counted = counted && r.colourIssues[i].pixels > 0 && r.colourIssues[i].a == 255
@@ -553,7 +610,7 @@ static void test24_corpus() {
         corpus.emplace_back(f, readFile(testdata(f)));
     }
     SpriteImportOptions o;
-    usePreset(o, "tomo");
+    ASSERT(usePreset(o, kTomoTune2Gpl, ENJIN2_SOURCE_DIR), "SPI-24 tomo_tune2.gpl reads");
 
     uint32_t seed = 0x2911u;
     auto rnd = [&]() { seed = seed * 1664525u + 1013904223u; return seed >> 8; };
@@ -609,7 +666,7 @@ static void test27_goldenCorpus() {
         ++rows;
         SpriteImportOptions o;
         o.kind = kind == "layered" ? SpriteKind::Layered : SpriteKind::Sheet;
-        if (palette != "-") ASSERT(usePreset(o, palette.c_str()), ("SPI-27 palette preset: " + palette).c_str());
+        if (palette != "-") ASSERT(usePreset(o, palette, dir), ("SPI-27 palette: " + palette).c_str());
         const auto r = run(readFile(dir + "/" + input), o);
         const std::string stem = input.substr(0, input.rfind('.'));
         ASSERT(r.ok() && r.njn == readFile(dir + "/" + stem + ".njn"), ("SPI-27 golden matches: " + stem).c_str());
@@ -632,9 +689,12 @@ static int verifyLayered(const char* path) {
 int main(int argc, char** argv) {
     if (argc == 3 && std::strcmp(argv[1], "--verify-layered") == 0) return verifyLayered(argv[2]);
 
-    const auto png = run(pngImage(3, 2, true, {0, 1, 15, 14, 2, 3}));
+    const auto png = run(pngImage(3, 2, true, {0, 1, 15, 7, 2, 3}));
     ASSERT(png.ok(), "PNG indexed source imports");
-    if (png.ok()) ASSERT((readSheet(png).pixl == Bytes{0, 1, 15, 14, 2, 3}), "PNG keeps duplicate-colour indices");
+    if (png.ok()) ASSERT((readSheet(png).pixl == Bytes{0, 1, 15, 7, 2, 3}), "PNG keeps duplicate-colour indices");
+    const auto png9 = run(pngImage(2, 1, true, {3, 9}));
+    ASSERT(png9.status == SpriteImportStatus::Unsupported && contains(png9.error, "9 (1 px)"),
+           "PNG index 9 is not a Palette role: rejected, named");
     ASSERT(!run(pngImage(1, 1, true, {16})).ok(), "PNG out-of-palette source index rejected before colour expansion");
     ASSERT((readSheet(run(pngImage(4, 1, true, {0x1b}, 2))).pixl == Bytes{0,1,2,3}), "PNG 2-bit indices are not grayscale-scaled");
     ASSERT((readSheet(run(pngImage(2, 1, true, {0x12}, 4))).pixl == Bytes{1,2}), "PNG 4-bit indices unpack");
@@ -648,12 +708,12 @@ int main(int argc, char** argv) {
     ASSERT(run(pngImage(2, 1, true, {1,2}), capped).status == SpriteImportStatus::TooLarge, "PNG honours cel-side cap");
     SpriteImportOptions cells;
     cells.cellW = 2; cells.cellH = 2;
-    const auto grid = pngImage(4, 4, true, {1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,0,15});
+    const auto grid = pngImage(4, 4, true, {1,2,3,4, 5,6,7,0, 7,6,5,4, 3,2,0,15});
     const auto sliced = run(grid, cells);
     ASSERT(sliced.ok(), "PNG cell slicing imports");
     if (sliced.ok()) {
         const auto s = readSheet(sliced);
-        ASSERT((s.pixl == Bytes{1,2,5,6, 3,4,7,8, 9,10,13,14, 11,12,0,15}), "PNG frames cut row-major, not scanline-major");
+        ASSERT((s.pixl == Bytes{1,2,5,6, 3,4,7,0, 7,6,3,2, 5,4,0,15}), "PNG frames cut row-major, not scanline-major");
         ASSERT((frameIdx(s.clips[0]) == std::vector<uint16_t>{0,1,2,3}), "PNG one clip spans the cells");
         SpriteReimportOptions ro;
         ro.cellW = 2; ro.cellH = 2;
@@ -662,7 +722,7 @@ int main(int argc, char** argv) {
     }
     cells.cellW = 3;
     ASSERT(!run(grid, cells).ok(), "PNG non-dividing cell rejected");
-    const auto pal = systemPalette();
+    const auto pal = houseDefaultPalette();
     const auto rgba = pngImage(2, 1, false, {pal[2].r,pal[2].g,pal[2].b,255, 255,0,255,0});
     const auto matched = run(rgba);
     ASSERT(matched.ok() && readSheet(matched).pixl == Bytes({2,15}), "PNG RGBA exact colour and clear pixel");
@@ -690,6 +750,7 @@ int main(int argc, char** argv) {
     test08_paletteChunks();
     test09_rgbaMatch();
     test10_rgbaMismatch();
+    test10b_rgbaRoleSlots();
     test11_rgbaCounting();
     test12_layered();
     test13_kindOverride();

@@ -440,13 +440,13 @@ static void testPaintStar()
 static void testPaintEdges()
 {
     static Canvas4<160, 160> canvas;
-    canvas.clear(Pixel4(9));
+    canvas.clear(Pixel4(ROLE_ACCENT3));
     canvas.clearDirty();
     const FixedVec2 pts[] = {px(3, 2), px(103, 2), px(103, 4), px(3, 4)};  // 100 px wide: 4 words
     const Ring ring{pts, 4, true};
     const RowMask m = fill(&ring, 1, FillRule::NonZero, Rect(0, 0, 160, 160));
     paintFill(canvas, m, ColourRole::None, Remap::identity());
-    bool untouched = canvas.getPixel(50, 3).value == 9 && !canvas.isTileDirty(3, 0);
+    bool untouched = canvas.getPixel(50, 3).value == ROLE_ACCENT3 && !canvas.isTileDirty(3, 0);
     ASSERT(untouched, "role None paints nothing");
 
     paintFill(canvas, m, ColourRole::Ink, Remap::solid(5));
@@ -455,7 +455,7 @@ static void testPaintEdges()
         for (int x = 0; x < 110; ++x)
         {
             const bool in = x >= 3 && x < 103 && y >= 2 && y < 4;
-            if (canvas.getPixel(int16_t(x), int16_t(y)).value != (in ? 5 : 9))
+            if (canvas.getPixel(int16_t(x), int16_t(y)).value != (in ? 5 : ROLE_ACCENT3))
                 ok = false;
         }
     ASSERT(ok, "a 100 px run across mask words paints exactly its pixels");

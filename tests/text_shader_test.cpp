@@ -18,6 +18,7 @@
 #include <enjin2/graphics/palette.hpp>
 #include <enjin2/graphics/text_renderer.hpp>
 #include <cstdio>
+#include <initializer_list>
 
 using namespace enjin2;
 
@@ -75,71 +76,79 @@ static void test_default_is_plain_silhouette() {
 
 static void test_solid_remap_recolours_only_silhouette() {
     printf("--- solid Remap recolours the silhouette (clip) ---\n");
-    // Effect(full mask, solid(9)) maps every drawn glyph pixel -> 9.
+    // Effect(full mask, solid(accent3)) maps every drawn glyph pixel -> accent3.
     auto c = renderBlock(4, 1, [](TextRenderer<Pixel4>& tr) {
-        tr.setEffect(Effect(Mask::full(), Remap::solid(9)));
+        tr.setEffect(Effect(Mask::full(), Remap::solid(ROLE_ACCENT3)));
     });
-    ASSERT(c.getPixel(6, 6).value == 9, "glyph pixel remapped to 9");
-    ASSERT(c.getPixel(5, 5).value == 9, "glyph corner remapped to 9");
+    ASSERT(c.getPixel(6, 6).value == ROLE_ACCENT3, "glyph pixel remapped to accent3");
+    ASSERT(c.getPixel(5, 5).value == ROLE_ACCENT3, "glyph corner remapped to accent3");
     ASSERT(c.getPixel(4, 6).value == kTransparent, "outside silhouette untouched (clip)");
 }
 
-static void test_dim_composes_as_darken() {
-    printf("--- dim() darkens the fill (Remap composition) ---\n");
-    const uint8_t base = 4;                  // ramp1 base
-    const uint8_t dark = Palette::darken(base);
-    ASSERT(dark != base, "fixture: darken(base) differs from base");
-    auto c = renderBlock(base, 1, [](TextRenderer<Pixel4>& tr) {
+static void test_dim_steps_toward_bg() {
+    printf("--- dim() steps the fill toward bg (Remap composition) ---\n");
+    auto c = renderBlock(ROLE_TEXT, 1, [](TextRenderer<Pixel4>& tr) {
         tr.setEffect(Effect::dim());
     });
-    ASSERT(c.getPixel(6, 6).value == dark, "glyph fill darkened one shade");
+    ASSERT(c.getPixel(6, 6).value == ROLE_MUTED, "text glyph fill dimmed to muted");
 }
 
 static void test_holo_clips_to_silhouette() {
-    printf("--- holo() lightens the diagonal band within the silhouette ---\n");
-    // holo is Mask::stripe x Remap::lighten: masked pixels lighten, the rest
-    // pass through, and nothing outside the glyph is touched.
-    const uint8_t base = 4;
+    printf("--- holo() steps a diagonal band toward text within the silhouette ---\n");
+    // holo is Mask::stripe x Remap::towardText: masked pixels step toward
+    // text, the rest pass through, and nothing outside the glyph is touched.
+    const uint8_t base = ROLE_SURFACE;
     auto c = renderBlock(base, 1, [](TextRenderer<Pixel4>& tr) {
         tr.setEffect(Effect::holo(0));
     });
-    bool anyLight = false, anyBase = false;
+    bool anyBand = false, anyBase = false;
     for (int16_t y = 5; y <= 7; ++y)
         for (int16_t x = 5; x <= 7; ++x) {
             uint8_t v = c.getPixel(x, y).value;
-            if (v == Palette::lighten(base)) anyLight = true;
+            if (v == ROLE_MUTED) anyBand = true;
             if (v == base) anyBase = true;
-            ASSERT(v == base || v == Palette::lighten(base), "glyph pixel is base or lightened");
+            ASSERT(v == base || v == ROLE_MUTED, "glyph pixel is surface or one step toward text");
         }
-    ASSERT(anyLight, "at least one glyph pixel lands on the lighten band");
+    ASSERT(anyBand, "at least one glyph pixel lands on the band");
     ASSERT(anyBase, "at least one glyph pixel passes through unmasked");
     ASSERT(c.getPixel(4, 6).value == kTransparent, "outside silhouette untouched");
 }
 
-static void test_outline_is_dark_silhouette_behind_fill() {
-    printf("--- outline: +/-1 px dark silhouette behind the fill ---\n");
-    const uint8_t base = 4;
-    const uint8_t dark = Palette::darken(base);
-    auto c = renderBlock(base, 1, [](TextRenderer<Pixel4>& tr) {
-        tr.setOutline(true);
-    });
-    // Fill still wins on the interior.
-    ASSERT(c.getPixel(6, 6).value == base, "interior fill unchanged by outline");
-    // 4-connected outline: one pixel beyond each edge is the dark shade.
-    ASSERT(c.getPixel(4, 6).value == dark, "left outline is darken(fill)");
-    ASSERT(c.getPixel(8, 6).value == dark, "right outline is darken(fill)");
-    ASSERT(c.getPixel(6, 4).value == dark, "top outline is darken(fill)");
-    ASSERT(c.getPixel(6, 8).value == dark, "bottom outline is darken(fill)");
-    // Diagonal corner is never written (outline is 4-connected, not 8).
-    ASSERT(c.getPixel(4, 4).value == kTransparent, "diagonal corner stays clear");
+static void test_outline_is_bg_silhouette_behind_fill() {
+    printf("--- outline: +/-1 px bg silhouette behind the fill ---\n");
+    // The legibility outline is bg whatever the text colour (ADR-0022).
+    for (uint8_t fill : {ROLE_TEXT, ROLE_ACCENT, ROLE_MUTED}) {
+        auto c = renderBlock(fill, 1, [](TextRenderer<Pixel4>& tr) {
+            tr.setOutline(true);
+        });
+        // Fill still wins on the interior.
+        ASSERT(c.getPixel(6, 6).value == fill, "interior fill unchanged by outline");
+        // 4-connected outline: one pixel beyond each edge is bg.
+        ASSERT(c.getPixel(4, 6).value == ROLE_BG, "left outline is bg");
+        ASSERT(c.getPixel(8, 6).value == ROLE_BG, "right outline is bg");
+        ASSERT(c.getPixel(6, 4).value == ROLE_BG, "top outline is bg");
+        ASSERT(c.getPixel(6, 8).value == ROLE_BG, "bottom outline is bg");
+        // Diagonal corner is never written (outline is 4-connected, not 8).
+        ASSERT(c.getPixel(4, 4).value == kTransparent, "diagonal corner stays clear");
+    }
+}
+
+static void test_default_text_colour_is_text_role() {
+    printf("--- a fresh TextRenderer draws in the text role ---\n");
+    Canvas4<24, 24> c;
+    c.clear(Pixel4(kTransparent));
+    TextRenderer<Pixel4> tr;
+    tr.setFont(&kBlockFont);
+    tr.drawChar(c, 5, 5, 'A');
+    ASSERT(c.getPixel(6, 6).value == ROLE_TEXT, "default fill is the text role");
 }
 
 static void test_outline_explicit_colour() {
-    printf("--- outline: explicit colour overrides darken(fill) ---\n");
+    printf("--- outline: explicit colour overrides bg ---\n");
     auto c = renderBlock(4, 1, [](TextRenderer<Pixel4>& tr) {
-        tr.setOutline(true, Pixel4(12));
+        tr.setOutline(true, Pixel4(ROLE_ACCENT4));
     });
-    ASSERT(c.getPixel(4, 6).value == 12, "left outline uses the explicit colour");
+    ASSERT(c.getPixel(4, 6).value == ROLE_ACCENT4, "left outline uses the explicit colour");
     ASSERT(c.getPixel(6, 6).value == 4, "interior fill unchanged");
 }
 
@@ -155,9 +164,10 @@ static void test_integer_scale_grows_silhouette() {
 int main() {
     test_default_is_plain_silhouette();
     test_solid_remap_recolours_only_silhouette();
-    test_dim_composes_as_darken();
+    test_dim_steps_toward_bg();
     test_holo_clips_to_silhouette();
-    test_outline_is_dark_silhouette_behind_fill();
+    test_outline_is_bg_silhouette_behind_fill();
+    test_default_text_colour_is_text_role();
     test_outline_explicit_colour();
     test_integer_scale_grows_silhouette();
 

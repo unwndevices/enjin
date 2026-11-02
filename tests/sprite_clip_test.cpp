@@ -36,9 +36,9 @@ static NjnClip makeClip(const char* name, NjnLoopMode mode,
 }
 
 // A dummy 32-cell 1×1 sheet so any frameIndex 0..31 is addressable.
-static const uint8_t kSheetData[32] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0,
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 1,
+static const uint8_t kSheetData[32] = {  // Palette roles only (ADR-0022)
+    0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7,
+    0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7,
 };
 static SpriteSheet dummySheet() { return SpriteSheet(kSheetData, 1, 1, 32, 1); }
 
@@ -129,12 +129,12 @@ static void test_clip_frame_event() {
 // ============================================================
 static void test_flip_draw() {
     printf("--- flip: hflip/vflip mirror the blit ---\n");
-    // 4×4 single frame, distinct non-transparent indices (no 15).
+    // 4×4 single frame, non-transparent Palette roles; the corners differ.
     static const uint8_t px[16] = {
         1,  2,  3,  4,
-        5,  6,  7,  8,
-        9, 10, 11, 12,
-       13, 14,  1,  2,
+        5,  6,  7,  1,
+        2,  3,  4,  5,
+        7,  6,  1,  2,
     };
     Object obj;
     C_Sprite s(&obj);
@@ -156,7 +156,7 @@ static void test_flip_draw() {
     s.setHFlip(false);
     s.setVFlip(true);
     s.draw(canvas);
-    ASSERT(canvas.getPixel(0, 0).value == 13, "flip: vflip puts bottom row on top");
+    ASSERT(canvas.getPixel(0, 0).value == 7, "flip: vflip puts bottom row on top");
 }
 
 // ============================================================

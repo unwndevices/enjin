@@ -48,46 +48,49 @@ struct RGB {
 /** @brief Index value that always represents transparency — never resolves to a color */
 constexpr uint8_t PALETTE_TRANSPARENT = 15;
 
-/** @brief Maximum number of color entries in the palette (indices 0-14) */
-constexpr uint8_t PALETTE_MAX_ENTRIES = 15;
-
 /**
- * @brief Names of the built-in palettes Palette::loadPreset() accepts.
+ * @name Palette roles (ADR-0022)
+ * @brief The palette is 8 colours named by their job, plus transparent (15).
  *
- * loadPreset() matches against this array, and gfx.loadPalette's descriptor
- * publishes it as the PalettePreset enum.
- */
-inline constexpr const char* kPalettePresetNames[] = {"default", "tomo", "pico8", "gameboy"};
-
-/**
- * @name Ramp structure
- * @brief The 15 colour indices (0-14) are organised as 5 ramps × 3 shades.
- *
- * A *ramp* is one hue at three tones; index `i` sits on ramp `i / 3` at shade
- * `i % 3`. Shade 0 is the light tone, 1 the base, 2 the dark. This structure is
- * a pure convention over the index space — it is independent of the RGB values,
- * so re-authoring the palette re-skins every ramp while the structural
- * operations (@ref Palette::ramp, @ref Palette::lighten, @ref Palette::darken)
- * keep holding. Index 15 stays transparent and is never on a ramp.
+ * Art and code draw in roles, never in hues: a palette preset fills the roles,
+ * so switching it recolours every screen. The role contract: content (text,
+ * icons, glyphs) on `bg`/`surface`/`muted` is `text`; content goes only on
+ * `accent` and `accent4` fills and is `bg` there; `accent2`/`accent3` are
+ * art and game hues that never carry content. Nothing computes or checks
+ * contrast. Indices 8-14 are invalid: `gfx.*` raises on them, the sprite
+ * importer and the `.njn` loaders refuse them, and Pixel4 asserts on them in
+ * host debug builds. They are unused LUT slots: on screen they, like 15, show
+ * `bg` (makeRgb565Lut; the web Simulator does the same).
  * @{
  */
-constexpr uint8_t RAMP_COUNT = 5;   ///< Number of ramps (hues) over indices 0-14
-constexpr uint8_t RAMP_SHADES = 3;  ///< Tones per ramp: light, base, dark
-constexpr uint8_t SHADE_LIGHT = 0;  ///< Lightest tone within a ramp
-constexpr uint8_t SHADE_BASE = 1;   ///< Mid tone within a ramp
-constexpr uint8_t SHADE_DARK = 2;   ///< Darkest tone within a ramp
+constexpr uint8_t ROLE_BG = 0;       ///< Canvas background, the empty screen
+constexpr uint8_t ROLE_SURFACE = 1;  ///< Panels, list rows, the Menu panel, cards
+constexpr uint8_t ROLE_MUTED = 2;    ///< Secondary and disabled text, borders, dividers, shadows
+constexpr uint8_t ROLE_TEXT = 3;     ///< Main text and icons
+constexpr uint8_t ROLE_ACCENT = 4;   ///< Selection, focus, the main action
+constexpr uint8_t ROLE_ACCENT2 = 5;  ///< Second hue for art and games
+constexpr uint8_t ROLE_ACCENT3 = 6;  ///< Third hue for art and games
+constexpr uint8_t ROLE_ACCENT4 = 7;  ///< Alerts by convention: low battery, recording, errors
+constexpr uint8_t ROLE_COUNT = 8;    ///< Number of Palette roles (indices 0-7)
 /** @} */
+
+/**
+ * @brief Whether a stored index is valid: a Palette role (0-7) or transparent (15).
+ *
+ * The one test every gate uses (bindings, importer, loaders, Pixel4's debug
+ * assert). Values above 15 are not indices at all and fail too.
+ */
+constexpr bool isPaletteIndex(unsigned v) {
+    return v < ROLE_COUNT || v == PALETTE_TRANSPARENT;
+}
 
 /**
  * @brief Runtime color palette for Canvas4 pixel-to-RGB mapping
  *
- * Maps 4-bit pixel indices (0-14) to 24-bit RGB colors at display time.
+ * Maps the 8 Palette roles (indices 0-7) to 24-bit RGB colors at display time.
  * Index 15 is always transparent — callers should check `isTransparent()` before
- * calling `resolve()`. Supports named presets and index wrapping for smaller palettes.
- *
- * The transparency check always happens BEFORE modulo wrapping, so index 15 is
- * transparent regardless of palette size (e.g., a 4-color palette does not map
- * index 15 to index 3 via 15 % 4).
+ * calling `resolve()`. Indices 8-14 are invalid (no role); they resolve to
+ * black, as unused LUT slots.
  *
  * Usage:
  * @code
@@ -99,20 +102,18 @@ constexpr uint8_t SHADE_DARK = 2;   ///< Darkest tone within a ramp
  * @endcode
  */
 struct Palette {
-    RGB colors[PALETTE_MAX_ENTRIES]; ///< Color entries for indices 0-14
-    uint8_t size;                    ///< Active palette size — used for index wrapping
+    RGB colors[ROLE_COUNT];          ///< The Palette roles, indexed by ROLE_*
     bool debugTransparent;           ///< When true, renders transparent pixels as bright magenta
 
-    /** @brief Default constructor initializes to the system palette (the green ramp) */
+    /** @brief Default constructor initializes to the house default palette */
     Palette();
 
     /**
-     * @brief Set a color entry by index
+     * @brief Set a role's color
      *
-     * Index 15 (PALETTE_TRANSPARENT) is silently ignored. For indices
-     * 0-14 that exceed the current `size`, wrapping is applied via `index % size`.
+     * Only the roles (0-7) are set; any other index is silently ignored.
      *
-     * @param index Palette index (0-14, index 15 is transparent and ignored)
+     * @param index Palette role (0-7)
      * @param r Red channel (0-255)
      * @param g Green channel (0-255)
      * @param b Blue channel (0-255)
@@ -122,11 +123,11 @@ struct Palette {
     /**
      * @brief Get a color entry by index
      *
-     * Returns `RGB{0,0,0}` for the transparent index (15). For indices that
-     * exceed the current `size`, wrapping is applied via `index % size`.
+     * Returns the role's color for 0-7, and `RGB{0,0,0}` for anything else:
+     * the transparent index (15) and the invalid 8-14 (unused LUT slots).
      *
      * @param index Palette index (0-15)
-     * @return RGB color for the given index, or black if transparent
+     * @return RGB color for the given index, or black
      */
     RGB getColor(uint8_t index) const;
 
@@ -134,9 +135,9 @@ struct Palette {
      * @brief Resolve a palette index to an RGB color
      *
      * Callers MUST check `isTransparent(index)` before calling this method.
-     * For in-range indices, wrapping is applied via `index % size`.
+     * Same as `getColor`: a role's color, black for anything else.
      *
-     * @param index Palette index (0-14; behavior undefined for index 15)
+     * @param index Palette index (0-7; 8-15 give black)
      * @return Resolved RGB color
      */
     RGB resolve(uint8_t index) const;
@@ -144,8 +145,7 @@ struct Palette {
     /**
      * @brief Test whether a palette index represents transparency
      *
-     * Must be checked BEFORE calling `resolve()`. Transparency is checked
-     * before modulo wrapping — index 15 is always transparent.
+     * Must be checked BEFORE calling `resolve()`. Index 15 is always transparent.
      *
      * @param index Palette index to test
      * @return true if index is PALETTE_TRANSPARENT (15), false otherwise
@@ -153,65 +153,38 @@ struct Palette {
     bool isTransparent(uint8_t index) const;
 
     /**
-     * @brief Replace the active palette with a named preset
+     * @brief One step along the shade chain toward `bg`.
      *
-     * Supported preset names: "default" (the system green ramp), "tomo" (the
-     * previous, hue-ordered system palette), "pico8",
-     * "gameboy". The palette `size` is updated to match the preset's entry
-     * count. Index wrapping uses the new size after load.
+     * The chain is `bg <-> surface <-> muted <-> text`; `bg` stays put. An
+     * accent steps into `muted`. Index 15 (transparent) is returned
+     * unchanged. Three steps reach `bg` from anywhere.
      *
-     * @param name Null-terminated preset name string
-     * @return true if preset was found and loaded, false if name is unknown
+     * @param i Source palette index.
+     * @return The index one step toward `bg`.
      */
-    bool loadPreset(const char* name);
-
-    /**
-     * @brief Get the current active palette size
-     * @return Number of active color entries (used for index wrapping)
-     */
-    uint8_t getSize() const;
-
-    /**
-     * @brief Index of a ramp/shade pair (structural, palette-independent).
-     * @param rampId Ramp (hue) 0-4.
-     * @param shade Tone within the ramp: `SHADE_LIGHT` / `SHADE_BASE` /
-     *              `SHADE_DARK`.
-     * @return The palette index `rampId * RAMP_SHADES + shade`.
-     */
-    static constexpr uint8_t ramp(uint8_t rampId, uint8_t shade) {
-        return static_cast<uint8_t>((rampId * RAMP_SHADES) + shade);
+    static constexpr uint8_t towardBg(uint8_t i) {
+        if (i == PALETTE_TRANSPARENT) return PALETTE_TRANSPARENT;
+        if (i == ROLE_BG) return ROLE_BG;
+        if (i == ROLE_SURFACE) return ROLE_BG;
+        if (i == ROLE_MUTED) return ROLE_SURFACE;
+        return ROLE_MUTED;  // text and the accents
     }
 
     /**
-     * @brief The next lighter shade on the same ramp, clamped within the ramp.
+     * @brief One step along the shade chain toward `text`.
      *
-     * Steps one tone toward the light end (`i - 1`) but never crosses into the
-     * previous ramp: an already-light index (`i % 3 == SHADE_LIGHT`) stays put.
-     * Index 15 (transparent) is returned unchanged.
-     *
-     * @param i Source palette index.
-     * @return The lightened index, clamped to its ramp.
-     */
-    static constexpr uint8_t lighten(uint8_t i) {
-        if (i == PALETTE_TRANSPARENT) return PALETTE_TRANSPARENT;
-        if (i % RAMP_SHADES == SHADE_LIGHT) return i;
-        return static_cast<uint8_t>(i - 1);
-    }
-
-    /**
-     * @brief The next darker shade on the same ramp, clamped within the ramp.
-     *
-     * Steps one tone toward the dark end (`i + 1`) but never crosses into the
-     * next ramp: an already-dark index (`i % 3 == SHADE_DARK`) stays put. Index
-     * 15 (transparent) is returned unchanged.
+     * The mirror of @ref towardBg: `bg -> surface -> muted -> text`; `text`
+     * stays put. An accent steps into `text`. Index 15 (transparent) is
+     * returned unchanged.
      *
      * @param i Source palette index.
-     * @return The darkened index, clamped to its ramp.
+     * @return The index one step toward `text`.
      */
-    static constexpr uint8_t darken(uint8_t i) {
+    static constexpr uint8_t towardText(uint8_t i) {
         if (i == PALETTE_TRANSPARENT) return PALETTE_TRANSPARENT;
-        if (i % RAMP_SHADES == SHADE_DARK) return i;
-        return static_cast<uint8_t>(i + 1);
+        if (i == ROLE_BG) return ROLE_SURFACE;
+        if (i == ROLE_SURFACE) return ROLE_MUTED;
+        return ROLE_TEXT;  // muted, text and the accents
     }
 };
 
@@ -228,6 +201,9 @@ struct Palette {
  * @return true if parsing succeeded, false otherwise
  */
 bool parseHexColor(const char* hex, uint8_t& r, uint8_t& g, uint8_t& b);
+
+/** @brief A hex digit's value (either case), -1 for any other character. */
+int hexDigitValue(char c);
 
 /** @brief Engine-level global palette instance shared across all translation units */
 extern Palette g_palette;

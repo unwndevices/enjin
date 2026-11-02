@@ -3,7 +3,7 @@
 
 #include "canvas.hpp"
 #include "effect.hpp"     // index-shader data model (Mask x Remap x phase)
-#include "palette.hpp"    // ramp shade-stepping for the legibility outline
+#include "palette.hpp"    // Palette roles: the text default, the bg outline
 #include "gfxfont.h"  // canonical GFXglyph/GFXfont definitions (Adafruit GFX layout)
 #include <string>
 #include <cstring>
@@ -104,14 +104,14 @@ private:
     // so colour/holo/dim/fade are free `Remap` compositions and only this
     // inner draw loop swaps. `has_effect_ == false` restores the original
     // constant-colour write byte-for-byte (Canvas8 visual parity). The
-    // legibility outline is a separate shade-stepped silhouette pass drawn
+    // legibility outline is a separate bg silhouette pass drawn
     // behind the fill at a +/-1 px offset (a shader composition, on for the
     // banner, off for panel text).
     Effect effect_{};            ///< Active glyph shader (identity by default).
     bool has_effect_ = false;    ///< When false, the fill is a plain colour write.
-    bool outline_ = false;       ///< When true, draw a +/-1 px dark silhouette behind the fill.
+    bool outline_ = false;       ///< When true, draw a +/-1 px bg silhouette behind the fill.
     bool outline_has_color_ = false;  ///< true if an explicit outline colour was set.
-    TPixel outline_color_{};     ///< Explicit outline colour (else darken(text_color)).
+    TPixel outline_color_{};     ///< Explicit outline colour (else the bg role).
 
     /// @brief The palette index behind a `TPixel` (`Pixel4::value` or the byte).
     static constexpr uint8_t toIndex(TPixel p) {
@@ -130,7 +130,7 @@ public:
      */
     TextRenderer()
         : gfx_font(nullptr)
-        , text_color(15)
+        , text_color(ROLE_TEXT)
         , bg_color(0)
         , transparent_bg(true)
         , text_size_x(1)
@@ -171,12 +171,11 @@ public:
     }
 
     /**
-     * @brief Enable/disable the legibility outline (a +/-1 px dark silhouette).
+     * @brief Enable/disable the legibility outline (a +/-1 px bg silhouette).
      *
      * The outline is a shader composition, not a glyph feature: the glyph
-     * silhouette is stamped one shade darker (`Palette::darken(text_color)`)
-     * at the four +/-1 px offsets *behind* the fill, so the text reads over
-     * any scenery. On by default for the banner, off for panel text (#40).
+     * silhouette is stamped in the `bg` role (ADR-0022) at the four +/-1 px
+     * offsets *behind* the fill, so the text reads over any scenery. On by default for the banner, off for panel text (#40).
      *
      * @param on true to draw the outline.
      */
@@ -185,7 +184,7 @@ public:
         outline_has_color_ = false;
     }
 
-    /// @brief Enable the outline with an explicit colour (else darken(text_color)).
+    /// @brief Enable the outline with an explicit colour (else the bg role).
     void setOutline(bool on, TPixel color) {
         outline_ = on;
         outline_color_ = color;
@@ -320,7 +319,7 @@ public:
             // Walk the glyph's set bits once, stamping each into its scaled
             // pixel block shifted by (offx, offy). `colorFn(px, py)` yields the
             // colour per absolute pixel — a constant for the fill, a
-            // shade-stepped constant for the outline, or the index shader when
+            // bg constant for the outline, or the index shader when
             // one is set. Kept as one walk so the no-effect / no-outline case
             // writes exactly the pixels the original constant-colour loop did
             // (Canvas8 visual parity — see tests/waivers.hpp text pins).
@@ -348,11 +347,9 @@ public:
                 }
             };
 
-            // Outline pass (#40): a +/-1 px dark silhouette *behind* the fill.
+            // Outline pass (#40): a +/-1 px bg silhouette *behind* the fill.
             if (outline_) {
-                const TPixel oc = outline_has_color_
-                    ? outline_color_
-                    : fromIndex(Palette::darken(toIndex(text_color)));
+                const TPixel oc = outline_has_color_ ? outline_color_ : fromIndex(ROLE_BG);
                 const int16_t kOff[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
                 for (auto& o : kOff) {
                     stamp(o[0], o[1], [&](int16_t, int16_t) { return oc; });

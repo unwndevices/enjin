@@ -125,9 +125,11 @@ private:
 // Rendering fixture: 6x6 canvas, 3 parts, 3 frames.
 //
 //   image0 = [1 2 / 3 4]   (2x2)
-//   image1 = [5 6 / 7 8]   (2x2)
-//   image2 = [9 . / . 9]   (2x2 ring, 15 = transparent)
-//   image3 = [10]          (1x1)
+//   image1 = [5 6 / 7 0]   (2x2)
+//   image2 = [4 . / . 4]   (2x2 ring, 15 = transparent)
+//   image3 = [6]           (1x1)
+//   (Palette roles only, ADR-0022; image0's 4 is always covered where the
+//   ring shows, so the ring's 4 stays unambiguous.)
 //
 //   frame 0: base image0@(0,0), over image1@(1,1), spark invisible
 //   frame 1: base image0@(0,0), over image1@(1,1), spark image2@(4,2)
@@ -136,9 +138,9 @@ private:
 static Fixture makeRenderAsset() {
     Fixture f;
     f.addImage(2, 2, {1, 2, 3, 4});
-    f.addImage(2, 2, {5, 6, 7, 8});
-    f.addImage(2, 2, {9, 15, 15, 9});
-    f.addImage(1, 1, {10});
+    f.addImage(2, 2, {5, 6, 7, 0});
+    f.addImage(2, 2, {4, 15, 15, 4});
+    f.addImage(1, 1, {6});
     f.addPart("base");
     f.addPart("over");
     f.addPart("spark");
@@ -197,7 +199,7 @@ static void test_reconstruction() {
     expectRect(e0, 15);
     e0[0 * CW + 0] = 1; e0[0 * CW + 1] = 2;
     e0[1 * CW + 0] = 3; e0[1 * CW + 1] = 5; e0[1 * CW + 2] = 6;
-    e0[2 * CW + 1] = 7; e0[2 * CW + 2] = 8;
+    e0[2 * CW + 1] = 7; e0[2 * CW + 2] = 0;
     c.clear(Pixel4(15));
     s.draw(c);
     checkCanvas(c, e0, "LAYSP-01 painter order / overlap");
@@ -208,8 +210,8 @@ static void test_reconstruction() {
     expectRect(e1, 15);
     e1[0 * CW + 0] = 1; e1[0 * CW + 1] = 2;
     e1[1 * CW + 0] = 3; e1[1 * CW + 1] = 5; e1[1 * CW + 2] = 6;
-    e1[2 * CW + 1] = 7; e1[2 * CW + 2] = 8;
-    e1[2 * CW + 4] = 9; e1[3 * CW + 5] = 9;
+    e1[2 * CW + 1] = 7; e1[2 * CW + 2] = 0;
+    e1[2 * CW + 4] = 4; e1[3 * CW + 5] = 4;
     c.clear(Pixel4(15));
     s.draw(c);
     checkCanvas(c, e1, "LAYSP-02 transparency + LAYSP-04 intermittent");
@@ -237,7 +239,7 @@ static void test_reconstruction() {
     expectRect(e9, 15);
     e9[1 * CW + 2] = 1; e9[1 * CW + 3] = 2;
     e9[2 * CW + 2] = 3; e9[2 * CW + 3] = 5; e9[2 * CW + 4] = 6;
-    e9[3 * CW + 3] = 7; e9[3 * CW + 4] = 8;
+    e9[3 * CW + 3] = 7; e9[3 * CW + 4] = 0;
     c.clear(Pixel4(15));
     s.draw(c);
     checkCanvas(c, e9, "LAYSP-09 position offset");
@@ -268,8 +270,8 @@ static void test_flips() {
     expectRect(eh, 15);
     eh[0 * CW + 4] = 2; eh[0 * CW + 5] = 1;
     eh[1 * CW + 3] = 6; eh[1 * CW + 4] = 5; eh[1 * CW + 5] = 3;
-    eh[2 * CW + 1] = 9; eh[2 * CW + 3] = 8; eh[2 * CW + 4] = 7;
-    eh[3 * CW + 0] = 9;
+    eh[2 * CW + 1] = 4; eh[2 * CW + 3] = 0; eh[2 * CW + 4] = 7;
+    eh[3 * CW + 0] = 4;
     c.clear(Pixel4(15));
     s.draw(c);
     checkCanvas(c, eh, "LAYSP-06 horizontal flip");
@@ -280,8 +282,8 @@ static void test_flips() {
     s.setVFlip(true);
     uint8_t ev[CW * CH];
     expectRect(ev, 15);
-    ev[2 * CW + 5] = 9;
-    ev[3 * CW + 1] = 7; ev[3 * CW + 2] = 8; ev[3 * CW + 4] = 9;
+    ev[2 * CW + 5] = 4;
+    ev[3 * CW + 1] = 7; ev[3 * CW + 2] = 0; ev[3 * CW + 4] = 4;
     ev[4 * CW + 0] = 3; ev[4 * CW + 1] = 5; ev[4 * CW + 2] = 6;
     ev[5 * CW + 0] = 1; ev[5 * CW + 1] = 2;
     c.clear(Pixel4(15));
@@ -293,8 +295,8 @@ static void test_flips() {
     s.setHFlip(true);
     uint8_t eb[CW * CH];
     expectRect(eb, 15);
-    eb[2 * CW + 0] = 9;
-    eb[3 * CW + 1] = 9; eb[3 * CW + 3] = 8; eb[3 * CW + 4] = 7;
+    eb[2 * CW + 0] = 4;
+    eb[3 * CW + 1] = 4; eb[3 * CW + 3] = 0; eb[3 * CW + 4] = 7;
     eb[4 * CW + 3] = 6; eb[4 * CW + 4] = 5; eb[4 * CW + 5] = 3;
     eb[5 * CW + 4] = 2; eb[5 * CW + 5] = 1;
     c.clear(Pixel4(15));
@@ -593,15 +595,15 @@ static void test_sharing() {
     expectRect(e1, 15);
     e1[0 * CW + 0] = 1; e1[0 * CW + 1] = 2;
     e1[1 * CW + 0] = 3; e1[1 * CW + 1] = 5; e1[1 * CW + 2] = 6;
-    e1[2 * CW + 1] = 7; e1[2 * CW + 2] = 8;
+    e1[2 * CW + 1] = 7; e1[2 * CW + 2] = 0;
     checkCanvas(c1, e1, "instance 1 renders its frame");
 
     uint8_t e2[CW * CH];
     expectRect(e2, 15);
     e2[1 * CW + 2] = 1; e2[1 * CW + 3] = 2;
     e2[2 * CW + 2] = 3; e2[2 * CW + 3] = 5; e2[2 * CW + 4] = 6;
-    e2[3 * CW + 3] = 7; e2[3 * CW + 4] = 8;
-    e2[3 * CW + 6] = 9; e2[4 * CW + 7] = 9;  // spark at offset (4,2)+(2,1)
+    e2[3 * CW + 3] = 7; e2[3 * CW + 4] = 0;
+    e2[3 * CW + 6] = 4; e2[4 * CW + 7] = 4;  // spark at offset (4,2)+(2,1)
     checkCanvas(c2, e2, "instance 2 renders its own frame/position");
 }
 
@@ -671,7 +673,7 @@ static void test_storage_parity() {
     l.canvasW = 6;
     l.canvasH = 6;
     const std::vector<std::vector<uint8_t>> src = {
-        {1, 2, 3, 4}, {5, 6, 7, 8}, {9, 15, 15, 9}, {10}};
+        {1, 2, 3, 4}, {5, 6, 7, 0}, {4, 15, 15, 4}, {6}};  // Palette roles only
     const uint16_t dims[4][2] = {{2, 2}, {2, 2}, {2, 2}, {1, 1}};
     for (int i = 0; i < 4; ++i) {
         NjnPartImage img;

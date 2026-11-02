@@ -16,14 +16,15 @@ using namespace enjin2;
 // A small 4×4 test sprite for precise pixel verification
 // Layout (row-major, each byte = palette index, 15=transparent):
 //   Row 0:  1  2  3  4
-//   Row 1:  5  6  7  8
-//   Row 2:  9 10 11 12
-//   Row 3: 13 14  0  0
+//   Row 1:  5  6  7  1
+//   Row 2:  2  3  4  5
+//   Row 3:  7  6  0  0
+// (Palette roles only, ADR-0022; the four corners are distinct.)
 static const uint8_t small_4x4_data[] = {
     1,  2,  3,  4,
-    5,  6,  7,  8,
-    9, 10, 11, 12,
-   13, 14,  0,  0,
+    5,  6,  7,  1,
+    2,  3,  4,  5,
+    7,  6,  0,  0,
 };
 
 struct SpriteFixture {
@@ -68,7 +69,7 @@ int main() {
         f.exec("gfx.drawSprite(_s0, 10, 20)");
         ASSERT(f.px(10, 20) == 1, "normal: top-left = 1");
         ASSERT(f.px(13, 20) == 4, "normal: top-right = 4");
-        ASSERT(f.px(10, 23) == 13, "normal: bottom-left = 13");
+        ASSERT(f.px(10, 23) == 7, "normal: bottom-left = 7");
         ASSERT(f.px(13, 23) == 0, "normal: bottom-right = 0");
         ASSERT(f.px(11, 21) == 6, "normal: (1,1) = 6");
         printf("  PASS: normal draw\n");
@@ -81,7 +82,7 @@ int main() {
         ASSERT(f.px(10, 20) == 4, "flipH: top-left = 4");
         ASSERT(f.px(13, 20) == 1, "flipH: top-right = 1");
         ASSERT(f.px(10, 23) == 0, "flipH: bottom-left = 0");
-        ASSERT(f.px(13, 23) == 13, "flipH: bottom-right = 13");
+        ASSERT(f.px(13, 23) == 7, "flipH: bottom-right = 7");
         printf("  PASS: flipH\n");
     }
 
@@ -89,7 +90,7 @@ int main() {
     {
         f.clear();
         f.exec("gfx.drawSprite(_s0, 10, 20, false, true, false)");
-        ASSERT(f.px(10, 20) == 13, "flipV: top-left = 13");
+        ASSERT(f.px(10, 20) == 7, "flipV: top-left = 7");
         ASSERT(f.px(13, 20) == 0, "flipV: top-right = 0");
         ASSERT(f.px(10, 23) == 1, "flipV: bottom-left = 1");
         ASSERT(f.px(13, 23) == 4, "flipV: bottom-right = 4");
@@ -101,7 +102,7 @@ int main() {
         f.clear();
         f.exec("gfx.drawSprite(_s0, 10, 20, true, true, false)");
         ASSERT(f.px(10, 20) == 0, "flipHV: top-left = 0");
-        ASSERT(f.px(13, 20) == 13, "flipHV: top-right = 13");
+        ASSERT(f.px(13, 20) == 7, "flipHV: top-right = 7");
         ASSERT(f.px(10, 23) == 4, "flipHV: bottom-left = 4");
         ASSERT(f.px(13, 23) == 1, "flipHV: bottom-right = 1");
         printf("  PASS: flipH + flipV\n");
@@ -114,10 +115,10 @@ int main() {
         // 90° CW: dest(cellH-1-fy, fx) reads src(fx, fy)
         // original (0,0)=1 → dst at (cellH-1-0, 0)=(3,0) → pixel(13,20)
         // original (3,0)=4 → dst at (3, 3) → pixel(13,23)
-        // original (0,3)=13 → dst at (0, 0) → pixel(10,20)
+        // original (0,3)=7 → dst at (0, 0) → pixel(10,20)
         ASSERT(f.px(10 + 3, 20 + 0) == 1, "rot90: (3,0) = 1");
         ASSERT(f.px(10 + 3, 20 + 3) == 4, "rot90: (3,3) = 4");
-        ASSERT(f.px(10 + 0, 20 + 0) == 13, "rot90: (0,0) = 13");
+        ASSERT(f.px(10 + 0, 20 + 0) == 7, "rot90: (0,0) = 7");
         printf("  PASS: rotate90\n");
     }
 
@@ -148,14 +149,16 @@ int main() {
 
     // ── TEST 8: index shader through drawSprite (#36) ──
     {
-        // dim() = full mask + darken. The 4x4 sprite's opaque pixels are the
-        // clip; each surviving index darkens one shade on its ramp.
+        // dim() = full mask + towardBg. The 4x4 sprite's opaque pixels are the
+        // clip; each surviving index steps once along the shade chain.
         f.clear();
         f.exec("gfx.drawSprite(_s0, 0, 0, false, false, false, gfx.effect('dim'))");
-        // Source (0,0)=1 (ramp0 base) -> darken -> 2 (ramp0 dark).
-        ASSERT(f.px(0, 0) == 2, "fx dim: base index 1 darkened to 2");
-        // Source (0,3)=13 (ramp4 light) -> darken -> 14 (ramp4 base).
-        ASSERT(f.px(0, 3) == 14, "fx dim: index 13 darkened to 14");
+        // Source (2,0)=3 (text) -> towardBg -> 2 (muted).
+        ASSERT(f.px(2, 0) == 2, "fx dim: text dimmed to muted");
+        // Source (1,0)=2 (muted) -> towardBg -> 1 (surface).
+        ASSERT(f.px(1, 0) == 1, "fx dim: muted dimmed to surface");
+        // Source (0,3)=7 (accent4) -> towardBg -> 2 (muted).
+        ASSERT(f.px(0, 3) == 2, "fx dim: accent4 dimmed to muted");
         printf("  PASS: index shader (dim) through drawSprite\n");
     }
 

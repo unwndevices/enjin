@@ -144,7 +144,7 @@ int LuaBindings::lua_clear(lua_State* L) {
 
     uint8_t color = bindings->currentColor;
     if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        color = static_cast<uint8_t>(lua_tointeger(L, 1));
+        color = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
     }
 
     bindings->currentCanvas->clear(color);
@@ -158,7 +158,7 @@ int LuaBindings::lua_setColor(lua_State* L) {
     }
 
     if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        bindings->currentColor = static_cast<uint8_t>(lua_tointeger(L, 1));
+        bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
     }
 
     return 0;
@@ -332,7 +332,7 @@ int LuaBindings::lua_setPixel(lua_State* L) {
     if (lua_gettop(L) >= 3) {
         int16_t x = static_cast<int16_t>(lua_tointeger(L, 1));
         int16_t y = static_cast<int16_t>(lua_tointeger(L, 2));
-        uint8_t color = static_cast<uint8_t>(lua_tointeger(L, 3));
+        uint8_t color = lua::checkCanvasColour(L, 3, indexedColours(bindings->currentCanvas));
 
         bindings->currentCanvas->setPixel(x, y, color);
     }
@@ -386,7 +386,7 @@ int LuaBindings::lua_fastFillRect(lua_State* L) {
     int y = static_cast<int>(luaL_checknumber(L, 2));
     int w = static_cast<int>(luaL_checknumber(L, 3));
     int h = static_cast<int>(luaL_checknumber(L, 4));
-    uint8_t color = static_cast<uint8_t>(luaL_optnumber(L, 5, bindings->currentColor));
+    uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast bulk fill - bypass individual pixel calls
     int x2 = x + w;
@@ -415,7 +415,7 @@ int LuaBindings::lua_fastDrawLine(lua_State* L) {
     int y1 = static_cast<int>(luaL_checknumber(L, 2));
     int x2 = static_cast<int>(luaL_checknumber(L, 3));
     int y2 = static_cast<int>(luaL_checknumber(L, 4));
-    uint8_t color = static_cast<uint8_t>(luaL_optnumber(L, 5, bindings->currentColor));
+    uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast Bresenham line algorithm
     int dx = abs(x2 - x1);
@@ -442,51 +442,15 @@ int LuaBindings::lua_fastDrawLine(lua_State* L) {
 }
 
 //==============================================================================
-// Palette Functions
+// Palette Functions: read-only; the palette is the system's (Tomodachi #417)
 //==============================================================================
 
-int LuaBindings::lua_setPaletteColor(lua_State* L) {
-    int index = luaL_checkinteger(L, 1);
-    // Only a real string is the hex form; lua_isstring also accepts numbers.
-    if (lua_type(L, 2) == LUA_TSTRING) {
-        // Overload: setPaletteColor(index, '#rrggbb')
-        const char* hex = luaL_checkstring(L, 2);
-        uint8_t r = 0, g = 0, b = 0;
-        enjin2::parseHexColor(hex, r, g, b);
-        enjin2::g_palette.setColor(static_cast<uint8_t>(index), r, g, b);
-    } else {
-        // Overload: setPaletteColor(index, r, g, b)
-        int r = luaL_checkinteger(L, 2);
-        int g = luaL_checkinteger(L, 3);
-        int b = luaL_checkinteger(L, 4);
-        enjin2::g_palette.setColor(
-            static_cast<uint8_t>(index),
-            static_cast<uint8_t>(r),
-            static_cast<uint8_t>(g),
-            static_cast<uint8_t>(b));
-    }
-    return 0;
-}
-
 int LuaBindings::lua_getPaletteColor(lua_State* L) {
-    int index = luaL_checkinteger(L, 1);
-    RGB c = enjin2::g_palette.getColor(static_cast<uint8_t>(index));
+    RGB c = enjin2::g_palette.getColor(lua::checkPaletteIndex(L, 1));
     lua_pushinteger(L, c.r);
     lua_pushinteger(L, c.g);
     lua_pushinteger(L, c.b);
     return 3;
-}
-
-int LuaBindings::lua_loadPalette(lua_State* L) {
-    const char* name = luaL_checkstring(L, 1);
-    bool ok = enjin2::g_palette.loadPreset(name);
-    lua_pushboolean(L, ok);
-    return 1;
-}
-
-int LuaBindings::lua_getPaletteSize(lua_State* L) {
-    lua_pushinteger(L, enjin2::g_palette.getSize());
-    return 1;
 }
 
 } // namespace enjin2

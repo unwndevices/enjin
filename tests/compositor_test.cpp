@@ -90,12 +90,12 @@ static void test_layer_override()
 
     // Layer 0 has color 5 at (2,2)
     comp.layers[0].setPixel(2, 2, Pixel4(5));
-    // Layer 1 has color 8 at (2,2) — should override layer 0
-    comp.layers[1].setPixel(2, 2, Pixel4(8));
+    // Layer 1 has color 6 at (2,2) — should override layer 0
+    comp.layers[1].setPixel(2, 2, Pixel4(6));
     comp.composite();
 
-    ASSERT(comp.output.getPixel(2, 2).value == 8,
-           "layer override: output (2,2) should be 8 (layer 1 overrides layer 0)");
+    ASSERT(comp.output.getPixel(2, 2).value == 6,
+           "layer override: output (2,2) should be 6 (layer 1 overrides layer 0)");
 }
 
 // ============================================================
@@ -131,13 +131,13 @@ static void test_multi_layer_stack()
     // Layer 0: color 1 at (1,1)
     comp.layers[0].setPixel(1, 1, Pixel4(1));
     // Layer 1: leave transparent at (1,1)
-    // Layer 2: color 9 at (1,1) — highest visible
-    comp.layers[2].setPixel(1, 1, Pixel4(9));
+    // Layer 2: color 6 at (1,1) — highest visible
+    comp.layers[2].setPixel(1, 1, Pixel4(6));
     // Layer 3: leave transparent at (1,1)
     comp.composite();
 
-    ASSERT(comp.output.getPixel(1, 1).value == 9,
-           "multi-layer: output (1,1) should be 9 (layer 2 highest non-transparent)");
+    ASSERT(comp.output.getPixel(1, 1).value == 6,
+           "multi-layer: output (1,1) should be 6 (layer 2 highest non-transparent)");
 }
 
 // ============================================================
@@ -235,13 +235,13 @@ static void test_all_four_layers_same_pixel()
     comp.layers[0].setPixel(4, 4, Pixel4(1));
     comp.layers[1].setPixel(4, 4, Pixel4(3));
     comp.layers[2].setPixel(4, 4, Pixel4(7));
-    comp.layers[3].setPixel(4, 4, Pixel4(9));
+    comp.layers[3].setPixel(4, 4, Pixel4(5));
 
     comp.composite();
 
     // Highest layer (3) wins in painter's order
-    ASSERT(comp.output.getPixel(4, 4).value == 9,
-           "all four layers: output (4,4) should be 9 (layer 3 wins)");
+    ASSERT(comp.output.getPixel(4, 4).value == 5,
+           "all four layers: output (4,4) should be 5 (layer 3 wins)");
 }
 
 // ============================================================
@@ -257,7 +257,7 @@ static void test_composite_preserves_layer_buffers()
     // Set distinct pixels on different layers
     comp.layers[0].setPixel(0, 0, Pixel4(2));
     comp.layers[1].setPixel(3, 3, Pixel4(6));
-    comp.layers[2].setPixel(7, 7, Pixel4(10));
+    comp.layers[2].setPixel(7, 7, Pixel4(4));
 
     comp.composite();
 
@@ -266,8 +266,8 @@ static void test_composite_preserves_layer_buffers()
            "preserves: layer 0 (0,0) should still be 2 after composite");
     ASSERT(comp.layers[1].getPixel(3, 3).value == 6,
            "preserves: layer 1 (3,3) should still be 6 after composite");
-    ASSERT(comp.layers[2].getPixel(7, 7).value == 10,
-           "preserves: layer 2 (7,7) should still be 10 after composite");
+    ASSERT(comp.layers[2].getPixel(7, 7).value == 4,
+           "preserves: layer 2 (7,7) should still be 4 after composite");
     // Layer 1 untouched pixel should still be 15 (transparent)
     ASSERT(comp.layers[1].getPixel(0, 0).value == 15,
            "preserves: layer 1 (0,0) should still be 15 (transparent) after composite");

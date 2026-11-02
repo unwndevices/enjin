@@ -6,6 +6,7 @@
 #include "../../include/enjin2/scripting/tilemap_lua.hpp"
 #include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/core/name_index.hpp"
+#include "../../include/enjin2/scripting/palette_arg.hpp"
 
 namespace enjin2 {
 

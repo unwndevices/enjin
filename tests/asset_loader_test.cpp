@@ -97,7 +97,7 @@ static void writeFile(const std::string& path, const std::vector<uint8_t>& bytes
 static std::vector<uint8_t> makeTilesetNjn() {
     const uint8_t cw = 8, ch = 8, cols = 4, rows = 1;
     std::vector<uint8_t> pix(static_cast<size_t>(cw) * ch * cols * rows);
-    for (size_t i = 0; i < pix.size(); ++i) pix[i] = static_cast<uint8_t>(i % 15);
+    for (size_t i = 0; i < pix.size(); ++i) pix[i] = static_cast<uint8_t>(i % ROLE_COUNT);
 
     NjnTileAttr attrs[4] = {};
     attrs[1].flags = TileAttr::FLAG_SOLID;  attrs[1].kind = 1;
@@ -132,11 +132,11 @@ static std::vector<uint8_t> makeMapNjm() {
 }
 
 // A 3-tile 16x16 tileset (one tile = one compositor tile): tile 1 is solid
-// colour 5 (SOLID kind 3), tile 2 is solid colour 9 (no attrs).
+// colour 5 (SOLID kind 3), tile 2 is solid surface (1, no attrs).
 static std::vector<uint8_t> makeRoomNjn() {
     const uint8_t cw = 16, ch = 16, cols = 3, rows = 1;
     std::vector<uint8_t> pix(static_cast<size_t>(cw) * ch * cols * rows);
-    const uint8_t colours[3] = {15, 5, 9};
+    const uint8_t colours[3] = {15, 5, ROLE_SURFACE};
     for (size_t y = 0; y < ch; ++y) {
         for (size_t x = 0; x < static_cast<size_t>(cw) * cols; ++x) {
             pix[y * cw * cols + x] = colours[x / cw];
@@ -180,7 +180,7 @@ static std::vector<uint8_t> makeRoomNjm() {
 static std::vector<uint8_t> makeAnimNjn() {
     const uint8_t cw = 8, ch = 8, cols = 3, rows = 1;
     std::vector<uint8_t> pix(static_cast<size_t>(cw) * ch * cols * rows);
-    for (size_t i = 0; i < pix.size(); ++i) pix[i] = static_cast<uint8_t>(i % 15);
+    for (size_t i = 0; i < pix.size(); ++i) pix[i] = static_cast<uint8_t>(i % ROLE_COUNT);
 
     NjnClip clip{};
     std::strncpy(clip.name, "walk", sizeof(clip.name) - 1);
@@ -294,8 +294,8 @@ static void test_tilemap_load_scene_free(const std::string& dir) {
         ASSERT(canvas.getPixel(32, 0).value == 5, "wall cell draws tile 1");
         ASSERT(canvas.getPixel(47, 15).value == 5, "wall fills its 16x16 cell");
         ASSERT(canvas.getPixel(48, 0).value == 0, "the cell after the wall is empty");
-        ASSERT(canvas.getPixel(0, 16).value == 9, "floor cells draw tile 2");
-        ASSERT(canvas.getPixel(63, 31).value == 9, "the last floor cell draws tile 2");
+        ASSERT(canvas.getPixel(0, 16).value == ROLE_SURFACE, "floor cells draw tile 2");
+        ASSERT(canvas.getPixel(63, 31).value == ROLE_SURFACE, "the last floor cell draws tile 2");
     }
 
     // Dropping the last reference collects the handle safely.
@@ -343,7 +343,7 @@ static void test_sprite_load_v1_back_compat(const std::string& dir) {
     v1.push_back(NJN_MAGIC_0); v1.push_back(NJN_MAGIC_1);
     v1.push_back(NJN_VERSION); v1.push_back(cw);
     v1.push_back(ch); v1.push_back(cols); v1.push_back(rows); v1.push_back(0);
-    for (int i = 0; i < cw * ch * cols * rows; ++i) v1.push_back(static_cast<uint8_t>(i % 15));
+    for (int i = 0; i < cw * ch * cols * rows; ++i) v1.push_back(static_cast<uint8_t>(i % ROLE_COUNT));
     writeFile(dir + "/legacy.njn", v1);
 
     Fixture f;

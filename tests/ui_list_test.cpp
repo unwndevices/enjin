@@ -11,7 +11,7 @@
 #include <enjin2/ui/component.hpp>
 #include <enjin2/ui/components.hpp>
 #include <enjin2/ui/world.hpp>
-#include <enjin2/ui/theme.hpp>
+#include <enjin2/graphics/palette.hpp>
 #include <enjin2/ui/widgets/list.hpp>
 #include <enjin2/graphics/canvas.hpp>
 #include <cstdio>
@@ -116,7 +116,7 @@ static void test_render_draws_selection() {
     world.add<SizeComponent>(e, Size(64, 64));
     world.get<ListComponent>(e)->setCurrentSelection(1);
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
     // Scan the canvas: a rendered list must have put *some* non-black ink down,
@@ -127,7 +127,7 @@ static void test_render_draws_selection() {
         for (int16_t x = 0; x < 64; ++x) {
             uint8_t v = canvas.getPixel(x, y);
             if (v != 0) anyInk = true;
-            if (v == static_cast<uint8_t>(kDefaultTheme.accent)) anyHighlight = true;
+            if (v == ROLE_ACCENT) anyHighlight = true;
         }
     }
     ASSERT(anyInk, "list: render puts ink on the canvas");
@@ -145,7 +145,7 @@ static void test_render_empty_is_safe() {
     world.add<PositionComponent>(e, Point(0, 0));
     world.add<SizeComponent>(e, Size(32, 32));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f); // must not crash / read OOB
 
     bool anyInk = false;

@@ -2,6 +2,7 @@
 
 #include "component.hpp"
 #include "../core/types.hpp"
+#include "../graphics/palette.hpp"
 #include "../graphics/canvas.hpp"
 #include <cstdint>
 
@@ -93,7 +94,7 @@ struct RenderComponent : public Component<RenderComponent> {
      * @param vis Initial visibility
      * @param z Z-order
      */
-    RenderComponent(Pixel4 col = Colors::WHITE, Pixel4 bgCol = Colors::BLACK,
+    RenderComponent(Pixel4 col = Pixel4(ROLE_TEXT), Pixel4 bgCol = Pixel4(ROLE_BG),
                    uint8_t op = 255, bool vis = true, int16_t z = 0)
         : color(col), backgroundColor(bgCol), opacity(op), visible(vis), zOrder(z) {}
     

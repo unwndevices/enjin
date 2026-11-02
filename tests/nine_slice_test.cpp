@@ -57,7 +57,7 @@ static void test_edges_tile_never_stretch() {
 // destination background untouched.
 static void test_transparent_skipped() {
     Canvas4<48, 48> dst;
-    dst.clear(Pixel4(9));
+    dst.clear(Pixel4(ROLE_ACCENT3));
     Canvas4<8, 8> src;
     src.clear(Pixel4(PALETTE_TRANSPARENT));  // fully transparent source
     src.setPixel(0, 0, Pixel4(4));           // one opaque corner pixel
@@ -65,7 +65,7 @@ static void test_transparent_skipped() {
     nineSlice(dst, 5, 5, 10, 10, src, 2, 2);
 
     ASSERT(dst.getPixel(5, 5) == 4, "nineSlice: opaque corner pixel drawn");
-    ASSERT(dst.getPixel(6, 6) == 9, "nineSlice: transparent source keeps dst background");
+    ASSERT(dst.getPixel(6, 6) == ROLE_ACCENT3, "nineSlice: transparent source keeps dst background");
 }
 
 int main() {
