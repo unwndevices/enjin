@@ -5,7 +5,8 @@
 -- Run once through make_corpus.py, which also patches the 0 ms frame and writes
 -- the .njn goldens. The corpus is frozen: see README.md before running it again.
 --
--- Every file is indexed with source transparent index 0; art uses slots 1..14.
+-- Every file is indexed with source transparent index 0; art uses the Palette
+-- roles 1..7 (8..14 are not roles and the importer refuses them, ADR-0019).
 
 local out = app.params["out"]
 assert(out, "pass --script-param out=DIR")
@@ -113,14 +114,15 @@ do
   local spr = newSprite(4, 2, 1, colours)
   spr.layers[1].name = "art"
   local img = Image(4, 2, ColorMode.INDEXED)
-  for i = 1, 8 do img:drawPixel((i - 1) % 4, (i - 1) // 4, i) end
+  -- Indices 0..7: the transparent 0 and the roles 1..7.
+  for i = 1, 8 do img:drawPixel((i - 1) % 4, (i - 1) // 4, i - 1) end
   spr:newCel(spr.layers[1], 1, img, Point(0, 0))
   save(spr, "old_palette")
 end
 
 -- z-index tie (sheet): layer "low" at z +1 and layer "high" at z 0 both sit at
 -- order 1. Spec NOTE.5 paints the lower z first, so "low" (slot 5) ends on top
--- where the two overlap; the old tie-break painted "high" (slot 9) on top.
+-- where the two overlap; the old tie-break painted "high" (slot 7) on top.
 do
   local spr = newSprite(4, 4, 1)
   local low = spr.layers[1]
@@ -128,7 +130,7 @@ do
   local high = spr:newLayer()
   high.name = "high"
   rect(spr, low, 1, 0, 0, 3, 3, 5).zIndex = 1
-  rect(spr, high, 1, 1, 1, 3, 3, 9).zIndex = 0
+  rect(spr, high, 1, 1, 1, 3, 3, 7).zIndex = 0
   save(spr, "z_index_tie")
 end
 
@@ -141,7 +143,7 @@ do
   local guide = spr:newLayer()
   guide.name = "guide"
   guide.isVisible = false
-  rect(spr, guide, 1, 0, 0, 6, 5, 14)
+  rect(spr, guide, 1, 0, 0, 6, 5, 6)
   rect(spr, art, 1, 1, 1, 3, 2, 2)
   rect(spr, art, 2, 4, 3, 4, 4, 3)       -- runs off the bottom-right edge
   link(spr, { art }, {2, 3})              -- frame 3 links frame 2
