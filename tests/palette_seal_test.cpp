@@ -213,7 +213,11 @@ static void test_SEAL_04_palette() {
     }
     uint16_t lut[16];
     makeRgb565Lut(p, lut, false);
-    for (uint8_t i = ROLE_COUNT; i < 16; ++i) ASSERT(lut[i] == 0, "SEAL-04 LUT slots 8-15 are black");
+    // On screen 15 and the unused 8-14 show bg, on the device as in the
+    // Simulator (owner, #416): a layer left transparent is the empty screen.
+    const RGB bg = p.getColor(ROLE_BG);
+    for (uint8_t i = ROLE_COUNT; i < 16; ++i)
+        ASSERT(lut[i] == packRgb565(bg.r, bg.g, bg.b), "SEAL-04 LUT slots 8-15 show bg");
     ASSERT(lut[ROLE_TEXT] == packRgb565(text.r, text.g, text.b), "SEAL-04 LUT roles keep their colours");
 }
 

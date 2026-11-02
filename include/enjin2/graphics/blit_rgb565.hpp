@@ -48,10 +48,10 @@ constexpr uint16_t byteSwap16(uint16_t v) {
 /**
  * @brief Resolve all 16 palette indices to RGB565 words for the blit LUT.
  *
- * Index 15 (transparent) has no color of its own; it resolves to `getColor(15)`
- * (black) so a full-frame blit that ignores transparency still produces a
- * defined value. The invalid 8-14 are unused slots and hold black too. Callers that honor transparency should skip index 15 before the
- * blit rather than relying on this entry.
+ * The 8 roles (0-7) get their colours. Index 15 (transparent) and the unused
+ * 8-14 have no colour of their own; on screen they show `bg`, as in the web
+ * Simulator (ADR-0022): a pixel a full-frame blit finds still transparent is
+ * the empty screen, whatever the palette.
  *
  * @param pal   Source palette.
  * @param out   16-entry destination table.
@@ -59,7 +59,7 @@ constexpr uint16_t byteSwap16(uint16_t v) {
  */
 inline void makeRgb565Lut(const Palette& pal, uint16_t out[16], bool swapBytes = true) {
     for (uint8_t i = 0; i < 16; ++i) {
-        const RGB c = pal.getColor(i);
+        const RGB c = pal.getColor(i < ROLE_COUNT ? i : ROLE_BG);
         uint16_t v = packRgb565(c.r, c.g, c.b);
         out[i] = swapBytes ? byteSwap16(v) : v;
     }
