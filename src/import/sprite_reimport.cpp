@@ -161,6 +161,7 @@ SpriteReimportResult reimportSprite(const uint8_t* njn, size_t njnSize,
     SpriteImportOptions io;
     io.kind = ex.kind;
     io.palette = opts.palette;
+    io.paletteSlots = opts.paletteSlots;
     io.limits = opts.limits;
     io.cellW = opts.cellW;
     io.cellH = opts.cellH;

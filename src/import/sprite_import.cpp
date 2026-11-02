@@ -143,11 +143,11 @@ Oklab toOklab(uint8_t r8, uint8_t g8, uint8_t b8) {
             0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s};
 }
 
-uint8_t nearestSlot(const std::array<RGB, PALETTE_MAX_ENTRIES>& pal, uint8_t r, uint8_t g, uint8_t b) {
+uint8_t nearestSlot(const std::array<RGB, PALETTE_MAX_ENTRIES>& pal, uint8_t slots, uint8_t r, uint8_t g, uint8_t b) {
     const Oklab c = toOklab(r, g, b);
     uint8_t best = 0;
     float bestD = 0;
-    for (uint8_t i = 0; i < PALETTE_MAX_ENTRIES; ++i) {
+    for (uint8_t i = 0; i < slots; ++i) {
         const Oklab p = toOklab(pal[i].r, pal[i].g, pal[i].b);
         const float d = (p.L - c.L) * (p.L - c.L) + (p.a - c.a) * (p.a - c.a) + (p.b - c.b) * (p.b - c.b);
         if (i == 0 || d < bestD) { best = i; bestD = d; }
@@ -176,7 +176,9 @@ struct Use {
 class Importer {
 public:
     Importer(const ase::File& f, const SpriteImportOptions& o)
-        : m_file(f), m_opts(o), m_budget(o.limits.maxPixelBytes) {}
+        : m_file(f), m_opts(o),
+          m_slots(std::clamp<uint8_t>(o.paletteSlots, 1, PALETTE_MAX_ENTRIES)),
+          m_budget(o.limits.maxPixelBytes) {}
 
     SpriteImportResult run();
 
@@ -191,6 +193,7 @@ private:
 
     const ase::File& m_file;
     const SpriteImportOptions& m_opts;
+    const uint8_t m_slots;                         ///< RGBA target slots, 1..15.
     uint64_t m_budget;
     std::vector<size_t> m_visible;                 ///< Visible layer indices, painter order.
     std::vector<uint16_t> m_durations;             ///< Effective per-frame ms.
@@ -221,7 +224,7 @@ Error Importer::convert(const ase::Cel& cel, size_t frame, size_t layer, IndexCe
             if (p[3] == 0) {
                 v = CLEAR;
             } else if (p[3] == 255) {
-                for (uint8_t s = 0; s < PALETTE_MAX_ENTRIES; ++s) {
+                for (uint8_t s = 0; s < m_slots; ++s) {
                     const RGB& c = m_opts.palette[s];
                     if (c.r == p[0] && c.g == p[1] && c.b == p[2]) { v = s; break; }
                 }
@@ -304,7 +307,7 @@ Error Importer::badPixelError(SpriteImportResult& r) const {
     for (const auto& [key, count] : m_bad) {
         SpriteColourIssue i{static_cast<uint8_t>(key >> 24), static_cast<uint8_t>(key >> 16),
                             static_cast<uint8_t>(key >> 8), static_cast<uint8_t>(key), count, 0};
-        i.nearestSlot = nearestSlot(m_opts.palette, i.r, i.g, i.b);
+        i.nearestSlot = nearestSlot(m_opts.palette, m_slots, i.r, i.g, i.b);
         r.colourIssues.push_back(i);
     }
     std::stable_sort(r.colourIssues.begin(), r.colourIssues.end(),

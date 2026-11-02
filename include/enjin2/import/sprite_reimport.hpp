@@ -56,6 +56,8 @@ struct SpriteReimportOptions {
     uint16_t cellW = 0, cellH = 0;
     /// Target colours for RGBA sources; slot i is palette index i.
     std::array<RGB, PALETTE_MAX_ENTRIES> palette = systemPalette();
+    /// RGBA pixels match slots 0..paletteSlots-1 only (SpriteImportOptions::paletteSlots).
+    uint8_t paletteSlots = PALETTE_MAX_ENTRIES;
     SpriteImportLimits limits;
 };
 

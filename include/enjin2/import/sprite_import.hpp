@@ -93,6 +93,10 @@ struct SpriteImportOptions {
     uint16_t cellW = 0, cellH = 0;
     /// Target colours for RGBA sources; slot i is palette index i.
     std::array<RGB, PALETTE_MAX_ENTRIES> palette = systemPalette();
+    /// RGBA pixels match (and are nearest to) slots 0..paletteSlots-1 only.  The Studio
+    /// imports against its preset's 8 Palette roles (ROLE_COUNT, ADR-0019); the CLI still
+    /// matches all 15 until the old entries 8-14 go (Tomodachi #426).
+    uint8_t paletteSlots = PALETTE_MAX_ENTRIES;
     SpriteImportLimits limits;
 };
 
@@ -100,7 +104,7 @@ struct SpriteImportOptions {
 struct SpriteColourIssue {
     uint8_t  r, g, b, a;
     uint32_t pixels;       ///< In-canvas pixels with this value (each stored cel once).
-    uint8_t  nearestSlot;  ///< Closest palette slot by colour (Oklab), 0..14.
+    uint8_t  nearestSlot;  ///< Closest target slot by colour (Oklab), below paletteSlots.
     /// True when the value fails on alpha (0 < a < 255) rather than on colour.
     bool partialAlpha() const { return a != 0 && a != 255; }
 };

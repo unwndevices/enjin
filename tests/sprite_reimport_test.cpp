@@ -385,6 +385,18 @@ void testR13_badInputs() {
     ASSERT(pm.status == SpriteImportStatus::PaletteMismatch && pm.colourIssues.size() == 1 && pm.njn.empty(),
            "SPR-13 a palette mismatch carries its colour issues");
 
+    // The Studio's 8-role target (Tomodachi #425) reaches the import: a slot-14 colour is off it.
+    AseBuilder past(1, 1, 32, 1);
+    past.add(0, AseBuilder::layer("body"));
+    past.add(0, AseBuilder::cel(0, 0, 0, 1, 1, {140, 140, 140, 255}));
+    SpriteReimportOptions roles;
+    roles.palette = greyPalette();
+    roles.paletteSlots = ROLE_COUNT;
+    const Bytes pastSrc = past.build();
+    const auto off = reimportSprite(njn.data(), njn.size(), pastSrc.data(), pastSrc.size(), {}, roles);
+    ASSERT(off.status == SpriteImportStatus::PaletteMismatch && off.colourIssues.size() == 1 && off.colourIssues[0].nearestSlot == 7,
+           "SPR-13 paletteSlots reaches the import: a colour past the roles is off the palette");
+
     // Truncations and byte flips of the existing .njn never crash (ASan in the gate).
     bool ok = true;
     for (size_t cut = 0; cut < njn.size(); ++cut) {

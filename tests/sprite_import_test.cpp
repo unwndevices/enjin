@@ -17,6 +17,8 @@
  *   SPI-08  Old (0x0004) and new (0x2019) palette chunks both read.
  *   SPI-09  RGBA exact palette match imports to indices.
  *   SPI-10  RGBA mismatch: colour and alpha issues, counts, nearest slot.
+ *   SPI-10b RGBA against the 8 Palette roles (paletteSlots, Tomodachi #425):
+ *           a colour in a slot past the roles is off the palette.
  *   SPI-11  RGBA issues ignore off-canvas pixels and count a linked cel once.
  *   SPI-12  Two visible layers → layered: parts, crop, dedupe, invisible
  *           refs, bottom-centre pivot; decodes through njn2DecodeLayered.
@@ -243,6 +245,29 @@ static void test10_rgbaMismatch() {
         ASSERT(sawRed, "SPI-10 off-palette red reported");
     }
     ASSERT(!r.error.empty() && r.njn.empty(), "SPI-10 message, no output");
+}
+
+// The Studio imports against its preset's 8 roles (ADR-0019, Tomodachi #425): only slots
+// 0..paletteSlots-1 are targets, for the match and the nearest slot alike.
+static void test10b_rgbaRoleSlots() {
+    AseBuilder a(3, 1, 32);
+    a.add(0, AseBuilder::layer("body"));
+    a.add(0, AseBuilder::cel(0, 0, 0, 3, 1, {
+        30, 30, 30, 255,   70, 70, 70, 255,   140, 140, 140, 255,   // slots 3, 7, then 14: past the roles
+    }));
+    SpriteImportOptions roles = greyOpts();
+    roles.paletteSlots = ROLE_COUNT;
+    const auto r = run(a.build(), roles);
+    ASSERT(r.status == SpriteImportStatus::PaletteMismatch && r.colourIssues.size() == 1, "SPI-10b slot 14's colour is off an 8-role palette");
+    ASSERT(r.colourIssues.size() == 1 && r.colourIssues[0].r == 140 && r.colourIssues[0].nearestSlot == 7, "SPI-10b its nearest slot is a role");
+
+    AseBuilder b(2, 1, 32);
+    b.add(0, AseBuilder::layer("body"));
+    b.add(0, AseBuilder::cel(0, 0, 0, 2, 1, {30, 30, 30, 255, 70, 70, 70, 255}));
+    const auto ok = run(b.build(), roles);
+    ASSERT(ok.ok(), "SPI-10b role colours import");
+    const Sheet s = readSheet(ok);
+    ASSERT(s.ok && s.pixl == (Bytes{3, 7}), "SPI-10b role colours → role indices");
 }
 
 static void test11_rgbaCounting() {
@@ -707,6 +732,7 @@ int main(int argc, char** argv) {
     test08_paletteChunks();
     test09_rgbaMatch();
     test10_rgbaMismatch();
+    test10b_rgbaRoleSlots();
     test11_rgbaCounting();
     test12_layered();
     test13_kindOverride();
