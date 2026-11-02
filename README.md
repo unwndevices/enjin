@@ -48,10 +48,6 @@ int main() {
 
 Creates a canvas and draws a filled rectangle.
 
-### Running Examples
-
-See the `examples/` directory for sample code.
-
 ## Features
 
 - **Static Allocation:** No dynamic memory usage, predictable performance
@@ -99,7 +95,6 @@ enjin2 includes these single-header libraries (no installation required):
 include/           # Public headers
   enjin2/          # Main library namespace
 src/               # Implementation files
-examples/          # Example programs
 docs/              # Documentation source
 scripts/           # Utility scripts (API generation, etc.)
 ```

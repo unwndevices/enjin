@@ -30,7 +30,6 @@ endif()
 
 # Options
 option(ENJIN2_BUILD_TESTS "Build tests" ON)
-option(ENJIN2_BUILD_EXAMPLES "Build examples" ON)
 option(ENJIN2_BUILD_LUA "Build Lua bindings" ON)
 option(ENJIN2_BUILD_WASM "Build for WebAssembly" OFF)
 option(ENJIN2_USE_SIMD "Use SIMD optimizations" ON)
@@ -402,11 +401,6 @@ if(ENJIN2_BUILD_WASM)
         OUTPUT_NAME "enjin2"
         SUFFIX ".js"
     )
-endif()
-
-# Examples
-if(ENJIN2_BUILD_EXAMPLES)
-    add_subdirectory(examples)
 endif()
 
 # SDL3 desktop runner

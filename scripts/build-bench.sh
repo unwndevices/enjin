@@ -12,11 +12,10 @@ echo "=== enjin2 benchmark suite ==="
 echo "Project: ${PROJECT_ROOT}"
 echo "Build:   ${BUILD_DIR}"
 
-# Configure — benchmarks ON, tests/examples/SDL OFF, Release mode
+# Configure — benchmarks ON, tests/SDL OFF, Release mode
 cmake -DENJIN2_BUILD_BENCHMARKS=ON \
       -DENJIN2_BUILD_LUA=ON \
       -DENJIN2_BUILD_TESTS=OFF \
-      -DENJIN2_BUILD_EXAMPLES=OFF \
       -DENJIN2_BUILD_SDL=OFF \
       -DCMAKE_BUILD_TYPE=Release \
       -B "${BUILD_DIR}" \
