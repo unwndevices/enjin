@@ -49,6 +49,20 @@ def test_load_default_palette():
     assert tuple(pal.rgb[7]) == (0xE8, 0x48, 0x40)
 
 
+def test_house_default_is_the_engines():
+    # The Python copy of the house default must be src/graphics/palette.cpp's
+    # DEFAULT_COLORS, role for role (the engine is the source).
+    import re
+    cpp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..",
+                       "src", "graphics", "palette.cpp")
+    with open(cpp) as f:
+        body = f.read().split("DEFAULT_COLORS[ROLE_COUNT] = {", 1)[1].split("};", 1)[0]
+    engine = tuple(tuple(int(v, 16) for v in m)
+                   for m in re.findall(r"\{0x([0-9a-fA-F]{2}), 0x([0-9a-fA-F]{2}), 0x([0-9a-fA-F]{2})\}", body))
+    assert len(engine) == 8
+    assert palette.HOUSE_DEFAULT_RGB == engine
+
+
 def test_load_gpl_rejects_short_palette(tmp_path):
     p = tmp_path / "short.gpl"
     p.write_text("GIMP Palette\nName: short\n#\n255 0 0\n0 255 0\n")
