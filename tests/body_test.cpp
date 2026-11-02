@@ -12,6 +12,15 @@
 //   PHYS-BODY-06  a flipper moving away from the ball does not stall the TOI loop
 //   PHYS-BODY-07  every collider has an id: contacts carry it, remove(id) and
 //                 setEnabled(id, on) take one collider out (#384)
+//   PHYS-BODY-08  rolling resistance: a constant deceleration that holds a ball
+//                 on a slope gentler than it, takes it off a steeper one, and
+//                 stops a rolling ball without turning it round (Tomodachi #393)
+//   PHYS-BODY-09  a ball already touching a wall, box or post (a resting
+//                 contact leaves it within SLOP of the face) and then driven
+//                 hard into it does not pass through it (Tomodachi #393)
+//   PHYS-BODY-10  a ball starting near a box's corner, within the radius of
+//                 both faces' planes but clear of the rounded corner, still
+//                 hits the box (Tomodachi #393, a Marble Maze tunnel)
 #include <enjin2/core/colliders.hpp>
 #include <enjin2/core/object.hpp>
 #include <enjin2/components/body.hpp>
@@ -343,6 +352,159 @@ static void test_collider_ids() {
     ASSERT(sawFlipper && flipperIdZero, "a flipper's contacts carry id 0");
 }
 
+static void test_rolling_resistance() {
+    printf("--- PHYS-BODY-08: rolling resistance (N=1..8) ---\n");
+    ColliderSet open;  // no colliders: an open, level floor
+    for (int N : {1, 4, 8}) {
+        char msg[160];
+        // A pull of 90 px/s² against a resistance of 100: the ball never moves,
+        // not even by a creep, over 10 s.
+        {
+            BodyState b;
+            b.x = 10; b.y = 10; b.radius = 2; b.rollingResistance = 100.0f;
+            run(b, open, 90.0f, 0.0f, 300, N, true, [](int, const std::vector<Contact>&) {});
+            snprintf(msg, sizeof(msg), "N=%d a pull under the resistance holds the ball (x=%.6f, vx=%.6f)",
+                     N, b.x, b.vx);
+            ASSERT(b.x == 10.0f && b.vx == 0.0f && b.y == 10.0f, msg);
+        }
+        // A pull of 300 against 100 rolls it at the difference: 200 px/s², so
+        // 1 s from rest is 200 px/s and 100 px (s = a t² / 2).
+        {
+            BodyState b;
+            b.x = 0; b.y = 0; b.radius = 2; b.rollingResistance = 100.0f;
+            run(b, open, 0.0f, 300.0f, 30, N, true, [](int, const std::vector<Contact>&) {});
+            snprintf(msg, sizeof(msg), "N=%d a steeper pull rolls at its excess (vy=%.3f, y=%.3f)", N, b.vy, b.y);
+            ASSERT(std::fabs(b.vy - 200.0f) < 0.5f && std::fabs(b.y - 100.0f) < 200.0f / 30 / N + 0.5f, msg);
+            ASSERT(b.vx == 0.0f, "the resistance has no sideways part");
+        }
+        // Rolling at 120 px/s on the level, against 60 px/s²: it stops after 2 s
+        // and 120 px (v² / 2a), and stays stopped rather than rolling back.
+        {
+            BodyState b;
+            b.x = 0; b.y = 0; b.vx = 72.0f; b.vy = 96.0f; b.radius = 2; b.rollingResistance = 60.0f;
+            run(b, open, 0.0f, 0.0f, 90, N, true, [](int, const std::vector<Contact>&) {});
+            const float d = std::hypot(b.x, b.y);
+            snprintf(msg, sizeof(msg), "N=%d a rolling ball stops in v²/2a (d=%.3f, v=%.4f)", N, d,
+                     std::hypot(b.vx, b.vy));
+            ASSERT(b.vx == 0.0f && b.vy == 0.0f, msg);
+            ASSERT(std::fabs(d - 120.0f) < 120.0f / 30 / N + 0.5f, msg);
+            ASSERT(std::fabs(b.y / b.x - 96.0f / 72.0f) < 1e-3f, "it slows along its own heading");
+        }
+    }
+    // 0 (the default) is no resistance: a body left alone keeps its speed.
+    BodyState b;
+    b.vx = 50.0f;
+    ASSERT(b.rollingResistance == 0.0f, "rolling resistance defaults to 0");
+    run(b, open, 0.0f, 0.0f, 30, 4, true, [](int, const std::vector<Contact>&) {});
+    ASSERT(b.vx == 50.0f, "no resistance, no slowing");
+
+    // The component carries it.
+    Object o;
+    C_Body* body = o.addComponent<C_Body>();
+    body->setRollingResistance(42.0f);
+    ASSERT(body->getRollingResistance() == 42.0f && body->state().rollingResistance == 42.0f,
+           "C_Body sets and reads its rolling resistance");
+}
+
+static void test_touching_then_driven_in() {
+    printf("--- PHYS-BODY-09: touching, then driven hard into the same collider ---\n");
+    // Each case: the ball overlaps the collider by `overlap` px (0.004: inside
+    // the depenetration SLOP, so a resting contact can leave it there; 0: just
+    // touching), then moves 16.7 px in one substep, mostly into the collider.
+    for (float overlap : {0.0f, 0.004f}) {
+        char msg[160];
+        {   // an 8 px box: the far face is closer than the travel
+            BodyState b;
+            b.x = 8.0f + overlap; b.y = 0; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 2000.0f; b.vy = 300.0f;
+            ColliderSet set;
+            set.addAabb(10, -50, 18, 50, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            snprintf(msg, sizeof(msg), "overlap %.3f: the box keeps the ball on its side (x=%.3f)", overlap, b.x);
+            ASSERT(b.x <= 8.0f + 0.01f, msg);
+            ASSERT(!cs.empty(), "the push into the box is a contact");
+        }
+        {   // a box's corner region, driven in diagonally
+            BodyState b;
+            const float k = (2.0f - overlap) / std::sqrt(2.0f);
+            b.x = 10.0f - k; b.y = -50.0f - k; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 1500.0f; b.vy = 1500.0f;
+            ColliderSet set;
+            set.addAabb(10, -50, 18, 50, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            const bool inside = b.x > 10.0f - 2.0f + 0.05f && b.y > -50.0f - 2.0f + 0.05f &&
+                                b.x < 18.0f + 2.0f && b.y < 50.0f + 2.0f &&
+                                !(b.x < 10.0f && b.y < -50.0f &&
+                                  std::hypot(10.0f - b.x, -50.0f - b.y) >= 2.0f - 0.05f);
+            snprintf(msg, sizeof(msg), "overlap %.3f: driven into a corner, not through it (%.3f, %.3f)",
+                     overlap, b.x, b.y);
+            ASSERT(!inside && b.x < 18.0f, msg);
+        }
+        {   // a thin segment wall
+            BodyState b;
+            b.x = 8.0f + overlap; b.y = 0; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 2000.0f; b.vy = 300.0f;
+            ColliderSet set;
+            set.addSeg(10, -50, 10, 50, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            snprintf(msg, sizeof(msg), "overlap %.3f: the segment keeps the ball on its side (x=%.3f)", overlap, b.x);
+            ASSERT(b.x <= 8.0f + 0.01f, msg);
+        }
+        {   // a post
+            BodyState b;
+            b.x = -(5.0f - overlap); b.y = 0; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 2000.0f; b.vy = 0.0f;
+            ColliderSet set;
+            set.addCircle(0, 0, 3, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            snprintf(msg, sizeof(msg), "overlap %.3f: the post keeps the ball on its side (x=%.3f)", overlap, b.x);
+            ASSERT(b.x <= -5.0f + 0.01f, msg);
+        }
+    }
+    // Touching and moving away, or along the face, is free: no contact.
+    {
+        BodyState b;
+        b.x = 8.0f; b.y = 0; b.radius = 2; b.vx = 0.0f; b.vy = 600.0f;
+        ColliderSet set;
+        set.addAabb(10, -50, 18, 50, 0.1f);
+        std::vector<Contact> cs;
+        StepStats st;
+        stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+        ASSERT(std::fabs(b.y - 5.0f) < 1e-3f && std::fabs(b.vy - 600.0f) < 1e-3f && cs.empty(),
+               "sliding along a touched face keeps the whole move and makes no contact");
+    }
+}
+
+static void test_corner_region_start() {
+    printf("--- PHYS-BODY-10: a start in a box's corner region ---\n");
+    // Marble Maze, stage 3: the ball at (46.06, 39.34) skims an 8 px wall
+    // tile's top-left corner at (48, 40): 2.05 px off it, so not touching,
+    // yet inside the box grown by the radius. It moves (8.7, 2.25) px.
+    BodyState b;
+    b.x = 46.063f; b.y = 39.335f; b.radius = 2; b.restitution = 0.3f;
+    b.vx = 694.3f; b.vy = 180.0f;
+    ColliderSet set;
+    set.addAabb(48, 40, 56, 48, 0.1f);
+    std::vector<Contact> cs;
+    StepStats st;
+    stepFrame(b, set, 0.0f, 0.0f, 0.0125f, 1, true, cs, st);
+    const float cx = std::max(48.0f, std::min(b.x, 56.0f));
+    const float cy = std::max(40.0f, std::min(b.y, 48.0f));
+    char msg[160];
+    snprintf(msg, sizeof(msg), "the ball meets the corner instead of passing through the box (%.3f, %.3f)",
+             b.x, b.y);
+    ASSERT(std::hypot(b.x - cx, b.y - cy) >= 2.0f - 0.05f && b.x < 50.0f, msg);
+    ASSERT(!cs.empty(), "the corner hit is a contact");
+}
+
 int main() {
     test_rest_no_tunnel();
     test_swept_vs_naive();
@@ -351,6 +513,9 @@ int main() {
     test_component_contact_poll();
     test_flipper_moving_away();
     test_collider_ids();
+    test_rolling_resistance();
+    test_touching_then_driven_in();
+    test_corner_region_start();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;

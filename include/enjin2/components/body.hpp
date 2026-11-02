@@ -3,8 +3,8 @@
  * @brief C_Body — the single dynamic circle body (component, ADR-0003 §4)
  *
  * The only dynamic entity in either slice (pinball ball / maze marble): a circle
- * with position, velocity, radius, restitution and drag. It steps against a
- * scene-level @ref enjin2::ColliderSet "ColliderSet" (via `engine.scene.colliders()`), referenced here
+ * with position, velocity, radius, restitution, drag and rolling resistance. It
+ * steps against a scene-level @ref enjin2::ColliderSet "ColliderSet" (via `engine.scene.colliders()`), referenced here
  * with setColliders() — never owned. Every `step(dt)` runs N fixed-dt substeps
  * (swept conservative-advancement TOI + depenetration+impulse, see
  * colliders.hpp) and **buffers** the resolved contacts, which the applet polls
@@ -49,6 +49,8 @@ public:
     void setRadius(float r) { m_body.radius = r; }
     void setRestitution(float e) { m_body.restitution = e; }
     void setDrag(float d) { m_body.drag = d; }
+    /// Constant deceleration against the motion, px/s² (BodyState::rollingResistance).
+    void setRollingResistance(float a) { m_body.rollingResistance = a > 0.0f ? a : 0.0f; }
 
     float getX() const { return m_body.x; }
     float getY() const { return m_body.y; }
@@ -57,6 +59,7 @@ public:
     float getRadius() const { return m_body.radius; }
     float getRestitution() const { return m_body.restitution; }
     float getDrag() const { return m_body.drag; }
+    float getRollingResistance() const { return m_body.rollingResistance; }
 
     const BodyState& state() const { return m_body; }
 

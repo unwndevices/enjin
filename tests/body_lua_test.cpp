@@ -68,13 +68,16 @@ static void test_body_and_colliders_surface() {
         "total = col:count()\n"
         "nf = col:numFlippers()\n"
         "o = engine.scene.spawn()\n"
-        "body = o:add('C_Body', {radius=4, restitution=0.3, drag=0.0})\n"
+        "body = o:add('C_Body', {radius=4, restitution=0.3, drag=0.0, rollingResistance=55})\n"
         "body:setColliders(col)\n"
         "body.x = 80\n"
         "body.y = 40\n"
         "r_body = body.radius\n"
         "e_body = body.restitution\n"
         "x_body = body.x\n"
+        "rr_body = body.rollingResistance\n"
+        "body.rollingResistance = 70\n"
+        "rr_body2 = body.rollingResistance\n"
     );
 
     ASSERT(static_cast<int>(f.num("total")) == 4, "colliders:count() == 4 (seg+circle+flipper+aabb)");
@@ -86,6 +89,8 @@ static void test_body_and_colliders_surface() {
     ASSERT(std::fabs(f.num("r_body") - 4.0) < 1e-4, "C_Body radius set via add params");
     ASSERT(std::fabs(f.num("e_body") - 0.3) < 1e-4, "C_Body restitution set via add params");
     ASSERT(std::fabs(f.num("x_body") - 80.0) < 1e-4, "C_Body x writable");
+    ASSERT(std::fabs(f.num("rr_body") - 55.0) < 1e-4, "C_Body rollingResistance set via add params (#393)");
+    ASSERT(std::fabs(f.num("rr_body2") - 70.0) < 1e-4, "C_Body rollingResistance writable (#393)");
 }
 
 static void test_floor_rest_lua() {
