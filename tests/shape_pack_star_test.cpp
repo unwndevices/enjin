@@ -61,9 +61,9 @@ int main() {
 
     ShapeLook look;
     for (uint8_t s = 0; s < SHAPE_SLOT_COUNT; ++s) look.set(ShapeSlot(s), 1);
-    look.colour[0] = 9;
-    look.colour[1] = 4;
-    look.colour[2] = 0;
+    look.colour[0] = ROLE_ACCENT2;
+    look.colour[1] = ROLE_ACCENT;
+    look.colour[2] = ROLE_BG;
 
     ShapePackGroup pet;
     ASSERT(pet.build(pack, look, arena, &e), e.text);
@@ -88,9 +88,9 @@ int main() {
             if (x > maxX) maxX = x;
             if (y > maxY) maxY = y;
         }
-    ASSERT(colours[9] > 1500, "the Body is painted in the body colour");
-    ASSERT(colours[4] > 20, "cheeks and arms in the accent colour");
-    ASSERT(colours[0] > 10, "eyes and mouth in ink");
+    ASSERT(colours[ROLE_ACCENT2] > 1500, "the Body is painted in the body colour");
+    ASSERT(colours[ROLE_ACCENT] > 20, "cheeks and arms in the accent colour");
+    ASSERT(colours[ROLE_BG] > 10, "eyes and mouth in ink");
     ASSERT(maxY < 150 && maxY >= 146, "the pet stands on its feet line (legs reach just above it)");
     // Arms reach past the Body: x 4 and 76 (Kit) → the arm tips at 44.. and ..115.
     ASSERT(minX >= 42 && minX <= 46 && maxX >= 113 && maxX <= 117, "symmetric about x 80");

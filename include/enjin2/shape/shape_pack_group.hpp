@@ -54,7 +54,8 @@
  *
  * A bad Look is refused before anything is read, naming slot + id: a missing
  * body, eyes or mouth; an id not in the pack (unknown or retired); a filled
- * slot the Body has no socket for; a colour outside 0..14 (15 is transparent).
+ * slot the Body has no socket for; a colour that is not a Palette role (0..7,
+ * ADR-0019: 8..14 are invalid and 15, transparent, is no colour).
  */
 #pragma once
 
@@ -91,7 +92,7 @@ struct Breath {
 struct ShapeLook {
     uint16_t id[SHAPE_SLOT_COUNT] = {};
     uint8_t  filled = 0;                ///< Bit per ShapeSlot.
-    uint8_t  colour[3] = {0, 0, 0};     ///< Palette index of the body, accent and ink roles.
+    uint8_t  colour[3] = {0, 0, 0};     ///< The Palette role (0..7) of the body, accent and ink Colour roles.
 
     void set(ShapeSlot s, uint16_t pieceId)
     {
