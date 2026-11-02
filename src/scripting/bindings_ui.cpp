@@ -236,8 +236,8 @@ void LuaBindings::registerUISubtable(lua_State* L) {
                     "w: width\n"
                     "h: height\n"
                     "value: fill fraction, clamped to 0..1\n"
-                    "fg: palette index of the filled part\n"
-                    "bg: palette index of the whole bar"),
+                    "fg: the filled part, a gfx.COLOR role or 15 (8-14 raise)\n"
+                    "bg: the whole bar, a gfx.COLOR role or 15 (8-14 raise)"),
         luaFunction("statBar", lua_engine_ui_statBar,
                     "(x:int, y:int, w:int, h:int, current:number, max:number, fg:int, bg:int) -> nil",
                     "Draw a bar filled from the left by current / max.",
@@ -247,8 +247,8 @@ void LuaBindings::registerUISubtable(lua_State* L) {
                     "h: height\n"
                     "current: the stat's value\n"
                     "max: the stat's maximum; 0 or less draws an empty bar\n"
-                    "fg: palette index of the filled part\n"
-                    "bg: palette index of the whole bar"),
+                    "fg: the filled part, a gfx.COLOR role or 15 (8-14 raise)\n"
+                    "bg: the whole bar, a gfx.COLOR role or 15 (8-14 raise)"),
         luaFunction("panel", lua_engine_ui_panel,
                     "(x:int, y:int, w:int, h:int, slot:StyleSlot) -> nil\n"
                     "(x:int, y:int, w:int, h:int, bg:int, border:int) -> nil",
@@ -258,15 +258,15 @@ void LuaBindings::registerUISubtable(lua_State* L) {
                     "w: width\n"
                     "h: height\n"
                     "slot: style slot giving fill, border, radius, kind and shadow; unknown names raise\n"
-                    "bg: palette index of the fill (drawn with a 1 px solid border)\n"
-                    "border: palette index of the border")
+                    "bg: the fill, a gfx.COLOR role or 15 (8-14 raise); drawn with a 1 px solid border\n"
+                    "border: the border, a gfx.COLOR role or 15 (8-14 raise)")
             .withEnum(kSlot),
         luaFunction("label", lua_engine_ui_label, "(x:int, y:int, text:string, fg:int) -> nil",
                     "Draw text in the built-in font at size 1; note (x, y, text), unlike gfx.text.",
                     "x: left edge\n"
                     "y: top edge\n"
                     "text: the string to draw\n"
-                    "fg: palette index of the text")
+                    "fg: the text, a gfx.COLOR role or 15 (8-14 raise)")
             .note("Ignores gfx.setFont and gfx.setTextSize."),
         luaFunction("setStyle", lua_engine_ui_setStyle, "(slot:StyleSlot, fields:table) -> nil",
                     "Override a style slot: the given fields on top of the theme default.",

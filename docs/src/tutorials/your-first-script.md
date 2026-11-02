@@ -94,7 +94,7 @@ end
 
 ## Drawing
 
-`draw()` runs after every `update` call. Start each frame with `gfx.clear()` to erase the previous frame, then set a palette index with `gfx.setColor()` before each draw command. Drawing functions live under `gfx.*`.
+`draw()` runs after every `update` call. Start each frame with `gfx.clear(gfx.COLOR.BG)` to erase the previous frame (a bare `gfx.clear()` fills with the current draw colour, `text` after a reload), then set a colour with `gfx.setColor()` before each draw command. Drawing functions live under `gfx.*`.
 
 ```lua
 -- tamagotchi.lua lines 130–136
