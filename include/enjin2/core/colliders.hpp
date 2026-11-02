@@ -644,8 +644,8 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
  * @brief Advance the world by one FULL frame using N fixed-dt substeps.
  *
  * Each substep: spring the flipper angles (derive ω), integrate gravity, take off
- * the rolling resistance, then run a swept conservative-advancement TOI loop (≤4 iters/substep) followed by a full
- * depenetration+impulse pass, then apply drag. Contacts are appended to @p
+ * the rolling resistance, then run a swept conservative-advancement TOI loop (≤4
+ * iters/substep) followed by a full depenetration+impulse pass, then apply drag. Contacts are appended to @p
  * contacts (the caller polls/clears them per frame).
  *
  * If the TOI budget is exhausted the substep's leftover displacement is dropped:
