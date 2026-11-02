@@ -15,6 +15,12 @@
 //   PHYS-BODY-08  rolling resistance: a constant deceleration that holds a ball
 //                 on a slope gentler than it, takes it off a steeper one, and
 //                 stops a rolling ball without turning it round (Tomodachi #393)
+//   PHYS-BODY-09  a ball already touching a wall, box or post (a resting
+//                 contact leaves it within SLOP of the face) and then driven
+//                 hard into it does not pass through it (Tomodachi #393)
+//   PHYS-BODY-10  a ball starting near a box's corner, within the radius of
+//                 both faces' planes but clear of the rounded corner, still
+//                 hits the box (Tomodachi #393, a Marble Maze tunnel)
 #include <enjin2/core/colliders.hpp>
 #include <enjin2/core/object.hpp>
 #include <enjin2/components/body.hpp>
@@ -400,6 +406,105 @@ static void test_rolling_resistance() {
            "C_Body sets and reads its rolling resistance");
 }
 
+static void test_touching_then_driven_in() {
+    printf("--- PHYS-BODY-09: touching, then driven hard into the same collider ---\n");
+    // Each case: the ball overlaps the collider by `overlap` px (0.004: inside
+    // the depenetration SLOP, so a resting contact can leave it there; 0: just
+    // touching), then moves 16.7 px in one substep, mostly into the collider.
+    for (float overlap : {0.0f, 0.004f}) {
+        char msg[160];
+        {   // an 8 px box: the far face is closer than the travel
+            BodyState b;
+            b.x = 8.0f + overlap; b.y = 0; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 2000.0f; b.vy = 300.0f;
+            ColliderSet set;
+            set.addAabb(10, -50, 18, 50, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            snprintf(msg, sizeof(msg), "overlap %.3f: the box keeps the ball on its side (x=%.3f)", overlap, b.x);
+            ASSERT(b.x <= 8.0f + 0.01f, msg);
+            ASSERT(!cs.empty(), "the push into the box is a contact");
+        }
+        {   // a box's corner region, driven in diagonally
+            BodyState b;
+            const float k = (2.0f - overlap) / std::sqrt(2.0f);
+            b.x = 10.0f - k; b.y = -50.0f - k; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 1500.0f; b.vy = 1500.0f;
+            ColliderSet set;
+            set.addAabb(10, -50, 18, 50, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            const bool inside = b.x > 10.0f - 2.0f + 0.05f && b.y > -50.0f - 2.0f + 0.05f &&
+                                b.x < 18.0f + 2.0f && b.y < 50.0f + 2.0f &&
+                                !(b.x < 10.0f && b.y < -50.0f &&
+                                  std::hypot(10.0f - b.x, -50.0f - b.y) >= 2.0f - 0.05f);
+            snprintf(msg, sizeof(msg), "overlap %.3f: driven into a corner, not through it (%.3f, %.3f)",
+                     overlap, b.x, b.y);
+            ASSERT(!inside && b.x < 18.0f, msg);
+        }
+        {   // a thin segment wall
+            BodyState b;
+            b.x = 8.0f + overlap; b.y = 0; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 2000.0f; b.vy = 300.0f;
+            ColliderSet set;
+            set.addSeg(10, -50, 10, 50, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            snprintf(msg, sizeof(msg), "overlap %.3f: the segment keeps the ball on its side (x=%.3f)", overlap, b.x);
+            ASSERT(b.x <= 8.0f + 0.01f, msg);
+        }
+        {   // a post
+            BodyState b;
+            b.x = -(5.0f - overlap); b.y = 0; b.radius = 2; b.restitution = 0.3f;
+            b.vx = 2000.0f; b.vy = 0.0f;
+            ColliderSet set;
+            set.addCircle(0, 0, 3, 0.1f);
+            std::vector<Contact> cs;
+            StepStats st;
+            stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+            snprintf(msg, sizeof(msg), "overlap %.3f: the post keeps the ball on its side (x=%.3f)", overlap, b.x);
+            ASSERT(b.x <= -5.0f + 0.01f, msg);
+        }
+    }
+    // Touching and moving away, or along the face, is free: no contact.
+    {
+        BodyState b;
+        b.x = 8.0f; b.y = 0; b.radius = 2; b.vx = 0.0f; b.vy = 600.0f;
+        ColliderSet set;
+        set.addAabb(10, -50, 18, 50, 0.1f);
+        std::vector<Contact> cs;
+        StepStats st;
+        stepFrame(b, set, 0.0f, 0.0f, 1.0f / 120, 1, true, cs, st);
+        ASSERT(std::fabs(b.y - 5.0f) < 1e-3f && std::fabs(b.vy - 600.0f) < 1e-3f && cs.empty(),
+               "sliding along a touched face keeps the whole move and makes no contact");
+    }
+}
+
+static void test_corner_region_start() {
+    printf("--- PHYS-BODY-10: a start in a box's corner region ---\n");
+    // Marble Maze, stage 3: the ball at (46.06, 39.34) skims an 8 px wall
+    // tile's top-left corner at (48, 40): 2.05 px off it, so not touching,
+    // yet inside the box grown by the radius. It moves (8.7, 2.25) px.
+    BodyState b;
+    b.x = 46.063f; b.y = 39.335f; b.radius = 2; b.restitution = 0.3f;
+    b.vx = 694.3f; b.vy = 180.0f;
+    ColliderSet set;
+    set.addAabb(48, 40, 56, 48, 0.1f);
+    std::vector<Contact> cs;
+    StepStats st;
+    stepFrame(b, set, 0.0f, 0.0f, 0.0125f, 1, true, cs, st);
+    const float cx = std::max(48.0f, std::min(b.x, 56.0f));
+    const float cy = std::max(40.0f, std::min(b.y, 48.0f));
+    char msg[160];
+    snprintf(msg, sizeof(msg), "the ball meets the corner instead of passing through the box (%.3f, %.3f)",
+             b.x, b.y);
+    ASSERT(std::hypot(b.x - cx, b.y - cy) >= 2.0f - 0.05f && b.x < 50.0f, msg);
+    ASSERT(!cs.empty(), "the corner hit is a contact");
+}
+
 int main() {
     test_rest_no_tunnel();
     test_swept_vs_naive();
@@ -409,6 +514,8 @@ int main() {
     test_flipper_moving_away();
     test_collider_ids();
     test_rolling_resistance();
+    test_touching_then_driven_in();
+    test_corner_region_start();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;

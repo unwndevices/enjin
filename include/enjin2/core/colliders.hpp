@@ -329,6 +329,16 @@ inline bool raySphere(float ox, float oy, float dx, float dy,
     const float mx = ox - cx, my = oy - cy;
     const float b = 2.0f * (mx * dx + my * dy);
     const float c = mx * mx + my * my - r * r;
+    if (c <= 0.0f) {
+        // Starting on or inside the sphere (a resting contact leaves the body up
+        // to SLOP in): heading in is a hit now, heading out or along is free.
+        // Without this the sweep finds no entry and the body passes through.
+        if (b >= 0.0f) return false;
+        const float l = std::sqrt(mx * mx + my * my);
+        if (l < 1e-9f) return false;
+        t = 0.0f; nx = mx / l; ny = my / l;
+        return true;
+    }
     const float disc = b * b - 4.0f * a * c;
     if (disc < 0.0f) return false;
     const float tt = (-b - std::sqrt(disc)) / (2.0f * a);
@@ -364,10 +374,59 @@ inline bool rayOffsetLine(float ox, float oy, float dx, float dy,
     return true;
 }
 
+/// Closest point on segment (ax,ay)-(bx,by) to (px,py).
+inline void closestOnSeg(float px, float py, float ax, float ay, float bx, float by,
+                         float& cx, float& cy) {
+    const float ex = bx - ax, ey = by - ay;
+    const float len2 = ex * ex + ey * ey;
+    float t = len2 < 1e-9f ? 0.0f : ((px - ax) * ex + (py - ay) * ey) / len2;
+    t = t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t);
+    cx = ax + ex * t;
+    cy = ay + ey * t;
+}
+
+/// Whether a body at (ox, oy) of this radius already touches the surface point
+/// (cx, cy), the closest one on a collider: within kTouch of it, or inside.
+/// A resting contact leaves the body up to the depenetration SLOP inside its
+/// collider, where the sweeps find no entry at t > 0; without this test a body
+/// driven hard into the collider it rests on passes through it (#393).
+/// @p inward: the move (dx, dy) heads into the surface (against its normal).
+constexpr float kTouch = 1e-3f;
+inline bool touching(float ox, float oy, float dx, float dy, float radius,
+                     float cx, float cy, bool& inward) {
+    const float ex = ox - cx, ey = oy - cy;
+    const float d2 = ex * ex + ey * ey;
+    const float reach = radius + kTouch;
+    if (d2 >= reach * reach) return false;
+    inward = d2 > 1e-12f ? (ex * dx + ey * dy) < 0.0f : true;
+    return true;
+}
+
 /// Sweep a circle against a static segment (capsule = flat line + 2 end spheres).
 inline bool sweepSegment(float ox, float oy, float dx, float dy, float radius,
                          float ax, float ay, float bx, float by,
                          float& t, float& nx, float& ny) {
+    {
+        // Starting in contact (see touching()): heading in is a hit now.
+        float cx, cy;
+        closestOnSeg(ox, oy, ax, ay, bx, by, cx, cy);
+        bool inward = false;
+        if (touching(ox, oy, dx, dy, radius, cx, cy, inward)) {
+            if (!inward) return false;
+            t = 0.0f;
+            const float l = std::hypot(ox - cx, oy - cy);
+            if (l > 1e-6f) { nx = (ox - cx) / l; ny = (oy - cy) / l; }
+            else {  // centre on the line: the side it comes from
+                float sx = -(by - ay), sy = bx - ax;
+                const float sl = std::hypot(sx, sy);
+                if (sl < 1e-9f) return false;
+                sx /= sl; sy /= sl;
+                if (sx * dx + sy * dy > 0.0f) { sx = -sx; sy = -sy; }
+                nx = sx; ny = sy;
+            }
+            return true;
+        }
+    }
     float bt = 1.0f, bnx = 0.0f, bny = 0.0f;
     bool hit = false;
     float tt, nnx, nny;
@@ -388,6 +447,31 @@ inline bool sweepSegment(float ox, float oy, float dx, float dy, float radius,
 inline bool sweepAabb(float ox, float oy, float dx, float dy, float radius,
                       float minx, float miny, float maxx, float maxy,
                       float& t, float& nx, float& ny) {
+    {
+        // Starting in contact (see touching()): heading in is a hit now.
+        const float cx = ox < minx ? minx : (ox > maxx ? maxx : ox);
+        const float cy = oy < miny ? miny : (oy > maxy ? maxy : oy);
+        if (cx == ox && cy == oy) {
+            // Centre inside the box: the nearest face, if it is heading in.
+            const float dl = ox - minx, dr = maxx - ox, dt = oy - miny, db = maxy - oy;
+            const float m = std::min(std::min(dl, dr), std::min(dt, db));
+            float fx = 0.0f, fy = 0.0f;
+            if (m == dl) fx = -1.0f;
+            else if (m == dr) fx = 1.0f;
+            else if (m == dt) fy = -1.0f;
+            else fy = 1.0f;
+            if (fx * dx + fy * dy >= 0.0f) return false;
+            t = 0.0f; nx = fx; ny = fy;
+            return true;
+        }
+        bool inward = false;
+        if (touching(ox, oy, dx, dy, radius, cx, cy, inward)) {
+            if (!inward) return false;
+            const float l = std::hypot(ox - cx, oy - cy);
+            t = 0.0f; nx = (ox - cx) / l; ny = (oy - cy) / l;
+            return true;
+        }
+    }
     const float exMinX = minx - radius, exMinY = miny - radius;
     const float exMaxX = maxx + radius, exMaxY = maxy + radius;
     float tmin = 0.0f, tmax = 1.0f;
@@ -412,7 +496,16 @@ inline bool sweepAabb(float ox, float oy, float dx, float dy, float radius,
             if (tmin > tmax) return false;
         }
     }
-    if (tmin <= 0.0f || tmin > 1.0f) return false;
+    if (tmin > 1.0f) return false;
+    if (tmin <= 0.0f) {
+        // The start is inside the box grown by the radius but touches nothing
+        // (tested above), so it is in a corner region, clear of the rounded
+        // corner: the only way in is through that corner's circle. Bailing
+        // here let a ball skimming a corner pass through the box (#393).
+        const float cornerX = ox < minx ? minx : maxx;
+        const float cornerY = oy < miny ? miny : maxy;
+        return raySphere(ox, oy, dx, dy, cornerX, cornerY, radius, t, nx, ny);
+    }
     const float hx = ox + dx * tmin, hy = oy + dy * tmin;
     const bool inX = hx > minx && hx < maxx;
     const bool inY = hy > miny && hy < maxy;
@@ -423,17 +516,6 @@ inline bool sweepAabb(float ox, float oy, float dx, float dy, float radius,
     }
     t = tmin; nx = nnx; ny = nny;
     return true;
-}
-
-/// Closest point on segment (ax,ay)-(bx,by) to (px,py).
-inline void closestOnSeg(float px, float py, float ax, float ay, float bx, float by,
-                         float& cx, float& cy) {
-    const float ex = bx - ax, ey = by - ay;
-    const float len2 = ex * ex + ey * ey;
-    float t = len2 < 1e-9f ? 0.0f : ((px - ax) * ex + (py - ay) * ey) / len2;
-    t = t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t);
-    cx = ax + ex * t;
-    cy = ay + ey * t;
 }
 
 /// Velocity of a flipper's surface at a world point (ω × r) — the flip impulse.
