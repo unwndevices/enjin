@@ -6,8 +6,8 @@
  *   enjin_sprite_import <input.aseprite> --reimport <existing.njn> [-o <out.njn>] [--palette NAME]
  *
  * Runs enjin2::importSprite(), the function the Studio's asset-tools worker
- * calls.  --palette picks the RGBA target palette by preset name (default: the
- * system palette).  --reimport runs enjin2::reimportSprite() (Tomodachi #297)
+ * calls.  --palette picks the RGBA target palette: a preset name (default: the
+ * house default) or a GIMP `.gpl` file whose first 15 colours are indices 0-14.  --reimport runs enjin2::reimportSprite() (Tomodachi #297)
  * over an existing `.njn` instead, writing over it unless -o says otherwise.
  * The CLI has no sprite sidecar, so the follow set is empty: every clip counts
  * as edited and keeps its clip frames.  Exit status: 0 ok, 1 import failed,
@@ -36,7 +36,8 @@ void usage() {
                  "  --layered / --sheet  override the kind (default: layered when >1 layer is visible)\n"
                  "  --reimport FILE      replace FILE's pixels and frames, keeping its clips by name\n"
                  "                       (written over FILE unless -o is given; the kind is FILE's)\n"
-                  "  --palette NAME       RGBA target palette preset (default: default, the system palette)\n"
+                  "  --palette NAME       RGBA target palette: a preset (default: default, the house\n"
+                  "                       default) or a .gpl file (its first 15 colours, indices 0-14)\n"
                   "  --cell WxH           PNG cell size (default: whole image)\n");
 }
 
@@ -50,6 +51,23 @@ bool writeAll(const std::string& path, const std::vector<uint8_t>& bytes) {
     std::ofstream out(path, std::ios::binary);
     out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
     return static_cast<bool>(out);
+}
+
+/// Reads a GIMP `.gpl` palette's first PALETTE_MAX_ENTRIES colour rows into
+/// @p out; false when the file is unreadable or holds fewer rows.
+bool readGpl(const std::string& path, RGB* out) {
+    std::ifstream in(path);
+    if (!in) return false;
+    std::string line;
+    uint8_t n = 0;
+    while (n < PALETTE_MAX_ENTRIES && std::getline(in, line)) {
+        unsigned r = 0, g = 0, b = 0;
+        if (line.empty() || line[0] == '#') continue;
+        if (std::sscanf(line.c_str(), " %u %u %u", &r, &g, &b) != 3) continue;
+        if (r > 255 || g > 255 || b > 255) return false;
+        out[n++] = RGB(uint8_t(r), uint8_t(g), uint8_t(b));
+    }
+    return n == PALETTE_MAX_ENTRIES;
 }
 
 void printColourIssues(const std::vector<SpriteColourIssue>& issues) {
@@ -156,8 +174,10 @@ int main(int argc, char** argv) {
         return 2;
     }
     Palette p;
-    if (!p.loadPreset(palette.c_str()) || p.getSize() != PALETTE_MAX_ENTRIES) {
-        std::fprintf(stderr, "error: unknown or short palette preset '%s'\n", palette.c_str());
+    const bool gpl = palette.size() > 4 && palette.compare(palette.size() - 4, 4, ".gpl") == 0;
+    if (gpl ? !readGpl(palette, p.colors)
+            : (!p.loadPreset(palette.c_str()) || p.getSize() != PALETTE_MAX_ENTRIES)) {
+        std::fprintf(stderr, "error: unknown or short palette '%s'\n", palette.c_str());
         return 2;
     }
     std::copy(std::begin(p.colors), std::end(p.colors), opts.palette.begin());

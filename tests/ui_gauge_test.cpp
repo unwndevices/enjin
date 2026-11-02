@@ -6,6 +6,7 @@
 // line for both fill directions. A render pass then draws onto a Canvas4 and
 // asserts the rim and some fill ink appear, and that an empty gauge is a no-op.
 #include <enjin2/ui/component.hpp>
+#include <enjin2/graphics/palette.hpp>
 #include <enjin2/ui/components.hpp>
 #include <enjin2/ui/world.hpp>
 #include <enjin2/ui/widgets/gauge.hpp>
@@ -81,7 +82,7 @@ static void test_render_draws_rim_and_fill() {
     gauge->setValue(0.5f);
     world.add<PositionComponent>(e, Point(0, 0));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
     bool anyRim = false;
@@ -107,7 +108,7 @@ static void test_render_empty_is_safe() {
     world.add<GaugeComponent>(e); // diameter 0
     world.add<PositionComponent>(e, Point(0, 0));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
     bool anyInk = false;

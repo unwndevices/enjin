@@ -25,8 +25,8 @@ namespace enjin2 {
  * more than it saves).
  *
  * Only three kinds survive the v1 vocabulary (#18): **solid**, **bevel**
- * (top/left `lighten`, bottom/right `darken` — a ramp two-tone, not per-side
- * flags), and **drop-shadow** (an offset filled rounded rect painted behind,
+ * (top/left `towardText`, bottom/right `towardBg` — a shade-chain two-tone,
+ * not per-side flags), and **drop-shadow** (an offset filled rounded rect painted behind,
  * computed by the caller to track the IMU tilt). Dashed / dotted / double and
  * `border_side` are cut.
  */
@@ -34,22 +34,22 @@ namespace enjin2 {
 /// @brief The closed set of border kinds for v1 (#18): dashed/dotted/double cut.
 enum class BorderKind : uint8_t {
     Solid = 0,       ///< One colour on every side.
-    Bevel = 1,       ///< Top/left lightened, bottom/right darkened (ramp two-tone).
+    Bevel = 1,       ///< Top/left one step toward text, bottom/right toward bg.
     DropShadow = 2,  ///< Solid ring plus an offset filled rounded rect behind it.
 };
 
 /**
  * @brief The design tokens one border reads at draw time — the graphics-layer
- *        replacement for `Theme::border` (#18), resolved per-applet by style
+ *        replacement for the deleted `Theme::border` token (#18), resolved per-applet by style
  *        slots (a `Style` maps `border`/`borderWidth`/`radius`/`borderKind`/
  *        `shadowDx`/`shadowDy` onto this).
  *
- * On Canvas4, colours are ramp indices: the bevel tones and the shadow tone are
- * derived from `color` via `Palette::lighten`/`darken` at draw time. Canvas8
+ * On Canvas4, colours are Palette roles: the bevel tones and the shadow tone
+ * are derived from `color` via `Palette::towardText`/`towardBg` at draw time. Canvas8
  * keeps the full byte-wide palette index.
  */
 struct BorderStyle {
-    uint8_t color{15};               ///< Base stroke colour.
+    uint8_t color{ROLE_MUTED};       ///< Base stroke colour (default: the muted role).
     uint8_t thickness{1};            ///< Stroke thickness in pixels (>=1).
     uint8_t radius{0};               ///< Corner radius (clamped to half the min extent).
     BorderKind kind{BorderKind::Solid};
@@ -136,13 +136,13 @@ void strokeBorder(ICanvas<TPixel>& canvas, const Rect& rect, const BorderStyle& 
 
     const TPixel baseTone = TPixel(style.color);
 
-    // Drop shadow: an offset filled rounded rect painted behind the ring, in the
-    // one-step-darker tone. The caller offsets it to track the IMU tilt.
+    // Drop shadow: an offset filled rounded rect painted behind the ring, one
+    // step toward bg. The caller offsets it to track the IMU tilt.
     if (style.kind == BorderKind::DropShadow &&
         (style.shadowDx != 0 || style.shadowDy != 0)) {
         TPixel shadowTone = baseTone;
         if constexpr (std::is_same_v<TPixel, Pixel4>) {
-            shadowTone = TPixel(Palette::darken(baseTone.value));
+            shadowTone = TPixel(Palette::towardBg(baseTone.value));
         }
         detail::fillRoundedSpan(
             canvas,
@@ -156,8 +156,8 @@ void strokeBorder(ICanvas<TPixel>& canvas, const Rect& rect, const BorderStyle& 
     TPixel dark = baseTone;
     if constexpr (std::is_same_v<TPixel, Pixel4>) {
         if (bevel) {
-            light = TPixel(Palette::lighten(baseTone.value));
-            dark = TPixel(Palette::darken(baseTone.value));
+            light = TPixel(Palette::towardText(baseTone.value));
+            dark = TPixel(Palette::towardBg(baseTone.value));
         }
     }
 

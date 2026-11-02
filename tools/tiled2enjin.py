@@ -4,7 +4,7 @@
 Front-end over the shared ``enjin_assets`` library (issue #87, decision #53).
 Tiled is the map/attribute/collider authoring surface for purchased packs:
 
-    tiled2enjin.py map.tmx [--output base] [--palette enjin_default]
+    tiled2enjin.py map.tmx [--output base] [--palette path/to/palette.gpl]
                    [--preview base_preview.png] [--strict]
 
 Emits ``<base>.njn`` (v2 tileset: quantised PIXL + per-tile ATTR when authored),
@@ -30,7 +30,7 @@ def main(argv=None):
     parser.add_argument("--output", default=None,
                         help="Output path base (default: input without extension)")
     parser.add_argument("--palette", default=None,
-                        help="Palette .gpl path or name in tools/palettes/ (default: enjin_default)")
+                        help="Palette .gpl path (default: the engine's house default)")
     parser.add_argument("--preview", default=None, metavar="PNG",
                         help="Write a preview PNG reconstructed from the emitted binaries")
     parser.add_argument("--strict", action="store_true",
@@ -80,10 +80,7 @@ def main(argv=None):
 def _load_palette(spec):
     if not spec:
         return palette_mod.load_default()
-    if os.path.isfile(spec):
-        return palette_mod.load_gpl(spec)
-    candidate = os.path.join(palette_mod.PALETTES_DIR, spec if spec.endswith(".gpl") else spec + ".gpl")
-    return palette_mod.load_gpl(candidate)
+    return palette_mod.load_gpl(spec)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 #include "../component.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
-#include "../theme.hpp"
+#include "../../graphics/palette.hpp"
 #include "../../core/types.hpp"
 #include "../../graphics/canvas.hpp"
 #include "../../graphics/primitives.hpp"
@@ -19,7 +19,7 @@
  * Upstreamed from Eisei's `C_List` (#121). The rewrite is deliberately not a port
  * of the old Canvas8 member API: the widget is split into a data-only
  * @ref enjin2::ListComponent "ListComponent" (state the host mutates) and a @ref enjin2::ListSystem "ListSystem" that draws it
- * to an `ICanvas<Pixel4>` through a `TextRenderer<Pixel4>`, themed via theme.hpp.
+ * to an `ICanvas<Pixel4>` through a `TextRenderer<Pixel4>`, in Palette roles.
  *
  * Presentation-only by design: items arrive **pre-stringified** — the old
  * `getString(const T&)` projection moves out to the scene/host edge — and the
@@ -214,7 +214,8 @@ private:
  * @tparam TCanvas Pixel4 canvas type (e.g. Canvas4<W,H>)
  *
  * The selected row is pinned near the vertical center and highlighted with the
- * theme accent; unselected rows slide above and below it and are drawn muted. A
+ * accent role (its text in bg); unselected rows slide above and below it and are
+ * drawn muted. A
  * one-row selection jump is blended across a couple of in-between frames, and the
  * selected row marquees horizontally when it overflows the widget width.
  */
@@ -225,10 +226,9 @@ public:
      * @brief Construct against the world it draws and the canvas it draws to
      * @param world World holding the list entities (borrowed, not owned)
      * @param canvas Target Pixel4 canvas (borrowed, not owned)
-     * @param theme Palette/metrics to style with (defaults to the dark theme)
      */
-    ListSystem(TWorld* world, TCanvas* canvas, Theme theme = kDefaultTheme)
-        : world_(world), canvas_(canvas), theme_(theme) {}
+    ListSystem(TWorld* world, TCanvas* canvas)
+        : world_(world), canvas_(canvas) {}
 
     /**
      * @brief Advance and draw every list entity
@@ -326,10 +326,10 @@ private:
                 const int top = y + static_cast<int>(ty) - list.itemSpacing / 2 - 1;
                 Rect bar(originX, top, static_cast<uint16_t>(width),
                          static_cast<uint16_t>(itemHeight));
-                Primitives<Pixel4>::fillRoundRect(*canvas_, bar, 2, theme_.accent);
-                text_.setTextColor(theme_.accentText);
+                Primitives<Pixel4>::fillRoundRect(*canvas_, bar, 2, Pixel4(ROLE_ACCENT));
+                text_.setTextColor(Pixel4(ROLE_BG));  // content on accent is bg
             } else {
-                text_.setTextColor(theme_.muted);
+                text_.setTextColor(Pixel4(ROLE_MUTED));
             }
 
             const int pad = (list.textAlign == TextAlign::Center) ? 0 : ListComponent::kTextPadding;
@@ -341,7 +341,6 @@ private:
 
     TWorld* world_;
     TCanvas* canvas_;
-    Theme theme_;
     TextRenderer<Pixel4> text_;
 };
 

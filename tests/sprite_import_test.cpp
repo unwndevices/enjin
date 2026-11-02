@@ -471,8 +471,25 @@ static void test21_malformed() {
 
 static std::string testdata(const char* rel) { return std::string(ENJIN2_SOURCE_DIR) + "/" + rel; }
 
-/// Copies the named palette preset into @p o; false for an unknown name.
+/// The authoring palette of the tomo_tune2 reference asset
+/// (tools/testdata/tomo_tune2.gpl). It was the engine's "tomo" preset until the
+/// palette became 8 roles (ADR-0019); the goldens built against it keep it here
+/// until they are regenerated in roles.
+static constexpr RGB kTomoTune2Palette[PALETTE_MAX_ENTRIES] = {
+    {0x00, 0x00, 0x00}, {0x89, 0x89, 0x89}, {0xff, 0xff, 0xff}, {0x1a, 0x1c, 0x2c},
+    {0x5d, 0x27, 0x5d}, {0xb1, 0x3e, 0x53}, {0xef, 0x7d, 0x57}, {0xff, 0xcd, 0x75},
+    {0xa7, 0xf0, 0x70}, {0x38, 0xb7, 0x64}, {0x25, 0x71, 0x79}, {0x3b, 0x5d, 0xc9},
+    {0x73, 0xef, 0xf7}, {0x56, 0x6c, 0x86}, {0x33, 0x3c, 0x57},
+};
+
+/// Copies the named target palette into @p o: "tomo" is the tomo_tune2
+/// authoring palette above, anything else an engine preset; false for an
+/// unknown name.
 static bool usePreset(SpriteImportOptions& o, const char* name) {
+    if (std::string(name) == "tomo") {
+        std::copy(std::begin(kTomoTune2Palette), std::end(kTomoTune2Palette), o.palette.begin());
+        return true;
+    }
     Palette p;
     if (!p.loadPreset(name)) return false;
     std::copy(std::begin(p.colors), std::end(p.colors), o.palette.begin());

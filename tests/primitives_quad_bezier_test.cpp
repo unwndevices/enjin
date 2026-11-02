@@ -17,6 +17,7 @@
 //   - dirty tiles and canvas-edge clipping behave like every other primitive,
 //     and spans longer than 32767 px end and stay in place.
 #include <enjin2/graphics/canvas.hpp>
+#include <enjin2/graphics/palette.hpp>
 #include <enjin2/graphics/primitives.hpp>
 #include <cstdio>
 #include <algorithm>
@@ -66,14 +67,14 @@ static void test_control_on_chord_matches_drawLine() {
         const int16_t dx = c.x1 - c.x0, dy = c.y1 - c.y0;
         const int16_t steps = static_cast<int16_t>(std::gcd(abs(dx), abs(dy)));
         C line;
-        line.clear(Colors::BLACK);
-        P::drawLine(line, c.x0, c.y0, c.x1, c.y1, Colors::WHITE);
+        line.clear(Pixel4(ROLE_BG));
+        P::drawLine(line, c.x0, c.y0, c.x1, c.y1, Pixel4(ROLE_TEXT));
         for (int16_t i = 0; i <= steps; i++) {
             const int16_t cx = steps ? c.x0 + dx / steps * i : c.x0;
             const int16_t cy = steps ? c.y0 + dy / steps * i : c.y0;
             C curve;
-            curve.clear(Colors::BLACK);
-            P::drawQuadBezier(curve, c.x0, c.y0, cx, cy, c.x1, c.y1, Colors::WHITE);
+            curve.clear(Pixel4(ROLE_BG));
+            P::drawQuadBezier(curve, c.x0, c.y0, cx, cy, c.x1, c.y1, Pixel4(ROLE_TEXT));
             snprintf(msg, sizeof msg,
                      "control (%d,%d) on chord (%d,%d)-(%d,%d) draws drawLine's pixels",
                      cx, cy, c.x0, c.y0, c.x1, c.y1);
@@ -152,8 +153,8 @@ static void test_sag_sweep_is_thin_path() {
             const int16_t cy = (c.y0 + c.y1) / 2 + 2 * sag;
             if (h > w && cy > lowEnd) break;
             C curve;
-            curve.clear(Colors::BLACK);
-            P::drawQuadBezier(curve, c.x0, c.y0, cx, cy, c.x1, c.y1, Colors::WHITE);
+            curve.clear(Pixel4(ROLE_BG));
+            P::drawQuadBezier(curve, c.x0, c.y0, cx, cy, c.x1, c.y1, Pixel4(ROLE_TEXT));
             snprintf(msg, sizeof msg,
                      "(%d,%d)-(%d,%d) control (%d,%d): thin 8-connected path, ends drawn",
                      c.x0, c.y0, c.x1, c.y1, cx, cy);
@@ -165,8 +166,8 @@ static void test_sag_sweep_is_thin_path() {
 // A drooping curve is not its chord: the middle of the curve is drawn below it.
 static void test_sagged_curve_leaves_the_chord() {
     C curve;
-    curve.clear(Colors::BLACK);
-    P::drawQuadBezier(curve, 4, 10, 32, 30, 60, 10, Colors::WHITE);
+    curve.clear(Pixel4(ROLE_BG));
+    P::drawQuadBezier(curve, 4, 10, 32, 30, 60, 10, Pixel4(ROLE_TEXT));
     ASSERT(curve.getPixel(32, 20) != 0, "control 20 below a flat chord: middle droops by 10");
     ASSERT(curve.getPixel(32, 10) == 0, "control 20 below a flat chord: chord middle not drawn");
 }
@@ -190,8 +191,8 @@ static void test_symmetric_curve_is_symmetric() {
     for (int16_t half = 1; half <= 30; half++) {
         for (int16_t sag = 1; sag <= 24; sag++) {
             C curve;
-            curve.clear(Colors::BLACK);
-            P::drawQuadBezier(curve, 32 - half, 8, 32, 8 + 2 * sag, 32 + half, 8, Colors::WHITE);
+            curve.clear(Pixel4(ROLE_BG));
+            P::drawQuadBezier(curve, 32 - half, 8, 32, 8 + 2 * sag, 32 + half, 8, Pixel4(ROLE_TEXT));
             snprintf(msg, sizeof msg, "level chord half-width %d, sag %d: symmetric about its middle",
                      half, sag);
             ASSERT(isMirrorAbout(curve, curve, 64), msg);
@@ -208,10 +209,10 @@ static void test_mirrored_inputs_mirror_the_pixels() {
             const int16_t cx = (c.x0 + c.x1) / 2;
             const int16_t cy = (c.y0 + c.y1) / 2 + 2 * sag;
             C curve, mirror;
-            curve.clear(Colors::BLACK);
-            mirror.clear(Colors::BLACK);
-            P::drawQuadBezier(curve, c.x0, c.y0, cx, cy, c.x1, c.y1, Colors::WHITE);
-            P::drawQuadBezier(mirror, 64 - c.x0, c.y0, 64 - cx, cy, 64 - c.x1, c.y1, Colors::WHITE);
+            curve.clear(Pixel4(ROLE_BG));
+            mirror.clear(Pixel4(ROLE_BG));
+            P::drawQuadBezier(curve, c.x0, c.y0, cx, cy, c.x1, c.y1, Pixel4(ROLE_TEXT));
+            P::drawQuadBezier(mirror, 64 - c.x0, c.y0, 64 - cx, cy, 64 - c.x1, c.y1, Pixel4(ROLE_TEXT));
             snprintf(msg, sizeof msg, "(%d,%d)-(%d,%d) control (%d,%d): mirrored inputs, mirrored pixels",
                      c.x0, c.y0, c.x1, c.y1, cx, cy);
             ASSERT(isMirrorAbout(curve, mirror, 64), msg);
@@ -226,12 +227,12 @@ static void test_vertical_span_stays_drawLine() {
     static const Chord kVertical[] = {{20, 10, 20, 50}, {20, 50, 20, 10}, {5, 30, 5, 31}, {60, 0, 60, 63}};
     for (const Chord& c : kVertical) {
         C line;
-        line.clear(Colors::BLACK);
-        P::drawLine(line, c.x0, c.y0, c.x1, c.y1, Colors::WHITE);
+        line.clear(Pixel4(ROLE_BG));
+        P::drawLine(line, c.x0, c.y0, c.x1, c.y1, Pixel4(ROLE_TEXT));
         for (int16_t sag = -12; sag <= 12; sag++) {
             C sagged;
-            sagged.clear(Colors::BLACK);
-            P::drawSaggedLine(sagged, c.x0, c.y0, c.x1, c.y1, sag, Colors::WHITE);
+            sagged.clear(Pixel4(ROLE_BG));
+            P::drawSaggedLine(sagged, c.x0, c.y0, c.x1, c.y1, sag, Pixel4(ROLE_TEXT));
             snprintf(msg, sizeof msg, "vertical (%d,%d)-(%d,%d) sag %d: drawLine's pixels",
                      c.x0, c.y0, c.x1, c.y1, sag);
             ASSERT(sameCanvas(sagged, line), msg);
@@ -249,8 +250,8 @@ static void test_sagged_level_span_is_symmetric_for_every_width() {
         for (int16_t sag = -8; sag <= 24; sag++) {
             const int16_t y = sag < 0 ? 40 : 8;
             C curve;
-            curve.clear(Colors::BLACK);
-            P::drawSaggedLine(curve, x0, y, x1, y, sag, Colors::WHITE);
+            curve.clear(Pixel4(ROLE_BG));
+            P::drawSaggedLine(curve, x0, y, x1, y, sag, Pixel4(ROLE_TEXT));
             snprintf(msg, sizeof msg, "level (%d,%d)-(%d,%d) sag %d: symmetric about its middle",
                      x0, y, x1, y, sag);
             ASSERT(isMirrorAbout(curve, curve, static_cast<int16_t>(x0 + x1)), msg);
@@ -264,10 +265,10 @@ static void test_sag_zero_is_drawLine() {
     char msg[160];
     for (const Chord& c : kOctantChords) {
         C line, sagged;
-        line.clear(Colors::BLACK);
-        sagged.clear(Colors::BLACK);
-        P::drawLine(line, c.x0, c.y0, c.x1, c.y1, Colors::WHITE);
-        P::drawSaggedLine(sagged, c.x0, c.y0, c.x1, c.y1, 0, Colors::WHITE);
+        line.clear(Pixel4(ROLE_BG));
+        sagged.clear(Pixel4(ROLE_BG));
+        P::drawLine(line, c.x0, c.y0, c.x1, c.y1, Pixel4(ROLE_TEXT));
+        P::drawSaggedLine(sagged, c.x0, c.y0, c.x1, c.y1, 0, Pixel4(ROLE_TEXT));
         snprintf(msg, sizeof msg, "(%d,%d)-(%d,%d) sag 0: drawLine's pixels", c.x0, c.y0, c.x1, c.y1);
         ASSERT(sameCanvas(sagged, line), msg);
     }
@@ -278,8 +279,8 @@ static void test_sag_droops_the_middle_by_sag() {
     char msg[160];
     for (int16_t sag = 1; sag <= 20; sag++) {
         C curve;
-        curve.clear(Colors::BLACK);
-        P::drawSaggedLine(curve, 6, 10, 58, 10, sag, Colors::WHITE);
+        curve.clear(Pixel4(ROLE_BG));
+        P::drawSaggedLine(curve, 6, 10, 58, 10, sag, Pixel4(ROLE_TEXT));
         int16_t lowest = -1;
         for (int16_t y = 0; y < N; y++)
             for (int16_t x = 0; x < N; x++)
@@ -330,12 +331,12 @@ static void test_more_sag_only_moves_pixels_down() {
     std::copy(std::begin(kSteepChords), std::end(kSteepChords), chords + std::size(kSweepChords));
     for (const Chord& c : chords) {
         C prev;
-        prev.clear(Colors::BLACK);
-        P::drawSaggedLine(prev, c.x0, c.y0, c.x1, c.y1, 0, Colors::WHITE);
+        prev.clear(Pixel4(ROLE_BG));
+        P::drawSaggedLine(prev, c.x0, c.y0, c.x1, c.y1, 0, Pixel4(ROLE_TEXT));
         for (int16_t sag = 1; sag <= 12; sag++) {
             C next;
-            next.clear(Colors::BLACK);
-            P::drawSaggedLine(next, c.x0, c.y0, c.x1, c.y1, sag, Colors::WHITE);
+            next.clear(Pixel4(ROLE_BG));
+            P::drawSaggedLine(next, c.x0, c.y0, c.x1, c.y1, sag, Pixel4(ROLE_TEXT));
             snprintf(msg, sizeof msg, "(%d,%d)-(%d,%d) sag %d -> %d: pixels only move down",
                      c.x0, c.y0, c.x1, c.y1, sag - 1, sag);
             ASSERT(onlyMovedDown(prev, next), msg);
@@ -363,8 +364,8 @@ static void test_sagged_columns_are_nearest_pixel() {
         if (abs(dy) > w) continue;
         for (int16_t sag = 1; sag <= 16; sag++) {
             C curve;
-            curve.clear(Colors::BLACK);
-            P::drawSaggedLine(curve, c.x0, c.y0, c.x1, c.y1, sag, Colors::WHITE);
+            curve.clear(Pixel4(ROLE_BG));
+            P::drawSaggedLine(curve, c.x0, c.y0, c.x1, c.y1, sag, Pixel4(ROLE_TEXT));
             bool nearest = true;
             for (int64_t k = 1; k < w; k++) {
                 const int64_t depth = 2 * w * dy * k + 8 * sag * k * (w - k);
@@ -394,8 +395,8 @@ static void test_general_curves_are_thin_paths() {
     char msg[160];
     for (const Curve& k : kCurves) {
         C curve;
-        curve.clear(Colors::BLACK);
-        P::drawQuadBezier(curve, k.x0, k.y0, k.cx, k.cy, k.x1, k.y1, Colors::WHITE);
+        curve.clear(Pixel4(ROLE_BG));
+        P::drawQuadBezier(curve, k.x0, k.y0, k.cx, k.cy, k.x1, k.y1, Pixel4(ROLE_TEXT));
         snprintf(msg, sizeof msg, "(%d,%d) control (%d,%d) (%d,%d): thin 8-connected path",
                  k.x0, k.y0, k.cx, k.cy, k.x1, k.y1);
         ASSERT(isThinPath(curve, k.x0, k.y0, k.x1, k.y1), msg);
@@ -406,9 +407,9 @@ static void test_general_curves_are_thin_paths() {
 // the tiles holding its pixels, and no others.
 static void test_marks_exactly_its_dirty_tiles() {
     C curve;
-    curve.clear(Colors::BLACK);
+    curve.clear(Pixel4(ROLE_BG));
     curve.clearDirty();
-    P::drawSaggedLine(curve, 4, 6, 60, 20, 9, Colors::WHITE);
+    P::drawSaggedLine(curve, 4, 6, 60, 20, 9, Pixel4(ROLE_TEXT));
     bool exact = true;
     for (uint16_t ty = 0; ty < C::TILES_Y; ty++)
         for (uint16_t tx = 0; tx < C::TILES_X; tx++) {
@@ -426,11 +427,11 @@ static void test_marks_exactly_its_dirty_tiles() {
 // leaves exactly the on-canvas part of the same curve on a bigger one.
 static void test_clips_per_pixel_at_the_canvas_edge() {
     Canvas4<32, 32> small;
-    small.clear(Colors::BLACK);
-    P::drawQuadBezier(small, -10, 4, 20, 60, 50, 10, Colors::WHITE);
+    small.clear(Pixel4(ROLE_BG));
+    P::drawQuadBezier(small, -10, 4, 20, 60, 50, 10, Pixel4(ROLE_TEXT));
     C big;
-    big.clear(Colors::BLACK);
-    P::drawQuadBezier(big, -10, 4, 20, 60, 50, 10, Colors::WHITE);
+    big.clear(Pixel4(ROLE_BG));
+    P::drawQuadBezier(big, -10, 4, 20, 60, 50, 10, Pixel4(ROLE_TEXT));
     bool same = true;
     for (int16_t y = 0; y < 32; y++)
         for (int16_t x = 0; x < 32; x++)
@@ -450,24 +451,24 @@ static bool onlyLit(const C& c, bool (*want)(int16_t x, int16_t y)) {
 // below the canvas doesn't wrap around onto it.
 static void test_long_spans_end_and_stay_in_place() {
     C c;
-    c.clear(Colors::BLACK);
-    P::drawLine(c, -20000, 5, 20000, 5, Colors::WHITE);
+    c.clear(Pixel4(ROLE_BG));
+    P::drawLine(c, -20000, 5, 20000, 5, Pixel4(ROLE_TEXT));
     ASSERT(onlyLit(c, [](int16_t, int16_t y) { return y == 5; }), "40000 px level line: row 5");
-    c.clear(Colors::BLACK);
-    P::drawLine(c, -20000, -20000, 20000, 20000, Colors::WHITE);
+    c.clear(Pixel4(ROLE_BG));
+    P::drawLine(c, -20000, -20000, 20000, 20000, Pixel4(ROLE_TEXT));
     ASSERT(onlyLit(c, [](int16_t x, int16_t y) { return x == y; }), "40000 px diagonal: x == y");
-    c.clear(Colors::BLACK);
-    P::drawQuadBezier(c, INT16_MIN, 7, 0, 7, INT16_MAX, 7, Colors::WHITE);
+    c.clear(Pixel4(ROLE_BG));
+    P::drawQuadBezier(c, INT16_MIN, 7, 0, 7, INT16_MAX, 7, Pixel4(ROLE_TEXT));
     ASSERT(onlyLit(c, [](int16_t, int16_t y) { return y == 7; }), "full-range control on chord: row 7");
-    c.clear(Colors::BLACK);
-    P::drawSaggedLine(c, -20000, 9, 20000, 9, 1, Colors::WHITE);
+    c.clear(Pixel4(ROLE_BG));
+    P::drawSaggedLine(c, -20000, 9, 20000, 9, 1, Pixel4(ROLE_TEXT));
     ASSERT(onlyLit(c, [](int16_t, int16_t y) { return y == 10; }),
            "40000 px Span, sag 1: its middle stretch hangs on row 10");
-    c.clear(Colors::BLACK);
-    P::drawSaggedLine(c, -100, 30000, 100, 30000, 3000, Colors::WHITE);
+    c.clear(Pixel4(ROLE_BG));
+    P::drawSaggedLine(c, -100, 30000, 100, 30000, 3000, Pixel4(ROLE_TEXT));
     ASSERT(onlyLit(c, [](int16_t, int16_t) { return false; }), "Span hanging below y 32767: nothing on canvas");
-    c.clear(Colors::BLACK);
-    P::drawSaggedLine(c, INT16_MIN, INT16_MAX, INT16_MAX, INT16_MAX, INT16_MAX, Colors::WHITE);
+    c.clear(Pixel4(ROLE_BG));
+    P::drawSaggedLine(c, INT16_MIN, INT16_MAX, INT16_MAX, INT16_MAX, INT16_MAX, Pixel4(ROLE_TEXT));
     ASSERT(onlyLit(c, [](int16_t, int16_t) { return false; }), "full-range Span, full sag: nothing on canvas");
 }
 
@@ -482,8 +483,8 @@ static void test_tape_scale_spans_have_no_L_corners() {
     char msg[160];
     static Canvas4<160, 160> tape;
     for (const auto& k : kCases) {
-        tape.clear(Colors::BLACK);
-        P::drawSaggedLine(tape, k.c.x0, k.c.y0, k.c.x1, k.c.y1, k.sag, Colors::WHITE);
+        tape.clear(Pixel4(ROLE_BG));
+        P::drawSaggedLine(tape, k.c.x0, k.c.y0, k.c.x1, k.c.y1, k.sag, Pixel4(ROLE_TEXT));
         snprintf(msg, sizeof msg, "tape (%d,%d)-(%d,%d) sag %d: no L corners",
                  k.c.x0, k.c.y0, k.c.x1, k.c.y1, k.sag);
         ASSERT(isThinPath(tape, k.c.x0, k.c.y0, k.c.x1, k.c.y1), msg);
@@ -495,8 +496,8 @@ static void test_tape_scale_spans_have_no_L_corners() {
         const int16_t w = static_cast<int16_t>(abs(x1 - x0)), h = static_cast<int16_t>(abs(y1 - y0));
         for (int16_t sag = 1; sag <= std::min<int16_t>(std::max(w, h) / 2, 24); sag++) {
             if (h > w && y0 + (y1 - y0) / 2 + 2 * sag > std::max(y0, y1)) break;
-            tape.clear(Colors::BLACK);
-            P::drawSaggedLine(tape, x0, y0, x1, y1, sag, Colors::WHITE);
+            tape.clear(Pixel4(ROLE_BG));
+            P::drawSaggedLine(tape, x0, y0, x1, y1, sag, Pixel4(ROLE_TEXT));
             total++;
             if (!isThinPath(tape, x0, y0, x1, y1)) bad++;
         }

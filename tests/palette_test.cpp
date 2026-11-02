@@ -18,30 +18,44 @@ static int failures = 0;
     } while(0)
 
 // ============================================================
-// a. Default palette initialization
+// a. The 8 Palette roles (ADR-0019): job-named indices 0-7, 15 transparent
 // ============================================================
-static void test_default_init()
+static void test_role_indices()
 {
-    printf("--- Default palette initialization ---\n");
-
-    ASSERT(g_palette.getSize() == 15,
-           "Default palette size should be 15");
-
-    RGB c0 = g_palette.getColor(0);
-    ASSERT(c0 == RGB(0x08, 0x1a, 0x1c),
-           "Color[0] should be the darkest green #081a1c (system green ramp)");
-
-    RGB c7 = g_palette.getColor(7);
-    ASSERT(c7 == RGB(0x3d, 0x96, 0x28),
-           "Color[7] should be the middle green #3d9628");
-
-    RGB c14 = g_palette.getColor(14);
-    ASSERT(c14 == RGB(0xe8, 0xf4, 0xcc),
-           "Color[14] should be the lightest green #e8f4cc");
+    printf("--- Palette roles ---\n");
+    ASSERT(ROLE_BG == 0, "bg is index 0");
+    ASSERT(ROLE_SURFACE == 1, "surface is index 1");
+    ASSERT(ROLE_MUTED == 2, "muted is index 2");
+    ASSERT(ROLE_TEXT == 3, "text is index 3");
+    ASSERT(ROLE_ACCENT == 4, "accent is index 4");
+    ASSERT(ROLE_ACCENT2 == 5, "accent2 is index 5");
+    ASSERT(ROLE_ACCENT3 == 6, "accent3 is index 6");
+    ASSERT(ROLE_ACCENT4 == 7, "accent4 is index 7");
+    ASSERT(PALETTE_TRANSPARENT == 15, "transparent stays index 15");
 }
 
 // ============================================================
-// b. Transparency
+// b. The house default (placeholder until the designer picks)
+// ============================================================
+static void test_house_default()
+{
+    printf("--- House default ---\n");
+
+    ASSERT(g_palette.getColor(ROLE_BG) == RGB(0x08, 0x1a, 0x1c), "bg is #081a1c");
+    ASSERT(g_palette.getColor(ROLE_SURFACE) == RGB(0x16, 0x46, 0x32), "surface is #164632");
+    ASSERT(g_palette.getColor(ROLE_MUTED) == RGB(0x52, 0xa8, 0x2e), "muted is #52a82e");
+    ASSERT(g_palette.getColor(ROLE_TEXT) == RGB(0xe8, 0xf4, 0xcc), "text is #e8f4cc");
+    ASSERT(g_palette.getColor(ROLE_ACCENT) == RGB(0xb2, 0xda, 0x63), "accent is #b2da63");
+
+    // Temporary (removed by the seal ticket): 8-14 keep the old green ramp
+    // so art not yet re-indexed by job still draws.
+    ASSERT(g_palette.getColor(8) == RGB(0x52, 0xa8, 0x2e), "temporary 8 is the old ramp's #52a82e");
+    ASSERT(g_palette.getColor(11) == RGB(0x9b, 0xd2, 0x50), "temporary 11 is the old ramp's #9bd250");
+    ASSERT(g_palette.getColor(14) == RGB(0xe8, 0xf4, 0xcc), "temporary 14 is the old ramp's #e8f4cc");
+}
+
+// ============================================================
+// c. Transparency
 // ============================================================
 static void test_transparency()
 {
@@ -49,129 +63,83 @@ static void test_transparency()
 
     ASSERT(g_palette.isTransparent(15) == true,
            "Index 15 should be transparent");
-    ASSERT(g_palette.isTransparent(0) == false,
-           "Index 0 should not be transparent");
-    ASSERT(g_palette.isTransparent(14) == false,
-           "Index 14 should not be transparent");
+    ASSERT(g_palette.isTransparent(ROLE_BG) == false,
+           "bg should not be transparent");
+    ASSERT(g_palette.isTransparent(ROLE_ACCENT4) == false,
+           "accent4 should not be transparent");
+    ASSERT(g_palette.getColor(15) == RGB(0, 0, 0),
+           "getColor(15) is the transparent sentinel, black");
 }
 
 // ============================================================
-// c. setColor / getColor
+// d. setColor / getColor / loadPreset
 // ============================================================
 static void test_set_get_color()
 {
     printf("--- setColor / getColor ---\n");
 
-    g_palette.setColor(0, 255, 0, 0);
-    RGB c = g_palette.getColor(0);
-    ASSERT(c == RGB(255, 0, 0),
-           "After setColor(0, 255,0,0) getColor(0) should return {255,0,0}");
+    g_palette.setColor(ROLE_BG, 255, 0, 0);
+    ASSERT(g_palette.getColor(ROLE_BG) == RGB(255, 0, 0),
+           "After setColor(bg, 255,0,0) getColor(bg) should return {255,0,0}");
 
-    // Restore default palette
     bool ok = g_palette.loadPreset("default");
     ASSERT(ok, "loadPreset('default') should succeed after setColor test");
-
-    RGB restored = g_palette.getColor(0);
-    ASSERT(restored == RGB(0x08, 0x1a, 0x1c),
-           "Color[0] should be restored to the darkest green after loadPreset('default')");
+    ASSERT(g_palette.getColor(ROLE_BG) == RGB(0x08, 0x1a, 0x1c),
+           "bg should be restored to #081a1c after loadPreset('default')");
 }
 
-// ============================================================
-// d. Index wrapping
-// ============================================================
-static void test_wrapping()
-{
-    printf("--- Index wrapping ---\n");
-
-    bool ok = g_palette.loadPreset("gameboy");
-    ASSERT(ok, "loadPreset('gameboy') should succeed");
-    ASSERT(g_palette.getSize() == 4, "Gameboy preset size should be 4");
-
-    // 5 % 4 = 1, so getColor(5) == getColor(1)
-    RGB c5 = g_palette.getColor(5);
-    RGB c1 = g_palette.getColor(1);
-    ASSERT(c5 == c1,
-           "With gameboy (size=4), getColor(5) should equal getColor(1) via 5%4");
-
-    // Transparency survives wrapping check
-    ASSERT(g_palette.isTransparent(15) == true,
-           "isTransparent(15) should still be true with gameboy preset loaded");
-
-    // Restore for subsequent tests
-    g_palette.loadPreset("default");
-}
-
-// ============================================================
-// e. Transparency check before modulo (critical pitfall)
-// ============================================================
-static void test_transparency_before_modulo()
-{
-    printf("--- Transparency before modulo ---\n");
-
-    bool ok = g_palette.loadPreset("gameboy"); // size = 4
-    ASSERT(ok, "loadPreset('gameboy') should succeed");
-
-    // 15 % 4 = 3, but index 15 MUST be transparent, not resolved to index 3
-    ASSERT(g_palette.isTransparent(15) == true,
-           "Index 15 must be transparent even with size=4 (not 15%4=3)");
-
-    RGB via_resolve = g_palette.getColor(15);
-    RGB via_index3  = g_palette.getColor(3);
-    ASSERT(via_resolve != via_index3 || via_resolve == RGB(0, 0, 0),
-           "getColor(15) should return black (transparent sentinel), not color at index 3");
-
-    // Restore for subsequent tests
-    g_palette.loadPreset("default");
-}
-
-// ============================================================
-// f. loadPreset
-// ============================================================
 static void test_load_preset()
 {
     printf("--- loadPreset ---\n");
-
-    bool ok_gameboy = g_palette.loadPreset("gameboy");
-    ASSERT(ok_gameboy, "loadPreset('gameboy') should return true");
-    ASSERT(g_palette.getSize() == 4, "After loading gameboy, size should be 4");
-
-    bool ok_default = g_palette.loadPreset("default");
-    ASSERT(ok_default, "loadPreset('default') should return true");
-    ASSERT(g_palette.getSize() == 15, "After loading default, size should be 15");
-
-    bool ok_bad = g_palette.loadPreset("nonexistent");
-    ASSERT(ok_bad == false, "loadPreset('nonexistent') should return false");
+    // The tomo / pico8 / gameboy presets are gone (ADR-0019): only the house
+    // default is built in.
+    ASSERT(g_palette.loadPreset("tomo") == false, "loadPreset('tomo') is gone");
+    ASSERT(g_palette.loadPreset("pico8") == false, "loadPreset('pico8') is gone");
+    ASSERT(g_palette.loadPreset("gameboy") == false, "loadPreset('gameboy') is gone");
+    ASSERT(g_palette.loadPreset("nonexistent") == false, "loadPreset('nonexistent') fails");
+    ASSERT(g_palette.loadPreset(nullptr) == false, "loadPreset(nullptr) fails");
+    ASSERT(g_palette.getColor(ROLE_BG) == RGB(0x08, 0x1a, 0x1c), "a failed load leaves the palette");
 }
 
-// The hue-ordered `tomo` palette that was the system default before the green
-// ramp is still selectable by name.
-static void test_tomo_preset()
+// ============================================================
+// e. The shade chain: bg <-> surface <-> muted <-> text
+// ============================================================
+static void test_toward_bg()
 {
-    printf("--- tomo preset ---\n");
-
-    bool ok = g_palette.loadPreset("tomo");
-    ASSERT(ok, "loadPreset('tomo') should return true");
-    ASSERT(g_palette.getSize() == 15, "tomo preset size should be 15");
-    ASSERT(g_palette.getColor(2) == RGB(0xff, 0xff, 0xff), "tomo[2] should be white #ffffff");
-    ASSERT(g_palette.getColor(3) == RGB(0x1a, 0x1c, 0x2c), "tomo[3] should be navy #1a1c2c");
-
-    g_palette.loadPreset("default");
-    ASSERT(g_palette.getColor(0) == RGB(0x08, 0x1a, 0x1c), "default is back to the green ramp");
+    printf("--- towardBg ---\n");
+    ASSERT(Palette::towardBg(ROLE_TEXT) == ROLE_MUTED, "text -> muted");
+    ASSERT(Palette::towardBg(ROLE_MUTED) == ROLE_SURFACE, "muted -> surface");
+    ASSERT(Palette::towardBg(ROLE_SURFACE) == ROLE_BG, "surface -> bg");
+    ASSERT(Palette::towardBg(ROLE_BG) == ROLE_BG, "bg stays (end of the chain)");
+    ASSERT(Palette::towardBg(ROLE_ACCENT) == ROLE_MUTED, "accent -> muted");
+    ASSERT(Palette::towardBg(ROLE_ACCENT2) == ROLE_MUTED, "accent2 -> muted");
+    ASSERT(Palette::towardBg(ROLE_ACCENT3) == ROLE_MUTED, "accent3 -> muted");
+    ASSERT(Palette::towardBg(ROLE_ACCENT4) == ROLE_MUTED, "accent4 -> muted");
+    ASSERT(Palette::towardBg(PALETTE_TRANSPARENT) == PALETTE_TRANSPARENT, "transparency untouched");
 }
 
-// The PICO-8 palette that was the system default before `tomo` is still
-// selectable by name.
-static void test_pico8_preset()
+static void test_toward_text()
 {
-    printf("--- pico8 preset ---\n");
+    printf("--- towardText ---\n");
+    ASSERT(Palette::towardText(ROLE_BG) == ROLE_SURFACE, "bg -> surface");
+    ASSERT(Palette::towardText(ROLE_SURFACE) == ROLE_MUTED, "surface -> muted");
+    ASSERT(Palette::towardText(ROLE_MUTED) == ROLE_TEXT, "muted -> text");
+    ASSERT(Palette::towardText(ROLE_TEXT) == ROLE_TEXT, "text stays (end of the chain)");
+    ASSERT(Palette::towardText(ROLE_ACCENT) == ROLE_TEXT, "accent -> text");
+    ASSERT(Palette::towardText(ROLE_ACCENT4) == ROLE_TEXT, "accent4 -> text");
+    ASSERT(Palette::towardText(PALETTE_TRANSPARENT) == PALETTE_TRANSPARENT, "transparency untouched");
+}
 
-    bool ok = g_palette.loadPreset("pico8");
-    ASSERT(ok, "loadPreset('pico8') should return true");
-    ASSERT(g_palette.getSize() == 15, "Pico8 preset size should be 15");
-    ASSERT(g_palette.getColor(0) == RGB(0x1a, 0x1c, 0x2c),
-           "pico8[0] should be dark navy #1a1c2c");
-
-    g_palette.loadPreset("default");
+// Three steps reach the end of the chain from anywhere (the transition dim's
+// maximum).
+static void test_chain_reaches_bg_in_three()
+{
+    printf("--- chain length ---\n");
+    for (uint8_t i = 0; i < 15; ++i) {
+        uint8_t v = i;
+        for (int s = 0; s < 3; ++s) v = Palette::towardBg(v);
+        ASSERT(v == ROLE_BG, "three towardBg steps reach bg");
+    }
 }
 
 // ============================================================
@@ -203,32 +171,6 @@ static void test_parse_hex_color()
            "parseHexColor(nullptr, ...) should return false");
 }
 
-// The ramp structure is pure index arithmetic over 5 ramps × 3 shades,
-// independent of the RGB values, so it holds for any palette.
-static void test_ramp_index()
-{
-    printf("--- ramp() index ---\n");
-    ASSERT(Palette::ramp(0, SHADE_LIGHT) == 0, "ramp(0,light) == 0");
-    ASSERT(Palette::ramp(0, SHADE_DARK) == 2, "ramp(0,dark) == 2");
-    ASSERT(Palette::ramp(3, SHADE_BASE) == 10, "ramp(3,base) == 10");
-    ASSERT(Palette::ramp(4, SHADE_DARK) == 14, "ramp(4,dark) == 14");
-}
-
-// lighten/darken step one shade but never cross into a neighbouring ramp, and
-// leave transparency (15) untouched.
-static void test_lighten_darken_clamp()
-{
-    printf("--- lighten/darken clamp ---\n");
-    ASSERT(Palette::lighten(1) == 0, "lighten: base -> light");
-    ASSERT(Palette::lighten(0) == 0, "lighten: light holds (no ramp cross)");
-    ASSERT(Palette::lighten(3) == 3, "lighten: next ramp's light holds");
-    ASSERT(Palette::darken(1) == 2, "darken: base -> dark");
-    ASSERT(Palette::darken(2) == 2, "darken: dark holds (no ramp cross)");
-    ASSERT(Palette::darken(14) == 14, "darken: last dark holds");
-    ASSERT(Palette::lighten(15) == 15, "lighten: transparency untouched");
-    ASSERT(Palette::darken(15) == 15, "darken: transparency untouched");
-}
-
 // ============================================================
 // main
 // ============================================================
@@ -236,17 +178,15 @@ int main()
 {
     printf("=== palette_test ===\n");
 
-    test_default_init();
+    test_role_indices();
+    test_house_default();
     test_transparency();
     test_set_get_color();
-    test_wrapping();
-    test_transparency_before_modulo();
     test_load_preset();
-    test_tomo_preset();
-    test_pico8_preset();
+    test_toward_bg();
+    test_toward_text();
+    test_chain_reaches_bg_in_three();
     test_parse_hex_color();
-    test_ramp_index();
-    test_lighten_darken_clamp();
 
     printf("\n=== Results: %d passed, %d failed ===\n", passes, failures);
 

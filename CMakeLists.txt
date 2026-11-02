@@ -131,7 +131,6 @@ target_sources(enjin2_ui PRIVATE
     # UI ECS translation units (Phase 2, #120): static ID counters + EntityManager.
     src/ui/component.cpp
     src/ui/system.cpp
-    src/ui/theme.cpp
     src/ui/style.cpp
     src/ui/dialog.cpp
 )

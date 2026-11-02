@@ -3,7 +3,7 @@
  * @brief Tests for 7 scripting API improvements (quick task 007)
  *
  * API-01: BTN.* global table removed
- * API-02: gfx.COLOR contains only TRANSPARENT (15)
+ * API-02: gfx.COLOR names the 8 Palette roles (0-7) and TRANSPARENT (15)
  * API-03: engine.graphics.* alias sub-table
  * API-04: Float-to-int rounding in drawing primitives (lround)
  * API-05: text(str, x, y, scale) optional 4th scale param
@@ -60,29 +60,52 @@ struct Fixture {
 };
 
 // ============================================================
-// test_constants: removed BTN and transparent-only gfx.COLOR (API-01, API-02)
+// test_constants: BTN removed; gfx.COLOR names the Palette roles (API-01, API-02)
 // ============================================================
 static void test_constants() {
-    printf("--- test_constants: BTN absent, gfx.COLOR.TRANSPARENT only ---\n");
+    printf("--- test_constants: BTN absent, gfx.COLOR = the roles + TRANSPARENT ---\n");
     Fixture f;
 
     LuaResult r = f.exec(
         "btn_absent = (BTN == nil) and 1 or 0\n"
         "color_is_table = (type(gfx.COLOR) == 'table') and 1 or 0\n"
+        "c_bg, c_surface, c_muted, c_text = gfx.COLOR.BG, gfx.COLOR.SURFACE, gfx.COLOR.MUTED, gfx.COLOR.TEXT\n"
+        "c_accent, c_accent2 = gfx.COLOR.ACCENT, gfx.COLOR.ACCENT2\n"
+        "c_accent3, c_accent4 = gfx.COLOR.ACCENT3, gfx.COLOR.ACCENT4\n"
         "c_trans = gfx.COLOR.TRANSPARENT\n"
         "color_count = 0\n"
-        "color_only_transparent = 1\n"
-        "for key in pairs(gfx.COLOR) do\n"
-        "  color_count = color_count + 1\n"
-        "  if key ~= 'TRANSPARENT' then color_only_transparent = 0 end\n"
-        "end\n"
+        "for key in pairs(gfx.COLOR) do color_count = color_count + 1 end\n"
     );
     ASSERT(r.success, "gfx.COLOR contract query did not error");
     ASSERT((int)f.getNum("btn_absent") == 1, "BTN is nil");
     ASSERT((int)f.getNum("color_is_table") == 1, "gfx.COLOR is a table");
+    ASSERT((int)f.getNum("c_bg") == 0, "gfx.COLOR.BG == 0");
+    ASSERT((int)f.getNum("c_surface") == 1, "gfx.COLOR.SURFACE == 1");
+    ASSERT((int)f.getNum("c_muted") == 2, "gfx.COLOR.MUTED == 2");
+    ASSERT((int)f.getNum("c_text") == 3, "gfx.COLOR.TEXT == 3");
+    ASSERT((int)f.getNum("c_accent") == 4, "gfx.COLOR.ACCENT == 4");
+    ASSERT((int)f.getNum("c_accent2") == 5, "gfx.COLOR.ACCENT2 == 5");
+    ASSERT((int)f.getNum("c_accent3") == 6, "gfx.COLOR.ACCENT3 == 6");
+    ASSERT((int)f.getNum("c_accent4") == 7, "gfx.COLOR.ACCENT4 == 7");
     ASSERT((int)f.getNum("c_trans") == 15, "gfx.COLOR.TRANSPARENT == 15");
-    ASSERT((int)f.getNum("color_count") == 1, "gfx.COLOR has exactly one key");
-    ASSERT((int)f.getNum("color_only_transparent") == 1, "gfx.COLOR has no named colours");
+    ASSERT((int)f.getNum("color_count") == 9, "gfx.COLOR has the 8 roles and TRANSPARENT");
+}
+
+// ============================================================
+// test_draw_colour_default: after a reload the draw colour is the text role
+// ============================================================
+static void test_draw_colour_default() {
+    printf("--- test_draw_colour_default: a fresh state draws in text ---\n");
+    Fixture f;
+    f.rawCanvas.clear(Pixel4(PALETTE_TRANSPARENT));
+    LuaResult r = f.exec("gfx.rectangle('fill', 0, 0, 2, 2)");
+    ASSERT(r.success, "bare gfx.rectangle did not error");
+    ASSERT(f.rawCanvas.getPixel(0, 0).value == ROLE_TEXT, "the default draw colour is the text role");
+
+    f.exec("gfx.setColor(gfx.COLOR.ACCENT)");
+    f.bindings.registerAll();  // a reload
+    f.exec("gfx.rectangle('fill', 4, 4, 2, 2)");
+    ASSERT(f.rawCanvas.getPixel(4, 4).value == ROLE_TEXT, "a reload resets the draw colour to text");
 }
 
 // ============================================================
@@ -273,6 +296,7 @@ int main() {
     printf("=== scripting_api_test ===\n");
 
     test_constants();
+    test_draw_colour_default();
     test_gfx_table();
     test_float_coords();
     test_text_scale();

@@ -80,7 +80,7 @@ int main() {
                 dirtyComp->layers[l].setPixel(
                     x, y, enjin2::Pixel4(((x + y + l) & 3) == 0 ? (l + 2) : 15));
     }
-    if (enjin2::ENJIN_LAYER_COUNT >= 3) dirtyComp->setTint(2, enjin2::Remap::darken());
+    if (enjin2::ENJIN_LAYER_COUNT >= 3) dirtyComp->setTint(2, enjin2::Remap::towardBg());
 
     bench.run("compositor: compositeDirty full-frame (4 layers)", [&] {
         for (uint8_t l = 0; l < enjin2::ENJIN_LAYER_COUNT; ++l)

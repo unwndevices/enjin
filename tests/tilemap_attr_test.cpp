@@ -388,11 +388,6 @@ static void test_tmattr10_palbank_render() {
     tm->setSheet(makeSheet());
     tm->setTiles(g_zeroMap, 1, 1);
 
-    // Bank 1 remaps 5 -> 7.
-    Remap bank;
-    bank.lut[5] = 7;
-    tm->setPalbank(1, bank);
-
     Canvas4<16, 16> canvas;
 
     // palbank 0 → identity → pixel 5
@@ -401,11 +396,12 @@ static void test_tmattr10_palbank_render() {
     tm->draw(canvas);
     ASSERT(canvas.getPixel(0, 0).value == 5, "TMATTR-10: palbank 0 leaves index 5");
 
-    // palbank 1 → remap → pixel 7
+    // palbank 1 → stored, not drawn (one global palette) → pixel 5
     tm->setTile(0, 0, C_Tilemap::packCell(1, 0, 1, false, false));
     canvas.clear(Pixel4(0));
     tm->draw(canvas);
-    ASSERT(canvas.getPixel(0, 0).value == 7, "TMATTR-10: palbank 1 remaps 5->7");
+    ASSERT(canvas.getPixel(0, 0).value == 5, "TMATTR-10: palbank 1 is stored, not drawn");
+    ASSERT(C_Tilemap::cellPalbank(tm->getTile(0, 0)) == 1, "TMATTR-10: palbank bits survive");
 
     delete obj;
 

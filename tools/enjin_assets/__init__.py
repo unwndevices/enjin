@@ -6,7 +6,7 @@ independently-testable modules so ``tiled2enjin.py`` (Tiled maps) and the host
 asset scripts share one implementation:
 
 * :mod:`enjin_assets.oklab`    — sRGB ↔ Oklab colour conversions.
-* :mod:`enjin_assets.palette`  — load a 15-index ``.gpl`` ramp palette.
+* :mod:`enjin_assets.palette`  — the 15-index target palette: the house default or a ``.gpl``.
 * :mod:`enjin_assets.quantize` — nearest-in-Oklab RGBA → 4bpp index + ΔEOK stats.
 * :mod:`enjin_assets.png`      — decode a PNG and slice a tilesheet into tiles.
 * :mod:`enjin_assets.tilebank` — flip-aware tile dedupe, id assignment, 511 cap.

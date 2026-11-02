@@ -186,29 +186,6 @@ public:
      */
     bool isSolid(uint8_t tx, uint8_t ty) const { return attrAt(tx, ty).solid(); }
 
-    // ---- Palette banks ----------------------------------------------------
-
-    /**
-     * @brief Set one palette-bank remap (16-entry index→index LUT).
-     *
-     * The cell's 4-bit palbank field selects which bank's remap recolours the
-     * tile when drawn. Bank 0 defaults to identity (no remap).
-     *
-     * @param index Bank index (0-15).
-     * @param remap The index→index LUT for that bank.
-     */
-    void setPalbank(uint8_t index, const Remap& remap);
-
-    /**
-     * @brief Set up to 16 palette-bank remaps from a contiguous array.
-     * @param banks Pointer to @p count Remap records (bank 0, 1, …).
-     * @param count Number of banks (≤16).
-     */
-    void setPalbanks(const Remap* banks, uint8_t count);
-
-    /// @brief The remap for one palette bank (identity if unset).
-    const Remap& getPalbank(uint8_t index) const { return m_palbanks[index & 0x0F]; }
-
     // ---- Collision query API (ADR-0003 §3) --------------------------------
 
     /**
@@ -490,8 +467,7 @@ private:
         }
         if (m_sheet.data != nullptr) {
             m_sheet.draw(canvas, tileId, px, py,
-                         cellHFlip(cell), cellVFlip(cell),
-                         m_palbanks[cellPalbank(cell) & 0x0F]);
+                         cellHFlip(cell), cellVFlip(cell), Remap::identity());
         }
     }
 
@@ -503,7 +479,6 @@ private:
     int16_t     m_scrollY{0};                     ///< Vertical camera offset (pixels)
     TileAttr    m_attrs[TM_MAX_TILES]{};           ///< Per-tile attributes (owned, one per tile id)
     uint16_t    m_attrCount{0};                    ///< Attribute record count
-    Remap       m_palbanks[TM_PALBANK_COUNT]{};    ///< Palette-bank remaps (index = palbank)
 };
 
 } // namespace enjin2

@@ -6,6 +6,7 @@
 // clear. A render pass then blits onto a Canvas4 and asserts opaque pixels land at
 // the icon's origin while matte pixels leave the background showing through.
 #include <enjin2/ui/component.hpp>
+#include <enjin2/graphics/palette.hpp>
 #include <enjin2/ui/components.hpp>
 #include <enjin2/ui/world.hpp>
 #include <enjin2/ui/widgets/icon.hpp>
@@ -73,7 +74,7 @@ static void test_render_hidden_is_noop() {
     icon->setVisible(false);
     world.add<PositionComponent>(e, Point(0, 0));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
     bool anyInk = false;
@@ -93,7 +94,7 @@ static void test_render_null_bitmap_is_safe() {
     world.add<IconComponent>(e); // no bitmap
     world.add<PositionComponent>(e, Point(0, 0));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f); // must not dereference a null buffer
 
     bool anyInk = false;

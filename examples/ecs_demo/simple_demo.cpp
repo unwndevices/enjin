@@ -1,4 +1,5 @@
 #include "../enjin2/graphics/canvas.hpp"
+#include <enjin2/graphics/palette.hpp>
 #include "../enjin2/graphics/primitives.hpp"
 #include "../enjin2/core/types.hpp"
 #include <iostream>
@@ -29,12 +30,12 @@ int main() {
         std::cout << "Frame " << frame << ":\n";
         
         // Clear canvas
-        canvas.clear(Colors::BLACK);
+        canvas.clear(Pixel4(ROLE_BG));
         
         // Draw static rectangles (simulating UI components)
-        Primitives4::fillRect(canvas, Rect(5, 5, 12, 8), Colors::WHITE);
-        Primitives4::fillRect(canvas, Rect(25, 8, 10, 6), Colors::GRAY);
-        Primitives4::drawRect(canvas, Rect(40, 10, 15, 10), Colors::LIGHT_GRAY);
+        Primitives4::fillRect(canvas, Rect(5, 5, 12, 8), Pixel4(ROLE_TEXT));
+        Primitives4::fillRect(canvas, Rect(25, 8, 10, 6), Pixel4(ROLE_MUTED));
+        Primitives4::drawRect(canvas, Rect(40, 10, 15, 10), Pixel4(ROLE_ACCENT));
         
         // Draw animated circle (simulating ECS animation system)
         float time = frame * 0.1f;
@@ -46,11 +47,11 @@ int main() {
         circlePos.x = center.x + static_cast<int16_t>(radius * cos(angle));
         circlePos.y = center.y + static_cast<int16_t>(radius * sin(angle) * 0.5f); // Elliptical
         
-        Primitives4::fillCircle(canvas, circlePos.x, circlePos.y, 3, Colors::WHITE);
+        Primitives4::fillCircle(canvas, circlePos.x, circlePos.y, 3, Pixel4(ROLE_TEXT));
         
         // Draw UI elements
-        Primitives4::drawLine(canvas, 0, 0, 63, 31, Colors::DARK_GRAY);
-        Primitives4::drawLine(canvas, 63, 0, 0, 31, Colors::DARK_GRAY);
+        Primitives4::drawLine(canvas, 0, 0, 63, 31, Pixel4(ROLE_SURFACE));
+        Primitives4::drawLine(canvas, 63, 0, 0, 31, Pixel4(ROLE_SURFACE));
         
         // Print canvas (every 2nd column and row for console display)
         for (int y = 0; y < 32; y += 2) {

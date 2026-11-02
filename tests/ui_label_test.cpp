@@ -7,9 +7,9 @@
 // without looping forever. A render pass then proves the system inks glyphs and
 // paints the rounded background panel on a real Canvas4.
 #include <enjin2/ui/component.hpp>
+#include <enjin2/graphics/palette.hpp>
 #include <enjin2/ui/components.hpp>
 #include <enjin2/ui/world.hpp>
-#include <enjin2/ui/theme.hpp>
 #include <enjin2/ui/widgets/label.hpp>
 #include <enjin2/graphics/canvas.hpp>
 #include <cstdio>
@@ -71,7 +71,7 @@ static void test_render_draws_text() {
     world.add<PositionComponent>(e, Point(0, 0));
     world.add<SizeComponent>(e, Size(64, 32));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
     bool anyInk = false;
@@ -93,7 +93,7 @@ static void test_render_draws_background_panel() {
     world.add<PositionComponent>(e, Point(4, 4));
     world.add<SizeComponent>(e, Size(40, 24));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
     // The panel fill (value 10) must land somewhere inside the box.
@@ -115,7 +115,7 @@ static void test_render_empty_is_safe() {
     world.add<PositionComponent>(e, Point(0, 0));
     world.add<SizeComponent>(e, Size(32, 32));
 
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
     bool anyInk = false;

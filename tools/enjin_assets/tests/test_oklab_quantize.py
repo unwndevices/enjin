@@ -39,13 +39,14 @@ def test_delta_e_broadcasts_over_palette():
 
 def test_load_default_palette():
     pal = palette.load_default()
-    assert pal.name == "enjin-default"
+    assert pal.name == "house-default"
     assert pal.rgb.shape == (15, 3)
     assert pal.oklab.shape == (15, 3)
-    # Index 6 is orange 239,125,87 in enjin_default.gpl.
-    assert tuple(pal.rgb[6]) == (239, 125, 87)
-    # Index 0 is black 0,0,0.
-    assert tuple(pal.rgb[0]) == (0, 0, 0)
+    # Index 0 is the bg role #081a1c, index 3 the text role #e8f4cc.
+    assert tuple(pal.rgb[0]) == (0x08, 0x1A, 0x1C)
+    assert tuple(pal.rgb[3]) == (0xE8, 0xF4, 0xCC)
+    # Index 7 is the accent4 role, the house default's red #e84840.
+    assert tuple(pal.rgb[7]) == (0xE8, 0x48, 0x40)
 
 
 def test_load_gpl_rejects_short_palette(tmp_path):
@@ -62,10 +63,11 @@ def test_load_gpl_rejects_short_palette(tmp_path):
 
 def test_exact_palette_colours_map_to_their_index():
     pal = palette.load_default()
-    # Feed the 15 opaque palette colours as opaque pixels; each must map to itself.
-    rgba = np.concatenate([pal.rgb, np.full((15, 1), 255, dtype=np.uint8)], axis=1)
+    # Feed the 8 role colours as opaque pixels; each must map to itself. (The
+    # temporary entries 8-14 repeat some of them, so the first index wins.)
+    rgba = np.concatenate([pal.rgb[:8], np.full((8, 1), 255, dtype=np.uint8)], axis=1)
     res = quantize.quantize_rgba(rgba, pal)
-    assert list(res.indices) == list(range(15))
+    assert list(res.indices) == list(range(8))
     assert np.allclose(res.delta_e, 0.0, atol=1e-9)
 
 
@@ -73,24 +75,24 @@ def test_transparent_pixels_map_to_index_15():
     pal = palette.load_default()
     rgba = np.array(
         [
-            [239, 125, 87, 0],    # orange but fully transparent → 15
-            [239, 125, 87, 128],  # exactly at threshold → transparent
-            [239, 125, 87, 129],  # just above threshold → orange (6)
+            [232, 72, 64, 0],    # accent4 red but fully transparent → 15
+            [232, 72, 64, 128],  # exactly at threshold → transparent
+            [232, 72, 64, 129],  # just above threshold → accent4 (7)
         ],
         dtype=np.uint8,
     )
     res = quantize.quantize_rgba(rgba, pal)
-    assert list(res.indices) == [15, 15, 6]
+    assert list(res.indices) == [15, 15, 7]
     # Only one opaque pixel contributed to the error list.
     assert res.delta_e.shape == (1,)
 
 
-def test_near_colour_snaps_to_nearest_ramp():
+def test_near_colour_snaps_to_nearest_entry():
     pal = palette.load_default()
-    # A slightly-off orange should still land on index 6 (orange).
-    rgba = np.array([[235, 120, 90, 255]], dtype=np.uint8)
+    # A slightly-off red should still land on index 7 (accent4).
+    rgba = np.array([[228, 76, 70, 255]], dtype=np.uint8)
     res = quantize.quantize_rgba(rgba, pal)
-    assert res.indices[0] == 6
+    assert res.indices[0] == 7
     assert res.delta_e[0] < 0.05  # close
 
 

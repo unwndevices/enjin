@@ -148,14 +148,16 @@ int main() {
 
     // ── TEST 8: index shader through drawSprite (#36) ──
     {
-        // dim() = full mask + darken. The 4x4 sprite's opaque pixels are the
-        // clip; each surviving index darkens one shade on its ramp.
+        // dim() = full mask + towardBg. The 4x4 sprite's opaque pixels are the
+        // clip; each surviving index steps once along the shade chain.
         f.clear();
         f.exec("gfx.drawSprite(_s0, 0, 0, false, false, false, gfx.effect('dim'))");
-        // Source (0,0)=1 (ramp0 base) -> darken -> 2 (ramp0 dark).
-        ASSERT(f.px(0, 0) == 2, "fx dim: base index 1 darkened to 2");
-        // Source (0,3)=13 (ramp4 light) -> darken -> 14 (ramp4 base).
-        ASSERT(f.px(0, 3) == 14, "fx dim: index 13 darkened to 14");
+        // Source (2,0)=3 (text) -> towardBg -> 2 (muted).
+        ASSERT(f.px(2, 0) == 2, "fx dim: text dimmed to muted");
+        // Source (1,0)=2 (muted) -> towardBg -> 1 (surface).
+        ASSERT(f.px(1, 0) == 1, "fx dim: muted dimmed to surface");
+        // Source (0,3)=13 (a temporary 8-14 entry) -> towardBg -> 2 (muted).
+        ASSERT(f.px(0, 3) == 2, "fx dim: index 13 dimmed to muted");
         printf("  PASS: index shader (dim) through drawSprite\n");
     }
 

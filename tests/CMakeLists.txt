@@ -497,7 +497,7 @@ if(TARGET enjin_sprite_import)
         COMMAND enjin_sprite_import
             ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.aseprite
             -o ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn
-            --palette tomo)
+            --palette ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.gpl)
     set_tests_properties(sprite_import_cli_convert PROPERTIES FIXTURES_SETUP sprite_import_cli)
     add_test(NAME sprite_import_cli_loads
         COMMAND sprite_import_test --verify-layered
@@ -509,7 +509,7 @@ if(TARGET enjin_sprite_import)
             ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.aseprite
             --reimport ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2.njn
             -o ${CMAKE_CURRENT_BINARY_DIR}/sprite_import_tomo_tune2_reimport.njn
-            --palette tomo)
+            --palette ${CMAKE_CURRENT_SOURCE_DIR}/../tools/testdata/tomo_tune2.gpl)
     set_tests_properties(sprite_import_cli_reimport PROPERTIES
         FIXTURES_REQUIRED sprite_import_cli FIXTURES_SETUP sprite_import_cli_re
         PASS_REGULAR_EXPRESSION "touches no clip")

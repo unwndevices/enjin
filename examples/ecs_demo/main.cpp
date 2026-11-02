@@ -1,4 +1,5 @@
 #include "../enjin2/ui/component.hpp"
+#include <enjin2/graphics/palette.hpp>
 #include "../enjin2/ui/system.hpp"
 #include "../enjin2/ui/components.hpp"
 #include "../enjin2/ui/systems.hpp"
@@ -74,7 +75,7 @@ public:
         // Add components using static pools
         positions.addComponent(entity, pos);
         sizes.addComponent(entity, size);
-        renderables.addComponent(entity, Colors::WHITE, Colors::BLACK, 255, true, 0);
+        renderables.addComponent(entity, Pixel4(ROLE_TEXT), Pixel4(ROLE_BG), 255, true, 0);
         shapes.addComponent(entity, ShapeComponent::rectangle(true, 1));
         
         return entity;
@@ -91,7 +92,7 @@ public:
         if (!entity.isValid()) return entity;
         
         positions.addComponent(entity, pos);
-        renderables.addComponent(entity, Colors::LIGHT_GRAY, Colors::BLACK, 255, true, 1);
+        renderables.addComponent(entity, Pixel4(ROLE_ACCENT), Pixel4(ROLE_BG), 255, true, 1);
         shapes.addComponent(entity, ShapeComponent::circle(radius, true, 1));
         
         // Add animation that loops every 2 seconds
@@ -115,7 +116,7 @@ public:
         
         positions.addComponent(entity, pos);
         sizes.addComponent(entity, size);
-        renderables.addComponent(entity, Colors::GRAY, Colors::DARK_GRAY, 255, true, 2);
+        renderables.addComponent(entity, Pixel4(ROLE_MUTED), Pixel4(ROLE_SURFACE), 255, true, 2);
         shapes.addComponent(entity, ShapeComponent::rectangle(true, 1));
         inputs.addComponent(entity, true);
         
@@ -207,11 +208,11 @@ private:
             if (!render) continue;
             
             if (input->hovered) {
-                render->setColor(Colors::WHITE);
+                render->setColor(Pixel4(ROLE_TEXT));
             } else if (input->pressed) {
-                render->setColor(Colors::DARK_GRAY);
+                render->setColor(Pixel4(ROLE_SURFACE));
             } else {
-                render->setColor(Colors::GRAY);
+                render->setColor(Pixel4(ROLE_MUTED));
             }
         }
     }
@@ -221,7 +222,7 @@ private:
      */
     void renderEntities() {
         // Clear canvas
-        canvas.clear(Colors::BLACK);
+        canvas.clear(Pixel4(ROLE_BG));
         
         // Debug: print what we're about to render
         std::cout << "Rendering " << renderables.size() << " renderable entities\n";

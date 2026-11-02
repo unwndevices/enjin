@@ -323,15 +323,4 @@ public:
     uint8_t getByte() const { return data; }
 };
 
-/**
- * @brief Predefined color constants for 4-bit grayscale graphics
- */
-namespace Colors {
-    constexpr Pixel4 BLACK = Pixel4(0);      ///< Black (value 0)
-    constexpr Pixel4 DARK_GRAY = Pixel4(4);  ///< Dark gray (value 4)
-    constexpr Pixel4 GRAY = Pixel4(8);       ///< Medium gray (value 8)
-    constexpr Pixel4 LIGHT_GRAY = Pixel4(12); ///< Light gray (value 12)
-    constexpr Pixel4 WHITE = Pixel4(15);     ///< White (value 15)
-}
-
 } // namespace enjin2

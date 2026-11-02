@@ -52,8 +52,8 @@ namespace enjin2
                 for (int x = 0; x < 128; x++)
                 { // Assume max canvas width
                     uint8_t current = canvas.getPixel(x, y);
-                    uint8_t darkened = static_cast<uint8_t>(current * (1.0f - params.intensity * 0.5f));
-                    canvas.setPixel(x, y, clamp4bit(darkened));
+                    uint8_t dimmed = static_cast<uint8_t>(current * (1.0f - params.intensity * 0.5f));
+                    canvas.setPixel(x, y, clamp4bit(dimmed));
                 }
             }
         }

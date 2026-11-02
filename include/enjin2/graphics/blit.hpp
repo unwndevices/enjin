@@ -276,7 +276,7 @@ namespace enjin2
     // Two overloads mirror the compositor's colour/Remap split:
     //   * colour  — paint a solid Pixel4 (a hard blob).
     //   * Remap   — remap the pixels ALREADY under the ellipse (read dst, write
-    //               remap.apply(dst)). `Remap::darken()` gives a soft on-ramp
+    //               remap.apply(dst)). `Remap::towardBg()` gives a soft
     //               drop-shadow that tints the floor rather than stamping ink.
     // Pixels equal to PALETTE_TRANSPARENT are left untouched by the Remap form
     // so a shadow never paints into a hole.

@@ -513,21 +513,6 @@ static int lua_tilemap_setAttrs(lua_State* L) {
     return 0;
 }
 
-// tilemap:setPalbank(index, lutTable) — a 16-entry index→index remap
-static int lua_tilemap_setPalbank(lua_State* L) {
-    auto* tm = lua::checkTilemap(L, 1);
-    const uint8_t index = static_cast<uint8_t>(luaL_checkinteger(L, 2) & 0x0F);
-    luaL_checktype(L, 3, LUA_TTABLE);
-    Remap r;
-    for (int i = 0; i < 16; ++i) {
-        lua_rawgeti(L, 3, i + 1);
-        r.lut[i] = static_cast<uint8_t>(lua_tointeger(L, -1) & 0x0F);
-        lua_pop(L, 1);
-    }
-    tm->setPalbank(index, r);
-    return 0;
-}
-
 // tilemap:attrAt(tx, ty) -> flags, kind (DIR already flip-resolved)
 static int lua_tilemap_attrAt(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
@@ -785,11 +770,6 @@ static constexpr LuaApiEntry kTilemapMethods[] = {
                 "Replace the per-tile attributes, keyed by tile id: {flags, kind, flags, kind, ...}.",
                 "attrs: a flag byte (1 solid, 2 one-way, bits 2-3 direction) and a kind 0..255 "
                 "for tile 0, 1, ...; an empty table makes every tile passable"),
-    luaFunction("setPalbank", lua_tilemap_setPalbank, "(index:int, lut:table) -> nil",
-                "Set the colour remap a cell's palette bank applies when drawn.",
-                "index: palette bank 0..15\n"
-                "lut: 16 palette indices, the colour for index 0, 1, ...")
-        .note("The bank bits are stored but not yet drawn."),
     luaFunction("attrAt", lua_tilemap_attrAt, "(tx:int, ty:int) -> flags:int, kind:int",
                 "A cell's attribute, its direction turned by the cell's flips; 0, 0 when none.",
                 "tx: column\n"

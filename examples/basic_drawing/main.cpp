@@ -1,4 +1,5 @@
 #include <enjin2/core/types.hpp>
+#include <enjin2/graphics/palette.hpp>
 #include <enjin2/graphics/canvas.hpp>
 #include <enjin2/graphics/primitives.hpp>
 #include <iostream>
@@ -32,22 +33,22 @@ int main() {
     
     // Test 1: Basic shapes
     std::cout << "Test 1: Basic shapes\n";
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     
     // Draw some primitives
-    Primitives4::drawRect(canvas, Rect(2, 2, 8, 6), Colors::WHITE);
-    Primitives4::fillRect(canvas, Rect(12, 2, 6, 4), Colors::GRAY);
-    Primitives4::drawCircle(canvas, 25, 8, 4, Colors::LIGHT_GRAY);
-    Primitives4::drawLine(canvas, 0, 0, 31, 15, Colors::DARK_GRAY);
+    Primitives4::drawRect(canvas, Rect(2, 2, 8, 6), Pixel4(ROLE_TEXT));
+    Primitives4::fillRect(canvas, Rect(12, 2, 6, 4), Pixel4(ROLE_MUTED));
+    Primitives4::drawCircle(canvas, 25, 8, 4, Pixel4(ROLE_ACCENT));
+    Primitives4::drawLine(canvas, 0, 0, 31, 15, Pixel4(ROLE_SURFACE));
     
     printCanvas(canvas);
     
     // Test 2: Filled shapes
     std::cout << "Test 2: Filled shapes\n";
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     
-    Primitives4::fillCircle(canvas, 8, 8, 6, Colors::WHITE);
-    Primitives4::fillTriangle(canvas, 16, 2, 20, 14, 24, 2, Colors::GRAY);
+    Primitives4::fillCircle(canvas, 8, 8, 6, Pixel4(ROLE_TEXT));
+    Primitives4::fillTriangle(canvas, 16, 2, 20, 14, 24, 2, Pixel4(ROLE_MUTED));
     
     printCanvas(canvas);
     

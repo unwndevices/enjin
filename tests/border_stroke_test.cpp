@@ -1,7 +1,7 @@
 // Span-walker border stroke test (#18 / Tomodachi #39): the computed selection
 // frame primitive. Solid draws a hollow ring with rounded corners; bevel splits
-// into top/left light + bottom/right dark ramp tones; drop-shadow paints an
-// offset filled rounded rect behind the ring. All three walk rows via the
+// into top/left one step toward text + bottom/right one step toward bg (the
+// shade chain); drop-shadow paints an offset filled rounded rect behind the ring. All three walk rows via the
 // canvas row-fill — no per-pixel virtual dispatch, no cache.
 #include <enjin2/graphics/border.hpp>
 #include <enjin2/graphics/canvas.hpp>
@@ -23,23 +23,23 @@ static int failures = 0;
 // extreme corner — the same contract drawRoundRect had, now via strokeBorder.
 static void test_solid_ring() {
     Canvas4<32, 32> canvas;
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     BorderStyle st;
-    st.color = Pixel4(15);
+    st.color = Pixel4(ROLE_TEXT);
     st.thickness = 1;
     st.radius = 6;
     st.kind = BorderKind::Solid;
     strokeBorder(canvas, Rect(2, 2, 20, 20), st);
 
-    ASSERT(canvas.getPixel(12, 2) == 15, "solid: top edge midpoint inked");
-    ASSERT(canvas.getPixel(12, 21) == 15, "solid: bottom edge midpoint inked");
-    ASSERT(canvas.getPixel(2, 12) == 15, "solid: left edge midpoint inked");
-    ASSERT(canvas.getPixel(21, 12) == 15, "solid: right edge midpoint inked");
+    ASSERT(canvas.getPixel(12, 2) == ROLE_TEXT, "solid: top edge midpoint inked");
+    ASSERT(canvas.getPixel(12, 21) == ROLE_TEXT, "solid: bottom edge midpoint inked");
+    ASSERT(canvas.getPixel(2, 12) == ROLE_TEXT, "solid: left edge midpoint inked");
+    ASSERT(canvas.getPixel(21, 12) == ROLE_TEXT, "solid: right edge midpoint inked");
     ASSERT(canvas.getPixel(12, 12) == 0, "solid: interior hollow");
     ASSERT(canvas.getPixel(2, 2) == 0, "solid: extreme corner rounded away");
 }
 
-// Canvas8 border colours are byte-wide palette indices, not Canvas4 ramp indices.
+// Canvas8 border colours are byte-wide palette indices, not Canvas4 roles.
 static void test_canvas8_solid_preserves_full_width_color() {
     Canvas8<32, 32> canvas;
     canvas.clear(0);
@@ -56,62 +56,59 @@ static void test_canvas8_solid_preserves_full_width_color() {
 // A thicker stroke inks `thickness` rows/columns of ring (t=3 -> 3 px deep).
 static void test_thickness() {
     Canvas4<32, 32> canvas;
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     BorderStyle st;
-    st.color = Pixel4(15);
+    st.color = Pixel4(ROLE_TEXT);
     st.thickness = 3;
     st.radius = 0;
     strokeBorder(canvas, Rect(4, 4, 16, 16), st);
 
     // Left edge: 3 px inked (x = 4,5,6), then hollow at x = 7.
-    ASSERT(canvas.getPixel(4, 12) == 15, "thick: outer column inked");
-    ASSERT(canvas.getPixel(6, 12) == 15, "thick: inner-most stroke column inked");
+    ASSERT(canvas.getPixel(4, 12) == ROLE_TEXT, "thick: outer column inked");
+    ASSERT(canvas.getPixel(6, 12) == ROLE_TEXT, "thick: inner-most stroke column inked");
     ASSERT(canvas.getPixel(7, 12) == 0, "thick: interior past thickness is hollow");
     // Top band 3 rows deep.
-    ASSERT(canvas.getPixel(12, 4) == 15, "thick: top band inked");
-    ASSERT(canvas.getPixel(12, 6) == 15, "thick: top band inked to depth");
+    ASSERT(canvas.getPixel(12, 4) == ROLE_TEXT, "thick: top band inked");
+    ASSERT(canvas.getPixel(12, 6) == ROLE_TEXT, "thick: top band inked to depth");
     ASSERT(canvas.getPixel(12, 7) == 0, "thick: below top band is hollow");
 }
 
-// A bevel is a ramp two-tone: top/left take the light shade, bottom/right the
-// dark shade, both derived from the base colour's ramp (never stored).
+// A bevel is a shade-chain two-tone: top/left one step toward text,
+// bottom/right one step toward bg, both derived from the base colour (never
+// stored).
 static void test_bevel_two_tone() {
     Canvas4<32, 32> canvas;
-    canvas.clear(Colors::BLACK);
-    const uint8_t base = Palette::ramp(3, SHADE_BASE);  // scenery ramp base
+    canvas.clear(Pixel4(ROLE_BG));
     BorderStyle st;
-    st.color = Pixel4(base);
+    st.color = Pixel4(ROLE_MUTED);
     st.thickness = 2;
     st.radius = 0;
     st.kind = BorderKind::Bevel;
     strokeBorder(canvas, Rect(4, 4, 16, 16), st);
 
-    const uint8_t light = Palette::lighten(base);
-    const uint8_t dark = Palette::darken(base);
-    ASSERT(light != dark, "bevel: base ramp has distinct light/dark tones");
-    ASSERT(canvas.getPixel(12, 4) == light, "bevel: top edge is the light tone");
-    ASSERT(canvas.getPixel(4, 12) == light, "bevel: left edge is the light tone");
-    ASSERT(canvas.getPixel(12, 19) == dark, "bevel: bottom edge is the dark tone");
-    ASSERT(canvas.getPixel(19, 12) == dark, "bevel: right edge is the dark tone");
+    ASSERT(canvas.getPixel(12, 4) == ROLE_TEXT, "bevel: top edge of muted is text");
+    ASSERT(canvas.getPixel(4, 12) == ROLE_TEXT, "bevel: left edge of muted is text");
+    ASSERT(canvas.getPixel(12, 19) == ROLE_SURFACE, "bevel: bottom edge of muted is surface");
+    ASSERT(canvas.getPixel(19, 12) == ROLE_SURFACE, "bevel: right edge of muted is surface");
 }
 
 static void test_canvas4_bevel_narrows_full_width_style_color() {
     Canvas4<32, 32> canvas;
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     BorderStyle st;
-    st.color = 16;
+    st.color = 16 + ROLE_MUTED;
     st.thickness = 2;
     st.radius = 0;
     st.kind = BorderKind::Bevel;
     strokeBorder(canvas, Rect(4, 4, 16, 16), st);
 
-    ASSERT(canvas.getPixel(12, 4) == 0,
-           "Canvas4 bevel: full-width style colour narrows before ramp math");
-    ASSERT(canvas.getPixel(12, 19) == 1,
-           "Canvas4 bevel: dark tone derives from the narrowed colour");
+    ASSERT(canvas.getPixel(12, 4) == ROLE_TEXT,
+           "Canvas4 bevel: full-width style colour narrows before the chain step");
+    ASSERT(canvas.getPixel(12, 19) == ROLE_SURFACE,
+           "Canvas4 bevel: toward-bg tone derives from the narrowed colour");
 }
 
-static void test_canvas8_bevel_does_not_apply_pixel4_ramp_math() {
+static void test_canvas8_bevel_does_not_apply_pixel4_chain() {
     Canvas8<32, 32> canvas;
     canvas.clear(0);
     BorderStyle st;
@@ -127,14 +124,13 @@ static void test_canvas8_bevel_does_not_apply_pixel4_ramp_math() {
            "Canvas8 bevel: bottom edge keeps the byte-wide colour");
 }
 
-// A drop shadow paints an offset filled rounded rect behind the ring in the
-// one-step-darker tone; the ring itself is drawn on top at the origin.
+// A drop shadow paints an offset filled rounded rect behind the ring one step
+// toward bg; the ring itself is drawn on top at the origin.
 static void test_drop_shadow() {
     Canvas4<32, 32> canvas;
-    canvas.clear(Colors::BLACK);
-    const uint8_t base = Palette::ramp(2, SHADE_BASE);
+    canvas.clear(Pixel4(ROLE_BG));
     BorderStyle st;
-    st.color = Pixel4(base);
+    st.color = Pixel4(ROLE_TEXT);
     st.thickness = 1;
     st.radius = 0;
     st.kind = BorderKind::DropShadow;
@@ -142,15 +138,23 @@ static void test_drop_shadow() {
     st.shadowDy = 3;
     strokeBorder(canvas, Rect(4, 4, 12, 12), st);
 
-    const uint8_t shadowTone = Palette::darken(base);
     // Shadow fills the offset interior — a point past the ring's own bottom-right
     // edge but inside the shifted shadow rect.
-    ASSERT(canvas.getPixel(17, 17) == shadowTone, "shadow: offset fill present");
+    ASSERT(canvas.getPixel(17, 17) == ROLE_MUTED, "shadow of text: offset fill is muted");
     // The ring edge still inks at the origin position.
-    ASSERT(canvas.getPixel(4, 10) == base, "shadow: ring drawn on top at origin");
+    ASSERT(canvas.getPixel(4, 10) == ROLE_TEXT, "shadow: ring drawn on top at origin");
 }
 
-static void test_canvas8_shadow_does_not_apply_pixel4_ramp_math() {
+// A default BorderStyle strokes in the muted role (borders and dividers).
+static void test_default_colour_is_muted() {
+    Canvas4<32, 32> canvas;
+    canvas.clear(Pixel4(ROLE_BG));
+    BorderStyle st;
+    strokeBorder(canvas, Rect(4, 4, 10, 10), st);
+    ASSERT(canvas.getPixel(4, 8) == ROLE_MUTED, "default border colour is muted");
+}
+
+static void test_canvas8_shadow_does_not_apply_pixel4_chain() {
     Canvas8<32, 32> canvas;
     canvas.clear(0);
     BorderStyle st;
@@ -168,15 +172,15 @@ static void test_canvas8_shadow_does_not_apply_pixel4_ramp_math() {
 // A zero-radius stroke is exactly the square outline — no rounding, no gap.
 static void test_zero_radius_square() {
     Canvas4<32, 32> canvas;
-    canvas.clear(Colors::BLACK);
+    canvas.clear(Pixel4(ROLE_BG));
     BorderStyle st;
-    st.color = Pixel4(15);
+    st.color = Pixel4(ROLE_TEXT);
     st.thickness = 1;
     st.radius = 0;
     strokeBorder(canvas, Rect(4, 4, 10, 10), st);
 
-    ASSERT(canvas.getPixel(4, 4) == 15, "r=0: square corner inked");
-    ASSERT(canvas.getPixel(13, 13) == 15, "r=0: far square corner inked");
+    ASSERT(canvas.getPixel(4, 4) == ROLE_TEXT, "r=0: square corner inked");
+    ASSERT(canvas.getPixel(13, 13) == ROLE_TEXT, "r=0: far square corner inked");
     ASSERT(canvas.getPixel(8, 8) == 0, "r=0: interior hollow");
 }
 
@@ -186,10 +190,11 @@ int main() {
     test_thickness();
     test_bevel_two_tone();
     test_canvas4_bevel_narrows_full_width_style_color();
-    test_canvas8_bevel_does_not_apply_pixel4_ramp_math();
+    test_canvas8_bevel_does_not_apply_pixel4_chain();
     test_drop_shadow();
-    test_canvas8_shadow_does_not_apply_pixel4_ramp_math();
+    test_canvas8_shadow_does_not_apply_pixel4_chain();
     test_zero_radius_square();
+    test_default_colour_is_muted();
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
 }

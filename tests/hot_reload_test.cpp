@@ -127,8 +127,8 @@ static void test_registerAll_resets_drawing_state()
     // Verify defaults are restored
     LuaResult rd = f.exec("c2 = gfx.getColor(); w2 = gfx.getLineWidth()");
     ASSERT(rd.success, "gfx.getColor/gfx.getLineWidth after registerAll should succeed");
-    ASSERT(f.getNum("c2") == 15.0,
-           "after registerAll, color should be reset to 15");
+    ASSERT(f.getNum("c2") == 3.0,
+           "after registerAll, color should be reset to the text role (3)");
     ASSERT(f.getNum("w2") == 1.0,
            "after registerAll, lineWidth should be reset to 1");
 }

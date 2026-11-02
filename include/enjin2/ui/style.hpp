@@ -8,22 +8,21 @@ namespace enjin2 {
 
 /**
  * @brief A single visual style — the design tokens one drawable reads at draw
- *        time (colours as ramp indices, plus layout metrics).
+ *        time (colours as Palette roles, plus layout metrics).
  *
  * A `Style` is the per-slot half of the two-level theming model (see
  * `StyleSlot`). It is a flat constexpr aggregate so the ROM defaults
  * (`kDefaultStyles`) live in flash and an applet override is a plain copy.
  *
- * Colours are **role indices into the ramp palette**, never hexes: `fill` is a
- * ramp's base shade (`Palette::ramp(role, SHADE_BASE)`), so re-authoring the
- * palette re-skins every style while the roles hold (#12). The bevel/shadow
- * tones are **derived, never stored** — `light()`/`dark()`/`shadow()` shade-step
- * `fill` within its ramp via the #14 `Palette::lighten`/`darken` (clamped ±1),
+ * Colours are **Palette roles** (ADR-0019), never hexes, so switching the
+ * palette re-skins every style while the jobs hold. The bevel/shadow tones are
+ * **derived, never stored** — `towardText()`/`towardBg()`/`shadow()` step
+ * `fill` one place along the shade chain (`Palette::towardText`/`towardBg`),
  * so a tone can never drift out of sync with `fill`.
  */
 struct Style {
-    // ----- Colours (ramp role indices) -----
-    Pixel4 fill;    ///< Background / body fill — a ramp base shade
+    // ----- Colours (Palette roles) -----
+    Pixel4 fill;    ///< Background / body fill
     Pixel4 text;    ///< Text and icon colour
     Pixel4 border;  ///< Border / outline colour
 
@@ -35,17 +34,17 @@ struct Style {
     int8_t  shadowDx;     ///< Drop-shadow x offset (0 = none)
     int8_t  shadowDy;     ///< Drop-shadow y offset (0 = none)
     uint8_t textOutline;  ///< Legibility outline for text drawn through this slot
-                          ///< (1 = a dark +/-1 px silhouette; #40). On for the
+                          ///< (1 = a bg +/-1 px silhouette; #40). On for the
                           ///< banner so it reads over any scenery, off for panel
-                          ///< text. The tone is derived (darken of the text
-                          ///< colour), never stored — the type system renders it.
+                          ///< text. The tone is the bg role, never stored — the
+                          ///< type system renders it.
 
-    /// @brief The lighter tone of `fill`, one shade up its ramp (clamped).
-    constexpr Pixel4 light() const { return Pixel4(Palette::lighten(fill.value)); }
-    /// @brief The darker tone of `fill`, one shade down its ramp (clamped).
-    constexpr Pixel4 dark() const { return Pixel4(Palette::darken(fill.value)); }
-    /// @brief The drop-shadow tone — `darken(fill)` (the design's shadow == dark).
-    constexpr Pixel4 shadow() const { return Pixel4(Palette::darken(fill.value)); }
+    /// @brief `fill` one shade-chain step toward `text` (the bevel's top/left).
+    constexpr Pixel4 towardText() const { return Pixel4(Palette::towardText(fill.value)); }
+    /// @brief `fill` one shade-chain step toward `bg` (the bevel's bottom/right).
+    constexpr Pixel4 towardBg() const { return Pixel4(Palette::towardBg(fill.value)); }
+    /// @brief The drop-shadow tone — `towardBg(fill)`.
+    constexpr Pixel4 shadow() const { return Pixel4(Palette::towardBg(fill.value)); }
 };
 
 /**
@@ -72,31 +71,24 @@ static_assert(kStyleSlotCount <= 16,
               "the override mask (LuaBindings::m_styleSetMask) is a uint16_t — "
               "at most 16 slots fit");
 
-namespace detail {
-/// Base shade of a role's ramp — the conventional `fill` for that role (#12).
-constexpr Pixel4 roleBase(uint8_t role) { return Pixel4(Palette::ramp(role, SHADE_BASE)); }
-constexpr Pixel4 roleLight(uint8_t role) { return Pixel4(Palette::ramp(role, SHADE_LIGHT)); }
-constexpr Pixel4 roleDark(uint8_t role) { return Pixel4(Palette::ramp(role, SHADE_DARK)); }
-}  // namespace detail
-
 /**
- * @brief The ROM theme defaults, one `Style` per slot (placeholder palette).
+ * @brief The ROM theme defaults, one `Style` per slot, picked by job
+ *        (ADR-0019).
  *
- * Roles follow #12: 0 chrome, 1 hull, 2 floor, 3 scenery+interactive, 4
- * pet+selection accent. These are the placeholder structure — the authored
- * pixel-art palette re-skins them without touching this table (role indices,
- * not hexes). Selected variants take the selection-accent ramp (role 4).
+ * Panels and the banner sit on `surface` with `text` content and a `muted`
+ * border; a scene object's label sits on `muted`. Selected variants take the
+ * `accent` fill, and content on `accent` is `bg` (the role contract). Roles,
+ * not hexes, so a palette switch re-skins them without touching this table.
  */
 constexpr Style kDefaultStyles[kStyleSlotCount] = {
     // Columns: { fill, text, border, borderWidth, radius, padding, borderKind, shadowDx, shadowDy, textOutline }
-    // Panel — chrome body, light chrome text, dark chrome border
-    /* Panel               */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 2, 0, 0, 0, 0 },
-    /* PanelSelected       */ { detail::roleBase(4), detail::roleLight(4), detail::roleDark(4), 1, 0, 2, 0, 0, 0, 0 },
-    /* Popup               */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 3, 0, 1, 1, 0 },
+    /* Panel               */ { Pixel4(ROLE_SURFACE), Pixel4(ROLE_TEXT), Pixel4(ROLE_MUTED), 1, 0, 2, 0, 0, 0, 0 },
+    /* PanelSelected       */ { Pixel4(ROLE_ACCENT), Pixel4(ROLE_BG), Pixel4(ROLE_MUTED), 1, 0, 2, 0, 0, 0, 0 },
+    /* Popup               */ { Pixel4(ROLE_SURFACE), Pixel4(ROLE_TEXT), Pixel4(ROLE_MUTED), 1, 0, 3, 0, 1, 1, 0 },
     // Banner — the naming label: outline on by default so it reads over scenery (#40).
-    /* Banner              */ { detail::roleBase(0), detail::roleLight(0), detail::roleDark(0), 1, 0, 2, 0, 0, 0, 1 },
-    /* SceneObject         */ { detail::roleBase(3), detail::roleLight(3), detail::roleDark(3), 1, 0, 1, 0, 0, 0, 0 },
-    /* SceneObjectSelected */ { detail::roleBase(4), detail::roleLight(4), detail::roleDark(4), 1, 0, 1, 0, 0, 0, 0 },
+    /* Banner              */ { Pixel4(ROLE_SURFACE), Pixel4(ROLE_TEXT), Pixel4(ROLE_MUTED), 1, 0, 2, 0, 0, 0, 1 },
+    /* SceneObject         */ { Pixel4(ROLE_MUTED), Pixel4(ROLE_TEXT), Pixel4(ROLE_SURFACE), 1, 0, 1, 0, 0, 0, 0 },
+    /* SceneObjectSelected */ { Pixel4(ROLE_ACCENT), Pixel4(ROLE_BG), Pixel4(ROLE_MUTED), 1, 0, 1, 0, 0, 0, 0 },
 };
 
 /**

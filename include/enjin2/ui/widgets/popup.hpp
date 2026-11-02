@@ -3,7 +3,6 @@
 #include "../component.hpp"
 #include "../components.hpp"
 #include "../system.hpp"
-#include "../theme.hpp"
 #include "../../core/types.hpp"
 #include "../../graphics/canvas.hpp"
 #include "../../graphics/primitives.hpp"

@@ -32,8 +32,8 @@ python tools/tiled2enjin.py path/to/map.tmx --output out/base
 # With a preview PNG reconstructed from the emitted binaries + ΔEOK report.
 python tools/tiled2enjin.py path/to/map.tmx --output out/base --preview out/base.png
 
-# A different target palette (name in tools/palettes/, or a path).
-python tools/tiled2enjin.py map.tmx --palette enjin_gameboy
+# A different target palette (a .gpl path; the default is the engine's house default).
+python tools/tiled2enjin.py map.tmx --palette my_palette.gpl
 ```
 
 Outputs (given `--output out/base`):
@@ -50,7 +50,7 @@ Outputs (given `--output out/base`):
 
 * **Quantises** each RGB tile to the 15-colour palette by nearest distance in
   Oklab (dithering off). The ΔEOK histogram in the report is the quality gate a
-  human judges — a purchased pack whose palette is far from `enjin_default` will
+  human judges — a purchased pack whose palette is far from the house default will
   show a higher mean error, which is expected.
 * **Flip-dedupes** tiles over the four cell orientations (identity, H, V, HV);
   mirror-equivalent art collapses to one id with the flip bits set in the cell.

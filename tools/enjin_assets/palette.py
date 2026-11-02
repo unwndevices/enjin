@@ -1,10 +1,12 @@
-"""Load a GIMP ``.gpl`` ramp palette as the engine's 15-index target palette.
+"""The engine's 15-index target palette: the house default, or a GIMP ``.gpl``.
 
-The canonical palettes live in ``tools/palettes/`` (``enjin_default.gpl``,
-``enjin_gameboy.gpl``). Each holds 16 entries: indices 0–14 are opaque colours
-and index 15 is the reserved transparent key (magenta ``#FF00FF``). Quantisation
-only ever maps to the 15 opaque colours; a transparent source pixel is assigned
-index 15 directly, never by colour distance.
+The default is the engine's house default (``src/graphics/palette.cpp``): the
+8 Palette roles (ADR-0019) at indices 0–7, then the temporary entries 8–14
+that keep the old green ramp until every asset is re-indexed by job. A
+``.gpl`` holds 16 entries: indices 0–14 are opaque colours and index 15 is the
+reserved transparent key (magenta ``#FF00FF``). Quantisation only ever maps to
+the 15 opaque colours; a transparent source pixel is assigned index 15
+directly, never by colour distance.
 """
 
 from __future__ import annotations
@@ -22,8 +24,24 @@ TRANSPARENT_INDEX = 15
 #: Number of opaque, quantisable colours (indices 0..OPAQUE_COUNT-1).
 OPAQUE_COUNT = 15
 
-#: Directory holding the canonical ``.gpl`` palettes, next to this package.
-PALETTES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "palettes")
+#: The house default, as in the engine's ``src/graphics/palette.cpp``.
+HOUSE_DEFAULT_RGB: tuple[tuple[int, int, int], ...] = (
+    (0x08, 0x1A, 0x1C),  # 0  bg
+    (0x16, 0x46, 0x32),  # 1  surface
+    (0x52, 0xA8, 0x2E),  # 2  muted
+    (0xE8, 0xF4, 0xCC),  # 3  text
+    (0xB2, 0xDA, 0x63),  # 4  accent
+    (0xF0, 0xA8, 0x30),  # 5  accent2
+    (0x48, 0xC8, 0xD8),  # 6  accent3
+    (0xE8, 0x48, 0x40),  # 7  accent4
+    (0x52, 0xA8, 0x2E),  # 8  temporary: the old green ramp
+    (0x6B, 0xB9, 0x35),  # 9
+    (0x83, 0xCA, 0x3C),  # 10
+    (0x9B, 0xD2, 0x50),  # 11
+    (0xB2, 0xDA, 0x63),  # 12
+    (0xCE, 0xE8, 0x96),  # 13
+    (0xE8, 0xF4, 0xCC),  # 14
+)
 
 
 @dataclass(frozen=True)
@@ -81,5 +99,6 @@ def load_gpl(path: str) -> Palette:
 
 
 def load_default() -> Palette:
-    """Load the canonical ``enjin_default.gpl`` 15-colour palette."""
-    return load_gpl(os.path.join(PALETTES_DIR, "enjin_default.gpl"))
+    """The engine's house default palette (:data:`HOUSE_DEFAULT_RGB`)."""
+    rgb = np.array(HOUSE_DEFAULT_RGB, dtype=np.uint8)
+    return Palette(name="house-default", rgb=rgb, oklab=oklab.srgb_to_oklab(rgb))
