@@ -1,4 +1,4 @@
-// Draw-state bindings (Tomodachi #255): both gfx.setPaletteColor forms, and
+// Draw-state bindings (Tomodachi #255): the palette is read-only (#417), and
 // gfx.setLineWidth feeding the line and outline primitives.
 #include <enjin2/scripting/bindings.hpp>
 #include <enjin2/scripting/lua_engine.hpp>
@@ -48,30 +48,36 @@ struct DrawFixture {
 };
 
 // ============================================================
-// setPaletteColor: (i, r, g, b) and (i, "#rrggbb") set the same entry
+// The palette is the system's (Tomodachi #417, ADR-0019): an applet can read a
+// role's colour but has no call that changes one.
 // ============================================================
-static void test_setPaletteColor_forms()
+static void test_palette_is_read_only()
 {
-    printf("--- setPaletteColor forms ---\n");
+    printf("--- palette is read-only ---\n");
 
     DrawFixture f;
-    const RGB saved = g_palette.getColor(5);
+    const RGB saved = g_palette.getColor(ROLE_ACCENT2);
 
-    LuaResult r1 = f.exec("gfx.setPaletteColor(5, 18, 52, 86)");
-    ASSERT(r1.success, "setPaletteColor(i, r, g, b) should succeed");
-    const RGB a = g_palette.getColor(5);
+    LuaResult gone = f.exec(
+        "gone = gfx.setPaletteColor == nil and gfx.loadPalette == nil "
+        "and gfx.getPaletteSize == nil");
+    ASSERT(gone.success && f.engine.getGlobalBool("gone"),
+           "gfx.setPaletteColor, gfx.loadPalette and gfx.getPaletteSize are gone");
 
-    g_palette.setColor(5, 0, 0, 0);
-    LuaResult r2 = f.exec("gfx.setPaletteColor(5, '#123456')");
-    ASSERT(r2.success, "setPaletteColor(i, '#rrggbb') should succeed");
-    const RGB b = g_palette.getColor(5);
+    LuaResult set = f.exec("gfx.setPaletteColor(5, 18, 52, 86)");
+    ASSERT(!set.success, "calling gfx.setPaletteColor is an error");
+    LuaResult load = f.exec("gfx.loadPalette('default')");
+    ASSERT(!load.success, "calling gfx.loadPalette is an error");
+    ASSERT(g_palette.getColor(ROLE_ACCENT2) == saved, "the palette is unchanged");
 
-    ASSERT(a.r == 18 && a.g == 52 && a.b == 86,
-           "setPaletteColor(i, r, g, b) should set entry to (18, 52, 86)");
-    ASSERT(a.r == b.r && a.g == b.g && a.b == b.b,
-           "both setPaletteColor forms should set the same entry to the same colour");
+    g_palette.setColor(ROLE_ACCENT2, 18, 52, 86);
+    LuaResult get = f.exec("r, g, b = gfx.getPaletteColor(gfx.COLOR.ACCENT2)");
+    ASSERT(get.success, "gfx.getPaletteColor(role) still reads");
+    ASSERT(f.engine.getGlobalNumber("r") == 18.0 && f.engine.getGlobalNumber("g") == 52.0 &&
+               f.engine.getGlobalNumber("b") == 86.0,
+           "gfx.getPaletteColor(role) gives the role's colour");
 
-    g_palette.setColor(5, saved.r, saved.g, saved.b);
+    g_palette.setColor(ROLE_ACCENT2, saved.r, saved.g, saved.b);
 }
 
 // ============================================================
@@ -187,7 +193,7 @@ int main()
     printf("draw_state_binding_test\n");
     printf("=======================\n");
 
-    test_setPaletteColor_forms();
+    test_palette_is_read_only();
     test_line_width();
     test_rectangle_line_width();
     test_circle_line_width();

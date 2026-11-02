@@ -442,31 +442,8 @@ int LuaBindings::lua_fastDrawLine(lua_State* L) {
 }
 
 //==============================================================================
-// Palette Functions
+// Palette Functions: read-only; the palette is the system's (Tomodachi #417)
 //==============================================================================
-
-int LuaBindings::lua_setPaletteColor(lua_State* L) {
-    int index = luaL_checkinteger(L, 1);
-    // Only a real string is the hex form; lua_isstring also accepts numbers.
-    if (lua_type(L, 2) == LUA_TSTRING) {
-        // Overload: setPaletteColor(index, '#rrggbb')
-        const char* hex = luaL_checkstring(L, 2);
-        uint8_t r = 0, g = 0, b = 0;
-        enjin2::parseHexColor(hex, r, g, b);
-        enjin2::g_palette.setColor(static_cast<uint8_t>(index), r, g, b);
-    } else {
-        // Overload: setPaletteColor(index, r, g, b)
-        int r = luaL_checkinteger(L, 2);
-        int g = luaL_checkinteger(L, 3);
-        int b = luaL_checkinteger(L, 4);
-        enjin2::g_palette.setColor(
-            static_cast<uint8_t>(index),
-            static_cast<uint8_t>(r),
-            static_cast<uint8_t>(g),
-            static_cast<uint8_t>(b));
-    }
-    return 0;
-}
 
 int LuaBindings::lua_getPaletteColor(lua_State* L) {
     int index = luaL_checkinteger(L, 1);
@@ -475,18 +452,6 @@ int LuaBindings::lua_getPaletteColor(lua_State* L) {
     lua_pushinteger(L, c.g);
     lua_pushinteger(L, c.b);
     return 3;
-}
-
-int LuaBindings::lua_loadPalette(lua_State* L) {
-    const char* name = luaL_checkstring(L, 1);
-    bool ok = enjin2::g_palette.loadPreset(name);
-    lua_pushboolean(L, ok);
-    return 1;
-}
-
-int LuaBindings::lua_getPaletteSize(lua_State* L) {
-    lua_pushinteger(L, enjin2::g_palette.getSize());
-    return 1;
 }
 
 } // namespace enjin2

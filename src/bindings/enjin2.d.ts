@@ -94,9 +94,6 @@ export interface Enjin2Module extends EmscriptenModule {
 
   // Palette
   getPaletteRGB(): Uint8Array;
-  setPaletteColor(index: number, r: number, g: number, b: number): void;
-  loadPalette(name: string): boolean;
-  getPaletteSize(): number;
 }
 
 export interface EmscriptenModule {

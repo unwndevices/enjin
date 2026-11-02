@@ -163,12 +163,13 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
     function("getCanvasWidth", +[]() -> int { return ENJIN2_CANVAS_WIDTH; });
     function("getCanvasHeight", +[]() -> int { return ENJIN2_CANVAS_HEIGHT; });
 
-    // Palette functions — core graphics, not behind ENJIN2_BUILD_LUA guard
+    // Palette — core graphics, not behind ENJIN2_BUILD_LUA guard. Read-only: the
+    // palette is the system's (Tomodachi #417), set through libtomo's setPalette.
 
     // Snapshot semantics: fills a static buffer from g_palette at call time and returns
     // a typed_memory_view (a live JS view into WASM linear memory at that buffer address).
-    // The buffer is NOT updated when setPaletteColor() is called — Callers MUST re-invoke
-    // getPaletteRGB() after any setPaletteColor() call to get fresh data.
+    // The buffer is NOT updated when the palette changes — callers re-invoke
+    // getPaletteRGB() (the web simulator does every frame) to get fresh data.
     // The SDL3 runner is unaffected (it reads g_palette.resolve() directly at render time).
     function("getPaletteRGB", +[]() -> val {
         static uint8_t buf[45];
@@ -179,22 +180,6 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
             buf[i*3+2] = c.b;
         }
         return val(typed_memory_view(45, buf));
-    });
-
-    function("setPaletteColor", +[](int index, int r, int g, int b) {
-        enjin2::g_palette.setColor(
-            static_cast<uint8_t>(index),
-            static_cast<uint8_t>(r),
-            static_cast<uint8_t>(g),
-            static_cast<uint8_t>(b));
-    });
-
-    function("loadPalette", +[](std::string name) -> bool {
-        return enjin2::g_palette.loadPreset(name.c_str());
-    });
-
-    function("getPaletteSize", +[]() -> int {
-        return enjin2::g_palette.getSize();
     });
 
 #ifdef ENJIN2_BUILD_LUA

@@ -912,10 +912,7 @@ private:
     static int lua_fastDrawLine(lua_State* L);
 
     // Palette functions
-    static int lua_setPaletteColor(lua_State* L);
     static int lua_getPaletteColor(lua_State* L);
-    static int lua_loadPalette(lua_State* L);
-    static int lua_getPaletteSize(lua_State* L);
 
     // Input polling functions (INP-05)
     static int lua_isButtonHeld(lua_State* L);
