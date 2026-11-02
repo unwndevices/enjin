@@ -73,7 +73,7 @@ def main():
         src = os.path.join(HERE, name)
         cmd = [args.cli, src, '-o', os.path.splitext(src)[0] + '.njn', f'--{kind}']
         if palette:
-            cmd += ['--palette', palette]
+            cmd += ['--palette', os.path.join(HERE, palette) if palette.endswith('.gpl') else palette]
         subprocess.run(cmd, check=True)
 
 
