@@ -45,8 +45,8 @@ struct Remap {
      * Entry 15 is left as transparent passthrough (`lut[15] == 15`), so a solid
      * tint recolours a whole layer to one index without filling its holes.
      *
-     * @param index The palette index (0-15) every source 0-14 maps to.
-     * @return A `Remap` mapping 0-14 → `index`, 15 → 15.
+     * @param index The Palette role every non-transparent source maps to.
+     * @return A `Remap` mapping 0-14 → `index` (8-14 never occur), 15 → 15.
      */
     static constexpr Remap solid(uint8_t index) {
         Remap r{};

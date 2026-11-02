@@ -45,17 +45,17 @@ static void test_transparent_skip()
     dst.clear(Pixel4(5));
     Src src;
     src.setPixel(0, 0, Pixel4(0));  // transparent
-    src.setPixel(1, 0, Pixel4(12)); // opaque
+    src.setPixel(1, 0, Pixel4(6));  // opaque
 
     blitCanvasOpacity(dst, src, 4, 4, 1);
     ASSERT(dst.getPixel(4, 4).value == 5,
            "source Pixel4(0) is skipped, destination shows through");
-    ASSERT(dst.getPixel(5, 4).value == 12,
+    ASSERT(dst.getPixel(5, 4).value == 6,
            "opaque source pixel lands at divisor 1");
 
     Dst dst2;
     dst2.clear(Pixel4(5));
-    blitCanvasOpacity(dst2, src, 4, 4, 1, Pixel4(12));
+    blitCanvasOpacity(dst2, src, 4, 4, 1, Pixel4(6));
     ASSERT(dst2.getPixel(5, 4).value == 5,
            "a custom transparent value is honored");
     ASSERT(dst2.getPixel(4, 4).value == 0,
@@ -67,20 +67,20 @@ static void test_divisor_fade()
     printf("--- divisor fade ---\n");
     Dst dst;
     Src src;
-    src.setPixel(0, 0, Pixel4(12));
+    src.setPixel(0, 0, Pixel4(6));
     src.setPixel(1, 0, Pixel4(15));
 
     blitCanvasOpacity(dst, src, 0, 0, 2);
-    ASSERT(dst.getPixel(0, 0).value == 6, "12 / 2 = 6");
+    ASSERT(dst.getPixel(0, 0).value == 3, "6 / 2 = 3");
     ASSERT(dst.getPixel(1, 0).value == 7, "15 / 2 = 7 (integer fade)");
 
     Dst dst4;
     blitCanvasOpacity(dst4, src, 0, 0, 4);
-    ASSERT(dst4.getPixel(0, 0).value == 3, "12 / 4 = 3");
+    ASSERT(dst4.getPixel(0, 0).value == 1, "6 / 4 = 1");
 
     Dst dst0;
     blitCanvasOpacity(dst0, src, 0, 0, 0);
-    ASSERT(dst0.getPixel(0, 0).value == 12, "divisor 0 clamps to 1");
+    ASSERT(dst0.getPixel(0, 0).value == 6, "divisor 0 clamps to 1");
 }
 
 static void test_clipping()
@@ -91,10 +91,10 @@ static void test_clipping()
     Src src;
     for (int16_t y = 0; y < 8; ++y)
         for (int16_t x = 0; x < 8; ++x)
-            src.setPixel(x, y, Pixel4(9));
+            src.setPixel(x, y, Pixel4(6));
 
     blitCanvasOpacity(dst, src, -4, 28, 1);
-    ASSERT(dst.getPixel(0, 28).value == 9,
+    ASSERT(dst.getPixel(0, 28).value == 6,
            "on-canvas part of a clipped placement lands");
     ASSERT(dst.getPixel(4, 28).value == 3,
            "columns past the source stay untouched");

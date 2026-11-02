@@ -106,6 +106,7 @@
 #include <array>
 #include <string>
 
+#include "palette.hpp"
 #include "tilemap_asset.hpp"
 
 namespace enjin2 {
@@ -696,6 +697,43 @@ inline NjnEditResult njn2ReplaceChunk(const uint8_t* data, size_t size,
         return fail("the edited .njn failed to re-read: " + tag + " chunk not as written");
     }
     return res;
+}
+
+// ---------------------------------------------------------------------------
+// Palette-role check (ADR-0019): what the loaders refuse
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief The first stored pixel index that is not a Palette role (0..7) or
+ *        transparent (15), or -1 when every pixel is valid.
+ *
+ * Pixels are 1 byte each with the index in the low nibble (PIXL, LIMG), so the
+ * one bad kind is 8..14. The loaders (`engine.sprite.load` /
+ * `engine.tilemap.load`, LayeredAssetStore) run this one pass at load and
+ * refuse the file; the decoders themselves stay permissive so the Studio's
+ * Colour replace can still read old art and move it onto roles.
+ */
+inline int njnFirstOffRoleIndex(const uint8_t* px, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        const uint8_t v = px[i] & 0x0F;
+        if (v >= ROLE_COUNT && v != PALETTE_TRANSPARENT) return v;
+    }
+    return -1;
+}
+
+/// A static loader message naming an off-role pixel index (8..14).
+inline const char* njnOffRoleMessage(int v) {
+    static const char* const kMessages[] = {
+        "pixel index 8 is not a Palette role (0..7) or transparent (15)",
+        "pixel index 9 is not a Palette role (0..7) or transparent (15)",
+        "pixel index 10 is not a Palette role (0..7) or transparent (15)",
+        "pixel index 11 is not a Palette role (0..7) or transparent (15)",
+        "pixel index 12 is not a Palette role (0..7) or transparent (15)",
+        "pixel index 13 is not a Palette role (0..7) or transparent (15)",
+        "pixel index 14 is not a Palette role (0..7) or transparent (15)",
+    };
+    return v >= ROLE_COUNT && v < PALETTE_TRANSPARENT ? kMessages[v - ROLE_COUNT]
+                                                       : "pixel index is not a Palette role";
 }
 
 // ---------------------------------------------------------------------------

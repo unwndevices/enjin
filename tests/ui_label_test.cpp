@@ -89,18 +89,18 @@ static void test_render_draws_background_panel() {
 
     Entity e = world.create();
     auto* label = world.add<LabelComponent>(e, std::string("hi"));
-    label->setBackground(Pixel4(10));
+    label->setBackground(Pixel4(ROLE_SURFACE));
     world.add<PositionComponent>(e, Point(4, 4));
     world.add<SizeComponent>(e, Size(40, 24));
 
     canvas.clear(Pixel4(ROLE_BG));
     system.update(0.016f);
 
-    // The panel fill (value 10) must land somewhere inside the box.
+    // The panel fill (surface) must land somewhere inside the box.
     bool anyPanel = false;
     for (int16_t y = 0; y < 64; ++y)
         for (int16_t x = 0; x < 64; ++x)
-            if (canvas.getPixel(x, y) == 10) anyPanel = true;
+            if (canvas.getPixel(x, y) == ROLE_SURFACE) anyPanel = true;
     ASSERT(anyPanel, "label: background paints the rounded panel");
 }
 

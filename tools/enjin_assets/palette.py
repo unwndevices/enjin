@@ -1,11 +1,10 @@
-"""The engine's 15-index target palette: the house default, or a GIMP ``.gpl``.
+"""The engine's target palette: the 8 Palette roles, the house default or a GIMP ``.gpl``.
 
 The default is the engine's house default (``src/graphics/palette.cpp``): the
-8 Palette roles (ADR-0019) at indices 0–7, then the temporary entries 8–14
-that keep the old green ramp until every asset is re-indexed by job. A
-``.gpl`` holds 16 entries: indices 0–14 are opaque colours and index 15 is the
-reserved transparent key (magenta ``#FF00FF``). Quantisation only ever maps to
-the 15 opaque colours; a transparent source pixel is assigned index 15
+8 Palette roles (ADR-0019) at indices 0–7. Indices 8–14 are not roles: no tool
+writes them and the engine refuses them. A ``.gpl`` lists the 8 roles first
+(a 9th row, the transparent key magenta ``#FF00FF``, is ignored). Quantisation
+only ever maps to the 8 roles; a transparent source pixel is assigned index 15
 directly, never by colour distance.
 """
 
@@ -21,8 +20,13 @@ from . import oklab
 #: Reserved transparent palette index (matches TRANSPARENT_INDEX across the tools).
 TRANSPARENT_INDEX = 15
 
-#: Number of opaque, quantisable colours (indices 0..OPAQUE_COUNT-1).
-OPAQUE_COUNT = 15
+#: Number of opaque, quantisable colours: the Palette roles (indices 0..OPAQUE_COUNT-1).
+OPAQUE_COUNT = 8
+
+
+def is_palette_index(v: int) -> bool:
+    """A stored index the engine accepts: a Palette role 0..7 or transparent 15."""
+    return 0 <= v < OPAQUE_COUNT or v == TRANSPARENT_INDEX
 
 #: The house default, as in the engine's ``src/graphics/palette.cpp``.
 HOUSE_DEFAULT_RGB: tuple[tuple[int, int, int], ...] = (
@@ -34,24 +38,17 @@ HOUSE_DEFAULT_RGB: tuple[tuple[int, int, int], ...] = (
     (0xF0, 0xA8, 0x30),  # 5  accent2
     (0x48, 0xC8, 0xD8),  # 6  accent3
     (0xE8, 0x48, 0x40),  # 7  accent4
-    (0x52, 0xA8, 0x2E),  # 8  temporary: the old green ramp
-    (0x6B, 0xB9, 0x35),  # 9
-    (0x83, 0xCA, 0x3C),  # 10
-    (0x9B, 0xD2, 0x50),  # 11
-    (0xB2, 0xDA, 0x63),  # 12
-    (0xCE, 0xE8, 0x96),  # 13
-    (0xE8, 0xF4, 0xCC),  # 14
 )
 
 
 @dataclass(frozen=True)
 class Palette:
-    """A loaded 15-index palette plus precomputed Oklab coordinates.
+    """A loaded 8-role palette plus precomputed Oklab coordinates.
 
     Attributes:
         name: Human-readable palette name from the ``.gpl`` header.
-        rgb:  ``(15, 3)`` uint8 array of the opaque colours (indices 0–14).
-        oklab: ``(15, 3)`` float array — the Oklab coordinates of ``rgb``.
+        rgb:  ``(8, 3)`` uint8 array of the role colours (indices 0–7).
+        oklab: ``(8, 3)`` float array — the Oklab coordinates of ``rgb``.
     """
 
     name: str

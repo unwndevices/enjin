@@ -37,8 +37,11 @@ static int failures = 0;
 // frame drew into a cell. 11 frames so the colon (frame 10) is present.
 static void writeSynthStrip(const char* path) {
     std::vector<uint8_t> pix;
+    // Frame f coded in two Palette roles, as numerals_test.cpp's strip: the
+    // cell is 1 + f % 7, its pixel (1,1) is 1 + f / 7 (no index above 7 but 15).
     for (int f = 0; f < 11; ++f) {
-        for (int i = 0; i < 16; ++i) pix.push_back(static_cast<uint8_t>(f + 1));
+        for (int i = 0; i < 16; ++i)
+            pix.push_back(static_cast<uint8_t>(i == 1 * 4 + 1 ? 1 + f / 7 : 1 + f % 7));
     }
     NjnV2Writer w;
     njn2WriteMeta(w, 4, 4, 11, 1);
@@ -72,6 +75,11 @@ struct Fixture {
     bool   flag(const char* n) { return engine.getGlobalBool(n, false); }
     uint8_t px(int x, int y) { return canvas.getPixel(static_cast<int16_t>(x),
                                                       static_cast<int16_t>(y)).value; }
+    /// The frame drawn in the 4 px cell starting at column x (-1 = blank).
+    int frame(int x) {
+        const int low = px(x + 2, 2), high = px(x + 1, 1);
+        return low == 0 ? -1 : (high - 1) * 7 + (low - 1);
+    }
 };
 
 int main() {
@@ -87,27 +95,27 @@ int main() {
         "w = gfx.number(0, 0, 42, { strip = h })\n"), "load + gfx.number exec");
     ASSERT(fx.num("h") >= 0, "strip handle valid");
     ASSERT(fx.num("w") == 8, "gfx.number width parity (= 8)");
-    ASSERT(fx.px(2, 2) == 5, "Lua cell0 shows frame 4 (fill 5)");
-    ASSERT(fx.px(6, 2) == 3, "Lua cell1 shows frame 2 (fill 3)");
+    ASSERT(fx.frame(0) == 4, "Lua cell0 shows frame 4");
+    ASSERT(fx.frame(4) == 2, "Lua cell1 shows frame 2");
 
     // Right alignment: x=20 is the right edge, so a width-8 field starts at 12.
     fx.canvas.clear(Pixel4(0));
     ASSERT(fx.exec("gfx.number(20, 0, 42, { strip = h, align = 'right' })"),
            "gfx.number right-align exec");
-    ASSERT(fx.px(14, 2) == 5, "Lua right-anchored cell0 at x=12");
+    ASSERT(fx.frame(12) == 4, "Lua right-anchored cell0 at x=12");
 
     // Zero pad.
     fx.canvas.clear(Pixel4(0));
     ASSERT(fx.exec("gfx.number(0, 0, 7, { strip = h, pad = 3 })"), "gfx.number pad exec");
-    ASSERT(fx.px(2, 2) == 1 && fx.px(6, 2) == 1 && fx.px(10, 2) == 8,
-           "Lua pad3 -> 007 (fills 1,1,8)");
+    ASSERT(fx.frame(0) == 0 && fx.frame(4) == 0 && fx.frame(8) == 7,
+           "Lua pad3 -> 007 (frames 0,0,7)");
 
-    // Timer draw: 1:05 -> colon (frame 10, fill 11) in cell 2.
+    // Timer draw: 1:05 -> colon (frame 10) in cell 2.
     fx.canvas.clear(Pixel4(0));
     ASSERT(fx.exec("tw = gfx.timer(0, 0, 65000, { strip = h })"), "gfx.timer exec");
     ASSERT(fx.num("tw") == 20, "gfx.timer width parity (= 20)");
-    ASSERT(fx.px(10, 2) == 11, "Lua timer colon cell shows frame 10");
-    ASSERT(fx.px(18, 2) == 6, "Lua timer seconds-units 5 -> frame5 fill 6");
+    ASSERT(fx.frame(8) == 10, "Lua timer colon cell shows frame 10");
+    ASSERT(fx.frame(16) == 5, "Lua timer seconds-units 5 -> frame5");
 
     // engine.hud.rollingCounter surface.
     ASSERT(fx.exec(

@@ -76,7 +76,7 @@ static void test_popup_render() {
     bool anyRim = false;
     for (int16_t y = 0; y < 64; ++y)
         for (int16_t x = 0; x < 64; ++x)
-            if (canvas.getPixel(x, y) == 6) anyRim = true;
+            if (canvas.getPixel(x, y) == ROLE_MUTED) anyRim = true;
     ASSERT(anyRim, "popup: a shown popup strokes its rim");
 
     // Hide it and redraw onto a clean canvas: nothing should land.

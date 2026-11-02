@@ -546,14 +546,14 @@ void LuaBindings::registerAll() {
                     "Height of the active layer in pixels; 0 with no canvas."),
         luaFunction("clear", lua_clear, "(color:int?=current) -> nil",
                     "Fill the active layer with one colour.",
-                    "color: palette index; defaults to the current draw colour")
+                    "color: a gfx.COLOR role or 15; defaults to the current draw colour")
             .note("The draw colour starts at gfx.COLOR.TEXT after every reload, so a bare "
                   "gfx.clear() fills with text until gfx.setColor picks another."),
 
         // Drawing state
         luaFunction("setColor", lua_setColor, "(color:int) -> nil",
                     "Set the draw colour the shapes and text use.",
-                    "color: palette index; a non-number is ignored")
+                    "color: a gfx.COLOR role or 15 (8-14 raise); a non-number is ignored")
             .note("Starts at gfx.COLOR.TEXT (3) after every reload."),
         luaFunction("getColor", lua_getColor, "() -> int", "The current draw colour."),
         luaFunction("setLineWidth", lua_setLineWidth, "(width:int) -> nil",
@@ -618,7 +618,7 @@ void LuaBindings::registerAll() {
                     "Set one pixel of the active layer to the given colour.",
                     "x: column\n"
                     "y: row\n"
-                    "color: palette index (not the draw colour)"),
+                    "color: a gfx.COLOR role or 15 (not the draw colour)"),
         luaFunction("getPixel", lua_getPixel, "(x:int, y:int) -> int",
                     "The palette index of one pixel of the active layer, not of the composited frame.",
                     "x: column\n"
@@ -632,7 +632,7 @@ void LuaBindings::registerAll() {
                     "y: top edge\n"
                     "w: width\n"
                     "h: height\n"
-                    "color: palette index; defaults to the draw colour"),
+                    "color: a gfx.COLOR role or 15; defaults to the draw colour"),
         luaFunction("fastDrawLine", lua_fastDrawLine,
                     "(x1:number, y1:number, x2:number, y2:number, color:int?=current) -> nil",
                     "Draw a 1 px line clipped to the layer; values are truncated, not rounded.",
@@ -640,12 +640,12 @@ void LuaBindings::registerAll() {
                     "y1: start row\n"
                     "x2: end column\n"
                     "y2: end row\n"
-                    "color: palette index; defaults to the draw colour"),
+                    "color: a gfx.COLOR role or 15; defaults to the draw colour"),
 
         // Palette: read-only, the system sets it (Settings)
         luaFunction("getPaletteColor", lua_getPaletteColor, "(index:int) -> r:int, g:int, b:int",
                     "The colour of one palette entry; index 15 gives 0, 0, 0.",
-                    "index: palette index, a gfx.COLOR role; larger values wrap")
+                    "index: a gfx.COLOR role, or 15 (black); 8-14 raise")
             .note("The user picks the palette in Settings; an applet cannot change it."),
         // Sprites
         luaFunction("newSprite", lua_newSprite,
@@ -708,7 +708,7 @@ void LuaBindings::registerAll() {
         luaFunction("clearLayer", lua_clearLayer, "(layer:int?, color:int?=0) -> nil",
                     "Fill one layer with a colour.",
                     "layer: 1..gfx.getLayerCount(); nil means the active layer\n"
-                    "color: palette index; 0 by default, unlike gfx.clear"),
+                    "color: a gfx.COLOR role or 15; 0 by default, unlike gfx.clear"),
         luaFunction("getLayerCount", lua_getLayerCount, "() -> int",
                     "How many layers scripts can draw on."),
         luaFunction("setLayerVisible", lua_setLayerVisible, "(layer:int, visible:boolean) -> nil",

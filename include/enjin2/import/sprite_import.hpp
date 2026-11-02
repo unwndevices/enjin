@@ -31,10 +31,12 @@
  *
  * ## Colours
  *
- * Indexed sources keep their indices as palette slots (0..14); the source's
+ * Indexed sources keep their indices as Palette roles (0..7); the source's
  * transparent index becomes 15 and the source's palette colours are ignored.
- * RGBA sources need binary alpha and an exact match to the target palette
- * (SpriteImportOptions::palette, the system palette by default).  There is no
+ * Any other opaque index (8..14, or above) fails as Unsupported, naming it:
+ * 8-14 are not roles (ADR-0019).  RGBA sources need binary alpha and an exact
+ * match to one of the target palette's 8 roles (SpriteImportOptions::palette,
+ * the house default by default).  There is no
  * quantisation: a mismatch fails with SpriteImportStatus::PaletteMismatch and
  * one SpriteColourIssue per offending RGBA value.
  *
@@ -84,19 +86,15 @@ struct SpriteImportLimits {
     uint32_t maxPixelBytes  = 64u << 20;  ///< All decoded cel bytes together.
 };
 
-/// The system palette's 15 opaque colours (Palette's default, the green ramp).
-std::array<RGB, PALETTE_MAX_ENTRIES> systemPalette();
+/// The house default's 8 Palette roles (Palette's default), the importer's default target.
+std::array<RGB, ROLE_COUNT> systemPalette();
 
 struct SpriteImportOptions {
     SpriteKind kind = SpriteKind::Auto;
     /// PNG cell dimensions; both zero means the whole image as one frame.
     uint16_t cellW = 0, cellH = 0;
-    /// Target colours for RGBA sources; slot i is palette index i.
-    std::array<RGB, PALETTE_MAX_ENTRIES> palette = systemPalette();
-    /// RGBA pixels match (and are nearest to) slots 0..paletteSlots-1 only.  The Studio
-    /// imports against its preset's 8 Palette roles (ROLE_COUNT, ADR-0019); the CLI still
-    /// matches all 15 until the old entries 8-14 go (Tomodachi #426).
-    uint8_t paletteSlots = PALETTE_MAX_ENTRIES;
+    /// Target colours for RGBA sources: the 8 Palette roles, slot i is role i.
+    std::array<RGB, ROLE_COUNT> palette = systemPalette();
     SpriteImportLimits limits;
 };
 
@@ -104,7 +102,7 @@ struct SpriteImportOptions {
 struct SpriteColourIssue {
     uint8_t  r, g, b, a;
     uint32_t pixels;       ///< In-canvas pixels with this value (each stored cel once).
-    uint8_t  nearestSlot;  ///< Closest target slot by colour (Oklab), below paletteSlots.
+    uint8_t  nearestSlot;  ///< Closest target role by colour (Oklab), 0..7.
     /// True when the value fails on alpha (0 < a < 255) rather than on colour.
     bool partialAlpha() const { return a != 0 && a != 255; }
 };

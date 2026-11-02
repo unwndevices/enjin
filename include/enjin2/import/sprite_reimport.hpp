@@ -54,10 +54,8 @@ using SpriteFollowSet = std::map<std::string, std::string>;
 struct SpriteReimportOptions {
     /// PNG slicing, reused from the source sidecar.
     uint16_t cellW = 0, cellH = 0;
-    /// Target colours for RGBA sources; slot i is palette index i.
-    std::array<RGB, PALETTE_MAX_ENTRIES> palette = systemPalette();
-    /// RGBA pixels match slots 0..paletteSlots-1 only (SpriteImportOptions::paletteSlots).
-    uint8_t paletteSlots = PALETTE_MAX_ENTRIES;
+    /// Target colours for RGBA sources: the 8 Palette roles, slot i is role i.
+    std::array<RGB, ROLE_COUNT> palette = systemPalette();
     SpriteImportLimits limits;
 };
 

@@ -28,13 +28,13 @@ using GaugeWorld = World<32, GaugeComponent, PositionComponent>;
 
 // setValue saturates into the mode's range; switching mode reclamps the value.
 static void test_value_clamps_per_mode() {
-    GaugeComponent uni(100, Pixel4(13), GaugeMode::Unidirectional);
+    GaugeComponent uni(100, Pixel4(ROLE_TEXT), GaugeMode::Unidirectional);
     uni.setValue(2.0f);
     ASSERT(uni.value() == 1.0f, "gauge: unidirectional clamps high to 1");
     uni.setValue(-2.0f);
     ASSERT(uni.value() == 0.0f, "gauge: unidirectional clamps low to 0");
 
-    GaugeComponent bi(100, Pixel4(13), GaugeMode::Bidirectional);
+    GaugeComponent bi(100, Pixel4(ROLE_TEXT), GaugeMode::Bidirectional);
     bi.setValue(-2.0f);
     ASSERT(bi.value() == -1.0f, "gauge: bidirectional clamps low to -1");
 
@@ -47,7 +47,7 @@ static void test_value_clamps_per_mode() {
 // Unidirectional fill grows up from the bottom: half value fills the lower half and
 // the level line sits at the midpoint.
 static void test_unidirectional_geometry() {
-    GaugeComponent g(100, Pixel4(13), GaugeMode::Unidirectional);
+    GaugeComponent g(100, Pixel4(ROLE_TEXT), GaugeMode::Unidirectional);
     g.setValue(0.5f);
     Rect region = g.fillRegion();
     ASSERT(region.y == 50 && region.height == 50, "gauge: unidirectional fills the bottom half");
@@ -58,7 +58,7 @@ static void test_unidirectional_geometry() {
 // Bidirectional fill grows out from the center: positive fills above the midline,
 // negative below, and the level line tracks the boundary.
 static void test_bidirectional_geometry() {
-    GaugeComponent g(100, Pixel4(13), GaugeMode::Bidirectional);
+    GaugeComponent g(100, Pixel4(ROLE_TEXT), GaugeMode::Bidirectional);
     g.setValue(0.5f);
     Rect up = g.fillRegion();
     ASSERT(up.y == 25 && up.height == 25, "gauge: positive fills above the midline");
@@ -77,7 +77,7 @@ static void test_render_draws_rim_and_fill() {
     GaugeSystem<GaugeWorld, Canvas4<40, 40>> system(&world, &canvas);
 
     Entity e = world.create();
-    auto* gauge = world.add<GaugeComponent>(e, static_cast<uint16_t>(40), Pixel4(13),
+    auto* gauge = world.add<GaugeComponent>(e, static_cast<uint16_t>(40), Pixel4(ROLE_TEXT),
                                             GaugeMode::Unidirectional);
     gauge->setValue(0.5f);
     world.add<PositionComponent>(e, Point(0, 0));
@@ -90,7 +90,7 @@ static void test_render_draws_rim_and_fill() {
     for (int16_t y = 0; y < 40; ++y) {
         for (int16_t x = 0; x < 40; ++x) {
             uint8_t v = canvas.getPixel(x, y);
-            if (v == 13) anyRim = true;
+            if (v == ROLE_TEXT) anyRim = true;
             if (v == GaugeComponent::kFillValue) anyFill = true;
         }
     }

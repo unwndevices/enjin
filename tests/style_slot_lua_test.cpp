@@ -62,8 +62,8 @@ static void test_setstyle_masks_present_keys() {
 static void test_reset_clears_mask() {
     printf("--- registerAll clears the override mask ---\n");
     StyleFixture f;
-    f.exec("engine.ui.setStyle('panel', { fill = 9 })");
-    ASSERT(f.bindings.resolveStyle(StyleSlot::Panel).fill.value == 9, "override active");
+    f.exec("engine.ui.setStyle('panel', { fill = 6 })");
+    ASSERT(f.bindings.resolveStyle(StyleSlot::Panel).fill.value == 6, "override active");
 
     f.bindings.registerAll();  // applet boundary — fresh Lua state
     const Style& def = kDefaultStyles[(int)StyleSlot::Panel];
@@ -98,9 +98,9 @@ static void test_panel_dispatch() {
     ASSERT(f.canvas.getPixel(2, 2).value == def.border.value, "edge is the slot border");
 
     // Number → legacy explicit (bg, border).
-    LuaResult r2 = f.exec("engine.ui.panel(20, 20, 10, 10, 8, 3)");
+    LuaResult r2 = f.exec("engine.ui.panel(20, 20, 10, 10, 6, 3)");
     ASSERT(r2.success, "panel with numeric bg must not error");
-    ASSERT(f.canvas.getPixel(24, 24).value == 8, "interior is the legacy bg");
+    ASSERT(f.canvas.getPixel(24, 24).value == 6, "interior is the legacy bg");
     ASSERT(f.canvas.getPixel(20, 20).value == 3, "edge is the legacy border");
 }
 

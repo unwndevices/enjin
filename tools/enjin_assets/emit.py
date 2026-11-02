@@ -179,6 +179,16 @@ def choose_grid(count: int) -> tuple[int, int]:
     return (cols, rows)
 
 
+def _check_roles(pixels) -> None:
+    """Refuse pixel indices that are not Palette roles (8..14, ADR-0019): the
+    engine's loaders would refuse the file."""
+    from .palette import is_palette_index
+
+    for b in pixels:
+        if not is_palette_index(b & 0x0F):
+            raise ValueError(f"pixel index {b & 0x0F} is not a Palette role (0..7) or transparent (15)")
+
+
 def build_njn(
     cell_w: int,
     cell_h: int,
@@ -217,6 +227,8 @@ def build_njn(
 
     if cols > 255 or rows > 255:
         raise ValueError(f"sheet grid {cols}x{rows} exceeds the 255x255 META limit")
+
+    _check_roles(padded)
 
     w = NjnV2Writer()
     w.add_chunk(CHUNK_META, struct.pack("<BBBB", cell_w & 0xFF, cell_h & 0xFF, cols, rows))
@@ -365,6 +377,7 @@ def build_njn_layered(asset: Layered) -> bytes:
             raise ValueError(
                 f"image {img.w}x{img.h} has {len(img.pixels)} pixels, expected {img.w * img.h}"
             )
+        _check_roles(img.pixels)
         limg += struct.pack("<HH", img.w & 0xFFFF, img.h & 0xFFFF)
         limg += bytes(b & 0x0F for b in img.pixels)
     w.add_chunk(CHUNK_LIMG, bytes(limg))

@@ -99,7 +99,7 @@ static void test_draw_pixel_masking()
     printf("--- draw pixel masking ---\n");
 
     // Data with upper nibble set: 0xA3 should be masked to 0x03
-    static const uint8_t data[4] = { 0xA3, 0xF5, 0x70, 0xBE };
+    static const uint8_t data[4] = { 0xA3, 0xF5, 0x70, 0xB7 };
 
     SpriteSheet sheet(data, 2, 2, 1, 1);
     Canvas4<16, 16> canvas;
@@ -113,9 +113,9 @@ static void test_draw_pixel_masking()
            "0xF5 masked to 5");
     ASSERT(canvas.getPixel(0, 1).value == 0,
            "0x70 masked to 0");
-    // 0xBE & 0x0F = 14
-    ASSERT(canvas.getPixel(1, 1).value == 14,
-           "0xBE masked to 14");
+    // 0xB7 & 0x0F = 7
+    ASSERT(canvas.getPixel(1, 1).value == 7,
+           "0xB7 masked to 7");
 }
 
 // ============================================================
@@ -140,7 +140,7 @@ static void test_pikachu_data()
 
     // Verify some known pixels from the pikachu data:
     // Row 0 of pikachu is all 0x00 (transparent index 0 after mask = 0)
-    // The first non-zero pixel in the data is at row 2, around col 5 (data[2*38+5] = 0x03)
+    // The first non-zero pixel in the data is at row 2, around col 5 (data[2*38+5] = 0x01)
     // Let's check that the canvas has data where we expect it
 
     // pikachu_data[0] = 0x00 → palette 0 (not transparent, should be drawn)

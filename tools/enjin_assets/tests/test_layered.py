@@ -170,6 +170,17 @@ def test_layered_unknown_chunk_skipped():
     assert out.canvas_w == 4
 
 
+def test_layered_pixels_off_the_roles_are_refused():
+    # 8..14 are not Palette roles (ADR-0019): the engine's loader refuses them, so emit does too.
+    asset = _fixture()
+    asset.images[1] = emit.PartImage(1, 1, bytes([9]))
+    try:
+        emit.build_njn_layered(asset)
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "pixel index 9 is not a Palette role" in str(e)
+
+
 # --- required chunks -------------------------------------------------------
 
 def test_layered_missing_required():

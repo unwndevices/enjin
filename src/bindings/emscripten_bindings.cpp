@@ -171,15 +171,17 @@ EMSCRIPTEN_BINDINGS(enjin2_test) {
     // The buffer is NOT updated when the palette changes — callers re-invoke
     // getPaletteRGB() (the web simulator does every frame) to get fresh data.
     // The SDL3 runner is unaffected (it reads g_palette.resolve() directly at render time).
+    // The 8 Palette roles only (24 bytes, ADR-0019): 8-14 are no role and 15 is
+    // transparent, so a table built from this has 8 entries.
     function("getPaletteRGB", +[]() -> val {
-        static uint8_t buf[45];
-        for (int i = 0; i < 15; ++i) {
+        static uint8_t buf[enjin2::ROLE_COUNT * 3];
+        for (int i = 0; i < enjin2::ROLE_COUNT; ++i) {
             enjin2::RGB c = enjin2::g_palette.getColor(i);
             buf[i*3]   = c.r;
             buf[i*3+1] = c.g;
             buf[i*3+2] = c.b;
         }
-        return val(typed_memory_view(45, buf));
+        return val(typed_memory_view(sizeof(buf), buf));
     });
 
 #ifdef ENJIN2_BUILD_LUA

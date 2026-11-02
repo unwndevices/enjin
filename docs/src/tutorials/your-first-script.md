@@ -109,7 +109,7 @@ function draw()
     gfx.text("HUNGER:", 10, 34)
 ```
 
-Opaque colours use palette indices 0–14, whose RGB values depend on the current palette. Only transparency is named: `gfx.COLOR.TRANSPARENT` (15).
+Opaque colours are the 8 Palette roles 0–7, whose RGB values depend on the current palette; `gfx.COLOR` names them by job (`gfx.COLOR.TEXT` is 3) and names transparency, `gfx.COLOR.TRANSPARENT` (15). A colour 8–14 is no role and raises an error.
 
 ## Time
 

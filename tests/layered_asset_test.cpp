@@ -604,7 +604,7 @@ static NjnLayered makeStorageFixture() {
     big.h = 16;
     big.pixels.resize(16 * 16);
     for (size_t i = 0; i < big.pixels.size(); ++i) {
-        big.pixels[i] = static_cast<uint8_t>(i % 15);
+        big.pixels[i] = static_cast<uint8_t>(i % ROLE_COUNT);
     }
     l.images.push_back(std::move(big));
     return l;

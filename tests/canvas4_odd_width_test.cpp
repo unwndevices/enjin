@@ -56,8 +56,8 @@ static void test_no_row_aliasing()
     ASSERT(c.getPixel(0, 1).value == 7,
            "(0,1) readback");
 
-    c.setPixel(126, 126, Pixel4(9));
-    ASSERT(c.getPixel(126, 126).value == 9,
+    c.setPixel(126, 126, Pixel4(ROLE_ACCENT3));
+    ASSERT(c.getPixel(126, 126).value == ROLE_ACCENT3,
            "last pixel (126,126) is addressable in-buffer");
 }
 
@@ -68,15 +68,17 @@ static void test_full_roundtrip()
 {
     printf("--- Full-canvas round-trip ---\n");
 
+    // Every valid index (the 8 Palette roles and transparent, ADR-0019).
+    static constexpr uint8_t kValid[9] = {0, 1, 2, 3, 4, 5, 6, 7, PALETTE_TRANSPARENT};
     Canvas4<127, 127> c;
     for (int16_t y = 0; y < 127; ++y)
         for (int16_t x = 0; x < 127; ++x)
-            c.setPixel(x, y, Pixel4(static_cast<uint8_t>((x + y * 3) % 16)));
+            c.setPixel(x, y, Pixel4(kValid[(x + y * 3) % 9]));
 
     size_t bad = 0;
     for (int16_t y = 0; y < 127; ++y)
         for (int16_t x = 0; x < 127; ++x)
-            if (c.getPixel(x, y).value != (x + y * 3) % 16)
+            if (c.getPixel(x, y).value != kValid[(x + y * 3) % 9])
                 bad++;
     ASSERT(bad == 0, "every pixel reads back what was written");
 }
@@ -92,9 +94,9 @@ static void test_fast_paths()
 
     // Even x + even width takes the memset fast path; must land on the same
     // pixels as the per-pixel fallback.
-    fast.drawHLine(4, 5, 100, Pixel4(11));
+    fast.drawHLine(4, 5, 100, Pixel4(ROLE_ACCENT2));
     for (int16_t i = 0; i < 100; ++i)
-        ref.setPixel(4 + i, 5, Pixel4(11));
+        ref.setPixel(4 + i, 5, Pixel4(ROLE_ACCENT2));
 
     // Odd-width line clipped at the right edge (slow path) for contrast.
     fast.drawHLine(0, 6, 127, Pixel4(3));
@@ -103,7 +105,7 @@ static void test_fast_paths()
 
     Pixel4 batch[64];
     for (int16_t i = 0; i < 64; ++i)
-        batch[i] = Pixel4(static_cast<uint8_t>(i % 16));
+        batch[i] = Pixel4(i % 9 == 8 ? PALETTE_TRANSPARENT : static_cast<uint8_t>(i % 9));
     fast.setPixelBatch(2, 7, batch, 64);
     for (int16_t i = 0; i < 64; ++i)
         ref.setPixel(2 + i, 7, batch[i]);
@@ -124,14 +126,14 @@ static void test_even_layout_unchanged()
     printf("--- Even-width byte layout ---\n");
 
     Canvas4<128, 128> c;
-    c.setPixel(0, 0, Pixel4(0xA));
-    c.setPixel(1, 0, Pixel4(0xB));
-    c.setPixel(0, 1, Pixel4(0xC));
+    c.setPixel(0, 0, Pixel4(0x5));
+    c.setPixel(1, 0, Pixel4(0x6));
+    c.setPixel(0, 1, Pixel4(0x7));
 
     const PackedPixel4* buf = c.getBuffer();
-    ASSERT(buf[0].getLow().value == 0xA && buf[0].getHigh().value == 0xB,
+    ASSERT(buf[0].getLow().value == 0x5 && buf[0].getHigh().value == 0x6,
            "byte 0 packs pixels (0,0) low / (1,0) high as before");
-    ASSERT(buf[64].getLow().value == 0xC,
+    ASSERT(buf[64].getLow().value == 0x7,
            "row 1 still starts at byte 64 for width 128");
 }
 

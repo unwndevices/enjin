@@ -47,11 +47,37 @@ static void test_house_default()
     ASSERT(g_palette.getColor(ROLE_TEXT) == RGB(0xe8, 0xf4, 0xcc), "text is #e8f4cc");
     ASSERT(g_palette.getColor(ROLE_ACCENT) == RGB(0xb2, 0xda, 0x63), "accent is #b2da63");
 
-    // Temporary (removed by the seal ticket): 8-14 keep the old green ramp
-    // so art not yet re-indexed by job still draws.
-    ASSERT(g_palette.getColor(8) == RGB(0x52, 0xa8, 0x2e), "temporary 8 is the old ramp's #52a82e");
-    ASSERT(g_palette.getColor(11) == RGB(0x9b, 0xd2, 0x50), "temporary 11 is the old ramp's #9bd250");
-    ASSERT(g_palette.getColor(14) == RGB(0xe8, 0xf4, 0xcc), "temporary 14 is the old ramp's #e8f4cc");
+    ASSERT(g_palette.getColor(ROLE_ACCENT2) == RGB(0xf0, 0xa8, 0x30), "accent2 is #f0a830");
+    ASSERT(g_palette.getColor(ROLE_ACCENT3) == RGB(0x48, 0xc8, 0xd8), "accent3 is #48c8d8");
+    ASSERT(g_palette.getColor(ROLE_ACCENT4) == RGB(0xe8, 0x48, 0x40), "accent4 is #e84840");
+    ASSERT(sizeof(g_palette.colors) / sizeof(g_palette.colors[0]) == ROLE_COUNT,
+           "the palette holds exactly the 8 roles");
+}
+
+// ============================================================
+// b2. The seal (ADR-0019): 8-14 are no role
+// ============================================================
+static void test_sealed_indices()
+{
+    printf("--- 8-14 are invalid ---\n");
+    for (unsigned i = 0; i < 16; ++i) {
+        const bool valid = i < ROLE_COUNT || i == PALETTE_TRANSPARENT;
+        ASSERT(isPaletteIndex(i) == valid, "isPaletteIndex: roles 0-7 and 15 only");
+    }
+    ASSERT(!isPaletteIndex(16) && !isPaletteIndex(255), "isPaletteIndex: above 15 is no index");
+
+    // Unused LUT slots: black, and setColor cannot give them a colour.
+    for (uint8_t i = ROLE_COUNT; i < PALETTE_TRANSPARENT; ++i) {
+        ASSERT(g_palette.getColor(i) == RGB(0, 0, 0), "8-14 resolve to black (getColor)");
+        ASSERT(g_palette.resolve(i) == RGB(0, 0, 0), "8-14 resolve to black (resolve)");
+    }
+    Palette p;
+    p.setColor(9, 255, 0, 0);
+    p.setColor(PALETTE_TRANSPARENT, 255, 0, 0);
+    ASSERT(p.getColor(9) == RGB(0, 0, 0), "setColor(9) is ignored");
+    ASSERT(p.getColor(PALETTE_TRANSPARENT) == RGB(0, 0, 0), "setColor(15) is ignored");
+    for (uint8_t i = 0; i < ROLE_COUNT; ++i)
+        ASSERT(p.getColor(i) == g_palette.getColor(i), "setColor(8+) leaves the roles alone");
 }
 
 // ============================================================
@@ -135,7 +161,7 @@ static void test_toward_text()
 static void test_chain_reaches_bg_in_three()
 {
     printf("--- chain length ---\n");
-    for (uint8_t i = 0; i < 15; ++i) {
+    for (uint8_t i = 0; i < ROLE_COUNT; ++i) {
         uint8_t v = i;
         for (int s = 0; s < 3; ++s) v = Palette::towardBg(v);
         ASSERT(v == ROLE_BG, "three towardBg steps reach bg");
@@ -180,6 +206,7 @@ int main()
 
     test_role_indices();
     test_house_default();
+    test_sealed_indices();
     test_transparency();
     test_set_get_color();
     test_load_preset();

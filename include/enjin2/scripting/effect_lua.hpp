@@ -16,6 +16,7 @@
 #include "../core/name_index.hpp"
 #include "../graphics/effect.hpp"
 #include "lua_api.hpp"
+#include "palette_arg.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -79,17 +80,20 @@ enum class EffectPreset : uint8_t { Holo, Dim, Fade, Scanline, Ghost };
 inline constexpr const char* kEffectPresetNames[] = {"holo", "dim", "fade", "scanline", "ghost"};
 
 /// gfx.remap(...) — build a Remap.
-///   remap(table16)                  raw 16-entry lut (0-based Lua 1..16)
+///   remap(table16)                  raw 16-entry lut (0-based Lua 1..16); the
+///                                   entries for roles and 15 must be roles or 15,
+///                                   the ones for 8..14 (no role) are ignored
 ///   remap("identity"|"towardBg"|"towardText")
 ///   remap("solid", index)
 ///   remap("recolor", from, to)
 ///   remap("compose", first, second)
 inline int lua_remap(lua_State* L) {
     if (lua_istable(L, 1)) {
-        Remap r;
+        Remap r;  // identity: what the unused 8..14 entries keep
         for (int i = 0; i < 16; ++i) {
+            if (!isPaletteIndex(static_cast<unsigned>(i))) continue;
             lua_rawgeti(L, 1, i + 1);  // Lua arrays are 1-based
-            r.lut[i] = static_cast<uint8_t>(lua_tointeger(L, -1) & 0x0F);
+            r.lut[i] = paletteIndexOrError(L, lua_tointeger(L, -1), "gfx.remap: entry");
             lua_pop(L, 1);
         }
         pushRemap(L, r);
@@ -102,8 +106,8 @@ inline int lua_remap(lua_State* L) {
         case RemapKind::Identity: pushRemap(L, Remap::identity()); break;
         case RemapKind::TowardBg:   pushRemap(L, Remap::towardBg()); break;
         case RemapKind::TowardText: pushRemap(L, Remap::towardText()); break;
-        case RemapKind::Solid:    pushRemap(L, Remap::solid(argU8(L, 2))); break;
-        case RemapKind::Recolor:  pushRemap(L, Remap::recolor(argU8(L, 2), argU8(L, 3))); break;
+        case RemapKind::Solid:    pushRemap(L, Remap::solid(checkPaletteIndex(L, 2))); break;
+        case RemapKind::Recolor:  pushRemap(L, Remap::recolor(checkPaletteIndex(L, 2), checkPaletteIndex(L, 3))); break;
         case RemapKind::Compose:
             pushRemap(L, Remap::compose(checkRemap(L, 2), checkRemap(L, 3)));
             break;

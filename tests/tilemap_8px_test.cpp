@@ -43,14 +43,14 @@ static int failures = 0;
 static bool near(float a, float b) { return std::fabs(a - b) < 1e-3f; }
 
 // ---------------------------------------------------------------------------
-// Tileset: 8x8 cells, frame-major. 0 transparent, 1 wall (colour 9),
-// 2 floor (colour 1), 3 hole (colour 0), 4 exit (colour 12).
+// Tileset: 8x8 cells, frame-major. 0 transparent, 1 wall (muted),
+// 2 floor (surface), 3 hole (bg), 4 exit (accent).
 // ---------------------------------------------------------------------------
 static constexpr uint8_t T = 8;
 static constexpr uint8_t FRAMES = 5;
 static constexpr uint8_t WALL = 1, FLOOR = 2, HOLE = 3, EXIT = 4;
 static constexpr uint8_t KIND_WALL = 1, KIND_HOLE = 2, KIND_EXIT = 3;
-static const uint8_t kColour[FRAMES] = {15, 9, 1, 0, 12};
+static const uint8_t kColour[FRAMES] = {PALETTE_TRANSPARENT, ROLE_MUTED, ROLE_SURFACE, ROLE_BG, ROLE_ACCENT};
 static uint8_t g_tiles[FRAMES * T * T];
 
 static constexpr uint8_t MAP = 20;
@@ -227,19 +227,19 @@ static void test_tm8_06_draw() {
     Object* obj = new Object();
     C_Tilemap* tm = makeMaze(obj);
     Canvas4<160, 160> canvas;
-    canvas.clear(Pixel4(14));
+    canvas.clear(Pixel4(ROLE_ACCENT4));
     tm->draw(canvas);
-    ASSERT(canvas.getPixel(7, 7).value == 9, "TM8-06: wall at (7,7)");
+    ASSERT(canvas.getPixel(7, 7).value == ROLE_MUTED, "TM8-06: wall at (7,7)");
     ASSERT(canvas.getPixel(8, 8).value == 1, "TM8-06: floor at (8,8)");
     ASSERT(canvas.getPixel(64, 40).value == 0, "TM8-06: hole cell starts at (64,40)");
     ASSERT(canvas.getPixel(71, 47).value == 0, "TM8-06: hole cell ends at (71,47)");
     ASSERT(canvas.getPixel(72, 47).value == 1, "TM8-06: floor right of the hole");
-    ASSERT(canvas.getPixel(150, 150).value == 12, "TM8-06: exit");
+    ASSERT(canvas.getPixel(150, 150).value == ROLE_ACCENT, "TM8-06: exit");
 
     tm->setScroll(4, 0);
-    canvas.clear(Pixel4(14));
+    canvas.clear(Pixel4(ROLE_ACCENT4));
     tm->draw(canvas);
-    ASSERT(canvas.getPixel(3, 8).value == 9, "TM8-06: scroll 4 px shows half the wall");
+    ASSERT(canvas.getPixel(3, 8).value == ROLE_MUTED, "TM8-06: scroll 4 px shows half the wall");
     ASSERT(canvas.getPixel(4, 8).value == 1, "TM8-06: then floor");
     ASSERT(canvas.getPixel(60, 40).value == 0, "TM8-06: the hole moved 4 px left");
     delete obj;
@@ -252,7 +252,7 @@ static void test_tm8_07_draw_region_band() {
     // Over-band exit so the band filter shows.
     tm->setTile(18, 18, C_Tilemap::packCell(EXIT, /*band*/1));
     Canvas4<160, 160> canvas;
-    canvas.clear(Pixel4(14));
+    canvas.clear(Pixel4(ROLE_ACCENT4));
 
     // One 16 px compositor tile at (64,32) = map cells (8..9, 4..5): hole at (8,5).
     tm->drawRegionBand(canvas, 64, 32, 16, 16, C_Tilemap::Band::Under, Pixel4(6));
@@ -260,19 +260,19 @@ static void test_tm8_07_draw_region_band() {
     ASSERT(canvas.getPixel(79, 32).value == 1, "TM8-07: cell (9,4) floor");
     ASSERT(canvas.getPixel(64, 47).value == 0, "TM8-07: cell (8,5) hole");
     ASSERT(canvas.getPixel(79, 47).value == 1, "TM8-07: cell (9,5) floor");
-    ASSERT(canvas.getPixel(63, 32).value == 14, "TM8-07: left of the region untouched");
-    ASSERT(canvas.getPixel(80, 47).value == 14, "TM8-07: right of the region untouched");
+    ASSERT(canvas.getPixel(63, 32).value == ROLE_ACCENT4, "TM8-07: left of the region untouched");
+    ASSERT(canvas.getPixel(80, 47).value == ROLE_ACCENT4, "TM8-07: right of the region untouched");
 
     // The over-band exit is skipped by the under pass, painted by the over pass.
     tm->drawRegionBand(canvas, 144, 144, 16, 16, C_Tilemap::Band::Under, Pixel4(6));
     ASSERT(canvas.getPixel(150, 150).value == 6, "TM8-07: other band clears");
-    ASSERT(canvas.getPixel(158, 158).value == 9, "TM8-07: wall in the same region");
+    ASSERT(canvas.getPixel(158, 158).value == ROLE_MUTED, "TM8-07: wall in the same region");
     tm->drawRegionBand(canvas, 144, 144, 16, 16, C_Tilemap::Band::Over, Pixel4(15));
-    ASSERT(canvas.getPixel(150, 150).value == 12, "TM8-07: over pass draws the exit");
+    ASSERT(canvas.getPixel(150, 150).value == ROLE_ACCENT, "TM8-07: over pass draws the exit");
 
     // Scrolled by half a cell: the region's cells shift with the map.
     tm->setScroll(4, 0);
-    canvas.clear(Pixel4(14));
+    canvas.clear(Pixel4(ROLE_ACCENT4));
     tm->drawRegionBand(canvas, 48, 32, 16, 16, C_Tilemap::Band::Under, Pixel4(6));
     ASSERT(canvas.getPixel(60, 40).value == 0, "TM8-07: hole at screen x=60 when scrolled");
     ASSERT(canvas.getPixel(59, 40).value == 1, "TM8-07: floor left of it");
@@ -281,7 +281,7 @@ static void test_tm8_07_draw_region_band() {
     tm->setScroll(0, 0);
     tm->drawRegionBand(canvas, -16, 0, 16, 16, C_Tilemap::Band::Under, Pixel4(6));
     tm->drawRegionBand(canvas, 0, 0, 16, 16, C_Tilemap::Band::Under, Pixel4(6));
-    ASSERT(canvas.getPixel(0, 0).value == 9, "TM8-07: on-map cell after an off-map region");
+    ASSERT(canvas.getPixel(0, 0).value == ROLE_MUTED, "TM8-07: on-map cell after an off-map region");
     delete obj;
 }
 

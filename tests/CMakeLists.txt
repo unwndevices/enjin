@@ -313,8 +313,11 @@ target_include_directories(visual_parity_bench PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
 )
+# Its colour plane is Eisei's 16 grey levels (the identity on 0-15), not the
+# Palette roles, so Pixel4's debug role check (ADR-0019) is off here.
 target_compile_definitions(visual_parity_bench PRIVATE
-    ENJIN_GRAPHICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../include/enjin2/graphics")
+    ENJIN_GRAPHICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../include/enjin2/graphics"
+    ENJIN2_PIXEL4_ASSERT=0)
 target_link_libraries(visual_parity_bench PRIVATE
     enjin2_core enjin2_graphics)
 
@@ -731,6 +734,20 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME draw_state_binding_test COMMAND draw_state_binding_test)
+
+    # The palette contract's seal (Tomodachi ADR-0019, #426): gfx.*, the .njn
+    # loaders and the palette refuse indices 8-14, naming them
+    add_executable(palette_seal_test
+        palette_seal_test.cpp
+    )
+    target_include_directories(palette_seal_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(palette_seal_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME palette_seal_test COMMAND palette_seal_test)
 
     # Palette files: name, credits and the 8 Palette roles from a Lua table
     # (Tomodachi ADR-0019, #423)

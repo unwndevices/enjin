@@ -76,12 +76,12 @@ static void test_default_is_plain_silhouette() {
 
 static void test_solid_remap_recolours_only_silhouette() {
     printf("--- solid Remap recolours the silhouette (clip) ---\n");
-    // Effect(full mask, solid(9)) maps every drawn glyph pixel -> 9.
+    // Effect(full mask, solid(accent3)) maps every drawn glyph pixel -> accent3.
     auto c = renderBlock(4, 1, [](TextRenderer<Pixel4>& tr) {
-        tr.setEffect(Effect(Mask::full(), Remap::solid(9)));
+        tr.setEffect(Effect(Mask::full(), Remap::solid(ROLE_ACCENT3)));
     });
-    ASSERT(c.getPixel(6, 6).value == 9, "glyph pixel remapped to 9");
-    ASSERT(c.getPixel(5, 5).value == 9, "glyph corner remapped to 9");
+    ASSERT(c.getPixel(6, 6).value == ROLE_ACCENT3, "glyph pixel remapped to accent3");
+    ASSERT(c.getPixel(5, 5).value == ROLE_ACCENT3, "glyph corner remapped to accent3");
     ASSERT(c.getPixel(4, 6).value == kTransparent, "outside silhouette untouched (clip)");
 }
 
@@ -146,9 +146,9 @@ static void test_default_text_colour_is_text_role() {
 static void test_outline_explicit_colour() {
     printf("--- outline: explicit colour overrides bg ---\n");
     auto c = renderBlock(4, 1, [](TextRenderer<Pixel4>& tr) {
-        tr.setOutline(true, Pixel4(12));
+        tr.setOutline(true, Pixel4(ROLE_ACCENT4));
     });
-    ASSERT(c.getPixel(4, 6).value == 12, "left outline uses the explicit colour");
+    ASSERT(c.getPixel(4, 6).value == ROLE_ACCENT4, "left outline uses the explicit colour");
     ASSERT(c.getPixel(6, 6).value == 4, "interior fill unchanged");
 }
 

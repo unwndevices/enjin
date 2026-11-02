@@ -7,13 +7,10 @@ namespace enjin2 {
 // ============================================================
 // The house default (ADR-0019): a placeholder until the designer picks, the
 // green-ramp neutrals plus three hues picked to read on bg. Indices 0-7 are
-// the Palette roles (palette.hpp ROLE_*).
-//
-// Temporary: entries 8-14 keep the old 15-step green ramp's colours so art
-// not yet re-indexed by job still draws. The seal ticket removes them.
-// Index 15 is transparent.
+// the Palette roles (palette.hpp ROLE_*); 8-14 are invalid and 15 is
+// transparent.
 // ============================================================
-static constexpr RGB DEFAULT_COLORS[15] = {
+static constexpr RGB DEFAULT_COLORS[ROLE_COUNT] = {
     {0x08, 0x1a, 0x1c}, // 0  bg
     {0x16, 0x46, 0x32}, // 1  surface
     {0x52, 0xa8, 0x2e}, // 2  muted
@@ -22,13 +19,6 @@ static constexpr RGB DEFAULT_COLORS[15] = {
     {0xf0, 0xa8, 0x30}, // 5  accent2 — amber
     {0x48, 0xc8, 0xd8}, // 6  accent3 — cyan
     {0xe8, 0x48, 0x40}, // 7  accent4 — red
-    {0x52, 0xa8, 0x2e}, // 8  temporary: the old ramp's 8
-    {0x6b, 0xb9, 0x35}, // 9  temporary
-    {0x83, 0xca, 0x3c}, // 10 temporary
-    {0x9b, 0xd2, 0x50}, // 11 temporary
-    {0xb2, 0xda, 0x63}, // 12 temporary
-    {0xce, 0xe8, 0x96}, // 13 temporary
-    {0xe8, 0xf4, 0xcc}, // 14 temporary: the old ramp's lightest
 };
 
 // ============================================================
@@ -36,43 +26,30 @@ static constexpr RGB DEFAULT_COLORS[15] = {
 // ============================================================
 
 Palette::Palette()
-    : size(15)
-    , debugTransparent(false)
+    : debugTransparent(false)
 {
-    for (uint8_t i = 0; i < PALETTE_MAX_ENTRIES; ++i) {
+    for (uint8_t i = 0; i < ROLE_COUNT; ++i) {
         colors[i] = DEFAULT_COLORS[i];
     }
 }
 
 void Palette::setColor(uint8_t index, uint8_t r, uint8_t g, uint8_t b)
 {
-    // Transparency check BEFORE modulo wrapping
-    if (index == PALETTE_TRANSPARENT) {
-        return; // Index 15 is always transparent — silently ignore
+    if (index >= ROLE_COUNT) {
+        return; // transparent (15) and the invalid 8-14 hold no colour
     }
-    uint8_t wrapped = index % size;
-    colors[wrapped] = RGB{r, g, b};
+    colors[index] = RGB{r, g, b};
 }
 
 RGB Palette::getColor(uint8_t index) const
 {
-    // Transparency check BEFORE modulo wrapping
-    if (index == PALETTE_TRANSPARENT) {
-        return RGB{0, 0, 0};
-    }
-    uint8_t wrapped = index % size;
-    return colors[wrapped];
+    return index < ROLE_COUNT ? colors[index] : RGB{0, 0, 0};
 }
 
 RGB Palette::resolve(uint8_t index) const
 {
-    // Caller must have checked isTransparent() first.
-    // Transparency check BEFORE modulo wrapping (guard for direct callers).
-    if (index == PALETTE_TRANSPARENT) {
-        return RGB{0, 0, 0};
-    }
-    uint8_t wrapped = index % size;
-    return colors[wrapped];
+    // Caller must have checked isTransparent() first; 8-14 are unused slots.
+    return index < ROLE_COUNT ? colors[index] : RGB{0, 0, 0};
 }
 
 bool Palette::isTransparent(uint8_t index) const
@@ -85,16 +62,10 @@ bool Palette::loadPreset(const char* name)
     if (!name || std::strcmp(name, "default") != 0) {
         return false;
     }
-    size = PALETTE_MAX_ENTRIES;
-    for (uint8_t j = 0; j < PALETTE_MAX_ENTRIES; ++j) {
+    for (uint8_t j = 0; j < ROLE_COUNT; ++j) {
         colors[j] = DEFAULT_COLORS[j];
     }
     return true;
-}
-
-uint8_t Palette::getSize() const
-{
-    return size;
 }
 
 // ============================================================

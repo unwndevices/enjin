@@ -650,7 +650,8 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     // Load the tileset .njn (sheet + inline ATTR).
     std::vector<TileAttr> attrs;
     if (!b->loadNjnAsset(base + ".njn", slot, attrs)) {
-        luaL_error(L, "engine.tilemap.load: failed to load tileset '%s.njn'", name);
+        luaL_error(L, "engine.tilemap.load: failed to load tileset '%s.njn'%s%s", name,
+                   *b->njnRefusal_ ? ": " : "", b->njnRefusal_);
         return 0;
     }
     // Give the pinned slot well-defined animation state (mirrors sprite.load) so

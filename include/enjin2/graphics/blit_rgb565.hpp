@@ -50,7 +50,7 @@ constexpr uint16_t byteSwap16(uint16_t v) {
  *
  * Index 15 (transparent) has no color of its own; it resolves to `getColor(15)`
  * (black) so a full-frame blit that ignores transparency still produces a
- * defined value. Callers that honor transparency should skip index 15 before the
+ * defined value. The invalid 8-14 are unused slots and hold black too. Callers that honor transparency should skip index 15 before the
  * blit rather than relying on this entry.
  *
  * @param pal   Source palette.

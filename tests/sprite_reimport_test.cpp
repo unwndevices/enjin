@@ -166,8 +166,8 @@ void testR02_insertedFrame() {
     clips.push_back(makeClip("pose", NjnLoopMode::Once, {{2, 50, 7}, {3, 60, 0}}));
     njn = withClips(njn, clips);
 
-    // A frame (colour 9) inserted at 1: old frames 1..3 are now 2..4.
-    const Bytes src2 = sheetSource({1, 9, 2, 3, 4}, {{0, 4, 0, 0, "walk"}});
+    // A frame (colour 7) inserted at 1: old frames 1..3 are now 2..4.
+    const Bytes src2 = sheetSource({1, 7, 2, 3, 4}, {{0, 4, 0, 0, "walk"}});
     const auto r = reimport(njn, src2, {{"walk", "walk"}});
     ASSERT(r.ok() && !r.touchesNoClip, "SPR-02 re-import ok, touches clips");
     const Sheet s = readSheet(r.njn);
@@ -226,7 +226,7 @@ void testR05_editedUntouched() {
     Bytes njn = importOf(sheetSource({1, 2, 3, 4}, {{0, 1, 0, 0, "walk"}}));
     njn = withClips(njn, {makeClip("walk", NjnLoopMode::PingPong, {{1, 33, 4}, {0, 44, 0}, {1, 55, 9}})});
     const Bytes before = chunkOf(njn, NJN2_CHUNK_CLIP);
-    const auto r = reimport(njn, sheetSource({5, 6, 7, 8}, {{0, 3, 0, 0, "walk"}}), {});
+    const auto r = reimport(njn, sheetSource({5, 6, 7, 1}, {{0, 3, 0, 0, "walk"}}), {});
     ASSERT(r.ok() && r.touchesNoClip, "SPR-05 re-import ok; the edited clip isn't touched");
     ASSERT(chunkOf(r.njn, NJN2_CHUNK_CLIP) == before, "SPR-05 CLIP byte-for-byte");
     ASSERT(readSheet(r.njn).pixl[0] == 5, "SPR-05 pixels replaced");
@@ -303,7 +303,7 @@ void testR10_layeredKeepsChunks() {
     chunkOf(njn, NJN2_CHUNK_LPIV, &lpivAt);
     chunkOf(njn, xtra, &xtraAt);
 
-    const auto r = reimport(njn, layeredSource({8, 9, 10, 11}, {{0, 3, 0, 0, "blink"}}), {{"blink", "blink"}});
+    const auto r = reimport(njn, layeredSource({1, 2, 3, 4}, {{0, 3, 0, 0, "blink"}}), {{"blink", "blink"}});
     ASSERT(r.ok() && r.kind == SpriteKind::Layered, "SPR-10 layered re-import ok");
     int lpivAfter = -2, xtraAfter = -2;
     ASSERT(chunkOf(r.njn, NJN2_CHUNK_LPIV, &lpivAfter) == pivot && lpivAfter == lpivAt, "SPR-10 LPIV kept, in place");
@@ -327,7 +327,7 @@ void testR10_layeredKeepsChunks() {
         }
         w.finalise(noPivot);
     }
-    const auto r2 = reimport(noPivot, layeredSource({8, 9}, {{0, 1, 0, 0, "blink"}}), {{"blink", "blink"}});
+    const auto r2 = reimport(noPivot, layeredSource({1, 2}, {{0, 1, 0, 0, "blink"}}), {{"blink", "blink"}});
     int none = 0;
     ASSERT(r2.ok() && chunkOf(r2.njn, NJN2_CHUNK_LPIV, &none).empty() && none == -1, "SPR-10 an absent LPIV stays absent");
 }
@@ -385,17 +385,16 @@ void testR13_badInputs() {
     ASSERT(pm.status == SpriteImportStatus::PaletteMismatch && pm.colourIssues.size() == 1 && pm.njn.empty(),
            "SPR-13 a palette mismatch carries its colour issues");
 
-    // The Studio's 8-role target (Tomodachi #425) reaches the import: a slot-14 colour is off it.
+    // The 8-role target (Tomodachi #425/#426) reaches the import: the old slot 14's colour is off it.
     AseBuilder past(1, 1, 32, 1);
     past.add(0, AseBuilder::layer("body"));
     past.add(0, AseBuilder::cel(0, 0, 0, 1, 1, {140, 140, 140, 255}));
     SpriteReimportOptions roles;
     roles.palette = greyPalette();
-    roles.paletteSlots = ROLE_COUNT;
     const Bytes pastSrc = past.build();
     const auto off = reimportSprite(njn.data(), njn.size(), pastSrc.data(), pastSrc.size(), {}, roles);
     ASSERT(off.status == SpriteImportStatus::PaletteMismatch && off.colourIssues.size() == 1 && off.colourIssues[0].nearestSlot == 7,
-           "SPR-13 paletteSlots reaches the import: a colour past the roles is off the palette");
+           "SPR-13 the target reaches the import: a colour past the roles is off the palette");
 
     // Truncations and byte flips of the existing .njn never crash (ASan in the gate).
     bool ok = true;

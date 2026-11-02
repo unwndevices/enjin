@@ -32,7 +32,7 @@ def test_delta_e_broadcasts_over_palette():
     pal = palette.load_default()
     px = oklab.srgb_to_oklab(np.array([[239, 125, 87], [26, 28, 44]]))  # (2,3)
     d = oklab.delta_e(px[:, None, :], pal.oklab[None, :, :])
-    assert d.shape == (2, 15)
+    assert d.shape == (2, 8)
 
 
 # --- palette --------------------------------------------------------------
@@ -40,8 +40,8 @@ def test_delta_e_broadcasts_over_palette():
 def test_load_default_palette():
     pal = palette.load_default()
     assert pal.name == "house-default"
-    assert pal.rgb.shape == (15, 3)
-    assert pal.oklab.shape == (15, 3)
+    assert pal.rgb.shape == (8, 3)
+    assert pal.oklab.shape == (8, 3)
     # Index 0 is the bg role #081a1c, index 3 the text role #e8f4cc.
     assert tuple(pal.rgb[0]) == (0x08, 0x1A, 0x1C)
     assert tuple(pal.rgb[3]) == (0xE8, 0xF4, 0xCC)
@@ -63,8 +63,7 @@ def test_load_gpl_rejects_short_palette(tmp_path):
 
 def test_exact_palette_colours_map_to_their_index():
     pal = palette.load_default()
-    # Feed the 8 role colours as opaque pixels; each must map to itself. (The
-    # temporary entries 8-14 repeat some of them, so the first index wins.)
+    # Feed the 8 role colours as opaque pixels; each must map to itself.
     rgba = np.concatenate([pal.rgb[:8], np.full((8, 1), 255, dtype=np.uint8)], axis=1)
     res = quantize.quantize_rgba(rgba, pal)
     assert list(res.indices) == list(range(8))

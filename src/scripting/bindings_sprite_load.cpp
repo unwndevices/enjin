@@ -19,6 +19,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
                               std::vector<TileAttr>& outAttrs) {
     outAttrs.clear();
     loadedClips_[handle].clear();
+    njnRefusal_ = "";
 
     // Read the file with direct binary I/O (works on all platforms —
     // LuaFileSystem::readScriptFile only works under VCV_RACK or ESP32 defines).
@@ -90,6 +91,17 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
         rows  = header.rows;
         srcPixels = raw + sizeof(NjnHeader);
         pxSize = njnPixelDataSize(header);
+    }
+
+    // Pixels must be Palette roles or transparent (ADR-0019): one pass at load.
+    const int offRole = njnFirstOffRoleIndex(srcPixels, pxSize);
+    if (offRole >= 0) {
+        njnRefusal_ = njnOffRoleMessage(offRole);
+        printf(".njn refused, %s: %s\n", njnRefusal_, path.c_str());
+        ++spriteLoadFailures_;
+        loadedClips_[handle].clear();
+        outAttrs.clear();
+        return false;
     }
 
     // Copy pixels into the fixed asset arena (bump allocator).

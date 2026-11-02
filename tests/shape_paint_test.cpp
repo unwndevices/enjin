@@ -270,7 +270,7 @@ static void testDither()
     for (int shift = 0; shift < 2; ++shift)
         for (uint8_t level : {uint8_t(4), uint8_t(8), uint8_t(12), uint8_t(16)})
         {
-            canvas.clear(Pixel4(9));
+            canvas.clear(Pixel4(ROLE_ACCENT3));
             const FixedVec2 r[] = {px(3 + shift, 2), px(40 + shift, 2), px(40 + shift, 9), px(3 + shift, 9)};
             const Ring ring{r, 4, true};
             const RowMask m = fillInto(fillWords, &ring, 1, Rect(0, 0, 64, 32));
@@ -283,7 +283,7 @@ static void testDither()
                     const bool in = x >= 3 + shift && x < 40 + shift && y >= 2 && y < 9;
                     const bool on = in && kBayer[y & 3][x & 3] < level;
                     painted += on;
-                    ok = ok && canvas.getPixel(int16_t(x), int16_t(y)).value == (on ? 5 : 9);
+                    ok = ok && canvas.getPixel(int16_t(x), int16_t(y)).value == (on ? 5 : ROLE_ACCENT3);
                 }
             ASSERT(ok, "dither: Bayer below the level at canvas coordinates, the rest untouched");
             ASSERT(level < 16 ? painted < 37 * 7 : painted == 37 * 7, "dither: only solid paints every pixel");

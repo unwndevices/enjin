@@ -144,7 +144,7 @@ int LuaBindings::lua_clear(lua_State* L) {
 
     uint8_t color = bindings->currentColor;
     if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        color = static_cast<uint8_t>(lua_tointeger(L, 1));
+        color = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
     }
 
     bindings->currentCanvas->clear(color);
@@ -158,7 +158,7 @@ int LuaBindings::lua_setColor(lua_State* L) {
     }
 
     if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        bindings->currentColor = static_cast<uint8_t>(lua_tointeger(L, 1));
+        bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
     }
 
     return 0;
@@ -332,7 +332,7 @@ int LuaBindings::lua_setPixel(lua_State* L) {
     if (lua_gettop(L) >= 3) {
         int16_t x = static_cast<int16_t>(lua_tointeger(L, 1));
         int16_t y = static_cast<int16_t>(lua_tointeger(L, 2));
-        uint8_t color = static_cast<uint8_t>(lua_tointeger(L, 3));
+        uint8_t color = lua::checkCanvasColour(L, 3, indexedColours(bindings->currentCanvas));
 
         bindings->currentCanvas->setPixel(x, y, color);
     }
@@ -386,7 +386,7 @@ int LuaBindings::lua_fastFillRect(lua_State* L) {
     int y = static_cast<int>(luaL_checknumber(L, 2));
     int w = static_cast<int>(luaL_checknumber(L, 3));
     int h = static_cast<int>(luaL_checknumber(L, 4));
-    uint8_t color = static_cast<uint8_t>(luaL_optnumber(L, 5, bindings->currentColor));
+    uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast bulk fill - bypass individual pixel calls
     int x2 = x + w;
@@ -415,7 +415,7 @@ int LuaBindings::lua_fastDrawLine(lua_State* L) {
     int y1 = static_cast<int>(luaL_checknumber(L, 2));
     int x2 = static_cast<int>(luaL_checknumber(L, 3));
     int y2 = static_cast<int>(luaL_checknumber(L, 4));
-    uint8_t color = static_cast<uint8_t>(luaL_optnumber(L, 5, bindings->currentColor));
+    uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast Bresenham line algorithm
     int dx = abs(x2 - x1);
@@ -446,8 +446,7 @@ int LuaBindings::lua_fastDrawLine(lua_State* L) {
 //==============================================================================
 
 int LuaBindings::lua_getPaletteColor(lua_State* L) {
-    int index = luaL_checkinteger(L, 1);
-    RGB c = enjin2::g_palette.getColor(static_cast<uint8_t>(index));
+    RGB c = enjin2::g_palette.getColor(lua::checkPaletteIndex(L, 1));
     lua_pushinteger(L, c.r);
     lua_pushinteger(L, c.g);
     lua_pushinteger(L, c.b);

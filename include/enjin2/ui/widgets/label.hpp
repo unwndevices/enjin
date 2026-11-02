@@ -38,7 +38,7 @@ struct LabelComponent : public Component<LabelComponent> {
     std::string text;               ///< Pre-formatted label text (host does any projection)
     const GFXfont* font = nullptr;  ///< Glyph font (nullptr = built-in 5x7)
     uint8_t fontSize = 1;           ///< Integer text scale
-    Pixel4 color = Pixel4(14);      ///< Text (and box outline) color
+    Pixel4 color = Pixel4(ROLE_TEXT);  ///< Text (and box outline) color
     Pixel4 background = Pixel4(0);  ///< Box fill; 0 leaves the label transparent
     uint8_t pointer = 0;            ///< Tail height below the box (0 = no tail)
 

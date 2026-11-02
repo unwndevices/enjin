@@ -5,7 +5,7 @@
  *
  * Layout (buildNumberGlyphs / buildTimerGlyphs) is asserted directly on the
  * emitted frame lists; the draw is proven on a synthetic strip whose frame f is
- * a solid fill of palette index (f+1), so reading a cell's centre pixel recovers
+ * coded in two Palette roles (see makeSynthStrip), so reading a cell recovers
  * exactly which frame landed there. The Lua parity of these same paths lives in
  * numerals_lua_test.cpp.
  */
@@ -29,21 +29,29 @@ static int failures = 0;
         }                                       \
     } while (0)
 
-// Synthetic strip: 4x4 cells, frames 0..14, frame f filled with index (f+1).
-// f+1 is non-zero and never 15 for f <= 13, so a drawn cell is distinguishable
-// from the cleared (index 0) background and never transparent.
+// Synthetic strip: 4x4 cells, frames 0..14. There are only 7 non-bg roles, so
+// frame f is coded in two of them (ADR-0019: no index above 7 but 15): the
+// cell is filled with 1 + f % 7 and its pixel (1,1) holds 1 + f / 7. Both are
+// non-zero and never 15, so a drawn cell is distinguishable from the cleared
+// (index 0) background and never transparent.
 static uint8_t g_stripPixels[15 * 16];
 static SpriteSheet makeSynthStrip() {
     for (int f = 0; f < 15; ++f) {
-        const uint8_t fill = static_cast<uint8_t>(f + 1);
-        for (int i = 0; i < 16; ++i) g_stripPixels[f * 16 + i] = fill;
+        const uint8_t low = static_cast<uint8_t>(1 + f % 7);
+        for (int i = 0; i < 16; ++i) g_stripPixels[f * 16 + i] = low;
+        g_stripPixels[f * 16 + 1 * 4 + 1] = static_cast<uint8_t>(1 + f / 7);
     }
     return SpriteSheet(g_stripPixels, 4, 4, 15, 1);
 }
 
-// Centre pixel of cell `c` (cellW=4) for a field starting at startX, y=0..3.
-static uint8_t cellCentre(const Canvas4<64, 64>& c, int startX, int cell) {
-    return c.getPixel(static_cast<int16_t>(startX + cell * 4 + 2), 2).value;
+// The frame drawn in cell `c` (cellW=4) for a field starting at startX, y=0..3;
+// -1 when the cell is blank (background).
+static int cellFrame(const Canvas4<64, 64>& c, int startX, int cell) {
+    const int x = startX + cell * 4;
+    const int low = c.getPixel(static_cast<int16_t>(x + 2), 2).value;
+    const int high = c.getPixel(static_cast<int16_t>(x + 1), 1).value;
+    if (low == 0) return -1;
+    return (high - 1) * 7 + (low - 1);
 }
 
 int main() {
@@ -107,8 +115,8 @@ int main() {
         canvas.clear(Pixel4(0));
         const int w = drawNumber(canvas, strip, 0, 0, 42u, NumberStyle{});
         ASSERT(w == 8, "drawNumber 42 width = 8");
-        ASSERT(cellCentre(canvas, 0, 0) == 5, "cell0 shows frame 4 (fill 5)");
-        ASSERT(cellCentre(canvas, 0, 1) == 3, "cell1 shows frame 2 (fill 3)");
+        ASSERT(cellFrame(canvas, 0, 0) == 4, "cell0 shows frame 4");
+        ASSERT(cellFrame(canvas, 0, 1) == 2, "cell1 shows frame 2");
     }
     {
         // Right-anchored: x=20 is the right edge, field width 8 -> starts at 12.
@@ -116,8 +124,8 @@ int main() {
         canvas.clear(Pixel4(0));
         NumberStyle rs; rs.align = NumberAlign::Right;
         drawNumber(canvas, strip, 20, 0, 42u, rs);
-        ASSERT(cellCentre(canvas, 12, 0) == 5, "right-anchored cell0 at x=12");
-        ASSERT(cellCentre(canvas, 12, 1) == 3, "right-anchored cell1 at x=16");
+        ASSERT(cellFrame(canvas, 12, 0) == 4, "right-anchored cell0 at x=12");
+        ASSERT(cellFrame(canvas, 12, 1) == 2, "right-anchored cell1 at x=16");
     }
     {
         // Blank pad cells advance without drawing (background stays 0).
@@ -125,17 +133,17 @@ int main() {
         canvas.clear(Pixel4(0));
         NumberStyle bs; bs.pad = 3; bs.padZeros = false;
         drawNumber(canvas, strip, 0, 0, 5u, bs);
-        ASSERT(cellCentre(canvas, 0, 0) == 0, "blank pad cell draws nothing");
-        ASSERT(cellCentre(canvas, 0, 2) == 6, "value digit 5 -> frame5 fill 6");
+        ASSERT(cellFrame(canvas, 0, 0) == -1, "blank pad cell draws nothing");
+        ASSERT(cellFrame(canvas, 0, 2) == 5, "value digit 5 -> frame5");
     }
     {
-        // drawTimer 1:05 -> frames [0,1,colon,0,5] fills [1,2,11,1,6].
+        // drawTimer 1:05 -> frames [0,1,colon,0,5].
         Canvas4<64, 64> canvas;
         canvas.clear(Pixel4(0));
         const int w = drawTimer(canvas, strip, 0, 0, 65000u, NumberStyle{});
         ASSERT(w == 20, "drawTimer width = 5 cells * 4");
-        ASSERT(cellCentre(canvas, 0, 2) == 11, "colon cell shows frame 10 (fill 11)");
-        ASSERT(cellCentre(canvas, 0, 4) == 6, "seconds units 5 -> frame5 fill 6");
+        ASSERT(cellFrame(canvas, 0, 2) == 10, "colon cell shows frame 10");
+        ASSERT(cellFrame(canvas, 0, 4) == 5, "seconds units 5 -> frame5");
     }
 
     // --- RollingCounter: rolls to target, snaps and stops exactly ---

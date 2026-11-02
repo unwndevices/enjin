@@ -259,6 +259,16 @@ LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
         }
         return INVALID_HANDLE;
     }
+    // Pixels must be Palette roles or transparent (ADR-0019): one pass, before
+    // anything is committed. The decoder itself stays permissive (Colour replace).
+    for (const NjnPartImage& img : decoded.images) {
+        const uint8_t* px = img.rawPixels != nullptr ? img.rawPixels : img.pixels.data();
+        const int bad = njnFirstOffRoleIndex(px, static_cast<size_t>(img.w) * img.h);
+        if (bad >= 0) {
+            if (error != nullptr) *error = njnOffRoleMessage(bad);
+            return INVALID_HANDLE;
+        }
+    }
     // Non-fatal: an out-of-canvas pivot is tolerated but surfaced, so authoring
     // mistakes are visible on device rather than silently loaded (issue #133).
     if (decodeWarn != nullptr) {

@@ -8,6 +8,7 @@
  */
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/scripting/lua_api.hpp"
+#include "../../include/enjin2/scripting/palette_arg.hpp"
 #include "../../include/enjin2/core/name_index.hpp"
 #include <cstring>
 
@@ -30,8 +31,8 @@ int LuaBindings::lua_engine_ui_progressBar(lua_State* L) {
     uint16_t w     = static_cast<uint16_t>(luaL_checkinteger(L, 3));
     uint16_t h     = static_cast<uint16_t>(luaL_checkinteger(L, 4));
     float    value = static_cast<float>(luaL_checknumber(L, 5));  // float — do NOT use checkinteger
-    uint8_t  fg    = static_cast<uint8_t>(luaL_checkinteger(L, 6));
-    uint8_t  bg    = static_cast<uint8_t>(luaL_checkinteger(L, 7));
+    uint8_t  fg    = lua::checkCanvasColour(L, 6, indexedColours(b->currentCanvas));
+    uint8_t  bg    = lua::checkCanvasColour(L, 7, indexedColours(b->currentCanvas));
 
     // Clamp value to [0, 1]
     if (value < 0.0f) value = 0.0f;
@@ -62,8 +63,8 @@ int LuaBindings::lua_engine_ui_statBar(lua_State* L) {
     uint16_t h       = static_cast<uint16_t>(luaL_checkinteger(L, 4));
     float    current = static_cast<float>(luaL_checknumber(L, 5));  // float — do NOT use checkinteger
     float    max     = static_cast<float>(luaL_checknumber(L, 6));  // float — do NOT use checkinteger
-    uint8_t  fg      = static_cast<uint8_t>(luaL_checkinteger(L, 7));
-    uint8_t  bg      = static_cast<uint8_t>(luaL_checkinteger(L, 8));
+    uint8_t  fg      = lua::checkCanvasColour(L, 7, indexedColours(b->currentCanvas));
+    uint8_t  bg      = lua::checkCanvasColour(L, 8, indexedColours(b->currentCanvas));
 
     // Compute fraction — guard against division by zero
     float fraction = (max > 0.0f) ? (current / max) : 0.0f;
@@ -112,6 +113,14 @@ static void overlayKey(lua_State* L, int tableIdx, const char* key, T& out) {
     lua_pop(L, 1);
 }
 
+// A colour key (fill / text / border): a Palette role or 15, else a Lua error
+// naming the key and the value (ADR-0019).
+static void overlayColourKey(lua_State* L, int tableIdx, const char* key, Pixel4& out) {
+    lua_getfield(L, tableIdx, key);
+    if (lua_isnumber(L, -1)) out = Pixel4(lua::paletteIndexOrError(L, lua_tointeger(L, -1), key));
+    lua_pop(L, 1);
+}
+
 int LuaBindings::lua_engine_ui_panel(lua_State* L) {
     REQUIRE_CANVAS(b, L);
     int16_t  x = static_cast<int16_t>(luaL_checkinteger(L, 1));
@@ -136,8 +145,8 @@ int LuaBindings::lua_engine_ui_panel(lua_State* L) {
         bstyle.shadowDy  = st.shadowDy;
     } else {
         // Legacy explicit (bg, border): a plain 1px solid outline.
-        bg               = static_cast<uint8_t>(luaL_checkinteger(L, 5));
-        bstyle.color     = static_cast<uint8_t>(luaL_checkinteger(L, 6));
+        bg               = lua::checkCanvasColour(L, 5, indexedColours(b->currentCanvas));
+        bstyle.color     = lua::checkCanvasColour(L, 6, indexedColours(b->currentCanvas));
         bstyle.thickness = 1;
         bstyle.radius    = 0;
         bstyle.kind      = BorderKind::Solid;
@@ -151,7 +160,7 @@ int LuaBindings::lua_engine_ui_panel(lua_State* L) {
 // ── UI-05: engine.ui.setStyle(slotName, { fill=…, border=…, radius=…, … }) ────
 // Overrides one style slot. Resolution starts from the theme default (so absent
 // keys inherit it), overlays only the keys present in the table, stores the
-// result and marks the slot's mask bit. Colours are ramp role indices (#12);
+// result and marks the slot's mask bit. Colours are Palette roles (ADR-0019; 8-14 raise);
 // derived tones (light/dark/shadow) are never stored (#19).
 int LuaBindings::lua_engine_ui_setStyle(lua_State* L) {
     LuaBindings* b = getBindings(L);
@@ -162,9 +171,9 @@ int LuaBindings::lua_engine_ui_setStyle(lua_State* L) {
 
     // Start from the theme default (absent keys inherit it), overlay present keys.
     Style st = b->m_themeBase[i];
-    overlayKey(L, 2, "fill",   st.fill);
-    overlayKey(L, 2, "text",   st.text);
-    overlayKey(L, 2, "border", st.border);
+    overlayColourKey(L, 2, "fill",   st.fill);
+    overlayColourKey(L, 2, "text",   st.text);
+    overlayColourKey(L, 2, "border", st.border);
     overlayKey(L, 2, "borderWidth", st.borderWidth);
     overlayKey(L, 2, "radius",      st.radius);
     overlayKey(L, 2, "padding",     st.padding);
@@ -207,7 +216,7 @@ int LuaBindings::lua_engine_ui_label(lua_State* L) {
     int16_t     x   = static_cast<int16_t>(luaL_checkinteger(L, 1));
     int16_t     y   = static_cast<int16_t>(luaL_checkinteger(L, 2));
     const char* str = luaL_checkstring(L, 3);
-    uint8_t     fg  = static_cast<uint8_t>(luaL_checkinteger(L, 4));
+    uint8_t     fg  = lua::checkCanvasColour(L, 4, indexedColours(b->currentCanvas));
 
     b->currentCanvas->drawText(str, x, y, fg, 1, nullptr);  // size=1, default font
     return 0;

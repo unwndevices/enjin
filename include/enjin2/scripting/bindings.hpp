@@ -282,6 +282,11 @@ public:
     uint8_t measureTextHeight(uint8_t size, const GFXfont* font);
 };
 
+/// Whether a colour drawn on @p c is a palette index (a 4-bit canvas, or no canvas
+/// yet: the draw colour defaults to indexed) rather than a byte grey level (Canvas8).
+/// Lua colour arguments are checked as Palette roles only when indexed (ADR-0019).
+inline bool indexedColours(const LuaCanvas* c) { return c == nullptr || c->is4BitCanvas(); }
+
 /**
  * @brief Per-script persistent key-value store.
  *
@@ -485,7 +490,7 @@ private:
     static constexpr uint32_t SPRITE_BUFFER_BYTES = 65536;
     uint8_t     assetBuffer_[SPRITE_BUFFER_BYTES]; ///< Fixed C++ buffer for loaded pixels
     uint32_t    assetBufferUsed_{0};           ///< Current offset into assetBuffer_
-    uint32_t    spriteLoadFailures_{0};        ///< Loads refused for a slot or buffer space
+    uint32_t    spriteLoadFailures_{0};        ///< Loads refused for a slot, buffer space or off-role pixels
     SpriteAsset loadedAssets_[LUA_SPRITE_POOL_SIZE]{}; ///< Metadata for loaded assets
     std::vector<NjnClip> loadedClips_[LUA_SPRITE_POOL_SIZE]; ///< Decoded v2 CLIP table per slot (empty for v1/no-clip)
 
@@ -873,6 +878,9 @@ private:
      * @return true on success; false on I/O, arena-full, or format error.
      */
     bool loadNjnAsset(const std::string& path, int handle, std::vector<TileAttr>& outAttrs);
+    /// Why the last loadNjnAsset refused its file when the pixels were the reason
+    /// ("pixel index 9 is not a Palette role ..."); empty otherwise.
+    const char* njnRefusal_ = "";
 
     // Canvas management functions
     static int lua_getWidth(lua_State* L);

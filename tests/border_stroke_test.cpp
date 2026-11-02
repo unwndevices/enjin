@@ -92,21 +92,8 @@ static void test_bevel_two_tone() {
     ASSERT(canvas.getPixel(19, 12) == ROLE_SURFACE, "bevel: right edge of muted is surface");
 }
 
-static void test_canvas4_bevel_narrows_full_width_style_color() {
-    Canvas4<32, 32> canvas;
-    canvas.clear(Pixel4(ROLE_BG));
-    BorderStyle st;
-    st.color = 16 + ROLE_MUTED;
-    st.thickness = 2;
-    st.radius = 0;
-    st.kind = BorderKind::Bevel;
-    strokeBorder(canvas, Rect(4, 4, 16, 16), st);
-
-    ASSERT(canvas.getPixel(12, 4) == ROLE_TEXT,
-           "Canvas4 bevel: full-width style colour narrows before the chain step");
-    ASSERT(canvas.getPixel(12, 19) == ROLE_SURFACE,
-           "Canvas4 bevel: toward-bg tone derives from the narrowed colour");
-}
+// (A Canvas4 style colour above 15 is no Palette index: Pixel4 asserts on it in
+// debug builds (ADR-0019), so Canvas4 no longer narrows byte-wide colours.)
 
 static void test_canvas8_bevel_does_not_apply_pixel4_chain() {
     Canvas8<32, 32> canvas;
@@ -189,7 +176,6 @@ int main() {
     test_canvas8_solid_preserves_full_width_color();
     test_thickness();
     test_bevel_two_tone();
-    test_canvas4_bevel_narrows_full_width_style_color();
     test_canvas8_bevel_does_not_apply_pixel4_chain();
     test_drop_shadow();
     test_canvas8_shadow_does_not_apply_pixel4_chain();

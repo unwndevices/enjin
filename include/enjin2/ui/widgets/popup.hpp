@@ -45,8 +45,8 @@ struct PopUpComponent : public Component<PopUpComponent> {
     const GFXfont* font = nullptr;  ///< Text font (nullptr = built-in 5x7)
     uint8_t fontSize = 1;           ///< Integer text scale
     int radius = 44;                ///< Card radius in pixels
-    Pixel4 rimColor = Pixel4(6);    ///< Card outline color
-    Pixel4 textColor = Pixel4(14);  ///< Text color
+    Pixel4 rimColor = Pixel4(ROLE_MUTED);  ///< Card outline color (a border: muted)
+    Pixel4 textColor = Pixel4(ROLE_TEXT);  ///< Text color
 
     bool visible = false;           ///< Whether the popup is currently shown
     uint16_t autoHideMs = 0;        ///< Auto-hide delay in ms (0 = manual dismiss)
@@ -148,7 +148,7 @@ private:
         const int16_t r = static_cast<int16_t>(popup.radius);
 
         // Filled card + rim.
-        Primitives<Pixel4>::fillCircle(*canvas_, cx, cy, r, Pixel4(0));
+        Primitives<Pixel4>::fillCircle(*canvas_, cx, cy, r, Pixel4(ROLE_BG));
         Primitives<Pixel4>::drawCircle(*canvas_, cx, cy, r, popup.rimColor);
 
         drawIcon(popup, cx, cy);
@@ -161,21 +161,24 @@ private:
         const int16_t top = cy - 28;
         switch (popup.icon) {
             case PopUpComponent::Icon::Save:
-                Primitives<Pixel4>::fillRect(*canvas_, Rect(left, top, iconSize, iconSize + 2), Pixel4(12));
-                Primitives<Pixel4>::fillRect(*canvas_, Rect(left + 2, top + 2, iconSize - 4, 4), Pixel4(0));
-                Primitives<Pixel4>::fillRect(*canvas_, Rect(left + 3, top + 7, iconSize - 6, 3), Pixel4(8));
-                Primitives<Pixel4>::drawRect(*canvas_, Rect(left, top, iconSize, iconSize + 2), Pixel4(6));
+                // An icon on bg: text, with bg holes and a muted label (ADR-0019).
+                Primitives<Pixel4>::fillRect(*canvas_, Rect(left, top, iconSize, iconSize + 2), Pixel4(ROLE_TEXT));
+                Primitives<Pixel4>::fillRect(*canvas_, Rect(left + 2, top + 2, iconSize - 4, 4), Pixel4(ROLE_BG));
+                Primitives<Pixel4>::fillRect(*canvas_, Rect(left + 3, top + 7, iconSize - 6, 3), Pixel4(ROLE_MUTED));
+                Primitives<Pixel4>::drawRect(*canvas_, Rect(left, top, iconSize, iconSize + 2), Pixel4(ROLE_MUTED));
                 break;
             case PopUpComponent::Icon::Info:
-                Primitives<Pixel4>::fillCircle(*canvas_, cx, top + 7, iconSize / 2 + 1, Pixel4(10));
-                Primitives<Pixel4>::fillCircle(*canvas_, cx, top + 3, 1, Pixel4(0));
-                Primitives<Pixel4>::fillRect(*canvas_, Rect(cx - 1, top + 6, 3, 6), Pixel4(0));
+                // An accent disc carrying a bg glyph.
+                Primitives<Pixel4>::fillCircle(*canvas_, cx, top + 7, iconSize / 2 + 1, Pixel4(ROLE_ACCENT));
+                Primitives<Pixel4>::fillCircle(*canvas_, cx, top + 3, 1, Pixel4(ROLE_BG));
+                Primitives<Pixel4>::fillRect(*canvas_, Rect(cx - 1, top + 6, 3, 6), Pixel4(ROLE_BG));
                 break;
             case PopUpComponent::Icon::Warning:
                 Primitives<Pixel4>::fillTriangle(*canvas_, cx - 6, top + iconSize + 4,
-                                                 cx + 6, top + iconSize + 4, cx, top - 2, Pixel4(10));
-                Primitives<Pixel4>::fillRect(*canvas_, Rect(cx - 1, top + 3, 2, 6), Pixel4(0));
-                Primitives<Pixel4>::fillRect(*canvas_, Rect(cx - 1, top + 11, 2, 2), Pixel4(0));
+                                                 cx + 6, top + iconSize + 4, cx, top - 2, Pixel4(ROLE_ACCENT4));
+                // A warning is an alert: an accent4 fill carrying a bg glyph.
+                Primitives<Pixel4>::fillRect(*canvas_, Rect(cx - 1, top + 3, 2, 6), Pixel4(ROLE_BG));
+                Primitives<Pixel4>::fillRect(*canvas_, Rect(cx - 1, top + 11, 2, 2), Pixel4(ROLE_BG));
                 break;
             case PopUpComponent::Icon::None:
             default:
