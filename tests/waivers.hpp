@@ -43,6 +43,9 @@
 // Pin hashes: run the bench with --hash to print the current per-header
 // hashes to copy into a new entry.
 //
+// 2026-11-02 (Tomodachi #426): the blit pairs and their two retirements
+// (blit.canvasOpacity, blit.pattern) are gone with the grey-level blits.
+//
 // Re-pin 2026-09-07: canvas.hpp base pin bumped to 0x6cce4a52aae9a3d9
 // (was 0xf18aba15dd7867cc). The change since the M5 adjudication was the
 // dirty-tile compositor + presenter seam + Remap tint and the 480x480 canvas
@@ -130,7 +133,7 @@ namespace parity
 
     struct Waiver
     {
-        const char *pair_id;  // bench pair id, e.g. "blit.gray8Opacity"
+        const char *pair_id;  // bench pair id, e.g. "text.print"
         WaiverStatus status;
         const char *subrange; // human-readable predicate, e.g. "divisor >= 2"
         // Machine predicate over the case's parameter list. Mandatory for
@@ -182,17 +185,6 @@ namespace parity
     //     ("\n", "A\nB", "AB\nCD\nEF") guard the ratified advance, byte-exact
     //     against BASE's own write('\n') path.
     //
-    //   * blit.canvasOpacity (Retired) — the transparency plane moved (#158
-    //     structural finding): BASE keyed transparency on an out-of-band
-    //     8-bit matte (widgets composited with matte=16, one past the 4-bit
-    //     range, so drawn black stayed opaque); a Pixel4 source has no
-    //     out-of-band value, and HEAD's blitCanvasOpacity keys on Pixel4(0).
-    //     Unfixable at 4 bpp — the sentinel cannot exist — and a sub-range
-    //     waiver would exceed the 50% census gate. Ratified as the migrated
-    //     design. Exit question: blit_semantics_test pins the ratified
-    //     contract (transparent skip, 8-bit fade, clipping). Consequence to
-    //     verify at C2 (unwn #170): content drawn at true black inside an
-    //     Opacity50/25-blended widget canvas now reads transparent.
     //   * geom.drawRoundRect (Retired, Tomodachi #39) — HEAD deletes the
     //     corner-arc annulus (`(r-1)^2 <= i^2+j^2 <= r^2`) and rasterises the
     //     outline with the computed span-walker border stroke (border.hpp,
@@ -205,7 +197,7 @@ namespace parity
     //     Exit question: border_stroke_test (solid/bevel/drop-shadow ring) and
     //     primitives_roundrect_test (edges/hollow/rounded-corner/r=0 square)
     //     pin the ratified span-walker.
-    inline constexpr std::array<Waiver, 6> kWaivers{{
+    inline constexpr std::array<Waiver, 4> kWaivers{{
         {"text.drawChar", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
          "canvas.hpp", 0x33889c14b3245c21ull,
@@ -221,17 +213,6 @@ namespace parity
          "canvas.hpp", 0x33889c14b3245c21ull,
          "text_renderer.hpp", 0x25008f0e5f5a5650ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
-        {"blit.canvasOpacity", WaiverStatus::Retired,
-         "pair retired: 4-bit source cannot carry BASE's out-of-band matte", nullptr, 0,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "blit.hpp", 0x8ccf79c81069dae7ull,
-         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
-        {"blit.pattern", WaiverStatus::Retired,
-         "pair retired: HEAD samples the pattern at absolute canvas coords (R4 "
-         "one-grid), BASE anchors it to the rect origin", nullptr, 0,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "blit.hpp", 0x8ccf79c81069dae7ull,
-         "unwndevices/Tomodachi#36", "claude+ciro", "2026-09-07"},
         {"geom.drawRoundRect", WaiverStatus::Retired,
          "pair retired: HEAD replaces the corner-arc annulus with the #39 "
          "span-walker border stroke; the annulus is deleted", nullptr, 0,
