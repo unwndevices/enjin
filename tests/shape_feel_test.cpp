@@ -273,7 +273,7 @@ struct Star {
         if (!pack.open(*src, &e)) return false;
         arena.allocateBacking(64 * 1024);
         for (uint8_t k = 0; k < SHAPE_SLOT_COUNT; ++k) look.set(ShapeSlot(k), 1);
-        look.colour[0] = 9;
+        look.colour[0] = 5;  // accent2: a Look colour is a Palette role (0..7, #420)
         look.colour[1] = 4;
         look.colour[2] = 0;
         if (!pet.build(pack, look, arena, &e)) return false;
