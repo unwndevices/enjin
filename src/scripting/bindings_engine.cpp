@@ -1,6 +1,7 @@
 #include "../../include/enjin2/scripting/bindings.hpp"
 #include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/scripting/lua_event_bus.hpp"
+#include "../../include/enjin2/scripting/random_lua.hpp"
 #include "../../include/enjin2/core/scene.hpp"
 #include "../../include/enjin2/core/scene_state_machine.hpp"
 #include "../../include/enjin2/core/object.hpp"
@@ -220,11 +221,20 @@ void LuaBindings::registerEngineTable() {
                     "A random number in (0, 1], or scaled to run from a to b.",
                     "a: the value for 0\n"
                     "b: the value for 1"),
+        luaFunction("new", enjin2::lua::randomNew, "(seed:int) -> Random",
+                    "A seeded generator: integer and float like these, from a stream of its "
+                    "own.",
+                    "seed: the seed (32 bits); 0 picks the same fixed non-zero seed as seed(0)")
+            .note("One seed gives one sequence on every host. Drawing from it never moves "
+                  "the global stream or another generator. The seed is hashed first, so "
+                  "nearby seeds (a level number) give unrelated streams, and new(n) is not the "
+                  "stream seed(n) starts."),
     };
     static constexpr LuaApiModule kRandomModule = luaApiModule(
         LuaApiScope::Table, "engine.random",
         "A seeded xorshift32 generator, separate from math.random.", kRandom);
     luaApiSetSubtable(L, -1, kRandomModule);
+    enjin2::lua::ensureRandomMetatable(L);
 
     // --- engine.store (persistent key-value store) ---
     static constexpr LuaApiEntry kStore[] = {
@@ -1059,21 +1069,12 @@ int LuaBindings::lua_engine_collision_reflect(lua_State* L) {
 // engine.random.* bindings (seeded xorshift32 PRNG)
 //==============================================================================
 
-// xorshift32 step — inline helper
-static uint32_t xorshift32(uint32_t& state) {
-    state ^= state << 13;
-    state ^= state >> 17;
-    state ^= state << 5;
-    return state;
-}
-
 // --- engine.random.seed(n) ---
 // Sets the PRNG seed. If n==0, uses a non-zero default to avoid xorshift zero-lock.
 int LuaBindings::lua_engine_random_seed(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
-    uint32_t seed = static_cast<uint32_t>(luaL_checkinteger(L, 1));
-    b->m_rngState = (seed != 0) ? seed : 0x12345678;
+    b->m_rngState = lua::randomSeedState(luaL_checkinteger(L, 1));
     return 0;
 }
 
@@ -1082,31 +1083,15 @@ int LuaBindings::lua_engine_random_seed(lua_State* L) {
 int LuaBindings::lua_engine_random_integer(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushinteger(L, 0); return 1; }
-    int a = static_cast<int>(luaL_checkinteger(L, 1));
-    int lo = static_cast<int>(luaL_checkinteger(L, 2));
-    if (a > lo) { int tmp = a; a = lo; lo = tmp; }  // ensure a <= lo
-    uint32_t r = xorshift32(b->m_rngState);
-    int range = lo - a + 1;
-    lua_pushinteger(L, a + static_cast<int>(r % static_cast<uint32_t>(range)));
-    return 1;
+    return lua::pushRandomInteger(L, b->m_rngState, 1);
 }
 
 // --- engine.random.float([a, b]) ---
-// No args: returns [0, 1). Two args: returns [a, b).
+// No args: (0, 1]. Two args: scaled from a to b.
 int LuaBindings::lua_engine_random_float(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushnumber(L, 0.0); return 1; }
-    uint32_t r = xorshift32(b->m_rngState);
-    double normalized = static_cast<double>(r) / static_cast<double>(0xFFFFFFFFu);
-    int nargs = lua_gettop(L);
-    if (nargs >= 2) {
-        double a = luaL_checknumber(L, 1);
-        double lo = luaL_checknumber(L, 2);
-        lua_pushnumber(L, a + normalized * (lo - a));
-    } else {
-        lua_pushnumber(L, normalized);
-    }
-    return 1;
+    return lua::pushRandomFloat(L, b->m_rngState, 1);
 }
 
 //==============================================================================

@@ -556,6 +556,13 @@ static void testEngineTableDescribed() {
     expectMetatableDescribed(L, modules, "enjin2.Tilemap", "Tilemap");
     expectMetatableDescribed(L, modules, "enjin2.RollingCounter", "RollingCounter");
     expectMetatableDescribed(L, modules, "enjin2.Timer", "Timer");
+    // The seeded generator engine.random.new returns (Tomodachi #406).
+    expectMetatableDescribed(L, modules, "enjin2.Random", "Random");
+    ASSERT(describes(modulesAt(modules, LuaApiScope::Table, "engine.random"), "new"),
+           "engine.random.new has a descriptor");
+    ASSERT(describes(modulesAt(modules, LuaApiScope::Methods, "Random"), "integer") &&
+               describes(modulesAt(modules, LuaApiScope::Methods, "Random"), "float"),
+           "a generator's integer and float have descriptors");
 
     // Every switchable feature is off by default: not registered, not listed.
     ASSERT(evalBool(L, "engine.scene == nil"), "engine.scene is off by default");
