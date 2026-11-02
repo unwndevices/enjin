@@ -29,7 +29,7 @@
  *   SPI-19  Linked cel without a source, or out of range, rejected.
  *   SPI-20  Size caps and format limits → TooLarge.
  *   SPI-21  Malformed headers, frames and chunks rejected.
- *   SPI-22  tomo_tune2.aseprite imports with the "tomo" palette and matches
+ *   SPI-22  tomo_tune2.aseprite imports with its tomo_tune2.gpl palette and matches
  *           the committed tomo_tune2.njn part for part.
  *   SPI-23  tomo_tune2.aseprite against the system palette → PaletteMismatch.
  *   SPI-24  Truncation/corruption corpus: never crashes; every ok result
@@ -471,36 +471,39 @@ static void test21_malformed() {
 
 static std::string testdata(const char* rel) { return std::string(ENJIN2_SOURCE_DIR) + "/" + rel; }
 
-/// The authoring palette of the tomo_tune2 reference asset
-/// (tools/testdata/tomo_tune2.gpl). It was the engine's "tomo" preset until the
-/// palette became 8 roles (ADR-0019); the goldens built against it keep it here
-/// until they are regenerated in roles.
-static constexpr RGB kTomoTune2Palette[PALETTE_MAX_ENTRIES] = {
-    {0x00, 0x00, 0x00}, {0x89, 0x89, 0x89}, {0xff, 0xff, 0xff}, {0x1a, 0x1c, 0x2c},
-    {0x5d, 0x27, 0x5d}, {0xb1, 0x3e, 0x53}, {0xef, 0x7d, 0x57}, {0xff, 0xcd, 0x75},
-    {0xa7, 0xf0, 0x70}, {0x38, 0xb7, 0x64}, {0x25, 0x71, 0x79}, {0x3b, 0x5d, 0xc9},
-    {0x73, 0xef, 0xf7}, {0x56, 0x6c, 0x86}, {0x33, 0x3c, 0x57},
-};
-
-/// Copies the named target palette into @p o: "tomo" is the tomo_tune2
-/// authoring palette above, anything else an engine preset; false for an
-/// unknown name.
-static bool usePreset(SpriteImportOptions& o, const char* name) {
-    if (std::string(name) == "tomo") {
-        std::copy(std::begin(kTomoTune2Palette), std::end(kTomoTune2Palette), o.palette.begin());
-        return true;
+/// The tomo_tune2 reference asset's palette, tools/testdata/tomo_tune2.gpl: its black, grey
+/// and white in Palette role order (bg, muted, text; ADR-0019). Reads the first
+/// PALETTE_MAX_ENTRIES colour rows into @p o, as the CLI's --palette does; false when short.
+static bool useGpl(SpriteImportOptions& o, const std::string& path) {
+    std::ifstream in(path);
+    std::string line;
+    size_t n = 0;
+    while (n < PALETTE_MAX_ENTRIES && std::getline(in, line)) {
+        unsigned r = 0, g = 0, b = 0;
+        if (line.empty() || line[0] == '#') continue;
+        if (std::sscanf(line.c_str(), " %u %u %u", &r, &g, &b) != 3) continue;
+        o.palette[n++] = RGB(uint8_t(r), uint8_t(g), uint8_t(b));
     }
+    return n == PALETTE_MAX_ENTRIES;
+}
+
+/// Copies the named target palette into @p o: a `.gpl` path (relative to @p dir), or an
+/// engine preset; false for an unknown name.
+static bool usePreset(SpriteImportOptions& o, const std::string& name, const std::string& dir = "") {
+    if (name.size() > 4 && name.compare(name.size() - 4, 4, ".gpl") == 0) return useGpl(o, dir + "/" + name);
     Palette p;
-    if (!p.loadPreset(name)) return false;
+    if (!p.loadPreset(name.c_str())) return false;
     std::copy(std::begin(p.colors), std::end(p.colors), o.palette.begin());
     return true;
 }
+
+static const std::string kTomoTune2Gpl = "tools/testdata/tomo_tune2.gpl";
 
 static void test22_tomoTune2() {
     const Bytes src = readFile(testdata("tools/testdata/tomo_tune2.aseprite"));
     ASSERT(!src.empty(), "SPI-22 fixture readable");
     SpriteImportOptions o;
-    usePreset(o, "tomo");
+    ASSERT(usePreset(o, kTomoTune2Gpl, ENJIN2_SOURCE_DIR), "SPI-22 tomo_tune2.gpl reads");
     const auto r = run(src, o);
     ASSERT(r.ok() && r.kind == SpriteKind::Layered, "SPI-22 tomo_tune2 imports layered");
     if (!r.ok()) { fprintf(stderr, "  error: %s\n", r.error.c_str()); return; }
@@ -528,7 +531,7 @@ static void test22_tomoTune2() {
 
 static void test23_tomoTune2SystemPalette() {
     const auto r = run(readFile(testdata("tools/testdata/tomo_tune2.aseprite")));
-    ASSERT(r.status == SpriteImportStatus::PaletteMismatch, "SPI-23 hue art vs the green ramp → mismatch");
+    ASSERT(r.status == SpriteImportStatus::PaletteMismatch, "SPI-23 black/grey/white art vs the house default → mismatch");
     bool counted = !r.colourIssues.empty();
     for (size_t i = 0; i < r.colourIssues.size(); ++i) {
         counted = counted && r.colourIssues[i].pixels > 0 && r.colourIssues[i].a == 255
@@ -570,7 +573,7 @@ static void test24_corpus() {
         corpus.emplace_back(f, readFile(testdata(f)));
     }
     SpriteImportOptions o;
-    usePreset(o, "tomo");
+    ASSERT(usePreset(o, kTomoTune2Gpl, ENJIN2_SOURCE_DIR), "SPI-24 tomo_tune2.gpl reads");
 
     uint32_t seed = 0x2911u;
     auto rnd = [&]() { seed = seed * 1664525u + 1013904223u; return seed >> 8; };
@@ -626,7 +629,7 @@ static void test27_goldenCorpus() {
         ++rows;
         SpriteImportOptions o;
         o.kind = kind == "layered" ? SpriteKind::Layered : SpriteKind::Sheet;
-        if (palette != "-") ASSERT(usePreset(o, palette.c_str()), ("SPI-27 palette preset: " + palette).c_str());
+        if (palette != "-") ASSERT(usePreset(o, palette, dir), ("SPI-27 palette: " + palette).c_str());
         const auto r = run(readFile(dir + "/" + input), o);
         const std::string stem = input.substr(0, input.rfind('.'));
         ASSERT(r.ok() && r.njn == readFile(dir + "/" + stem + ".njn"), ("SPI-27 golden matches: " + stem).c_str());
