@@ -258,7 +258,8 @@ struct Rect {
  * 
  * Holds a palette index in 4 bits of storage: a Palette role (0-7) or
  * transparent (15). 8-14 are invalid (ADR-0022); constructing one asserts in
- * debug builds (ENJIN2_PIXEL4_ASSERT).
+ * host debug builds (ENJIN2_PIXEL4_ASSERT; never on the device, where it would
+ * sit in every pixel write).
  */
 struct Pixel4 {
     uint8_t value : 4; ///< Palette index: a role 0-7, or 15 = transparent
@@ -269,7 +270,7 @@ struct Pixel4 {
     /**
      * @brief Constructor from a palette index
      * @param v A Palette role (0-7) or PALETTE_TRANSPARENT (15); stored in the
-     *          low 4 bits. Anything else asserts in debug builds.
+     *          low 4 bits. Anything else asserts in host debug builds.
      */
     constexpr Pixel4(uint8_t v) : value(v & 0x0F) {
 #if ENJIN2_PIXEL4_ASSERT

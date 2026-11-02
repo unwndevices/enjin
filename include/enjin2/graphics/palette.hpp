@@ -59,7 +59,8 @@ constexpr uint8_t PALETTE_TRANSPARENT = 15;
  * art and game hues that never carry content. Nothing computes or checks
  * contrast. Indices 8-14 are invalid: `gfx.*` raises on them, the sprite
  * importer and the `.njn` loaders refuse them, and Pixel4 asserts on them in
- * debug builds. They are unused LUT slots.
+ * host debug builds. They are unused LUT slots: on screen they, like 15, show
+ * `bg` (makeRgb565Lut; the web Simulator does the same).
  * @{
  */
 constexpr uint8_t ROLE_BG = 0;       ///< Canvas background, the empty screen
