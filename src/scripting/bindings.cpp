@@ -642,27 +642,11 @@ void LuaBindings::registerAll() {
                     "y2: end row\n"
                     "color: palette index; defaults to the draw colour"),
 
-        // Palette
-        luaFunction("setPaletteColor", lua_setPaletteColor,
-                    "(index:int, hex:string) -> nil\n"
-                    "(index:int, r:int, g:int, b:int) -> nil",
-                    "Change the colour of one palette entry.",
-                    "index: palette index; 15 is ignored and larger values wrap\n"
-                    "hex: \"#rrggbb\" (the # is optional); an invalid string sets black\n"
-                    "r: red 0..255\n"
-                    "g: green 0..255\n"
-                    "b: blue 0..255")
-            .note("The palette is global to the process, not to one applet."),
+        // Palette: read-only, the system sets it (Settings)
         luaFunction("getPaletteColor", lua_getPaletteColor, "(index:int) -> r:int, g:int, b:int",
                     "The colour of one palette entry; index 15 gives 0, 0, 0.",
-                    "index: palette index; larger values wrap"),
-        luaFunction("loadPalette", lua_loadPalette, "(name:string) -> boolean",
-                    "Replace the palette with a built-in preset; false for an unknown name.",
-                    "name: the preset; only \"default\", the house default, is built in")
-            .note("The palette is global to the process, not to one applet."),
-        luaFunction("getPaletteSize", lua_getPaletteSize, "() -> int",
-                    "How many colours the current palette has."),
-
+                    "index: palette index, a gfx.COLOR role; larger values wrap")
+            .note("The user picks the palette in Settings; an applet cannot change it."),
         // Sprites
         luaFunction("newSprite", lua_newSprite,
                     "(data:userdata, cellW:int, cellH:int, cols:int, rows:int) -> handle:int",
