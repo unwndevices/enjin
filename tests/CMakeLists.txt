@@ -732,6 +732,20 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME draw_state_binding_test COMMAND draw_state_binding_test)
 
+    # Palette files: name, credits and the 8 Palette roles from a Lua table
+    # (Tomodachi ADR-0019, #423)
+    add_executable(palette_file_test
+        palette_file_test.cpp
+    )
+    target_include_directories(palette_file_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(palette_file_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME palette_file_test COMMAND palette_file_test)
+
     # Script sandbox: identical on every platform (Tomodachi ADR-0012, #251)
     add_executable(lua_sandbox_test
         lua_sandbox_test.cpp

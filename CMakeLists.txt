@@ -240,6 +240,8 @@ if(ENJIN2_BUILD_LUA)
         # Skin-pack loader seam (Tomodachi #154): a graphics seam whose manifest
         # reader needs Lua, so it lives here (enjin2_graphics stays Lua-free).
         src/graphics/skin_pack.cpp
+        # Palette files (Tomodachi #423): presets as a Lua table of the 8 roles.
+        src/graphics/palette_file.cpp
     )
     target_include_directories(enjin2_lua
         PRIVATE
