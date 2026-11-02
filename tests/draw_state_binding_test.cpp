@@ -48,7 +48,7 @@ struct DrawFixture {
 };
 
 // ============================================================
-// The palette is the system's (Tomodachi #417, ADR-0019): an applet can read a
+// The palette is the system's (Tomodachi #417, ADR-0022): an applet can read a
 // role's colour but has no call that changes one.
 // ============================================================
 static void test_palette_is_read_only()

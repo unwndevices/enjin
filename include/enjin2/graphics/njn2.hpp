@@ -700,7 +700,7 @@ inline NjnEditResult njn2ReplaceChunk(const uint8_t* data, size_t size,
 }
 
 // ---------------------------------------------------------------------------
-// Palette-role check (ADR-0019): what the loaders refuse
+// Palette-role check (ADR-0022): what the loaders refuse
 // ---------------------------------------------------------------------------
 
 /**

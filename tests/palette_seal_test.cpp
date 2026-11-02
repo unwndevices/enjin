@@ -1,4 +1,4 @@
-// The palette contract's seal (ADR-0019, Tomodachi #426): indices 8-14 are not
+// The palette contract's seal (ADR-0022, Tomodachi #426): indices 8-14 are not
 // Palette roles, and every way in refuses them with a clear message.
 //
 //   SEAL-01  gfx.* raise a Lua error naming the bad colour (9), for each kind

@@ -114,7 +114,7 @@ static void overlayKey(lua_State* L, int tableIdx, const char* key, T& out) {
 }
 
 // A colour key (fill / text / border): a Palette role or 15, else a Lua error
-// naming the key and the value (ADR-0019).
+// naming the key and the value (ADR-0022).
 static void overlayColourKey(lua_State* L, int tableIdx, const char* key, Pixel4& out) {
     lua_getfield(L, tableIdx, key);
     if (lua_isnumber(L, -1)) out = Pixel4(lua::paletteIndexOrError(L, lua_tointeger(L, -1), key));
@@ -160,7 +160,7 @@ int LuaBindings::lua_engine_ui_panel(lua_State* L) {
 // ── UI-05: engine.ui.setStyle(slotName, { fill=…, border=…, radius=…, … }) ────
 // Overrides one style slot. Resolution starts from the theme default (so absent
 // keys inherit it), overlays only the keys present in the table, stores the
-// result and marks the slot's mask bit. Colours are Palette roles (ADR-0019; 8-14 raise);
+// result and marks the slot's mask bit. Colours are Palette roles (ADR-0022; 8-14 raise);
 // derived tones (light/dark/shadow) are never stored (#19).
 int LuaBindings::lua_engine_ui_setStyle(lua_State* L) {
     LuaBindings* b = getBindings(L);

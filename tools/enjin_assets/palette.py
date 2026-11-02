@@ -1,7 +1,7 @@
 """The engine's target palette: the 8 Palette roles, the house default or a GIMP ``.gpl``.
 
 The default is the engine's house default (``src/graphics/palette.cpp``): the
-8 Palette roles (ADR-0019) at indices 0–7. Indices 8–14 are not roles: no tool
+8 Palette roles (ADR-0022) at indices 0–7. Indices 8–14 are not roles: no tool
 writes them and the engine refuses them. A ``.gpl`` lists the 8 roles first
 (a 9th row, the transparent key magenta ``#FF00FF``, is ignored). Quantisation
 only ever maps to the 8 roles; a transparent source pixel is assigned index 15

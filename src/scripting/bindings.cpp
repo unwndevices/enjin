@@ -511,7 +511,7 @@ void LuaBindings::registerAll() {
     // === gfx.* namespace table ===
     static constexpr LuaApiEnum kShapeMode = luaApiEnum("ShapeMode", kShapeModeNames);
     static constexpr LuaApiEnum kAlign = luaApiEnum("Align", kNumberAlignNames);
-    // The 8 Palette roles (ADR-0019) and transparency. The numbers 0-7 and 15
+    // The 8 Palette roles (ADR-0022) and transparency. The numbers 0-7 and 15
     // stay legal wherever a colour is taken.
     static constexpr LuaApiEntry kGfxColor[] = {
         luaConstant("BG", ROLE_BG, "Palette index 0, the bg role: the canvas background, the empty screen."),

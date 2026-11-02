@@ -2,7 +2,7 @@ GIMP Palette
 Name: tomo-tune2
 Columns: 8
 #
-# The tomo_tune2 art's palette in Palette role order (ADR-0019): the 8 roles
+# The tomo_tune2 art's palette in Palette role order (ADR-0022): the 8 roles
 # the importer targets. The art is black, grey and white, re-indexed once by
 # luminance onto the roles' order in the house default: black bg, grey muted,
 # white text. The other roles are the old tomo hues the art never uses. The

@@ -5,7 +5,7 @@
 namespace enjin2 {
 
 // ============================================================
-// The house default (ADR-0019): a placeholder until the designer picks, the
+// The house default (ADR-0022): a placeholder until the designer picks, the
 // green-ramp neutrals plus three hues picked to read on bg. Indices 0-7 are
 // the Palette roles (palette.hpp ROLE_*); 8-14 are invalid and 15 is
 // transparent.

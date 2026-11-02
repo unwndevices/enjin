@@ -35,4 +35,4 @@ They refuse to overwrite it without `--force`.
 | `layered` | layered | Hidden layer, linked cels, a moving part, a missing part, ping-pong-reverse repeat 2 |
 
 Every minimal input is indexed with transparent index 0, and its art uses the Palette roles
-1..7: the importer refuses 8..14, which are not roles (ADR-0019, Tomodachi #426).
+1..7: the importer refuses 8..14, which are not roles (ADR-0022, Tomodachi #426).

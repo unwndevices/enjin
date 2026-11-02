@@ -23,7 +23,7 @@ static int failures = 0;
 // Source: 8x8, value = column+1 (1..8) so a horizontal position maps to a known
 // index — lets us assert the warp preserves left-to-right order.
 // Column sx holds kColumn[sx]: non-zero, rising left to right, all Palette roles
-// (ADR-0019: only 7 non-bg roles, so two middle columns share a value; the ends
+// (ADR-0022: only 7 non-bg roles, so two middle columns share a value; the ends
 // stay unique).
 static constexpr uint8_t kColumn[8] = {1, 2, 3, 4, 4, 5, 6, 7};
 static void paintSource(Canvas4<8, 8>& src) {

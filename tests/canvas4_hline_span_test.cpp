@@ -24,7 +24,7 @@ static int failures = 0;
 
 // A busy background so a span that over- or under-writes a neighbouring
 // nibble shows up as a mismatch.
-// Every valid index (the 8 Palette roles and transparent, ADR-0019).
+// Every valid index (the 8 Palette roles and transparent, ADR-0022).
 static constexpr uint8_t kValid[9] = {0, 1, 2, 3, 4, 5, 6, 7, PALETTE_TRANSPARENT};
 
 template <uint16_t W, uint16_t H>

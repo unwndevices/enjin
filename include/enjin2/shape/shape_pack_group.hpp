@@ -55,7 +55,7 @@
  * A bad Look is refused before anything is read, naming slot + id: a missing
  * body, eyes or mouth; an id not in the pack (unknown or retired); a filled
  * slot the Body has no socket for; a colour that is not a Palette role (0..7,
- * ADR-0019: 8..14 are invalid and 15, transparent, is no colour).
+ * ADR-0022: 8..14 are invalid and 15, transparent, is no colour).
  */
 #pragma once
 

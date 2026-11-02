@@ -43,7 +43,7 @@ static void test_derived_tones() {
     ASSERT(end.shadow() == ROLE_MUTED, "shadow() of accent is muted");
 }
 
-// Slot count + default table are consistent and picked by job (ADR-0019).
+// Slot count + default table are consistent and picked by job (ADR-0022).
 static void test_default_table() {
     printf("--- ROM default table ---\n");
     ASSERT(kStyleSlotCount == 6, "six slots in v1");

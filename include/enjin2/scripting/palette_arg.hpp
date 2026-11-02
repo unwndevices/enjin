@@ -1,6 +1,6 @@
 #pragma once
 
-// Lua colour arguments (ADR-0019): every binding that takes a palette index
+// Lua colour arguments (ADR-0022): every binding that takes a palette index
 // reads it through these, so 8-14 (no Palette role) raise a Lua error that
 // names the bad value instead of drawing. A byte-wide canvas (Canvas8) has no
 // palette: its colours are grey levels 0..255 (checkCanvasColour). Header-only, shared by enjin's

@@ -14,7 +14,7 @@ namespace enjin2 {
  * `StyleSlot`). It is a flat constexpr aggregate so the ROM defaults
  * (`kDefaultStyles`) live in flash and an applet override is a plain copy.
  *
- * Colours are **Palette roles** (ADR-0019), never hexes, so switching the
+ * Colours are **Palette roles** (ADR-0022), never hexes, so switching the
  * palette re-skins every style while the jobs hold. The bevel/shadow tones are
  * **derived, never stored** — `towardText()`/`towardBg()`/`shadow()` step
  * `fill` one place along the shade chain (`Palette::towardText`/`towardBg`),
@@ -73,7 +73,7 @@ static_assert(kStyleSlotCount <= 16,
 
 /**
  * @brief The ROM theme defaults, one `Style` per slot, picked by job
- *        (ADR-0019).
+ *        (ADR-0022).
  *
  * Panels and the banner sit on `surface` with `text` content and a `muted`
  * border; a scene object's label sits on `muted`. Selected variants take the

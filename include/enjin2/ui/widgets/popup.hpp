@@ -161,7 +161,7 @@ private:
         const int16_t top = cy - 28;
         switch (popup.icon) {
             case PopUpComponent::Icon::Save:
-                // An icon on bg: text, with bg holes and a muted label (ADR-0019).
+                // An icon on bg: text, with bg holes and a muted label (ADR-0022).
                 Primitives<Pixel4>::fillRect(*canvas_, Rect(left, top, iconSize, iconSize + 2), Pixel4(ROLE_TEXT));
                 Primitives<Pixel4>::fillRect(*canvas_, Rect(left + 2, top + 2, iconSize - 4, 4), Pixel4(ROLE_BG));
                 Primitives<Pixel4>::fillRect(*canvas_, Rect(left + 3, top + 7, iconSize - 6, 3), Pixel4(ROLE_MUTED));

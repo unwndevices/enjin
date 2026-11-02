@@ -68,7 +68,7 @@ static void test_full_roundtrip()
 {
     printf("--- Full-canvas round-trip ---\n");
 
-    // Every valid index (the 8 Palette roles and transparent, ADR-0019).
+    // Every valid index (the 8 Palette roles and transparent, ADR-0022).
     static constexpr uint8_t kValid[9] = {0, 1, 2, 3, 4, 5, 6, 7, PALETTE_TRANSPARENT};
     Canvas4<127, 127> c;
     for (int16_t y = 0; y < 127; ++y)

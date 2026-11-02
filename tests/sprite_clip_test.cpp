@@ -36,7 +36,7 @@ static NjnClip makeClip(const char* name, NjnLoopMode mode,
 }
 
 // A dummy 32-cell 1×1 sheet so any frameIndex 0..31 is addressable.
-static const uint8_t kSheetData[32] = {  // Palette roles only (ADR-0019)
+static const uint8_t kSheetData[32] = {  // Palette roles only (ADR-0022)
     0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7,
     0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7,
 };

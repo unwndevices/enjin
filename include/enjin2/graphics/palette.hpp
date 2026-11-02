@@ -49,7 +49,7 @@ struct RGB {
 constexpr uint8_t PALETTE_TRANSPARENT = 15;
 
 /**
- * @name Palette roles (ADR-0019)
+ * @name Palette roles (ADR-0022)
  * @brief The palette is 8 colours named by their job, plus transparent (15).
  *
  * Art and code draw in roles, never in hues: a palette preset fills the roles,

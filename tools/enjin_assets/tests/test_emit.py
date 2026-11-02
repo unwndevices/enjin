@@ -37,7 +37,7 @@ def test_njn_header_and_roundtrip():
 
 
 def test_pixels_off_the_roles_are_refused():
-    # 8..14 are not Palette roles (ADR-0019): the engine refuses such a file, so emit does too.
+    # 8..14 are not Palette roles (ADR-0022): the engine refuses such a file, so emit does too.
     for build in (lambda px: emit.build_njn(1, 1, px, tile_count=1),):
         try:
             build(bytes([9]))

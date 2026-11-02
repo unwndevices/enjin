@@ -180,7 +180,7 @@ def choose_grid(count: int) -> tuple[int, int]:
 
 
 def _check_roles(pixels) -> None:
-    """Refuse pixel indices that are not Palette roles (8..14, ADR-0019): the
+    """Refuse pixel indices that are not Palette roles (8..14, ADR-0022): the
     engine's loaders would refuse the file."""
     from .palette import is_palette_index
 

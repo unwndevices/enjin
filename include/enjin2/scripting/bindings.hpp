@@ -284,7 +284,7 @@ public:
 
 /// Whether a colour drawn on @p c is a palette index (a 4-bit canvas, or no canvas
 /// yet: the draw colour defaults to indexed) rather than a byte grey level (Canvas8).
-/// Lua colour arguments are checked as Palette roles only when indexed (ADR-0019).
+/// Lua colour arguments are checked as Palette roles only when indexed (ADR-0022).
 inline bool indexedColours(const LuaCanvas* c) { return c == nullptr || c->is4BitCanvas(); }
 
 /**

@@ -18,7 +18,7 @@ static int failures = 0;
     } while(0)
 
 // ============================================================
-// a. The 8 Palette roles (ADR-0019): job-named indices 0-7, 15 transparent
+// a. The 8 Palette roles (ADR-0022): job-named indices 0-7, 15 transparent
 // ============================================================
 static void test_role_indices()
 {
@@ -55,7 +55,7 @@ static void test_house_default()
 }
 
 // ============================================================
-// b2. The seal (ADR-0019): 8-14 are no role
+// b2. The seal (ADR-0022): 8-14 are no role
 // ============================================================
 static void test_sealed_indices()
 {
@@ -117,7 +117,7 @@ static void test_set_get_color()
 static void test_load_preset()
 {
     printf("--- loadPreset ---\n");
-    // The tomo / pico8 / gameboy presets are gone (ADR-0019): only the house
+    // The tomo / pico8 / gameboy presets are gone (ADR-0022): only the house
     // default is built in.
     ASSERT(g_palette.loadPreset("tomo") == false, "loadPreset('tomo') is gone");
     ASSERT(g_palette.loadPreset("pico8") == false, "loadPreset('pico8') is gone");

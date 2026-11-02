@@ -6,7 +6,7 @@
 -- the .njn goldens. The corpus is frozen: see README.md before running it again.
 --
 -- Every file is indexed with source transparent index 0; art uses the Palette
--- roles 1..7 (8..14 are not roles and the importer refuses them, ADR-0019).
+-- roles 1..7 (8..14 are not roles and the importer refuses them, ADR-0022).
 
 local out = app.params["out"]
 assert(out, "pass --script-param out=DIR")

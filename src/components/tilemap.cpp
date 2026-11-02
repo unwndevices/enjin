@@ -428,7 +428,7 @@ void C_Tilemap::draw(ICanvas<Pixel4>& canvas) {
             // Frame 0 in the tileset is intentionally "wasted" — this removes
             // an off-by-one subtract from the hot rendering path. Flip bits
             // render here (ADR-0003 §3); the palbank bits are stored, not drawn
-            // (one global palette, ADR-0019); band is honored by the compositor
+            // (one global palette, ADR-0022); band is honored by the compositor
             // restore filter (drawCellBand), not this bulk draw.
             m_sheet.draw(canvas, tileId, px, py,
                          cellHFlip(cell), cellVFlip(cell), Remap::identity());

@@ -19,7 +19,7 @@ using namespace enjin2;
 //   Row 1:  5  6  7  1
 //   Row 2:  2  3  4  5
 //   Row 3:  7  6  0  0
-// (Palette roles only, ADR-0019; the four corners are distinct.)
+// (Palette roles only, ADR-0022; the four corners are distinct.)
 static const uint8_t small_4x4_data[] = {
     1,  2,  3,  4,
     5,  6,  7,  1,

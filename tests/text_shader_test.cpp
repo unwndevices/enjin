@@ -116,7 +116,7 @@ static void test_holo_clips_to_silhouette() {
 
 static void test_outline_is_bg_silhouette_behind_fill() {
     printf("--- outline: +/-1 px bg silhouette behind the fill ---\n");
-    // The legibility outline is bg whatever the text colour (ADR-0019).
+    // The legibility outline is bg whatever the text colour (ADR-0022).
     for (uint8_t fill : {ROLE_TEXT, ROLE_ACCENT, ROLE_MUTED}) {
         auto c = renderBlock(fill, 1, [](TextRenderer<Pixel4>& tr) {
             tr.setOutline(true);

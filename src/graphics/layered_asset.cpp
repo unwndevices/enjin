@@ -259,7 +259,7 @@ LayeredAssetStore::Handle LayeredAssetStore::loadFromMemory(const uint8_t* data,
         }
         return INVALID_HANDLE;
     }
-    // Pixels must be Palette roles or transparent (ADR-0019): one pass, before
+    // Pixels must be Palette roles or transparent (ADR-0022): one pass, before
     // anything is committed. The decoder itself stays permissive (Colour replace).
     for (const NjnPartImage& img : decoded.images) {
         const uint8_t* px = img.rawPixels != nullptr ? img.rawPixels : img.pixels.data();

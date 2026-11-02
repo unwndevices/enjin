@@ -12,7 +12,7 @@
 
 namespace enjin2 {
 
-// The overlay's default colour: accent4, the alert role (ADR-0019); text defaults to text.
+// The overlay's default colour: accent4, the alert role (ADR-0022); text defaults to text.
 static constexpr uint8_t kDebugColour = ROLE_ACCENT4;
 
 // ── Guard macro ──────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@
  *   SPI-06  Clip names: printable ASCII, 15 chars, empty → clipN; the summary
  *           keeps each clip's source tag name.
  *   SPI-07  Indexed opaque index that is not a Palette role (8..14, or > 15)
- *           rejected, naming it (ADR-0019).
+ *           rejected, naming it (ADR-0022).
  *   SPI-08  Old (0x0004) and new (0x2019) palette chunks both read.
  *   SPI-09  RGBA exact palette match imports to indices.
  *   SPI-10  RGBA mismatch: colour and alpha issues, counts, nearest slot.
@@ -181,7 +181,7 @@ static void test07_indexedOutOfRange() {
     const auto r = run(a.build());
     ASSERT(r.status == SpriteImportStatus::Unsupported, "SPI-07 opaque index 20 rejected");
     ASSERT(contains(r.error, "20"), "SPI-07 error names the index");
-    // 8..14 are not Palette roles (ADR-0019, Tomodachi #426): an index 9 is refused too.
+    // 8..14 are not Palette roles (ADR-0022, Tomodachi #426): an index 9 is refused too.
     AseBuilder nine(3, 1, 8);
     nine.add(0, AseBuilder::layer("body"));
     nine.add(0, AseBuilder::cel(0, 0, 0, 3, 1, {3, 9, 9}));
@@ -260,7 +260,7 @@ static void test10_rgbaMismatch() {
     ASSERT(!r.error.empty() && r.njn.empty(), "SPI-10 message, no output");
 }
 
-// The target is the preset's 8 roles (ADR-0019, Tomodachi #425/#426): only roles 0..7 are
+// The target is the preset's 8 roles (ADR-0022, Tomodachi #425/#426): only roles 0..7 are
 // targets, for the match and the nearest slot alike; there is no slot 8..14 to match.
 static void test10b_rgbaRoleSlots() {
     AseBuilder a(3, 1, 32);
@@ -509,7 +509,7 @@ static void test21_malformed() {
 static std::string testdata(const char* rel) { return std::string(ENJIN2_SOURCE_DIR) + "/" + rel; }
 
 /// The tomo_tune2 reference asset's palette, tools/testdata/tomo_tune2.gpl: its black, grey
-/// and white in Palette role order (bg, muted, text; ADR-0019). Reads the first
+/// and white in Palette role order (bg, muted, text; ADR-0022). Reads the first
 /// ROLE_COUNT colour rows into @p o, as the CLI's --palette does; false when short.
 static bool useGpl(SpriteImportOptions& o, const std::string& path) {
     std::ifstream in(path);

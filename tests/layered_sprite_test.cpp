@@ -128,7 +128,7 @@ private:
 //   image1 = [5 6 / 7 0]   (2x2)
 //   image2 = [4 . / . 4]   (2x2 ring, 15 = transparent)
 //   image3 = [6]           (1x1)
-//   (Palette roles only, ADR-0019; image0's 4 is always covered where the
+//   (Palette roles only, ADR-0022; image0's 4 is always covered where the
 //   ring shows, so the ring's 4 stays unambiguous.)
 //
 //   frame 0: base image0@(0,0), over image1@(1,1), spark invisible

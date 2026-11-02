@@ -1,4 +1,4 @@
-// Palette files (Tomodachi ADR-0019, #423): a Lua chunk that returns a table of
+// Palette files (Tomodachi ADR-0022, #423): a Lua chunk that returns a table of
 // name, author, source and the 8 Palette roles as "#rrggbb". The same format
 // for the built-in presets and for palette files on the card.
 #include <enjin2/graphics/palette_file.hpp>

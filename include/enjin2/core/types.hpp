@@ -8,7 +8,7 @@
 #include "../graphics/palette.hpp"
 
 /**
- * @brief Pixel4's debug check (ADR-0019): 1 makes `Pixel4(v)` assert that `v` is a
+ * @brief Pixel4's debug check (ADR-0022): 1 makes `Pixel4(v)` assert that `v` is a
  * Palette role (0-7) or transparent (15).
  *
  * On by default in debug host builds (native tests, a debug WASM build); off when
@@ -257,7 +257,7 @@ struct Rect {
  * @brief 4-bit pixel type for memory-efficient graphics
  * 
  * Holds a palette index in 4 bits of storage: a Palette role (0-7) or
- * transparent (15). 8-14 are invalid (ADR-0019); constructing one asserts in
+ * transparent (15). 8-14 are invalid (ADR-0022); constructing one asserts in
  * debug builds (ENJIN2_PIXEL4_ASSERT).
  */
 struct Pixel4 {

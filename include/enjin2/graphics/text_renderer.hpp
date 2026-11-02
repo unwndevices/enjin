@@ -174,7 +174,7 @@ public:
      * @brief Enable/disable the legibility outline (a +/-1 px bg silhouette).
      *
      * The outline is a shader composition, not a glyph feature: the glyph
-     * silhouette is stamped in the `bg` role (ADR-0019) at the four +/-1 px
+     * silhouette is stamped in the `bg` role (ADR-0022) at the four +/-1 px
      * offsets *behind* the fill, so the text reads over any scenery. On by default for the banner, off for panel text (#40).
      *
      * @param on true to draw the outline.

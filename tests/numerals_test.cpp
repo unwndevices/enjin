@@ -30,7 +30,7 @@ static int failures = 0;
     } while (0)
 
 // Synthetic strip: 4x4 cells, frames 0..14. There are only 7 non-bg roles, so
-// frame f is coded in two of them (ADR-0019: no index above 7 but 15): the
+// frame f is coded in two of them (ADR-0022: no index above 7 but 15): the
 // cell is filled with 1 + f % 7 and its pixel (1,1) holds 1 + f / 7. Both are
 // non-zero and never 15, so a drawn cell is distinguishable from the cleared
 // (index 0) background and never transparent.

@@ -34,7 +34,7 @@
  * Indexed sources keep their indices as Palette roles (0..7); the source's
  * transparent index becomes 15 and the source's palette colours are ignored.
  * Any other opaque index (8..14, or above) fails as Unsupported, naming it:
- * 8-14 are not roles (ADR-0019).  RGBA sources need binary alpha and an exact
+ * 8-14 are not roles (ADR-0022).  RGBA sources need binary alpha and an exact
  * match to one of the target palette's 8 roles (SpriteImportOptions::palette,
  * the house default by default).  There is no
  * quantisation: a mismatch fails with SpriteImportStatus::PaletteMismatch and

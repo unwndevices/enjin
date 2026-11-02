@@ -93,7 +93,7 @@ static void test_bevel_two_tone() {
 }
 
 // (A Canvas4 style colour above 15 is no Palette index: Pixel4 asserts on it in
-// debug builds (ADR-0019), so Canvas4 no longer narrows byte-wide colours.)
+// debug builds (ADR-0022), so Canvas4 no longer narrows byte-wide colours.)
 
 static void test_canvas8_bevel_does_not_apply_pixel4_chain() {
     Canvas8<32, 32> canvas;

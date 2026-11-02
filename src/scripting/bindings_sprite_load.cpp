@@ -93,7 +93,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
         pxSize = njnPixelDataSize(header);
     }
 
-    // Pixels must be Palette roles or transparent (ADR-0019): one pass at load.
+    // Pixels must be Palette roles or transparent (ADR-0022): one pass at load.
     const int offRole = njnFirstOffRoleIndex(srcPixels, pxSize);
     if (offRole >= 0) {
         njnRefusal_ = njnOffRoleMessage(offRole);

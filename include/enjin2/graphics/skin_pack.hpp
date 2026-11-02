@@ -59,7 +59,7 @@ struct SkinPack {
  * }
  * @endcode
  *
- * A skin carries no colours (Tomodachi #417, ADR-0019: one global palette); a
+ * A skin carries no colours (Tomodachi #417, ADR-0022: one global palette); a
  * `palette` field left in an old manifest is ignored. Every `assets` entry
  * names a `.njn` basename resolved against @p folder; a present, loadable asset is registered, a missing or unloadable one is simply left out
  * (per-asset fallback is the caller's policy). `nineslice[name] = {w, h}` sets

@@ -31,7 +31,7 @@ struct Rng {
     uint32_t s;
     explicit Rng(uint32_t seed) : s(seed ? seed : 0x1234567u) {}
     uint32_t next() { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return s; }
-    /// A random valid index: a Palette role or 15 (ADR-0019: 8-14 are invalid).
+    /// A random valid index: a Palette role or 15 (ADR-0022: 8-14 are invalid).
     uint8_t nibble() {
         static constexpr uint8_t kValid[9] = {0, 1, 2, 3, 4, 5, 6, 7, PALETTE_TRANSPARENT};
         return kValid[next() % 9];

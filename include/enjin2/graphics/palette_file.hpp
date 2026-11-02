@@ -7,7 +7,7 @@
 namespace enjin2 {
 
 /**
- * @brief The role names a palette file uses, in index order (ADR-0019).
+ * @brief The role names a palette file uses, in index order (ADR-0022).
  *
  * `kPaletteRoleNames[ROLE_BG]` is "bg", ... `kPaletteRoleNames[ROLE_ACCENT4]`
  * is "accent4".
