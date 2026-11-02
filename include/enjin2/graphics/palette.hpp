@@ -201,6 +201,9 @@ struct Palette {
  */
 bool parseHexColor(const char* hex, uint8_t& r, uint8_t& g, uint8_t& b);
 
+/** @brief A hex digit's value (either case), -1 for any other character. */
+int hexDigitValue(char c);
+
 /** @brief Engine-level global palette instance shared across all translation units */
 extern Palette g_palette;
 

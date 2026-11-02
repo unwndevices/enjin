@@ -241,6 +241,8 @@ if(ENJIN2_BUILD_LUA)
         src/graphics/skin_pack.cpp
         # Palette files (Tomodachi #423): presets as a Lua table of the 8 roles.
         src/graphics/palette_file.cpp
+        # The "return a table" sandbox both of them read through.
+        src/graphics/table_file.cpp
     )
     target_include_directories(enjin2_lua
         PRIVATE

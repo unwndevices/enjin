@@ -1,82 +1,15 @@
 #include "enjin2/graphics/skin_pack.hpp"
+#include "enjin2/graphics/table_file.hpp"
 
 extern "C" {
-#include "lauxlib.h"
 #include "lua.h"
-#include "lualib.h"
 }
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
-#include <sys/stat.h>
-
-#ifdef ESP32
-#include <esp_heap_caps.h>
-#endif
 
 namespace enjin2 {
 namespace {
-
-// Sandbox mirror of the applet manifest reader: load the manifest text with an
-// empty environment (text-only, no bytecode), run it, and require a table back.
-constexpr const char* kSkinManifestReader =
-    "local s = ...\n"
-    "local chunk = assert(load(s, 'skin.lua', 't', {}))\n"
-    "local t = chunk()\n"
-    "assert(type(t) == 'table', 'skin.lua must return a table')\n"
-    "return t\n";
-
-// Same acceptance window as the applet catalog: a regular, non-empty, NUL-free
-// file within `limit` bytes.
-bool readText(const std::string& path, size_t limit, std::string& out) {
-    out.clear();
-    struct stat st {};
-    if (stat(path.c_str(), &st) || !S_ISREG(st.st_mode) || st.st_size <= 0 ||
-        static_cast<size_t>(st.st_size) > limit)
-        return false;
-    FILE* file = std::fopen(path.c_str(), "rb");
-    if (!file) return false;
-    out.resize(static_cast<size_t>(st.st_size));
-    const bool ok = std::fread(out.data(), 1, out.size(), file) == out.size() &&
-                    out.find('\0') == std::string::npos;
-    std::fclose(file);
-    if (!ok) out.clear();
-    return ok;
-}
-
-void instructionLimit(lua_State* L, lua_Debug*) {
-    luaL_error(L, "skin.lua instruction limit exceeded");
-}
-
-// The manifest VM's allocator. On device plain malloc is internal RAM only,
-// which a whole VM does not fit beside TinyUSB and BLE (Tomodachi #277): prefer
-// PSRAM, like the applet VM (LuaPlatform::createState).
-void* skinAlloc(void*, void* ptr, size_t, size_t nsize) {
-    if (nsize == 0) {
-        std::free(ptr);
-        return nullptr;
-    }
-#ifdef ESP32
-    void* p = heap_caps_realloc(ptr, nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    return p ? p : heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
-#else
-    return std::realloc(ptr, nsize);
-#endif
-}
-
-// Runs under lua_pcall, so running out of memory fails the load instead of
-// aborting. Only the base library: the reader needs load/assert/type, and the
-// manifest itself runs in an empty environment.
-int readManifest(lua_State* L) {
-    const auto* source = static_cast<const std::string*>(lua_touserdata(L, 1));
-    luaL_requiref(L, LUA_GNAME, luaopen_base, 1);
-    lua_pop(L, 1);
-    if (luaL_loadstring(L, kSkinManifestReader) != LUA_OK) return lua_error(L);
-    lua_pushlstring(L, source->data(), source->size());
-    lua_call(L, 1, 1);
-    return 1;
-}
 
 void fail(std::string* error, const char* msg) {
     if (error) *error = msg;
@@ -174,35 +107,21 @@ bool loadSkinPack(const std::string& folder, LayeredAssetStore& store,
     out = SkinPack{};
 
     std::string source;
-    if (!readText(folder + "/skin.lua", 65536, source)) {
+    if (!readTableFileText(folder + "/skin.lua", 65536, source, nullptr)) {
         fail(error, "missing or unreadable skin.lua");
         return false;
     }
 
-    lua_State* L = lua_newstate(skinAlloc, nullptr);
-    if (!L) {
-        fail(error, "cannot allocate skin Lua state");
-        return false;
-    }
-    lua_sethook(L, instructionLimit, LUA_MASKCOUNT, 100000);
-    lua_pushcfunction(L, readManifest);
-    lua_pushlightuserdata(L, &source);
-    const int status = lua_pcall(L, 1, 1, 0);
-    lua_sethook(L, nullptr, 0, 0);
-    if (status != LUA_OK) {
-        if (error) *error = lua_tostring(L, -1) ? lua_tostring(L, -1)
-                                                : "skin.lua parse error";
-        lua_close(L);
-        return false;
-    }
-
-    // Manifest table now sits at the stack top. A `palette` field (skins made
-    // before Tomodachi #417) is ignored: skins carry no colours.
-    readAssets(L, folder, store, out);
-    readNineSlice(L, out);
-
-    lua_close(L);
-    return true;
+    // A `palette` field (skins made before Tomodachi #417) is ignored: skins
+    // carry no colours. readAssets/readNineSlice read the table at the top.
+    return readTableFile(
+        source, "skin.lua",
+        [&](lua_State* L, int, std::string*) {
+            readAssets(L, folder, store, out);
+            readNineSlice(L, out);
+            return true;
+        },
+        error);
 }
 
 } // namespace enjin2

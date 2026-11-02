@@ -81,6 +81,14 @@ bool parseHexColor(const char* hex, uint8_t& r, uint8_t& g, uint8_t& b)
     return true;
 }
 
+int hexDigitValue(char c)
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
 // ============================================================
 // Global palette instance
 // ============================================================
