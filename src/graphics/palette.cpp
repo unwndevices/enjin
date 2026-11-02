@@ -57,17 +57,6 @@ bool Palette::isTransparent(uint8_t index) const
     return index == PALETTE_TRANSPARENT;
 }
 
-bool Palette::loadPreset(const char* name)
-{
-    if (!name || std::strcmp(name, "default") != 0) {
-        return false;
-    }
-    for (uint8_t j = 0; j < ROLE_COUNT; ++j) {
-        colors[j] = DEFAULT_COLORS[j];
-    }
-    return true;
-}
-
 // ============================================================
 // Free function: parseHexColor
 // ============================================================

@@ -98,7 +98,7 @@ static void test_transparency()
 }
 
 // ============================================================
-// d. setColor / getColor / loadPreset
+// d. setColor / getColor
 // ============================================================
 static void test_set_get_color()
 {
@@ -108,23 +108,9 @@ static void test_set_get_color()
     ASSERT(g_palette.getColor(ROLE_BG) == RGB(255, 0, 0),
            "After setColor(bg, 255,0,0) getColor(bg) should return {255,0,0}");
 
-    bool ok = g_palette.loadPreset("default");
-    ASSERT(ok, "loadPreset('default') should succeed after setColor test");
+    g_palette = Palette();
     ASSERT(g_palette.getColor(ROLE_BG) == RGB(0x08, 0x1a, 0x1c),
-           "bg should be restored to #081a1c after loadPreset('default')");
-}
-
-static void test_load_preset()
-{
-    printf("--- loadPreset ---\n");
-    // The tomo / pico8 / gameboy presets are gone (ADR-0022): only the house
-    // default is built in.
-    ASSERT(g_palette.loadPreset("tomo") == false, "loadPreset('tomo') is gone");
-    ASSERT(g_palette.loadPreset("pico8") == false, "loadPreset('pico8') is gone");
-    ASSERT(g_palette.loadPreset("gameboy") == false, "loadPreset('gameboy') is gone");
-    ASSERT(g_palette.loadPreset("nonexistent") == false, "loadPreset('nonexistent') fails");
-    ASSERT(g_palette.loadPreset(nullptr) == false, "loadPreset(nullptr) fails");
-    ASSERT(g_palette.getColor(ROLE_BG) == RGB(0x08, 0x1a, 0x1c), "a failed load leaves the palette");
+           "a fresh Palette is the house default again (#081a1c bg)");
 }
 
 // ============================================================
@@ -209,7 +195,6 @@ int main()
     test_sealed_indices();
     test_transparency();
     test_set_get_color();
-    test_load_preset();
     test_toward_bg();
     test_toward_text();
     test_chain_reaches_bg_in_three();

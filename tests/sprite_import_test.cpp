@@ -528,8 +528,8 @@ static bool useGpl(SpriteImportOptions& o, const std::string& path) {
 /// engine preset; false for an unknown name.
 static bool usePreset(SpriteImportOptions& o, const std::string& name, const std::string& dir = "") {
     if (name.size() > 4 && name.compare(name.size() - 4, 4, ".gpl") == 0) return useGpl(o, dir + "/" + name);
-    Palette p;
-    if (!p.loadPreset(name.c_str())) return false;
+    if (name != "default") return false;  // the one engine preset, the house default
+    const Palette p;
     std::copy(std::begin(p.colors), std::end(p.colors), o.palette.begin());
     return true;
 }

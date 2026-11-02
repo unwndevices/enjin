@@ -174,10 +174,9 @@ int main(int argc, char** argv) {
         usage();
         return 2;
     }
-    Palette p;
+    Palette p;  // the house default, the one built-in preset ("default")
     const bool gpl = palette.size() > 4 && palette.compare(palette.size() - 4, 4, ".gpl") == 0;
-    if (gpl ? !readGpl(palette, p.colors)
-            : !p.loadPreset(palette.c_str())) {
+    if (gpl ? !readGpl(palette, p.colors) : palette != "default") {
         std::fprintf(stderr, "error: unknown palette, or a .gpl with fewer than 8 colours (the roles): %s\n", palette.c_str());
         return 2;
     }

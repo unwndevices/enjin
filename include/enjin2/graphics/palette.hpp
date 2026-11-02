@@ -152,16 +152,6 @@ struct Palette {
     bool isTransparent(uint8_t index) const;
 
     /**
-     * @brief Replace the active palette with a named preset
-     *
-     * The only built-in preset is "default", the house default.
-     *
-     * @param name Null-terminated preset name string
-     * @return true if preset was found and loaded, false if name is unknown
-     */
-    bool loadPreset(const char* name);
-
-    /**
      * @brief One step along the shade chain toward `bg`.
      *
      * The chain is `bg <-> surface <-> muted <-> text`; `bg` stays put. An
