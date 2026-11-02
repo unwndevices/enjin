@@ -82,33 +82,6 @@ void fail(std::string* error, const char* msg) {
     if (error) *error = msg;
 }
 
-// Read the mandatory `palette` array (field at stack top) into `out`. Returns
-// the number of colours read (0 = missing/empty/invalid → mandatory failure).
-int readPalette(lua_State* L, Palette& out) {
-    lua_getfield(L, -1, "palette");
-    if (!lua_istable(L, -1)) {
-        lua_pop(L, 1);
-        return 0;
-    }
-    int count = 0;
-    for (int i = 1; i <= PALETTE_MAX_ENTRIES; ++i) {
-        lua_rawgeti(L, -1, i);
-        const char* hex = lua_tostring(L, -1);
-        uint8_t r, g, b;
-        if (!hex || !parseHexColor(hex, r, g, b)) {
-            lua_pop(L, 1);
-            break;
-        }
-        out.colors[count] = RGB(r, g, b);
-        ++count;
-        lua_pop(L, 1);
-    }
-    lua_pop(L, 1); // palette table
-    out.size = static_cast<uint8_t>(count);
-    out.debugTransparent = false;
-    return count;
-}
-
 void copyName(char (&dst)[SkinPack::NAME_CAP], const char* src) {
     std::snprintf(dst, SkinPack::NAME_CAP, "%s", src ? src : "");
 }
@@ -223,24 +196,13 @@ bool loadSkinPack(const std::string& folder, LayeredAssetStore& store,
         return false;
     }
 
-    // Manifest table now sits at the stack top.
-    if (readPalette(L, out.palette) == 0) {
-        lua_close(L);
-        out = SkinPack{};
-        fail(error, "skin.lua palette is mandatory and must list hex colours");
-        return false;
-    }
+    // Manifest table now sits at the stack top. A `palette` field (skins made
+    // before Tomodachi #417) is ignored: skins carry no colours.
     readAssets(L, folder, store, out);
     readNineSlice(L, out);
 
     lua_close(L);
     return true;
-}
-
-void applySkinPalette(const SkinPack& pack, Palette& dst) {
-    for (int i = 0; i < PALETTE_MAX_ENTRIES; ++i) dst.colors[i] = pack.palette.colors[i];
-    dst.size = pack.palette.size ? pack.palette.size : PALETTE_MAX_ENTRIES;
-    dst.debugTransparent = false;
 }
 
 } // namespace enjin2

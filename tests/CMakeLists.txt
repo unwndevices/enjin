@@ -719,7 +719,7 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME layer_binding_test COMMAND layer_binding_test)
 
-    # Draw-state bindings: setPaletteColor forms + setLineWidth primitives (Tomodachi #255)
+    # Draw-state bindings: the read-only palette (Tomodachi #417) + setLineWidth primitives (#255)
     add_executable(draw_state_binding_test
         draw_state_binding_test.cpp
     )
