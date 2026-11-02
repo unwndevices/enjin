@@ -55,7 +55,13 @@ struct BodyState {
     float vy{0};          ///< Velocity Y (px/s).
     float radius{3};      ///< Ball radius (px).
     float restitution{0.5f}; ///< Bounciness [0..1] (can exceed 1 for bumpers).
-    float drag{0};        ///< Velocity damping /s (rolling friction).
+    float drag{0};        ///< Velocity damping /s: a loss proportional to speed (air, a
+                          ///< sticky surface).
+    /// Rolling resistance (px/s²): a constant deceleration against the motion,
+    /// whatever the speed (Coulomb-like, a ball on a board). A pull weaker than
+    /// it never starts the body from rest; a rolling body it slows stops, and
+    /// stays stopped. 0 = none.
+    float rollingResistance{0};
 };
 
 /// A static collider's handle within its ColliderSet (#384): handed out by the
@@ -300,6 +306,20 @@ inline void applyDrag(BodyState& body, float h) {
     body.vy *= factor;
 }
 
+/// Rolling resistance over one substep h: take rollingResistance·h off the
+/// speed along the motion, stopping the body (never reversing it) when that is
+/// all the speed it has. Runs after gravity's kick and before the move, so a
+/// pull under the resistance moves the body by nothing at all, not by a creep.
+inline void applyRollingResistance(BodyState& body, float h) {
+    if (body.rollingResistance <= 0.0f) return;
+    const float speed = std::hypot(body.vx, body.vy);
+    const float loss = body.rollingResistance * h;
+    if (speed <= loss) { body.vx = 0.0f; body.vy = 0.0f; return; }
+    const float k = (speed - loss) / speed;
+    body.vx *= k;
+    body.vy *= k;
+}
+
 /// Ray (o + d·t) vs sphere(c, r): earliest t∈[0,1] + contact normal, or false.
 inline bool raySphere(float ox, float oy, float dx, float dy,
                       float cx, float cy, float r,
@@ -541,8 +561,8 @@ inline void depenetrate(BodyState& body, ColliderSet& set,
 /**
  * @brief Advance the world by one FULL frame using N fixed-dt substeps.
  *
- * Each substep: spring the flipper angles (derive ω), integrate gravity, then run
- * a swept conservative-advancement TOI loop (≤4 iters/substep) followed by a full
+ * Each substep: spring the flipper angles (derive ω), integrate gravity, take off
+ * the rolling resistance, then run a swept conservative-advancement TOI loop (≤4 iters/substep) followed by a full
  * depenetration+impulse pass, then apply drag. Contacts are appended to @p
  * contacts (the caller polls/clears them per frame).
  *
@@ -574,9 +594,10 @@ inline void stepFrame(BodyState& body, ColliderSet& set,
             f.angVel = (f.angle - prev) / h;
         }
 
-        // 2. integrate gravity
+        // 2. integrate gravity, less the rolling resistance
         body.vx += gx * h;
         body.vy += gy * h;
+        detail::applyRollingResistance(body, h);
 
         const float sp = std::hypot(body.vx, body.vy);
         if (sp > stats.maxSpeed) stats.maxSpeed = sp;

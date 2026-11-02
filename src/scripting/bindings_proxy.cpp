@@ -1135,7 +1135,7 @@ static int lua_csprite_proxy_newindex_impl(lua_State* L) {
 // C_Body_Proxy Metatable Implementation (ADR-0003 §4, Tomodachi #80)
 //
 // The single dynamic circle body. Writable state (x/y/vx/vy/radius/restitution/
-// drag), step configuration (gravity/substeps/swept), a step(dt) that runs N
+// drag/rollingResistance), step configuration (gravity/substeps/swept), a step(dt) that runs N
 // substeps against the active ColliderSet, and polled contacts (no callbacks).
 //==============================================================================
 
@@ -1217,6 +1217,7 @@ static int lua_cbody_proxy_index_impl(lua_State* L) {
     if (strcmp(key, "radius") == 0)      { lua_pushnumber(L, body->getRadius()); return 1; }
     if (strcmp(key, "restitution") == 0) { lua_pushnumber(L, body->getRestitution()); return 1; }
     if (strcmp(key, "drag") == 0)        { lua_pushnumber(L, body->getDrag()); return 1; }
+    if (strcmp(key, "rollingResistance") == 0) { lua_pushnumber(L, body->getRollingResistance()); return 1; }
 
     lua_pushnil(L);
     return 1;
@@ -1237,6 +1238,7 @@ static int lua_cbody_proxy_newindex_impl(lua_State* L) {
     else if (strcmp(key, "radius") == 0) body->setRadius(v);
     else if (strcmp(key, "restitution") == 0) body->setRestitution(v);
     else if (strcmp(key, "drag") == 0)   body->setDrag(v);
+    else if (strcmp(key, "rollingResistance") == 0) body->setRollingResistance(v);
     return 0;
 }
 
@@ -1847,7 +1849,7 @@ static void registerSpriteProxy(lua_State* L) {
 }
 
 // C_Body_Proxy (ADR-0003 §4, #80): the circle body. Writable
-// x/y/vx/vy/radius/restitution/drag via __newindex.
+// x/y/vx/vy/radius/restitution/drag/rollingResistance via __newindex.
 static void registerBodyProxy(lua_State* L) {
     static constexpr LuaApiEntry kMethods[] = {
         luaFunction("step", lua_body_step, "(dt:number) -> nil",
@@ -1875,14 +1877,17 @@ static void registerBodyProxy(lua_State* L) {
         LuaApiScope::Methods, "C_Body", "Body methods, called as body:name(...).", kMethods);
     static constexpr LuaApiEntry kMeta[] = {
         luaFunction("__index", lua_cbody_proxy_index_impl, "(body:C_Body, key:string) -> any",
-                    "body.x, y, vx, vy, radius, restitution and drag (numbers) read the body; "
-                    "other keys look up a method.",
+                    "body.x, y, vx, vy, radius, restitution, drag and rollingResistance "
+                    "(numbers) read the body; other keys look up a method.",
                     "body: the component\n"
                     "key: a field or method name; unknown keys give nil")
-            .note("Raises once the component is destroyed."),
+            .note("drag takes off a share of the speed per second; rollingResistance is a "
+                  "constant deceleration in px/s² that holds the body still under a weaker pull. "
+                  "Raises once the component is destroyed."),
         luaFunction("__newindex", lua_cbody_proxy_newindex_impl,
                     "(body:C_Body, key:string, value:number) -> nil",
-                    "Writes x, y, vx, vy, radius, restitution and drag; other keys are ignored.",
+                    "Writes x, y, vx, vy, radius, restitution, drag and rollingResistance; other "
+                    "keys are ignored.",
                     "body: the component\n"
                     "key: the field\n"
                     "value: the new value; a non-number raises, whatever the key"),

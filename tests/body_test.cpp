@@ -12,6 +12,9 @@
 //   PHYS-BODY-06  a flipper moving away from the ball does not stall the TOI loop
 //   PHYS-BODY-07  every collider has an id: contacts carry it, remove(id) and
 //                 setEnabled(id, on) take one collider out (#384)
+//   PHYS-BODY-08  rolling resistance: a constant deceleration that holds a ball
+//                 on a slope gentler than it, takes it off a steeper one, and
+//                 stops a rolling ball without turning it round (Tomodachi #393)
 #include <enjin2/core/colliders.hpp>
 #include <enjin2/core/object.hpp>
 #include <enjin2/components/body.hpp>
@@ -343,6 +346,60 @@ static void test_collider_ids() {
     ASSERT(sawFlipper && flipperIdZero, "a flipper's contacts carry id 0");
 }
 
+static void test_rolling_resistance() {
+    printf("--- PHYS-BODY-08: rolling resistance (N=1..8) ---\n");
+    ColliderSet open;  // no colliders: an open, level floor
+    for (int N : {1, 4, 8}) {
+        char msg[160];
+        // A pull of 90 px/s² against a resistance of 100: the ball never moves,
+        // not even by a creep, over 10 s.
+        {
+            BodyState b;
+            b.x = 10; b.y = 10; b.radius = 2; b.rollingResistance = 100.0f;
+            run(b, open, 90.0f, 0.0f, 300, N, true, [](int, const std::vector<Contact>&) {});
+            snprintf(msg, sizeof(msg), "N=%d a pull under the resistance holds the ball (x=%.6f, vx=%.6f)",
+                     N, b.x, b.vx);
+            ASSERT(b.x == 10.0f && b.vx == 0.0f && b.y == 10.0f, msg);
+        }
+        // A pull of 300 against 100 rolls it at the difference: 200 px/s², so
+        // 1 s from rest is 200 px/s and 100 px (s = a t² / 2).
+        {
+            BodyState b;
+            b.x = 0; b.y = 0; b.radius = 2; b.rollingResistance = 100.0f;
+            run(b, open, 0.0f, 300.0f, 30, N, true, [](int, const std::vector<Contact>&) {});
+            snprintf(msg, sizeof(msg), "N=%d a steeper pull rolls at its excess (vy=%.3f, y=%.3f)", N, b.vy, b.y);
+            ASSERT(std::fabs(b.vy - 200.0f) < 0.5f && std::fabs(b.y - 100.0f) < 200.0f / 30 / N + 0.5f, msg);
+            ASSERT(b.vx == 0.0f, "the resistance has no sideways part");
+        }
+        // Rolling at 120 px/s on the level, against 60 px/s²: it stops after 2 s
+        // and 120 px (v² / 2a), and stays stopped rather than rolling back.
+        {
+            BodyState b;
+            b.x = 0; b.y = 0; b.vx = 72.0f; b.vy = 96.0f; b.radius = 2; b.rollingResistance = 60.0f;
+            run(b, open, 0.0f, 0.0f, 90, N, true, [](int, const std::vector<Contact>&) {});
+            const float d = std::hypot(b.x, b.y);
+            snprintf(msg, sizeof(msg), "N=%d a rolling ball stops in v²/2a (d=%.3f, v=%.4f)", N, d,
+                     std::hypot(b.vx, b.vy));
+            ASSERT(b.vx == 0.0f && b.vy == 0.0f, msg);
+            ASSERT(std::fabs(d - 120.0f) < 120.0f / 30 / N + 0.5f, msg);
+            ASSERT(std::fabs(b.y / b.x - 96.0f / 72.0f) < 1e-3f, "it slows along its own heading");
+        }
+    }
+    // 0 (the default) is no resistance: a body left alone keeps its speed.
+    BodyState b;
+    b.vx = 50.0f;
+    ASSERT(b.rollingResistance == 0.0f, "rolling resistance defaults to 0");
+    run(b, open, 0.0f, 0.0f, 30, 4, true, [](int, const std::vector<Contact>&) {});
+    ASSERT(b.vx == 50.0f, "no resistance, no slowing");
+
+    // The component carries it.
+    Object o;
+    C_Body* body = o.addComponent<C_Body>();
+    body->setRollingResistance(42.0f);
+    ASSERT(body->getRollingResistance() == 42.0f && body->state().rollingResistance == 42.0f,
+           "C_Body sets and reads its rolling resistance");
+}
+
 int main() {
     test_rest_no_tunnel();
     test_swept_vs_naive();
@@ -351,6 +408,7 @@ int main() {
     test_component_contact_poll();
     test_flipper_moving_away();
     test_collider_ids();
+    test_rolling_resistance();
 
     printf("\n%d passed, %d failed\n", passes, failures);
     return failures > 0 ? 1 : 0;
