@@ -55,7 +55,7 @@ struct SpriteReimportOptions {
     /// PNG slicing, reused from the source sidecar.
     uint16_t cellW = 0, cellH = 0;
     /// Target colours for RGBA sources: the 8 Palette roles, slot i is role i.
-    std::array<RGB, ROLE_COUNT> palette = systemPalette();
+    std::array<RGB, ROLE_COUNT> palette = houseDefaultPalette();
     SpriteImportLimits limits;
 };
 

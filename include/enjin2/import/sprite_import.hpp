@@ -87,14 +87,14 @@ struct SpriteImportLimits {
 };
 
 /// The house default's 8 Palette roles (Palette's default), the importer's default target.
-std::array<RGB, ROLE_COUNT> systemPalette();
+std::array<RGB, ROLE_COUNT> houseDefaultPalette();
 
 struct SpriteImportOptions {
     SpriteKind kind = SpriteKind::Auto;
     /// PNG cell dimensions; both zero means the whole image as one frame.
     uint16_t cellW = 0, cellH = 0;
     /// Target colours for RGBA sources: the 8 Palette roles, slot i is role i.
-    std::array<RGB, ROLE_COUNT> palette = systemPalette();
+    std::array<RGB, ROLE_COUNT> palette = houseDefaultPalette();
     SpriteImportLimits limits;
 };
 

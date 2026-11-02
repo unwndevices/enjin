@@ -34,7 +34,7 @@
  *   SPI-21  Malformed headers, frames and chunks rejected.
  *   SPI-22  tomo_tune2.aseprite imports with its tomo_tune2.gpl palette and matches
  *           the committed tomo_tune2.njn part for part.
- *   SPI-23  tomo_tune2.aseprite against the system palette → PaletteMismatch.
+ *   SPI-23  tomo_tune2.aseprite against the house default palette → PaletteMismatch.
  *   SPI-24  Truncation/corruption corpus: never crashes; every ok result
  *           re-reads (run under ASan by scripts/importer-check.sh).
  *   SPI-25  An unrolled clip over 255 frames → TooLarge.
@@ -722,7 +722,7 @@ int main(int argc, char** argv) {
     }
     cells.cellW = 3;
     ASSERT(!run(grid, cells).ok(), "PNG non-dividing cell rejected");
-    const auto pal = systemPalette();
+    const auto pal = houseDefaultPalette();
     const auto rgba = pngImage(2, 1, false, {pal[2].r,pal[2].g,pal[2].b,255, 255,0,255,0});
     const auto matched = run(rgba);
     ASSERT(matched.ok() && readSheet(matched).pixl == Bytes({2,15}), "PNG RGBA exact colour and clear pixel");

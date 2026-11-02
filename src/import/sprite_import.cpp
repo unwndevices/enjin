@@ -533,7 +533,7 @@ SpriteImportResult Importer::run() {
 
 } // namespace
 
-std::array<RGB, ROLE_COUNT> systemPalette() {
+std::array<RGB, ROLE_COUNT> houseDefaultPalette() {
     const Palette p;
     std::array<RGB, ROLE_COUNT> out{};
     std::copy(std::begin(p.colors), std::end(p.colors), out.begin());
