@@ -6,7 +6,7 @@
 //   shape_paint_kit_test <pack.njn> --update   rewrite the goldens (review the diff!)
 //
 // A golden is the layer over one window as rows of palette indices ('.' = 15,
-// transparent). Look colours: body 9, accent 4, ink 0. The Star stands at
+// transparent). Look colours: body accent2 (5), accent accent (4), ink bg (0). The Star stands at
 // (80, 150): Kit (artboard) point (x, y) lands on screen (x + 40, y + 82).
 
 #include <enjin2/graphics/asset_arena.hpp>
@@ -76,9 +76,9 @@ static bool golden(const Layer& c, const char* name, int x0, int y0, int w, int 
 static ShapeLook starLook() {
     ShapeLook l;
     for (uint8_t s = 0; s < SHAPE_SLOT_COUNT; ++s) l.set(ShapeSlot(s), 1);
-    l.colour[0] = 9;
-    l.colour[1] = 4;
-    l.colour[2] = 0;
+    l.colour[0] = ROLE_ACCENT2;
+    l.colour[1] = ROLE_ACCENT;
+    l.colour[2] = ROLE_BG;
     return l;
 }
 
@@ -147,9 +147,9 @@ int main(int argc, char** argv) {
         l.set(ShapeSlot::Eyes, 2);
         l.set(ShapeSlot::Mouth, 2);
         l.set(ShapeSlot::Top, 2);
-        l.colour[0] = 9;
-        l.colour[1] = 4;
-        l.colour[2] = 0;
+        l.colour[0] = ROLE_ACCENT2;
+        l.colour[1] = ROLE_ACCENT;
+        l.colour[2] = ROLE_BG;
         ShapePackGroup pet;
         ASSERT(pet.build(pack, l, arena, &e), e.text);
         layer.clear(Pixel4(15));

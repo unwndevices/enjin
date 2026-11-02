@@ -124,16 +124,16 @@ static ShapeDrawScratch* scratch() {
     return s;
 }
 
-// Body 9, accent 4, ink 0.
+// Body accent2, accent accent, ink bg (Palette roles).
 static ShapeLook look(std::initializer_list<std::pair<ShapeSlot, uint16_t>> extra = {}) {
     ShapeLook l;
     l.set(ShapeSlot::Body, 1);
     l.set(ShapeSlot::Eyes, 1);
     l.set(ShapeSlot::Mouth, 1);
     for (auto [s, id] : extra) l.set(s, id);
-    l.colour[0] = 9;
-    l.colour[1] = 4;
-    l.colour[2] = 0;
+    l.colour[0] = ROLE_ACCENT2;
+    l.colour[1] = ROLE_ACCENT;
+    l.colour[2] = ROLE_BG;
     return l;
 }
 
@@ -186,14 +186,14 @@ static void testDitheredCheek() {
     // Cheek at x 76..83, y 92..93. Bayer row 0 (y 92) {0 8 2 10}: even x < 8;
     // row 1 (y 93) {12 4 14 6}: odd x.
     ASSERT(expectPicture(layer, 75, 92, 10, 2,
-                         "9494949499\n"
-                         "9949494949",
+                         "5454545455\n"
+                         "5545454545",
                          "cheek at x 80"),
            "50 % cheek: the Body through every other pixel");
     ASSERT(draw(f, pet, layer, look({{ShapeSlot::Cheeks, 1}}), 81, 100), "moved");
     ASSERT(expectPicture(layer, 76, 92, 10, 2,
-                         "9949494949\n"
-                         "9494949499",
+                         "5545454545\n"
+                         "5454545455",
                          "cheek at x 81"),
            "moved one pixel right: the pattern stays on the screen");
 }
@@ -210,13 +210,13 @@ static void testInnerStrokeOnTheBody() {
     ASSERT(expectPicture(layer, 71, 83, 6, 4,
                          "......\n"
                          ".00000\n"
-                         ".09999\n"
-                         ".09999",
+                         ".05555\n"
+                         ".05555",
                          "top-left corner"),
            "inner stroke: a 1 px ink ring inside the Body's edge");
     ASSERT(expectPicture(layer, 83, 97, 5, 4,
-                         "99990\n"
-                         "99990\n"
+                         "55550\n"
+                         "55550\n"
                          "00000\n"
                          ".....",
                          "bottom-right corner"),
@@ -267,11 +267,11 @@ static void testOwnClip() {
     // Right eye anchor (84, 88): lip x 84..87 y 88..89, teeth cut to x 84..87 y 89..90.
     // Left eye anchor (76, 88), mirrored: [72, 76), x 72..75.
     ASSERT(expectPicture(layer, 72, 87, 16, 5,
-                         "9999999999999999\n"
-                         "0000999999990000\n"
-                         "4444999999994444\n"
-                         "4444999999994444\n"
-                         "9999999999999999",
+                         "5555555555555555\n"
+                         "0000555555550000\n"
+                         "4444555555554444\n"
+                         "4444555555554444\n"
+                         "5555555555555555",
                          "own clip"),
            "teeth only inside the clip Shape, mirrored with their member");
 }
@@ -300,7 +300,7 @@ static void testLiveBodyClip() {
                 // The face paints over the cap (#317 decision 6): eyes at
                 // (x - 5, y - 12) (mirrored) and (x + 4, y - 12), the mouth at (x, y - 4).
                 const bool face = (py == y - 12 && (px == x - 5 || px == x + 4)) || (px == x && py == y - 4);
-                ok = ok && v == (face ? 0 : cap ? 4 : body ? 9 : 15);
+                ok = ok && v == (face ? ROLE_BG : cap ? ROLE_ACCENT : body ? ROLE_ACCENT2 : 15);
             }
         ASSERT(ok, "the cap is cut to the Body where the Body is now");
     }

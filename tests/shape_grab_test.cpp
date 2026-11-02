@@ -98,9 +98,9 @@ static bool openStar(Star& s, Layer& layer) {
     if (!s.pack.open(*s.src, &e)) return false;
     s.arena.allocateBacking(64 * 1024);
     for (uint8_t k = 0; k < SHAPE_SLOT_COUNT; ++k) s.look.set(ShapeSlot(k), 1);
-    s.look.colour[0] = 9;
-    s.look.colour[1] = 4;
-    s.look.colour[2] = 0;
+    s.look.colour[0] = ROLE_ACCENT2;
+    s.look.colour[1] = ROLE_ACCENT;
+    s.look.colour[2] = ROLE_BG;
     if (!s.pet.build(s.pack, s.look, s.arena, &e)) return false;
     s.pet.setPosition(px(80, 150));
     layer.clear(Pixel4(15));

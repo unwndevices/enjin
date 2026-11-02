@@ -226,9 +226,9 @@ bool ShapePackGroup::validate(const ShapeLook& look, ShapeError* err) const
         }
     }
     for (uint8_t r = 0; r < 3; ++r)
-        if (look.colour[r] > 14)
+        if (look.colour[r] >= ROLE_COUNT)
         {
-            setError(err, "Look: colours.%s %u is outside the palette (0..14; 15 is transparent)", shapeRoleName(ShapeRole(r)),
+            setError(err, "Look: colours.%s %u is not a Palette role (0..7)", shapeRoleName(ShapeRole(r)),
                      unsigned(look.colour[r]));
             return false;
         }
