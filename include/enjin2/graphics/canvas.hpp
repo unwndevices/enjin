@@ -511,7 +511,13 @@ namespace enjin2
         }
 
         /**
-         * @brief Batch pixel setting for arrays of data
+         * @brief Set a row's run of pixels from an array: pixels[0..count-1]
+         *        to x..x+count-1 on row y, clipped to the canvas.
+         *
+         * Paints exactly what setPixel would for each, at any start and width
+         * parity: an odd start owns the high nibble of its byte, the pairs
+         * between are one byte each, an odd remainder owns the low nibble of
+         * the last byte. The span's tiles are marked dirty once.
          * @param x Starting x coordinate
          * @param y Y coordinate
          * @param pixels Array of pixel values
@@ -522,39 +528,30 @@ namespace enjin2
             if (y < 0 || y >= HEIGHT || x >= WIDTH || count <= 0)
                 return;
 
-            // Clip to canvas bounds
-            if (x < 0)
+            // Clip to canvas bounds, in int so a far-off-left start can't wrap.
+            int x0 = x, n = count;
+            if (x0 < 0)
             {
-                pixels += -x;
-                count += x;
-                x = 0;
+                pixels += -x0;
+                n += x0;
+                x0 = 0;
             }
-            if (x + count > WIDTH)
-            {
-                count = WIDTH - x;
-            }
+            if (x0 + n > WIDTH)
+                n = WIDTH - x0;
+            if (n <= 0)
+                return;
 
-            // Mark the tile span dirty (the fast path below bypasses setPixel).
-            invalidate(x, y, count, 1);
+            // Mark the span dirty (the packed writes below bypass setPixel).
+            invalidate(static_cast<int16_t>(x0), y, static_cast<int16_t>(n), 1);
 
-            // Optimized batch setting for even-aligned data
-            if ((x & 1) == 0 && (count & 1) == 0)
-            {
-                size_t startIndex = getIndex(x, y);
-
-                for (int16_t i = 0; i < count; i += 2)
-                {
-                    buffer[startIndex + i / 2] = PackedPixel4((pixels[i + 1].value << 4) | pixels[i].value);
-                }
-            }
-            else
-            {
-                // Fallback for odd alignment
-                for (int16_t i = 0; i < count; ++i)
-                {
-                    setPixel(x + i, y, pixels[i]);
-                }
-            }
+            PackedPixel4 *p = &buffer[getIndex(static_cast<int16_t>(x0), y)];
+            int i = 0;
+            if (x0 & 1)
+                (p++)->setHigh(pixels[i++]);
+            for (; i + 1 < n; i += 2)
+                *p++ = PackedPixel4(static_cast<uint8_t>((pixels[i + 1].value << 4) | pixels[i].value));
+            if (i < n)
+                p->setLow(pixels[i]);
         }
 
         void fill(const Rect &rect, Pixel4 color) override
