@@ -110,6 +110,22 @@ static void test_fast_paths()
     for (int16_t i = 0; i < 64; ++i)
         ref.setPixel(2 + i, 7, batch[i]);
 
+    // Every start and width parity, clipped at both edges: the nibble-aware
+    // path, row by row, against setPixel. From batch[1]: no pixel of a
+    // short run is the canvas's cleared 0.
+    const Pixel4 *run = batch + 1;
+    const int16_t starts[] = {-3, -2, 0, 1, 2, 3, 120, 121};
+    const int16_t widths[] = {1, 2, 3, 4, 9, 10};
+    int16_t row = 10;
+    for (int16_t sx : starts)
+        for (int16_t w : widths)
+        {
+            fast.setPixelBatch(sx, row, run, w);
+            for (int16_t i = 0; i < w; ++i)
+                ref.setPixel(sx + i, row, run[i]);
+            ++row;
+        }
+
     size_t bad = 0;
     for (int16_t y = 0; y < 127; ++y)
         for (int16_t x = 0; x < 127; ++x)
