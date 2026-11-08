@@ -209,7 +209,19 @@ static void test_visibility_toggle_recomposites()
     c.endFrame();
 }
 
-#include "/tmp/opencode/replacement.cpp"
+// deriveBandMask: bit ty is set when any tile of tile row ty is dirty.
+static void test_derive_band_mask()
+{
+    uint8_t dirty[Comp::DIRTY_BYTES] = {};
+    Frame<64, 64> f{nullptr, dirty, Comp::TILES_X, Comp::TILES_Y, nullptr};
+    ASSERT(f.deriveBandMask() == 0, "nothing dirty: no band");
+    dirty[0] = 1u << 2;            // tile (2,0)
+    dirty[1] = 1u << (13 - 8);     // tile (1,3)
+    ASSERT(f.deriveBandMask() == ((1u << 0) | (1u << 3)), "the dirty tiles' rows");
+    memset(dirty, 0xFF, sizeof dirty);
+    ASSERT(f.deriveBandMask() == 0x0F, "all dirty: every row of a 4-row canvas");
+}
+
 int main()
 {
     printf("compositor_dirty_test\n");

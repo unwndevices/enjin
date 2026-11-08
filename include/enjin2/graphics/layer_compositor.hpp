@@ -3,6 +3,7 @@
 #include "canvas.hpp"
 #include "remap.hpp"
 #include "presenter.hpp"
+#include "span_mask.hpp"
 #include <cstring>
 
 namespace enjin2 {
@@ -164,6 +165,71 @@ struct LayerCompositor {
     /// Palette handed to the presenter (may be null — adapter falls back).
     const Palette* palette = nullptr;
 
+    // ------------------------------------------------------------
+    // MASKS AND THE COVER (screen transitions, #455)
+    // ------------------------------------------------------------
+    //
+    // A masked layer's pixels count only inside its mask: outside it, the
+    // layers below show through as if it were transparent there. The cover is
+    // a solid colour painted inside its own mask over every layer, untinted.
+    // Changing either recomposites only the tiles whose spans changed (a
+    // growing disc dirties its ring, not its bounding box). A frame with no
+    // mask and no cover takes the unmasked composite loop unchanged.
+
+    using Mask = SpanMask<W, H>;
+
+    /// @brief Mask a layer: from now on it shows only inside `m` (copied).
+    void setMask(uint8_t layer, const Mask& m) {
+        if (layer >= ENJIN_LAYER_COUNT) return;
+        for (uint16_t y = 0; y < H; ++y) {
+            const int a0 = masked_[layer] ? mask_[layer].x0[y] : 0;
+            const int a1 = masked_[layer] ? mask_[layer].x1[y] : W;
+            markSpanChange(y, a0, a1, m.x0[y], m.x1[y]);
+        }
+        mask_[layer] = m;
+        masked_[layer] = true;
+    }
+
+    /// @brief Unmask a layer: it shows everywhere again.
+    void clearMask(uint8_t layer) {
+        if (layer >= ENJIN_LAYER_COUNT || !masked_[layer]) return;
+        for (uint16_t y = 0; y < H; ++y) {
+            markSpanChange(y, mask_[layer].x0[y], mask_[layer].x1[y], 0, W);
+        }
+        masked_[layer] = false;
+    }
+
+    bool isMasked(uint8_t layer) const { return layer < ENJIN_LAYER_COUNT && masked_[layer]; }
+
+    /// @brief Paint `color` inside `m` (copied) over every layer.
+    void setCover(const Mask& m, Pixel4 color) {
+        const bool recolour = covered_ && coverColor_.value != color.value;
+        for (uint16_t y = 0; y < H; ++y) {
+            if (!covered_) {
+                markSpanChange(y, 0, 0, m.x0[y], m.x1[y]);
+            } else if (recolour) {
+                markSpan(y, cover_.x0[y], cover_.x1[y]);
+                markSpan(y, m.x0[y], m.x1[y]);
+            } else {
+                markSpanChange(y, cover_.x0[y], cover_.x1[y], m.x0[y], m.x1[y]);
+            }
+        }
+        cover_ = m;
+        coverColor_ = color;
+        covered_ = true;
+    }
+
+    /// @brief Take the cover away.
+    void clearCover() {
+        if (!covered_) return;
+        for (uint16_t y = 0; y < H; ++y) {
+            markSpan(y, cover_.x0[y], cover_.x1[y]);
+        }
+        covered_ = false;
+    }
+
+    bool hasCover() const { return covered_; }
+
     /// @brief Reset the dirty-tile state (call once after construction/setup).
     /// Layer 0 is opaque black (the base); layers 1..N-1 are transparent (index
     /// 15) so an untouched upper layer lets lower layers show through.
@@ -180,6 +246,10 @@ struct LayerCompositor {
         }
         memset(mergedDirty, 0, DIRTY_BYTES);
         memset(pendingDirty, 0, DIRTY_BYTES);
+        for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
+            masked_[l] = false;
+        }
+        covered_ = false;
     }
 
     /// @brief Show or hide a layer. A visibility change forces the whole frame
@@ -277,7 +347,11 @@ struct LayerCompositor {
                 if ((mergedDirty[t >> 3] & (1u << (t & 7))) == 0) {
                     continue;
                 }
-                recompositeTile(tx, ty);
+                if (anyMaskOrCover()) {
+                    recompositeTileMasked(tx, ty);
+                } else {
+                    recompositeTile(tx, ty);
+                }
             }
         }
     }
@@ -341,6 +415,133 @@ private:
         if (callback) {
             layers[l].setDirtyBitmap(saved);
         }
+    }
+
+    Mask mask_[ENJIN_LAYER_COUNT];
+    bool masked_[ENJIN_LAYER_COUNT] = {};
+    Mask cover_;
+    bool covered_ = false;
+    Pixel4 coverColor_ = Pixel4(0);
+
+    bool anyMaskOrCover() const {
+        if (covered_) return true;
+        for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
+            if (masked_[l] && visible[l]) return true;
+        }
+        return false;
+    }
+
+    /// Mark the tiles row y's pixels [x0, x1) fall in to recomposite.
+    void markSpan(uint16_t y, int x0, int x1) {
+        if (x0 < 0) x0 = 0;
+        if (x1 > W) x1 = W;
+        if (x0 >= x1 || y >= H) return;
+        const uint16_t ty = y / TILE_SIZE;
+        for (int tx = x0 / TILE_SIZE; tx <= (x1 - 1) / TILE_SIZE; ++tx) {
+            const uint16_t t = static_cast<uint16_t>(ty * TILES_X + tx);
+            pendingDirty[t >> 3] |= static_cast<uint8_t>(1u << (t & 7));
+        }
+    }
+
+    /// Mark what changes in row y when its span goes from [a0, a1) to [b0, b1).
+    void markSpanChange(uint16_t y, int a0, int a1, int b0, int b1) {
+        const bool aEmpty = a0 >= a1, bEmpty = b0 >= b1;
+        if (aEmpty && bEmpty) return;
+        if (aEmpty) { markSpan(y, b0, b1); return; }
+        if (bEmpty) { markSpan(y, a0, a1); return; }
+        if (a0 != b0) markSpan(y, a0 < b0 ? a0 : b0, a0 < b0 ? b0 : a0);
+        if (a1 != b1) markSpan(y, a1 < b1 ? a1 : b1, a1 < b1 ? b1 : a1);
+    }
+
+    /// @brief recompositeTile with masks and the cover: per row, a masked layer
+    /// joins the merge only where its span covers the pixel. A row every mask
+    /// covers or misses whole runs the byte loop; a row a mask edge crosses
+    /// runs per pixel. The cover then overwrites its span.
+    void recompositeTileMasked(uint16_t tx, uint16_t ty) {
+        const int x0 = tx * TILE_SIZE;
+        const int y0 = ty * TILE_SIZE;
+        const int x1 = x0 + TILE_SIZE > W ? W : x0 + TILE_SIZE;
+        const int y1 = y0 + TILE_SIZE > H ? H : y0 + TILE_SIZE;
+
+        const PackedPixel4* lbuf[ENJIN_LAYER_COUNT];
+        const uint8_t* llut[ENJIN_LAYER_COUNT];
+        const Mask* lmask[ENJIN_LAYER_COUNT];
+        uint8_t nvis = 0;
+        for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
+            if (!visible[l]) continue;
+            lbuf[nvis] = layers[l].getBuffer();
+            llut[nvis] = tint[l].lut;
+            lmask[nvis] = masked_[l] ? &mask_[l] : nullptr;
+            ++nvis;
+        }
+        PackedPixel4* obuf = output.getBuffer();
+
+        for (int py = y0; py < y1; ++py) {
+            const size_t row = static_cast<size_t>(py) * ROW_BYTES;
+            // The layers whose span takes this tile row whole; any edge inside
+            // it sends the row per pixel.
+            const PackedPixel4* rbuf[ENJIN_LAYER_COUNT];
+            const uint8_t* rlut[ENJIN_LAYER_COUNT];
+            uint8_t nrow = 0;
+            bool edge = false;
+            for (uint8_t k = 0; k < nvis; ++k) {
+                if (lmask[k]) {
+                    const int s0 = lmask[k]->x0[py], s1 = lmask[k]->x1[py];
+                    if (s0 >= x1 || s1 <= x0 || s0 >= s1) continue;  // misses the row
+                    if (s0 > x0 || s1 < x1) edge = true;
+                }
+                rbuf[nrow] = lbuf[k];
+                rlut[nrow] = llut[k];
+                ++nrow;
+            }
+            if (!edge) {
+                for (int px = x0; px < x1; px += 2) {
+                    const size_t idx = row + (static_cast<size_t>(px) >> 1);
+                    uint8_t lo = 0, hi = 0;
+                    for (uint8_t k = 0; k < nrow; ++k) {
+                        const uint8_t b = rbuf[k][idx].getByte();
+                        const uint8_t sl = b & 0x0F;
+                        if (sl != 0x0F) lo = rlut[k][sl];
+                        const uint8_t sh = static_cast<uint8_t>(b >> 4);
+                        if (sh != 0x0F) hi = rlut[k][sh];
+                    }
+                    if (px + 1 < x1) {
+                        obuf[idx] = PackedPixel4(static_cast<uint8_t>((hi << 4) | lo));
+                    } else {
+                        const uint8_t cur = obuf[idx].getByte();
+                        obuf[idx] = PackedPixel4(static_cast<uint8_t>((cur & 0xF0) | lo));
+                    }
+                }
+            } else {
+                for (int px = x0; px < x1; ++px) {
+                    const size_t idx = row + (static_cast<size_t>(px) >> 1);
+                    const bool odd = (px & 1) != 0;
+                    uint8_t v = 0;
+                    for (uint8_t k = 0; k < nvis; ++k) {
+                        if (lmask[k] && (px < lmask[k]->x0[py] || px >= lmask[k]->x1[py])) continue;
+                        const uint8_t b = lbuf[k][idx].getByte();
+                        const uint8_t s = odd ? static_cast<uint8_t>(b >> 4) : static_cast<uint8_t>(b & 0x0F);
+                        if (s != 0x0F) v = llut[k][s];
+                    }
+                    writeNibble(obuf[idx], odd, v);
+                }
+            }
+            if (covered_) {
+                int c0 = cover_.x0[py], c1 = cover_.x1[py];
+                if (c0 < x0) c0 = x0;
+                if (c1 > x1) c1 = x1;
+                const uint8_t c = coverColor_.value;
+                for (int px = c0; px < c1; ++px) {
+                    writeNibble(obuf[row + (static_cast<size_t>(px) >> 1)], (px & 1) != 0, c);
+                }
+            }
+        }
+    }
+
+    static void writeNibble(PackedPixel4& p, bool odd, uint8_t v) {
+        const uint8_t cur = p.getByte();
+        p = PackedPixel4(odd ? static_cast<uint8_t>((cur & 0x0F) | (v << 4))
+                             : static_cast<uint8_t>((cur & 0xF0) | (v & 0x0F)));
     }
 
     /// Byte stride of one packed pixel row (two 4-bit pixels per byte, rows

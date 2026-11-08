@@ -1450,6 +1450,18 @@ target_link_libraries(compositor_dirty_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME compositor_dirty_test COMMAND compositor_dirty_test)
 
+# Span masks: masked layers, the cover and Transition (#455). Disc spans
+# against the pixel-centre test, ring-only dirtying, masked-path parity.
+add_executable(span_mask_test
+    span_mask_test.cpp
+)
+target_include_directories(span_mask_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(span_mask_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME span_mask_test COMMAND span_mask_test)
+
 # recompositeTile parity oracle (#66): pins the compositor inner loop's exact
 # per-pixel semantics against an independent naive reference, so a perf rewrite
 # of the loop stays visually identical (even/odd width, partial tiles, tint,
