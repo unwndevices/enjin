@@ -49,6 +49,14 @@ void readAssets(lua_State* L, const std::string& folder,
     lua_pop(L, 1); // assets table
 }
 
+// Copy a string `face` into the pack; anything else (a number included, which
+// lua_tostring would coerce) names no face.
+void readFace(lua_State* L, SkinPack& out) {
+    lua_getfield(L, -1, "face");
+    if (lua_type(L, -1) == LUA_TSTRING) copyName(out.face, lua_tostring(L, -1));
+    lua_pop(L, 1);
+}
+
 // Attach `nineslice[name] = {w, h}` corners onto already-loaded assets.
 void readNineSlice(lua_State* L, SkinPack& out) {
     lua_getfield(L, -1, "nineslice");
@@ -113,10 +121,12 @@ bool loadSkinPack(const std::string& folder, LayeredAssetStore& store,
     }
 
     // A `palette` field (skins made before Tomodachi #417) is ignored: skins
-    // carry no colours. readAssets/readNineSlice read the table at the top.
+    // carry no colours. readFace/readAssets/readNineSlice read the table at
+    // the top.
     return readTableFile(
         source, "skin.lua",
         [&](lua_State* L, int, std::string*) {
+            readFace(L, out);
             readAssets(L, folder, store, out);
             readNineSlice(L, out);
             return true;

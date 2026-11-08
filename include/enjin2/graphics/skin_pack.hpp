@@ -38,6 +38,9 @@ struct SkinPack {
 
     Asset assets[MAX_ASSETS] = {}; ///< Present parts, in manifest-encounter order.
     int numAssets = 0;             ///< Count of live entries in @ref assets.
+    /// The layout the pack names (`face = "..."`), "" when it names none. What
+    /// an id means is the consumer's (Tomodachi's player Faces, ADR-0026).
+    char face[NAME_CAP] = {};
 
     /// Handle of the named asset, or `INVALID_HANDLE` if the pack omits it.
     LayeredAssetStore::Handle handleByName(const char* name) const;
@@ -54,6 +57,7 @@ struct SkinPack {
  *
  * @code
  * return {
+ *   face    = "tapedeck",                  -- optional layout id
  *   assets  = { tileset = "tileset", border = "border", ... },  -- optional
  *   nineslice = { border = { 4, 4 } },     -- optional {cornerW, cornerH}
  * }
@@ -63,7 +67,9 @@ struct SkinPack {
  * `palette` field left in an old manifest is ignored. Every `assets` entry
  * names a `.njn` basename resolved against @p folder; a present, loadable asset is registered, a missing or unloadable one is simply left out
  * (per-asset fallback is the caller's policy). `nineslice[name] = {w, h}` sets
- * the corner on the matching asset.
+ * the corner on the matching asset. `face` is copied into `SkinPack::face`
+ * when it is a string (cut to `NAME_CAP - 1` bytes like an asset name); any
+ * other value names no face.
  *
  * @return false (with @p error set) only when the manifest is missing or
  *         unparseable.
