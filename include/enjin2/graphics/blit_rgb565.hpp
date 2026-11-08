@@ -34,6 +34,18 @@ constexpr uint16_t packRgb565(uint8_t r, uint8_t g, uint8_t b) {
     return static_cast<uint16_t>(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3));
 }
 
+/// The 8-bit level of a 5-bit channel (0..31), its top bits repeated below.
+constexpr uint8_t expand5(uint32_t v) { return static_cast<uint8_t>((v << 3) | (v >> 2)); }
+
+/// The 8-bit level of a 6-bit channel (0..63), its top bits repeated below.
+constexpr uint8_t expand6(uint32_t v) { return static_cast<uint8_t>((v << 2) | (v >> 4)); }
+
+/// Unpack a native-order RGB565 word (red in the high bits) into 8-bit
+/// channels, each 0..255 (expand5 / expand6).
+constexpr RGB unpackRgb565(uint16_t c) {
+    return RGB(expand5(c >> 11), expand6((c >> 5) & 0x3F), expand5(c & 0x1F));
+}
+
 /**
  * @brief Swap the two bytes of a 16-bit word.
  *

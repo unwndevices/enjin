@@ -5,7 +5,8 @@
 //
 // Free functions straight against any ICanvas<Pixel4> framebuffer (Canvas4 is
 // deliberately lean, so these are not member API): the nine-slice panel blit,
-// filled ellipses (solid or a Remap of what is under them) and the warp blit.
+// filled ellipses (solid or a Remap of what is under them), the warp blit and
+// the column-scaled strip blit.
 // They copy or remap palette indices; none does arithmetic on them. The
 // Eisei-era grey-level blits (8-bit grey sources, additive/subtractive and
 // opacity blends) were deleted with the 8-role palette (ADR-0022, Tomodachi
@@ -220,6 +221,62 @@ namespace enjin2
                 for (int16_t dy = miny; dy <= maxy; ++dy)
                     for (int16_t dx = minx; dx <= maxx; ++dx)
                         dst.setPixel(dx, dy, sp);
+            }
+        }
+    }
+
+    // ---- column-scaled strip blit (Tomodachi #459, ADR-0026) ----
+
+    // Draw `src` as a strip `w` px wide whose left edge is `hL` px tall and
+    // whose right edge is `hR`, both centred on one line: the cover flow's Side
+    // covers (an inner edge that recedes) and its Flip (a width that narrows to
+    // nothing). (x, y) is the top-left of the strip's bounding box, so its
+    // centre line is max(hL, hR) / 2 rows below y.
+    //
+    // Column i (0..w-1) is hL + (hR - hL) * i / (w - 1) px tall, rounded half
+    // away from zero, and starts (max(hL, hR) - its height) / 2 rows below y.
+    // It reads source column i * srcW / w, and its row j reads source row
+    // j * srcH / height: nearest by column, then nearest by row within the
+    // column. With w, hL and hR the source's own size it is a plain blit.
+    //
+    // Source pixels equal to `transparent` are skipped, and the strip is
+    // clipped to the canvas; a zero or negative width or height draws nothing.
+    inline void stripBlit(ICanvas<Pixel4> &dst, const ICanvas<Pixel4> &src, int16_t x,
+                          int16_t y, int16_t w, int16_t hL, int16_t hR,
+                          Pixel4 transparent = Pixel4(PALETTE_TRANSPARENT))
+    {
+        const int srcW = src.getWidth();
+        const int srcH = src.getHeight();
+        if (w <= 0 || srcW <= 0 || srcH <= 0 || (hL <= 0 && hR <= 0))
+            return;
+        const int dstW = dst.getWidth();
+        const int dstH = dst.getHeight();
+        const int tallest = std::max<int>(hL, hR);
+        const int rise = hR - hL;
+        const int steps = w - 1;
+
+        // Only the columns inside the canvas, in int so a far-off start can't wrap.
+        const int i0 = std::max(0, -int(x));
+        const int i1 = std::min(int(w), dstW - int(x));
+        for (int i = i0; i < i1; ++i) {
+            int hc = hL;
+            if (steps > 0) {
+                const int64_t num = int64_t(2) * rise * i;  // past int at full int16 range
+                hc += int((num >= 0 ? num + steps : num - steps) / (2 * steps));
+            }
+            if (hc <= 0)
+                continue;
+            const int top = int(y) + (tallest - hc) / 2;
+            const int sx = i * srcW / w;
+            const int dx = int(x) + i;
+            const int j0 = std::max(0, -top);
+            const int j1 = std::min(hc, dstH - top);
+            for (int j = j0; j < j1; ++j) {
+                const Pixel4 sp = src.getPixel(static_cast<int16_t>(sx),
+                                               static_cast<int16_t>(j * srcH / hc));
+                if (sp.value == transparent.value)
+                    continue;
+                dst.setPixel(static_cast<int16_t>(dx), static_cast<int16_t>(top + j), sp);
             }
         }
     }

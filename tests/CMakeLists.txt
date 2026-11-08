@@ -182,6 +182,30 @@ target_link_libraries(nine_slice_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME nine_slice_test COMMAND nine_slice_test)
 
+# Oklab + the ordered dither into the Palette roles, and the column-scaled
+# strip blit (Tomodachi #459, ADR-0026)
+add_executable(role_dither_test
+    role_dither_test.cpp
+)
+target_include_directories(role_dither_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_compile_definitions(role_dither_test PRIVATE
+    ENJIN2_ROLE_DITHER_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/testdata/role_dither")
+target_link_libraries(role_dither_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME role_dither_test COMMAND role_dither_test)
+
+add_executable(strip_blit_test
+    strip_blit_test.cpp
+)
+target_include_directories(strip_blit_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+target_link_libraries(strip_blit_test PRIVATE
+    enjin2_core enjin2_graphics)
+add_test(NAME strip_blit_test COMMAND strip_blit_test)
+
 add_executable(warp_canvas_test
     warp_canvas_test.cpp
 )
