@@ -92,6 +92,10 @@ target_sources(enjin2_graphics PRIVATE
     # Layered-asset arena + owner/loader (ADR-0004, Tomodachi #95)
     src/graphics/asset_arena.cpp
     src/graphics/layered_asset.cpp
+    # Oklab + the ordered dither of RGB565 into the Palette roles
+    # (ADR-0026, Tomodachi #459)
+    src/graphics/oklab.cpp
+    src/graphics/role_dither.cpp
     # Retained layered-sprite instance: reconstruction + animation
     # (ADR-0004, Tomodachi #96)
     src/graphics/layered_sprite.cpp
