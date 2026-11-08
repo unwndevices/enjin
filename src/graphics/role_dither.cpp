@@ -3,12 +3,12 @@
 
 #include "../../include/enjin2/graphics/role_dither.hpp"
 
+#include "../../include/enjin2/graphics/bayer.hpp"
+#include "../../include/enjin2/graphics/blit_rgb565.hpp"
+
 namespace enjin2 {
 
 namespace {
-
-// The 4×4 Bayer matrix, row-major: entry (y & 3) * 4 + (x & 3).
-constexpr uint8_t BAYER4[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
 
 constexpr int CELL_SHIFT = 8 - RoleDither::GRID_BITS;
 
@@ -50,11 +50,11 @@ uint8_t RoleDither::nearestRole(uint8_t r, uint8_t g, uint8_t b) const {
 }
 
 uint8_t RoleDither::pick(uint16_t rgb565, int x, int y) const {
-    const int r5 = rgb565 >> 11, g6 = (rgb565 >> 5) & 63, b5 = rgb565 & 31;
+    const RGB c = unpackRgb565(rgb565);
     const int d = offset_[((y & 3) << 2) | (x & 3)];
-    const int r = clampByte(((r5 << 3) | (r5 >> 2)) + d) >> CELL_SHIFT;
-    const int g = clampByte(((g6 << 2) | (g6 >> 4)) + d) >> CELL_SHIFT;
-    const int b = clampByte(((b5 << 3) | (b5 >> 2)) + d) >> CELL_SHIFT;
+    const int r = clampByte(c.r + d) >> CELL_SHIFT;
+    const int g = clampByte(c.g + d) >> CELL_SHIFT;
+    const int b = clampByte(c.b + d) >> CELL_SHIFT;
     return table_[(r * GRID + g) * GRID + b];
 }
 

@@ -1,7 +1,9 @@
 // Oklab and the ordered dither into the Palette roles (Tomodachi #459,
 // ADR-0026): RGB565 covers become 4-bit role images, the same bytes on every
 // target.
+#include <enjin2/graphics/bayer.hpp>
 #include <enjin2/graphics/blit_rgb565.hpp>
+#include <enjin2/graphics/effect.hpp>
 #include <enjin2/graphics/oklab.hpp>
 #include <enjin2/graphics/role_dither.hpp>
 #include <cmath>
@@ -278,6 +280,23 @@ static void testGoldens() {
     checkGolden("gradient-paper-8-light.bin", gradient, paper8Light());
 }
 
+// The shared 4x4 Bayer matrix and the RGB565 channel expansion the dither
+// (and the music player's covers) read.
+static void testBayerAndRgb565() {
+    const uint8_t want[4][4] = {{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}};
+    bool same = true;
+    for (int y = 0; y < 8; ++y)
+        for (int x = 0; x < 8; ++x) same &= bayer4(x, y) == want[y & 3][x & 3];
+    ASSERT(same, "bayer4 is the standard matrix, repeating every 4 pixels");
+    // Effect's dissolve mask reads the same matrix: level 1 sets only entry 0.
+    const auto m = Mask::bayer(1);
+    ASSERT(m.rows[0] == 1u && m.rows[1] == 0u && m.rows[2] == 0u && m.rows[3] == 0u, "Mask::bayer(1) is entry 0");
+    ASSERT(expand5(0) == 0 && expand5(31) == 255 && expand5(16) == 132, "5-bit channels repeat their top bits");
+    ASSERT(expand6(0) == 0 && expand6(63) == 255 && expand6(32) == 130, "6-bit channels repeat their top bits");
+    const RGB c = unpackRgb565(packRgb565(255, 128, 0));
+    ASSERT(c.r == 255 && c.g == 130 && c.b == 0, "unpackRgb565 undoes packRgb565 to the channel's precision");
+}
+
 int main() {
     testOklabReference();
     testOklabFixedFollowsFloat();
@@ -287,6 +306,7 @@ int main() {
     testOddWidth();
     testIntoCanvas();
     testGoldens();
+    testBayerAndRgb565();
     printf("role_dither_test: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
 }

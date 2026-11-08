@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "bayer.hpp"
+
 #include "remap.hpp"
 
 namespace enjin2 {
@@ -124,13 +126,6 @@ struct Mask {
      * @return A `4 × 4` ordered-dither mask.
      */
     static constexpr Mask bayer(uint8_t level) {
-        // Standard 4×4 Bayer threshold matrix, values 0..15.
-        constexpr uint8_t B[4][4] = {
-            {0, 8, 2, 10},
-            {12, 4, 14, 6},
-            {3, 11, 1, 9},
-            {15, 7, 13, 5},
-        };
         const uint8_t lv = level > 16 ? 16 : level;
         Mask m{};
         m.w = 4;
@@ -138,7 +133,7 @@ struct Mask {
         for (uint8_t r = 0; r < 4; ++r) {
             uint32_t row = 0;
             for (uint8_t c = 0; c < 4; ++c) {
-                if (B[r][c] < lv) {
+                if (bayer4(c, r) < lv) {
                     row |= (1u << c);
                 }
             }
