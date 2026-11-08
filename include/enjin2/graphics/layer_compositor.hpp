@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bayer.hpp"
 #include "canvas.hpp"
 #include "remap.hpp"
 #include "presenter.hpp"
@@ -166,17 +167,53 @@ struct LayerCompositor {
     const Palette* palette = nullptr;
 
     // ------------------------------------------------------------
-    // MASKS AND THE COVER (screen transitions, #455)
+    // MASKS AND THE COVER (screen transitions, #455, #456)
     // ------------------------------------------------------------
     //
     // A masked layer's pixels count only inside its mask: outside it, the
     // layers below show through as if it were transparent there. The cover is
-    // a solid colour painted inside its own mask over every layer, untinted.
-    // Changing either recomposites only the tiles whose spans changed (a
-    // growing disc dirties its ring, not its bounding box). A frame with no
-    // mask and no cover takes the unmasked composite loop unchanged.
+    // painted over every layer, untinted, in up to COVER_BANDS bands: each
+    // band is a mask and what it shows (a solid colour, or the source canvas's
+    // pixel at the same place, on a share of its pixels). Bands nest, each
+    // inside the one before (in every row, its span inside the last band's),
+    // and a pixel takes the innermost band that holds it: an edge, as a ring
+    // or a soft band that dithers from the layers into the source. Changing either
+    // recomposites only the tiles whose spans changed (a growing disc dirties
+    // its ring, not its bounding box). A frame with no mask and no cover takes
+    // the unmasked composite loop unchanged.
 
     using Mask = SpanMask<W, H>;
+
+    /// The most bands a cover holds (Tomodachi's Home key portal: a 16 px
+    /// soft edge, one band a px, and its inside).
+    static constexpr uint8_t COVER_BANDS = 17;
+
+    /// @brief What a band of the cover shows.
+    struct CoverFill {
+        Pixel4 color = Pixel4(0);  ///< a solid colour, unless fromSource
+        bool fromSource = false;   ///< the source canvas's pixel at the same place
+        /// fromSource: of every 16 pixels, how many show the source (0..16), by
+        /// the 4×4 Bayer matrix anchored to the canvas, so a pixel's threshold
+        /// stays put while the band moves; the rest show the layers.
+        uint8_t density = 16;
+
+        static CoverFill solid(Pixel4 c) {
+            CoverFill f;
+            f.color = c;
+            return f;
+        }
+        static CoverFill source(uint8_t density = 16) {
+            CoverFill f;
+            f.fromSource = true;
+            f.density = density > 16 ? 16 : density;
+            return f;
+        }
+        bool operator==(const CoverFill& o) const {
+            return fromSource == o.fromSource &&
+                   (fromSource ? density == o.density : color.value == o.color.value);
+        }
+        bool operator!=(const CoverFill& o) const { return !(*this == o); }
+    };
 
     /// @brief Mask a layer: from now on it shows only inside `m` (copied).
     void setMask(uint8_t layer, const Mask& m) {
@@ -201,34 +238,63 @@ struct LayerCompositor {
 
     bool isMasked(uint8_t layer) const { return layer < ENJIN_LAYER_COUNT && masked_[layer]; }
 
-    /// @brief Paint `color` inside `m` (copied) over every layer.
+    /// @brief Paint `color` inside `m` (copied) over every layer: a cover of
+    /// one solid band.
     void setCover(const Mask& m, Pixel4 color) {
-        const bool recolour = covered_ && coverColor_.value != color.value;
+        setCoverBand(0, m, CoverFill::solid(color));
+        trimCover(1);
+    }
+
+    /// @brief The canvas the source bands show (not copied: it must outlive
+    /// the cover, or be replaced first). Setting it, even to the same canvas,
+    /// repaints every source band: call it again after drawing into it.
+    void setCoverSource(const Layer* source) {
+        coverSource_ = source;
+        for (uint8_t i = 0; i < coverBands_; ++i) {
+            if (!coverFill_[i].fromSource) continue;
+            for (uint16_t y = 0; y < H; ++y) markSpan(y, cover_[i].x0[y], cover_[i].x1[y]);
+        }
+    }
+
+    /// @brief Set band `band` of the cover to `m` (copied), showing `fill`. A
+    /// band past the last one adds it (any skipped band is empty). `m` lies
+    /// inside band `band - 1` and around band `band + 1` (the bands nest).
+    void setCoverBand(uint8_t band, const Mask& m, CoverFill fill) {
+        if (band >= COVER_BANDS) return;
+        for (uint8_t i = coverBands_; i < band; ++i) {
+            cover_[i].clear();
+            coverFill_[i] = CoverFill{};
+        }
+        const bool had = band < coverBands_;
+        const bool refill = had && coverFill_[band] != fill;
         for (uint16_t y = 0; y < H; ++y) {
-            if (!covered_) {
-                markSpanChange(y, 0, 0, m.x0[y], m.x1[y]);
-            } else if (recolour) {
-                markSpan(y, cover_.x0[y], cover_.x1[y]);
+            if (!had) {
+                markSpan(y, m.x0[y], m.x1[y]);
+            } else if (refill) {
+                markSpan(y, cover_[band].x0[y], cover_[band].x1[y]);
                 markSpan(y, m.x0[y], m.x1[y]);
             } else {
-                markSpanChange(y, cover_.x0[y], cover_.x1[y], m.x0[y], m.x1[y]);
+                markSpanChange(y, cover_[band].x0[y], cover_[band].x1[y], m.x0[y], m.x1[y]);
             }
         }
-        cover_ = m;
-        coverColor_ = color;
-        covered_ = true;
+        cover_[band] = m;
+        coverFill_[band] = fill;
+        if (band >= coverBands_) coverBands_ = static_cast<uint8_t>(band + 1);
+    }
+
+    /// @brief Keep the cover's first `bands` bands, dropping the rest.
+    void trimCover(uint8_t bands) {
+        for (uint8_t i = bands; i < coverBands_ && i < COVER_BANDS; ++i) {
+            for (uint16_t y = 0; y < H; ++y) markSpan(y, cover_[i].x0[y], cover_[i].x1[y]);
+        }
+        if (coverBands_ > bands) coverBands_ = bands;
     }
 
     /// @brief Take the cover away.
-    void clearCover() {
-        if (!covered_) return;
-        for (uint16_t y = 0; y < H; ++y) {
-            markSpan(y, cover_.x0[y], cover_.x1[y]);
-        }
-        covered_ = false;
-    }
+    void clearCover() { trimCover(0); }
 
-    bool hasCover() const { return covered_; }
+    bool hasCover() const { return coverBands_ > 0; }
+    uint8_t coverBands() const { return coverBands_; }
 
     /// @brief Reset the dirty-tile state (call once after construction/setup).
     /// Layer 0 is opaque black (the base); layers 1..N-1 are transparent (index
@@ -249,7 +315,8 @@ struct LayerCompositor {
         for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
             masked_[l] = false;
         }
-        covered_ = false;
+        coverBands_ = 0;
+        coverSource_ = nullptr;
     }
 
     /// @brief Show or hide a layer. A visibility change forces the whole frame
@@ -419,12 +486,13 @@ private:
 
     Mask mask_[ENJIN_LAYER_COUNT];
     bool masked_[ENJIN_LAYER_COUNT] = {};
-    Mask cover_;
-    bool covered_ = false;
-    Pixel4 coverColor_ = Pixel4(0);
+    Mask cover_[COVER_BANDS];
+    CoverFill coverFill_[COVER_BANDS];
+    uint8_t coverBands_ = 0;
+    const Layer* coverSource_ = nullptr;
 
     bool anyMaskOrCover() const {
-        if (covered_) return true;
+        if (coverBands_ > 0) return true;
         for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
             if (masked_[l] && visible[l]) return true;
         }
@@ -526,15 +594,67 @@ private:
                     writeNibble(obuf[idx], odd, v);
                 }
             }
-            if (covered_) {
-                int c0 = cover_.x0[py], c1 = cover_.x1[py];
-                if (c0 < x0) c0 = x0;
-                if (c1 > x1) c1 = x1;
-                const uint8_t c = coverColor_.value;
-                for (int px = c0; px < c1; ++px) {
-                    writeNibble(obuf[row + (static_cast<size_t>(px) >> 1)], (px & 1) != 0, c);
-                }
+            if (coverBands_ > 0) paintCoverRow(obuf, row, py, x0, x1);
+        }
+    }
+
+    /// @brief Paint the cover's bands over row py's pixels [x0, x1) of the
+    /// output (row = the row's byte offset). Bands nest, so a band paints its
+    /// span less the next band's: each pixel is painted once, by its band.
+    void paintCoverRow(PackedPixel4* obuf, size_t row, int py, int x0, int x1) {
+        for (uint8_t i = 0; i < coverBands_; ++i) {
+            int c0 = cover_[i].x0[py], c1 = cover_[i].x1[py];
+            if (c0 < x0) c0 = x0;
+            if (c1 > x1) c1 = x1;
+            if (c0 >= c1) continue;
+            int n0 = c1, n1 = c1;  // the next band's span here (empty: none)
+            if (i + 1 < coverBands_ && cover_[i + 1].x0[py] < cover_[i + 1].x1[py]) {
+                n0 = cover_[i + 1].x0[py] > c0 ? cover_[i + 1].x0[py] : c0;
+                n1 = cover_[i + 1].x1[py] < c1 ? cover_[i + 1].x1[py] : c1;
+                if (n0 >= n1) n0 = n1 = c1;
             }
+            paintCoverSpan(obuf, row, py, c0, n0, coverFill_[i]);
+            paintCoverSpan(obuf, row, py, n1, c1, coverFill_[i]);
+        }
+    }
+
+    /// @brief Paint pixels [c0, c1) of row py with `f`.
+    void paintCoverSpan(PackedPixel4* obuf, size_t row, int py, int c0, int c1, const CoverFill& f) {
+        if (c0 >= c1) return;
+        if (!f.fromSource) {
+            const uint8_t c = f.color.value;
+            for (int px = c0; px < c1; ++px) {
+                writeNibble(obuf[row + (static_cast<size_t>(px) >> 1)], (px & 1) != 0, c);
+            }
+            return;
+        }
+        const PackedPixel4* sbuf = coverSource_ ? coverSource_->getBuffer() : nullptr;
+        if (!sbuf || f.density == 0) return;
+        if (f.density >= 16) {
+            // The whole span: a byte at a time between its odd ends.
+            int px = c0;
+            if (px & 1) {
+                const size_t idx = row + (static_cast<size_t>(px) >> 1);
+                writeNibble(obuf[idx], true, static_cast<uint8_t>(sbuf[idx].getByte() >> 4));
+                ++px;
+            }
+            for (; px + 1 < c1; px += 2) {
+                const size_t idx = row + (static_cast<size_t>(px) >> 1);
+                obuf[idx] = sbuf[idx];
+            }
+            if (px < c1) {
+                const size_t idx = row + (static_cast<size_t>(px) >> 1);
+                writeNibble(obuf[idx], false, static_cast<uint8_t>(sbuf[idx].getByte() & 0x0F));
+            }
+            return;
+        }
+        const uint8_t* bayerRow = &BAYER4[(py & 3) << 2];
+        for (int px = c0; px < c1; ++px) {
+            if (bayerRow[px & 3] >= f.density) continue;
+            const size_t idx = row + (static_cast<size_t>(px) >> 1);
+            const bool odd = (px & 1) != 0;
+            const uint8_t b = sbuf[idx].getByte();
+            writeNibble(obuf[idx], odd, odd ? static_cast<uint8_t>(b >> 4) : static_cast<uint8_t>(b & 0x0F));
         }
     }
 

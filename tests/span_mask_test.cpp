@@ -1,4 +1,5 @@
 // Span masks, the compositor's masked layers and cover, and Transition (#455).
+#include <enjin2/graphics/bayer.hpp>
 #include <enjin2/graphics/layer_compositor.hpp>
 #include <enjin2/graphics/span_mask.hpp>
 #include <enjin2/ui/transition.hpp>
@@ -184,6 +185,201 @@ static void testCover() {
     ASSERT(outAt(c, 0, 0) == 5 && !c.hasCover(), "clearCover gives the layers back");
 }
 
+// A cover from a canvas (#456): inside its mask the frame shows the source
+// canvas's pixel at the same place, over every layer, untinted.
+static void testCoverFromSource() {
+    static Comp c;
+    static Comp::Layer src;
+    c.resetDirtyState();
+    c.layers[0].clear(Pixel4(1));
+    c.layers[1].clear(Pixel4(2));
+    c.tint[1] = Remap::solid(5);
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 64; ++x)
+            src.setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), Pixel4(static_cast<uint8_t>((x + 2 * y) % 8)));
+    settle(c);
+
+    Comp::Mask m;
+    m.disc(0, 0, 37);
+    c.setCoverSource(&src);
+    c.setCoverBand(0, m, Comp::CoverFill::source());
+    settle(c);
+    bool ok = true;
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 64; ++x)
+            if (outAt(c, x, y) != (inDisc(x, y, 0, 0, 37) ? (x + 2 * y) % 8 : 5)) ok = false;
+    ASSERT(ok, "a source cover shows the canvas inside its disc, the layers outside");
+    ASSERT(c.hasCover() && c.coverBands() == 1, "one band");
+
+    // A new picture in the source: the covered area recomposites.
+    src.clear(Pixel4(6));
+    c.setCoverSource(&src);
+    settle(c);
+    ASSERT(outAt(c, 0, 0) == 6 && outAt(c, 20, 20) == 6, "setCoverSource repaints the covered area");
+    ASSERT(outAt(c, 63, 63) == 5, "outside the cover stays the layers");
+
+    c.clearCover();
+    settle(c);
+    ASSERT(outAt(c, 0, 0) == 5 && !c.hasCover(), "clearCover gives the layers back");
+}
+
+// A soft edge (#456): bands inside the cover's mask, each showing the source
+// on a share of its pixels by the 4x4 Bayer matrix anchored to the canvas, so
+// a pixel decides alike wherever the band is.
+static void testCoverBands() {
+    static Comp c;
+    static Comp::Layer src;
+    c.resetDirtyState();
+    c.layers[0].clear(Pixel4(1));
+    src.clear(Pixel4(4));
+    settle(c);
+    c.setCoverSource(&src);
+
+    auto soft = [&](int r) {
+        Comp::Mask m;
+        for (uint8_t i = 0; i < 4; ++i) {
+            m.disc(0, 0, r - i);
+            c.setCoverBand(i, m, Comp::CoverFill::source(static_cast<uint8_t>(4 * i + 2)));
+        }
+        m.disc(0, 0, r - 4);
+        c.setCoverBand(4, m, Comp::CoverFill::source());
+        c.trimCover(5);
+    };
+    // The share a pixel's band shows: 2, 6, 10, 14 of 16 from the outside in.
+    auto want = [](int x, int y, int r) -> uint8_t {
+        int depth = -1;   // the innermost band holding the pixel
+        for (int i = 0; i <= 4; ++i)
+            if (inDisc(x, y, 0, 0, r - i)) depth = i;
+        if (depth < 0) return 1;
+        const int density = depth == 4 ? 16 : 4 * depth + 2;
+        return bayer4(x, y) < density ? 4 : 1;
+    };
+    soft(40);
+    settle(c);
+    bool ok = true;
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 64; ++x)
+            if (outAt(c, x, y) != want(x, y, 40)) ok = false;
+    ASSERT(ok, "each band shows its share of the source, by the matrix");
+    ASSERT(c.coverBands() == 5, "five bands");
+
+    // The pixel at (30, 15) is 2.0 px inside r=36 and 4.0 px inside r=38:
+    // band 1 of r=36 (6/16) is not band 3 of r=38 (14/16), yet its threshold
+    // is its own: it shows the source in both or neither when bayer4 < 6.
+    int same = 0, tried = 0;
+    soft(36);
+    settle(c);
+    uint8_t a[64][64];
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 64; ++x) a[y][x] = outAt(c, x, y);
+    soft(38);
+    settle(c);
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 64; ++x) {
+            // In the band at both radii, at the same depth: the same decision.
+            int d36 = -1, d38 = -1;
+            for (int i = 0; i <= 4; ++i) {
+                if (inDisc(x, y, 0, 0, 36 - i)) d36 = i;
+                if (inDisc(x, y, 0, 0, 38 - i)) d38 = i;
+            }
+            if (d36 < 0 || d36 == 4 || d38 == 4) continue;
+            if ((bayer4(x, y) < 4 * d36 + 2) != (bayer4(x, y) < 4 * d38 + 2)) continue;
+            ++tried;
+            same += a[y][x] == outAt(c, x, y);
+        }
+    ASSERT(tried > 0 && same == tried, "a pixel's threshold stays put as the band moves");
+
+    // The ring: a solid band outside the source.
+    Comp::Mask m;
+    m.disc(0, 0, 20);
+    c.setCoverBand(0, m, Comp::CoverFill::solid(Pixel4(3)));
+    m.disc(0, 0, 19);
+    c.setCoverBand(1, m, Comp::CoverFill::source());
+    c.trimCover(2);
+    settle(c);
+    ok = true;
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 64; ++x) {
+            const uint8_t w = inDisc(x, y, 0, 0, 19) ? 4 : inDisc(x, y, 0, 0, 20) ? 3 : 1;
+            if (outAt(c, x, y) != w) ok = false;
+        }
+    ASSERT(ok, "a ring: one solid band round the source");
+    ASSERT(c.coverBands() == 2, "trimCover drops the bands past it");
+
+    // Growing the bands dirties only the tiles where a band edge moved.
+    Comp::Mask g;
+    g.disc(0, 0, 30);
+    c.setCoverBand(0, g, Comp::CoverFill::solid(Pixel4(3)));
+    g.disc(0, 0, 29);
+    c.setCoverBand(1, g, Comp::CoverFill::source());
+    settle(c);
+    g.disc(0, 0, 40);
+    c.setCoverBand(0, g, Comp::CoverFill::solid(Pixel4(3)));
+    g.disc(0, 0, 39);
+    c.setCoverBand(1, g, Comp::CoverFill::source());
+    c.beginFrame();
+    c.compositeDirty();
+    c.endFrame();
+    ASSERT(!tileDirty(c, 0, 0), "the tile inside both rings stays clean");
+    ASSERT(tileDirty(c, 2, 0), "a tile the ring crossed recomposites");
+    ASSERT(!tileDirty(c, 3, 3), "a tile outside both stays clean");
+}
+
+// The bands and their dither composite as a per-pixel reference over random
+// layers, tints and holes, odd width included.
+static void testCoverBandsParity() {
+    using C = LayerCompositor<49, 40>;
+    static C c;
+    static C::Layer src;
+    c.resetDirtyState();
+    srand(456);
+    for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l)
+        for (int y = 0; y < 40; ++y)
+            for (int x = 0; x < 49; ++x) {
+                const int v = rand() % 9;
+                c.layers[l].setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y),
+                                     Pixel4(static_cast<uint8_t>(v == 8 ? 15 : v)));
+            }
+    for (int y = 0; y < 40; ++y)
+        for (int x = 0; x < 49; ++x)
+            src.setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), Pixel4(static_cast<uint8_t>(rand() % 8)));
+    c.tint[2] = Remap::towardBg();
+    C::Mask lm;
+    lm.disc(48, 39, 30);
+    c.setMask(1, lm);
+    c.setCoverSource(&src);
+    const int radii[6] = {33, 31, 30, 28, 27, 22};
+    const C::CoverFill fills[6] = {C::CoverFill::source(1), C::CoverFill::solid(Pixel4(7)),
+                                   C::CoverFill::source(9), C::CoverFill::source(15),
+                                   C::CoverFill::solid(Pixel4(2)), C::CoverFill::source()};
+    C::Mask bands[6];
+    for (uint8_t i = 0; i < 6; ++i) {
+        bands[i].disc(3, 2, radii[i]);
+        c.setCoverBand(i, bands[i], fills[i]);
+    }
+    c.compositeDirty();
+    bool ref = true;
+    for (int y = 0; y < 40; ++y)
+        for (int x = 0; x < 49; ++x) {
+            uint8_t v = 0;
+            for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
+                if (l == 1 && !lm.contains(x, y)) continue;
+                const uint8_t s = c.layers[l].getPixel(x, y).value;
+                if (s != 15) v = c.tint[l].lut[s];
+            }
+            int depth = -1;
+            for (int i = 0; i < 6; ++i)
+                if (bands[i].contains(x, y)) depth = i;
+            if (depth >= 0) {
+                const C::CoverFill& f = fills[depth];
+                if (!f.fromSource) v = f.color.value;
+                else if (bayer4(x, y) < f.density) v = src.getPixel(x, y).value;
+            }
+            if (c.output.getPixel(x, y).value != v) ref = false;
+        }
+    ASSERT(ref, "the bands composite as the per-pixel reference");
+}
+
 // A full mask on every layer composites exactly as no mask (random content,
 // transparent holes, tints), odd width included.
 static void testFullMaskParity() {
@@ -267,6 +463,9 @@ int main() {
     testCoverage();
     testMaskedLayer();
     testCover();
+    testCoverFromSource();
+    testCoverBands();
+    testCoverBandsParity();
     testFullMaskParity();
     testTransition();
     printf("span_mask_test: %d passed, %d failed\n", passes, failures);
