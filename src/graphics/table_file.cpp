@@ -34,7 +34,11 @@ bool fail(std::string* error, const std::string& msg) {
     return false;
 }
 
-void instructionLimit(lua_State* L, lua_Debug*) {
+// VM instructions a file (and its validator) may run before the read is cut
+// off: far past what any real skin, palette or manifest runs.
+constexpr int kInstructionLimit = 100000;
+
+void instructionLimitHit(lua_State* L, lua_Debug*) {
     luaL_error(L, "instruction limit exceeded");
 }
 
@@ -139,7 +143,7 @@ bool readTableFile(std::string_view source, const char* what, const TableFieldRe
     budget.limit = options.memoryLimit;
     lua_State* L = lua_newstate(tableFileAlloc, &budget);
     if (!L) return fail(error, "cannot allocate a Lua state");
-    lua_sethook(L, instructionLimit, LUA_MASKCOUNT, options.instructionLimit);
+    lua_sethook(L, instructionLimitHit, LUA_MASKCOUNT, kInstructionLimit);
     Chunk chunk{source, what, options.validator};
     lua_pushcfunction(L, runChunk);
     lua_pushlightuserdata(L, &chunk);

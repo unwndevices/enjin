@@ -50,8 +50,6 @@ struct TableFileOptions {
     /// memory". It bounds a file that eats memory (a string doubled in a
     /// loop) before it can take the heap, PSRAM or internal, from the device.
     size_t memoryLimit = 1024 * 1024;
-    /// VM instructions the file may run before the read is cut off.
-    int instructionLimit = 100000;
 };
 
 /**
@@ -62,7 +60,8 @@ struct TableFileOptions {
  *
  * @return what @p read returns; false with the Lua error in @p error when the
  * Lua state cannot be made, the chunk (or the validator) does not load,
- * raises, runs past the instruction limit, outgrows the memory budget ("not
+ * raises, runs past the instruction limit (100 000 VM instructions, the
+ * same for every file), outgrows the memory budget ("not
  * enough memory") or returns no table.
  */
 bool readTableFile(std::string_view source, const char* what, const TableFieldReader& read,
