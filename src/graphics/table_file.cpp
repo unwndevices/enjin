@@ -3,8 +3,10 @@
 extern "C" {
 #include "lauxlib.h"
 #include "lua.h"
+#include "lualib.h"
 }
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -18,6 +20,15 @@ namespace enjin2 {
 
 namespace {
 
+void* reallocBlock(void* ptr, size_t nsize) {
+#ifdef ESP32
+    void* p = heap_caps_realloc(ptr, nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    return p ? p : heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
+#else
+    return std::realloc(ptr, nsize);
+#endif
+}
+
 bool fail(std::string* error, const std::string& msg) {
     if (error) *error = msg;
     return false;
@@ -27,36 +38,70 @@ void instructionLimit(lua_State* L, lua_Debug*) {
     luaL_error(L, "instruction limit exceeded");
 }
 
+// What the state holds against what it may: growth past the limit fails,
+// which Lua turns into LUA_ERRMEM. Shrinking and freeing never fail.
+struct Budget {
+    size_t used = 0;
+    size_t limit = 0;
+};
+
 // On device plain malloc is internal RAM only, which a whole VM does not fit
 // beside TinyUSB and BLE (Tomodachi #277): prefer PSRAM, like the applet VM
 // (LuaPlatform::createState).
-void* tableFileAlloc(void*, void* ptr, size_t, size_t nsize) {
+void* tableFileAlloc(void* ud, void* ptr, size_t osize, size_t nsize) {
+    auto* budget = static_cast<Budget*>(ud);
+    const size_t old = ptr ? osize : 0;  // without a block osize is the object's type
     if (nsize == 0) {
         std::free(ptr);
+        budget->used -= old;
         return nullptr;
     }
-#ifdef ESP32
-    void* p = heap_caps_realloc(ptr, nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    return p ? p : heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
-#else
-    return std::realloc(ptr, nsize);
-#endif
+    if (nsize > old && budget->used - old + nsize > budget->limit) return nullptr;
+    void* p = reallocBlock(ptr, nsize);
+    if (p) budget->used = budget->used - old + nsize;
+    return p;
 }
 
 struct Chunk {
     const std::string* source;
     const char* what;
+    const char* validator;
 };
 
-// Under lua_pcall: load text only, run in an empty _ENV, require a table back.
+// A validator's libraries: base (without the file loaders), string and math.
+void openValidatorLibraries(lua_State* L) {
+    luaL_requiref(L, LUA_GNAME, luaopen_base, 1);
+    luaL_requiref(L, LUA_STRLIBNAME, luaopen_string, 1);
+    luaL_requiref(L, LUA_MATHLIBNAME, luaopen_math, 1);
+    lua_pop(L, 3);
+    lua_pushnil(L);
+    lua_setglobal(L, "dofile");
+    lua_pushnil(L);
+    lua_setglobal(L, "loadfile");
+}
+
+// Under lua_pcall, so running out of memory anywhere in it is an error: load
+// text only and run it in an empty _ENV, or hand it to the validator, and
+// require a table back. No C++ object lives in this frame: a Lua error
+// leaves it by longjmp.
 int runChunk(lua_State* L) {
     const auto* chunk = static_cast<const Chunk*>(lua_touserdata(L, 1));
-    const std::string name = std::string("=") + chunk->what;
-    if (luaL_loadbufferx(L, chunk->source->data(), chunk->source->size(), name.c_str(), "t") != LUA_OK)
-        return lua_error(L);
-    lua_newtable(L);
-    lua_setupvalue(L, -2, 1);  // the chunk's _ENV
-    lua_call(L, 0, 1);
+    char name[64];
+    if (chunk->validator) {
+        openValidatorLibraries(L);
+        std::snprintf(name, sizeof name, "=%s validator", chunk->what);
+        if (luaL_loadbufferx(L, chunk->validator, std::strlen(chunk->validator), name, "t") != LUA_OK)
+            return lua_error(L);
+        lua_pushlstring(L, chunk->source->data(), chunk->source->size());
+        lua_call(L, 1, 1);
+    } else {
+        std::snprintf(name, sizeof name, "=%s", chunk->what);
+        if (luaL_loadbufferx(L, chunk->source->data(), chunk->source->size(), name, "t") != LUA_OK)
+            return lua_error(L);
+        lua_newtable(L);
+        lua_setupvalue(L, -2, 1);  // the chunk's _ENV
+        lua_call(L, 0, 1);
+    }
     if (!lua_istable(L, -1)) return luaL_error(L, "%s must return a table", chunk->what);
     return 1;
 }
@@ -89,11 +134,13 @@ bool readTableFileText(const std::string& path, size_t limit, std::string& out,
 }
 
 bool readTableFile(const std::string& source, const char* what, const TableFieldReader& read,
-                   std::string* error) {
-    lua_State* L = lua_newstate(tableFileAlloc, nullptr);
+                   std::string* error, const TableFileOptions& options) {
+    Budget budget;
+    budget.limit = options.memoryLimit;
+    lua_State* L = lua_newstate(tableFileAlloc, &budget);
     if (!L) return fail(error, "cannot allocate a Lua state");
-    lua_sethook(L, instructionLimit, LUA_MASKCOUNT, 100000);
-    Chunk chunk{&source, what};
+    lua_sethook(L, instructionLimit, LUA_MASKCOUNT, options.instructionLimit);
+    Chunk chunk{&source, what, options.validator};
     lua_pushcfunction(L, runChunk);
     lua_pushlightuserdata(L, &chunk);
     const int status = lua_pcall(L, 1, 1, 0);
@@ -103,6 +150,10 @@ bool readTableFile(const std::string& source, const char* what, const TableField
         const char* msg = lua_tostring(L, -1);
         ok = fail(error, msg ? msg : std::string(what) + " could not be read");
     } else {
+        // The reader runs outside the protection (it is C++: a Lua error's
+        // longjmp would skip its destructors), so it must not run out: its
+        // few allocations (field names) are not held to the budget.
+        budget.limit = SIZE_MAX;
         ok = read(L, lua_gettop(L), error);
     }
     lua_close(L);
