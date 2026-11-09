@@ -63,7 +63,7 @@ void* tableFileAlloc(void* ud, void* ptr, size_t osize, size_t nsize) {
 }
 
 struct Chunk {
-    const std::string* source;
+    std::string_view source;
     const char* what;
     const char* validator;
 };
@@ -92,11 +92,11 @@ int runChunk(lua_State* L) {
         std::snprintf(name, sizeof name, "=%s validator", chunk->what);
         if (luaL_loadbufferx(L, chunk->validator, std::strlen(chunk->validator), name, "t") != LUA_OK)
             return lua_error(L);
-        lua_pushlstring(L, chunk->source->data(), chunk->source->size());
+        lua_pushlstring(L, chunk->source.data(), chunk->source.size());
         lua_call(L, 1, 1);
     } else {
         std::snprintf(name, sizeof name, "=%s", chunk->what);
-        if (luaL_loadbufferx(L, chunk->source->data(), chunk->source->size(), name, "t") != LUA_OK)
+        if (luaL_loadbufferx(L, chunk->source.data(), chunk->source.size(), name, "t") != LUA_OK)
             return lua_error(L);
         lua_newtable(L);
         lua_setupvalue(L, -2, 1);  // the chunk's _ENV
@@ -133,14 +133,14 @@ bool readTableFileText(const std::string& path, size_t limit, std::string& out,
     return true;
 }
 
-bool readTableFile(const std::string& source, const char* what, const TableFieldReader& read,
+bool readTableFile(std::string_view source, const char* what, const TableFieldReader& read,
                    std::string* error, const TableFileOptions& options) {
     Budget budget;
     budget.limit = options.memoryLimit;
     lua_State* L = lua_newstate(tableFileAlloc, &budget);
     if (!L) return fail(error, "cannot allocate a Lua state");
     lua_sethook(L, instructionLimit, LUA_MASKCOUNT, options.instructionLimit);
-    Chunk chunk{&source, what, options.validator};
+    Chunk chunk{source, what, options.validator};
     lua_pushcfunction(L, runChunk);
     lua_pushlightuserdata(L, &chunk);
     const int status = lua_pcall(L, 1, 1, 0);

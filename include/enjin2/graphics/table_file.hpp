@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <string_view>
 
 struct lua_State;
 
@@ -64,7 +65,7 @@ struct TableFileOptions {
  * raises, runs past the instruction limit, outgrows the memory budget ("not
  * enough memory") or returns no table.
  */
-bool readTableFile(const std::string& source, const char* what, const TableFieldReader& read,
+bool readTableFile(std::string_view source, const char* what, const TableFieldReader& read,
                    std::string* error, const TableFileOptions& options = {});
 
 } // namespace enjin2
