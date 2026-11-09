@@ -756,8 +756,8 @@ void LuaBindings::registerAll() {
         luaFunction("setFont", lua_setFont, "(name:string) -> nil",
                     "Switch the text font; an unknown name keeps the current one.",
                     "name: \"default\", \"default8\", or a font the host registered")
-            .note("Tomodachi hosts also register \"body\", \"display\" and \"monogram\" "
-                  "(the native lists' face)."),
+            .note("A host that registers fonts may describe gfx.setFont again with a Font "
+                  "enum of its names (Tomodachi's: body, display, monogram)."),
         luaFunction("getFont", lua_getFont, "() -> string", "The current font's name."),
         luaFunction("getTextWidth", lua_getTextWidth, "(str:string?=\"\") -> int",
                     "Width of str in pixels at the current font and size; 0 with no canvas.",
