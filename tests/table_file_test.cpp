@@ -4,7 +4,7 @@
 // file that eats memory runs out of its own budget, and running out of memory
 // anywhere (making the state, opening a validator's libraries, the file
 // itself) is an error, never an abort.
-#include <enjin2/graphics/table_file.hpp>
+#include <enjin2/scripting/table_file.hpp>
 
 extern "C" {
 #include "lua.h"

@@ -1,5 +1,5 @@
 #include "enjin2/graphics/palette_file.hpp"
-#include "enjin2/graphics/table_file.hpp"
+#include "enjin2/scripting/table_file.hpp"
 
 extern "C" {
 #include "lua.h"
