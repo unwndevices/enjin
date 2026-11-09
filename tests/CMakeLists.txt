@@ -780,6 +780,20 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME palette_file_test COMMAND palette_file_test)
 
+    # "Return a table" files: the sandbox every short-lived Lua read goes
+    # through, its limits and its out-of-memory errors (Tomodachi #423, #279)
+    add_executable(table_file_test
+        table_file_test.cpp
+    )
+    target_include_directories(table_file_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(table_file_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME table_file_test COMMAND table_file_test)
+
     # Script sandbox: identical on every platform (Tomodachi ADR-0012, #251)
     add_executable(lua_sandbox_test
         lua_sandbox_test.cpp

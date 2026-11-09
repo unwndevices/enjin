@@ -684,6 +684,14 @@ public:
     void registerFont(const char* name, const GFXfont* font);
 
     /**
+     * @brief gfx.setFont's C function, for a host that describes its own font
+     * set: the host re-registers gfx.setFont with this function and a Font
+     * enum of the names it registered (luaApiSetFields), so the API census
+     * and the API reference list its faces (Tomodachi #474).
+     */
+    static int lua_setFont(lua_State* L);
+
+    /**
      * @brief Inject SceneStateMachine pointer for engine.scene.switch()
      * @param ssm Non-owning pointer; may be nullptr in SDL standalone mode
      */
@@ -956,7 +964,6 @@ private:
     static int lua_textAligned(lua_State* L);
     static int lua_setTextSize(lua_State* L);
     static int lua_getTextSize(lua_State* L);
-    static int lua_setFont(lua_State* L);
     static int lua_getFont(lua_State* L);
     static int lua_getTextWidth(lua_State* L);
     static int lua_getTextHeight(lua_State* L);
