@@ -227,7 +227,24 @@ constexpr LuaApiModule luaApiModule(LuaApiScope scope, const char* path, const c
 //==============================================================================
 // Registration. Every helper records the module in the VM's API registry, so
 // luaApiModules() lists exactly what was registered into that VM.
+//
+// Every Function entry is registered behind one guard (Tomodachi #279): a C++
+// exception that leaves the binding (std::bad_alloc from a `new` that found no
+// memory, any std::exception, anything else) becomes a Lua error raised by the
+// guard, "audio.new: not enough memory" or "audio.new: <what()>" (the module's
+// path and the entry's name), which a script can pcall and the applet host
+// shows as an applet error. Lua is built as C (its errors longjmp,
+// LUAI_THROW), so an exception would otherwise unwind into Lua's C frames and
+// end in std::terminate. The guard raises only once its catch block has
+// ended, so no longjmp leaves a live exception behind. The cost: one C
+// closure (one upvalue) per registered function instead of a light function.
 //==============================================================================
+
+/**
+ * @brief The C function at `idx`, seen through the guard: the binding a
+ * guarded closure calls, else lua_tocfunction(). nullptr for a non-C value.
+ */
+lua_CFunction luaApiFunction(lua_State* L, int idx);
 
 /// Fill the existing table at `tableIdx` (a metatable, a methods table).
 void luaApiSetFields(lua_State* L, int tableIdx, const LuaApiModule& module);

@@ -2,7 +2,10 @@
 #include "../../include/enjin2/scripting/lua_api.hpp"
 #include "../../include/enjin2/scripting/lua_api_stdlib.hpp"
 
+#include <cstdio>
 #include <cstring>
+#include <exception>
+#include <new>
 #include <set>
 
 namespace enjin2 {
@@ -37,12 +40,13 @@ void recordModule(lua_State* L, const LuaApiModule& module) {
 }
 
 void pushTable(lua_State* L, const LuaApiModule& module);
+void pushGuarded(lua_State* L, const LuaApiEntry& e);
 
 // Push one entry's value; false for entries that register nothing.
 bool pushEntry(lua_State* L, const LuaApiEntry& e) {
     switch (e.kind) {
         case LuaApiKind::Function:
-            lua_pushcfunction(L, e.func);
+            pushGuarded(L, e);
             return true;
         case LuaApiKind::Constant:
             lua_pushinteger(L, e.value);
@@ -74,6 +78,78 @@ const char* leafName(const char* path) {
 }
 
 } // namespace
+
+namespace {
+
+// The qualified name of a guarded entry, for its error message: the module
+// that holds it, found in this VM's API registry, only on the error path.
+// No C++ allocation here: this runs after a bad_alloc.
+void qualifiedName(lua_State* L, const LuaApiEntry* e, char* out, size_t cap) {
+    const LuaApiModule* owner = nullptr;
+    lua_getfield(L, LUA_REGISTRYINDEX, kApiRegistryKey);
+    if (lua_istable(L, -1)) {
+        const lua_Integer n = static_cast<lua_Integer>(lua_rawlen(L, -1));
+        for (lua_Integer i = 1; i <= n && !owner; ++i) {
+            lua_rawgeti(L, -1, i);
+            const auto* m = static_cast<const LuaApiModule*>(lua_touserdata(L, -1));
+            lua_pop(L, 1);
+            if (m && e >= m->entries && e < m->entries + m->count) owner = m;
+        }
+    }
+    lua_pop(L, 1);
+    if (owner && owner->path && *owner->path && owner->scope != LuaApiScope::Globals) {
+        const char* sep = owner->scope == LuaApiScope::Methods ? ":" : ".";
+        std::snprintf(out, cap, "%s%s%s", owner->path, sep, e->name);
+    } else {
+        std::snprintf(out, cap, "%s", e->name ? e->name : "?");
+    }
+}
+
+// The guard every Function entry is registered behind (Tomodachi #279): the
+// entry is upvalue 1 and its function is called directly, so a C++ exception
+// it throws unwinds only C++ frames (the binding's and this one), never Lua's
+// C frames.
+int guardedCall(lua_State* L) {
+    const auto* e = static_cast<const LuaApiEntry*>(lua_touserdata(L, lua_upvalueindex(1)));
+#if defined(__cpp_exceptions) || defined(__EXCEPTIONS)
+    char what[96];
+    bool outOfMemory = false;
+    try {
+        return e->func(L);
+    } catch (const std::bad_alloc&) {
+        outOfMemory = true;
+    } catch (const std::exception& ex) {
+        std::snprintf(what, sizeof what, "%s", ex.what());
+    } catch (...) {
+        std::snprintf(what, sizeof what, "C++ exception");
+    }
+    // Out of the catch block: the exception object is gone, so the longjmp
+    // below leaves nothing behind. The binding's own frames were unwound with
+    // their destructors.
+    char name[64];
+    qualifiedName(L, e, name, sizeof name);
+    if (outOfMemory) return luaL_error(L, "%s: not enough memory", name);
+    return luaL_error(L, "%s: %s", name, what);
+#else
+    return e->func(L);
+#endif
+}
+
+void pushGuarded(lua_State* L, const LuaApiEntry& e) {
+    lua_pushlightuserdata(L, const_cast<LuaApiEntry*>(&e));
+    lua_pushcclosure(L, guardedCall, 1);
+}
+
+} // namespace
+
+lua_CFunction luaApiFunction(lua_State* L, int idx) {
+    const lua_CFunction f = lua_tocfunction(L, idx);
+    if (f != guardedCall) return f;
+    if (!lua_getupvalue(L, idx, 1)) return nullptr;
+    const auto* e = static_cast<const LuaApiEntry*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    return e ? e->func : nullptr;
+}
 
 void luaApiSetFields(lua_State* L, int tableIdx, const LuaApiModule& module) {
     setEntries(L, lua_absindex(L, tableIdx), module);
@@ -233,7 +309,7 @@ void checkDescribed(Census& c, const LuaApiEntry& e, const std::string& full) {
     lua_State* L = c.L;
     switch (e.kind) {
         case LuaApiKind::Function:
-            if (lua_tocfunction(L, -1) != e.func)
+            if (luaApiFunction(L, -1) != e.func)
                 c.problems.push_back(full + " is not the function its descriptor registers");
             break;
         case LuaApiKind::Constant:

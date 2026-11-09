@@ -15,7 +15,9 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <new>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -654,6 +656,79 @@ static void testEachFeatureSwitch() {
     }
 }
 
+
+//==============================================================================
+// A C++ exception in a binding is a Lua error (Tomodachi #279, #465)
+//==============================================================================
+
+// An allocation that fails inside a binding: what make_unique<OscWave> did
+// in audio.new when internal DRAM ran out.
+static int fnOutOfMemory(lua_State*) { throw std::bad_alloc(); }
+static int fnThrowsRuntime(lua_State*) { throw std::runtime_error("disk on fire"); }
+static int fnThrowsInt(lua_State*) { throw 7; }
+static int fnArgError(lua_State* L) { return luaL_checkinteger(L, 1) > 0 ? 0 : 0; }
+
+static constexpr LuaApiEntry kThrowing[] = {
+    luaFunction("oom", fnOutOfMemory, "() -> nil", "Runs out of memory."),
+    luaFunction("runtime", fnThrowsRuntime, "() -> nil", "Throws std::runtime_error."),
+    luaFunction("other", fnThrowsInt, "() -> nil", "Throws a non-std exception."),
+    luaFunction("arg", fnArgError, "(n:int) -> nil", "Checks its argument."),
+    luaFunction("ok", fnA, "() -> int", "Returns 1."),
+};
+static constexpr LuaApiModule kThrowingModule =
+    luaApiModule(LuaApiScope::Table, "throwing", "Bindings that throw.", kThrowing);
+
+static std::string pcallMessage(lua_State* L, const char* code) {
+    if (luaL_dostring(L, code) == LUA_OK) {
+        lua_settop(L, 0);
+        return "<no error>";
+    }
+    std::string msg = lua_tostring(L, -1) ? lua_tostring(L, -1) : "<non-string error>";
+    lua_settop(L, 0);
+    return msg;
+}
+
+static void testExceptionsBecomeLuaErrors() {
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    luaApiSetGlobalTable(L, kThrowingModule);
+
+    const std::string oom = pcallMessage(L, "throwing.oom()");
+    ASSERT(oom.find("not enough memory") != std::string::npos,
+           "bad_alloc in a binding is a Lua 'not enough memory' error: " + oom);
+    ASSERT(oom.find("throwing.oom: not enough memory") != std::string::npos,
+           "the error names the binding: " + oom);
+    ASSERT(evalInt(L, "select(2, pcall(throwing.oom)):find('throwing.oom', 1, true) and 1 or 0") == 1,
+           "the name holds when the binding is called through pcall");
+
+    ASSERT(evalInt(L, "pcall(throwing.oom) and 0 or 1") == 1,
+           "a script can pcall a binding that runs out of memory");
+
+    const std::string rt = pcallMessage(L, "throwing.runtime()");
+    ASSERT(rt.find("disk on fire") != std::string::npos,
+           "std::exception's what() reaches the Lua error: " + rt);
+
+    const std::string other = pcallMessage(L, "throwing.other()");
+    ASSERT(other.find("C++ exception") != std::string::npos,
+           "any other exception is a Lua error too: " + other);
+
+    const std::string arg = pcallMessage(L, "throwing.arg('x')");
+    ASSERT(arg.find("bad argument #1 to 'arg'") != std::string::npos,
+           "luaL_argerror still names the function through the guard: " + arg);
+
+    ASSERT(evalInt(L, "throwing.ok()") == 1, "the VM keeps running after each");
+    ASSERT(lua_gettop(L) == 0, "the stack is balanced");
+
+    // The census still sees the descriptor's own function behind the guard.
+    lua_getglobal(L, "throwing");
+    lua_getfield(L, -1, "ok");
+    ASSERT(luaApiFunction(L, -1) == fnA, "luaApiFunction unwraps the guard");
+    lua_pop(L, 2);
+    for (const auto& p : luaApiCensus(L))
+        ASSERT(p.rfind("throwing", 0) != 0, "a guarded module is still fully described: " + p);
+    lua_close(L);
+}
+
 int main() {
     testRoundTrip();
     testStructure();
@@ -667,6 +742,7 @@ int main() {
     testEnjinCoreModules();
     testEngineTableDescribed();
     testEachFeatureSwitch();
+    testExceptionsBecomeLuaErrors();
 
     printf("lua_api_test: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;
