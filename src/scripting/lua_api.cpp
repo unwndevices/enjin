@@ -109,27 +109,41 @@ void qualifiedName(lua_State* L, const LuaApiEntry* e, char* out, size_t cap) {
 // entry is upvalue 1 and its function is called directly, so a C++ exception
 // it throws unwinds only C++ frames (the binding's and this one), never Lua's
 // C frames.
+// The text of the exception caught last, kept past its catch block. One for
+// every VM: a Lua VM runs on one task, and two exceptions at once on two tasks
+// would at worst mix their messages.
+char g_caughtWhat[96];
+
+// The cold half of the guard, out of line so the guard's own frame stays small
+// on every binding call: name the binding and raise.
+[[gnu::noinline, gnu::cold]] int raiseCaught(lua_State* L, const LuaApiEntry* e, bool outOfMemory) {
+    char name[64];
+    qualifiedName(L, e, name, sizeof name);
+    if (outOfMemory) return luaL_error(L, "%s: not enough memory", name);
+    return luaL_error(L, "%s: %s", name, g_caughtWhat);
+}
+
+[[gnu::noinline, gnu::cold]] void noteCaught(const char* what) {
+    std::snprintf(g_caughtWhat, sizeof g_caughtWhat, "%s", what ? what : "C++ exception");
+}
+
 int guardedCall(lua_State* L) {
     const auto* e = static_cast<const LuaApiEntry*>(lua_touserdata(L, lua_upvalueindex(1)));
 #if defined(__cpp_exceptions) || defined(__EXCEPTIONS)
-    char what[96];
     bool outOfMemory = false;
     try {
         return e->func(L);
     } catch (const std::bad_alloc&) {
         outOfMemory = true;
     } catch (const std::exception& ex) {
-        std::snprintf(what, sizeof what, "%s", ex.what());
+        noteCaught(ex.what());
     } catch (...) {
-        std::snprintf(what, sizeof what, "C++ exception");
+        noteCaught(nullptr);
     }
     // Out of the catch block: the exception object is gone, so the longjmp
-    // below leaves nothing behind. The binding's own frames were unwound with
-    // their destructors.
-    char name[64];
-    qualifiedName(L, e, name, sizeof name);
-    if (outOfMemory) return luaL_error(L, "%s: not enough memory", name);
-    return luaL_error(L, "%s: %s", name, what);
+    // in raiseCaught leaves nothing behind. The binding's own frames were
+    // unwound with their destructors.
+    return raiseCaught(L, e, outOfMemory);
 #else
     return e->func(L);
 #endif
