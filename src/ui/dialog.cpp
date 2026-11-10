@@ -145,11 +145,9 @@ void Dialog::draw(ICanvas<Pixel4>& canvas) const {
         textX = static_cast<int16_t>(textX + options_.portrait->cellW + options_.style.padding);
     }
 
-    // The dialog's text settings are its own: set them on the canvas for its
-    // lines and put the canvas's back after.
-    const TextState saved = canvas.text();
+    // The dialog's text settings are its own: the canvas's come back after.
+    TextScope<Pixel4> scope(canvas);
     TextRenderer<Pixel4> renderer(canvas);
-    renderer.reset();
     renderer.setFont(faceOf(options_));
     renderer.setTextColor(options_.style.text);
     renderer.setOutline(options_.style.textOutline != 0);
@@ -162,7 +160,6 @@ void Dialog::draw(ICanvas<Pixel4>& canvas) const {
         renderer.draw(utf8Head(line, visible), textX, static_cast<int16_t>(contentY + i * lineHeight));
         remaining -= visible;
     }
-    canvas.text() = saved;
 }
 
 } // namespace enjin2

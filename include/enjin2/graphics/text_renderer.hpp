@@ -90,15 +90,17 @@ inline MissingLog& missingLog() {
     return log;
 }
 
-/// Report @p cp missing from @p face once per character and face (the first
-/// 64 pairs; later ones are reported every time rather than remembered).
+/// Report @p cp missing from @p face once per character and face. The first 64
+/// pairs are remembered; past them nothing more is logged (a log line a frame
+/// would be worse than a quiet one).
 inline void reportMissing(const Face& face, uint32_t cp) {
     struct Seen { const Face* face; uint32_t cp; };
     static Seen seen[64];
     static int n = 0;
     for (int i = 0; i < n; ++i)
         if (seen[i].face == &face && seen[i].cp == cp) return;
-    if (n < 64) seen[n++] = {&face, cp};
+    if (n == 64) return;
+    seen[n++] = {&face, cp};
     if (MissingLog log = missingLog()) log(face, cp);
 }
 
@@ -119,6 +121,10 @@ inline int width(const Face& f, std::string_view s, uint8_t size = 1) {
 /// The line height (the face's yAdvance) at @p size.
 inline int lineHeight(const Face& f, uint8_t size = 1) { return f.font->yAdvance * (size ? size : 1); }
 
+/// How far the capitals' top sits under the line's top, at @p size: a screen
+/// laid out by cap tops draws at `capTop - capOffset(face, size)`.
+inline int capOffset(const Face& f, uint8_t size = 1) { return (f.ascent - f.capHeight) * (size ? size : 1); }
+
 /// @p s without its trailing spaces.
 inline std::string_view trimRight(std::string_view s) {
     while (!s.empty() && s.back() == ' ') s.remove_suffix(1);
@@ -134,6 +140,7 @@ inline size_t wrapEnd(const Face& f, uint8_t size, std::string_view p, size_t st
     while (i < p.size()) {
         const size_t at = i;
         const uint32_t cp = decodeUtf8(p, i);
+        if (cp == '\r') continue;
         if (cp == ' ') lastBreak = at;
         const int adv = advance(f, cp) * size;
         if (cp != ' ' && w + adv > boxW && at > start) {
@@ -244,6 +251,8 @@ public:
     int width(std::string_view s) const { return text::width(face(), s, s_.size); }
     int lineHeight() const { return text::lineHeight(face(), s_.size); }
     int ascent() const { return face().ascent * s_.size; }
+    /// The line top that puts the capitals' top at @p capTop (text::capOffset).
+    int topForCap(int capTop) const { return capTop - text::capOffset(face(), s_.size); }
 
     // ---- drawing ------------------------------------------------------------
 
@@ -329,6 +338,7 @@ private:
             size_t i = 0, fit = 0;
             while (i < line.size()) {
                 const uint32_t cp = text::decodeUtf8(line, i);
+                if (cp == '\r') { fit = i; continue; }
                 const int adv = text::advance(f, cp) * size;
                 if (w + adv > room) break;
                 w += adv;
@@ -416,6 +426,29 @@ private:
         }
         return g->xAdvance;
     }
+};
+
+/**
+ * @brief Keeps a canvas's text state as it was: saved now, put back when the
+ *        scope ends. A screen that draws on a layer it shares (the UI layer, the
+ *        System layer, an applet's layer a host draws on too) sets what it needs
+ *        inside one, so nothing it set reaches the layer's next user.
+ *
+ *     TextScope scope(layer);
+ *     TextRenderer<Pixel4> t(layer);
+ *     t.setFont(faces::body);  ...
+ */
+template <typename TPixel>
+class TextScope {
+public:
+    explicit TextScope(ICanvas<TPixel>& canvas) : canvas_(canvas), saved_(canvas.text()) { canvas.text() = TextState{}; }
+    ~TextScope() { canvas_.text() = saved_; }
+    TextScope(const TextScope&) = delete;
+    TextScope& operator=(const TextScope&) = delete;
+
+private:
+    ICanvas<TPixel>& canvas_;
+    TextState saved_;
 };
 
 }  // namespace enjin2

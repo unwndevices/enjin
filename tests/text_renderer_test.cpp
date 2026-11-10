@@ -324,6 +324,41 @@ static void test_outline_under_the_whole_line() {
     ASSERT(ink(c, ROLE_BG).n > 0, "the outline is bg");
 }
 
+static void test_scope_and_cap_offset() {
+    printf("--- TextScope starts at the defaults and puts the layer's state back ---\n");
+    Canvas c = blank();
+    TextRenderer<Pixel4>(c).setFont(faces::display).setTextSize(3).setTextWrap(TextOverflow::Clip, 9);
+    {
+        TextScope<Pixel4> scope(c);
+        TextRenderer<Pixel4> t(c);
+        ASSERT(&t.face() == &faces::monogram && t.textSize() == 1, "inside, the defaults");
+        t.setFont(faces::body).setOutline(true);
+    }
+    ASSERT(c.text().face == &faces::display && c.text().size == 3 && c.text().width == 9 && !c.text().outline,
+           "after, the layer's own state");
+    ASSERT(text::capOffset(faces::monogram) == 4 && text::capOffset(faces::display, 2) == 10, "capOffset");
+    TextRenderer<Pixel4> t(c);
+    t.reset();
+    ASSERT(t.topForCap(20) == 16, "topForCap = capTop - capOffset");
+}
+
+static void test_missing_log_stops_after_64() {
+    printf("--- the missing-character log remembers 64 pairs, then goes quiet ---\n");
+    text::missingLog() = &countingLog;
+    g_logged = 0;
+    Canvas c = blank();
+    TextRenderer<Pixel4> t(c);
+    t.setTextWrap(TextOverflow::Clip, 1);
+    char buf[8];
+    for (uint32_t cp = 0x3041; cp < 0x3041 + 80; ++cp) {  // hiragana: in no face
+        buf[0] = char(0xE0 | (cp >> 12)); buf[1] = char(0x80 | ((cp >> 6) & 0x3F)); buf[2] = char(0x80 | (cp & 0x3F)); buf[3] = 0;
+        t.draw(buf, 0, 0);
+        t.draw(buf, 0, 0);
+    }
+    ASSERT(g_logged <= 64, "never more than 64 lines, however many frames draw them");
+    text::missingLog() = &text::defaultMissingLog;
+}
+
 int main() {
     test_y_is_the_top_of_the_line();
     test_width_is_the_advance();
@@ -335,6 +370,8 @@ int main() {
     test_state_is_sticky_and_per_canvas();
     test_clip_window_and_print();
     test_outline_under_the_whole_line();
+    test_scope_and_cap_offset();
+    test_missing_log_stops_after_64();
     printf("\ntext_renderer_test: %d passed, %d failed\n", passes, failures);
     return failures ? 1 : 0;
 }
