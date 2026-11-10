@@ -1,6 +1,9 @@
 #include "bindings_internal.hpp"
 #include "../../include/enjin2/scripting/layer_claims.hpp"
-#include "../../include/enjin2/graphics/numerals.hpp"
+#include "../../include/enjin2/graphics/faces/faces.hpp"
+#include "../../include/enjin2/core/name_index.hpp"
+#include "../../include/enjin2/scripting/effect_lua.hpp"
+#include "../../include/enjin2/scripting/palette_arg.hpp"
 
 namespace enjin2 {
 
@@ -93,161 +96,109 @@ int LuaBindings::lua_isLayerVisible(lua_State* L) {
 // Text bindings
 //==============================================================================
 
+namespace {
+
+/// The active canvas's text state, or nullptr with no canvas.
+TextState* activeText(LuaBindings* b, LuaCanvas* canvas) {
+    (void)b;
+    return canvas ? canvas->textState() : nullptr;
+}
+
+}  // namespace
+
+// gfx.text(str, x, y [, align]) -> lines
 int LuaBindings::lua_text(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b || !b->currentCanvas) return 0;
+    if (!b || !b->currentCanvas) { lua_pushinteger(L, 0); return 1; }
     b->checkDrawLayer(L);
-    const char* str = luaL_checkstring(L, 1);
-    lua_Integer x = luaL_checkinteger(L, 2);
-    lua_Integer y = luaL_checkinteger(L, 3);
-    // Optional 4th arg: per-call scale override — does NOT mutate currentTextSize
-    uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 4 && lua_isnumber(L, 4)) {
-        int s = static_cast<int>(lua_tointeger(L, 4));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    size_t len = 0;
+    const char* str = luaL_checklstring(L, 1, &len);
+    const lua_Integer x = luaL_checkinteger(L, 2);
+    const lua_Integer y = luaL_checkinteger(L, 3);
+    TextAlign align = TextAlign::Left;
+    if (!lua_isnoneornil(L, 4)) {
+        const int a = nameIndex(luaL_checkstring(L, 4), kTextAlignNames);
+        if (a < 0) return luaL_argerror(L, 4, "align must be \"left\", \"center\" or \"right\"");
+        align = static_cast<TextAlign>(a);
     }
-    b->currentCanvas->drawText(str, static_cast<int16_t>(x), static_cast<int16_t>(y),
-                              b->currentColor, scale, b->currentFont);
-    return 0;
-}
-
-int LuaBindings::lua_textCentered(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b || !b->currentCanvas) return 0;
-    b->checkDrawLayer(L);
-    const char* str = luaL_checkstring(L, 1);
-    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 3 && lua_isnumber(L, 3)) {
-        int s = static_cast<int>(lua_tointeger(L, 3));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
-    }
-    uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
-    int16_t x = static_cast<int16_t>(((int)b->currentCanvas->getWidth() - (int)tw) / 2);
-    b->currentCanvas->drawText(str, x, y, b->currentColor, scale, b->currentFont);
-    return 0;
-}
-
-int LuaBindings::lua_textAligned(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b || !b->currentCanvas) return 0;
-    b->checkDrawLayer(L);
-    const char* str = luaL_checkstring(L, 1);
-    int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 3));
-    const int align = nameIndex(luaL_optstring(L, 4, "left"), kNumberAlignNames);
-    uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 5 && lua_isnumber(L, 5)) {
-        int s = static_cast<int>(lua_tointeger(L, 5));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
-    }
-    if (align == static_cast<int>(NumberAlign::Center)) {
-        uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
-        x = static_cast<int16_t>(x - static_cast<int16_t>(tw / 2));
-    } else if (align == static_cast<int>(NumberAlign::Right)) {
-        uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
-        x = static_cast<int16_t>(x - static_cast<int16_t>(tw));
-    }
-    // "left" and unknown names = no adjustment
-    b->currentCanvas->drawText(str, x, y, b->currentColor, scale, b->currentFont);
-    return 0;
-}
-
-int LuaBindings::lua_textWrapped(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b || !b->currentCanvas) return 0;
-    b->checkDrawLayer(L);
-    const char* str = luaL_checkstring(L, 1);
-    lua_Integer x = luaL_checkinteger(L, 2);
-    lua_Integer y = luaL_checkinteger(L, 3);
-    lua_Integer maxWidth = luaL_checkinteger(L, 4);
-    b->currentCanvas->drawTextWrapped(str, static_cast<int16_t>(x), static_cast<int16_t>(y),
-                                      static_cast<uint16_t>(maxWidth), b->currentColor,
-                                      b->currentTextSize, b->currentFont);
-    return 0;
-}
-
-int LuaBindings::lua_setTextSize(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b) return 0;
-    if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        int s = static_cast<int>(lua_tointeger(L, 1));
-        b->currentTextSize = (s > 0 && s <= 255) ? static_cast<uint8_t>(s) : 1;
-    }
-    return 0;
-}
-
-int LuaBindings::lua_getTextSize(lua_State* L) {
-    LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushinteger(L, 1); return 1; }
-    lua_pushinteger(L, b->currentTextSize);
+    if (TextState* st = b->currentCanvas->textState()) st->color = b->currentColor;
+    const int lines = b->currentCanvas->drawText(std::string_view(str, len), static_cast<int16_t>(x),
+                                                 static_cast<int16_t>(y), align);
+    lua_pushinteger(L, lines);
     return 1;
 }
 
+// gfx.setFont(name)
 int LuaBindings::lua_setFont(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) return 0;
     const char* name = luaL_checkstring(L, 1);
-    if (strcmp(name, "default") == 0) {
-        b->currentFont = nullptr;
-        strncpy(b->currentFontName, "default", 31);
-        b->currentFontName[31] = '\0';
-        return 0;
-    }
-    for (uint8_t i = 0; i < b->fontCount; ++i) {
-        if (strcmp(b->fontRegistry[i].name, name) == 0) {
-            b->currentFont = b->fontRegistry[i].font;
-            strncpy(b->currentFontName, name, 31);
-            b->currentFontName[31] = '\0';
-            return 0;
-        }
-    }
-    // Unknown font name: keep current
+    const Face* face = faces::find(name);
+    if (!face) return luaL_argerror(L, 1, "font must be \"monogram\", \"body\" or \"display\"");
+    if (TextState* st = b ? activeText(b, b->currentCanvas) : nullptr) st->face = face;
     return 0;
 }
 
-int LuaBindings::lua_getFont(lua_State* L) {
+// gfx.setTextWrap(overflow [, width])
+int LuaBindings::lua_setTextWrap(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushstring(L, "default"); return 1; }
-    lua_pushstring(L, b->currentFontName);
-    return 1;
+    const int mode = nameIndex(luaL_checkstring(L, 1), kTextOverflowNames);
+    if (mode < 0) return luaL_argerror(L, 1, "overflow must be \"wrap\", \"clip\" or \"ellipsis\"");
+    lua_Integer width = 0;
+    if (!lua_isnoneornil(L, 2)) {
+        width = luaL_checkinteger(L, 2);
+        if (width < 1 || width > INT16_MAX) return luaL_argerror(L, 2, "width must be 1 or more");
+    }
+    if (TextState* st = b ? activeText(b, b->currentCanvas) : nullptr) {
+        st->overflow = static_cast<TextOverflow>(mode);
+        st->width = static_cast<int16_t>(width);
+    }
+    return 0;
 }
 
+// gfx.setTextSize(size)
+int LuaBindings::lua_setTextSize(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    if (!b || !lua_isnumber(L, 1)) return 0;
+    const lua_Integer s = lua_tointeger(L, 1);
+    if (TextState* st = activeText(b, b->currentCanvas))
+        st->size = (s > 0 && s <= 255) ? static_cast<uint8_t>(s) : 1;
+    return 0;
+}
+
+// gfx.getTextWidth([str]) -> int
 int LuaBindings::lua_getTextWidth(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b || !b->currentCanvas) {
-        lua_pushinteger(L, 0);
-        return 1;
-    }
-    const char* str = luaL_optstring(L, 1, "");
-    uint16_t w = b->currentCanvas->measureTextWidth(str, b->currentTextSize, b->currentFont);
-    lua_pushinteger(L, w);
+    size_t len = 0;
+    const char* str = luaL_optlstring(L, 1, "", &len);
+    if (!b || !b->currentCanvas) { lua_pushinteger(L, 0); return 1; }
+    lua_pushinteger(L, b->currentCanvas->textWidth(std::string_view(str, len)));
     return 1;
 }
 
-int LuaBindings::lua_getTextHeight(lua_State* L) {
+// gfx.setTextOutline(on [, color])
+int LuaBindings::lua_setTextOutline(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b || !b->currentCanvas) {
-        lua_pushinteger(L, 8);  // default 5x7 height
-        return 1;
+    const bool on = lua_toboolean(L, 1) != 0;
+    TextState* st = b ? activeText(b, b->currentCanvas) : nullptr;
+    const uint8_t color = lua::optCanvasColour(L, 2, ROLE_BG, b ? indexedColours(b->currentCanvas) : true);
+    if (st) {
+        st->outline = on;
+        st->outlineColor = color;
     }
-    uint8_t h = b->currentCanvas->measureTextHeight(b->currentTextSize, b->currentFont);
-    lua_pushinteger(L, h);
-    return 1;
+    return 0;
 }
 
-void LuaBindings::registerFont(const char* name, const ::GFXfont* font) {
-    if (fontCount >= MAX_FONTS) return;
-    for (uint8_t i = 0; i < fontCount; ++i) {
-        if (strcmp(fontRegistry[i].name, name) == 0) {
-            fontRegistry[i].font = font;
-            return;
-        }
+// gfx.setTextEffect([effect])
+int LuaBindings::lua_setTextEffect(lua_State* L) {
+    LuaBindings* b = getBindings(L);
+    TextState* st = b ? activeText(b, b->currentCanvas) : nullptr;
+    if (lua_isnoneornil(L, 1)) {
+        if (st) { st->hasEffect = false; st->effect = Effect{}; }
+        return 0;
     }
-    strncpy(fontRegistry[fontCount].name, name, 31);
-    fontRegistry[fontCount].name[31] = '\0';
-    fontRegistry[fontCount].font = font;
-    ++fontCount;
+    const Effect fx = lua::checkEffect(L, 1);
+    if (st) { st->effect = fx; st->hasEffect = true; }
+    return 0;
 }
 
 } // namespace enjin2

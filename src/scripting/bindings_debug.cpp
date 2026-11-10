@@ -72,14 +72,18 @@ int LuaBindings::lua_engine_debug_cross(lua_State* L) {
 }
 
 // ── DEBUG-02: engine.debug.text(str, x, y [, color]) ─────────────────────────
-// Uses default font (nullptr) and size 1 for predictable debug output.
+// Draws in the default face (monogram) at size 1 for predictable debug output.
 int LuaBindings::lua_engine_debug_text(lua_State* L) {
     REQUIRE_DEBUG_CANVAS(b);
     const char* str = luaL_checkstring(L, 1);
     int16_t x   = static_cast<int16_t>(luaL_checkinteger(L, 2));
     int16_t y   = static_cast<int16_t>(luaL_checkinteger(L, 3));
     uint8_t col = lua::optCanvasColour(L, 4, ROLE_TEXT, indexedColours(b->m_debugCanvas));
-    b->m_debugCanvas->drawText(str, x, y, col, 1, nullptr);  // size=1, default font
+    if (TextState* st = b->m_debugCanvas->textState()) {
+        *st = TextState{};  // monogram at size 1, whatever was set before: predictable
+        st->color = col;
+    }
+    b->m_debugCanvas->drawText(str, x, y);
     return 0;
 }
 

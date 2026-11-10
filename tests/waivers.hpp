@@ -98,6 +98,13 @@
 // and canvas.hpp includes palette.hpp; no drawing code changed, and the bench
 // sets every text colour explicitly, so the glcd sub-ranges are re-affirmed
 // unchanged. The text_renderer.hpp head pin stays stale (see above).
+//
+// 2026-11-10 (Tomodachi #476, ADR-0029): the text pairs and their three
+// waivers (text.drawChar, text.print, text.println) are gone with Canvas8's
+// text and the built-in glcd font; enjin's TextRenderer is the one text route.
+// canvas.hpp base pin bumped to 0xa735c09dda6e27d4 (was 0x33889c14b3245c21):
+// Canvas8's text methods went and ICanvas gained its TextState; no geometry
+// changed (bench: 13 pairs, 0 failed).
 
 #include <array>
 #include <cstddef>
@@ -154,13 +161,6 @@ namespace parity
         const char *date;   // YYYY-MM-DD, provenance only (pins do the firing)
     };
 
-    // Covers the built-in 5x7 (glcd) font sub-range of a text pair: font
-    // fixture index 3 is the nullptr-font case on both sides.
-    inline bool coversGlcdFont(const Param *params, size_t count)
-    {
-        return paramValue(params, count, "font") == 3;
-    }
-
     // THE TABLE. Bump the array size when adding an entry — the explicit count
     // keeps the list visible *as a list* and every addition a one-hunk diff.
     // Evaluation is first-match-wins, so keep predicates non-overlapping per
@@ -197,26 +197,11 @@ namespace parity
     //     Exit question: border_stroke_test (solid/bevel/drop-shadow ring) and
     //     primitives_roundrect_test (edges/hollow/rounded-corner/r=0 square)
     //     pin the ratified span-walker.
-    inline constexpr std::array<Waiver, 4> kWaivers{{
-        {"text.drawChar", WaiverStatus::Active,
-         "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
-         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
-        {"text.print", WaiverStatus::Active,
-         "font == 3 (glcd / no GFX font)", &coversGlcdFont, 1812,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
-         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
-        {"text.println", WaiverStatus::Retired,
-         "pair retired: HEAD '\\n' yAdvance ratified; no BASE call sites", nullptr, 0,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
-         "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
+    inline constexpr std::array<Waiver, 1> kWaivers{{
         {"geom.drawRoundRect", WaiverStatus::Retired,
          "pair retired: HEAD replaces the corner-arc annulus with the #39 "
          "span-walker border stroke; the annulus is deleted", nullptr, 0,
-         "canvas.hpp", 0x33889c14b3245c21ull,
+         "canvas.hpp", 0xa735c09dda6e27d4ull,
          "primitives.hpp", 0x7b4f2bcb50064a6bull,
          "unwndevices/Tomodachi#39", "claude+ciro", "2026-09-07"},
     }};

@@ -12,7 +12,8 @@
 #include "lua_platform.hpp"
 #include "object_proxy.hpp"
 #include "../graphics/canvas.hpp"
-#include "../graphics/gfxfont.h"
+#include "../graphics/text_state.hpp"
+#include <string_view>
 #include "../graphics/primitives.hpp"
 #include "../graphics/sprite.hpp"
 #include "../graphics/sprite_asset.hpp"
@@ -238,48 +239,18 @@ public:
     void fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2, 
                      int16_t x3, int16_t y3, uint8_t color);
 
-    /**
-     * @brief Draw text at position using given color, size, and font
-     * @param str Null-terminated string to draw
-     * @param x X coordinate
-     * @param y Y coordinate
-     * @param color Text color (0-15 for 4-bit, 0-255 for 8-bit)
-     * @param size Size multiplier (1=normal, 2=double, etc.)
-     * @param font GFXfont pointer (nullptr = built-in 5x7)
-     */
-    void drawText(const char* str, int16_t x, int16_t y,
-                  uint8_t color, uint8_t size, const GFXfont* font);
+    /// @brief The canvas's sticky text state (ADR-0029), or nullptr without a canvas.
+    TextState* textState();
 
     /**
-     * @brief Draw text with word wrapping within maxWidth
-     * @param str Null-terminated string to draw
-     * @param x X coordinate
-     * @param y Y coordinate
-     * @param maxWidth Maximum width in pixels before wrapping
-     * @param color Text color
-     * @param size Size multiplier
-     * @param font GFXfont pointer (nullptr = built-in 5x7)
+     * @brief Draw @p str through the canvas's TextRenderer, in its text state,
+     *        the line's top at y, x its left edge, centre or right edge.
+     * @return the number of lines drawn
      */
-    void drawTextWrapped(const char* str, int16_t x, int16_t y,
-                        uint16_t maxWidth, uint8_t color, uint8_t size,
-                        const GFXfont* font);
+    int drawText(std::string_view str, int16_t x, int16_t y, TextAlign align = TextAlign::Left);
 
-    /**
-     * @brief Measure width of string in pixels with given size and font
-     * @param str Null-terminated string to measure
-     * @param size Size multiplier
-     * @param font GFXfont pointer (nullptr = built-in 5x7)
-     * @return Width in pixels
-     */
-    uint16_t measureTextWidth(const char* str, uint8_t size, const GFXfont* font);
-
-    /**
-     * @brief Measure character height in pixels with given size and font
-     * @param size Size multiplier
-     * @param font GFXfont pointer (nullptr = built-in 5x7)
-     * @return Height in pixels
-     */
-    uint8_t measureTextHeight(uint8_t size, const GFXfont* font);
+    /// @brief The advance of @p str in the canvas's text state.
+    int textWidth(std::string_view str);
 };
 
 /// Whether a colour drawn on @p c is a palette index (a 4-bit canvas, or no canvas
@@ -455,18 +426,6 @@ private:
     uint16_t     m_styleSetMask{0};                 ///< Bit i set -> slot i overridden
     const Style* m_themeBase{kDefaultStyles};       ///< Active ROM theme (setTheme swaps)
 
-    // ── Text state ───────────────────────────────────────────────────────────
-    uint8_t currentTextSize{1};       ///< Text size multiplier (1=normal, 2=double, etc.)
-    const GFXfont* currentFont{nullptr}; ///< nullptr = built-in 5x7
-    char currentFontName[32]{"default"};
-
-    static constexpr int MAX_FONTS = 8; ///< Fixed font registry size
-    struct FontEntry {
-        char name[32];
-        const GFXfont* font;
-    };
-    FontEntry fontRegistry[MAX_FONTS]{};
-    uint8_t fontCount{0};
 
     // ── Sprite pool ──────────────────────────────────────────────────────────
     static constexpr int LUA_SPRITE_POOL_SIZE = 16;  ///< Fixed pool — zero alloc
@@ -676,20 +635,6 @@ public:
      */
     void setAssetPath(const std::string& path) { assetPath_ = path; }
 
-    /**
-     * @brief Register a named font for use from Lua via setFont(name).
-     * @param name Name to use in Lua (e.g. "myfont"); "default" = built-in 5x7, "default8" is pre-registered.
-     * @param font Pointer to GFXfont (non-owning); may be nullptr for "default" to mean built-in 5x7.
-     */
-    void registerFont(const char* name, const GFXfont* font);
-
-    /**
-     * @brief gfx.setFont's C function, for a host that describes its own font
-     * set: the host re-registers gfx.setFont with this function and a Font
-     * enum of the names it registered (luaApiSetFields), so the API census
-     * and the API reference list its faces (Tomodachi #474).
-     */
-    static int lua_setFont(lua_State* L);
 
     /**
      * @brief Inject SceneStateMachine pointer for engine.scene.switch()
@@ -945,9 +890,6 @@ private:
     static int lua_updateSprite(lua_State* L);
     static int lua_setFrame(lua_State* L);
 
-    // HUD numerals (ADR-0003 §8, #83): gfx.number / gfx.timer draw digit strips.
-    static int lua_number(lua_State* L);  ///< gfx.number(x,y,value,{strip,pad,align,sep,spacing,padZeros}) → width
-    static int lua_timer(lua_State* L);   ///< gfx.timer(x,y,ms,{strip,align,spacing}) → width
 
     // Layer system bindings (LAYER-06)
     static int lua_setLayer(lua_State* L);
@@ -959,14 +901,12 @@ private:
 
     // Text bindings
     static int lua_text(lua_State* L);
-    static int lua_textWrapped(lua_State* L);
-    static int lua_textCentered(lua_State* L);
-    static int lua_textAligned(lua_State* L);
+    static int lua_setFont(lua_State* L);
+    static int lua_setTextWrap(lua_State* L);
     static int lua_setTextSize(lua_State* L);
-    static int lua_getTextSize(lua_State* L);
-    static int lua_getFont(lua_State* L);
     static int lua_getTextWidth(lua_State* L);
-    static int lua_getTextHeight(lua_State* L);
+    static int lua_setTextOutline(lua_State* L);
+    static int lua_setTextEffect(lua_State* L);
 
     // -- Debug draw bindings (Phase 47: DEBUG-01..DEBUG-03) -----------------------
     static int lua_engine_debug_rect(lua_State* L);
@@ -1038,7 +978,6 @@ private:
     void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
     void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
     void registerUISubtable(lua_State* L);     ///< engine.ui.* sub-table (called from registerEngineTable)
-    void registerHudSubtable(lua_State* L);    ///< engine.hud.* sub-table (#83; called from registerEngineTable)
     void registerTilemapMethods(lua_State* L); ///< The engine.tilemap.load handle's metatable (called from registerEngineTable)
     void registerProxyMetatable();
 
@@ -1074,7 +1013,6 @@ private:
     static int lua_engine_ui_progressBar(lua_State* L);
     static int lua_engine_ui_statBar(lua_State* L);
     static int lua_engine_ui_panel(lua_State* L);
-    static int lua_engine_ui_label(lua_State* L);
     static int lua_engine_ui_setStyle(lua_State* L);
     static int lua_engine_ui_setTheme(lua_State* L);
 

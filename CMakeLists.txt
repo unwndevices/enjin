@@ -88,7 +88,6 @@ target_sources(enjin2_graphics PRIVATE
     src/graphics/primitives.cpp
     src/graphics/palette.cpp
     src/graphics/effects.cpp
-    src/graphics/numerals.cpp
     # Layered-asset arena + owner/loader (ADR-0004, Tomodachi #95)
     src/graphics/asset_arena.cpp
     src/graphics/layered_asset.cpp
@@ -219,7 +218,6 @@ if(ENJIN2_BUILD_LUA)
         src/scripting/bindings_draw.cpp
         src/scripting/bindings_input_sprites.cpp
         src/scripting/bindings_sprite_load.cpp
-        src/scripting/bindings_numerals.cpp
         src/scripting/bindings_layers_text.cpp
         src/scripting/bindings_engine.cpp
         src/scripting/bindings_physics.cpp

@@ -2,8 +2,8 @@
 //
 // One-binary call-path differential harness (Visual-Parity-Bench-Design):
 // this tree contains both sides of the Eisei enjin migration — Canvas8 with
-// every BASE drawing algorithm intact, plus Canvas4 / Primitives<TPixel> /
-// TextRenderer — so BASE and HEAD run in-process and
+// every BASE drawing algorithm intact, plus Canvas4 / Primitives<TPixel> —
+// so BASE and HEAD run in-process and
 // comparison is an in-process memcmp. The unit of test is the *substitution
 // pair*: (what BASE Eisei actually called, what HEAD Eisei actually calls) —
 // a call-site substitution, never a name match (§ 2).
@@ -11,9 +11,10 @@
 // Pixel pairs run the A/B/C decomposition (§ 4) where a HEAD-@8bpp form
 // exists:
 //   A: BASE algorithm @8bpp (Canvas8 member)
-//   B: HEAD algorithm @8bpp (Primitives<uint8_t> / TextRenderer<uint8_t>)
-//   C: HEAD algorithm @4bpp (Primitives<Pixel4> / TextRenderer<Pixel4>)
-// A!=B labels ALGORITHM, B!=C labels DEPTH. The blit compositor's grey-level
+//   B: HEAD algorithm @8bpp (Primitives<uint8_t>)
+//   C: HEAD algorithm @4bpp (Primitives<Pixel4>)
+// A!=B labels ALGORITHM, B!=C labels DEPTH. The text pairs are gone with
+// Canvas8's text (Tomodachi #476, ADR-0029: one text route, no BASE left). The blit compositor's grey-level
 // pairs are gone with the blits themselves (Tomodachi #426: the palette is 8
 // roles, ADR-0022, so 16-grey arithmetic on Pixel4 has no meaning).
 //
@@ -60,12 +61,10 @@
 
 #include <enjin2/graphics/canvas.hpp>
 #include <enjin2/graphics/primitives.hpp>
-#include <enjin2/graphics/text_renderer.hpp>
 
 #include "visual_parity/bench_support.hpp"
 #include "visual_parity/png_review.hpp"
 
-#include "visual_parity/fonts/fonts.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -613,300 +612,6 @@ namespace
         endPair();
     }
 
-    // --- Tier 1 + Tier 2: text ---------------------------------------------
-
-    struct FontFixture
-    {
-        const char *name;
-        const GFXfont *font; // nullptr = built-in glcd
-    };
-
-    const FontFixture kFonts[] = {
-        {"absolute8pt7b", &absolute8pt7b},
-        {"MN80P1", &MN80P1},
-        {"Awkward8pt7b", &Awkward8pt7b},
-        {"glcd", nullptr}};
-
-    // The 40 string fixtures (#158): empty, single glyphs, the M2 "Ag"
-    // probe, real UI strings, exactly-at/one-past-wrap runs, all-spaces,
-    // newlines/carriage returns, punctuation.
-    const char *kStrings[] = {
-        "", " ", "   ", "A", "g", ".", "0", "~",
-        "Ag", "AV", "SATURN", "Datum 12", "SPEED", "IN TUNE", "128", "-12.5",
-        "0.00", "ORBIT 4", "WARP", "SAVE PRESET", "PRESS SET TO CONFIRM",
-        "ADVANCED SETTINGS", "DATUM MANAGER 000", "THE QUICK BROWN FOX",
-        "the quick brown fox jumps", "MMMMMMMMMMMMMMMMMMMM",
-        "iiiiiiiiiiiiiiiiiiiiiiiiiiiiii", "WWWWWWWWWW", "A B C D E F G H I J K",
-        "\n", "A\nB", "AB\nCD\nEF", "\r", "A\rB", "  leading", "trailing  ",
-        "mid  dle", "!@#$%^&*()", "[]{};:'\",<>/?\\|",
-        "0123456789 0123456789 0123456789"};
-
-    void sweepTextDrawChar()
-    {
-        bench.beginPair({"text.drawChar", "TIER1",
-                         "Canvas8::drawChar", "TextRenderer<Pixel4>::drawChar"});
-        if (!bench.cur->retired)
-        {
-            for (int fi = 0; fi < 4; ++fi)
-                for (int size = 1; size <= 2; ++size)
-                    for (int ch = 32; ch <= 126; ++ch)
-                    {
-                        const GFXfont *font = kFonts[fi].font;
-                        const auto c = static_cast<unsigned char>(ch);
-                        const auto sz = static_cast<uint8_t>(size);
-                        runPixelCase(bench,
-                                     {{"font", fi}, {"size", size}, {"glyph", ch}},
-                                     [=](Base8 &cv)
-                                     {
-                                         cv.setFont(font);
-                                         cv.drawChar(30, 60, c, 15, 15, sz);
-                                     },
-                                     [=](Base8 &cv)
-                                     {
-                                         TextRenderer<uint8_t> tr;
-                                         tr.setFont(font);
-                                         tr.setTextSize(sz);
-                                         tr.setTextColor(15);
-                                         tr.drawChar(cv, 30, 60, c);
-                                     },
-                                     [=](Head4 &cv)
-                                     {
-                                         TextRenderer<Pixel4> tr;
-                                         tr.setFont(font);
-                                         tr.setTextSize(sz);
-                                         tr.setTextColor(Pixel4(15));
-                                         tr.drawChar(cv, 30, 60, c);
-                                     });
-                    }
-        }
-        endPair();
-    }
-
-    void sweepTextPrint()
-    {
-        bench.beginPair({"text.print", "TIER1",
-                         "Canvas8::print", "TextRenderer<Pixel4>::drawString"});
-        if (!bench.cur->retired)
-        {
-            const int16_t x = 4, y = 60;
-            auto runPrint = [x, y](int fi, int size, const char *str,
-                                   std::vector<Param> params)
-            {
-                const GFXfont *font = kFonts[fi].font;
-                const auto sz = static_cast<uint8_t>(size);
-                runPixelCase(bench, params,
-                             [=](Base8 &cv)
-                             {
-                                 cv.setFont(font);
-                                 cv.setTextSize(sz);
-                                 cv.setTextColor(15);
-                                 cv.setCursor(x, y);
-                                 cv.print(str);
-                             },
-                             [=](Base8 &cv)
-                             {
-                                 TextRenderer<uint8_t> tr;
-                                 tr.setFont(font);
-                                 tr.setTextSize(sz);
-                                 tr.setTextColor(15);
-                                 tr.drawString(cv, x, y, str);
-                             },
-                             [=](Head4 &cv)
-                             {
-                                 TextRenderer<Pixel4> tr;
-                                 tr.setFont(font);
-                                 tr.setTextSize(sz);
-                                 tr.setTextColor(Pixel4(15));
-                                 tr.drawString(cv, x, y, str);
-                             });
-            };
-            for (int fi = 0; fi < 4; ++fi)
-                for (int size = 1; size <= 2; ++size)
-                {
-                    for (size_t si = 0; si < std::size(kStrings); ++si)
-                        runPrint(fi, size, kStrings[si],
-                                 {{"font", fi}, {"size", size}, {"string", static_cast<int32_t>(si)}});
-                    // Every printable glyph as a one-char string (#158: the
-                    // 95-glyph sweep belongs to the rendering pairs, not
-                    // just drawChar — print's cursor/wrap path sees it too).
-                    for (int ch = 32; ch <= 126; ++ch)
-                    {
-                        const char one[2] = {static_cast<char>(ch), '\0'};
-                        runPrint(fi, size, one,
-                                 {{"font", fi}, {"size", size}, {"glyph", ch}});
-                    }
-                }
-        }
-        endPair();
-    }
-
-    void sweepTextPrintln()
-    {
-        bench.beginPair({"text.println", "TIER1",
-                         "Canvas8::println + print", "TextRenderer<Pixel4>::drawString(\"a\\nb\")"});
-        if (!bench.cur->retired)
-        {
-            // HEAD has no println: migrated call sites collapse to a '\n' in
-            // the string, so the pair drives exactly that substitution. BASE
-            // println advances a hardcoded 8 px; HEAD's writeChar('\n')
-            // advances yAdvance * size.
-            const std::pair<const char *, const char *> lines[] = {
-                {"A", "B"}, {"SATURN", "ORBIT"}, {"Datum 12", "ready"},
-                {"", "below-empty"}, {"WARP", ""}, {"128", "-12.5"},
-                {"g", "y"}, {"SAVE", "PRESET"}, {"IN", "TUNE"}, {"MM", "WW"}};
-            const int16_t x = 4, y = 40;
-            for (int fi = 0; fi < 4; ++fi)
-                for (int size = 1; size <= 2; ++size)
-                    for (size_t li = 0; li < std::size(lines); ++li)
-                    {
-                        const GFXfont *font = kFonts[fi].font;
-                        const auto sz = static_cast<uint8_t>(size);
-                        const char *l1 = lines[li].first;
-                        const char *l2 = lines[li].second;
-                        const std::string joined = std::string(l1) + "\n" + l2;
-                        runPixelCase(bench,
-                                     {{"font", fi}, {"size", size}, {"lines", static_cast<int32_t>(li)}},
-                                     [=](Base8 &cv)
-                                     {
-                                         cv.setFont(font);
-                                         cv.setTextSize(sz);
-                                         cv.setTextColor(15);
-                                         cv.setCursor(x, y);
-                                         cv.println(l1);
-                                         cv.print(l2);
-                                     },
-                                     [=](Base8 &cv)
-                                     {
-                                         TextRenderer<uint8_t> tr;
-                                         tr.setFont(font);
-                                         tr.setTextSize(sz);
-                                         tr.setTextColor(15);
-                                         tr.drawString(cv, x, y, joined.c_str());
-                                     },
-                                     [=](Head4 &cv)
-                                     {
-                                         TextRenderer<Pixel4> tr;
-                                         tr.setFont(font);
-                                         tr.setTextSize(sz);
-                                         tr.setTextColor(Pixel4(15));
-                                         tr.drawString(cv, x, y, joined.c_str());
-                                     });
-                    }
-        }
-        endPair();
-    }
-
-    void sweepTextGetTextWidth()
-    {
-        bench.beginPair({"text.getTextWidth", "TIER1",
-                         "Canvas8::getTextWidth", "TextRenderer<Pixel4>::getTextWidth"});
-        if (!bench.cur->retired)
-        {
-            auto runWidth = [](int fi, int size, const char *str,
-                               std::vector<Param> params)
-            {
-                const GFXfont *font = kFonts[fi].font;
-                const auto sz = static_cast<uint8_t>(size);
-
-                Base8 &c8 = *canvases().a; // font/size state carrier only
-                c8.setFont(font);
-                c8.setTextSize(sz);
-                const int32_t a = c8.getTextWidth(str);
-                c8.setFont(&defaultFont8pt7b); // restore the canvas defaults
-                c8.setTextSize(1);
-
-                TextRenderer<uint8_t> trB;
-                trB.setFont(font);
-                trB.setTextSize(sz);
-                const int32_t b = trB.getTextWidth(str);
-
-                TextRenderer<Pixel4> trC;
-                trC.setFont(font);
-                trC.setTextSize(sz);
-                const int32_t c = trC.getTextWidth(str);
-
-                char detail[128];
-                snprintf(detail, sizeof(detail),
-                         "width BASE=%d HEAD=%d (\"%.24s\")", a, c, str);
-                runMetricCase(bench, params, a == b, b == c, a == c,
-                              static_cast<size_t>(std::abs(a - c)), detail);
-            };
-            for (int fi = 0; fi < 4; ++fi)
-                for (int size = 1; size <= 2; ++size)
-                {
-                    for (size_t si = 0; si < std::size(kStrings); ++si)
-                        runWidth(fi, size, kStrings[si],
-                                 {{"font", fi}, {"size", size}, {"string", static_cast<int32_t>(si)}});
-                    for (int ch = 32; ch <= 126; ++ch)
-                    {
-                        const char one[2] = {static_cast<char>(ch), '\0'};
-                        runWidth(fi, size, one,
-                                 {{"font", fi}, {"size", size}, {"glyph", ch}});
-                    }
-                }
-        }
-        endPair();
-    }
-
-    void sweepTextBoundsGuard()
-    {
-        bench.beginPair({"guard.getTextBounds", "TIER2 GUARD",
-                         "Canvas8::getTextBounds", "TextRenderer<Pixel4>::getTextBounds(wrap=127)"});
-        if (!bench.cur->retired)
-        {
-            struct B
-            {
-                int16_t x1 = 0, y1 = 0;
-                uint16_t w = 0, h = 0;
-                bool operator==(const B &o) const
-                {
-                    return x1 == o.x1 && y1 == o.y1 && w == o.w && h == o.h;
-                }
-            };
-            const int16_t x = 10, y = 64;
-            for (int fi = 0; fi < 4; ++fi)
-                for (int size = 1; size <= 2; ++size)
-                    for (size_t si = 0; si < std::size(kStrings); ++si)
-                    {
-                        const GFXfont *font = kFonts[fi].font;
-                        const char *str = kStrings[si];
-                        const auto sz = static_cast<uint8_t>(size);
-
-                        B a, b, c;
-                        Base8 &c8 = *canvases().a;
-                        c8.setFont(font);
-                        c8.setTextSize(sz);
-                        c8.getTextBounds(str, x, y, &a.x1, &a.y1, &a.w, &a.h);
-                        c8.setFont(&defaultFont8pt7b); // restore the canvas defaults
-                        c8.setTextSize(1);
-
-                        TextRenderer<uint8_t> trB;
-                        trB.setFont(font);
-                        trB.setTextSize(sz);
-                        trB.getTextBounds(str, x, y, &b.x1, &b.y1, &b.w, &b.h, W);
-
-                        TextRenderer<Pixel4> trC;
-                        trC.setFont(font);
-                        trC.setTextSize(sz);
-                        trC.getTextBounds(str, x, y, &c.x1, &c.y1, &c.w, &c.h, W);
-
-                        const size_t mag =
-                            static_cast<size_t>(std::abs(a.x1 - c.x1)) +
-                            static_cast<size_t>(std::abs(a.y1 - c.y1)) +
-                            static_cast<size_t>(std::abs(static_cast<int>(a.w) - static_cast<int>(c.w))) +
-                            static_cast<size_t>(std::abs(static_cast<int>(a.h) - static_cast<int>(c.h)));
-                        char detail[160];
-                        snprintf(detail, sizeof(detail),
-                                 "BASE ink box (%d,%d,%u,%u) HEAD (%d,%d,%u,%u) (str %zu)",
-                                 a.x1, a.y1, a.w, a.h, c.x1, c.y1, c.w, c.h, si);
-                        runMetricCase(bench,
-                                      {{"font", fi}, {"size", size}, {"string", static_cast<int32_t>(si)}},
-                                      a == b, b == c, a == c, mag, detail);
-                    }
-        }
-        endPair();
-    }
-
 } // namespace
 
 int main(int argc, char **argv)
@@ -930,7 +635,7 @@ int main(int argc, char **argv)
     {
         printf("implementation-pin hashes (FNV-1a-64 of the graphics headers) —\n"
                "copy the relevant pair into a new tests/waivers.hpp entry:\n");
-        for (const char *f : {"canvas.hpp", "primitives.hpp", "text_renderer.hpp"})
+        for (const char *f : {"canvas.hpp", "primitives.hpp"})
             printf("  %-18s 0x%016llx\n", f,
                    static_cast<unsigned long long>(pinHash(f)));
         return 0;
@@ -958,11 +663,6 @@ int main(int argc, char **argv)
     sweepFillTriangle();
     sweepCircleGuards();
     sweepDrawArc();
-    sweepTextDrawChar();
-    sweepTextPrint();
-    sweepTextPrintln();
-    sweepTextGetTextWidth();
-    sweepTextBoundsGuard();
 
     printSignatures(bench);
     printCensus(bench);

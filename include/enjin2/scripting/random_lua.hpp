@@ -12,7 +12,7 @@
 // randomGeneratorState), so new(n) is not the stream engine.random.seed(n)
 // starts.
 //
-// Header-only and engine-owned (like hud_lua.hpp) so a host that does not
+// Header-only and engine-owned (like effect_lua.hpp) so a host that does not
 // link enjin's LuaBindings, or a bare VM in a test, can still make one:
 // push randomNew as a function.
 

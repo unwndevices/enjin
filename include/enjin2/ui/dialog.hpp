@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/types.hpp"
+#include "../graphics/face.hpp"
 #include "../graphics/sprite.hpp"
 #include "style.hpp"
 
@@ -15,7 +16,7 @@ struct DialogOptions {
     Style style{kDefaultStyles[static_cast<int>(StyleSlot::Popup)]};
     Rect box{4, 100, 152, 56};
     float cps{30.0f};
-    const GFXfont* font{nullptr};
+    const Face* font{nullptr};  ///< nullptr: the default face (monogram)
     const SpriteSheet* portrait{nullptr};
     uint16_t portraitFrame{0};
 };

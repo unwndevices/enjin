@@ -5,8 +5,7 @@
 // phase). Colour/outline/holo/dim are Remap compositions; the 1-bit glyph
 // format is unchanged. These cases pin:
 //   * default (no effect / no outline) writes exactly the glyph silhouette in
-//     the plain text colour — the byte-parity contract the waiver table
-//     re-pins text_renderer.hpp against;
+//     the plain text colour;
 //   * a solid Remap recolours only the silhouette (the glyph is the clip);
 //   * dim / holo compose as Remaps over the fill;
 //   * the legibility outline stamps a +/-1 px dark silhouette *behind* the
@@ -45,6 +44,8 @@ static const GFXglyph kBlockGlyphs[] = {
 };
 static const GFXfont kBlockFont = {
     (uint8_t*)kBlockBitmaps, (GFXglyph*)kBlockGlyphs, 0x41, 0x41, 5};
+// Ascent 0: the line's top is the baseline, so the block's top is at y.
+static const Face kBlockFace = {"block", &kBlockFont, 0, 3};
 
 static constexpr uint8_t kTransparent = 15;
 
@@ -54,12 +55,12 @@ template <typename Setup>
 static Canvas4<24, 24> renderBlock(uint8_t color, uint8_t scale, Setup&& setup) {
     Canvas4<24, 24> c;
     c.clear(Pixel4(kTransparent));
-    TextRenderer<Pixel4> tr;
-    tr.setFont(&kBlockFont);
-    tr.setTextColor(Pixel4(color));
+    TextRenderer<Pixel4> tr(c);
+    tr.setFont(kBlockFace);
+    tr.setTextColor(color);
     tr.setTextSize(scale);
     setup(tr);
-    tr.drawChar(c, 5, 5, 'A');
+    tr.draw("A", 5, 5);
     return c;
 }
 
@@ -137,16 +138,16 @@ static void test_default_text_colour_is_text_role() {
     printf("--- a fresh TextRenderer draws in the text role ---\n");
     Canvas4<24, 24> c;
     c.clear(Pixel4(kTransparent));
-    TextRenderer<Pixel4> tr;
-    tr.setFont(&kBlockFont);
-    tr.drawChar(c, 5, 5, 'A');
+    TextRenderer<Pixel4> tr(c);
+    tr.setFont(kBlockFace);
+    tr.draw("A", 5, 5);
     ASSERT(c.getPixel(6, 6).value == ROLE_TEXT, "default fill is the text role");
 }
 
 static void test_outline_explicit_colour() {
     printf("--- outline: explicit colour overrides bg ---\n");
     auto c = renderBlock(4, 1, [](TextRenderer<Pixel4>& tr) {
-        tr.setOutline(true, Pixel4(ROLE_ACCENT4));
+        tr.setOutline(true, ROLE_ACCENT4);
     });
     ASSERT(c.getPixel(4, 6).value == ROLE_ACCENT4, "left outline uses the explicit colour");
     ASSERT(c.getPixel(6, 6).value == 4, "interior fill unchanged");

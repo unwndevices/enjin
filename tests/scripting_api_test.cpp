@@ -14,6 +14,7 @@
 #include <enjin2/scripting/lua_engine.hpp>
 #include <enjin2/graphics/canvas.hpp>
 #include <cstdio>
+#include <string>
 #include <cstring>
 
 using namespace enjin2;
@@ -151,43 +152,33 @@ static void test_float_coords() {
 }
 
 // ============================================================
-// test_text_scale: text(str, x, y, scale) optional 4th param (API-05)
+// test_text_surface: gfx.text(str, x, y [, align]) and its state (ADR-0029)
 // ============================================================
-static void test_text_scale() {
-    printf("--- test_text_scale: optional scale param ---\n");
+static void test_text_surface() {
+    printf("--- test_text_surface: gfx.text and its sticky state ---\n");
     Fixture f;
 
-    // text with scale 2 should not error and should NOT change global textSize
-    LuaResult r = f.exec(
-        "gfx.text('hello', 0, 0, 2)\n"
-        "size_after = gfx.getTextSize()\n"
-    );
-    ASSERT(r.success, "gfx.text('hello', 0, 0, 2) did not error");
-    ASSERT((int)f.getNum("size_after") == 1, "gfx.text() with scale 2 does not change global textSize");
-
-    // backward compat: text with 3 args still works
-    r = f.exec("gfx.text('hi', 0, 0)");
-    ASSERT(r.success, "gfx.text('hi', 0, 0) backward compat works");
-}
-
-// ============================================================
-// test_text_centered_aligned: textCentered + textAligned (API-06)
-// ============================================================
-static void test_text_centered_aligned() {
-    printf("--- test_text_centered_aligned: new text functions ---\n");
-    Fixture f;
-
-    LuaResult r = f.exec("gfx.textCentered('hi', 8)");
-    ASSERT(r.success, "gfx.textCentered('hi', 8) did not error");
-
-    r = f.exec("gfx.textAligned('hi', 0, 8, 'center')");
-    ASSERT(r.success, "gfx.textAligned center did not error");
-
-    r = f.exec("gfx.textAligned('hi', 15, 8, 'right')");
-    ASSERT(r.success, "gfx.textAligned right did not error");
-
-    r = f.exec("gfx.textAligned('hi', 0, 8, 'left')");
-    ASSERT(r.success, "gfx.textAligned left (default) did not error");
+    LuaResult r = f.exec("lines = gfx.text('hi', 0, 0)");
+    ASSERT(r.success, "gfx.text('hi', 0, 0) works");
+    for (const char* align : {"left", "center", "right"}) {
+        r = f.exec((std::string("gfx.text('hi', 40, 8, '") + align + "')").c_str());
+        ASSERT(r.success, align);
+    }
+    r = f.exec("gfx.text('hi', 0, 8, 'middle')");
+    ASSERT(!r.success, "an unknown align raises");
+    r = f.exec("gfx.setTextWrap('ellipsis', 30); gfx.setTextWrap('clip'); gfx.setTextWrap('wrap')");
+    ASSERT(r.success, "setTextWrap takes wrap, clip and ellipsis");
+    r = f.exec("gfx.setTextWrap('scroll')");
+    ASSERT(!r.success, "setTextWrap raises on another overflow");
+    r = f.exec("gfx.setTextWrap('wrap', 0)");
+    ASSERT(!r.success, "setTextWrap raises on a width under 1");
+    for (const char* gone : {"textCentered", "textAligned", "textWrapped", "getTextHeight", "getTextSize",
+                             "getFont", "number", "timer"}) {
+        r = f.exec((std::string("assert(gfx.") + gone + " == nil)").c_str());
+        ASSERT(r.success, gone);
+    }
+    r = f.exec("assert(engine.graphics == nil)");
+    ASSERT(r.success, "engine.graphics is gone");
 }
 
 // ============================================================
@@ -299,8 +290,7 @@ int main() {
     test_draw_colour_default();
     test_gfx_table();
     test_float_coords();
-    test_text_scale();
-    test_text_centered_aligned();
+    test_text_surface();
     test_engine_config_resolution();
     test_engine_state();
     test_bare_globals_removed();

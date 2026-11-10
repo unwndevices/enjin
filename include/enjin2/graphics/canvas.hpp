@@ -7,13 +7,11 @@
 #include <cstdio>
 #include <cstring>
 
-// Include GFX font support
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
-#include "gfxfont.h"
-// Include default font data
-#include "defaultfont.hpp"
+// Every canvas carries its own sticky text state (ADR-0029)
+#include "text_state.hpp"
 // Index-shader effect model (Mask x Remap x phase)
 #include "effect.hpp"
 
@@ -103,6 +101,15 @@ namespace enjin2
         {
             return Rect(0, 0, getWidth(), getHeight());
         }
+
+        /// @brief This canvas's text state: face, colour, overflow, box width,
+        /// cursor, scale, outline, shader and clip window (ADR-0029). Draw text
+        /// through a TextRenderer, which reads and sets it.
+        TextState &text() { return text_; }
+        const TextState &text() const { return text_; }
+
+    private:
+        TextState text_{};
     };
 
     /**
@@ -676,16 +683,6 @@ namespace enjin2
     private:
         uint8_t buffer[WIDTH * HEIGHT];
 
-        // Text cursor and color state
-        int16_t cursor_x = 0;
-        int16_t cursor_y = 0;
-        uint8_t textcolor = ROLE_TEXT;  // Default to the text Palette role
-        uint8_t textbgcolor = ROLE_BG;  // Default to the bg Palette role
-        uint8_t textsize_x = 1;  // Text size scaling
-        uint8_t textsize_y = 1;
-        bool wrap = true;                            // Text wrapping
-        bool _cp437 = false;                         // Character set compatibility
-        const GFXfont *gfx_font = &defaultFont8pt7b; // Current GFX font (default to included font)
 
     public:
         Canvas8()
@@ -787,249 +784,6 @@ namespace enjin2
          */
         uint16_t height() const { return HEIGHT; }
 
-        /**
-         * @brief Set text color
-         * @param color Text color value
-         */
-        void setTextColor(uint16_t color)
-        {
-            textcolor = color & 0xFF; // Convert to 8-bit
-            textbgcolor = textcolor;  // Set both to same for transparent background
-        }
-
-        /**
-         * @brief Set text color with background
-         * @param color Text color value
-         * @param bg Background color value
-         */
-        void setTextColor(uint16_t color, uint16_t bg)
-        {
-            textcolor = color & 0xFF;
-            textbgcolor = bg & 0xFF;
-        }
-
-        /**
-         * @brief Set cursor position
-         * @param x X coordinate
-         * @param y Y coordinate
-         */
-        void setCursor(int16_t x, int16_t y)
-        {
-            cursor_x = x;
-            cursor_y = y;
-        }
-
-        /**
-         * @brief Get cursor X position
-         * @return Current cursor X coordinate
-         */
-        int16_t getCursorX() const { return cursor_x; }
-
-        /**
-         * @brief Get cursor Y position
-         * @return Current cursor Y coordinate
-         */
-        int16_t getCursorY() const { return cursor_y; }
-
-        /**
-         * @brief Write a single character (Adafruit_GFX compatible)
-         * @param c Character to write
-         * @return Number of bytes written
-         */
-        size_t write(uint8_t c)
-        {
-            if (!gfx_font)
-                return 1; // Safety check
-
-            // GFX font handling
-            if (c == '\n')
-            {
-                cursor_x = 0;
-                cursor_y += (int16_t)textsize_y * gfx_font->yAdvance;
-            }
-            else if (c != '\r')
-            {
-                uint8_t first = gfx_font->first;
-                if ((c >= first) && (c <= gfx_font->last))
-                {
-                    GFXglyph *glyph = &gfx_font->glyph[c - first];
-                    uint8_t w = glyph->width;
-                    uint8_t h = glyph->height;
-                    if ((w > 0) && (h > 0))
-                    {
-                        int16_t xo = glyph->xOffset;
-                        if (wrap && ((cursor_x + textsize_x * (xo + w)) > WIDTH))
-                        {
-                            cursor_x = 0;
-                            cursor_y += (int16_t)textsize_y * gfx_font->yAdvance;
-                        }
-                        drawChar(cursor_x, cursor_y, c, textcolor, textbgcolor, textsize_x, textsize_y);
-                    }
-                    cursor_x += glyph->xAdvance * (int16_t)textsize_x;
-                }
-            }
-            return 1;
-        }
-
-        /**
-         * @brief Print text at cursor position (Adafruit_GFX compatible)
-         * @param text Null-terminated string to print
-         */
-        void print(const char *text)
-        {
-            if (!text)
-                return;
-            while (*text)
-            {
-                write(*text++);
-            }
-        }
-
-        /**
-         * @brief Print text with newline (basic implementation)
-         * @param text Null-terminated string to print
-         */
-        void println(const char *text)
-        {
-            print(text);
-            cursor_x = 0;
-            cursor_y += 8;
-        }
-
-        /**
-         * @brief Draw a single character (Adafruit_GFX compatible)
-         * @param x X coordinate
-         * @param y Y coordinate
-         * @param c Character to draw
-         * @param color Text color
-         * @param bg Background color
-         * @param size_x Horizontal scale factor
-         * @param size_y Vertical scale factor
-         */
-        void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size_x, uint8_t size_y)
-        {
-            // GFX font rendering (based on Adafruit_GFX implementation)
-            if (!gfx_font)
-                return; // Safety check
-
-            c -= gfx_font->first;
-            if (c >= (gfx_font->last - gfx_font->first + 1))
-                return;
-
-            GFXglyph *glyph = &gfx_font->glyph[c];
-            uint8_t *bitmap = gfx_font->bitmap;
-
-            uint16_t bo = glyph->bitmapOffset;
-            uint8_t w = glyph->width;
-            uint8_t h = glyph->height;
-            int8_t xo = glyph->xOffset;
-            int8_t yo = glyph->yOffset;
-            uint8_t xx, yy, bits = 0, bit = 0;
-            int16_t xo16 = 0, yo16 = 0;
-
-            if (size_x > 1 || size_y > 1)
-            {
-                xo16 = xo;
-                yo16 = yo;
-            }
-
-            // Render glyph bitmap
-            for (yy = 0; yy < h; yy++)
-            {
-                for (xx = 0; xx < w; xx++)
-                {
-                    if (!(bit++ & 7))
-                    {
-                        bits = bitmap[bo++];
-                    }
-                    if (bits & 0x80)
-                    {
-                        if (size_x == 1 && size_y == 1)
-                        {
-                            setPixel(x + xo + xx, y + yo + yy, color);
-                        }
-                        else
-                        {
-                            fillRect(x + (xo16 + xx) * size_x, y + (yo16 + yy) * size_y,
-                                     size_x, size_y, color);
-                        }
-                    }
-                    bits <<= 1;
-                }
-            }
-        }
-
-        /**
-         * @brief Draw a single character with uniform scaling
-         * @param x X coordinate
-         * @param y Y coordinate
-         * @param c Character to draw
-         * @param color Text color
-         * @param bg Background color
-         * @param size Scale factor for both axes
-         */
-        void drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size)
-        {
-            drawChar(x, y, c, color, bg, size, size);
-        }
-
-        /**
-         * @brief Set text size scaling
-         * @param s Uniform scale factor
-         */
-        void setTextSize(uint8_t s) { setTextSize(s, s); }
-        /**
-         * @brief Set text size scaling with independent axes
-         * @param s_x Horizontal scale factor
-         * @param s_y Vertical scale factor
-         */
-        void setTextSize(uint8_t s_x, uint8_t s_y)
-        {
-            textsize_x = s_x;
-            textsize_y = s_y;
-        }
-
-        /**
-         * @brief Set text wrap mode
-         * @param w Enable or disable text wrapping
-         */
-        void setTextWrap(bool w) { wrap = w; }
-
-        /**
-         * @brief Get text width (6 pixels per character times size)
-         * @param text Null-terminated string to measure
-         * @return Width in pixels
-         */
-        int16_t getTextWidth(const char *text)
-        {
-            if (!text)
-                return 0;
-            if (gfx_font)
-            {
-                // Use glyph xAdvance for custom fonts, trim trailing space on last char
-                uint16_t advance = 0;
-                uint8_t first = gfx_font->first, last = gfx_font->last;
-                GFXglyph *lastGlyph = nullptr;
-                unsigned char c;
-                const char *p = text;
-                while ((c = *p++))
-                {
-                    if (c >= first && c <= last)
-                    {
-                        lastGlyph = &gfx_font->glyph[c - first];
-                        advance += lastGlyph->xAdvance * textsize_x;
-                    }
-                }
-                if (lastGlyph)
-                {
-                    int16_t lastVisual = (int8_t)lastGlyph->xOffset + lastGlyph->width;
-                    if (lastVisual < (int16_t)lastGlyph->xAdvance)
-                        advance -= (lastGlyph->xAdvance - lastVisual) * textsize_x;
-                }
-                return (int16_t)advance;
-            }
-            return strlen(text) * 6 * textsize_x;
-        }
 
         /**
          * @brief Fill rectangle
@@ -1519,147 +1273,6 @@ namespace enjin2
          */
         void exportToBMP(const char *filename) const;
 
-        /**
-         * @brief Set GFX font for text rendering
-         * @param font Pointer to GFXfont structure (nullptr for built-in font)
-         */
-        void setFont(const GFXfont *font = nullptr)
-        {
-            if (font && !gfx_font)
-            {
-                // Switching from classic to new font behavior
-                cursor_y += 6;
-            }
-            else if (!font && gfx_font)
-            {
-                // Switching from new to classic font behavior
-                cursor_y -= 6;
-            }
-            gfx_font = font;
-        }
-
-        /**
-         * @brief Helper to determine character bounds (Adafruit_GFX compatible)
-         * @param c Character to measure
-         * @param x Current X cursor position (updated)
-         * @param y Current Y cursor position (updated)
-         * @param minx Minimum X bound (updated)
-         * @param miny Minimum Y bound (updated)
-         * @param maxx Maximum X bound (updated)
-         * @param maxy Maximum Y bound (updated)
-         */
-        void charBounds(unsigned char c, int16_t *x, int16_t *y, int16_t *minx, int16_t *miny, int16_t *maxx, int16_t *maxy)
-        {
-            if (gfx_font)
-            {
-                // Custom font
-                if (c == '\n')
-                {
-                    *x = 0; // Reset x to zero, advance y by one line
-                    *y += textsize_y * gfx_font->yAdvance;
-                }
-                else if (c != '\r')
-                { // Not a carriage return; is normal char
-                    uint8_t first = gfx_font->first,
-                            last = gfx_font->last;
-                    if ((c >= first) && (c <= last))
-                    { // Char present in this font?
-                        GFXglyph *glyph = &gfx_font->glyph[c - first];
-                        uint8_t gw = glyph->width,
-                                gh = glyph->height,
-                                xa = glyph->xAdvance;
-                        int8_t xo = glyph->xOffset,
-                               yo = glyph->yOffset;
-                        if (wrap && ((*x + (((int16_t)xo + gw) * textsize_x)) > WIDTH))
-                        {
-                            *x = 0; // Reset x to zero, advance y by one line
-                            *y += textsize_y * gfx_font->yAdvance;
-                        }
-                        int16_t tsx = (int16_t)textsize_x, tsy = (int16_t)textsize_y,
-                                x1 = *x + xo * tsx, y1 = *y + yo * tsy, x2 = x1 + gw * tsx - 1,
-                                y2 = y1 + gh * tsy - 1;
-                        if (x1 < *minx)
-                            *minx = x1;
-                        if (y1 < *miny)
-                            *miny = y1;
-                        if (x2 > *maxx)
-                            *maxx = x2;
-                        if (y2 > *maxy)
-                            *maxy = y2;
-                        *x += xa * tsx;
-                    }
-                }
-            }
-            else
-            {
-                // Default font (built-in)
-                if (c == '\n')
-                {
-                    *x = 0;               // Reset x to zero,
-                    *y += textsize_y * 8; // advance y one line
-                }
-                else if (c != '\r')
-                {
-                    if (wrap && ((*x + textsize_x * 6) > WIDTH))
-                    {
-                        *x = 0;               // Reset x to zero,
-                        *y += textsize_y * 8; // advance y one line
-                    }
-                    int16_t x1 = *x, y1 = *y, x2 = x1 + textsize_x * 6 - 1, y2 = y1 + textsize_y * 8 - 1;
-                    if (x1 < *minx)
-                        *minx = x1;
-                    if (y1 < *miny)
-                        *miny = y1;
-                    if (x2 > *maxx)
-                        *maxx = x2;
-                    if (y2 > *maxy)
-                        *maxy = y2;
-                    *x += textsize_x * 6; // Advance x one char
-                }
-            }
-        }
-
-        /**
-         * @brief Get text bounds (Adafruit_GFX compatible)
-         * @param str Null-terminated string to measure
-         * @param x Starting X position
-         * @param y Starting Y position
-         * @param x1 Output minimum X bound
-         * @param y1 Output minimum Y bound
-         * @param w Output text width
-         * @param h Output text height
-         */
-        void getTextBounds(const char *str, int16_t x, int16_t y, int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h)
-        {
-            if (!str || !x1 || !y1 || !w || !h)
-                return;
-
-            uint8_t c;                                                  // Current character
-            int16_t minx = 0x7FFF, miny = 0x7FFF, maxx = -1, maxy = -1; // Bound rect
-            // Bound rect is intentionally initialized inverted, so 1st char sets it
-
-            *x1 = x; // Initial position is value passed in
-            *y1 = y;
-            *w = *h = 0; // Initial size is zero
-
-            while ((c = *str++))
-            {
-                // charBounds() modifies x/y to advance for each character,
-                // and min/max x/y are updated to incrementally build bounding rect.
-                charBounds(c, &x, &y, &minx, &miny, &maxx, &maxy);
-            }
-
-            if (maxx >= minx)
-            {                         // If legit string bounds were found...
-                *x1 = minx;           // Update x1 to least X coord,
-                *w = maxx - minx + 1; // And w to bound rect width
-            }
-            if (maxy >= miny)
-            { // Same for height
-                *y1 = miny;
-                *h = maxy - miny + 1;
-            }
-        }
 
         /**
          * @brief Fill triangle (basic implementation)

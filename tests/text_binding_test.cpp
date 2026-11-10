@@ -1,296 +1,176 @@
 /**
  * @file text_binding_test.cpp
- * @brief Unit tests for Lua text bindings: text(), textWrapped(),
- *        setTextSize/getTextSize, setFont/getFont, getTextWidth, getTextHeight.
+ * @brief The Lua text surface (ADR-0029, Tomodachi #476): gfx.text,
+ *        gfx.setFont, gfx.setTextWrap, gfx.setTextSize, gfx.getTextWidth and
+ *        the outline/effect setters.
  *
- * Verifies measurement correctness, pixel output, newline handling,
- * word-wrap behaviour, and font switching.
+ * Lua draws through the same TextRenderer and the same per-layer state native
+ * code uses, so every pixel check here is against a native draw.
  */
+#include <enjin2/graphics/canvas.hpp>
+#include <enjin2/graphics/faces/faces.hpp>
+#include <enjin2/graphics/text_renderer.hpp>
 #include <enjin2/scripting/bindings.hpp>
 #include <enjin2/scripting/lua_engine.hpp>
-#include <enjin2/graphics/canvas.hpp>
+
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 using namespace enjin2;
 
 static int passes = 0;
 static int failures = 0;
 
-#define ASSERT(cond, msg) \
-    do { \
-        if (!(cond)) { \
-            fprintf(stderr, "FAIL [line %d]: %s\n", __LINE__, (msg)); \
-            failures++; \
-        } else { \
-            passes++; \
-        } \
-    } while(0)
+#define ASSERT(cond, msg)                                                     \
+    do {                                                                      \
+        if (!(cond)) {                                                        \
+            fprintf(stderr, "FAIL [line %d]: %s\n", __LINE__, (msg));         \
+            failures++;                                                       \
+        } else {                                                              \
+            passes++;                                                         \
+        }                                                                     \
+    } while (0)
 
-// ============================================================
-// Fixture: LuaEngine + LuaBindings + 128x128 Canvas8
-// ============================================================
+using Layer = Canvas4<96, 64>;
+
+// Two layers, as a host gives an applet.
 struct TextFixture {
-    Canvas8<128, 128> canvas;
-    LuaCanvas luaCanvas;
+    Layer layers[2];
+    LuaCanvas wrap0{&layers[0]};
+    LuaCanvas wrap1{&layers[1]};
+    LuaCanvas* canvases[2] = {&wrap0, &wrap1};
+    bool visible[2] = {true, true};
     LuaEngine engine;
-    LuaBindings bindings;
+    LuaBindings bindings{&engine};
 
-    TextFixture()
-        : luaCanvas(&canvas)
-        , bindings(&engine)
-    {
+    TextFixture() {
         engine.initialize();
         bindings.registerAll();
-        bindings.setCanvas(&luaCanvas);
-        canvas.clear(0);
+        bindings.setLayers(canvases, 2, visible);
+        for (auto& l : layers) l.clear(Pixel4(PALETTE_TRANSPARENT));
     }
-
-    LuaResult exec(const char* code) {
-        return engine.executeString(code);
-    }
-
-    double getNum(const char* name) {
-        return engine.getGlobalNumber(name);
-    }
-
-    std::string getStr(const char* name) {
-        return engine.getGlobalString(name);
-    }
-
-    bool hasNonZeroPixel(int16_t x0, int16_t y0, int16_t w, int16_t h) {
-        for (int16_t y = y0; y < y0 + h; ++y)
-            for (int16_t x = x0; x < x0 + w; ++x)
-                if (canvas.getPixel(x, y) != 0) return true;
-        return false;
-    }
-
-    bool regionIsBlank(int16_t x0, int16_t y0, int16_t w, int16_t h) {
-        return !hasNonZeroPixel(x0, y0, w, h);
-    }
+    LuaResult exec(const std::string& code) { return engine.executeString(code.c_str()); }
+    double num(const char* name) { return engine.getGlobalNumber(name); }
 };
 
-// ============================================================
-// getTextWidth: default 5x7 font, size 1
-// Each char = 6 px wide (5 glyph + 1 spacing)
-// ============================================================
-static void test_getTextWidth_default_size1() {
-    printf("--- getTextWidth default font size 1 ---\n");
-    TextFixture f;
-    f.exec("w = gfx.getTextWidth('Hello')");
-    // 5 chars * 6 px = 30
-    ASSERT(f.getNum("w") == 30.0, "getTextWidth('Hello') should be 30 at size 1");
+static Layer blank() {
+    Layer l;
+    l.clear(Pixel4(PALETTE_TRANSPARENT));
+    return l;
 }
 
-// ============================================================
-// getTextWidth: default 5x7 font, size 2
-// ============================================================
-static void test_getTextWidth_default_size2() {
-    printf("--- getTextWidth default font size 2 ---\n");
-    TextFixture f;
-    f.exec("gfx.setTextSize(2); w = gfx.getTextWidth('Hi')");
-    // 2 chars * 6 px * 2 = 24
-    ASSERT(f.getNum("w") == 24.0, "getTextWidth('Hi') should be 24 at size 2");
+static bool same(const Layer& a, const Layer& b) {
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 96; ++x)
+            if (a.getPixel(int16_t(x), int16_t(y)).value != b.getPixel(int16_t(x), int16_t(y)).value) return false;
+    return true;
 }
 
-// ============================================================
-// getTextWidth: empty string
-// ============================================================
-static void test_getTextWidth_empty() {
-    printf("--- getTextWidth empty string ---\n");
+static void test_text_is_the_native_draw() {
+    printf("--- gfx.text draws what TextRenderer draws, y the line's top ---\n");
     TextFixture f;
-    f.exec("w = gfx.getTextWidth('')");
-    ASSERT(f.getNum("w") == 0.0, "getTextWidth('') should be 0");
+    ASSERT(f.exec("gfx.setColor(gfx.COLOR.ACCENT); lines = gfx.text('Track 01', 3, 2)").success, "gfx.text runs");
+    ASSERT(f.num("lines") == 1, "returns the lines drawn");
+    Layer ref = blank();
+    TextRenderer<Pixel4>(ref).setTextColor(ROLE_ACCENT).draw("Track 01", 3, 2);
+    ASSERT(same(f.layers[0], ref), "monogram, accent, the line's top at y");
+
+    TextFixture g;
+    g.exec("gfx.setFont('display'); gfx.setTextSize(2); gfx.text('Hi', 90, 0, 'right')");
+    Layer ref2 = blank();
+    TextRenderer<Pixel4>(ref2).setFont(faces::display).setTextSize(2).draw("Hi", 90, 0, TextAlign::Right);
+    ASSERT(same(g.layers[0], ref2), "face, size and align reach the same draw");
 }
 
-// ============================================================
-// getTextHeight: default font size 1  =>  8 * 1 = 8
-// ============================================================
-static void test_getTextHeight_default_size1() {
-    printf("--- getTextHeight default font size 1 ---\n");
+static void test_measure() {
+    printf("--- gfx.getTextWidth is the advance in the layer's face and size ---\n");
     TextFixture f;
-    f.exec("h = gfx.getTextHeight()");
-    ASSERT(f.getNum("h") == 8.0, "gfx.getTextHeight() should be 8 at size 1 (default 5x7)");
+    f.exec("a = gfx.getTextWidth('Track 01'); gfx.setTextSize(2); b = gfx.getTextWidth('ab'); "
+           "gfx.setTextSize(1); gfx.setFont('body'); c = gfx.getTextWidth('Hello'); d = gfx.getTextWidth()");
+    ASSERT(f.num("a") == 48, "monogram: 6 px a character");
+    ASSERT(f.num("b") == 24, "times the size");
+    ASSERT(f.num("c") == text::width(faces::body, "Hello"), "body");
+    ASSERT(f.num("d") == 0, "no string: 0");
 }
 
-// ============================================================
-// getTextHeight: default font size 3  =>  8 * 3 = 24
-// ============================================================
-static void test_getTextHeight_default_size3() {
-    printf("--- getTextHeight default font size 3 ---\n");
+static void test_wrap_modes() {
+    printf("--- gfx.setTextWrap: wrap | clip | ellipsis, at a width or the layer's edge ---\n");
     TextFixture f;
-    f.exec("gfx.setTextSize(3); h = gfx.getTextHeight()");
-    ASSERT(f.getNum("h") == 24.0, "gfx.getTextHeight() should be 24 at size 3");
+    f.exec("n1 = gfx.text('aaa bbb', 0, 0)");
+    ASSERT(f.num("n1") == 1, "fits before the layer's edge: one line");
+    f.exec("gfx.setTextWrap('wrap', 30); n2 = gfx.text('aaa bbb', 0, 20)");
+    ASSERT(f.num("n2") == 2, "wraps at the given width");
+    f.exec("gfx.setTextWrap('ellipsis', 30); n3 = gfx.text('abcdefgh', 0, 40)");
+    ASSERT(f.num("n3") == 1, "ellipsis: one line");
+    Layer ref = blank();
+    TextRenderer<Pixel4> r(ref);
+    r.draw("aaa bbb", 0, 0);
+    r.setTextWrap(TextOverflow::Wrap, 30).draw("aaa bbb", 0, 20);
+    r.setTextWrap(TextOverflow::Ellipsis, 30).draw("abcdefgh", 0, 40);
+    ASSERT(same(f.layers[0], ref), "the same pixels as native");
+    ASSERT(!f.exec("gfx.setTextWrap('scroll')").success, "another overflow raises");
+    ASSERT(!f.exec("gfx.setTextWrap('clip', -3)").success, "a width under 1 raises");
 }
 
-// ============================================================
-// getTextHeight: default8 font size 1  =>  14 * 1 = 14
-// ============================================================
-static void test_getTextHeight_default8() {
-    printf("--- getTextHeight default8 font size 1 ---\n");
+static void test_state_is_per_layer() {
+    printf("--- each layer keeps its own text state ---\n");
     TextFixture f;
-    f.exec("gfx.setFont('default8'); h = gfx.getTextHeight()");
-    ASSERT(f.getNum("h") == 14.0, "gfx.getTextHeight() should be 14 for default8 at size 1");
+    f.exec("gfx.setLayer(1); gfx.setFont('display'); gfx.setTextSize(3)");
+    f.exec("gfx.setLayer(2); w2 = gfx.getTextWidth('ab')");
+    ASSERT(f.num("w2") == 12, "layer 2 is still monogram at size 1");
+    f.exec("gfx.setLayer(1); w1 = gfx.getTextWidth('ab')");
+    ASSERT(f.num("w1") == text::width(faces::display, "ab", 3), "layer 1 kept display at 3");
+    ASSERT(f.layers[0].text().face == &faces::display, "the setting is on the canvas, where native code sees it");
 }
 
-// ============================================================
-// text() draws pixels in the expected region
-// ============================================================
-static void test_text_draws_pixels() {
-    printf("--- text() draws pixels ---\n");
+static void test_reload_resets_the_state() {
+    printf("--- a reload starts every layer in monogram, wrap, size 1 ---\n");
     TextFixture f;
-    f.exec("gfx.setColor(7); gfx.text('A', 0, 0)");
-    // 'A' at size 1 should write some non-zero pixels in the 6x8 area at (0,0)
-    ASSERT(f.hasNonZeroPixel(0, 0, 6, 8), "text('A',0,0) should produce non-zero pixels in 6x8 region");
+    f.exec("gfx.setFont('body'); gfx.setTextSize(4); gfx.setTextWrap('clip', 10); gfx.setTextOutline(true)");
+    f.bindings.setLayers(f.canvases, 2, f.visible);
+    const TextState& st = f.layers[0].text();
+    ASSERT(st.face == nullptr && st.size == 1 && st.overflow == TextOverflow::Wrap && st.width == 0 && !st.outline,
+           "defaults again");
 }
 
-// ============================================================
-// text() does not bleed outside expected bounds
-// ============================================================
-static void test_text_no_bleed() {
-    printf("--- text() no bleed beyond glyph ---\n");
+static void test_faces() {
+    printf("--- gfx.setFont takes monogram, body and display ---\n");
     TextFixture f;
-    f.exec("gfx.setColor(7); gfx.text('A', 10, 10)");
-    // Row 0..9 and column 0..9 should be blank (character starts at 10,10)
-    ASSERT(f.regionIsBlank(0, 0, 10, 10), "area before origin should be blank");
-    // Past the glyph: column 16+ should be blank (10 + 6 = 16)
-    ASSERT(f.regionIsBlank(16, 10, 20, 8), "area after glyph should be blank");
+    for (const char* name : {"monogram", "body", "display"})
+        ASSERT(f.exec(std::string("gfx.setFont('") + name + "')").success, name);
+    for (const char* gone : {"default", "default8", "nonexistent"})
+        ASSERT(!f.exec(std::string("gfx.setFont('") + gone + "')").success, gone);
 }
 
-// ============================================================
-// setTextSize / getTextSize roundtrip
-// ============================================================
-static void test_setTextSize_roundtrip() {
-    printf("--- setTextSize / getTextSize roundtrip ---\n");
+static void test_outline_and_effect() {
+    printf("--- Lua reaches the outline and the shader ---\n");
     TextFixture f;
-    f.exec("gfx.setTextSize(4); sz = gfx.getTextSize()");
-    ASSERT(f.getNum("sz") == 4.0, "gfx.getTextSize() should return 4 after gfx.setTextSize(4)");
+    f.exec("gfx.setTextOutline(true); gfx.text('HH', 4, 4)");
+    Layer ref = blank();
+    TextRenderer<Pixel4>(ref).setOutline(true).draw("HH", 4, 4);
+    ASSERT(same(f.layers[0], ref), "the outline, as native draws it");
+    ASSERT(!f.exec("gfx.setTextOutline(true, 9)").success, "an outline colour 8-14 raises");
+    ASSERT(f.exec("gfx.setTextEffect(nil)").success, "nil drops the shader");
 }
 
-// ============================================================
-// setFont / getFont roundtrip
-// ============================================================
-static void test_setFont_roundtrip() {
-    printf("--- setFont / getFont roundtrip ---\n");
+static void test_newline_and_utf8() {
+    printf("--- newlines and UTF-8 ---\n");
     TextFixture f;
-    f.exec("gfx.setFont('default8'); f1 = gfx.getFont(); gfx.setFont('default'); f2 = gfx.getFont()");
-    ASSERT(f.getStr("f1") == "default8", "gfx.getFont() should return 'default8'");
-    ASSERT(f.getStr("f2") == "default",  "gfx.getFont() should return 'default' after switching back");
+    f.exec("n = gfx.text('a\\nb', 0, 0); w = gfx.getTextWidth('\\u{20AC}')");
+    ASSERT(f.num("n") == 2, "a newline starts a line");
+    ASSERT(f.num("w") == text::tofuAdvance(faces::monogram), "a missing character measures one tofu");
 }
 
-// ============================================================
-// setFont with unknown name keeps current
-// ============================================================
-static void test_setFont_unknown_keeps_current() {
-    printf("--- setFont unknown name keeps current ---\n");
-    TextFixture f;
-    f.exec("gfx.setFont('default8'); gfx.setFont('nonexistent'); f = gfx.getFont()");
-    ASSERT(f.getStr("f") == "default8", "gfx.setFont('nonexistent') should keep 'default8'");
-}
-
-// ============================================================
-// text() with newline: second line should render below first
-// ============================================================
-static void test_text_newline() {
-    printf("--- text() with newline ---\n");
-    TextFixture f;
-    // Draw two lines: "A\nB" at (0,0). Second line starts at y=8 for default font.
-    f.exec("gfx.setColor(7); gfx.text('A\\nB', 0, 0)");
-    ASSERT(f.hasNonZeroPixel(0, 0, 6, 8), "first line 'A' should have pixels in row 0..7");
-    ASSERT(f.hasNonZeroPixel(0, 8, 6, 8), "second line 'B' should have pixels in row 8..15");
-}
-
-// ============================================================
-// textWrapped(): text that exceeds maxWidth wraps to next line
-// ============================================================
-static void test_textWrapped_wraps() {
-    printf("--- textWrapped() wraps long text ---\n");
-    TextFixture f;
-    // "AAA BBB" with maxWidth=24 (4 chars fit: 4*6=24). "AAA " = 4 chars = 24 px.
-    // "BBB" won't fit on the same line, so it wraps.
-    f.exec("gfx.setColor(7); gfx.textWrapped('AAA BBB', 0, 0, 24)");
-    ASSERT(f.hasNonZeroPixel(0, 0, 24, 8), "first line 'AAA ' should have pixels");
-    ASSERT(f.hasNonZeroPixel(0, 8, 24, 8), "wrapped line 'BBB' should have pixels on row 8+");
-}
-
-// ============================================================
-// textWrapped(): short text stays on one line
-// ============================================================
-static void test_textWrapped_no_wrap_if_fits() {
-    printf("--- textWrapped() no wrap when text fits ---\n");
-    TextFixture f;
-    // "Hi" = 2*6 = 12 px, maxWidth = 60: fits on one line
-    f.exec("gfx.setColor(7); gfx.textWrapped('Hi', 0, 0, 60)");
-    ASSERT(f.hasNonZeroPixel(0, 0, 12, 8), "text should render on first line");
-    ASSERT(f.regionIsBlank(0, 8, 60, 8),   "no second line when text fits");
-}
-
-// ============================================================
-// getTextWidth after font switch: default8 has proportional widths
-// ============================================================
-static void test_getTextWidth_default8() {
-    printf("--- getTextWidth with default8 font ---\n");
-    TextFixture f;
-    f.exec("gfx.setFont('default8'); w = gfx.getTextWidth('A')");
-    // defaultFont8pt7b 'A' glyph = {xAdvance 5, width 4, xOffset 0}. getTextWidth
-    // trims the last glyph's trailing bearing (xAdvance - (xOffset+width) = 1),
-    // matching Canvas8::getTextWidth byte-for-byte (sweep adjudication, unwn #168).
-    ASSERT(f.getNum("w") == 4.0, "getTextWidth('A') should be 4 for default8 font (5 advance - 1 trailing bearing)");
-}
-
-// ============================================================
-// text() at size 2 draws larger glyphs
-// ============================================================
-static void test_text_size2_larger() {
-    printf("--- text() at size 2 produces larger output ---\n");
-    TextFixture f;
-    f.exec("gfx.setColor(7); gfx.setTextSize(2); gfx.text('A', 0, 0)");
-    // Size 2: glyph spans 12x16 pixels (6*2 x 8*2)
-    ASSERT(f.hasNonZeroPixel(0, 0, 12, 16), "size 2 'A' should have pixels in 12x16 region");
-    // The region beyond the scaled glyph should be blank
-    ASSERT(f.regionIsBlank(12, 0, 20, 16), "area past size-2 glyph should be blank");
-}
-
-// ============================================================
-// text() resets state after hot-reload (registerAll called twice)
-// ============================================================
-static void test_text_state_reset_on_reload() {
-    printf("--- text state resets on registerAll reload ---\n");
-    TextFixture f;
-    f.exec("gfx.setTextSize(4); gfx.setFont('default8')");
-    ASSERT(f.getNum("") == 0.0 || true, ""); // dummy; real checks below
-    // Simulate reload
-    f.bindings.registerAll();
-    f.exec("sz = gfx.getTextSize(); fn = gfx.getFont()");
-    ASSERT(f.getNum("sz") == 1.0,       "textSize should reset to 1 after registerAll()");
-    ASSERT(f.getStr("fn") == "default", "font should reset to 'default' after registerAll()");
-}
-
-// ============================================================
-// main
-// ============================================================
 int main() {
-    printf("text_binding_test\n");
-    printf("=================\n");
-
-    test_getTextWidth_default_size1();
-    test_getTextWidth_default_size2();
-    test_getTextWidth_empty();
-    test_getTextHeight_default_size1();
-    test_getTextHeight_default_size3();
-    test_getTextHeight_default8();
-    test_text_draws_pixels();
-    test_text_no_bleed();
-    test_setTextSize_roundtrip();
-    test_setFont_roundtrip();
-    test_setFont_unknown_keeps_current();
-    test_text_newline();
-    test_textWrapped_wraps();
-    test_textWrapped_no_wrap_if_fits();
-    test_getTextWidth_default8();
-    test_text_size2_larger();
-    test_text_state_reset_on_reload();
-
-    printf("\nResults: %d passed, %d failed\n", passes, failures);
-    return failures == 0 ? 0 : 1;
+    test_text_is_the_native_draw();
+    test_measure();
+    test_wrap_modes();
+    test_state_is_per_layer();
+    test_reload_resets_the_state();
+    test_faces();
+    test_outline_and_effect();
+    test_newline_and_utf8();
+    printf("\ntext_binding_test: %d passed, %d failed\n", passes, failures);
+    return failures ? 1 : 0;
 }

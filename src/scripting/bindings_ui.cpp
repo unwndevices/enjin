@@ -209,19 +209,6 @@ int LuaBindings::lua_engine_ui_setTheme(lua_State* L) {
     return 0;
 }
 
-// ── UI-04: engine.ui.label(x, y, text, fg) ───────────────────────────────────
-// Draws text at the specified position with the given foreground color.
-int LuaBindings::lua_engine_ui_label(lua_State* L) {
-    REQUIRE_CANVAS(b, L);
-    int16_t     x   = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t     y   = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    const char* str = luaL_checkstring(L, 3);
-    uint8_t     fg  = lua::checkCanvasColour(L, 4, indexedColours(b->currentCanvas));
-
-    b->currentCanvas->drawText(str, x, y, fg, 1, nullptr);  // size=1, default font
-    return 0;
-}
-
 // ── Sub-table registration (called from registerEngineTable) ──────────────────
 void LuaBindings::registerUISubtable(lua_State* L) {
     // Assumes engine table is at top of stack
@@ -261,13 +248,6 @@ void LuaBindings::registerUISubtable(lua_State* L) {
                     "bg: the fill, a gfx.COLOR role or 15 (8-14 raise); drawn with a 1 px solid border\n"
                     "border: the border, a gfx.COLOR role or 15 (8-14 raise)")
             .withEnum(kSlot),
-        luaFunction("label", lua_engine_ui_label, "(x:int, y:int, text:string, fg:int) -> nil",
-                    "Draw text in the built-in font at size 1; note (x, y, text), unlike gfx.text.",
-                    "x: left edge\n"
-                    "y: top edge\n"
-                    "text: the string to draw\n"
-                    "fg: the text, a gfx.COLOR role or 15 (8-14 raise)")
-            .note("Ignores gfx.setFont and gfx.setTextSize."),
         luaFunction("setStyle", lua_engine_ui_setStyle, "(slot:StyleSlot, fields:table) -> nil",
                     "Override a style slot: the given fields on top of the theme default.",
                     "slot: the slot to override; unknown names raise\n"

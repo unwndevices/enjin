@@ -1,683 +1,423 @@
 #ifndef ENJIN2_GRAPHICS_TEXT_RENDERER_HPP
 #define ENJIN2_GRAPHICS_TEXT_RENDERER_HPP
 
+// The one text route (ADR-0029): every string on every host, from native code
+// and from Lua, is drawn here, in one of the three faces (faces/faces.hpp).
+//
+// The rules:
+//  - y is the top of the line; the baseline is y + ascent * size.
+//  - A string's width is its advance (the sum of its glyphs' xAdvance).
+//  - Text is UTF-8. A character the face lacks draws a tofu (a hollow box one
+//    advance wide) and is logged once per character and face.
+//  - Overflow is one setting, wrap | clip | ellipsis, on a box that runs from
+//    the anchor to the given width, or to the layer's edge when none is given.
+//    Wrapping breaks at spaces, and inside a word only when the word is longer
+//    than the line.
+//
+// The state (face, colour, overflow, box width, cursor, scale, outline, shader,
+// clip window) lives on the canvas (TextState, text_state.hpp): a renderer is a
+// view of one canvas's state, cheap to make, and every setting it makes stays
+// on that canvas until changed.
+
 #include "canvas.hpp"
-#include "effect.hpp"     // index-shader data model (Mask x Remap x phase)
-#include "palette.hpp"    // Palette roles: the text default, the bg outline
-#include "gfxfont.h"  // canonical GFXglyph/GFXfont definitions (Adafruit GFX layout)
-#include <string>
-#include <cstring>
+#include "effect.hpp"
+#include "faces/faces.hpp"
+#include "palette.hpp"
+#include "text_state.hpp"
+
+#include <cstdint>
+#include <cstdio>
+#include <string_view>
 #include <type_traits>
 
 namespace enjin2 {
 
-// GFXglyph / GFXfont are defined once in graphics/gfxfont.h (global namespace,
-// matching the Adafruit GFX ABI) and used unqualified here via that include.
+namespace text {
 
-// Standard ASCII 5x7 font (from Adafruit GFX)
-static const uint8_t default_font[] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x3E, 0x5B, 0x4F, 0x5B, 0x3E, 0x3E, 0x6B,
-    0x4F, 0x6B, 0x3E, 0x1C, 0x3E, 0x7C, 0x3E, 0x1C, 0x18, 0x3C, 0x7E, 0x3C,
-    0x18, 0x1C, 0x57, 0x7D, 0x57, 0x1C, 0x1C, 0x5E, 0x7F, 0x5E, 0x1C, 0x00,
-    0x18, 0x3C, 0x18, 0x00, 0xFF, 0xE7, 0xC3, 0xE7, 0xFF, 0x00, 0x18, 0x24,
-    0x18, 0x00, 0xFF, 0xE7, 0xDB, 0xE7, 0xFF, 0x30, 0x48, 0x3A, 0x06, 0x0E,
-    0x26, 0x29, 0x79, 0x29, 0x26, 0x40, 0x7F, 0x05, 0x05, 0x07, 0x40, 0x7F,
-    0x05, 0x25, 0x3F, 0x5A, 0x3C, 0xE7, 0x3C, 0x5A, 0x7F, 0x3E, 0x1C, 0x1C,
-    0x08, 0x08, 0x1C, 0x1C, 0x3E, 0x7F, 0x14, 0x22, 0x7F, 0x22, 0x14, 0x5F,
-    0x5F, 0x00, 0x5F, 0x5F, 0x06, 0x09, 0x7F, 0x01, 0x7F, 0x00, 0x66, 0x89,
-    0x95, 0x6A, 0x60, 0x60, 0x60, 0x60, 0x60, 0x94, 0xA2, 0xFF, 0xA2, 0x94,
-    0x08, 0x04, 0x7E, 0x04, 0x08, 0x10, 0x20, 0x7E, 0x20, 0x10, 0x08, 0x08,
-    0x2A, 0x1C, 0x08, 0x08, 0x1C, 0x2A, 0x08, 0x08, 0x1E, 0x10, 0x10, 0x10,
-    0x10, 0x0C, 0x1E, 0x0C, 0x1E, 0x0C, 0x30, 0x38, 0x3E, 0x38, 0x30, 0x06,
-    0x0E, 0x3E, 0x0E, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5F,
-    0x00, 0x00, 0x00, 0x07, 0x00, 0x07, 0x00, 0x14, 0x7F, 0x14, 0x7F, 0x14,
-    0x24, 0x2A, 0x7F, 0x2A, 0x12, 0x23, 0x13, 0x08, 0x64, 0x62, 0x36, 0x49,
-    0x56, 0x20, 0x50, 0x00, 0x08, 0x07, 0x03, 0x00, 0x00, 0x1C, 0x22, 0x41,
-    0x00, 0x00, 0x41, 0x22, 0x1C, 0x00, 0x2A, 0x1C, 0x7F, 0x1C, 0x2A, 0x08,
-    0x08, 0x3E, 0x08, 0x08, 0x00, 0x80, 0x70, 0x30, 0x00, 0x08, 0x08, 0x08,
-    0x08, 0x08, 0x00, 0x00, 0x60, 0x60, 0x00, 0x20, 0x10, 0x08, 0x04, 0x02,
-    0x3E, 0x51, 0x49, 0x45, 0x3E, 0x00, 0x42, 0x7F, 0x40, 0x00, 0x72, 0x49,
-    0x49, 0x49, 0x46, 0x21, 0x41, 0x49, 0x4D, 0x33, 0x18, 0x14, 0x12, 0x7F,
-    0x10, 0x27, 0x45, 0x45, 0x45, 0x39, 0x3C, 0x4A, 0x49, 0x49, 0x31, 0x41,
-    0x21, 0x11, 0x09, 0x07, 0x36, 0x49, 0x49, 0x49, 0x36, 0x46, 0x49, 0x49,
-    0x29, 0x1E, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x40, 0x34, 0x00, 0x00,
-    0x00, 0x08, 0x14, 0x22, 0x41, 0x14, 0x14, 0x14, 0x14, 0x14, 0x00, 0x41,
-    0x22, 0x14, 0x08, 0x02, 0x01, 0x59, 0x09, 0x06, 0x3E, 0x41, 0x5D, 0x59,
-    0x4E, 0x7C, 0x12, 0x11, 0x12, 0x7C, 0x7F, 0x49, 0x49, 0x49, 0x36, 0x3E,
-    0x41, 0x41, 0x41, 0x22, 0x7F, 0x41, 0x41, 0x22, 0x1C, 0x7F, 0x49, 0x49,
-    0x49, 0x41, 0x7F, 0x09, 0x09, 0x09, 0x01, 0x3E, 0x41, 0x49, 0x49, 0x7A,
-    0x7F, 0x08, 0x08, 0x08, 0x7F, 0x00, 0x41, 0x7F, 0x41, 0x00, 0x20, 0x40,
-    0x41, 0x3F, 0x01, 0x7F, 0x08, 0x14, 0x22, 0x41, 0x7F, 0x40, 0x40, 0x40,
-    0x40, 0x7F, 0x02, 0x0C, 0x02, 0x7F, 0x7F, 0x04, 0x08, 0x10, 0x7F, 0x3E,
-    0x41, 0x41, 0x41, 0x3E, 0x7F, 0x09, 0x09, 0x09, 0x06, 0x3E, 0x41, 0x51,
-    0x21, 0x5E, 0x7F, 0x09, 0x19, 0x29, 0x46, 0x46, 0x49, 0x49, 0x49, 0x31,
-    0x01, 0x01, 0x7F, 0x01, 0x01, 0x3F, 0x40, 0x40, 0x40, 0x3F, 0x1F, 0x20,
-    0x40, 0x20, 0x1F, 0x3F, 0x40, 0x38, 0x40, 0x3F, 0x63, 0x14, 0x08, 0x14,
-    0x63, 0x07, 0x08, 0x70, 0x08, 0x07, 0x61, 0x51, 0x49, 0x45, 0x43, 0x00,
-    0x7F, 0x41, 0x41, 0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x00, 0x41, 0x41,
-    0x7F, 0x00, 0x04, 0x02, 0x01, 0x02, 0x04, 0x40, 0x40, 0x40, 0x40, 0x40,
-    0x00, 0x01, 0x02, 0x04, 0x00, 0x20, 0x54, 0x54, 0x54, 0x78, 0x7F, 0x48,
-    0x44, 0x44, 0x38, 0x38, 0x44, 0x44, 0x44, 0x20, 0x38, 0x44, 0x44, 0x48,
-    0x7F, 0x38, 0x54, 0x54, 0x54, 0x18, 0x08, 0x7E, 0x09, 0x01, 0x02, 0x0C,
-    0x52, 0x52, 0x52, 0x3E, 0x7F, 0x08, 0x04, 0x04, 0x78, 0x00, 0x44, 0x7D,
-    0x40, 0x00, 0x20, 0x40, 0x44, 0x3D, 0x00, 0x7F, 0x10, 0x28, 0x44, 0x00,
-    0x00, 0x41, 0x7F, 0x40, 0x00, 0x7C, 0x04, 0x18, 0x04, 0x78, 0x7C, 0x08,
-    0x04, 0x04, 0x78, 0x38, 0x44, 0x44, 0x44, 0x38, 0x7C, 0x14, 0x14, 0x14,
-    0x08, 0x08, 0x14, 0x14, 0x18, 0x7C, 0x7C, 0x08, 0x04, 0x04, 0x08, 0x48,
-    0x54, 0x54, 0x54, 0x20, 0x04, 0x3F, 0x44, 0x40, 0x20, 0x3C, 0x40, 0x40,
-    0x20, 0x7C, 0x1C, 0x20, 0x40, 0x20, 0x1C, 0x3C, 0x40, 0x30, 0x40, 0x3C,
-    0x44, 0x28, 0x10, 0x28, 0x44, 0x0C, 0x50, 0x50, 0x50, 0x3C, 0x44, 0x64,
-    0x54, 0x4C, 0x44, 0x00, 0x08, 0x36, 0x41, 0x00, 0x00, 0x00, 0x7F, 0x00,
-    0x00, 0x00, 0x41, 0x36, 0x08, 0x00, 0x10, 0x08, 0x08, 0x10, 0x08, 0x78,
-    0x46, 0x41, 0x46, 0x78
-};
+/// Decode one UTF-8 code point from s at i, advancing i. A malformed sequence
+/// yields U+FFFD and consumes one byte.
+inline uint32_t decodeUtf8(std::string_view s, size_t& i) {
+    const auto byte = [&](size_t k) { return static_cast<uint8_t>(s[k]); };
+    const uint8_t b0 = byte(i);
+    if (b0 < 0x80) { ++i; return b0; }
+    int extra = 0;
+    uint32_t cp = 0;
+    if ((b0 & 0xE0) == 0xC0) { extra = 1; cp = b0 & 0x1F; }
+    else if ((b0 & 0xF0) == 0xE0) { extra = 2; cp = b0 & 0x0F; }
+    else if ((b0 & 0xF8) == 0xF0) { extra = 3; cp = b0 & 0x07; }
+    else { ++i; return 0xFFFD; }
+    if (i + extra >= s.size()) { ++i; return 0xFFFD; }
+    for (int k = 1; k <= extra; ++k) {
+        const uint8_t b = byte(i + k);
+        if ((b & 0xC0) != 0x80) { ++i; return 0xFFFD; }
+        cp = (cp << 6) | (b & 0x3F);
+    }
+    static constexpr uint32_t kMin[4] = {0, 0x80, 0x800, 0x10000};
+    if (cp < kMin[extra] || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) { ++i; return 0xFFFD; }
+    i += static_cast<size_t>(extra) + 1;
+    return cp;
+}
+
+/// The glyph for @p cp in @p f, or nullptr when the face lacks it.
+inline const GFXglyph* glyph(const Face& f, uint32_t cp) {
+    const GFXfont& font = *f.font;
+    if (cp < font.first || cp > font.last) return nullptr;
+    const GFXglyph& g = font.glyph[cp - font.first];
+    return g.xAdvance ? &g : nullptr;
+}
+
+/// The tofu's advance in @p f at size 1: the advance of '?'.
+inline int tofuAdvance(const Face& f) {
+    const GFXglyph* q = glyph(f, '?');
+    return q ? q->xAdvance : f.capHeight;
+}
+
+/// The advance of @p cp in @p f at size 1 (a tofu's when it is missing).
+inline int advance(const Face& f, uint32_t cp) {
+    const GFXglyph* g = glyph(f, cp);
+    return g ? g->xAdvance : tofuAdvance(f);
+}
+
+/// Where a missing character is reported; replaceable (setMissingLog).
+using MissingLog = void (*)(const Face& face, uint32_t cp);
+
+inline void defaultMissingLog(const Face& face, uint32_t cp) {
+    std::printf("text: U+%04X is not in %s; drawn as a tofu\n", static_cast<unsigned>(cp), face.name);
+}
+
+inline MissingLog& missingLog() {
+    static MissingLog log = &defaultMissingLog;
+    return log;
+}
+
+/// Report @p cp missing from @p face once per character and face (the first
+/// 64 pairs; later ones are reported every time rather than remembered).
+inline void reportMissing(const Face& face, uint32_t cp) {
+    struct Seen { const Face* face; uint32_t cp; };
+    static Seen seen[64];
+    static int n = 0;
+    for (int i = 0; i < n; ++i)
+        if (seen[i].face == &face && seen[i].cp == cp) return;
+    if (n < 64) seen[n++] = {&face, cp};
+    if (MissingLog log = missingLog()) log(face, cp);
+}
+
+/// The width of @p s, unwrapped, at @p size: the widest line's advance
+/// (a newline starts a line).
+inline int width(const Face& f, std::string_view s, uint8_t size = 1) {
+    int widest = 0, w = 0;
+    for (size_t i = 0; i < s.size();) {
+        const uint32_t cp = decodeUtf8(s, i);
+        if (cp == '\n') { widest = w > widest ? w : widest; w = 0; continue; }
+        if (cp == '\r') continue;
+        w += advance(f, cp);
+    }
+    widest = w > widest ? w : widest;
+    return widest * (size ? size : 1);
+}
+
+/// The line height (the face's yAdvance) at @p size.
+inline int lineHeight(const Face& f, uint8_t size = 1) { return f.font->yAdvance * (size ? size : 1); }
+
+/// @p s without its trailing spaces.
+inline std::string_view trimRight(std::string_view s) {
+    while (!s.empty() && s.back() == ' ') s.remove_suffix(1);
+    return s;
+}
+
+/// Where the line starting at @p start ends in the paragraph @p p (exclusive):
+/// after the last word that fits in @p boxW, or inside a word longer than the line.
+inline size_t wrapEnd(const Face& f, uint8_t size, std::string_view p, size_t start, int boxW) {
+    int w = 0;
+    size_t lastBreak = std::string_view::npos;  // a space that ends a fitting word
+    size_t i = start;
+    while (i < p.size()) {
+        const size_t at = i;
+        const uint32_t cp = decodeUtf8(p, i);
+        if (cp == ' ') lastBreak = at;
+        const int adv = advance(f, cp) * size;
+        if (cp != ' ' && w + adv > boxW && at > start) {
+            if (lastBreak != std::string_view::npos && lastBreak > start) return lastBreak;
+            return at;
+        }
+        w += adv;
+    }
+    return p.size();
+}
 
 /**
- * @brief Text alignment options
+ * @brief Split @p s into the lines TextRenderer::draw would draw, calling
+ *        fn(line) for each: a newline ends a line; with Wrap, a paragraph wider
+ *        than @p boxW breaks at its spaces (inside a word only when the word is
+ *        longer than the line), the spaces at a break dropped. Clip and
+ *        Ellipsis keep one line per paragraph (cut when drawn).
  */
-enum class TextAlign {
-    Left,
-    Center,
-    Right
-};
+template <typename Fn>
+void forEachLine(const Face& f, uint8_t size, TextOverflow overflow, std::string_view s, int boxW, Fn&& fn) {
+    if (!size) size = 1;
+    size_t para = 0;
+    while (true) {
+        size_t nl = s.find('\n', para);
+        if (nl == std::string_view::npos) nl = s.size();
+        const std::string_view p = s.substr(para, nl - para);
+        if (overflow == TextOverflow::Wrap) {
+            size_t start = 0;
+            do {
+                const size_t end = wrapEnd(f, size, p, start, boxW);
+                fn(trimRight(p.substr(start, end - start)));
+                start = end;
+                while (start < p.size() && p[start] == ' ') ++start;
+            } while (start < p.size());
+        } else {
+            fn(p);
+        }
+        if (nl == s.size()) break;
+        para = nl + 1;
+    }
+}
+
+}  // namespace text
 
 /**
- * @brief Text renderer for drawing text to canvas
+ * @brief Draws text on one canvas, through that canvas's sticky TextState.
+ *
+ *     TextRenderer<Pixel4> t(layer);
+ *     t.setFont(faces::body);
+ *     t.setTextWrap(TextOverflow::Ellipsis, 80);
+ *     t.draw("Track 01", 10, 4);          // y = the top of the line
+ *     t.draw("12:30", 150, 4, TextAlign::Right);
  */
-template<typename TPixel>
+template <typename TPixel>
 class TextRenderer {
+public:
+    explicit TextRenderer(ICanvas<TPixel>& canvas) : canvas_(canvas), s_(canvas.text()) {}
+
+    // ---- the state (sticky, on the canvas) ---------------------------------
+
+    TextRenderer& setFont(const Face& face) { s_.face = &face; return *this; }
+    const Face& face() const { return s_.face ? *s_.face : faces::monogram; }
+
+    TextRenderer& setTextColor(uint8_t index) { s_.color = index; return *this; }
+    template <typename P = TPixel, typename = std::enable_if_t<!std::is_same_v<P, uint8_t>>>
+    TextRenderer& setTextColor(TPixel p) { s_.color = toIndex(p); return *this; }
+
+    /// Integer scale: 1 = native size; 0 counts as 1.
+    TextRenderer& setTextSize(uint8_t size) { s_.size = size ? size : 1; return *this; }
+    uint8_t textSize() const { return s_.size; }
+
+    /// The overflow rule and the box's width (0: to the layer's edge).
+    TextRenderer& setTextWrap(TextOverflow overflow, int16_t width = 0) {
+        s_.overflow = overflow;
+        s_.width = width > 0 ? width : 0;
+        return *this;
+    }
+
+    TextRenderer& setCursor(int16_t x, int16_t y) { s_.cursorX = x; s_.cursorY = y; return *this; }
+
+    /// The legibility outline, in the bg role.
+    TextRenderer& setOutline(bool on) { s_.outline = on; s_.outlineColor = ROLE_BG; return *this; }
+    TextRenderer& setOutline(bool on, uint8_t index) { s_.outline = on; s_.outlineColor = index; return *this; }
+
+    /// Run every fill pixel through @p fx (sampled at absolute canvas coordinates).
+    TextRenderer& setEffect(const Effect& fx) { s_.effect = fx; s_.hasEffect = true; return *this; }
+    TextRenderer& clearEffect() { s_.hasEffect = false; s_.effect = Effect{}; return *this; }
+
+    /// Draw text only inside [x, x+w) x [y, y+h).
+    TextRenderer& setClip(int16_t x, int16_t y, int16_t w, int16_t h) {
+        s_.clipX0 = x; s_.clipY0 = y;
+        s_.clipX1 = static_cast<int16_t>(x + (w > 0 ? w : 0));
+        s_.clipY1 = static_cast<int16_t>(y + (h > 0 ? h : 0));
+        return *this;
+    }
+    TextRenderer& clearClip() {
+        s_.clipX0 = s_.clipY0 = INT16_MIN;
+        s_.clipX1 = s_.clipY1 = INT16_MAX;
+        return *this;
+    }
+
+    /// Every setting back to its default (monogram, the text role, wrap at the edge, ...).
+    TextRenderer& reset() { s_ = TextState{}; return *this; }
+
+    // ---- measuring ----------------------------------------------------------
+
+    /// The advance of @p s at the current face and size (the widest line).
+    int width(std::string_view s) const { return text::width(face(), s, s_.size); }
+    int lineHeight() const { return text::lineHeight(face(), s_.size); }
+    int ascent() const { return face().ascent * s_.size; }
+
+    // ---- drawing ------------------------------------------------------------
+
+    /**
+     * @brief Draw @p s with the top of its first line at y.
+     *
+     * x is the line's left edge, centre or right edge (@p align). The box the
+     * overflow rule applies to: for Left it runs from x for the state's width
+     * (or to the layer's right edge), for Right it ends at x (from the left
+     * edge), for Center it is centred on x (as wide as fits on the layer).
+     *
+     * @return the number of lines drawn. The cursor is left at the end of the
+     *         last line.
+     */
+    int draw(std::string_view s, int x, int y, TextAlign align = TextAlign::Left) {
+        const Face& f = face();
+        const int boxW = boxWidth(x, align);
+        int left;
+        switch (align) {
+            case TextAlign::Left: left = x; break;
+            case TextAlign::Right: left = x - boxW; break;
+            default: left = x - boxW / 2; break;
+        }
+        const int right = left + boxW;
+        const int lineH = text::lineHeight(f, s_.size);
+
+        int lines = 0;
+        int lineTop = y;
+        int endX = x;
+        const bool wrap = s_.overflow == TextOverflow::Wrap;
+        const bool ellipsis = s_.overflow == TextOverflow::Ellipsis;
+        text::forEachLine(f, s_.size, s_.overflow, s, boxW, [&](std::string_view line) {
+            endX = drawLine(f, line, x, align, lineTop, left, right,
+                            !wrap && ellipsis && text::width(f, line, s_.size) > boxW);
+            ++lines;
+            lineTop += lineH;
+        });
+        s_.cursorX = static_cast<int16_t>(endX);
+        s_.cursorY = static_cast<int16_t>(lineTop - lineH);
+        return lines;
+    }
+
+    /// Draw @p s at the cursor (Adafruit's print), left-aligned; the cursor moves on.
+    int print(std::string_view s) { return draw(s, s_.cursorX, s_.cursorY); }
+
 private:
-    const GFXfont* gfx_font;
-    TPixel text_color;
-    TPixel bg_color;
-    bool transparent_bg;
-    uint8_t text_size_x;
-    uint8_t text_size_y;
-    bool wrap_text;
-    int16_t cursor_x;
-    int16_t cursor_y;
+    ICanvas<TPixel>& canvas_;
+    TextState& s_;
 
-    // --- Type-system additions (#40): the glyph as index-shader clip ---
-    // The 1-bit GFX glyph bitmap is the clip silhouette: its set bits decide
-    // *where* to draw, and every drawn pixel is funnelled through an @ref
-    // Effect (Mask x Remap x phase) sampled at absolute canvas coordinates —
-    // so colour/holo/dim/fade are free `Remap` compositions and only this
-    // inner draw loop swaps. `has_effect_ == false` restores the original
-    // constant-colour write byte-for-byte (Canvas8 visual parity). The
-    // legibility outline is a separate bg silhouette pass drawn
-    // behind the fill at a +/-1 px offset (a shader composition, on for the
-    // banner, off for panel text).
-    Effect effect_{};            ///< Active glyph shader (identity by default).
-    bool has_effect_ = false;    ///< When false, the fill is a plain colour write.
-    bool outline_ = false;       ///< When true, draw a +/-1 px bg silhouette behind the fill.
-    bool outline_has_color_ = false;  ///< true if an explicit outline colour was set.
-    TPixel outline_color_{};     ///< Explicit outline colour (else the bg role).
-
-    /// @brief The palette index behind a `TPixel` (`Pixel4::value` or the byte).
     static constexpr uint8_t toIndex(TPixel p) {
         if constexpr (std::is_same_v<TPixel, uint8_t>) return p;
         else return p.value;
     }
-    /// @brief Wrap a palette index back into a `TPixel`.
     static constexpr TPixel fromIndex(uint8_t i) {
-        if constexpr (std::is_same_v<TPixel, uint8_t>) return static_cast<uint8_t>(i);
+        if constexpr (std::is_same_v<TPixel, uint8_t>) return i;
         else return TPixel(i);
     }
 
-public:
-    /**
-     * @brief Construct a new TextRenderer
-     */
-    TextRenderer()
-        : gfx_font(nullptr)
-        , text_color(ROLE_TEXT)
-        , bg_color(0)
-        , transparent_bg(true)
-        , text_size_x(1)
-        , text_size_y(1)
-        , wrap_text(true)
-        , cursor_x(0)
-        , cursor_y(0)
-    {}
-
-    /**
-     * @brief Set the GFX font
-     * @param font Pointer to GFX font structure (nullptr for default built-in font)
-     */
-    void setFont(const GFXfont* font) {
-        gfx_font = font;
-    }
-
-    /**
-     * @brief Route every drawn glyph pixel through an index shader (#40).
-     *
-     * The glyph bitmap stays the 1-bit clip silhouette; the shader recolours
-     * the pixels it keeps. Compose colour/holo/dim/fade as `Remap`s
-     * (`Effect::holo()`, `Effect::dim()`, `Effect::fade(level)`, or a
-     * `Remap::solid(index)` fill). Sampling is at absolute canvas coordinates,
-     * so a scrolling phase stays seamless across dirty tiles.
-     *
-     * @param fx The effect to apply to the glyph silhouette.
-     */
-    void setEffect(const Effect& fx) {
-        effect_ = fx;
-        has_effect_ = true;
-    }
-
-    /// @brief Drop the shader; the fill reverts to a plain `text_color` write.
-    void clearEffect() {
-        has_effect_ = false;
-        effect_ = Effect{};
-    }
-
-    /**
-     * @brief Enable/disable the legibility outline (a +/-1 px bg silhouette).
-     *
-     * The outline is a shader composition, not a glyph feature: the glyph
-     * silhouette is stamped in the `bg` role (ADR-0022) at the four +/-1 px
-     * offsets *behind* the fill, so the text reads over any scenery. On by default for the banner, off for panel text (#40).
-     *
-     * @param on true to draw the outline.
-     */
-    void setOutline(bool on) {
-        outline_ = on;
-        outline_has_color_ = false;
-    }
-
-    /// @brief Enable the outline with an explicit colour (else the bg role).
-    void setOutline(bool on, TPixel color) {
-        outline_ = on;
-        outline_color_ = color;
-        outline_has_color_ = true;
-    }
-
-    /**
-     * @brief Set text color (transparent background)
-     * @param color Text color
-     */
-    void setTextColor(TPixel color) {
-        text_color = color;
-        transparent_bg = true;
-    }
-
-    /**
-     * @brief Set text color with background
-     * @param color Text color
-     * @param bgcolor Background color
-     */
-    void setTextColor(TPixel color, TPixel bgcolor) {
-        text_color = color;
-        bg_color = bgcolor;
-        transparent_bg = false;
-    }
-
-    /**
-     * @brief Set text size
-     * @param size Size multiplier (1 = normal, 2 = double, etc.)
-     */
-    void setTextSize(uint8_t size) {
-        text_size_x = text_size_y = (size > 0) ? size : 1;
-    }
-
-    /**
-     * @brief Set text size with separate X/Y scaling
-     * @param sx X size multiplier
-     * @param sy Y size multiplier
-     */
-    void setTextSize(uint8_t sx, uint8_t sy) {
-        text_size_x = (sx > 0) ? sx : 1;
-        text_size_y = (sy > 0) ? sy : 1;
-    }
-
-    /**
-     * @brief Set cursor position
-     * @param x X coordinate
-     * @param y Y coordinate
-     */
-    void setCursor(int16_t x, int16_t y) {
-        cursor_x = x;
-        cursor_y = y;
-    }
-
-    /**
-     * @brief Set text wrapping
-     * @param wrap True to enable text wrapping
-     */
-    void setTextWrap(bool wrap) {
-        wrap_text = wrap;
-    }
-
-    /**
-     * @brief Draw a single character (Adafruit GFX style)
-     * @param canvas Canvas to draw to
-     * @param x X position
-     * @param y Y position
-     * @param c Character to draw
-     */
-    void drawChar(ICanvas<TPixel>& canvas, int16_t x, int16_t y, unsigned char c) {
-        if (!gfx_font) {
-            // Built-in font (classic 5x7)
-            if (c < 32 || c > 126) return; // Only printable ASCII
-            
-            for (int8_t i = 0; i < 5; i++) { // Char bitmap = 5 columns
-                uint8_t line = default_font[c * 5 + i];
-                for (int8_t j = 0; j < 8; j++, line >>= 1) {
-                    if (line & 1) {
-                        if (text_size_x == 1 && text_size_y == 1) {
-                            canvas.setPixel(x + i, y + j, text_color);
-                        } else {
-                            // Draw scaled pixel
-                            for (uint8_t sy = 0; sy < text_size_y; sy++) {
-                                for (uint8_t sx = 0; sx < text_size_x; sx++) {
-                                    canvas.setPixel(x + i * text_size_x + sx, 
-                                                  y + j * text_size_y + sy, text_color);
-                                }
-                            }
-                        }
-                    } else if (!transparent_bg) {
-                        if (text_size_x == 1 && text_size_y == 1) {
-                            canvas.setPixel(x + i, y + j, bg_color);
-                        } else {
-                            // Draw scaled background pixel
-                            for (uint8_t sy = 0; sy < text_size_y; sy++) {
-                                for (uint8_t sx = 0; sx < text_size_x; sx++) {
-                                    canvas.setPixel(x + i * text_size_x + sx, 
-                                                  y + j * text_size_y + sy, bg_color);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // Draw spacing column
-            if (!transparent_bg) {
-                for (int8_t j = 0; j < 8; j++) {
-                    if (text_size_x == 1 && text_size_y == 1) {
-                        canvas.setPixel(x + 5, y + j, bg_color);
-                    } else {
-                        for (uint8_t sy = 0; sy < text_size_y; sy++) {
-                            for (uint8_t sx = 0; sx < text_size_x; sx++) {
-                                canvas.setPixel(x + 5 * text_size_x + sx, 
-                                              y + j * text_size_y + sy, bg_color);
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            // Custom GFX font — the glyph bitmap is a 1-bit clip silhouette.
-            if (c < gfx_font->first || c > gfx_font->last) return;
-
-            c -= gfx_font->first;
-            const GFXglyph* glyph = (const GFXglyph*)gfx_font->glyph;
-            const GFXglyph& g = glyph[c];
-
-            const uint16_t bo = g.bitmapOffset;
-            const uint8_t w = g.width, h = g.height;
-            const int8_t xo = g.xOffset, yo = g.yOffset;
-
-            // Walk the glyph's set bits once, stamping each into its scaled
-            // pixel block shifted by (offx, offy). `colorFn(px, py)` yields the
-            // colour per absolute pixel — a constant for the fill, a
-            // bg constant for the outline, or the index shader when
-            // one is set. Kept as one walk so the no-effect / no-outline case
-            // writes exactly the pixels the original constant-colour loop did
-            // (Canvas8 visual parity — see tests/waivers.hpp text pins).
-            auto stamp = [&](int16_t offx, int16_t offy, auto&& colorFn) {
-                uint16_t p = bo;
-                uint8_t bits = 0, bit = 0;
-                for (uint8_t yy = 0; yy < h; yy++) {
-                    for (uint8_t xx = 0; xx < w; xx++) {
-                        if (!(bit++ & 7)) {
-                            bits = gfx_font->bitmap[p++];
-                        }
-                        if (bits & 0x80) {
-                            const int16_t bx = x + (xo + xx) * text_size_x + offx;
-                            const int16_t by = y + (yo + yy) * text_size_y + offy;
-                            for (uint8_t sy = 0; sy < text_size_y; sy++) {
-                                for (uint8_t sx = 0; sx < text_size_x; sx++) {
-                                    const int16_t px = bx + sx;
-                                    const int16_t py = by + sy;
-                                    canvas.setPixel(px, py, colorFn(px, py));
-                                }
-                            }
-                        }
-                        bits <<= 1;
-                    }
-                }
-            };
-
-            // Outline pass (#40): a +/-1 px bg silhouette *behind* the fill.
-            if (outline_) {
-                const TPixel oc = outline_has_color_ ? outline_color_ : fromIndex(ROLE_BG);
-                const int16_t kOff[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-                for (auto& o : kOff) {
-                    stamp(o[0], o[1], [&](int16_t, int16_t) { return oc; });
-                }
-            }
-
-            // Fill pass: the index shader when set, else the plain text colour.
-            if (has_effect_) {
-                const uint8_t base = toIndex(text_color);
-                stamp(0, 0, [&](int16_t px, int16_t py) {
-                    return fromIndex(effect_.shadePixel(base, px, py));
-                });
-            } else {
-                stamp(0, 0, [&](int16_t, int16_t) { return text_color; });
+    int boxWidth(int x, TextAlign align) const {
+        if (s_.width > 0) return s_.width;
+        const int w = canvas_.getWidth();
+        switch (align) {
+            case TextAlign::Left: return w - x > 0 ? w - x : 0;
+            case TextAlign::Right: return x > 0 ? x : 0;
+            default: {
+                const int half = x < w - x ? x : w - x;
+                return half > 0 ? 2 * half : 0;
             }
         }
     }
 
-    /**
-     * @brief Draw a string
-     * @param canvas Canvas to draw to
-     * @param x X position
-     * @param y Y position
-     * @param str String to draw
-     */
-    void drawString(ICanvas<TPixel>& canvas, int16_t x, int16_t y, const char* str) {
-        setCursor(x, y);
-        while (*str) {
-            writeChar(canvas, *str++);
+    /// Draw one line; returns the pen's x after it.
+    int drawLine(const Face& f, std::string_view line, int x, TextAlign align, int lineTop,
+                 int left, int right, bool ellipsis) {
+        const int size = s_.size;
+        std::string_view body = line;
+        int dots = 0;
+        if (ellipsis) {
+            // The longest head that leaves room for "...".
+            const int dotsW = 3 * text::advance(f, '.') * size;
+            const int room = (right - left) - dotsW;
+            int w = 0;
+            size_t i = 0, fit = 0;
+            while (i < line.size()) {
+                const uint32_t cp = text::decodeUtf8(line, i);
+                const int adv = text::advance(f, cp) * size;
+                if (w + adv > room) break;
+                w += adv;
+                fit = i;
+            }
+            body = text::trimRight(line.substr(0, fit));
+            dots = 3;
         }
+        const int lineW = text::width(f, body, s_.size) + dots * text::advance(f, '.') * size;
+        int pen;
+        switch (align) {
+            case TextAlign::Left: pen = x; break;
+            case TextAlign::Right: pen = x - lineW; break;
+            default: pen = x - lineW / 2; break;
+        }
+        // Clip and Ellipsis cut at the box; Wrap draws what didn't fit (one
+        // glyph wider than the line) rather than lose it.
+        int cx0 = s_.clipX0, cx1 = s_.clipX1;
+        if (s_.overflow != TextOverflow::Wrap) {
+            if (left > cx0) cx0 = left;
+            if (right < cx1) cx1 = right;
+        }
+        const int baseline = lineTop + f.ascent * size;
+        // The outline pass under the whole line, then the fill.
+        if (s_.outline) {
+            static const int8_t kOff[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+            for (const auto& o : kOff) run(f, body, dots, pen + o[0], baseline + o[1], cx0, cx1, true);
+        }
+        return run(f, body, dots, pen, baseline, cx0, cx1, false);
     }
 
-    /**
-     * @brief Draw a string with automatic wrapping
-     * @param canvas Canvas to draw to
-     * @param x X position
-     * @param y Y position
-     * @param width Maximum width before wrapping
-     * @param str String to draw
-     */
-    void drawStringWrapped(ICanvas<TPixel>& canvas, int16_t x, int16_t y, 
-                          uint16_t width, const char* str) {
-        setCursor(x, y);
-        setTextWrap(true);
-        
-        // Simple word wrapping implementation
-        const char* word_start = str;
-        const char* current = str;
-        int16_t line_x = x;
-        
-        while (*current) {
-            if (*current == ' ' || *current == '\n' || *(current + 1) == '\0') {
-                // End of word or line
-                
-                // Calculate word width
-                uint16_t word_width = getTextWidth(std::string(word_start, current).c_str());
-                
-                // Check if word fits on current line
-                if (line_x + word_width > x + width && line_x > x) {
-                    // Move to next line
-                    cursor_y += getCharHeight() * text_size_y;
-                    cursor_x = x;
-                    line_x = x;
-                }
-                
-                // Draw the word
-                while (word_start <= current) {
-                    if (*word_start != '\n') {
-                        writeChar(canvas, *word_start);
-                    } else {
-                        cursor_y += getCharHeight() * text_size_y;
-                        cursor_x = x;
-                        line_x = x;
-                    }
-                    word_start++;
-                }
-                
-                line_x = cursor_x;
-                word_start = current + 1;
-            }
-            current++;
+    /// Walk @p body (then @p dots periods) from @p pen, stamping each glyph.
+    int run(const Face& f, std::string_view body, int dots, int pen, int baseline, int cx0, int cx1,
+            bool outlinePass) {
+        const int size = s_.size;
+        for (size_t i = 0; i < body.size();) {
+            const uint32_t cp = text::decodeUtf8(body, i);
+            if (cp == '\r') continue;
+            pen += stamp(f, cp, pen, baseline, cx0, cx1, outlinePass) * size;
         }
+        for (int d = 0; d < dots; ++d) pen += stamp(f, '.', pen, baseline, cx0, cx1, outlinePass) * size;
+        return pen;
     }
 
-    /**
-     * @brief Get text bounds for a string (Adafruit ink box)
-     * @param str String to measure
-     * @param x X position (cursor start / baseline for GFX fonts)
-     * @param y Y position (cursor start / baseline for GFX fonts)
-     * @param x1 Output: minimum X of the rendered ink (includes glyph bearing)
-     * @param y1 Output: minimum Y of the rendered ink (negative of the ascent
-     *           relative to the baseline for GFX fonts)
-     * @param w Output: ink width
-     * @param h Output: ink height
-     * @param wrap_width Wrap boundary consulted when wrapping is enabled;
-     *        0 (the default) measures single-line. Pass the target canvas
-     *        width to reproduce the wrapped extents a Canvas-resident
-     *        measurement would report — the renderer holds no canvas at
-     *        measurement time, so the boundary must come from the caller.
-     *
-     * Restored pre-migration semantics (unwn #161): the true ink bounding box
-     * via the Adafruit charBounds walk, not the advance-width / yAdvance box.
-     * Centering math of the form `pos - w / 2 - x1` / `pos - h / 2 - y1`
-     * depends on these bearings.
-     */
-    void getTextBounds(const char* str, int16_t x, int16_t y,
-                      int16_t* x1, int16_t* y1, uint16_t* w, uint16_t* h,
-                      uint16_t wrap_width = 0) {
-        if (!str || !x1 || !y1 || !w || !h) return;
-
-        int16_t minx = 0x7FFF, miny = 0x7FFF, maxx = -1, maxy = -1;
-
-        *x1 = x; // Initial position is value passed in
-        *y1 = y;
-        *w = *h = 0; // Initial size is zero
-
-        while (*str) {
-            charBounds(static_cast<unsigned char>(*str++), &x, &y,
-                       &minx, &miny, &maxx, &maxy, wrap_width);
-        }
-
-        if (maxx >= minx) {
-            *x1 = minx;
-            *w = static_cast<uint16_t>(maxx - minx + 1);
-        }
-        if (maxy >= miny) {
-            *y1 = miny;
-            *h = static_cast<uint16_t>(maxy - miny + 1);
-        }
+    void plot(int px, int py, int cx0, int cx1, bool outlinePass) {
+        if (px < cx0 || px >= cx1 || py < s_.clipY0 || py >= s_.clipY1) return;
+        if (px < 0 || py < 0 || px >= canvas_.getWidth() || py >= canvas_.getHeight()) return;
+        uint8_t c;
+        if (outlinePass) c = s_.outlineColor;
+        else if (s_.hasEffect) c = s_.effect.shadePixel(s_.color, static_cast<int16_t>(px), static_cast<int16_t>(py));
+        else c = s_.color;
+        canvas_.setPixel(static_cast<int16_t>(px), static_cast<int16_t>(py), fromIndex(c));
     }
 
-    /**
-     * @brief Helper to determine character bounds (Adafruit_GFX compatible)
-     * @param c Character to measure
-     * @param x Current X cursor position (updated)
-     * @param y Current Y cursor position (updated)
-     * @param minx Minimum X bound (updated)
-     * @param miny Minimum Y bound (updated)
-     * @param maxx Maximum X bound (updated)
-     * @param maxy Maximum Y bound (updated)
-     * @param wrap_width Wrap boundary (0 = no wrapping during measurement)
-     */
-    void charBounds(unsigned char c, int16_t* x, int16_t* y,
-                    int16_t* minx, int16_t* miny, int16_t* maxx, int16_t* maxy,
-                    uint16_t wrap_width = 0) {
-        if (gfx_font) {
-            if (c == '\n') {
-                *x = 0; // Reset x to zero, advance y by one line
-                *y += text_size_y * gfx_font->yAdvance;
-            } else if (c != '\r') { // Not a carriage return; is normal char
-                uint8_t first = gfx_font->first,
-                        last = gfx_font->last;
-                if ((c >= first) && (c <= last)) { // Char present in this font?
-                    const GFXglyph* glyph = (const GFXglyph*)gfx_font->glyph;
-                    const GFXglyph& g = glyph[c - first];
-                    uint8_t gw = g.width,
-                            gh = g.height,
-                            xa = g.xAdvance;
-                    int8_t xo = g.xOffset,
-                           yo = g.yOffset;
-                    if (wrap_text && wrap_width &&
-                        ((*x + (((int16_t)xo + gw) * text_size_x)) > (int16_t)wrap_width)) {
-                        *x = 0; // Reset x to zero, advance y by one line
-                        *y += text_size_y * gfx_font->yAdvance;
-                    }
-                    int16_t tsx = (int16_t)text_size_x, tsy = (int16_t)text_size_y,
-                            x1 = *x + xo * tsx, y1 = *y + yo * tsy, x2 = x1 + gw * tsx - 1,
-                            y2 = y1 + gh * tsy - 1;
-                    if (x1 < *minx)
-                        *minx = x1;
-                    if (y1 < *miny)
-                        *miny = y1;
-                    if (x2 > *maxx)
-                        *maxx = x2;
-                    if (y2 > *maxy)
-                        *maxy = y2;
-                    *x += xa * tsx;
-                }
-            }
-        } else {
-            // Default font (built-in)
-            if (c == '\n') {
-                *x = 0;                // Reset x to zero,
-                *y += text_size_y * 8; // advance y one line
-            } else if (c != '\r') {
-                if (wrap_text && wrap_width && ((*x + text_size_x * 6) > (int16_t)wrap_width)) {
-                    *x = 0;                // Reset x to zero,
-                    *y += text_size_y * 8; // advance y one line
-                }
-                int16_t x1 = *x, y1 = *y, x2 = x1 + text_size_x * 6 - 1, y2 = y1 + text_size_y * 8 - 1;
-                if (x1 < *minx)
-                    *minx = x1;
-                if (y1 < *miny)
-                    *miny = y1;
-                if (x2 > *maxx)
-                    *maxx = x2;
-                if (y2 > *maxy)
-                    *maxy = y2;
-                *x += text_size_x * 6; // Advance x one char
-            }
-        }
+    void block(int bx, int by, int cx0, int cx1, bool outlinePass) {
+        const int size = s_.size;
+        for (int sy = 0; sy < size; ++sy)
+            for (int sx = 0; sx < size; ++sx) plot(bx + sx, by + sy, cx0, cx1, outlinePass);
     }
 
-    /**
-     * @brief Get width of a string in pixels
-     * @param str String to measure
-     * @return Width in pixels
-     *
-     * GFX fonts sum glyph advances, then trim the last glyph's trailing
-     * bearing (advance past its ink) — Canvas8::getTextWidth byte-for-byte
-     * (sweep adjudication, unwn #168). Centering math tuned on the shipped
-     * UI depends on the trim. The built-in font stays 6 px per character.
-     */
-    uint16_t getTextWidth(const char* str) {
-        if (!str) return 0;
-
-        if (gfx_font) {
-            uint16_t advance = 0;
-            uint8_t first = gfx_font->first, last = gfx_font->last;
-            const GFXglyph* glyphs = (const GFXglyph*)gfx_font->glyph;
-            const GFXglyph* lastGlyph = nullptr;
-            unsigned char c;
-            while ((c = static_cast<unsigned char>(*str++))) {
-                if (c >= first && c <= last) {
-                    lastGlyph = &glyphs[c - first];
-                    advance += lastGlyph->xAdvance * text_size_x;
-                }
-            }
-            if (lastGlyph) {
-                int16_t lastVisual = (int8_t)lastGlyph->xOffset + lastGlyph->width;
-                if (lastVisual < (int16_t)lastGlyph->xAdvance)
-                    advance -= (lastGlyph->xAdvance - lastVisual) * text_size_x;
-            }
-            return advance;
+    /// Stamp one character with its pen at (pen, baseline); returns its advance at size 1.
+    int stamp(const Face& f, uint32_t cp, int pen, int baseline, int cx0, int cx1, bool outlinePass) {
+        const int size = s_.size;
+        const GFXglyph* g = text::glyph(f, cp);
+        if (!g) {
+            if (!outlinePass) text::reportMissing(f, cp);
+            // The tofu: a hollow box one advance wide (less a column), cap high.
+            const int adv = text::tofuAdvance(f);
+            const int w = adv - 1 > 2 ? adv - 1 : 2;
+            const int h = f.capHeight > 2 ? f.capHeight : 2;
+            const int top = -h;
+            for (int yy = 0; yy < h; ++yy)
+                for (int xx = 0; xx < w; ++xx)
+                    if (yy == 0 || yy == h - 1 || xx == 0 || xx == w - 1)
+                        block(pen + xx * size, baseline + (top + yy) * size, cx0, cx1, outlinePass);
+            return adv;
         }
-
-        uint16_t width = 0;
-        while (*str) {
-            width += getCharWidth(*str++) * text_size_x;
-        }
-        return width;
-    }
-
-    /**
-     * @brief Write a character at current cursor position
-     * @param canvas Canvas to draw to
-     * @param c Character to write
-     *
-     * The GFX-font path is Canvas8::write byte-for-byte (sweep adjudication,
-     * unwn #168): the wrap predicate tests the glyph's scaled ink edge
-     * (xOffset + width), not its advance; empty glyphs (space) advance the
-     * cursor but never trigger a wrap; a carriage return is ignored; out-of-range
-     * characters do nothing at all. The built-in 5x7 path keeps its own
-     * advance-based wrap — it serves the engine's scripting API and has no
-     * BASE counterpart (waived sub-range, unwn #168).
-     */
-    void writeChar(ICanvas<TPixel>& canvas, unsigned char c) {
-        if (gfx_font) {
-            if (c == '\n') {
-                cursor_x = 0;
-                cursor_y += (int16_t)text_size_y * gfx_font->yAdvance;
-            } else if (c != '\r') {
-                uint8_t first = gfx_font->first;
-                if ((c >= first) && (c <= gfx_font->last)) {
-                    const GFXglyph* glyph = (const GFXglyph*)gfx_font->glyph;
-                    const GFXglyph& g = glyph[c - first];
-                    if ((g.width > 0) && (g.height > 0)) {
-                        int16_t xo = g.xOffset;
-                        if (wrap_text &&
-                            ((cursor_x + text_size_x * (xo + g.width)) >
-                             (int16_t)canvas.getWidth())) {
-                            cursor_x = 0;
-                            cursor_y += (int16_t)text_size_y * gfx_font->yAdvance;
-                        }
-                        drawChar(canvas, cursor_x, cursor_y, c);
-                    }
-                    cursor_x += g.xAdvance * (int16_t)text_size_x;
-                }
-            }
-        } else {
-            if (c == '\n') {
-                cursor_x = 0;
-                cursor_y += getCharHeight() * text_size_y;
-            } else if (c == '\r') {
-                cursor_x = 0;
-            } else {
-                uint16_t char_width = getCharWidth(c) * text_size_x;
-
-                // Check for line wrap
-                if (wrap_text && cursor_x + char_width > canvas.getWidth()) {
-                    cursor_x = 0;
-                    cursor_y += getCharHeight() * text_size_y;
-                }
-
-                drawChar(canvas, cursor_x, cursor_y, c);
-                cursor_x += char_width;
+        const uint8_t* bits = f.font->bitmap + g->bitmapOffset;
+        int bit = 0;
+        for (int row = 0; row < g->height; ++row) {
+            for (int col = 0; col < g->width; ++col, ++bit) {
+                if (!(bits[bit >> 3] & (0x80u >> (bit & 7)))) continue;
+                block(pen + (g->xOffset + col) * size, baseline + (g->yOffset + row) * size, cx0, cx1, outlinePass);
             }
         }
-    }
-
-
-    /**
-     * @brief Get character width
-     * @param c Character to measure
-     * @return Width in pixels
-     */
-    uint16_t getCharWidth(unsigned char c) {
-        if (gfx_font) {
-            if (c < gfx_font->first || c > gfx_font->last) return 0;
-            const GFXglyph* glyph = (const GFXglyph*)gfx_font->glyph;
-            const GFXglyph& g = glyph[c - gfx_font->first];
-            return g.xAdvance;
-        }
-        return 6; // Default character width (5 + 1 spacing)
-    }
-
-    /**
-     * @brief Get character height
-     * @return Height in pixels
-     */
-    uint8_t getCharHeight() {
-        if (gfx_font) {
-            return gfx_font->yAdvance;
-        }
-        return 8; // Default character height
+        return g->xAdvance;
     }
 };
 
-} // namespace enjin2
+}  // namespace enjin2
 
-#endif // ENJIN2_GRAPHICS_TEXT_RENDERER_HPP
+#endif  // ENJIN2_GRAPHICS_TEXT_RENDERER_HPP

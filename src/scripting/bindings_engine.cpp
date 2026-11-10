@@ -529,9 +529,6 @@ void LuaBindings::registerEngineTable() {
     // --- engine.ui (Phase 52: UI-01..UI-04) ---
     registerUISubtable(L);
 
-    // --- engine.hud (#83: RollingCounter / Timer value objects) ---
-    registerHudSubtable(L);
-
     // --- engine.log (ENG-05) ---
     static constexpr LuaApiEntry kEngine[] = {
         luaFunction("log", lua_engine_log, "(...:any) -> nil",

@@ -73,7 +73,7 @@ static void test_SEAL_01_lua_colours() {
         "gfx.setPixel(1, 1, 9)",
         "gfx.fastFillRect(0, 0, 2, 2, 9)",
         "gfx.getPaletteColor(9)",
-        "engine.ui.label(0, 0, 'hi', 9)",
+        "gfx.setTextOutline(true, 9)",
         "engine.ui.panel(0, 0, 4, 4, 9, 2)",
         "engine.ui.setStyle('panel', { fill = 9 })",
         "gfx.remap('solid', 9)",

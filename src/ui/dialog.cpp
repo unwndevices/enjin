@@ -11,10 +11,13 @@ namespace enjin2 {
 
 namespace {
 
-uint16_t measuredWidth(const std::string& text, const GFXfont* font) {
-    TextRenderer<Pixel4> renderer;
-    renderer.setFont(font);
-    return renderer.getTextWidth(text.c_str());
+const Face& faceOf(const DialogOptions& o) { return o.font ? *o.font : faces::monogram; }
+
+/// The first @p n bytes of @p s, cut back to a whole UTF-8 character.
+std::string_view utf8Head(std::string_view s, size_t n) {
+    if (n >= s.size()) return s;
+    while (n > 0 && (static_cast<uint8_t>(s[n]) & 0xC0) == 0x80) --n;
+    return s.substr(0, n);
 }
 
 } // namespace
@@ -73,7 +76,7 @@ size_t Dialog::currentPageCharacters() const {
 }
 
 size_t Dialog::lineHeightPx() const {
-    return options_.font ? options_.font->yAdvance : static_cast<size_t>(8);
+    return static_cast<size_t>(text::lineHeight(faceOf(options_)));
 }
 
 void Dialog::appendLine(Page& page, std::string line, size_t linesPerPage) {
@@ -98,60 +101,25 @@ void Dialog::paginate(const std::string& text) {
     const size_t linesPerPage = std::max<size_t>(1, contentHeight > 0
         ? static_cast<size_t>(contentHeight) / std::max<size_t>(1, lineHeight) : 1);
 
+    // The text renderer's own line breaking (ADR-0029): a form feed starts a
+    // page, a newline a line; tabs and carriage returns read as spaces.
+    std::string normal(text);
+    for (char& c : normal)
+        if (c == '\t' || c == '\r') c = ' ';
     Page currentPage;
-    std::string line;
-    std::string word;
-
-    auto flushLine = [&](bool forceEmpty) {
-        if (!line.empty() || forceEmpty) appendLine(currentPage, std::move(line), linesPerPage);
-        line.clear();
-    };
-    auto placeWord = [&]() {
-        if (word.empty()) return;
-        std::string candidate = line.empty() ? word : line + " " + word;
-        if (measuredWidth(candidate, options_.font) <= contentWidth) {
-            line = std::move(candidate);
-            word.clear();
-            return;
-        }
-        if (!line.empty()) flushLine(false);
-        while (!word.empty()) {
-            size_t fit = 0;
-            for (size_t n = 1; n <= word.size(); ++n) {
-                if (measuredWidth(word.substr(0, n), options_.font) > contentWidth) break;
-                fit = n;
-            }
-            if (fit == 0) fit = 1;
-            if (fit == word.size()) {
-                line = std::move(word);
-                word.clear();
-            } else {
-                appendLine(currentPage, word.substr(0, fit), linesPerPage);
-                word.erase(0, fit);
-            }
-        }
-    };
-    auto forcePage = [&]() {
-        placeWord();
-        flushLine(false);
+    size_t chunk = 0;
+    while (true) {
+        size_t ff = normal.find('\f', chunk);
+        if (ff == std::string::npos) ff = normal.size();
+        const std::string_view part(normal.data() + chunk, ff - chunk);
+        if (!part.empty())
+            text::forEachLine(faceOf(options_), 1, TextOverflow::Wrap, part, contentWidth,
+                              [&](std::string_view line) { appendLine(currentPage, std::string(line), linesPerPage); });
+        if (ff == normal.size()) break;
         if (!currentPage.lines.empty()) pages_.push_back(std::move(currentPage));
         currentPage = Page{};
-    };
-
-    for (char c : text) {
-        if (c == '\f') {
-            forcePage();
-        } else if (c == '\n') {
-            placeWord();
-            flushLine(true);
-        } else if (c == ' ' || c == '\t' || c == '\r') {
-            placeWord();
-        } else {
-            word.push_back(c);
-        }
+        chunk = ff + 1;
     }
-    placeWord();
-    flushLine(false);
     if (!currentPage.lines.empty() || pages_.empty()) pages_.push_back(std::move(currentPage));
 }
 
@@ -177,22 +145,24 @@ void Dialog::draw(ICanvas<Pixel4>& canvas) const {
         textX = static_cast<int16_t>(textX + options_.portrait->cellW + options_.style.padding);
     }
 
-    TextRenderer<Pixel4> renderer;
-    renderer.setFont(options_.font);
+    // The dialog's text settings are its own: set them on the canvas for its
+    // lines and put the canvas's back after.
+    const TextState saved = canvas.text();
+    TextRenderer<Pixel4> renderer(canvas);
+    renderer.reset();
+    renderer.setFont(faceOf(options_));
     renderer.setTextColor(options_.style.text);
     renderer.setOutline(options_.style.textOutline != 0);
-    renderer.setTextWrap(false);
+    renderer.setTextWrap(TextOverflow::Clip);
     const int16_t lineHeight = static_cast<int16_t>(lineHeightPx());
-    const int16_t baselineOffset = options_.font ? static_cast<int16_t>(lineHeight - 2) : 0;
     size_t remaining = revealedCharacters_;
     for (size_t i = 0; i < pages_[pageIndex_].lines.size() && remaining > 0; ++i) {
         const std::string& line = pages_[pageIndex_].lines[i];
         const size_t visible = std::min(remaining, line.size());
-        const std::string clipped = line.substr(0, visible);
-        renderer.drawString(canvas, textX,
-            static_cast<int16_t>(contentY + baselineOffset + i * lineHeight), clipped.c_str());
+        renderer.draw(utf8Head(line, visible), textX, static_cast<int16_t>(contentY + i * lineHeight));
         remaining -= visible;
     }
+    canvas.text() = saved;
 }
 
 } // namespace enjin2

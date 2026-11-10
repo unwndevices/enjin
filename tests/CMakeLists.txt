@@ -54,16 +54,6 @@ target_link_libraries(spring_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME spring_test COMMAND spring_test)
 
-# List widget unit test (Phase 3a, #121: C_List -> data-only ListComponent + ListSystem)
-add_executable(ui_list_test
-    ui_list_test.cpp
-)
-target_include_directories(ui_list_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-target_link_libraries(ui_list_test PRIVATE
-    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
-add_test(NAME ui_list_test COMMAND ui_list_test)
 
 # Rounded-rect primitives test (Phase 3a, #121: drawRoundRect/fillRoundRect on Primitives<TPixel>)
 add_executable(primitives_roundrect_test
@@ -216,16 +206,6 @@ target_link_libraries(warp_canvas_test PRIVATE
     enjin2_core enjin2_graphics)
 add_test(NAME warp_canvas_test COMMAND warp_canvas_test)
 
-# Label widget unit test (Phase 3a, #121: C_Label -> data-only LabelComponent + LabelSystem)
-add_executable(ui_label_test
-    ui_label_test.cpp
-)
-target_include_directories(ui_label_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-target_link_libraries(ui_label_test PRIVATE
-    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
-add_test(NAME ui_label_test COMMAND ui_label_test)
 
 # Icon widget unit test (Phase 3a, #121: C_Sprite Icon -> data-only IconComponent + IconSystem)
 add_executable(ui_icon_test
@@ -249,16 +229,6 @@ target_link_libraries(ui_gauge_test PRIVATE
     enjin2_core enjin2_graphics enjin2_ui enjin2_input)
 add_test(NAME ui_gauge_test COMMAND ui_gauge_test)
 
-# Overlay + PopUp widget test (Phase 3a, #121: OverlayBg/PopUpUI -> data-only components + systems)
-add_executable(ui_overlay_popup_test
-    ui_overlay_popup_test.cpp
-)
-target_include_directories(ui_overlay_popup_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-target_link_libraries(ui_overlay_popup_test PRIVATE
-    enjin2_core enjin2_graphics enjin2_ui enjin2_input)
-add_test(NAME ui_overlay_popup_test COMMAND ui_overlay_popup_test)
 
 # Palette unit test
 add_executable(palette_test
@@ -680,18 +650,6 @@ target_link_libraries(layered_sprite_test PRIVATE
 )
 add_test(NAME layered_sprite_test COMMAND layered_sprite_test)
 
-# HUD numerals — glyph layout, digit-strip draw, RollingCounter, Timer
-# (ADR-0003 §8, #83). Links enjin2 for drawNumber/drawTimer (enjin2_graphics).
-add_executable(numerals_test
-    numerals_test.cpp
-)
-target_include_directories(numerals_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-target_link_libraries(numerals_test PRIVATE
-    enjin2
-)
-add_test(NAME numerals_test COMMAND numerals_test)
 
 # Applet-owned dialog primitive: paginate + type-on + advance FSM (Tomodachi #86).
 add_executable(dialog_test
@@ -983,21 +941,6 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME sprite_lua_test COMMAND sprite_lua_test)
-
-    # HUD numerals Lua binding test (ADR-0003 §8, #83: gfx.number / gfx.timer +
-    # engine.hud.rollingCounter / engine.hud.timer value objects)
-    add_executable(numerals_lua_test
-        numerals_lua_test.cpp
-    )
-    target_include_directories(numerals_lua_test PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-        ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    target_link_libraries(numerals_lua_test PRIVATE
-        enjin2
-        enjin2_lua
-    )
-    add_test(NAME numerals_lua_test COMMAND numerals_lua_test)
 
     # C_Body / ColliderSet Lua binding test (ADR-0003 §4, #80: engine.scene.
     # colliders() + obj:add("C_Body") + body:step + polled contact buffer)
@@ -1441,6 +1384,15 @@ add_test(NAME effect_test COMMAND effect_test)
 
 # Type system (Tomodachi #40): the 1-bit GFX glyph as index-shader clip
 # (colour/outline/holo/dim as Remap compositions; format unchanged).
+# The one text route (ADR-0029, Tomodachi #476): line top, advance width,
+# UTF-8 + tofu, wrap | clip | ellipsis, the state on the canvas.
+add_executable(text_renderer_test
+    text_renderer_test.cpp
+)
+target_include_directories(text_renderer_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(text_renderer_test PRIVATE enjin2_core enjin2_graphics)
+add_test(NAME text_renderer_test COMMAND text_renderer_test)
+
 add_executable(text_shader_test
     text_shader_test.cpp
 )

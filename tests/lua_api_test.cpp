@@ -536,28 +536,11 @@ static void testEngineTableDescribed() {
     expectAllValidate(modules, "defaults");
     expectEngineDescribed(L, modules, "defaults");
 
-    // engine.graphics re-exports gfx functions with gfx's own descriptors.
-    const auto gfx = modulesAt(modules, LuaApiScope::Table, "gfx");
-    const auto graphics = modulesAt(modules, LuaApiScope::Table, "engine.graphics");
-    ASSERT(!graphics.empty(), "engine.graphics is a descriptor module");
-    for (const auto* m : graphics) {
-        for (size_t i = 0; i < m->count; ++i) {
-            const LuaApiEntry& alias = m->entries[i];
-            bool same = false;
-            for (const auto* g : gfx)
-                for (size_t j = 0; j < g->count; ++j)
-                    same = same || (std::strcmp(g->entries[j].name, alias.name) == 0 &&
-                                    g->entries[j].func == alias.func &&
-                                    std::strcmp(g->entries[j].signature, alias.signature) == 0 &&
-                                    std::strcmp(g->entries[j].summary, alias.summary) == 0);
-            ASSERT(same, std::string("engine.graphics.") + alias.name + " is gfx's entry");
-        }
-    }
+    // One way to draw (ADR-0029): gfx, no engine.graphics second name.
+    ASSERT(modulesAt(modules, LuaApiScope::Table, "engine.graphics").empty(), "no engine.graphics module");
 
-    // The scene-free map handle (#256) and the HUD value objects (#83).
+    // The scene-free map handle (#256).
     expectMetatableDescribed(L, modules, "enjin2.Tilemap", "Tilemap");
-    expectMetatableDescribed(L, modules, "enjin2.RollingCounter", "RollingCounter");
-    expectMetatableDescribed(L, modules, "enjin2.Timer", "Timer");
     // The seeded generator engine.random.new returns (Tomodachi #406).
     expectMetatableDescribed(L, modules, "enjin2.Random", "Random");
     ASSERT(describes(modulesAt(modules, LuaApiScope::Table, "engine.random"), "new"),

@@ -400,20 +400,21 @@ int main(int argc, char* argv[]) {
 #ifdef ENJIN2_BUILD_LUA
             enjin2::LuaCanvas* dbg = g_lua.getBindings().getDebugCanvas();
             if (dbg) {
+                if (enjin2::TextState* st = dbg->textState()) st->color = 8;
                 auto& ft = enjin2::FrameTimingInstrumentation::get();
                 char buf[48];
                 snprintf(buf, sizeof(buf), "lua  %4u us",
                          ft.luaTime_us.load(std::memory_order_relaxed));
-                dbg->drawText(buf, 1, 1, 8, 1, nullptr);
+                dbg->drawText(buf, 1, 1);
                 snprintf(buf, sizeof(buf), "upd  %4u us",
                          ft.updateTime_us.load(std::memory_order_relaxed));
-                dbg->drawText(buf, 1, 10, 8, 1, nullptr);
+                dbg->drawText(buf, 1, 10);
                 snprintf(buf, sizeof(buf), "comp %4u us",
                          ft.compositeTime_us.load(std::memory_order_relaxed));
-                dbg->drawText(buf, 1, 19, 8, 1, nullptr);
+                dbg->drawText(buf, 1, 19);
                 snprintf(buf, sizeof(buf), "rdr  %4u us",
                          ft.renderTime_us.load(std::memory_order_relaxed));
-                dbg->drawText(buf, 1, 28, 8, 1, nullptr);
+                dbg->drawText(buf, 1, 28);
             }
 #endif
         }

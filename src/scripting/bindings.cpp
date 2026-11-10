@@ -2,9 +2,7 @@
 #include "../../include/enjin2/scripting/layer_claims.hpp"
 #include "../../include/enjin2/scripting/effect_lua.hpp"
 #include "../../include/enjin2/scripting/lua_api.hpp"
-#include "../../include/enjin2/graphics/numerals.hpp"
 #include "../../include/enjin2/graphics/palette.hpp"
-#include "../../include/enjin2/graphics/defaultfont.hpp"
 #include "../../include/enjin2/graphics/text_renderer.hpp"
 #include "../../include/enjin2/graphics/blit.hpp"
 #include "../../include/enjin2/graphics/layer_compositor.hpp"
@@ -366,78 +364,22 @@ void LuaCanvas::fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
     }
 }
 
-void LuaCanvas::drawText(const char* str, int16_t x, int16_t y,
-                         uint8_t color, uint8_t size, const ::GFXfont* font) {
-    if (!str) return;
-    const GFXfont* gfxFont = font;
-    if (is4Bit) {
-        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
-        TextRenderer<Pixel4> tr;
-        tr.setFont(gfxFont);
-        tr.setTextColor(Pixel4(color));
-        tr.setTextSize(size);
-        tr.drawString(*canvas, x, y, str);
-    } else {
-        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
-        TextRenderer<uint8_t> tr;
-        tr.setFont(gfxFont);
-        tr.setTextColor(color);
-        tr.setTextSize(size);
-        tr.drawString(*canvas, x, y, str);
-    }
+TextState* LuaCanvas::textState() {
+    if (!canvasPtr) return nullptr;
+    if (is4Bit) return &static_cast<ICanvas<Pixel4>*>(canvasPtr)->text();
+    return &static_cast<ICanvas<uint8_t>*>(canvasPtr)->text();
 }
 
-void LuaCanvas::drawTextWrapped(const char* str, int16_t x, int16_t y,
-                               uint16_t maxWidth, uint8_t color, uint8_t size,
-                               const ::GFXfont* font) {
-    if (!str) return;
-    const GFXfont* gfxFont = font;
-    if (is4Bit) {
-        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
-        TextRenderer<Pixel4> tr;
-        tr.setFont(gfxFont);
-        tr.setTextColor(Pixel4(color));
-        tr.setTextSize(size);
-        tr.drawStringWrapped(*canvas, x, y, maxWidth, str);
-    } else {
-        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
-        TextRenderer<uint8_t> tr;
-        tr.setFont(gfxFont);
-        tr.setTextColor(color);
-        tr.setTextSize(size);
-        tr.drawStringWrapped(*canvas, x, y, maxWidth, str);
-    }
+int LuaCanvas::drawText(std::string_view str, int16_t x, int16_t y, TextAlign align) {
+    if (!canvasPtr) return 0;
+    if (is4Bit) return TextRenderer<Pixel4>(*static_cast<ICanvas<Pixel4>*>(canvasPtr)).draw(str, x, y, align);
+    return TextRenderer<uint8_t>(*static_cast<ICanvas<uint8_t>*>(canvasPtr)).draw(str, x, y, align);
 }
 
-uint16_t LuaCanvas::measureTextWidth(const char* str, uint8_t size, const ::GFXfont* font) {
-    if (!str) return 0;
-    const GFXfont* gfxFont = font;
-    if (is4Bit) {
-        TextRenderer<Pixel4> tr;
-        tr.setFont(gfxFont);
-        tr.setTextSize(size);
-        return tr.getTextWidth(str);
-    } else {
-        TextRenderer<uint8_t> tr;
-        tr.setFont(gfxFont);
-        tr.setTextSize(size);
-        return tr.getTextWidth(str);
-    }
-}
-
-uint8_t LuaCanvas::measureTextHeight(uint8_t size, const ::GFXfont* font) {
-    const GFXfont* gfxFont = font;
-    if (is4Bit) {
-        TextRenderer<Pixel4> tr;
-        tr.setFont(gfxFont);
-        tr.setTextSize(size);
-        return tr.getCharHeight() * size;
-    } else {
-        TextRenderer<uint8_t> tr;
-        tr.setFont(gfxFont);
-        tr.setTextSize(size);
-        return tr.getCharHeight() * size;
-    }
+int LuaCanvas::textWidth(std::string_view str) {
+    TextState* st = textState();
+    if (!st) return 0;
+    return text::width(st->face ? *st->face : faces::monogram, str, st->size);
 }
 
 //==============================================================================
@@ -510,7 +452,9 @@ void LuaBindings::registerAll() {
 
     // === gfx.* namespace table ===
     static constexpr LuaApiEnum kShapeMode = luaApiEnum("ShapeMode", kShapeModeNames);
-    static constexpr LuaApiEnum kAlign = luaApiEnum("Align", kNumberAlignNames);
+    static constexpr LuaApiEnum kAlign = luaApiEnum("Align", kTextAlignNames);
+    static constexpr LuaApiEnum kOverflow = luaApiEnum("Overflow", kTextOverflowNames);
+    static constexpr LuaApiEnum kFace = luaApiEnum("Font", faces::kNames);
     // The 8 Palette roles (ADR-0022) and transparency. The numbers 0-7 and 15
     // stay legal wherever a colour is taken.
     static constexpr LuaApiEntry kGfxColor[] = {
@@ -682,24 +626,6 @@ void LuaBindings::registerAll() {
                     "handle: the sprite\n"
                     "frame: 0-based frame, clamped to the sheet"),
 
-        // HUD numerals (#83): digit-strip number / timer draws.
-        luaFunction("number", lua_number, "(x:int, y:int, value:int, opts:table) -> width:int",
-                    "Draw a number from a digit-strip sprite (frame d is digit d); returns its width.",
-                    "x: anchor column, see opts.align\n"
-                    "y: top edge\n"
-                    "value: the number; negative values draw as 0\n"
-                    "opts: {strip = sprite handle (required), pad = 0, padZeros = true, "
-                    "align = Align (\"left\"), sep = separator frame or -1, spacing = 0}")
-            .withEnum(kAlign),
-        luaFunction("timer", lua_timer, "(x:int, y:int, ms:int, opts:table) -> width:int",
-                    "Draw milliseconds as mm:ss from an 11-frame strip (digits, then ':'); returns its width.",
-                    "x: anchor column, see opts.align\n"
-                    "y: top edge\n"
-                    "ms: the time; negative values draw as 0\n"
-                    "opts: {strip = sprite handle (required), align = Align (\"left\"), "
-                    "spacing = 0}")
-            .withEnum(kAlign),
-
         // Layers
         luaFunction("setLayer", lua_setLayer, "(layer:int) -> nil",
                     "Draw on another layer from now on.",
@@ -719,51 +645,43 @@ void LuaBindings::registerAll() {
                     "Whether a layer is shown; true when the host has no layers.",
                     "layer: 1..gfx.getLayerCount(); out of range raises"),
 
-        // Text
-        luaFunction("text", lua_text, "(str:string, x:int, y:int, scale:int?=current) -> nil",
-                    "Draw text at (x, y) in the current font, size and draw colour.",
-                    "str: the text\n"
-                    "x: left edge; a fractional number raises\n"
-                    "y: vertical position; a fractional number raises\n"
-                    "scale: size for this call only, 1..255"),
-        luaFunction("textWrapped", lua_textWrapped,
-                    "(str:string, x:int, y:int, maxWidth:int) -> nil",
-                    "Draw text wrapped to a width, at the current size.",
-                    "str: the text\n"
-                    "x: left edge\n"
-                    "y: vertical position of the first line\n"
-                    "maxWidth: wrap width in pixels"),
-        luaFunction("textCentered", lua_textCentered,
-                    "(str:string, y:int, scale:int?=current) -> nil",
-                    "Draw text centred across the layer's width.",
-                    "str: the text\n"
-                    "y: vertical position\n"
-                    "scale: size for this call only, 1..255"),
-        luaFunction("textAligned", lua_textAligned,
-                    "(str:string, x:int, y:int, align:Align?=left, scale:int?=current) -> nil",
-                    "Draw text with x as its left edge, centre or right edge.",
-                    "str: the text\n"
-                    "x: anchor column\n"
-                    "y: vertical position\n"
-                    "align: which edge x anchors; an unknown name anchors left\n"
-                    "scale: size for this call only, 1..255")
-            .withEnum(kAlign),
+        // Text (ADR-0029): one route, its state sticky on the active layer.
+        luaFunction("text", lua_text, "(str:string, x:int, y:int, align:Align?=left) -> lines:int",
+                    "Draw UTF-8 text with the top of its line at y, in the layer's face, size, "
+                    "overflow and the draw colour; returns the lines drawn.",
+                    "str: the text; a newline starts a line, a character the face lacks draws a box\n"
+                    "x: the line's left edge, centre or right edge (align); a fractional number raises\n"
+                    "y: the top of the first line; a fractional number raises\n"
+                    "align: which point of the line x is")
+            .withEnum(kAlign)
+            .note("A line longer than its box wraps, clips or ends in ... (gfx.setTextWrap). "
+                  "The box runs from x to the layer's edge unless setTextWrap gave a width."),
+        luaFunction("setFont", lua_setFont, "(name:Font) -> nil",
+                    "Draw this layer's text in another face.",
+                    "name: monogram (the default), body or display; another name raises")
+            .withEnum(kFace)
+            .note("Each layer keeps its own face; every layer starts in monogram after a reload."),
+        luaFunction("setTextWrap", lua_setTextWrap, "(overflow:Overflow, width:int?) -> nil",
+                    "What this layer's text does at the end of its box: wrap, clip or ellipsis.",
+                    "overflow: wrap breaks at spaces (inside a word only when it is longer than the "
+                    "line), clip cuts it, ellipsis cuts it to fit \"...\"\n"
+                    "width: the box's width in pixels; nil runs it to the layer's edge")
+            .withEnum(kOverflow)
+            .note("Starts as wrap at the layer's edge after every reload."),
         luaFunction("setTextSize", lua_setTextSize, "(size:int) -> nil",
-                    "Set the text scale factor.",
+                    "Scale this layer's text by a whole number.",
                     "size: 1..255; other numbers reset it to 1")
             .note("Starts at 1 after every reload."),
-        luaFunction("getTextSize", lua_getTextSize, "() -> int", "The current text scale factor."),
-        luaFunction("setFont", lua_setFont, "(name:string) -> nil",
-                    "Switch the text font; an unknown name keeps the current one.",
-                    "name: \"default\", \"default8\", or a font the host registered")
-            .note("A host that registers fonts may describe gfx.setFont again with a Font "
-                  "enum of its names (Tomodachi's: body, display, monogram)."),
-        luaFunction("getFont", lua_getFont, "() -> string", "The current font's name."),
         luaFunction("getTextWidth", lua_getTextWidth, "(str:string?=\"\") -> int",
-                    "Width of str in pixels at the current font and size; 0 with no canvas.",
+                    "The advance of str in pixels in this layer's face and size (the widest line).",
                     "str: the text"),
-        luaFunction("getTextHeight", lua_getTextHeight, "() -> int",
-                    "Line height in pixels at the current font and size."),
+        luaFunction("setTextOutline", lua_setTextOutline, "(on:boolean, color:int?=bg) -> nil",
+                    "Draw this layer's text over a 1 px outline, so it reads over any scenery.",
+                    "on: whether the outline is drawn\n"
+                    "color: a gfx.COLOR role; bg by default"),
+        luaFunction("setTextEffect", lua_setTextEffect, "(effect:Effect?) -> nil",
+                    "Run every pixel of this layer's text through an index shader.",
+                    "effect: a gfx.effect(...) value; nil draws in the plain colour again"),
 
         // Layer constants (Lua 1-indexed)
         luaConstant("LAYER_BG", 1, "The back layer."),
@@ -793,35 +711,9 @@ void LuaBindings::registerAll() {
         luaApiModule(LuaApiScope::Globals, "", "The print global.", kPrint);
     luaApiSetGlobals(L, kPrintModule);
 
-    // Pre-register built-in 8pt font so setFont("default8") works
-    registerFont("default8", &defaultFont8pt7b);
-
     // Register engine.* global table (ENG-06: must be before any script loads)
     registerEngineTable();
 
-    // engine.graphics: gfx drawing calls under a second name (quick-007 API-03).
-    // Built here, next to the gfx descriptors it re-exports, so each alias is
-    // gfx's own entry.
-    static constexpr LuaApiEntry kGraphics[] = {
-        luaApiAlias(kGfx, "clear"),         luaApiAlias(kGfx, "setColor"),
-        luaApiAlias(kGfx, "getColor"),      luaApiAlias(kGfx, "setLineWidth"),
-        luaApiAlias(kGfx, "getLineWidth"),  luaApiAlias(kGfx, "point"),
-        luaApiAlias(kGfx, "line"),          luaApiAlias(kGfx, "rectangle"),
-        luaApiAlias(kGfx, "circle"),        luaApiAlias(kGfx, "triangle"),
-        luaApiAlias(kGfx, "setPixel"),      luaApiAlias(kGfx, "getPixel"),
-        luaApiAlias(kGfx, "text"),          luaApiAlias(kGfx, "textWrapped"),
-        luaApiAlias(kGfx, "textCentered"),  luaApiAlias(kGfx, "textAligned"),
-        luaApiAlias(kGfx, "setTextSize"),   luaApiAlias(kGfx, "getTextSize"),
-        luaApiAlias(kGfx, "setFont"),       luaApiAlias(kGfx, "getFont"),
-        luaApiAlias(kGfx, "getTextWidth"),  luaApiAlias(kGfx, "getTextHeight"),
-        luaApiAlias(kGfx, "getWidth"),      luaApiAlias(kGfx, "getHeight"),
-    };
-    static constexpr LuaApiModule kGraphicsModule = luaApiModule(
-        LuaApiScope::Table, "engine.graphics",
-        "The same functions as gfx under a second name; prefer gfx.", kGraphics);
-    lua_getglobal(L, "engine");
-    luaApiSetSubtable(L, -1, kGraphicsModule);
-    lua_pop(L, 1);
 
     // Scene-object proxies (switchable, off by default): ScriptProxy for the
     // C_LuaScript self, ObjectProxy for engine.scene.find/spawn (Phase 37),
@@ -852,6 +744,10 @@ void LuaBindings::setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleAr
     layerVisible = visibleArr;
     activeLayer = 0;
     currentCanvas = layerCount ? layerCanvases[0] : nullptr;
+    // A new set of layers starts with every text setting at its default.
+    for (uint8_t i = 0; i < layerCount; ++i)
+        if (layerCanvases[i])
+            if (TextState* st = layerCanvases[i]->textState()) *st = TextState{};
 }
 
 void LuaBindings::resetSpritePool() {
@@ -862,10 +758,13 @@ void LuaBindings::resetSpritePool() {
     }
     assetBufferUsed_ = 0;
     spriteLoadFailures_ = 0;
-    currentTextSize = 1;
-    currentFont = nullptr;
-    strncpy(currentFontName, "default", 31);
-    currentFontName[31] = '\0';
+    // Every layer's text state back to its defaults: one applet's face,
+    // overflow or scale never reaches the next (ADR-0029).
+    for (uint8_t i = 0; i < layerCount; ++i)
+        if (layerCanvases[i])
+            if (TextState* st = layerCanvases[i]->textState()) *st = TextState{};
+    if (currentCanvas)
+        if (TextState* st = currentCanvas->textState()) *st = TextState{};
     m_rngState = 0x12345678;  // reset RNG on reload
 }
 

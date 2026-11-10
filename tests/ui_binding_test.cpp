@@ -97,7 +97,7 @@ static void test_ui_table_exists() {
         "ok_progressBar  = (type(engine.ui.progressBar) == 'function') and 1 or 0\n"
         "ok_statBar      = (type(engine.ui.statBar) == 'function') and 1 or 0\n"
         "ok_panel        = (type(engine.ui.panel) == 'function') and 1 or 0\n"
-        "ok_label        = (type(engine.ui.label) == 'function') and 1 or 0\n"
+        "ok_label        = (engine.ui.label == nil) and 1 or 0\n"
     );
 
     ASSERT(r.success,                          "engine.ui table checks must not error");
@@ -105,7 +105,7 @@ static void test_ui_table_exists() {
     ASSERT(f.getNum("ok_progressBar") == 1.0, "engine.ui.progressBar must be a function");
     ASSERT(f.getNum("ok_statBar")     == 1.0, "engine.ui.statBar must be a function");
     ASSERT(f.getNum("ok_panel")       == 1.0, "engine.ui.panel must be a function");
-    ASSERT(f.getNum("ok_label")       == 1.0, "engine.ui.label must be a function");
+    ASSERT(f.getNum("ok_label")       == 1.0, "engine.ui.label is gone: gfx.text is the one way (ADR-0029)");
 }
 
 // ============================================================
@@ -125,8 +125,7 @@ static void test_null_canvas_safety() {
     LuaResult r3 = f.exec("engine.ui.panel(0, 0, 10, 10, 3, 7)");
     ASSERT(r3.success, "panel must not crash with null canvas");
 
-    LuaResult r4 = f.exec("engine.ui.label(0, 0, 'hello', 5)");
-    ASSERT(r4.success, "label must not crash with null canvas");
+
 }
 
 // ============================================================
@@ -252,16 +251,6 @@ static void test_canvas8_panel_preserves_full_width_border_color() {
 }
 
 // ============================================================
-// Test 7: label callable without crash
-// ============================================================
-static void test_label_callable() {
-    printf("--- Test 7: label callable with string argument ---\n");
-
-    UIFixture f;
-
-    LuaResult r = f.exec("engine.ui.label(10, 10, 'hello', 5)");
-    ASSERT(r.success, "engine.ui.label must not crash (null canvas safety)");
-}
 
 // ============================================================
 // main
@@ -276,7 +265,6 @@ int main() {
     test_progressBar_value_clamping();
     test_panel_pixel_verification();
     test_canvas8_panel_preserves_full_width_border_color();
-    test_label_callable();
 
     printf("\n%d/%d passed\n", passes, passes + failures);
     return failures ? 1 : 0;
