@@ -1,0 +1,327 @@
+# DRAFT — awaiting the owner's review (#476)
+#
+# body: the Latin-1 glyphs 1980v23P01.ttf lacks, drafted from the face's own
+# letters by tools/draft_latin1.py (a one-shot helper). This file is now the source:
+# edit it by hand; ttf2enjin.py --glyphs merges it over the TTF's raster.
+#
+# One block per glyph, blank line between blocks:
+#   U+XXXX <char> xAdvance=N xOffset=N yOffset=N   (yOffset = top row vs the baseline)
+#   rows of '.'/'#' (width = row length, height = number of rows; none = no ink)
+# Line top = baseline - 8 (ascent); nothing may sit above it. Cap height 6, x-height 4.
+# From the TTF (not here): U+00A0 U+00A1 U+00A2 U+00A3 U+00A4 U+00A5 U+00A6 U+00A7 U+00A8 U+00A9 U+00B4 U+00B7 U+00BF U+00C0 U+00C1 U+00C2 U+00C3 U+00C7 U+00C8 U+00C9 U+00CA U+00CC U+00CD U+00CE U+00D1 U+00D2 U+00D3 U+00D4 U+00D5 U+00D7 U+00D9 U+00DA U+00DB U+00DC U+00E0 U+00E1 U+00E2 U+00E3 U+00E7 U+00E8 U+00E9 U+00EA U+00EC U+00ED U+00EE U+00F1 U+00F2 U+00F3 U+00F4 U+00F5 U+00F7 U+00F9 U+00FA U+00FB U+00FC
+
+U+00AA ª xAdvance=4 xOffset=0 yOffset=-6
+.##
+#.#
+.##
+...
+###
+
+U+00AB « xAdvance=6 xOffset=0 yOffset=-4
+.#..#
+#..#.
+.#..#
+
+U+00AC ¬ xAdvance=6 xOffset=0 yOffset=-3
+###
+..#
+
+U+00AD SHY xAdvance=3 xOffset=0 yOffset=-3
+###
+
+U+00AE ® xAdvance=6 xOffset=0 yOffset=-6
+.###.
+#..##
+#.#.#
+#..##
+#.#.#
+#.#.#
+.###.
+
+U+00AF ¯ xAdvance=4 xOffset=0 yOffset=-5
+###
+
+U+00B0 ° xAdvance=4 xOffset=0 yOffset=-6
+###
+#.#
+###
+
+U+00B1 ± xAdvance=6 xOffset=0 yOffset=-6
+.#.
+###
+.#.
+.#.
+...
+###
+
+U+00B2 ² xAdvance=4 xOffset=0 yOffset=-6
+##.
+..#
+.#.
+###
+
+U+00B3 ³ xAdvance=4 xOffset=0 yOffset=-6
+##.
+.##
+..#
+##.
+
+U+00B5 µ xAdvance=4 xOffset=0 yOffset=-4
+#.#
+#.#
+#.#
+###
+#..
+#..
+
+U+00B6 ¶ xAdvance=5 xOffset=0 yOffset=-6
+####
+##.#
+.#.#
+.#.#
+.#.#
+.#.#
+
+U+00B8 ¸ xAdvance=4 xOffset=0 yOffset=0
+.##
+##.
+
+U+00B9 ¹ xAdvance=3 xOffset=0 yOffset=-6
+.#
+##
+.#
+.#
+
+U+00BA º xAdvance=4 xOffset=0 yOffset=-6
+###
+#.#
+###
+...
+###
+
+U+00BB » xAdvance=6 xOffset=0 yOffset=-4
+#..#.
+.#..#
+#..#.
+
+U+00BC ¼ xAdvance=8 xOffset=0 yOffset=-6
+#....#.
+#...#..
+#..#...
+..#.#.#
+.#..###
+#.....#
+
+U+00BD ½ xAdvance=8 xOffset=0 yOffset=-6
+#....#.
+#...#..
+#..#...
+..#.##.
+.#...#.
+#....##
+
+U+00BE ¾ xAdvance=9 xOffset=0 yOffset=-6
+###...#.
+.##..#..
+###.#...
+...#.#.#
+..#..###
+.#.....#
+
+U+00C4 Ä xAdvance=4 xOffset=0 yOffset=-8
+#.#
+...
+###
+#.#
+#.#
+###
+#.#
+#.#
+
+U+00C5 Å xAdvance=4 xOffset=0 yOffset=-8
+.#.
+#.#
+###
+#.#
+#.#
+###
+#.#
+#.#
+
+U+00C6 Æ xAdvance=5 xOffset=0 yOffset=-6
+####
+#.#.
+#.#.
+####
+#.#.
+#.##
+
+U+00CB Ë xAdvance=4 xOffset=0 yOffset=-8
+#.#
+...
+##.
+#..
+#..
+##.
+#..
+##.
+
+U+00CF Ï xAdvance=4 xOffset=0 yOffset=-8
+#.#
+...
+.#.
+.#.
+.#.
+.#.
+.#.
+.#.
+
+U+00D0 Ð xAdvance=5 xOffset=0 yOffset=-6
+.###
+.#.#
+##.#
+.#.#
+.#.#
+.###
+
+U+00D6 Ö xAdvance=4 xOffset=0 yOffset=-8
+#.#
+...
+###
+#.#
+#.#
+#.#
+#.#
+###
+
+U+00D8 Ø xAdvance=5 xOffset=0 yOffset=-6
+####
+#..#
+#.##
+##.#
+#..#
+####
+
+U+00DD Ý xAdvance=5 xOffset=0 yOffset=-8
+...#.
+..#..
+#...#
+#...#
+#...#
+#####
+..#..
+..#..
+
+U+00DE Þ xAdvance=4 xOffset=0 yOffset=-6
+#..
+###
+#.#
+#.#
+###
+#..
+
+U+00DF ß xAdvance=5 xOffset=0 yOffset=-6
+###.
+#.#.
+#.##
+#..#
+#..#
+#.##
+
+U+00E4 ä xAdvance=4 xOffset=0 yOffset=-7
+#.#
+#.#
+...
+###
+#.#
+#.#
+###
+
+U+00E5 å xAdvance=4 xOffset=0 yOffset=-8
+.#.
+#.#
+.#.
+...
+###
+#.#
+#.#
+###
+
+U+00E6 æ xAdvance=6 xOffset=0 yOffset=-4
+#####.
+#.####
+#.#...
+######
+
+U+00EB ë xAdvance=4 xOffset=0 yOffset=-7
+.#.#
+.#.#
+....
+.##.
+####
+#...
+.###
+
+U+00EF ï xAdvance=4 xOffset=0 yOffset=-7
+#.#
+#.#
+...
+.#.
+.#.
+.#.
+.#.
+
+U+00F0 ð xAdvance=4 xOffset=0 yOffset=-6
+##.
+.##
+###
+#.#
+#.#
+###
+
+U+00F6 ö xAdvance=4 xOffset=0 yOffset=-7
+#.#
+#.#
+...
+###
+#.#
+#.#
+###
+
+U+00F8 ø xAdvance=5 xOffset=0 yOffset=-4
+####
+#.##
+##.#
+####
+
+U+00FD ý xAdvance=4 xOffset=0 yOffset=-7
+..#
+.##
+...
+#.#
+#.#
+#.#
+###
+..#
+###
+
+U+00FE þ xAdvance=4 xOffset=0 yOffset=-6
+#..
+#..
+###
+#.#
+#.#
+###
+#..
+#..
+
+U+00FF ÿ xAdvance=4 xOffset=0 yOffset=-7
+#.#
+#.#
+...
+#.#
+#.#
+#.#
+###
+..#
+###
