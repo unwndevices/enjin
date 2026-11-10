@@ -26,7 +26,7 @@ const config = {
       classes: [
         'ButtonDial', 'C_Draw', 'C_Drawable', 'C_ImageCache', 'C_LuaScript',
         'C_Position', 'C_Sprite',
-        'FillUpGauge', 'ImageCacheException', 'Label', 'Slider', 'Tickmarks'
+        'FillUpGauge', 'ImageCacheException', 'Slider', 'Tickmarks'
       ],
       description: 'Component types for game objects',
     },

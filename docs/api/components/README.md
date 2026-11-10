@@ -21,6 +21,5 @@ Provides concrete component implementations for game objects including sprites, 
 - [C_Sprite](./C_Sprite)
 - [FillUpGauge](./FillUpGauge)
 - [ImageCacheException](./ImageCacheException)
-- [Label](./Label)
 - [Slider](./Slider)
 - [Tickmarks](./Tickmarks)
