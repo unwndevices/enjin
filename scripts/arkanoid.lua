@@ -320,7 +320,7 @@ local function draw_hud()
     gfx.rectangle(0, 0, W, AREA_T)
 
     gfx.setColor(7)
-    gfx.text("SCORE:" .. score, 4, 3)
+    gfx.text("SCORE:" .. score, 4, -1)
 
     -- Lives as balls
     for i = 1, lives do
@@ -399,11 +399,11 @@ local function draw_title()
 
     -- Title text with drop shadow (scale=2 for large title)
     gfx.setColor(2)
-    gfx.textCentered("ARKANOID", 40, 2)
+    gfx.setTextSize(2); gfx.text("ARKANOID", W // 2, 32, "center"); gfx.setTextSize(1)
     gfx.setColor(8)
-    gfx.textCentered("ARKANOID", 39, 2)
+    gfx.setTextSize(2); gfx.text("ARKANOID", W // 2, 31, "center"); gfx.setTextSize(1)
     gfx.setColor(9)
-    gfx.textCentered("ARKANOID", 38, 2)
+    gfx.setTextSize(2); gfx.text("ARKANOID", W // 2, 30, "center"); gfx.setTextSize(1)
 
     -- Rainbow brick row
     local demo_colors = { 8, 9, 10, 11, 12, 13, 14, 8, 9, 10 }
@@ -417,17 +417,17 @@ local function draw_title()
 
     -- Instructions
     gfx.setColor(6)
-    gfx.textCentered("WHEEL : MOVE", 110)
-    gfx.textCentered("A : LAUNCH", 124)
+    gfx.text("WHEEL : MOVE", W // 2, 106, "center")
+    gfx.text("A : LAUNCH", W // 2, 120, "center")
 
     -- Blinking prompt
     if math.floor(engine.time.now() * 2) % 2 == 0 then
         gfx.setColor(7)
-        gfx.textCentered("PRESS A TO START", 170)
+        gfx.text("PRESS A TO START", W // 2, 166, "center")
     end
 
     gfx.setColor(5)
-    gfx.textCentered("BUILT WITH ENJIN LUA", 220)
+    gfx.text("BUILT WITH ENJIN LUA", W // 2, 216, "center")
 end
 
 local function draw_dialog()
@@ -443,14 +443,14 @@ local function draw_gameover()
     draw_dialog()
 
     gfx.setColor(8)
-    gfx.textCentered("GAME OVER", 95)
+    gfx.text("GAME OVER", W // 2, 91, "center")
 
     gfx.setColor(7)
-    gfx.textCentered("FINAL SCORE: " .. score, 118)
+    gfx.text("FINAL SCORE: " .. score, W // 2, 114, "center")
 
     if math.floor(engine.time.now() * 2) % 2 == 0 then
         gfx.setColor(6)
-        gfx.textCentered("PRESS A", 140)
+        gfx.text("PRESS A", W // 2, 136, "center")
     end
 end
 
@@ -458,14 +458,14 @@ local function draw_win()
     draw_dialog()
 
     gfx.setColor(10)
-    gfx.textCentered("YOU WIN!", 95)
+    gfx.text("YOU WIN!", W // 2, 91, "center")
 
     gfx.setColor(7)
-    gfx.textCentered("FINAL SCORE: " .. score, 118)
+    gfx.text("FINAL SCORE: " .. score, W // 2, 114, "center")
 
     if math.floor(engine.time.now() * 2) % 2 == 0 then
         gfx.setColor(6)
-        gfx.textCentered("PRESS A", 140)
+        gfx.text("PRESS A", W // 2, 136, "center")
     end
 end
 
@@ -493,7 +493,7 @@ function draw()
         draw_ball()
         if math.floor(engine.time.now() * 3) % 2 == 0 then
             gfx.setColor(10)
-            gfx.textCentered("PRESS A TO LAUNCH", H / 2 + 20)
+            gfx.text("PRESS A TO LAUNCH", W // 2, H // 2 + 16, "center")
         end
     elseif cur == "gameover" then
         draw_gameover()

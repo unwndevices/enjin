@@ -114,7 +114,7 @@ function draw()
 
         -- Number label
         gfx.setColor(7)
-        gfx.text(tostring(i), x - 2, y - o.size - 6)
+        gfx.text(tostring(i), x - 2, y - o.size - 10)
     end
 
     -- Draw cursor crosshair
@@ -126,7 +126,7 @@ function draw()
 
     -- HUD
     gfx.setColor(7)
-    gfx.text("Z=spawn  X=destroy", 1, 1)
-    gfx.text("alive:" .. #objects, 1, H - 16)
-    gfx.text("s:" .. spawn_count .. " d:" .. destroy_count, 1, H - 8)
+    gfx.text("Z=spawn  X=destroy", 1, -3)
+    gfx.text("alive:" .. #objects, 1, H - 20)
+    gfx.text("s:" .. spawn_count .. " d:" .. destroy_count, 1, H - 12)
 end

@@ -205,7 +205,7 @@ end
 function draw_labels()
     gfx.setColor(7) -- white
     local label = flip_labels[flip_mode + 1] or "?"
-    gfx.text(label, 1, H - 18)
+    gfx.text(label, 1, H - 22)
 end
 
 function draw_palette_strip()

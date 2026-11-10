@@ -138,17 +138,17 @@ function draw()
 
     -- Title
     gfx.setColor(7)
-    gfx.textCentered("TAMAGOTCHI", 10, 2)
+    gfx.setTextSize(2); gfx.text("TAMAGOTCHI", W // 2, 2, "center"); gfx.setTextSize(1)
 
     -- Stats
     gfx.setColor(6)
-    gfx.text("HUNGER:", 10, 34)
+    gfx.text("HUNGER:", 10, 30)
     drawProgressBar(80, 33, 100, 10, stats.hunger, 8)
 
-    gfx.text("HAPPINESS:", 10, 49)
+    gfx.text("HAPPINESS:", 10, 45)
     drawProgressBar(80, 48, 100, 10, stats.happiness, 11)
 
-    gfx.text("ENERGY:", 10, 64)
+    gfx.text("ENERGY:", 10, 60)
     drawProgressBar(80, 63, 100, 10, stats.energy, 12)
 
     -- Draw pet
@@ -180,9 +180,9 @@ function draw()
         -- Zzz
         gfx.setColor(7)
         if math.floor(engine.time.now() * 2) % 2 == 0 then
-            gfx.text("Z", petX + 35, petY - 30)
+            gfx.text("Z", petX + 35, petY - 34)
         end
-        gfx.text("z", petX + 45, petY - 40)
+        gfx.text("z", petX + 45, petY - 44)
     elseif cur == "dead" then
         gfx.setColor(0)
         -- dead eyes (X)
@@ -197,18 +197,18 @@ function draw()
     -- Interaction message
     if msg_timer > 0 then
         gfx.setColor(10)
-        gfx.textCentered(msg_text, petY - 50)
+        gfx.text(msg_text, W // 2, petY - 54, "center")
     end
 
     -- Controls prompt
     if cur == "dead" then
         gfx.setColor(8)
-        gfx.textCentered("PET DIED! PRESS A TO RESET", H - 20)
+        gfx.text("PET DIED! PRESS A TO RESET", W // 2, H - 24, "center")
     elseif cur == "alive" then
         gfx.setColor(6)
-        gfx.textCentered("WHEEL: FEED/PLAY   A: SLEEP", H - 20)
+        gfx.text("WHEEL: FEED/PLAY   A: SLEEP", W // 2, H - 24, "center")
     elseif cur == "sleeping" then
         gfx.setColor(6)
-        gfx.textCentered("A: WAKE UP (IF ENERGY > 50)", H - 20)
+        gfx.text("A: WAKE UP (IF ENERGY > 50)", W // 2, H - 24, "center")
     end
 end

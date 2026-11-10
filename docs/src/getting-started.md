@@ -48,9 +48,13 @@ end
 function draw()
     gfx.clear(0)
     gfx.setColor(7)
-    gfx.textCentered("Hello, enjin2!", 32)
+    gfx.text("Hello, enjin2!", gfx.getWidth() // 2, 28, "center")
 end
 ```
+
+`gfx.text(s, x, y [, align])` puts the top of the line at `y`. Text is in the monogram face
+until `gfx.setFont("body")` or `gfx.setFont("display")`; `gfx.setTextSize`, `gfx.setTextWrap`
+("wrap", "clip" or "ellipsis") and the face stay set on the layer until changed.
 
 Drawing colours are the 8 Palette roles 0–7, named by `gfx.COLOR` (`BG`, `SURFACE`, `MUTED`,
 `TEXT`, `ACCENT` … `ACCENT4`); `gfx.COLOR.TRANSPARENT` is 15. A colour 8–14 raises an error.

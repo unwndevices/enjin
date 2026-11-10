@@ -1,6 +1,7 @@
 -- scripts/text_demo.lua
--- Visual demo of the Lua text API: default 5x7 font, default8 font,
--- setTextSize, text(), textWrapped(), getTextWidth, getTextHeight.
+-- Visual demo of the Lua text API (ADR-0029): the three faces, setTextSize,
+-- gfx.text's align, setTextWrap's wrap / ellipsis, getTextWidth. y is the
+-- top of the line for every face.
 --
 -- Run with a host that loads this script (e.g. sprite_sdl_test --lua script path).
 
@@ -12,50 +13,42 @@ function draw(self)
     local w, h = gfx.getWidth(), gfx.getHeight()
     gfx.clear(0)
 
-    -- Title bar
+    -- Title bar, in monogram (every layer starts in it)
     gfx.setColor(7)
+    gfx.setFont("monogram")
     gfx.setTextSize(1)
-    gfx.setFont("default")
-    gfx.text("TEXT DEMO", 4, 2)
+    gfx.text("TEXT DEMO", 4, 0)
 
-    -- Default 5x7 at size 1
+    -- monogram at sizes 1, 2 and 3
     gfx.setColor(15)
-    gfx.setTextSize(1)
-    gfx.setFont("default")
-    gfx.text("Default 5x7 size 1", 4, 14)
-
-    -- Default 5x7 at size 2
+    gfx.text("monogram size 1", 4, 12)
     gfx.setColor(12)
     gfx.setTextSize(2)
-    gfx.text("Size 2", 4, 24)
-
-    -- Default 5x7 at size 3
+    gfx.text("Size 2", 4, 22)
     gfx.setColor(11)
     gfx.setTextSize(3)
-    gfx.text("Size 3", 4, 42)
+    gfx.text("Size 3", 4, 44)
+    gfx.setTextSize(1)
 
-    -- Switch to default8 (8pt proportional)
+    -- The other two faces
     gfx.setColor(14)
-    gfx.setTextSize(1)
-    gfx.setFont("default8")
-    gfx.text("default8 font", 4, 62)
+    gfx.setFont("body")
+    gfx.text("body face", 4, 82)
+    gfx.setFont("display")
+    gfx.text("display", w - 4, 76, "right")
 
-    -- Wrapped text in a column
+    -- Wrapped at a width, then one line ending in ...
     gfx.setColor(9)
-    gfx.setFont("default")
-    gfx.setTextSize(1)
-    gfx.textWrapped("The quick brown fox jumps over the lazy dog.", 4, 76, w - 8)
+    gfx.setFont("monogram")
+    local lines = gfx.text("The quick brown fox jumps over the lazy dog.", 4, 98)
+    gfx.setTextWrap("ellipsis", w - 8)
+    gfx.text("This line is too long for the screen, so it ends in dots", 4, 98 + lines * 13)
+    gfx.setTextWrap("wrap")
 
-    -- Measurement example: center a short label
-    local msg = "Centered"
-    gfx.setColor(15)
-    local tw = gfx.getTextWidth(msg)
-    local th = gfx.getTextHeight()
-    gfx.text(msg, math.floor((w - tw) / 2), h - th - 4)
-
-    -- Small label at bottom-right using measurement
-    gfx.setTextSize(1)
-    local footer = "getTextWidth/getTextHeight"
+    -- Measurement: a label right-aligned by hand, and one by align
+    local footer = "getTextWidth"
     gfx.setColor(8)
-    gfx.text(footer, w - gfx.getTextWidth(footer) - 4, h - 8)
+    gfx.text(footer, w - gfx.getTextWidth(footer) - 4, h - 14)
+    gfx.setColor(15)
+    gfx.text("Centered", w // 2, h - 28, "center")
 end

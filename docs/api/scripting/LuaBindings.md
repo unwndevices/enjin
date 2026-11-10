@@ -89,14 +89,6 @@ pathDirectory path (e.g. "/data" or "assets")
 
 ---
 
-### `void registerFont(const char *name, const GFXfont *font)`
-
-Register a named font for use from Lua via setFont(name). 
-
-nameName to use in Lua (e.g. "myfont"); "default" = built-in 5x7, "default8" is pre-registered. fontPointer to GFXfont (non-owning); may be nullptr for "default" to mean built-in 5x7. 
-
----
-
 ### `void setSceneStateMachine(SceneStateMachine *ssm)`
 
 Inject SceneStateMachine pointer for engine.scene.switch(). 
@@ -389,41 +381,43 @@ Stored via "enjin_bindings" key during registerAll(). Used by static Lua C-funct
 
 ### `static int lua_text(lua_State *L)`
 
----
-
-### `static int lua_textWrapped(lua_State *L)`
-
----
-
-### `static int lua_textCentered(lua_State *L)`
-
----
-
-### `static int lua_textAligned(lua_State *L)`
-
----
-
-### `static int lua_setTextSize(lua_State *L)`
-
----
-
-### `static int lua_getTextSize(lua_State *L)`
+`gfx.text(s, x, y [, align])` -> lines drawn. `y` is the top of the line in every face; `align` is "left" (x is the left edge), "center" or "right". Draws through enjin's TextRenderer and the active layer's text state (ADR-0029).
 
 ---
 
 ### `static int lua_setFont(lua_State *L)`
 
+`gfx.setFont(name)`: "monogram" (every layer's default), "body" or "display". Any other name raises.
+
 ---
 
-### `static int lua_getFont(lua_State *L)`
+### `static int lua_setTextWrap(lua_State *L)`
+
+`gfx.setTextWrap(overflow [, width])`: "wrap" (the default: at spaces, inside a word only when it is longer than the line), "clip" or "ellipsis", in a box `width` wide (none: to the layer's edge).
+
+---
+
+### `static int lua_setTextSize(lua_State *L)`
+
+`gfx.setTextSize(n)`: the integer scale, 1 the face's own size.
 
 ---
 
 ### `static int lua_getTextWidth(lua_State *L)`
 
+`gfx.getTextWidth(s)` -> the advance of `s` in the layer's face and size (the widest line).
+
 ---
 
-### `static int lua_getTextHeight(lua_State *L)`
+### `static int lua_setTextOutline(lua_State *L)`
+
+`gfx.setTextOutline(on [, color])`: a 1-px outline under the text, bg by default.
+
+---
+
+### `static int lua_setTextEffect(lua_State *L)`
+
+`gfx.setTextEffect(effect | nil)`: run the text's pixels through a `gfx.effect`; nil clears it.
 
 ---
 
@@ -668,10 +662,6 @@ Stored via "enjin_bindings" key during registerAll(). Used by static Lua C-funct
 ---
 
 ### `static int lua_engine_ui_panel(lua_State *L)`
-
----
-
-### `static int lua_engine_ui_label(lua_State *L)`
 
 ---
 

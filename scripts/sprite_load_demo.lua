@@ -38,6 +38,6 @@ function draw()
     end
 
     gfx.setColor(15)
-    gfx.text("A:FlipH B:Rot90", 2, 2)
-    gfx.text("Enc:FlipV", 2, 12)
+    gfx.text("A:FlipH B:Rot90", 2, -2)
+    gfx.text("Enc:FlipV", 2, 8)
 end

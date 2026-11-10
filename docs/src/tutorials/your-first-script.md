@@ -103,11 +103,15 @@ function draw()
     local cur = engine.state.current()
 
     gfx.setColor(7)
-    gfx.textCentered("TAMAGOTCHI", 10, 2)
+    gfx.setTextSize(2); gfx.text("TAMAGOTCHI", W // 2, 2, "center"); gfx.setTextSize(1)
 
     gfx.setColor(6)
-    gfx.text("HUNGER:", 10, 34)
+    gfx.text("HUNGER:", 10, 30)
 ```
+
+`gfx.text(s, x, y [, align])` draws with the top of the line at `y`; `"center"` centres the
+line on `x` and `"right"` ends it there. The face (monogram by default), the size and the
+overflow rule (`gfx.setTextWrap`) are set on the layer and stay until changed.
 
 Opaque colours are the 8 Palette roles 0–7, whose RGB values depend on the current palette; `gfx.COLOR` names them by job (`gfx.COLOR.TEXT` is 3) and names transparency, `gfx.COLOR.TRANSPARENT` (15). A colour 8–14 is no role and raises an error.
 
@@ -118,7 +122,7 @@ Opaque colours are the 8 Palette roles 0–7, whose RGB values depend on the cur
 ```lua
 -- tamagotchi.lua line 177: blink a "Z" every half second during sleep
 if math.floor(engine.time.now() * 2) % 2 == 0 then
-    gfx.text("Z", petX + 35, petY - 30)
+    gfx.text("Z", petX + 35, petY - 34)
 end
 ```
 
