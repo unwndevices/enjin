@@ -10,22 +10,37 @@
 namespace enjin2 {
 
 /**
- * @brief Compile-time layer count for the multi-layer compositor.
+ * @brief Compile-time layer stack for the multi-layer compositor.
  *
- * Valid range: 1-8. Change and rebuild to adjust the layer stack.
- * Layer 0 = backmost (background), layer N-1 = frontmost (top).
+ * Layer 0 = backmost (background), layer N-1 = frontmost (top). Every host
+ * builds the same stack of five:
  *
- * All hosts: 4 layers (3 Lua applet layers + 1 shell UI layer).
+ *   0..ENJIN_LUA_LAYER_COUNT-1  the applet's layers (Lua's gfx, a native
+ *                               applet's canvases): 3, whatever the stack holds
+ *   ENJIN_UI_LAYER              the Shell's chrome and the Menu panel
+ *   ENJIN_SYSTEM_LAYER          the system screens (the volume bar, the power
+ *                               key's hold ring, Powering off, the System
+ *                               update): over every other layer and over the
+ *                               cover, hidden until something is on it
+ *
+ * Lua's layer count is its own constant, not ENJIN_LAYER_COUNT - 1, so a
+ * layer added above the applet's never gives an applet one more.
  */
-constexpr uint8_t ENJIN_LAYER_COUNT = 4;
+constexpr uint8_t ENJIN_LUA_LAYER_COUNT = 3;
+constexpr uint8_t ENJIN_UI_LAYER = ENJIN_LUA_LAYER_COUNT;
+constexpr uint8_t ENJIN_SYSTEM_LAYER = ENJIN_UI_LAYER + 1;
+constexpr uint8_t ENJIN_LAYER_COUNT = ENJIN_SYSTEM_LAYER + 1;
 static_assert(ENJIN_LAYER_COUNT >= 1 && ENJIN_LAYER_COUNT <= 8,
               "ENJIN_LAYER_COUNT must be between 1 and 8 (inclusive)");
+static_assert(ENJIN_SYSTEM_LAYER == ENJIN_LAYER_COUNT - 1,
+              "the System layer is the top of the stack");
 
 /**
  * @brief Multi-layer canvas compositor.
  *
  * Holds ENJIN_LAYER_COUNT Canvas4 layer buffers plus one output Canvas4.
- * Compositing uses painter's order (layer 0 = back, layer N-1 = front).
+ * Compositing uses painter's order (layer 0 = back, layer N-1 = front); the
+ * System layer (ENJIN_SYSTEM_LAYER) goes over the cover too.
  * Pixel index 15 is the transparency passthrough value — any pixel with
  * index 15 on an upper layer lets lower layers show through.
  *
@@ -50,11 +65,13 @@ struct LayerCompositor {
     bool visible[ENJIN_LAYER_COUNT];
 
     /**
-     * @brief Default constructor — initialises all visibility flags to true.
+     * @brief Default constructor: every layer visible but the System layer,
+     * which is hidden until something is drawn on it (setVisible).
      */
     LayerCompositor() {
         for (uint8_t i = 0; i < ENJIN_LAYER_COUNT; ++i) {
-            visible[i] = true;
+            visible[i] = i != ENJIN_SYSTEM_LAYER;
+            composited_[i] = visible[i];
         }
         resetDirtyState();
     }
@@ -172,7 +189,8 @@ struct LayerCompositor {
     //
     // A masked layer's pixels count only inside its mask: outside it, the
     // layers below show through as if it were transparent there. The cover is
-    // painted over every layer, untinted, in up to COVER_BANDS bands: each
+    // painted over every layer but the System layer (which stays on top: a
+    // system picture is over everything), untinted, in up to COVER_BANDS bands: each
     // band is a mask and what it shows (a solid colour, or the source canvas's
     // pixel at the same place, on a share of its pixels). Bands nest, each
     // inside the one before (in every row, its span inside the last band's),
@@ -238,8 +256,8 @@ struct LayerCompositor {
 
     bool isMasked(uint8_t layer) const { return layer < ENJIN_LAYER_COUNT && masked_[layer]; }
 
-    /// @brief Paint `color` inside `m` (copied) over every layer: a cover of
-    /// one solid band.
+    /// @brief Paint `color` inside `m` (copied) over every layer below the
+    /// System layer: a cover of one solid band.
     void setCover(const Mask& m, Pixel4 color) {
         setCoverBand(0, m, CoverFill::solid(color));
         trimCover(1);
@@ -319,13 +337,17 @@ struct LayerCompositor {
         coverSource_ = nullptr;
     }
 
-    /// @brief Show or hide a layer. A visibility change forces the whole frame
-    /// to recomposite next frame (the affected tiles must pull from the new set
-    /// of visible layers), so route toggles through here, not `visible[]` raw.
+    /// @brief Show or hide a layer. The tiles the layer has anything on
+    /// (anything but index 15; every tile of layer 0, which is opaque)
+    /// recomposite next frame, from the new set of visible layers, so route
+    /// toggles through here, not `visible[]` raw. What the layer draws or
+    /// clears after this, in the same frame, recomposites too (its dirty tiles
+    /// count while it is visible or was at the last composite). A hidden layer
+    /// costs nothing: its draws recomposite no tile.
     void setVisible(uint8_t layer, bool v) {
         if (layer >= ENJIN_LAYER_COUNT || visible[layer] == v) return;
         visible[layer] = v;
-        memset(pendingDirty, 0xFF, DIRTY_BYTES);
+        markContent(layer);
     }
 
     /// @brief Set a layer's backdrop colour — the gfx.clear(c) sugar. Fills the
@@ -395,7 +417,11 @@ struct LayerCompositor {
             mergedDirty[b] |= pendingDirty[b];
         }
         for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
-            if (!visible[l]) continue;
+            // A layer hidden since the last composite still owes the tiles it
+            // changed in between (what it showed there must go).
+            const bool counts = visible[l] || composited_[l];
+            composited_[l] = visible[l];
+            if (!counts) continue;
             const uint8_t* host = layers[l].dirtyBitmap();
             const bool restores = restore[l].kind != RestoreSource::Kind::None;
             for (size_t b = 0; b < DIRTY_BYTES; ++b) {
@@ -486,6 +512,38 @@ private:
 
     Mask mask_[ENJIN_LAYER_COUNT];
     bool masked_[ENJIN_LAYER_COUNT] = {};
+    /// Whether each layer was visible at the last compositeDirty().
+    bool composited_[ENJIN_LAYER_COUNT] = {};
+
+    /// Mark every tile @p l has anything but index 15 on (all of layer 0).
+    void markContent(uint8_t l) {
+        if (l == 0) {
+            memset(pendingDirty, 0xFF, DIRTY_BYTES);
+            return;
+        }
+        const PackedPixel4* buf = layers[l].getBuffer();
+        for (uint16_t ty = 0; ty < TILES_Y; ++ty) {
+            const int y0 = ty * TILE_SIZE;
+            const int y1 = y0 + TILE_SIZE > H ? H : y0 + TILE_SIZE;
+            for (uint16_t tx = 0; tx < TILES_X; ++tx) {
+                const int x0 = tx * TILE_SIZE;
+                const int x1 = x0 + TILE_SIZE > W ? W : x0 + TILE_SIZE;
+                bool any = false;
+                for (int py = y0; py < y1 && !any; ++py) {
+                    const size_t row = static_cast<size_t>(py) * ROW_BYTES;
+                    for (int px = x0; px < x1; px += 2) {
+                        const uint8_t b = buf[row + (static_cast<size_t>(px) >> 1)].getByte();
+                        const bool lo = (b & 0x0F) != 0x0F;
+                        const bool hi = px + 1 < x1 && (b >> 4) != 0x0F;
+                        if (lo || hi) { any = true; break; }
+                    }
+                }
+                if (!any) continue;
+                const uint16_t t = static_cast<uint16_t>(ty * TILES_X + tx);
+                pendingDirty[t >> 3] |= static_cast<uint8_t>(1u << (t & 7));
+            }
+        }
+    }
     Mask cover_[COVER_BANDS];
     CoverFill coverFill_[COVER_BANDS];
     uint8_t coverBands_ = 0;
@@ -535,7 +593,8 @@ private:
         const uint8_t* llut[ENJIN_LAYER_COUNT];
         const Mask* lmask[ENJIN_LAYER_COUNT];
         uint8_t nvis = 0;
-        for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
+        // The System layer goes on after the cover (paintSystemRow).
+        for (uint8_t l = 0; l < ENJIN_SYSTEM_LAYER; ++l) {
             if (!visible[l]) continue;
             lbuf[nvis] = layers[l].getBuffer();
             llut[nvis] = tint[l].lut;
@@ -595,6 +654,31 @@ private:
                 }
             }
             if (coverBands_ > 0) paintCoverRow(obuf, row, py, x0, x1);
+            paintSystemRow(obuf, row, py, x0, x1);
+        }
+    }
+
+    /// @brief Paint the System layer's row py, pixels [x0, x1), over the
+    /// output: above every layer and the cover. Index 15 lets them show.
+    void paintSystemRow(PackedPixel4* obuf, size_t row, int py, int x0, int x1) {
+        constexpr uint8_t l = ENJIN_SYSTEM_LAYER;
+        if (!visible[l]) return;
+        if (masked_[l]) {
+            if (mask_[l].x0[py] > x0) x0 = mask_[l].x0[py];
+            if (mask_[l].x1[py] < x1) x1 = mask_[l].x1[py];
+        }
+        const PackedPixel4* sbuf = layers[l].getBuffer();
+        const uint8_t* lut = tint[l].lut;
+        for (int px = x0; px < x1; ++px) {
+            const size_t idx = row + (static_cast<size_t>(px) >> 1);
+            const uint8_t b = sbuf[idx].getByte();
+            if (b == 0xFF) {  // both pixels clear: skip the pair
+                px |= 1;
+                continue;
+            }
+            const bool odd = (px & 1) != 0;
+            const uint8_t v = odd ? static_cast<uint8_t>(b >> 4) : static_cast<uint8_t>(b & 0x0F);
+            if (v != 0x0F) writeNibble(obuf[idx], odd, lut[v]);
         }
     }
 

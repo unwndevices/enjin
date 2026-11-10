@@ -158,8 +158,8 @@ static void test_null_safety() {
     static LuaCanvas lua_layer0(&compositor.layers[0]);
     static LuaCanvas lua_layer1(&compositor.layers[1]);
     static LuaCanvas lua_layer2(&compositor.layers[2]);
-    static LuaCanvas lua_layer3(&compositor.layers[3]);
-    static LuaCanvas* lua_layers[3] = {
+    static LuaCanvas lua_layer3(&compositor.layers[ENJIN_UI_LAYER]);
+    static LuaCanvas* lua_layers[ENJIN_LUA_LAYER_COUNT] = {
         &lua_layer0, &lua_layer1, &lua_layer2
     };
 
@@ -170,7 +170,7 @@ static void test_null_safety() {
     if (!ok) return;
 
     // Wire layers (required — currentCanvas must not be null in bindings_draw.cpp)
-    sys.getBindings().setLayers(lua_layers, 3, compositor.visible);
+    sys.getBindings().setLayers(lua_layers, ENJIN_LUA_LAYER_COUNT, compositor.visible);
     sys.getBindings().setDebugCanvas(&lua_layer3);
 
     // Wire time state so engine.time.* return valid values
