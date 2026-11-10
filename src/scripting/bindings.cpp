@@ -1,3 +1,4 @@
+#include "../../include/enjin2/graphics/corner_watch.hpp"
 #include "bindings_internal.hpp"
 #include "../../include/enjin2/scripting/layer_claims.hpp"
 #include "../../include/enjin2/scripting/effect_lua.hpp"
@@ -368,6 +369,7 @@ void LuaCanvas::fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 
 void LuaCanvas::drawText(const char* str, int16_t x, int16_t y,
                          uint8_t color, uint8_t size, const ::GFXfont* font) {
+    CornerWatch::ScriptText scriptText;  // a cut here is the script's layout (corner_watch.hpp)
     if (!str) return;
     const GFXfont* gfxFont = font;
     if (is4Bit) {
@@ -390,6 +392,7 @@ void LuaCanvas::drawText(const char* str, int16_t x, int16_t y,
 void LuaCanvas::drawTextWrapped(const char* str, int16_t x, int16_t y,
                                uint16_t maxWidth, uint8_t color, uint8_t size,
                                const ::GFXfont* font) {
+    CornerWatch::ScriptText scriptText;  // a cut here is the script's layout (corner_watch.hpp)
     if (!str) return;
     const GFXfont* gfxFont = font;
     if (is4Bit) {
