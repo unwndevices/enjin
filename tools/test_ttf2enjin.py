@@ -182,7 +182,7 @@ def test_face_form_cli():
     check('#include "enjin2/graphics/face.hpp"' in text, "the face form includes face.hpp")
     check("namespace enjin2::faces {" in text, "the face form is in enjin2::faces")
     check("inline const ::GFXfont blocksFont = {" in text, "the GFXfont is <id>Font")
-    check('inline const ::enjin2::Face blocks{"blocks", &blocksFont, 10, 10};' in text,
+    check('inline constexpr ::enjin2::Face blocks{"blocks", &blocksFont, 10, 10};' in text,
           "the Face carries the name, font, ascent and cap height")
     check(re.search(r"blocksGlyphs, 0x20, 0xFF, \d+ \};", text) is not None,
           "the GFXfont spans 0x20..0xFF")

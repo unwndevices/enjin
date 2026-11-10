@@ -511,6 +511,6 @@ inline const ::GFXfont displayFont = {
   (uint8_t  *)displayBitmaps,
   (::GFXglyph *)displayGlyphs, 0x20, 0xFF, 23 };
 
-inline const ::enjin2::Face display{"display", &displayFont, 17, 12};
+inline constexpr ::enjin2::Face display{"display", &displayFont, 17, 12};
 
 }  // namespace enjin2::faces

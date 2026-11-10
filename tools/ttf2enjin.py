@@ -340,7 +340,7 @@ def emit_face_header(glyphs, y_advance, ident, face_name, ascent, cap_height, fi
     lines.append("  (::GFXglyph *)%sGlyphs, 0x%02X, 0x%02X, %d };"
                  % (ident, first, last, y_advance))
     lines.append("")
-    lines.append('inline const ::enjin2::Face %s{"%s", &%sFont, %d, %d};'
+    lines.append('inline constexpr ::enjin2::Face %s{"%s", &%sFont, %d, %d};'
                  % (ident, face_name, ident, ascent, cap_height))
     lines.append("")
     lines.append("}  // namespace enjin2::faces")

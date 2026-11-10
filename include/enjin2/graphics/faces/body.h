@@ -291,6 +291,6 @@ inline const ::GFXfont bodyFont = {
   (uint8_t  *)bodyBitmaps,
   (::GFXglyph *)bodyGlyphs, 0x20, 0xFF, 10 };
 
-inline const ::enjin2::Face body{"body", &bodyFont, 8, 6};
+inline constexpr ::enjin2::Face body{"body", &bodyFont, 8, 6};
 
 }  // namespace enjin2::faces

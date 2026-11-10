@@ -30,7 +30,8 @@ inline constexpr const char* kTextOverflowNames[] = {"wrap", "clip", "ellipsis"}
 struct TextState {
     /// The face; nullptr is the default face (monogram).
     const Face* face = nullptr;
-    /// The fill's palette index.
+    /// The fill's palette index. Lua's gfx.text sets it from the draw colour
+    /// (gfx.setColor), so from Lua text takes the colour shapes take.
     uint8_t color = ROLE_TEXT;
     /// Integer scale (setTextSize), 1..255.
     uint8_t size = 1;
@@ -48,7 +49,9 @@ struct TextState {
     bool hasEffect = false;
     Effect effect{};
     /// A window text draws inside, in canvas coordinates (x1/y1 exclusive);
-    /// the default is the whole canvas.
+    /// the default is the whole canvas. Not an overflow rule: overflow decides
+    /// where a line ends in its box; the window is the part of the layer a
+    /// screen lets text show in (a marquee's row, a list under its header).
     int16_t clipX0 = INT16_MIN, clipY0 = INT16_MIN, clipX1 = INT16_MAX, clipY1 = INT16_MAX;
 };
 

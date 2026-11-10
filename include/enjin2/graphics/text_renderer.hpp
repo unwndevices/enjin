@@ -123,7 +123,7 @@ inline int lineHeight(const Face& f, uint8_t size = 1) { return f.font->yAdvance
 
 /// How far the capitals' top sits under the line's top, at @p size: a screen
 /// laid out by cap tops draws at `capTop - capOffset(face, size)`.
-inline int capOffset(const Face& f, uint8_t size = 1) { return (f.ascent - f.capHeight) * (size ? size : 1); }
+inline constexpr int capOffset(const Face& f, uint8_t size = 1) { return (f.ascent - f.capHeight) * (size ? size : 1); }
 
 /// @p s without its trailing spaces.
 inline std::string_view trimRight(std::string_view s) {

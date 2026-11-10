@@ -318,6 +318,6 @@ inline const ::GFXfont monogramFont = {
   (uint8_t  *)monogramBitmaps,
   (::GFXglyph *)monogramGlyphs, 0x20, 0xFF, 13 };
 
-inline const ::enjin2::Face monogram{"monogram", &monogramFont, 11, 7};
+inline constexpr ::enjin2::Face monogram{"monogram", &monogramFont, 11, 7};
 
 }  // namespace enjin2::faces
