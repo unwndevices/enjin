@@ -8,7 +8,22 @@
 #   U+XXXX <char> xAdvance=N xOffset=N yOffset=N   (yOffset = top row vs the baseline)
 #   rows of '.'/'#' (width = row length, height = number of rows; none = no ink)
 # Line top = baseline - 17 (ascent); nothing may sit above it. Cap height 12, x-height 11.
-# From the TTF (not here): U+00A0 U+00A1 U+00A2 U+00A3 U+00A4 U+00A5 U+00A6 U+00A7 U+00A8 U+00A9
+# From the TTF (not here): U+00A0 U+00A1 U+00A2 U+00A3 U+00A4 U+00A5 U+00A6 U+00A7 U+00A8
+# Replacing the TTF's own (wrong) glyph: U+00A9
+
+U+00A9 © xAdvance=14 xOffset=0 yOffset=-12
+.###########.
+#############
+####......###
+###..########
+###..########
+###..########
+###..########
+###..########
+###..########
+####......###
+#############
+.###########.
 
 U+00AA ª xAdvance=8 xOffset=1 yOffset=-14
 .###.

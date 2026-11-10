@@ -18,7 +18,8 @@ from ttf2enjin.rasterize):
   * Æ æ from the face's A/a and E/e overlapped; Ð = D + a crossbar; Þ þ from P/p and
     b's ascender; µ = u + a descender; ¿ = ? turned; ± × ÷ ¬ · ¯ ­ from + - x . _;
     the rest (ß ð ª º ¹ ² ³ ¼ ½ ¾ « » ® ° ¶ ...) as small per-face pixel art.
-  * glyphs the TTF already has are never drafted (ttf2enjin rasterises those).
+  * glyphs the TTF already has are never drafted (ttf2enjin rasterises those), except
+    the ones in REPLACE (display's U+00A9, a spade in KarenFat).
 
 Usage (from the Tomodachi repo root):
     python3 libs/enjin/tools/draft_latin1.py [--face monogram|body|display] [--force]
@@ -299,6 +300,9 @@ ART = {
         0xAE: (-12, 0, ".###########. ############# ###......#### ###..###..### ###..###..### "
                        "###......#### ###..##..#### ###..###..### ###..###..### "
                        "###..###..### ############# .###########.", 14),
+        0xA9: (-12, 0, ".###########. ############# ####......### ###..######## ###..######## "
+                       "###..######## ###..######## ###..######## ###..######## "
+                       "####......### ############# .###########.", 14),
         0xB0: (-12, 1, ".####. ###### ##..## ##..## ###### .####.", 8),
         0xB6: (-12, 0, "..######### .########## ########### #######.### #######.### "
                        ".######.### ...####.### ...####.### ...####.### ...####.### "
@@ -514,10 +518,14 @@ def label_char(code):
     return chr(code)
 
 
+# TTF glyphs that are wrong, drafted anyway: KarenFat's U+00A9 is a spade, not ©.
+REPLACE = {"display": {0xA9}}
+
+
 def draft_face(face):
     out = {}
     for code in range(0xA0, 0x100):
-        if face.has(code):
+        if face.has(code) and code not in REPLACE.get(face.name, ()):
             continue
         bm = derived(face, code)
         if bm is None:
@@ -529,7 +537,7 @@ def draft_face(face):
 
 
 def write_face(face, glyphs, path):
-    from_ttf = [c for c in range(0xA0, 0x100) if face.has(c)]
+    from_ttf = [c for c in range(0xA0, 0x100) if face.has(c) and c not in glyphs]
     head = [
         "# DRAFT — awaiting the owner's review (#476)",
         "#",
@@ -544,6 +552,9 @@ def write_face(face, glyphs, path):
         "# Line top = baseline - %d (ascent); nothing may sit above it. Cap height %d, x-height %d."
         % (face.ascent, -face.cap_top, -face.x_top),
         "# From the TTF (not here): %s" % " ".join("U+%04X" % c for c in from_ttf),
+    ] + (["# Replacing the TTF's own (wrong) glyph: %s"
+          % " ".join("U+%04X" % c for c in sorted(REPLACE[face.name]))]
+         if face.name in REPLACE else []) + [
         "",
     ]
     body = "\n\n".join(glyph_block(c, glyphs[c]) for c in sorted(glyphs))
