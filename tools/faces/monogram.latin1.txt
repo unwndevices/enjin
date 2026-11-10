@@ -1,0 +1,823 @@
+# DRAFT — awaiting the owner's review (#476)
+#
+# monogram: the Latin-1 glyphs monogram.ttf lacks, drafted from the face's own
+# letters by tools/draft_latin1.py (a one-shot helper). This file is now the source:
+# edit it by hand; ttf2enjin.py --glyphs merges it over the TTF's raster.
+#
+# One block per glyph, blank line between blocks:
+#   U+XXXX <char> xAdvance=N xOffset=N yOffset=N   (yOffset = top row vs the baseline)
+#   rows of '.'/'#' (width = row length, height = number of rows; none = no ink)
+# Line top = baseline - 11 (ascent); nothing may sit above it. Cap height 7, x-height 5.
+# From the TTF (not here): U+00A0 U+00A1 U+00A2 U+00A3 U+00A4 U+00A5 U+00A6 U+00A7 U+00A8 U+00A9
+
+U+00AA ª xAdvance=6 xOffset=1 yOffset=-7
+.##
+#.#
+.##
+...
+###
+
+U+00AB « xAdvance=6 xOffset=0 yOffset=-5
+.#..#
+#..#.
+.#..#
+
+U+00AC ¬ xAdvance=6 xOffset=0 yOffset=-4
+#####
+....#
+
+U+00AD SHY xAdvance=6 xOffset=0 yOffset=-4
+#####
+
+U+00AE ® xAdvance=6 xOffset=0 yOffset=-7
+.###.
+#..##
+#.#.#
+#..##
+#.#.#
+#.#.#
+.###.
+
+U+00AF ¯ xAdvance=6 xOffset=0 yOffset=-7
+#####
+
+U+00B0 ° xAdvance=6 xOffset=1 yOffset=-7
+.#.
+#.#
+.#.
+
+U+00B1 ± xAdvance=6 xOffset=0 yOffset=-7
+..#..
+..#..
+#####
+..#..
+..#..
+.....
+#####
+
+U+00B2 ² xAdvance=6 xOffset=1 yOffset=-7
+##.
+..#
+.#.
+#..
+###
+
+U+00B3 ³ xAdvance=6 xOffset=1 yOffset=-7
+##.
+..#
+.#.
+..#
+##.
+
+U+00B4 ´ xAdvance=6 xOffset=2 yOffset=-8
+.#
+#.
+
+U+00B5 µ xAdvance=6 xOffset=0 yOffset=-5
+#...#
+#...#
+#...#
+#...#
+#####
+#....
+#....
+
+U+00B6 ¶ xAdvance=6 xOffset=0 yOffset=-7
+.####
+###.#
+###.#
+.##.#
+..#.#
+..#.#
+..#.#
+
+U+00B7 · xAdvance=6 xOffset=2 yOffset=-3
+#
+#
+
+U+00B8 ¸ xAdvance=6 xOffset=2 yOffset=0
+.#
+##
+
+U+00B9 ¹ xAdvance=6 xOffset=1 yOffset=-7
+.#.
+##.
+.#.
+.#.
+###
+
+U+00BA º xAdvance=6 xOffset=1 yOffset=-7
+.#.
+#.#
+.#.
+...
+###
+
+U+00BB » xAdvance=6 xOffset=0 yOffset=-5
+#..#.
+.#..#
+#..#.
+
+U+00BC ¼ xAdvance=6 xOffset=0 yOffset=-7
+#...#
+#..#.
+#.#..
+.#...
+#.#.#
+..###
+....#
+
+U+00BD ½ xAdvance=6 xOffset=0 yOffset=-7
+#...#
+#..#.
+#.#..
+.#.##
+#...#
+...#.
+..###
+
+U+00BE ¾ xAdvance=6 xOffset=0 yOffset=-7
+##..#
+.#.#.
+##.#.
+..#..
+#.#.#
+..###
+....#
+
+U+00BF ¿ xAdvance=6 xOffset=0 yOffset=-7
+..#..
+.....
+..#..
+.#...
+#....
+#...#
+.###.
+
+U+00C0 À xAdvance=6 xOffset=0 yOffset=-10
+.#...
+..#..
+.....
+.###.
+#...#
+#...#
+#...#
+#####
+#...#
+#...#
+
+U+00C1 Á xAdvance=6 xOffset=0 yOffset=-10
+...#.
+..#..
+.....
+.###.
+#...#
+#...#
+#...#
+#####
+#...#
+#...#
+
+U+00C2 Â xAdvance=6 xOffset=0 yOffset=-10
+..#..
+.#.#.
+.....
+.###.
+#...#
+#...#
+#...#
+#####
+#...#
+#...#
+
+U+00C3 Ã xAdvance=6 xOffset=0 yOffset=-10
+.#..#
+#.##.
+.....
+.###.
+#...#
+#...#
+#...#
+#####
+#...#
+#...#
+
+U+00C4 Ä xAdvance=6 xOffset=0 yOffset=-9
+.#.#.
+.....
+.###.
+#...#
+#...#
+#...#
+#####
+#...#
+#...#
+
+U+00C5 Å xAdvance=6 xOffset=0 yOffset=-11
+..#..
+.#.#.
+..#..
+.....
+.###.
+#...#
+#...#
+#...#
+#####
+#...#
+#...#
+
+U+00C6 Æ xAdvance=6 xOffset=0 yOffset=-7
+.####
+#.#..
+#.#..
+#####
+#.#..
+#.#..
+#.###
+
+U+00C7 Ç xAdvance=6 xOffset=0 yOffset=-7
+.###.
+#...#
+#....
+#....
+#....
+#...#
+.###.
+..#..
+.##..
+
+U+00C8 È xAdvance=6 xOffset=0 yOffset=-10
+.#...
+..#..
+.....
+#####
+#....
+#....
+####.
+#....
+#....
+#####
+
+U+00C9 É xAdvance=6 xOffset=0 yOffset=-10
+...#.
+..#..
+.....
+#####
+#....
+#....
+####.
+#....
+#....
+#####
+
+U+00CA Ê xAdvance=6 xOffset=0 yOffset=-10
+..#..
+.#.#.
+.....
+#####
+#....
+#....
+####.
+#....
+#....
+#####
+
+U+00CB Ë xAdvance=6 xOffset=0 yOffset=-9
+.#.#.
+.....
+#####
+#....
+#....
+####.
+#....
+#....
+#####
+
+U+00CC Ì xAdvance=6 xOffset=0 yOffset=-10
+.#...
+..#..
+.....
+#####
+..#..
+..#..
+..#..
+..#..
+..#..
+#####
+
+U+00CD Í xAdvance=6 xOffset=0 yOffset=-10
+...#.
+..#..
+.....
+#####
+..#..
+..#..
+..#..
+..#..
+..#..
+#####
+
+U+00CE Î xAdvance=6 xOffset=0 yOffset=-10
+..#..
+.#.#.
+.....
+#####
+..#..
+..#..
+..#..
+..#..
+..#..
+#####
+
+U+00CF Ï xAdvance=6 xOffset=0 yOffset=-9
+.#.#.
+.....
+#####
+..#..
+..#..
+..#..
+..#..
+..#..
+#####
+
+U+00D0 Ð xAdvance=6 xOffset=0 yOffset=-7
+.###.
+.#..#
+.#..#
+###.#
+.#..#
+.#..#
+.###.
+
+U+00D1 Ñ xAdvance=6 xOffset=0 yOffset=-10
+.#..#
+#.##.
+.....
+#...#
+#...#
+##..#
+#.#.#
+#..##
+#...#
+#...#
+
+U+00D2 Ò xAdvance=6 xOffset=0 yOffset=-10
+.#...
+..#..
+.....
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00D3 Ó xAdvance=6 xOffset=0 yOffset=-10
+...#.
+..#..
+.....
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00D4 Ô xAdvance=6 xOffset=0 yOffset=-10
+..#..
+.#.#.
+.....
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00D5 Õ xAdvance=6 xOffset=0 yOffset=-10
+.#..#
+#.##.
+.....
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00D6 Ö xAdvance=6 xOffset=0 yOffset=-9
+.#.#.
+.....
+.###.
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00D7 × xAdvance=6 xOffset=0 yOffset=-6
+#...#
+.#.#.
+..#..
+.#.#.
+#...#
+
+U+00D8 Ø xAdvance=6 xOffset=0 yOffset=-7
+.###.
+#...#
+#..##
+#.#.#
+##..#
+#...#
+.###.
+
+U+00D9 Ù xAdvance=6 xOffset=0 yOffset=-10
+.#...
+..#..
+.....
+#...#
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00DA Ú xAdvance=6 xOffset=0 yOffset=-10
+...#.
+..#..
+.....
+#...#
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00DB Û xAdvance=6 xOffset=0 yOffset=-10
+..#..
+.#.#.
+.....
+#...#
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00DC Ü xAdvance=6 xOffset=0 yOffset=-9
+.#.#.
+.....
+#...#
+#...#
+#...#
+#...#
+#...#
+#...#
+.###.
+
+U+00DD Ý xAdvance=6 xOffset=0 yOffset=-10
+...#.
+..#..
+.....
+#...#
+#...#
+.#.#.
+..#..
+..#..
+..#..
+..#..
+
+U+00DE Þ xAdvance=6 xOffset=0 yOffset=-7
+#....
+####.
+#...#
+#...#
+####.
+#....
+#....
+
+U+00DF ß xAdvance=6 xOffset=0 yOffset=-7
+.##..
+#..#.
+#.#..
+#..#.
+#...#
+#...#
+#.##.
+
+U+00E0 à xAdvance=6 xOffset=0 yOffset=-8
+.#...
+..#..
+.....
+.####
+#...#
+#...#
+#...#
+.####
+
+U+00E1 á xAdvance=6 xOffset=0 yOffset=-8
+...#.
+..#..
+.....
+.####
+#...#
+#...#
+#...#
+.####
+
+U+00E2 â xAdvance=6 xOffset=0 yOffset=-8
+..#..
+.#.#.
+.....
+.####
+#...#
+#...#
+#...#
+.####
+
+U+00E3 ã xAdvance=6 xOffset=0 yOffset=-8
+.#..#
+#.##.
+.....
+.####
+#...#
+#...#
+#...#
+.####
+
+U+00E4 ä xAdvance=6 xOffset=0 yOffset=-7
+.#.#.
+.....
+.####
+#...#
+#...#
+#...#
+.####
+
+U+00E5 å xAdvance=6 xOffset=0 yOffset=-9
+..#..
+.#.#.
+..#..
+.....
+.####
+#...#
+#...#
+#...#
+.####
+
+U+00E6 æ xAdvance=6 xOffset=0 yOffset=-5
+.####
+#.#.#
+#.###
+#.#..
+.####
+
+U+00E7 ç xAdvance=6 xOffset=0 yOffset=-5
+.###.
+#...#
+#....
+#...#
+.###.
+..#..
+.##..
+
+U+00E8 è xAdvance=6 xOffset=0 yOffset=-8
+.#...
+..#..
+.....
+.###.
+#...#
+#####
+#....
+.###.
+
+U+00E9 é xAdvance=6 xOffset=0 yOffset=-8
+...#.
+..#..
+.....
+.###.
+#...#
+#####
+#....
+.###.
+
+U+00EA ê xAdvance=6 xOffset=0 yOffset=-8
+..#..
+.#.#.
+.....
+.###.
+#...#
+#####
+#....
+.###.
+
+U+00EB ë xAdvance=6 xOffset=0 yOffset=-7
+.#.#.
+.....
+.###.
+#...#
+#####
+#....
+.###.
+
+U+00EC ì xAdvance=6 xOffset=0 yOffset=-8
+.#...
+..#..
+.....
+.##..
+..#..
+..#..
+..#..
+#####
+
+U+00ED í xAdvance=6 xOffset=0 yOffset=-8
+...#.
+..#..
+.....
+.##..
+..#..
+..#..
+..#..
+#####
+
+U+00EE î xAdvance=6 xOffset=0 yOffset=-8
+..#..
+.#.#.
+.....
+.##..
+..#..
+..#..
+..#..
+#####
+
+U+00EF ï xAdvance=6 xOffset=0 yOffset=-7
+.#.#.
+.....
+.##..
+..#..
+..#..
+..#..
+#####
+
+U+00F0 ð xAdvance=6 xOffset=0 yOffset=-7
+..#.#
+...#.
+..#.#
+.####
+#...#
+#...#
+.###.
+
+U+00F1 ñ xAdvance=6 xOffset=0 yOffset=-8
+.#..#
+#.##.
+.....
+####.
+#...#
+#...#
+#...#
+#...#
+
+U+00F2 ò xAdvance=6 xOffset=0 yOffset=-8
+.#...
+..#..
+.....
+.###.
+#...#
+#...#
+#...#
+.###.
+
+U+00F3 ó xAdvance=6 xOffset=0 yOffset=-8
+...#.
+..#..
+.....
+.###.
+#...#
+#...#
+#...#
+.###.
+
+U+00F4 ô xAdvance=6 xOffset=0 yOffset=-8
+..#..
+.#.#.
+.....
+.###.
+#...#
+#...#
+#...#
+.###.
+
+U+00F5 õ xAdvance=6 xOffset=0 yOffset=-8
+.#..#
+#.##.
+.....
+.###.
+#...#
+#...#
+#...#
+.###.
+
+U+00F6 ö xAdvance=6 xOffset=0 yOffset=-7
+.#.#.
+.....
+.###.
+#...#
+#...#
+#...#
+.###.
+
+U+00F7 ÷ xAdvance=6 xOffset=0 yOffset=-6
+..#..
+.....
+#####
+.....
+..#..
+
+U+00F8 ø xAdvance=6 xOffset=0 yOffset=-5
+.###.
+#..##
+#.#.#
+##..#
+.###.
+
+U+00F9 ù xAdvance=6 xOffset=0 yOffset=-8
+.#...
+..#..
+.....
+#...#
+#...#
+#...#
+#...#
+.####
+
+U+00FA ú xAdvance=6 xOffset=0 yOffset=-8
+...#.
+..#..
+.....
+#...#
+#...#
+#...#
+#...#
+.####
+
+U+00FB û xAdvance=6 xOffset=0 yOffset=-8
+..#..
+.#.#.
+.....
+#...#
+#...#
+#...#
+#...#
+.####
+
+U+00FC ü xAdvance=6 xOffset=0 yOffset=-7
+.#.#.
+.....
+#...#
+#...#
+#...#
+#...#
+.####
+
+U+00FD ý xAdvance=6 xOffset=0 yOffset=-8
+...#.
+..#..
+.....
+#...#
+#...#
+#...#
+#...#
+.####
+....#
+.###.
+
+U+00FE þ xAdvance=6 xOffset=0 yOffset=-7
+#....
+#....
+####.
+#...#
+#...#
+#...#
+####.
+#....
+#....
+
+U+00FF ÿ xAdvance=6 xOffset=0 yOffset=-7
+.#.#.
+.....
+#...#
+#...#
+#...#
+#...#
+.####
+....#
+.###.
