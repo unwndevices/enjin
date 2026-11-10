@@ -737,7 +737,7 @@ void LuaBindings::setInput(InputState* input) {
 }
 
 void LuaBindings::setLayers(LuaCanvas** canvases, uint8_t count, bool* visibleArr) {
-    layerCount = (count > ENJIN_LAYER_COUNT - 1) ? ENJIN_LAYER_COUNT - 1 : count;
+    layerCount = (count > ENJIN_LUA_LAYER_COUNT) ? ENJIN_LUA_LAYER_COUNT : count;
     for (uint8_t i = 0; i < layerCount; ++i) {
         layerCanvases[i] = canvases[i];
     }

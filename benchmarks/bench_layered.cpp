@@ -231,8 +231,10 @@ int main() {
                 loaded[1].arenaBytes * 100 / loaded[0].arenaBytes);
 
     LayerCompositor<160, 160> comp;
-    comp.setVisible(4, false);  // four device compositor canvases
-    for (uint8_t l = 1; l <= 3; ++l) {
+    // The four layers an applet frame composites (the System layer is hidden
+    // until a system screen is on it).
+    comp.setVisible(ENJIN_SYSTEM_LAYER, false);
+    for (uint8_t l = 1; l <= ENJIN_UI_LAYER; ++l) {
         for (int16_t y = 0; y < 160; y += 4) {
             for (int16_t x = 0; x < 160; x += 4) {
                 comp.layers[l].setPixel(x, y, Pixel4(static_cast<uint8_t>((x + y + l) % 8)));

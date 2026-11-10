@@ -344,6 +344,7 @@ static void testCoverBandsParity() {
         for (int x = 0; x < 49; ++x)
             src.setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), Pixel4(static_cast<uint8_t>(rand() % 8)));
     c.tint[2] = Remap::towardBg();
+    c.setVisible(ENJIN_SYSTEM_LAYER, true);  // over the cover
     C::Mask lm;
     lm.disc(48, 39, 30);
     c.setMask(1, lm);
@@ -362,7 +363,7 @@ static void testCoverBandsParity() {
     for (int y = 0; y < 40; ++y)
         for (int x = 0; x < 49; ++x) {
             uint8_t v = 0;
-            for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) {
+            for (uint8_t l = 0; l < ENJIN_SYSTEM_LAYER; ++l) {
                 if (l == 1 && !lm.contains(x, y)) continue;
                 const uint8_t s = c.layers[l].getPixel(x, y).value;
                 if (s != 15) v = c.tint[l].lut[s];
@@ -375,6 +376,8 @@ static void testCoverBandsParity() {
                 if (!f.fromSource) v = f.color.value;
                 else if (bayer4(x, y) < f.density) v = src.getPixel(x, y).value;
             }
+            const uint8_t top = c.layers[ENJIN_SYSTEM_LAYER].getPixel(x, y).value;
+            if (top != 15) v = top;
             if (c.output.getPixel(x, y).value != v) ref = false;
         }
     ASSERT(ref, "the bands composite as the per-pixel reference");
@@ -397,6 +400,8 @@ static void testFullMaskParity() {
                 b.layers[l].setPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), p);
             }
     a.tint[1] = b.tint[1] = Remap::towardBg();
+    a.setVisible(ENJIN_SYSTEM_LAYER, true);
+    b.setVisible(ENJIN_SYSTEM_LAYER, true);
     C::Mask full;
     full.fill();
     for (uint8_t l = 0; l < ENJIN_LAYER_COUNT; ++l) b.setMask(l, full);

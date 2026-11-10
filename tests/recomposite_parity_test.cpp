@@ -72,6 +72,7 @@ static void checkSize(const char* label, uint32_t seed) {
     if (ENJIN_LAYER_COUNT >= 2) c->setTint(1, Remap::solid(3));
     if (ENJIN_LAYER_COUNT >= 3) c->setTint(2, Remap::towardBg());
     if (ENJIN_LAYER_COUNT >= 4) c->setVisible(2, false);
+    c->setVisible(ENJIN_SYSTEM_LAYER, true);  // hidden by default: show it to cover it
 
     // Force a full-frame recomposite through the real path.
     c->invalidateLayer(0);

@@ -74,7 +74,9 @@ int main() {
     // pattern on the upper layers, then force a full-frame recomposite.
     auto* dirtyComp = new enjin2::LayerCompositor<128, 128>();
     dirtyComp->layers[0].fillRect(0, 0, 128, 128, enjin2::Pixel4(1));
-    for (uint8_t l = 1; l < enjin2::ENJIN_LAYER_COUNT; ++l) {
+    // The four layers an applet frame composites: the System layer stays
+    // hidden (as it is while no system screen is up), so it costs nothing.
+    for (uint8_t l = 1; l <= enjin2::ENJIN_UI_LAYER; ++l) {
         for (int16_t y = 0; y < 128; ++y)
             for (int16_t x = 0; x < 128; ++x)
                 dirtyComp->layers[l].setPixel(
@@ -83,7 +85,7 @@ int main() {
     if (enjin2::ENJIN_LAYER_COUNT >= 3) dirtyComp->setTint(2, enjin2::Remap::towardBg());
 
     bench.run("compositor: compositeDirty full-frame (4 layers)", [&] {
-        for (uint8_t l = 0; l < enjin2::ENJIN_LAYER_COUNT; ++l)
+        for (uint8_t l = 0; l <= enjin2::ENJIN_UI_LAYER; ++l)
             dirtyComp->invalidateLayer(l);
         dirtyComp->compositeDirty();
         ankerl::nanobench::doNotOptimizeAway(dirtyComp->output.getPixel(64, 64));

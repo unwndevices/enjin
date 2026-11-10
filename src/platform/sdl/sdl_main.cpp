@@ -226,15 +226,15 @@ int main(int argc, char* argv[]) {
     static enjin2::LuaCanvas g_lua_layer0(&g_compositor.layers[0]);
     static enjin2::LuaCanvas g_lua_layer1(&g_compositor.layers[1]);
     static enjin2::LuaCanvas g_lua_layer2(&g_compositor.layers[2]);
-    static enjin2::LuaCanvas g_lua_layer3(&g_compositor.layers[3]);
-    // Layer 3 is the debug-draw layer — intentionally excluded from g_lua_layers
+    static enjin2::LuaCanvas g_lua_layer3(&g_compositor.layers[enjin2::ENJIN_UI_LAYER]);
+    // The UI layer is the debug-draw layer — intentionally excluded from g_lua_layers
     // (accessible only via engine.debug.* bindings, not via setLayer)
-    static enjin2::LuaCanvas* g_lua_layers[3] = {
+    static enjin2::LuaCanvas* g_lua_layers[enjin2::ENJIN_LUA_LAYER_COUNT] = {
         &g_lua_layer0, &g_lua_layer1, &g_lua_layer2
     };
 
     // lua_ok gates update/draw calls; false = paused (error state, awaiting F5)
-    bool lua_ok = performReload(g_lua, g_lua_layers, 3,
+    bool lua_ok = performReload(g_lua, g_lua_layers, enjin2::ENJIN_LUA_LAYER_COUNT,
                                 g_compositor.visible, &g_input, script_path);
     g_lua.getBindings().setDebugCanvas(&g_lua_layer3);
     // Initial startup failure behaves identically to reload failure:
@@ -264,7 +264,7 @@ int main(int argc, char* argv[]) {
 #ifdef ENJIN2_BUILD_LUA
                 else if (event.key.key == SDLK_F5) {
                     g_compositor.clearAll();
-                    lua_ok = performReload(g_lua, g_lua_layers, 3,
+                    lua_ok = performReload(g_lua, g_lua_layers, enjin2::ENJIN_LUA_LAYER_COUNT,
                                           g_compositor.visible, &g_input, script_path);
                     g_lua.getBindings().setDebugCanvas(&g_lua_layer3);
                     prev_ticks = SDL_GetTicks();  // prevent dt spike on first post-reload frame
