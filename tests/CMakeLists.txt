@@ -814,6 +814,34 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME lua_sandbox_test COMMAND lua_sandbox_test)
 
+    # lua::ScriptRef, the one holder of a Lua value across frames, and every
+    # binding that holds one releasing it on teardown (Tomodachi #481)
+    add_executable(lua_ref_test
+        lua_ref_test.cpp
+    )
+    target_include_directories(lua_ref_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(lua_ref_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME lua_ref_test COMMAND lua_ref_test)
+
+    # lua::checkName / optName / optFieldName: an unknown name of a closed set
+    # raises (ADR-0030)
+    add_executable(lua_args_test
+        lua_args_test.cpp
+    )
+    target_include_directories(lua_args_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(lua_args_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME lua_args_test COMMAND lua_args_test)
+
     # Hot-reload state management test (resetSpritePool, registerAll reset, reload cycle)
     add_executable(hot_reload_test
         hot_reload_test.cpp
@@ -852,6 +880,19 @@ if(ENJIN2_BUILD_LUA)
         enjin2_lua
     )
     add_test(NAME text_binding_test COMMAND text_binding_test)
+
+    # ADR-0030: a mistake in gfx.* or engine.tween raises (the #478 review's sweep)
+    add_executable(mistakes_raise_test
+        mistakes_raise_test.cpp
+    )
+    target_include_directories(mistakes_raise_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(mistakes_raise_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME mistakes_raise_test COMMAND mistakes_raise_test)
 
     # Math binding test (Vec2, Point, Rect userdata + clamp, lerp, remap, sign, smoothstep, distance)
     add_executable(math_binding_test
@@ -1461,6 +1502,15 @@ add_executable(text_shader_test
 target_include_directories(text_shader_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 target_link_libraries(text_shader_test PRIVATE enjin2_core enjin2_graphics)
 add_test(NAME text_shader_test COMMAND text_shader_test)
+
+# Corner cuts (Tomodachi safe area): which pixels a rounded screen hides, and
+# the one report per string the text renderer gives the armed CornerWatch.
+add_executable(corner_watch_test
+    corner_watch_test.cpp
+)
+target_include_directories(corner_watch_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(corner_watch_test PRIVATE enjin2_core enjin2_graphics)
+add_test(NAME corner_watch_test COMMAND corner_watch_test)
 
 add_executable(remap_test
     remap_test.cpp

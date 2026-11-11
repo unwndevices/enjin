@@ -607,12 +607,11 @@ static bool readLuaTable(lua_State* L, int idx, LuaStore::StoreSlot& slot) {
 }
 
 // --- engine.store.save(key, value) ---
-// Returns true on success, false if at 16-key capacity or invalid args
+// true, or nil, err when the store is full or the file write fails (ADR-0030)
 int LuaBindings::lua_engine_store_save(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushboolean(L, 0); return 1; }
-
     const char* key = luaL_checkstring(L, 1);
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Keys are fields inside one stored blob, so every host has the same limit
     // (Tomodachi #244; the NVS 15-character limit applies to the blob's name only).
@@ -647,19 +646,15 @@ int LuaBindings::lua_engine_store_save(lua_State* L) {
             return 0;
     }
 
-    if (!ok) {
-        printf("[engine.store] warning: save('%s') failed (capacity: %d/%d)\n",
-               key, b->m_store.count(), LuaStore::STORE_MAX_KEYS);
-    }
+    if (!ok) return lua::returnErr(L, "store full");
 
     // Auto-persist to file if store path is set (desktop only — WASM/ESP32 use flush())
 #if !defined(__EMSCRIPTEN__) && !defined(ESP32)
-    if (ok && b->m_storePath[0] != '\0') {
-        b->m_store.saveToFile(b->m_storePath);
-    }
+    if (b->m_storePath[0] != '\0' && !b->m_store.saveToFile(b->m_storePath))
+        return lua::returnErr(L, "write failed");
 #endif
 
-    lua_pushboolean(L, ok ? 1 : 0);
+    lua_pushboolean(L, 1);
     return 1;
 }
 
@@ -691,19 +686,18 @@ int LuaBindings::lua_engine_store_exists(lua_State* L) {
 }
 
 // --- engine.store.delete(key) ---
-// Returns boolean (true if key existed and was removed)
+// true if key existed and was removed, false if it did not; nil, err when the
+// file write fails (ADR-0030)
 int LuaBindings::lua_engine_store_delete(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushboolean(L, 0); return 1; }
-
     const char* key = luaL_checkstring(L, 1);
+    if (!b) return lua::returnErr(L, "no engine");
     bool removed = b->m_store.remove(key);
 
     // Auto-persist (desktop only — WASM/ESP32 use flush())
 #if !defined(__EMSCRIPTEN__) && !defined(ESP32)
-    if (removed && b->m_storePath[0] != '\0') {
-        b->m_store.saveToFile(b->m_storePath);
-    }
+    if (removed && b->m_storePath[0] != '\0' && !b->m_store.saveToFile(b->m_storePath))
+        return lua::returnErr(L, "write failed");
 #endif
 
     lua_pushboolean(L, removed ? 1 : 0);
@@ -711,21 +705,21 @@ int LuaBindings::lua_engine_store_delete(lua_State* L) {
 }
 
 // --- engine.store.clear() ---
-// Removes all stored data
+// Removes all stored data: true, or nil, err when the file write fails
 int LuaBindings::lua_engine_store_clear(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) return 0;
+    if (!b) return lua::returnErr(L, "no engine");
 
     b->m_store.clear();
 
     // Auto-persist (writes empty store; desktop only — WASM/ESP32 use flush())
 #if !defined(__EMSCRIPTEN__) && !defined(ESP32)
-    if (b->m_storePath[0] != '\0') {
-        b->m_store.saveToFile(b->m_storePath);
-    }
+    if (b->m_storePath[0] != '\0' && !b->m_store.saveToFile(b->m_storePath))
+        return lua::returnErr(L, "write failed");
 #endif
 
-    return 0;
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 // --- engine.store.flush() --- (Phase 48: STORE-02)
@@ -733,32 +727,38 @@ int LuaBindings::lua_engine_store_clear(lua_State* L) {
 // flush() is the commit point for WASM/ESP32 — writes full store blob to localStorage (WASM) or NVS (ESP32)
 int LuaBindings::lua_engine_store_flush(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushboolean(L, 0); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
 #if defined(__EMSCRIPTEN__) || defined(ESP32)
     // flush() is the commit point for WASM/ESP32 — writes full store blob to localStorage (WASM) or NVS (ESP32)
-    bool ok = b->m_store.saveToFile(nullptr);  // path arg unused on these platforms
-    lua_pushboolean(L, ok ? 1 : 0);
-    return 1;
+    const bool ok = b->m_store.saveToFile(nullptr);  // path arg unused on these platforms
 #else
     // Desktop: requires a path to be set
-    if (b->m_storePath[0] == '\0') { lua_pushboolean(L, 0); return 1; }
-    bool ok = b->m_store.saveToFile(b->m_storePath);
-    lua_pushboolean(L, ok ? 1 : 0);
-    return 1;
+    if (b->m_storePath[0] == '\0') return lua::returnErr(L, "no save file");
+    const bool ok = b->m_store.saveToFile(b->m_storePath);
 #endif
+    if (!ok) return lua::returnErr(L, "write failed");
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 // --- engine.store.path(filepath) --- (Phase 48: STORE-02)
 // Sets the save file path at runtime and loads any existing data from the new path.
 int LuaBindings::lua_engine_store_path(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) return 0;
     const char* path = luaL_checkstring(L, 1);
+    if (!b) return lua::returnErr(L, "no engine");
     strncpy(b->m_storePath, path, sizeof(b->m_storePath) - 1);
     b->m_storePath[sizeof(b->m_storePath) - 1] = '\0';
-    b->m_store.loadFromFile(b->m_storePath);  // load existing data; silent no-op if file missing
-    return 0;
+    // Load existing data. No file yet is no failure: true, an empty store.
+    if (!b->m_store.loadFromFile(b->m_storePath)) {
+        if (FILE* f = fopen(b->m_storePath, "rb")) {
+            fclose(f);
+            return lua::returnErr(L, "bad save file");
+        }
+    }
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 } // namespace enjin2

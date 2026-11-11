@@ -38,12 +38,12 @@ end)
 
 ## Waiting by Frames
 
-`engine.async.wait_frames(n)` suspends the coroutine for exactly `n` frames. Use this when timing must be frame-precise rather than time-based (e.g., invincibility windows, hitbox active frames).
+`engine.async.waitFrames(n)` suspends the coroutine for exactly `n` frames. Use this when timing must be frame-precise rather than time-based (e.g., invincibility windows, hitbox active frames).
 
 ```lua
 engine.async.start(function()
     set_invincible(true)
-    engine.async.wait_frames(60)   -- invincible for 60 frames
+    engine.async.waitFrames(60)   -- invincible for 60 frames
     set_invincible(false)
 end)
 ```
@@ -74,7 +74,7 @@ engine.async.start(function()
     engine.async.wait(1.0)
 
     -- 3. flash for 30 frames
-    engine.async.wait_frames(30)
+    engine.async.waitFrames(30)
 
     -- 4. transition
     engine.state.switch("next_level")

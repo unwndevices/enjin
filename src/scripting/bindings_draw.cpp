@@ -262,9 +262,8 @@ int LuaBindings::lua_setColor(lua_State* L) {
         return 0;
     }
 
-    if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
-    }
+    // Not a colour (a non-number, 8-14) is a mistake: it raises (ADR-0030).
+    bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
 
     return 0;
 }
@@ -309,12 +308,10 @@ int LuaBindings::lua_getLineWidth(lua_State* L) {
 int LuaBindings::lua_point(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    if (lua_gettop(L) >= 2 && lua_isnumber(L, 1) && lua_isnumber(L, 2)) {
-        int16_t x = static_cast<int16_t>(lround(lua_tonumber(L, 1)));
-        int16_t y = static_cast<int16_t>(lround(lua_tonumber(L, 2)));
-
-        bindings->currentCanvas->setPixel(x, y, bindings->currentColor);
-    }
+    // Not a number is a mistake: it raises (ADR-0030).
+    int16_t x = static_cast<int16_t>(lround(luaL_checknumber(L, 1)));
+    int16_t y = static_cast<int16_t>(lround(luaL_checknumber(L, 2)));
+    bindings->currentCanvas->setPixel(x, y, bindings->currentColor);
 
     return 0;
 }
@@ -407,7 +404,7 @@ int LuaBindings::lua_rectangle(lua_State* L) {
         uint16_t height = static_cast<uint16_t>(lua_tointeger(L, startIdx + 3));
 
         if (isFillMode(mode)) {
-            bindings->currentCanvas->fillRect(x, y, width, height, bindings->currentColor);
+            bindings->fillRect(x, y, width, height);
         } else {
             strokeRect(*bindings->currentCanvas, x, y, width, height,
                        bindings->currentColor, bindings->lineWidth);
@@ -543,10 +540,10 @@ int LuaBindings::lua_print(lua_State* L) {
 int LuaBindings::lua_fastFillRect(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    int x = static_cast<int>(luaL_checknumber(L, 1));
-    int y = static_cast<int>(luaL_checknumber(L, 2));
-    int w = static_cast<int>(luaL_checknumber(L, 3));
-    int h = static_cast<int>(luaL_checknumber(L, 4));
+    int x = static_cast<int>(lua::checkFloat(L, 1));
+    int y = static_cast<int>(lua::checkFloat(L, 2));
+    int w = static_cast<int>(lua::checkFloat(L, 3));
+    int h = static_cast<int>(lua::checkFloat(L, 4));
     uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast bulk fill - bypass individual pixel calls
@@ -572,10 +569,10 @@ int LuaBindings::lua_fastFillRect(lua_State* L) {
 int LuaBindings::lua_fastDrawLine(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    int x1 = static_cast<int>(luaL_checknumber(L, 1));
-    int y1 = static_cast<int>(luaL_checknumber(L, 2));
-    int x2 = static_cast<int>(luaL_checknumber(L, 3));
-    int y2 = static_cast<int>(luaL_checknumber(L, 4));
+    int x1 = static_cast<int>(lua::checkFloat(L, 1));
+    int y1 = static_cast<int>(lua::checkFloat(L, 2));
+    int x2 = static_cast<int>(lua::checkFloat(L, 3));
+    int y2 = static_cast<int>(lua::checkFloat(L, 4));
     uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast Bresenham line algorithm

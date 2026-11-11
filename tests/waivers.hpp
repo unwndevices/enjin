@@ -98,6 +98,15 @@
 // and canvas.hpp includes palette.hpp; no drawing code changed, and the bench
 // sets every text colour explicitly, so the glcd sub-ranges are re-affirmed
 // unchanged. The text_renderer.hpp head pin stays stale (see above).
+//
+// Re-pin 2026-11-11 (Tomodachi #481): canvas.hpp base pin bumped to
+// 0x9b309bb96074ccb2 (was 0x33889c14b3245c21), text_renderer.hpp head pin to
+// 0x1be17c58598a4462 (was 0x25008f0e5f5a5650, stale since before #318) and
+// primitives.hpp to 0xd3cbba979cd8fed9 (was 0x7b4f2bcb50064a6b), all in
+// lockstep across the four entries. visual_parity_bench before the re-pin:
+// the only failures are the two glcd pairs, font == 3 alone, at max diff 80
+// and 1812, exactly the waived bounds, so the sub-ranges are re-affirmed
+// unchanged.
 
 #include <array>
 #include <cstddef>
@@ -197,27 +206,30 @@ namespace parity
     //     Exit question: border_stroke_test (solid/bevel/drop-shadow ring) and
     //     primitives_roundrect_test (edges/hollow/rounded-corner/r=0 square)
     //     pin the ratified span-walker.
+    //   * 2026-11-11: text_renderer.hpp's HEAD pin refreshed for the corner-cut
+    //     ink scope (9b2e6f7, Tomodachi ADR-0031), which reports ink and draws
+    //     no glyph differently.
     inline constexpr std::array<Waiver, 4> kWaivers{{
         {"text.drawChar", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
+         "canvas.hpp", 0x9b309bb96074ccb2ull,
+         "text_renderer.hpp", 0xbaa4f18ee96aa8c6ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.print", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 1812,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
+         "canvas.hpp", 0x9b309bb96074ccb2ull,
+         "text_renderer.hpp", 0xbaa4f18ee96aa8c6ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.println", WaiverStatus::Retired,
          "pair retired: HEAD '\\n' yAdvance ratified; no BASE call sites", nullptr, 0,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "text_renderer.hpp", 0x25008f0e5f5a5650ull,
+         "canvas.hpp", 0x9b309bb96074ccb2ull,
+         "text_renderer.hpp", 0xbaa4f18ee96aa8c6ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"geom.drawRoundRect", WaiverStatus::Retired,
          "pair retired: HEAD replaces the corner-arc annulus with the #39 "
          "span-walker border stroke; the annulus is deleted", nullptr, 0,
-         "canvas.hpp", 0x33889c14b3245c21ull,
-         "primitives.hpp", 0x7b4f2bcb50064a6bull,
+         "canvas.hpp", 0x9b309bb96074ccb2ull,
+         "primitives.hpp", 0xd3cbba979cd8fed9ull,
          "unwndevices/Tomodachi#39", "claude+ciro", "2026-09-07"},
     }};
 

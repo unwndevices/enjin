@@ -150,65 +150,13 @@ target_link_libraries(enjin2_ui PRIVATE enjin2_graphics)
 
 # Lua bindings
 if(ENJIN2_BUILD_LUA)
-    if(EMSCRIPTEN)
-        # LuaJIT does not support WebAssembly (no WASM architecture backend).
-        # Building Lua 5.4.8 from source for WebAssembly (LuaJIT is x86/ARM only)
-        message(STATUS "Building Lua 5.4.8 from source for WebAssembly (LuaJIT is x86/ARM only)")
-        include(FetchContent)
-        FetchContent_Declare(
-            lua54
-            URL https://www.lua.org/ftp/lua-5.4.8.tar.gz
-        )
-        FetchContent_MakeAvailable(lua54)
-
-        file(GLOB LUA54_SOURCES "${lua54_SOURCE_DIR}/src/l*.c")
-        # Exclude standalone interpreter (lua.c) and compiler (luac.c)
-        list(FILTER LUA54_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
-
-        add_library(lua54_wasm STATIC ${LUA54_SOURCES})
-        target_include_directories(lua54_wasm PUBLIC ${lua54_SOURCE_DIR}/src)
-
-        set(LUA_LIBRARIES lua54_wasm)
-        set(LUA_INCLUDE_DIRS ${lua54_SOURCE_DIR}/src)
-    elseif(ESP32)
-        # LuaJIT requires a native CPU architecture — use standard Lua 5.4.8 for ESP32 cross-compilation.
-        # Building Lua 5.4.8 from source for ESP32
-        message(STATUS "Building Lua 5.4.8 from source for ESP32")
-        include(FetchContent)
-        FetchContent_Declare(
-            lua54
-            URL https://www.lua.org/ftp/lua-5.4.8.tar.gz
-        )
-        FetchContent_MakeAvailable(lua54)
-
-        file(GLOB LUA54_SOURCES "${lua54_SOURCE_DIR}/src/l*.c")
-        list(FILTER LUA54_SOURCES EXCLUDE REGEX ".*/(lua|luac)\\.c$")
-
-        add_library(lua54_esp32 STATIC ${LUA54_SOURCES})
-        target_include_directories(lua54_esp32 PUBLIC ${lua54_SOURCE_DIR}/src)
-
-        set(LUA_LIBRARIES lua54_esp32)
-        set(LUA_INCLUDE_DIRS ${lua54_SOURCE_DIR}/src)
-    else()
-        # Desktop platforms - use system Lua
-        find_package(Lua QUIET)
-
-        # Provide clear error if Lua was requested but not found
-        # FindLua sets LUA_FOUND (all-caps); Lua_FOUND is the modern alias — check both
-        if(NOT LUA_FOUND AND NOT Lua_FOUND AND ENJIN2_BUILD_LUA)
-            message(FATAL_ERROR
-                "Lua was requested (ENJIN2_BUILD_LUA=ON) but could not be found.\n"
-                "Install Lua from https://lua.org/ or set ENJIN2_BUILD_LUA=OFF to build without Lua support.\n"
-                "Package managers:\n"
-                "  Debian/Ubuntu: apt-get install liblua5.4-dev\n"
-                "  macOS: brew install lua\n"
-            )
-        endif()
-
-        # FindLua sets LUA_INCLUDE_DIR (singular); normalise to LUA_INCLUDE_DIRS used below
-        set(LUA_INCLUDE_DIRS ${LUA_INCLUDE_DIR})
+    # One Lua for every host (Tomodachi #481): 5.4.8 from source, declared once
+    # in cmake/lua54.cmake. A parent project that already made the `lua54`
+    # target (libtomo's native build) is reused, so its tree builds Lua once.
+    if(NOT TARGET lua54)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/lua54.cmake)
     endif()
-    
+
     add_library(enjin2_lua STATIC)
     target_sources(enjin2_lua PRIVATE
         src/scripting/lua_engine.cpp
@@ -252,14 +200,12 @@ if(ENJIN2_BUILD_LUA)
     target_include_directories(enjin2_lua
         PRIVATE
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            ${LUA_INCLUDE_DIRS}
-        INTERFACE
-            ${LUA_INCLUDE_DIRS}
     )
+    # PUBLIC: a consumer of enjin2_lua includes lua.h and links the same Lua.
+    target_link_libraries(enjin2_lua PUBLIC lua54)
     target_link_libraries(enjin2_lua PRIVATE
         enjin2_graphics
         enjin2_ui
-        ${LUA_LIBRARIES}
     )
     
     # Platform-specific definitions
@@ -361,7 +307,7 @@ if(ENJIN2_BUILD_WASM)
         # executable so the linker sees the __em_js_* metadata.
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:src/scripting/wasm_storage.cpp>
     )
-    # Lua include dirs are propagated via enjin2_lua -> LUA_INCLUDE_DIRS (PUBLIC on lua54_wasm or luajit_embedded)
+    # Lua's include dir comes with enjin2_lua (it links lua54 PUBLIC).
     target_compile_definitions(enjin2_wasm PRIVATE
         $<$<BOOL:${ENJIN2_BUILD_LUA}>:ENJIN2_BUILD_LUA=1>
         ENJIN2_CANVAS_WIDTH=${ENJIN2_CANVAS_WIDTH}
@@ -430,7 +376,6 @@ if(ENJIN2_BUILD_SDL)
     )
     target_include_directories(enjin2_sdl PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<$<BOOL:${ENJIN2_BUILD_LUA}>:${LUA_INCLUDE_DIRS}>
     )
     target_link_libraries(enjin2_sdl PRIVATE
         enjin2_core
@@ -463,7 +408,6 @@ if(ENJIN2_BUILD_HEADLESS)
     )
     target_include_directories(enjin_run PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        ${LUA_INCLUDE_DIRS}
     )
     target_link_libraries(enjin_run PRIVATE
         enjin2_core

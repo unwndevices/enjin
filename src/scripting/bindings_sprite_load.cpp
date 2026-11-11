@@ -20,12 +20,14 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
     outAttrs.clear();
     loadedClips_[handle].clear();
     njnRefusal_ = "";
+    njnError_ = "";
 
     // Read the file with direct binary I/O (works on all platforms —
     // LuaFileSystem::readScriptFile only works under VCV_RACK or ESP32 defines).
     FILE* fp = fopen(path.c_str(), "rb");
     if (!fp) {
         printf("Failed to read .njn file: %s\n", path.c_str());
+        njnError_ = "file not found";
         return false;
     }
     fseek(fp, 0, SEEK_END);
@@ -34,6 +36,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
     if (fileSize <= 0) {
         fclose(fp);
         printf("Empty .njn file: %s\n", path.c_str());
+        njnError_ = "empty file";
         return false;
     }
     std::string fileContent(static_cast<size_t>(fileSize), '\0');
@@ -41,6 +44,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
     fclose(fp);
     if (bytesRead != static_cast<size_t>(fileSize)) {
         printf("Incomplete read of .njn file: %s\n", path.c_str());
+        njnError_ = "read failed";
         return false;
     }
 
@@ -58,11 +62,13 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
         NjnV2Reader reader;
         if (!reader.open(raw, rawSize)) {
             printf("Invalid or corrupt .njn v2 container: %s\n", path.c_str());
+            njnError_ = "not a valid .njn";
             return false;
         }
         if (!njn2DecodeMeta(reader.find(NJN2_CHUNK_META), cellW, cellH, cols, rows) ||
             cellW == 0 || cellH == 0 || cols == 0 || rows == 0) {
             printf(".njn v2 missing/invalid META chunk: %s\n", path.c_str());
+            njnError_ = "not a valid .njn";
             return false;
         }
         const NjnV2Chunk* pixl = reader.find(NJN2_CHUNK_PIXL);
@@ -70,6 +76,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
             static_cast<uint32_t>(cellW) * cellH * cols * rows;
         if (!pixl || pixl->size < expected) {
             printf(".njn v2 missing/short PIXL chunk: %s\n", path.c_str());
+            njnError_ = "not a valid .njn";
             return false;
         }
         srcPixels = pixl->data;
@@ -83,6 +90,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
         NjnHeader header;
         if (!parseNjnHeader(raw, rawSize, header)) {
             printf("Invalid or corrupt .njn sprite asset: %s\n", path.c_str());
+            njnError_ = "not a valid .njn";
             return false;
         }
         cellW = header.cellW;
@@ -97,6 +105,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
     const int offRole = njnFirstOffRoleIndex(srcPixels, pxSize);
     if (offRole >= 0) {
         njnRefusal_ = njnOffRoleMessage(offRole);
+        njnError_ = njnRefusal_;
         printf(".njn refused, %s: %s\n", njnRefusal_, path.c_str());
         ++spriteLoadFailures_;
         loadedClips_[handle].clear();
@@ -109,6 +118,7 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
         printf(".njn asset buffer full (needs %u bytes, %u free): %s\n",
                pxSize, static_cast<uint32_t>(sizeof(assetBuffer_)) - assetBufferUsed_,
                path.c_str());
+        njnError_ = "asset buffer full";
         ++spriteLoadFailures_;
         loadedClips_[handle].clear();
         outAttrs.clear();
@@ -142,15 +152,13 @@ bool LuaBindings::loadNjnAsset(const std::string& path, int handle,
     return true;
 }
 
-// engine.sprite.load(name) -> handle(0..15) or -1
+// engine.sprite.load(name) -> handle(0..15), or nil, err (ADR-0030)
 // Resolves path: assetPath_ + "/" + name + ".njn". Accepts v1 flat headers and
 // v2 typed-chunk containers (with CLIP + ATTR); pixels land in assetBuffer_.
 int LuaBindings::lua_loadSprite(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushinteger(L, -1); return 1; }
-
     const char* name = luaL_checkstring(L, 1);
-    if (!name) { lua_pushinteger(L, -1); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Find first inactive slot
     int handle = -1;
@@ -160,8 +168,7 @@ int LuaBindings::lua_loadSprite(lua_State* L) {
     if (handle < 0) {
         printf("Sprite pool is full (max %d slots)\n", LUA_SPRITE_POOL_SIZE);
         ++b->spriteLoadFailures_;
-        lua_pushinteger(L, -1);
-        return 1;
+        return lua::returnErr(L, "sprite slots full");
     }
 
     std::string path = b->assetPath_;
@@ -172,10 +179,7 @@ int LuaBindings::lua_loadSprite(lua_State* L) {
     path += ".njn";
 
     std::vector<TileAttr> attrs;  // sprite sheets ignore ATTR
-    if (!b->loadNjnAsset(path, handle, attrs)) {
-        lua_pushinteger(L, -1);
-        return 1;
-    }
+    if (!b->loadNjnAsset(path, handle, attrs)) return lua::returnErr(L, b->njnError_);
 
     // Initialize SpritePool animation state (loadNjnAsset filled the sheet).
     auto& s = b->spritePool[handle];
@@ -198,8 +202,10 @@ int LuaBindings::lua_freeSprite(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
 
-    int handle = static_cast<int>(luaL_checkinteger(L, 1));
-    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;
+    int handle = lua::checkInt(L, 1);
+    // A handle never loaded, or freed already, is a mistake (ADR-0030).
+    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active)
+        return luaL_argerror(L, 1, lua_pushfstring(L, "unknown sprite handle %d", handle));
 
     auto& s = b->spritePool[handle];
     auto& asset = b->loadedAssets_[handle];

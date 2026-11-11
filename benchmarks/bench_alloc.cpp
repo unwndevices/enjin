@@ -107,15 +107,16 @@ int main() {
     enjin2::LuaBindings bindings(&eng);
     bindings.registerAll();
 
-    // Pre-register engine.time.delta as a Lua registry reference for zero-alloc calling.
-    // Calling via lua_rawgeti + lua_call does NOT parse Lua source (no luaL_loadstring).
+    // Hold engine.time.delta in a ScriptRef for zero-alloc calling.
+    // Calling via push + lua_call does NOT parse Lua source (no luaL_loadstring).
     // executeString() allocates for chunk parsing — never use it inside an AllocGuard.
     lua_State* L = eng.getState();
     lua_getglobal(L, "engine");          // push engine table
     lua_getfield(L, -1, "time");         // push engine.time subtable
     lua_getfield(L, -1, "delta");        // push engine.time.delta C function
-    int deltaRef = luaL_ref(L, LUA_REGISTRYINDEX);  // store ref, pops delta
-    lua_pop(L, 2);                       // pop time, engine
+    enjin2::lua::ScriptRef delta;
+    delta.assign(L, -1);
+    lua_pop(L, 3);                       // pop delta, time, engine
 
     // Reset counter — setup allocations must not bleed into guarded sections
     g_alloc_count = 0;
@@ -162,7 +163,7 @@ int main() {
     // this test verifies the C++ binding code itself does not call operator new.
     {
         enjin2::AllocGuard g("lua binding: engine.time.delta call");
-        lua_rawgeti(L, LUA_REGISTRYINDEX, deltaRef);  // push C function (no alloc)
+        delta.push(L);                                 // push C function (no alloc)
         lua_call(L, 0, 1);                            // call with 0 args, 1 result
         ankerl::nanobench::doNotOptimizeAway(lua_tonumber(L, -1));
         lua_pop(L, 1);
@@ -172,7 +173,7 @@ int main() {
     // CLEANUP
     // =========================================================================
 
-    luaL_unref(L, LUA_REGISTRYINDEX, deltaRef);
+    delta.reset();
     eng.shutdown();
 
     fprintf(stdout, "[ALLOC-PASS] All hot-path allocation checks passed\n");

@@ -69,7 +69,12 @@ int main() {
         "        { frame=20, dur=100, event=5 },\n"
         "    }},\n"
         "  })\n"
-        "  played = spr:play('run')\n"
+        "  played = pcall(spr.play, spr, 'run')\n"   // raises on a clip it lacks (ADR-0030)
+        "  nope = pcall(spr.play, spr, 'nope')\n"
+        "  sprWrite = pcall(function() spr.hflipp = true end)\n"   // a key it does not write raises
+        "  selfWrite = pcall(function() self.speed = 3 end)\n"
+        "  selfLayer = pcall(function() self.layer = 0 end)\n"
+        "  unknownGet = pcall(self.get, self, 'C_Nope')\n"
         "  f0 = spr.frame\n"
         "  clipname = spr.clip\n"
         "  spr:setFrameForAngle(0, 0, 90)\n"   // scrub the active clip's frames
@@ -91,7 +96,12 @@ int main() {
     ASSERT(!script->hasErrors(), "no Lua errors after init");
 
     ASSERT(script->getScriptBool("added", false), "self:add('C_Sprite') returned a proxy");
-    ASSERT(script->getScriptBool("played", false), "spr:play('run') returned true");
+    ASSERT(script->getScriptBool("played", false), "spr:play('run') ran");
+    ASSERT(!script->getScriptBool("nope", true), "spr:play('nope') raises: no such clip");
+    ASSERT(!script->getScriptBool("sprWrite", true), "a C_Sprite key it does not write raises (ADR-0030)");
+    ASSERT(!script->getScriptBool("selfWrite", true), "self.speed = 3 raises: self writes x, y, visible, layer, active");
+    ASSERT(!script->getScriptBool("selfLayer", true), "self.layer = 0 raises: layers start at 1");
+    ASSERT(!script->getScriptBool("unknownGet", true), "self:get('C_Nope') raises: an unknown component");
     ASSERT(static_cast<int>(script->getScriptNumber("f0", -1)) == 10, "play resets to first frame cell 10");
     ASSERT(script->getScriptString("clipname", "") == "run", "spr.clip reads the playing clip name");
     ASSERT(script->getScriptBool("hf", false), "spr.hflip write+read round-trips");

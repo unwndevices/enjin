@@ -20,14 +20,11 @@
 
 namespace enjin2 {
 
-// ── Private helper: clear a single slot and unref its thread ─────────────────
+// ── Private helper: clear a single slot and release its thread ───────────────
 // Uses template so it works with the private CoroutineSlot type.
 template<typename Slot>
-static void clearSlot(Slot& slot, lua_State* L) {
-    if (L && slot.threadRef != LUA_NOREF) {
-        luaL_unref(L, LUA_REGISTRYINDEX, slot.threadRef);
-    }
-    slot.threadRef     = LUA_NOREF;
+static void clearSlot(Slot& slot, lua_State* /*L*/) {
+    slot.thread.reset();
     slot.waitRemaining = 0.0f;
     slot.waitFrames    = 0;          // Phase 57: QOL-02
     slot.waitTweenId   = 0;          // Phase 57: QOL-01
@@ -37,12 +34,12 @@ static void clearSlot(Slot& slot, lua_State* L) {
 
 // ── ASYNC-01: engine.async.start(fn) ────────────────────────────────────────
 // Creates a new coroutine from fn and schedules it for this frame.
-// Returns an integer ID on success, or nil if the pool is full (no Lua error).
+// Returns an integer ID on success, or nil, err if the pool is full (ADR-0030).
 int LuaBindings::lua_engine_async_start(lua_State* L) {
     luaL_checktype(L, 1, LUA_TFUNCTION);
 
     LuaBindings* b = LuaBindings::getBindings(L);
-    if (!b) { lua_pushnil(L); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Find a free slot via linear scan
     int freeIdx = -1;
@@ -52,11 +49,7 @@ int LuaBindings::lua_engine_async_start(lua_State* L) {
             break;
         }
     }
-    if (freeIdx < 0) {
-        // Pool full — return nil per plan spec (no Lua error)
-        lua_pushnil(L);
-        return 1;
-    }
+    if (freeIdx < 0) return lua::returnErr(L, "coroutine slots full");
 
     CoroutineSlot& slot = b->m_coroutinePool[freeIdx];
 
@@ -65,8 +58,9 @@ int LuaBindings::lua_engine_async_start(lua_State* L) {
     // Move the function from the calling thread into the new thread
     lua_pushvalue(L, 1);                        // [fn, thread, fn]
     lua_xmove(L, co, 1);                        // co=[fn]; L=[fn, thread]
-    // Anchor the thread in the registry to prevent GC
-    slot.threadRef     = luaL_ref(L, LUA_REGISTRYINDEX); // L=[fn]
+    // Anchor the thread to prevent GC
+    slot.thread.assign(L, -1);
+    lua_pop(L, 1);                              // L=[fn]
     slot.waitRemaining = 0.0f;   // runs immediately this tick
     slot.id            = ++b->m_nextCoroutineId;
     slot.active        = true;
@@ -96,10 +90,10 @@ int LuaBindings::lua_engine_async_wait(lua_State* L) {
     // Find the calling coroutine in the pool by comparing lua_State pointers
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
         CoroutineSlot& slot = b->m_coroutinePool[i];
-        if (!slot.active || slot.threadRef == LUA_NOREF) continue;
+        if (!slot.active || !slot.thread.valid()) continue;
 
         // Retrieve the thread from the registry and compare
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        slot.thread.push(L);
         lua_State* co = lua_tothread(L, -1);
         lua_pop(L, 1);
 
@@ -119,7 +113,7 @@ int LuaBindings::lua_engine_async_cancel(lua_State* L) {
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return 0;
 
-    int cancelId = static_cast<int>(luaL_checkinteger(L, 1));
+    int cancelId = lua::checkInt(L, 1);
     lua_State* mainL = b->engine->getState();
 
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
@@ -175,7 +169,7 @@ void LuaBindings::tickCoroutines(float dt) {
         }
 
         // Retrieve coroutine thread from registry
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        slot.thread.push(L);
         lua_State* co = lua_tothread(L, -1);
         lua_pop(L, 1);
 
@@ -221,31 +215,31 @@ void LuaBindings::clearCoroutines() {
     m_nextCoroutineId = 0;
 }
 
-// ── Phase 57 QOL-02: engine.async.wait_frames(n) ────────────────────────────
+// ── Phase 57 QOL-02: engine.async.waitFrames(n) ────────────────────────────
 // Yields the calling coroutine for exactly n frames before resuming.
-// wait_frames(0) and wait_frames(-1) return immediately without yielding.
+// waitFrames(0) and waitFrames(-1) return immediately without yielding.
 // Mutually exclusive with wait(seconds): setting waitFrames clears waitRemaining.
 int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
     if (!lua_isyieldable(L)) {
-        luaL_error(L, "engine.async.wait_frames() called outside a coroutine");
+        luaL_error(L, "engine.async.waitFrames() called outside a coroutine");
         return 0;
     }
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return lua_yield(L, 0);
 
-    int n = static_cast<int>(luaL_optinteger(L, 1, 0));
+    int n = lua::optInt(L, 1, 0);
     if (n <= 0) return 0;  // resume immediately — no yield
 
     // Find the calling coroutine in the pool and set waitFrames.
-    // Use n-1 because the tick where the coroutine calls wait_frames() counts as frame 1.
-    // Example: wait_frames(3) with tick counting:
-    //   Tick 1: coroutine starts, calls wait_frames(3) → waitFrames=2, yields
+    // Use n-1 because the tick where the coroutine calls waitFrames() counts as frame 1.
+    // Example: waitFrames(3) with tick counting:
+    //   Tick 1: coroutine starts, calls waitFrames(3) → waitFrames=2, yields
     //   Tick 2: waitFrames 2→1, skip
     //   Tick 3: waitFrames 1→0, resume (exactly 3 ticks from start)
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
         CoroutineSlot& slot = b->m_coroutinePool[i];
-        if (!slot.active || slot.threadRef == LUA_NOREF) continue;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        if (!slot.active || !slot.thread.valid()) continue;
+        slot.thread.push(L);
         lua_State* co = lua_tothread(L, -1);
         lua_pop(L, 1);
         if (co == L) {
@@ -260,21 +254,24 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
 // ── registerAsyncSubtable: engine.async.* (called from registerEngineTable) ──
 void LuaBindings::registerAsyncSubtable(lua_State* L) {
     static constexpr LuaApiEntry kAsync[] = {
-        luaFunction("start", lua_engine_async_start, "(fn:function) -> id:int?",
-                    "Run fn as a coroutine at the next coroutine tick; nil when all 8 slots are busy.",
+        luaFunction("start", lua_engine_async_start, "(fn:function) -> id:int?, err:string?",
+                    "Run fn as a coroutine at the next coroutine tick; nil, \"coroutine slots "
+                    "full\" when all 8 are taken.",
                     "fn: the function to run; its return values are discarded")
             .note("Coroutines tick after update(), so fn started in update() first runs later "
-                  "that frame. Errors are printed as [async error] and free the slot."),
+                  "that frame. An error fn raises is printed as [async error] and frees the "
+                  "slot.")
+            .returnsErr(),
         luaFunction("wait", lua_engine_async_wait, "(seconds:number?=0) -> nil",
                     "Suspend the calling coroutine for a number of seconds.",
                     "seconds: how long to wait; negative counts as 0")
             .note("Raises outside a coroutine."),
         luaFunction("cancel", lua_engine_async_cancel, "(id:int) -> nil",
-                    "Stop a coroutine; unknown ids are ignored.",
+                    "Stop a coroutine; an id that finished or was cancelled does nothing.",
                     "id: the id async.start returned"),
         luaFunction("cancelAll", lua_engine_async_cancelAll, "() -> nil",
                     "Stop every coroutine and restart the id counter."),
-        luaFunction("wait_frames", lua_engine_async_wait_frames, "(n:int?=0) -> nil",
+        luaFunction("waitFrames", lua_engine_async_wait_frames, "(n:int?=0) -> nil",
                     "Suspend the calling coroutine for n ticks, counting the current one.",
                     "n: ticks to wait; 0 or less returns without yielding")
             .note("Raises outside a coroutine."),

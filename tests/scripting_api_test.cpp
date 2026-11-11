@@ -4,7 +4,7 @@
  *
  * API-01: BTN.* global table removed
  * API-02: gfx.COLOR names the 8 Palette roles (0-7) and TRANSPARENT (15)
- * API-03: engine.graphics.* alias sub-table
+ * API-03: gfx.* alias sub-table
  * API-04: Float-to-int rounding in drawing primitives (lround)
  * API-05: text(str, x, y, scale) optional 4th scale param
  * API-06: textCentered(str, y) and textAligned(str, x, y, align)
@@ -232,23 +232,23 @@ static void test_engine_state() {
     ASSERT(r.success, "engine.state.switch('play') did not error");
     ASSERT((int)f.getNum("is_play") == 1, "engine.state.current() == 'play' after switch");
 
-    // on_enter callback fires on transition into "menu"
+    // onEnter callback fires on transition into "menu"
     r = f.exec(
         "enter_called = 0\n"
-        "engine.state.on_enter('menu', function() enter_called = 1 end)\n"
+        "engine.state.onEnter('menu', function() enter_called = 1 end)\n"
         "engine.state.switch('menu')\n"
     );
-    ASSERT(r.success, "on_enter + switch('menu') did not error");
-    ASSERT((int)f.getNum("enter_called") == 1, "on_enter callback fires on switch into 'menu'");
+    ASSERT(r.success, "onEnter + switch('menu') did not error");
+    ASSERT((int)f.getNum("enter_called") == 1, "onEnter callback fires on switch into 'menu'");
 
-    // on_exit callback fires when leaving state
+    // onExit callback fires when leaving state
     r = f.exec(
         "exit_called = 0\n"
-        "engine.state.on_exit('menu', function() exit_called = 1 end)\n"
+        "engine.state.onExit('menu', function() exit_called = 1 end)\n"
         "engine.state.switch('play')\n"  // leave 'menu' -> enter 'play'
     );
-    ASSERT(r.success, "on_exit + switch did not error");
-    ASSERT((int)f.getNum("exit_called") == 1, "on_exit callback fires when leaving 'menu'");
+    ASSERT(r.success, "onExit + switch did not error");
+    ASSERT((int)f.getNum("exit_called") == 1, "onExit callback fires when leaving 'menu'");
 }
 
 // ============================================================

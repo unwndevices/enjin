@@ -10,7 +10,7 @@ namespace enjin2 {
 int LuaBindings::lua_isButtonHeld(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
-    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    int btn = lua::checkInt(L, 1);
     lua_pushboolean(L, b->currentInput->held(btn) ? 1 : 0);
     return 1;
 }
@@ -18,7 +18,7 @@ int LuaBindings::lua_isButtonHeld(lua_State* L) {
 int LuaBindings::lua_isButtonJustPressed(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
-    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    int btn = lua::checkInt(L, 1);
     lua_pushboolean(L, b->currentInput->justPressed(btn) ? 1 : 0);
     return 1;
 }
@@ -26,7 +26,7 @@ int LuaBindings::lua_isButtonJustPressed(lua_State* L) {
 int LuaBindings::lua_isButtonJustReleased(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentInput) { lua_pushboolean(L, 0); return 1; }
-    int btn = static_cast<int>(luaL_checkinteger(L, 1));
+    int btn = lua::checkInt(L, 1);
     lua_pushboolean(L, b->currentInput->justReleased(btn) ? 1 : 0);
     return 1;
 }
@@ -34,7 +34,7 @@ int LuaBindings::lua_isButtonJustReleased(lua_State* L) {
 int LuaBindings::lua_getAxis(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentInput) { lua_pushnumber(L, 0.0); return 1; }
-    int axis = static_cast<int>(luaL_checkinteger(L, 1));
+    int axis = lua::checkInt(L, 1);
     float val = (axis >= 0 && axis < 8) ? b->currentInput->axes[axis] : 0.0f;
     lua_pushnumber(L, static_cast<lua_Number>(val));
     return 1;
@@ -44,27 +44,27 @@ int LuaBindings::lua_getAxis(lua_State* L) {
 // Sprite Pool Bindings (SPR-06)
 //==============================================================================
 
-// newSprite(data_lightuserdata, cell_w, cell_h, cols, rows) -> handle (0..15) or -1
+// newSprite(data_lightuserdata, cell_w, cell_h, cols, rows) -> handle (0..15)
 // data: lightuserdata pointing to const uint8_t* pixel array (caller owns lifetime)
-// Returns -1 if pool is full.
+// nil, "sprite slots full" when the pool is (ADR-0030).
 int LuaBindings::lua_newSprite(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushinteger(L, -1); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Find first inactive slot
     int handle = -1;
     for (int i = 0; i < LUA_SPRITE_POOL_SIZE; ++i) {
         if (!b->spritePool[i].active) { handle = i; break; }
     }
-    if (handle < 0) { lua_pushinteger(L, -1); return 1; }  // pool full
+    if (handle < 0) return lua::returnErr(L, "sprite slots full");
 
     // Initialize slot from Lua arguments
     auto& s = b->spritePool[handle];
     s.sheet.data  = static_cast<const uint8_t*>(lua_topointer(L, 1));  // lightuserdata
-    s.sheet.cellW = static_cast<uint8_t>(luaL_checkinteger(L, 2));
-    s.sheet.cellH = static_cast<uint8_t>(luaL_checkinteger(L, 3));
-    s.sheet.cols  = static_cast<uint8_t>(luaL_checkinteger(L, 4));
-    s.sheet.rows  = static_cast<uint8_t>(luaL_checkinteger(L, 5));
+    s.sheet.cellW = static_cast<uint8_t>(lua::checkInt(L, 2));
+    s.sheet.cellH = static_cast<uint8_t>(lua::checkInt(L, 3));
+    s.sheet.cols  = static_cast<uint8_t>(lua::checkInt(L, 4));
+    s.sheet.rows  = static_cast<uint8_t>(lua::checkInt(L, 5));
     s.fps      = 8.0f;
     s.accumSec = 0.0f;
     s.frame    = 0;
@@ -89,11 +89,13 @@ int LuaBindings::lua_drawSprite(lua_State* L) {
     if (!b || !b->currentCanvas) return 0;
     b->checkDrawLayer(L);
 
-    int handle = static_cast<int>(luaL_checkinteger(L, 1));
-    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;
+    int handle = lua::checkInt(L, 1);
+    // A handle never loaded, or freed, is a mistake (ADR-0030).
+    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active)
+        return luaL_argerror(L, 1, lua_pushfstring(L, "unknown sprite handle %d", handle));
 
-    int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t x = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t y = static_cast<int16_t>(lua::checkInt(L, 3));
 
     // Optional flip/rotation flags (default false)
     bool flipH    = lua_toboolean(L, 4) != 0;
@@ -183,13 +185,13 @@ int LuaBindings::lua_updateSprite(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
 
-    int handle = static_cast<int>(luaL_checkinteger(L, 1));
+    int handle = lua::checkInt(L, 1);
     if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;
 
     auto& s = b->spritePool[handle];
     if (!s.sheet.data || s.fps <= 0.0f || s.done) return 0;
 
-    float dt = static_cast<float>(luaL_checknumber(L, 2));
+    float dt = lua::checkFloat(L, 2);
     s.accumSec += dt;
     const float frameSec = 1.0f / s.fps;
 
@@ -241,14 +243,14 @@ int LuaBindings::lua_setFrame(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
 
-    int handle = static_cast<int>(luaL_checkinteger(L, 1));
+    int handle = lua::checkInt(L, 1);
     if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;
 
     auto& s = b->spritePool[handle];
     const uint16_t total = s.sheet.frameCount();
     if (total == 0) return 0;
 
-    int requestedFrame = static_cast<int>(luaL_checkinteger(L, 2));
+    int requestedFrame = lua::checkInt(L, 2);
     if (requestedFrame < 0) requestedFrame = 0;
     if (requestedFrame >= total) requestedFrame = total - 1;
 

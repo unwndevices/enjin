@@ -93,6 +93,49 @@ int LuaBindings::lua_isLayerVisible(lua_State* L) {
 // Text bindings
 //==============================================================================
 
+// One draw for gfx.text, gfx.textAligned and native callers (drawText): the
+// current face and colour at `scale`, x moved by the align.
+static void drawTextOn(LuaCanvas& canvas, const char* str, int16_t x, int16_t y, NumberAlign align,
+                       uint8_t color, uint8_t scale, const GFXfont* font) {
+    if (align == NumberAlign::Center) {
+        uint16_t tw = canvas.measureTextWidth(str, scale, font);
+        x = static_cast<int16_t>(x - static_cast<int16_t>(tw / 2));
+    } else if (align == NumberAlign::Right) {
+        uint16_t tw = canvas.measureTextWidth(str, scale, font);
+        x = static_cast<int16_t>(x - static_cast<int16_t>(tw));
+    }
+    // "left" = no adjustment
+    canvas.drawText(str, x, y, color, scale, font);
+}
+
+void LuaBindings::drawText(const char* str, int16_t x, int16_t y, NumberAlign align) {
+    if (!currentCanvas || !str) return;
+    drawTextOn(*currentCanvas, str, x, y, align, currentColor, currentTextSize, currentFont);
+}
+
+void LuaBindings::fillRect(int16_t x, int16_t y, uint16_t w, uint16_t h) {
+    if (currentCanvas) currentCanvas->fillRect(x, y, w, h, currentColor);
+}
+
+bool LuaBindings::selectFont(const char* name) {
+    if (!name) return false;
+    if (strcmp(name, "default") == 0) {
+        currentFont = nullptr;
+        strncpy(currentFontName, "default", 31);
+        currentFontName[31] = '\0';
+        return true;
+    }
+    for (uint8_t i = 0; i < fontCount; ++i) {
+        if (strcmp(fontRegistry[i].name, name) == 0) {
+            currentFont = fontRegistry[i].font;
+            strncpy(currentFontName, name, 31);
+            currentFontName[31] = '\0';
+            return true;
+        }
+    }
+    return false;
+}
+
 int LuaBindings::lua_text(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b || !b->currentCanvas) return 0;
@@ -102,12 +145,13 @@ int LuaBindings::lua_text(lua_State* L) {
     lua_Integer y = luaL_checkinteger(L, 3);
     // Optional 4th arg: per-call scale override — does NOT mutate currentTextSize
     uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 4 && lua_isnumber(L, 4)) {
-        int s = static_cast<int>(lua_tointeger(L, 4));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    if (!lua_isnoneornil(L, 4)) {   // off 1..255 raises (ADR-0030)
+        const int s = lua::checkInt(L, 4);
+        luaL_argcheck(L, s > 0 && s <= 255, 4, "scale is 1..255");
+        scale = static_cast<uint8_t>(s);
     }
-    b->currentCanvas->drawText(str, static_cast<int16_t>(x), static_cast<int16_t>(y),
-                              b->currentColor, scale, b->currentFont);
+    drawTextOn(*b->currentCanvas, str, static_cast<int16_t>(x), static_cast<int16_t>(y),
+               NumberAlign::Left, b->currentColor, scale, b->currentFont);
     return 0;
 }
 
@@ -116,11 +160,12 @@ int LuaBindings::lua_textCentered(lua_State* L) {
     if (!b || !b->currentCanvas) return 0;
     b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
-    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t y = static_cast<int16_t>(lua::checkInt(L, 2));
     uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 3 && lua_isnumber(L, 3)) {
-        int s = static_cast<int>(lua_tointeger(L, 3));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    if (!lua_isnoneornil(L, 3)) {   // off 1..255 raises (ADR-0030)
+        const int s = lua::checkInt(L, 3);
+        luaL_argcheck(L, s > 0 && s <= 255, 3, "scale is 1..255");
+        scale = static_cast<uint8_t>(s);
     }
     uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
     int16_t x = static_cast<int16_t>(((int)b->currentCanvas->getWidth() - (int)tw) / 2);
@@ -133,23 +178,18 @@ int LuaBindings::lua_textAligned(lua_State* L) {
     if (!b || !b->currentCanvas) return 0;
     b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
-    int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 3));
-    const int align = nameIndex(luaL_optstring(L, 4, "left"), kNumberAlignNames);
+    int16_t x = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t y = static_cast<int16_t>(lua::checkInt(L, 3));
+    // An unknown align name or a scale off 1..255 is a mistake: it raises (ADR-0030).
+    const int align = lua::optName(L, 4, kNumberAlignNames, "align", static_cast<int>(NumberAlign::Left));
     uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 5 && lua_isnumber(L, 5)) {
-        int s = static_cast<int>(lua_tointeger(L, 5));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    if (!lua_isnoneornil(L, 5)) {
+        const int s = lua::checkInt(L, 5);
+        luaL_argcheck(L, s > 0 && s <= 255, 5, "scale is 1..255");
+        scale = static_cast<uint8_t>(s);
     }
-    if (align == static_cast<int>(NumberAlign::Center)) {
-        uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
-        x = static_cast<int16_t>(x - static_cast<int16_t>(tw / 2));
-    } else if (align == static_cast<int>(NumberAlign::Right)) {
-        uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
-        x = static_cast<int16_t>(x - static_cast<int16_t>(tw));
-    }
-    // "left" and unknown names = no adjustment
-    b->currentCanvas->drawText(str, x, y, b->currentColor, scale, b->currentFont);
+    drawTextOn(*b->currentCanvas, str, x, y, static_cast<NumberAlign>(align), b->currentColor,
+               scale, b->currentFont);
     return 0;
 }
 
@@ -170,10 +210,9 @@ int LuaBindings::lua_textWrapped(lua_State* L) {
 int LuaBindings::lua_setTextSize(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
-    if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        int s = static_cast<int>(lua_tointeger(L, 1));
-        b->currentTextSize = (s > 0 && s <= 255) ? static_cast<uint8_t>(s) : 1;
-    }
+    const int s = lua::checkInt(L, 1);
+    luaL_argcheck(L, s > 0 && s <= 255, 1, "size is 1..255");   // a mistake raises (ADR-0030)
+    b->currentTextSize = static_cast<uint8_t>(s);
     return 0;
 }
 
@@ -188,22 +227,9 @@ int LuaBindings::lua_setFont(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
     const char* name = luaL_checkstring(L, 1);
-    if (strcmp(name, "default") == 0) {
-        b->currentFont = nullptr;
-        strncpy(b->currentFontName, "default", 31);
-        b->currentFontName[31] = '\0';
-        return 0;
-    }
-    for (uint8_t i = 0; i < b->fontCount; ++i) {
-        if (strcmp(b->fontRegistry[i].name, name) == 0) {
-            b->currentFont = b->fontRegistry[i].font;
-            strncpy(b->currentFontName, name, 31);
-            b->currentFontName[31] = '\0';
-            return 0;
-        }
-    }
-    // Unknown font name: keep current
-    return 0;
+    if (b->selectFont(name)) return 0;
+    // A font no host registered is a mistake: it raises (ADR-0030).
+    return luaL_argerror(L, 1, lua_pushfstring(L, "unknown font '%s'", name));
 }
 
 int LuaBindings::lua_getFont(lua_State* L) {

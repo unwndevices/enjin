@@ -88,6 +88,22 @@ constexpr LuaApiEnum luaApiEnum(const char* name, const char* const (&values)[N]
     return LuaApiEnum{name, values, N};
 }
 
+/**
+ * @brief How a function reports a failure (ADR-0030). One of two:
+ *
+ * - Raises: only a programming mistake fails it (a wrong type, an unknown
+ *   enum, an out-of-range argument, the wrong lifecycle phase), and that
+ *   raises. The default.
+ * - NilErr: the world can say no (a file, the card, a pool, the network, a
+ *   full slot table): it returns nil, err, `err` a short lower-case message.
+ *   Its signature's results end in `err:string?` after an optional first
+ *   result. Mistakes still raise.
+ *
+ * Printing and returning nothing, -1, 0 or false is not a failure report:
+ * validateLuaApiModule() fails an entry whose text says so.
+ */
+enum class LuaApiFailure : uint8_t { Raises, NilErr };
+
 struct LuaApiModule;
 
 /** @brief One registered (or, for Lifecycle, documented) name. */
@@ -103,6 +119,14 @@ struct LuaApiEntry {
     const char*         hostNote = nullptr;   ///< Optional free text (host differences, caveats)
     const LuaApiEnum*   enums = nullptr;      ///< Named enums the signature refers to
     size_t              enumCount = 0;
+    LuaApiFailure       failure = LuaApiFailure::Raises;  ///< Function; see LuaApiFailure
+
+    /// The world can say no: this function returns nil, err (ADR-0030).
+    constexpr LuaApiEntry returnsErr() const {
+        LuaApiEntry e = *this;
+        e.failure = LuaApiFailure::NilErr;
+        return e;
+    }
 
     /// Attach a host note.
     constexpr LuaApiEntry note(const char* text) const {
@@ -174,29 +198,6 @@ constexpr LuaApiEntry luaLifecycle(const char* name, const char* signature,
     return e;
 }
 
-namespace detail {
-constexpr bool luaApiNameEquals(const char* a, const char* b) {
-    while (*a != '\0' && *a == *b) { ++a; ++b; }
-    return *a == *b;
-}
-// Deliberately not constexpr: reaching it while initialising a constexpr
-// array is a compile error, which is how a misspelt alias is reported.
-inline LuaApiEntry luaApiAliasNotFound() { return LuaApiEntry{}; }
-} // namespace detail
-
-/// The entry named `name` in `entries`, for a table that re-exports functions
-/// documented elsewhere (engine.graphics = the gfx drawing calls): the alias
-/// and the original are one descriptor, so they cannot drift. Use it to
-/// initialise a constexpr array, where a name missing from `entries` fails to
-/// compile.
-template <size_t N>
-constexpr LuaApiEntry luaApiAlias(const LuaApiEntry (&entries)[N], const char* name) {
-    for (size_t i = 0; i < N; ++i) {
-        if (detail::luaApiNameEquals(entries[i].name, name)) return entries[i];
-    }
-    return detail::luaApiAliasNotFound();
-}
-
 /** @brief Where a module's entries live once registered. */
 enum class LuaApiScope : uint8_t {
     Table,      ///< A table at `path` ("gfx", "engine.tween", "gfx.COLOR")
@@ -205,9 +206,11 @@ enum class LuaApiScope : uint8_t {
     Metatable,  ///< Metamethods of userdata type `path` (__add, __index, ...)
 };
 
-/// Lowercase names of the kinds and scopes ("function", "globals", ...).
+/// Lowercase names of the kinds and scopes ("function", "globals", ...), and
+/// the failure modes ("raises", "nilErr").
 const char* luaApiKindName(LuaApiKind kind);
 const char* luaApiScopeName(LuaApiScope scope);
+const char* luaApiFailureName(LuaApiFailure failure);
 
 /** @brief A descriptor array plus where it is registered. */
 struct LuaApiModule {
@@ -294,7 +297,10 @@ std::vector<LuaApiTableView> luaApiView(lua_State* L);
  *   constant its value, so a stale merge is reported too;
  * - a described Table/Globals name, or a stdlib name, that a script cannot
  *   reach is reported;
- * - every registered module must pass validateLuaApiModule (signatures parse).
+ * - every registered module must pass validateLuaApiModule (signatures parse,
+ *   ADR-0030's names and failure modes);
+ * - one job has one home (ADR-0030): no table engine.X beside a global table X,
+ *   and no C function described under two names.
  * Returns one line per problem; empty = the API reference is exactly the VM.
  */
 std::vector<std::string> luaApiCensus(lua_State* L);
@@ -339,8 +345,17 @@ std::vector<std::pair<std::string, std::string>> luaApiArgLines(const LuaApiEntr
  *
  * Every Function/Lifecycle signature parses; its argument lines name exactly
  * its distinct parameters, in order; every lowercase type is a builtin and
- * every enum the entry declares is non-empty; Table entries recurse. Returns
- * false with one line per problem in `errors`.
+ * every enum the entry declares is non-empty; Table entries recurse. And
+ * ADR-0030: every name (the module path's parts, entries, parameters,
+ * results) is camelCase, no '_' (a constant, or a table of constants, may be
+ * UPPER_SNAKE; a metamethod is __name; a lone '_' is a placeholder
+ * parameter); a NilErr entry's results end in `err:string?`; a Raises entry
+ * returns no err. The failure text is a whitelist of the two forms: every
+ * clause of an entry's text that speaks of a failure condition (unknown,
+ * invalid, full, missing, printed, ignored, ...) says it raises, or (on a
+ * NilErr entry) that it returns `nil, "…"`; "nil for an unknown id", "false
+ * when", "-1 on failure", "keeps the current one and logs" fail. Returns false
+ * with one line per problem in `errors`.
  */
 bool validateLuaApiModule(const LuaApiModule& module, std::string* errors = nullptr);
 

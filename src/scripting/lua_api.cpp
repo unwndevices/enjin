@@ -211,6 +211,14 @@ const char* luaApiScopeName(LuaApiScope scope) {
     return "table";
 }
 
+const char* luaApiFailureName(LuaApiFailure failure) {
+    switch (failure) {
+        case LuaApiFailure::Raises: return "raises";
+        case LuaApiFailure::NilErr: return "nilErr";
+    }
+    return "?";
+}
+
 std::vector<const LuaApiModule*> luaApiModules(lua_State* L) {
     std::vector<const LuaApiModule*> modules;
     lua_getfield(L, LUA_REGISTRYINDEX, kApiRegistryKey);
@@ -403,6 +411,63 @@ std::vector<std::string> luaApiCensus(lua_State* L) {
         if (lua_isnil(L, -1))
             problems.push_back(std::string("stdlib ") + e.name + " is listed but not reachable");
         lua_settop(L, top);
+    }
+
+    // One job, one home (ADR-0030): engine.* is enjin's, so no engine.X beside
+    // a global X; and no C function described under two names (an alias).
+    constexpr char kEngine[] = "engine.";
+    for (const auto& t : view) {
+        if (t.scope != LuaApiScope::Table || t.path.rfind(kEngine, 0) != 0) continue;
+        const std::string leaf = t.path.substr(sizeof(kEngine) - 1);
+        if (findView(view, LuaApiScope::Table, leaf))
+            problems.push_back(t.path + " and " + leaf + " hold one job: engine.* is enjin's, a "
+                               "product table is a global");
+    }
+    std::vector<std::pair<lua_CFunction, std::string>> homes;
+    for (const auto& t : view) {
+        if (t.scope != LuaApiScope::Table && t.scope != LuaApiScope::Globals) continue;
+        for (const LuaApiEntry* e : t.entries) {
+            if (e->kind != LuaApiKind::Function || !e->func) continue;
+            const std::string here = joinPath(t.path, e->name);
+            for (const auto& [func, there] : homes) {
+                if (func != e->func) continue;
+                const bool first = there < here;
+                problems.push_back((first ? there : here) + " and " + (first ? here : there) +
+                                   " are one function in two homes");
+            }
+            homes.emplace_back(e->func, here);
+        }
+    }
+    // One reading in two tables (input.tilt beside sensor.tilt): a reading
+    // takes nothing and returns something, and two of them under one name with
+    // one signature in two tables read one thing twice. A verb on a handle
+    // (tween.cancel(id) beside async.cancel(id)) is each table's own job, so
+    // only readings are compared. Methods are a type's own.
+    const auto isReading = [](const LuaApiEntry& e) {
+        if (e.kind != LuaApiKind::Function || !e.func || !e.signature) return false;
+        if (std::strncmp(e.signature, "()", 2) != 0) return false;
+        const char* arrow = std::strstr(e.signature, "->");
+        if (!arrow) return false;
+        const char* result = arrow + 2;
+        while (*result == ' ') ++result;
+        return *result && std::strcmp(result, "nil") != 0;
+    };
+    std::vector<std::pair<const LuaApiEntry*, std::string>> readings;
+    for (const auto& t : view) {
+        if (t.scope != LuaApiScope::Table) continue;
+        for (const LuaApiEntry* e : t.entries) {
+            if (!isReading(*e)) continue;
+            const std::string here = joinPath(t.path, e->name);
+            for (const auto& [other, there] : readings) {
+                if (other->func == e->func || std::strcmp(other->name, e->name) != 0 ||
+                    std::strcmp(other->signature, e->signature) != 0)
+                    continue;
+                const bool first = there < here;
+                problems.push_back((first ? there : here) + " and " + (first ? here : there) +
+                                   " are one reading in two tables (one name, one signature)");
+            }
+            readings.emplace_back(e, here);
+        }
     }
 
     for (const LuaApiModule* m : luaApiModules(L)) {

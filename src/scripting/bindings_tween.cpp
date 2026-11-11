@@ -23,19 +23,11 @@
 
 namespace enjin2 {
 
-// ── Private helper: clear a single tween slot and unref target + done_cb ──────
+// ── Private helper: clear a single tween slot, releasing target + done_cb ─────
 template<typename Slot>
-static void clearTweenSlot(Slot& slot, lua_State* L) {
-    if (L) {
-        if (slot.targetRef != LUA_NOREF) {
-            luaL_unref(L, LUA_REGISTRYINDEX, slot.targetRef);
-        }
-        if (slot.doneCbRef != LUA_NOREF) {
-            luaL_unref(L, LUA_REGISTRYINDEX, slot.doneCbRef);
-        }
-    }
-    slot.targetRef  = LUA_NOREF;
-    slot.doneCbRef  = LUA_NOREF;
+static void clearTweenSlot(Slot& slot, lua_State* /*L*/) {
+    slot.target.reset();
+    slot.doneCb.reset();
     slot.propCount  = 0;
     slot.elapsed    = 0.0f;
     slot.id         = 0;
@@ -79,12 +71,13 @@ static inline float tweenEase(float t, uint8_t easingCode) {
 int LuaBindings::lua_engine_tween_to(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);   // target table
     luaL_checktype(L, 2, LUA_TTABLE);   // props table
-    float duration = static_cast<float>(luaL_checknumber(L, 3));  // duration in seconds
-    const char* easingStr = luaL_optstring(L, 4, "linear");        // easing name
+    float duration = lua::checkFloat(L, 3);  // duration in seconds
+    // An unknown easing name is a mistake: it raises (ADR-0030).
+    const int easingIdx = lua::optName(L, 4, kTweenEasingNames, "easing", 0);
     // arg 5: optional done callback (lua_isfunction check below)
 
     LuaBindings* b = LuaBindings::getBindings(L);
-    if (!b) { lua_pushnil(L); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Find a free slot via linear scan
     int freeIdx = -1;
@@ -94,36 +87,25 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
             break;
         }
     }
-    if (freeIdx < 0) {
-        // Pool full — return nil per spec (no Lua error)
-        lua_pushnil(L);
-        return 1;
-    }
+    if (freeIdx < 0) return lua::returnErr(L, "tween slots full");
 
     TweenSlot& slot = b->m_tweenPool[freeIdx];
 
     // Clamp duration: allow 0 for instant completion on next tick
     if (duration < 0.0f) duration = 0.0f;
 
-    // Anchor target table in registry
-    lua_pushvalue(L, 1);
-    slot.targetRef = luaL_ref(L, LUA_REGISTRYINDEX);
-
-    // Anchor done_cb if provided
+    // Anchor the target table, and done_cb if provided
+    slot.target.assign(L, 1);
     if (lua_isfunction(L, 5)) {
-        lua_pushvalue(L, 5);
-        slot.doneCbRef = luaL_ref(L, LUA_REGISTRYINDEX);
+        slot.doneCb.assign(L, 5);
     } else {
-        slot.doneCbRef = LUA_NOREF;
+        slot.doneCb.reset();
     }
 
-    // Parse easing string; "linear" and unknown strings default to Linear
     static_assert(static_cast<size_t>(TweenEasing::EaseOutBack) + 1 ==
                       sizeof(kTweenEasingNames) / sizeof(kTweenEasingNames[0]),
                   "kTweenEasingNames is indexed by TweenEasing");
-    const int easingIdx = nameIndex(easingStr, kTweenEasingNames);
-    const TweenEasing easing =
-        easingIdx < 0 ? TweenEasing::Linear : static_cast<TweenEasing>(easingIdx);
+    const TweenEasing easing = static_cast<TweenEasing>(easingIdx);
 
     // Iterate props table; sample start values from target table
     int propCount = 0;
@@ -146,7 +128,7 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
             slot.keys[propCount][TWEEN_KEY_MAX - 1] = '\0';
 
             // Sample start value from target table
-            lua_rawgeti(L, LUA_REGISTRYINDEX, slot.targetRef);  // push target
+            slot.target.push(L);                                // push target
             lua_getfield(L, -1, key);                            // push target[key]
             float startVal = lua_isnumber(L, -1) ? static_cast<float>(lua_tonumber(L, -1)) : 0.0f;
             lua_pop(L, 2);  // pop target[key] + target
@@ -177,7 +159,7 @@ int LuaBindings::lua_engine_tween_cancel(lua_State* L) {
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return 0;
 
-    int cancelId = static_cast<int>(luaL_checkinteger(L, 1));
+    int cancelId = lua::checkInt(L, 1);
     lua_State* mainL = b->engine->getState();
 
     for (int i = 0; i < TWEEN_POOL_SIZE; ++i) {
@@ -229,7 +211,7 @@ void LuaBindings::tickTweens(float dt) {
         float easedT = tweenEase(t, static_cast<uint8_t>(slot.easing));
 
         // Push target table from registry
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.targetRef);
+        slot.target.push(L);
         if (!lua_istable(L, -1)) {
             lua_pop(L, 1);
             clearTweenSlot(slot, L);
@@ -256,7 +238,7 @@ void LuaBindings::tickTweens(float dt) {
                 if (!cslot.active || cslot.waitTweenId != completedId) continue;
                 cslot.waitTweenId = 0;
 
-                lua_rawgeti(L, LUA_REGISTRYINDEX, cslot.threadRef);
+                cslot.thread.push(L);
                 lua_State* co = lua_tothread(L, -1);
                 lua_pop(L, 1);
                 if (!co) continue;
@@ -267,10 +249,7 @@ void LuaBindings::tickTweens(float dt) {
                 if (status != LUA_YIELD) {
                     // Coroutine finished (LUA_OK) or errored — inline clear
                     // (clearSlot is static in bindings_async.cpp — not visible here)
-                    if (cslot.threadRef != LUA_NOREF) {
-                        luaL_unref(L, LUA_REGISTRYINDEX, cslot.threadRef);
-                    }
-                    cslot.threadRef     = LUA_NOREF;
+                    cslot.thread.reset();
                     cslot.waitRemaining = 0.0f;
                     cslot.waitFrames    = 0;
                     cslot.waitTweenId   = 0;
@@ -285,8 +264,8 @@ void LuaBindings::tickTweens(float dt) {
             }
 
             // Fire done_cb if provided
-            if (slot.doneCbRef != LUA_NOREF) {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, slot.doneCbRef);
+            if (slot.doneCb.valid()) {
+                slot.doneCb.push(L);
                 if (lua_isfunction(L, -1)) {
                     if (lua_pcall(L, 0, 0, 0) != 0) {
                         const char* err = lua_tostring(L, -1);
@@ -327,7 +306,7 @@ int LuaBindings::lua_engine_tween_await(lua_State* L) {
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return lua_yield(L, 0);
 
-    int tweenId = static_cast<int>(luaL_checkinteger(L, 1));
+    int tweenId = lua::checkInt(L, 1);
 
     // Check if tween is still active — if not, resume immediately (expired/invalid ID)
     bool found = false;
@@ -342,8 +321,8 @@ int LuaBindings::lua_engine_tween_await(lua_State* L) {
     // Find calling coroutine slot and set waitTweenId
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
         CoroutineSlot& slot = b->m_coroutinePool[i];
-        if (!slot.active || slot.threadRef == LUA_NOREF) continue;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        if (!slot.active || !slot.thread.valid()) continue;
+        slot.thread.push(L);
         lua_State* co = lua_tothread(L, -1);
         lua_pop(L, 1);
         if (co == L) {
@@ -354,15 +333,12 @@ int LuaBindings::lua_engine_tween_await(lua_State* L) {
     return lua_yield(L, 0);
 }
 
-// ── Private helper: clear a single spring slot and unref its target ───────────
+// ── Private helper: clear a single spring slot, releasing its target ─────────
 // Templated like clearTweenSlot so the private nested SpringSlot type is deduced
 // (a free function cannot name LuaBindings::SpringSlot directly).
 template<typename Slot>
-static void clearSpringSlot(Slot& slot, lua_State* L) {
-    if (L && slot.targetRef != LUA_NOREF) {
-        luaL_unref(L, LUA_REGISTRYINDEX, slot.targetRef);
-    }
-    slot.targetRef = LUA_NOREF;
+static void clearSpringSlot(Slot& slot, lua_State* /*L*/) {
+    slot.target.reset();
     slot.key[0]    = '\0';
     slot.spring    = Spring{};
     slot.id        = 0;
@@ -384,11 +360,11 @@ static void clearSpringSlot(Slot& slot, lua_State* L) {
 int LuaBindings::lua_engine_tween_spring(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);                       // target table
     const char* key = luaL_checkstring(L, 2);               // field name
-    float goal = static_cast<float>(luaL_checknumber(L, 3)); // spring target
+    float goal = lua::checkFloat(L, 3); // spring target
     // arg 4: optional { duration, bounce } table
 
     LuaBindings* b = LuaBindings::getBindings(L);
-    if (!b) { lua_pushnil(L); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Resolve (duration, bounce): the caller's table wins, else the pop preset.
     float durationS = springpreset::Pop.durationS;
@@ -407,7 +383,7 @@ int LuaBindings::lua_engine_tween_spring(lua_State* L) {
     for (int i = 0; i < SPRING_POOL_SIZE; ++i) {
         SpringSlot& slot = b->m_springPool[i];
         if (!slot.active || strcmp(slot.key, key) != 0) continue;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.targetRef); // push stored target
+        slot.target.push(L); // push stored target
         bool sameTable = lua_rawequal(L, 1, -1);
         lua_pop(L, 1);
         if (!sameTable) continue;
@@ -423,7 +399,7 @@ int LuaBindings::lua_engine_tween_spring(lua_State* L) {
     for (int i = 0; i < SPRING_POOL_SIZE; ++i) {
         if (!b->m_springPool[i].active) { freeIdx = i; break; }
     }
-    if (freeIdx < 0) { lua_pushnil(L); return 1; } // pool full — nil per spec
+    if (freeIdx < 0) return lua::returnErr(L, "spring slots full");
 
     SpringSlot& slot = b->m_springPool[freeIdx];
 
@@ -432,9 +408,8 @@ int LuaBindings::lua_engine_tween_spring(lua_State* L) {
     float start = lua_isnumber(L, -1) ? static_cast<float>(lua_tonumber(L, -1)) : 0.0f;
     lua_pop(L, 1);
 
-    // Anchor the target table in the registry.
-    lua_pushvalue(L, 1);
-    slot.targetRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    // Anchor the target table.
+    slot.target.assign(L, 1);
 
     strncpy(slot.key, key, TWEEN_KEY_MAX - 1);
     slot.key[TWEEN_KEY_MAX - 1] = '\0';
@@ -464,7 +439,7 @@ void LuaBindings::tickSprings(float dt) {
         SpringSlot& slot = m_springPool[i];
         if (!slot.active) continue;
 
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.targetRef);
+        slot.target.push(L);
         if (!lua_istable(L, -1)) {           // target GC'd or replaced — drop it
             lua_pop(L, 1);
             clearSpringSlot(slot, L);
@@ -499,18 +474,21 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
     static constexpr LuaApiEntry kTween[] = {
         luaFunction("to", lua_engine_tween_to,
                     "(target:table, props:table, duration:number, easing:Easing?=linear, "
-                    "done:function?) -> id:int?",
-                    "Animate numeric fields of a table to new values; nil when all 8 slots are busy.",
+                    "done:function?) -> id:int?, err:string?",
+                    "Animate numeric fields of a table to new values; nil, \"tween slots full\" "
+                    "when all 8 are taken.",
                     "target: the plain Lua table to animate (userdata is rejected)\n"
                     "props: field name -> end value; at most 4 string-keyed numbers are used\n"
                     "duration: seconds; a negative value finishes on the next tick\n"
-                    "easing: curve name; an unknown name falls back to linear\n"
+                    "easing: curve name (default linear); an unknown name raises\n"
                     "done: called (under pcall) when the tween finishes")
             .withEnum(kEasing)
-            .note("Start values are sampled now (a missing field starts at 0). Written values "
-                  "are floats. Cleared on reload and on a scene change."),
+            .note("Start values are sampled now (a field the target has not set starts at 0). Written values "
+                  "are floats. Cleared on reload and on a scene change.")
+            .returnsErr(),
         luaFunction("cancel", lua_engine_tween_cancel, "(id:int) -> nil",
-                    "Stop a tween where it is, without calling done; unknown ids are ignored.",
+                    "Stop a tween where it is, without calling done; an id that finished or was "
+                    "cancelled does nothing.",
                     "id: the id tween.to returned (springs are not cancelled here)"),
         luaFunction("cancelAll", lua_engine_tween_cancelAll, "() -> nil",
                     "Stop every tween and spring and restart the id counter."),
@@ -519,15 +497,17 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
                     "id: the id tween.to returned (spring ids are not awaitable)")
             .note("Raises outside a coroutine; call it from engine.async.start."),
         luaFunction("spring", lua_engine_tween_spring,
-                    "(target:table, key:string, goal:number, params:table?) -> id:int?",
+                    "(target:table, key:string, goal:number, params:table?) -> "
+                    "id:int?, err:string?",
                     "Spring one numeric field toward goal; a running spring on the same field is retargeted.",
                     "target: the plain Lua table holding the field\n"
                     "key: the field name\n"
                     "goal: the value to settle on\n"
                     "params: {duration = 0.34, bounce = 0.55} overrides (the Pop preset)")
             .note("Tuned for pixel-scale values: it settles within 0.5 and snaps exactly onto "
-                  "goal. Retargeting keeps the velocity and returns the existing id; nil when "
-                  "all 8 spring slots are busy."),
+                  "goal. Retargeting keeps the velocity and returns the existing id; nil, "
+                  "\"spring slots full\" when all 8 are taken.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kTweenModule = luaApiModule(
         LuaApiScope::Table, "engine.tween",

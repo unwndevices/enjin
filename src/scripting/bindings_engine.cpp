@@ -49,16 +49,23 @@ void LuaBindings::registerEngineTable() {
         luaFunction("find", lua_engine_scene_find, "(name:string) -> ObjectProxy?",
                     "The named object in the active scene, else a persisted one; nil when none.",
                     "name: the object's name"),
-        luaFunction("spawn", lua_engine_scene_spawn, "(name:string?) -> ObjectProxy?",
-                    "Add a new object, with a C_Position, to the active scene; nil without one.",
-                    "name: optional name, for engine.scene.find"),
+        luaFunction("spawn", lua_engine_scene_spawn,
+                    "(name:string?) -> obj:ObjectProxy?, err:string?",
+                    "Add a new object, with a C_Position, to the active scene; nil, \"objects "
+                    "full\" when the scene holds its most, nil, \"no active scene\" without one.",
+                    "name: optional name, for engine.scene.find")
+            .returnsErr(),
         luaFunction("destroy", lua_engine_scene_destroy, "(obj:ObjectProxy) -> nil",
-                    "Remove an object from the active scene; a destroyed or foreign value is ignored.",
+                    "Remove an object from the active scene; one already destroyed does nothing, and a "
+                    "value that is not an object raises.",
                     "obj: the object"),
-        luaFunction("persist", lua_engine_scene_persist, "(obj:ObjectProxy) -> boolean?",
-                    "Keep an object alive across scene switches: true, or nil when the pool is full.",
-                    "obj: the object; any other value gives nil")
-            .note("nil without a scene state machine."),
+        luaFunction("persist", lua_engine_scene_persist,
+                    "(obj:ObjectProxy) -> ok:boolean?, err:string?",
+                    "Keep an object alive across scene switches: true, or nil and a reason.",
+                    "obj: the object; any other value raises")
+            .note("err: \"persist pool full\", \"destroyed object\", or \"no scene state "
+                  "machine\".")
+            .returnsErr(),
         luaFunction("unpersist", lua_engine_scene_unpersist, "(obj:ObjectProxy) -> boolean?",
                     "Let a persisted object go at the next scene switch: true, or nil.",
                     "obj: the object; any other value gives nil")
@@ -196,7 +203,7 @@ void LuaBindings::registerEngineTable() {
     // --- engine.lua (GC-01, GC-02) ---
     static constexpr LuaApiEntry kLua[] = {
         luaFunction("collect", lua_engine_lua_collect, "() -> nil",
-                    "Run one small incremental garbage-collection step, not a full collection."),
+                    "Run one small incremental garbage-collection step, short of a full collection."),
         luaFunction("memory", lua_engine_lua_memory, "() -> number",
                     "Bytes the Lua heap uses now."),
     };
@@ -239,15 +246,16 @@ void LuaBindings::registerEngineTable() {
     // --- engine.store (persistent key-value store) ---
     static constexpr LuaApiEntry kStore[] = {
         luaFunction("save", lua_engine_store_save,
-                    "(key:string, value:number|string|boolean|table) -> boolean",
-                    "Store a value under key; false when all 16 keys are taken or a table does "
-                    "not fit.",
+                    "(key:string, value:number|string|boolean|table) -> ok:boolean?, err:string?",
+                    "Store a value under key: true, or nil, \"store full\" when all 16 keys are "
+                    "taken or a table does not fit (\"write failed\" for the desktop file).",
                     "key: the name; up to 63 bytes (longer raises)\n"
                     "value: a number, a string (up to 127 bytes), a boolean, or a flat table of up "
                     "to 16 string keys holding numbers, strings or booleans (other values are "
                     "skipped); anything else raises")
             .note("Desktop hosts write the file at once when a path is set; the web and the "
-                  "device keep changes in memory until engine.store.flush()."),
+                  "device keep changes in memory until engine.store.flush().")
+            .returnsErr(),
         luaFunction("load", lua_engine_store_load,
                     "(key:string) -> value:number|string|boolean|table?",
                     "The value stored under key, or nil; a table comes back as a new table.",
@@ -255,18 +263,27 @@ void LuaBindings::registerEngineTable() {
         luaFunction("exists", lua_engine_store_exists, "(key:string) -> boolean",
                     "Whether key holds a value.",
                     "key: the name"),
-        luaFunction("delete", lua_engine_store_delete, "(key:string) -> boolean",
-                    "Remove a key; true when it existed.",
-                    "key: the name"),
-        luaFunction("clear", lua_engine_store_clear, "() -> nil", "Remove every key."),
-        luaFunction("flush", lua_engine_store_flush, "() -> boolean",
+        luaFunction("delete", lua_engine_store_delete,
+                    "(key:string) -> removed:boolean?, err:string?",
+                    "Remove a key: true when it existed, false when it did not; nil, \"write "
+                    "failed\" when the desktop file cannot be written.",
+                    "key: the name")
+            .returnsErr(),
+        luaFunction("clear", lua_engine_store_clear, "() -> ok:boolean?, err:string?",
+                    "Remove every key: true, or nil, \"write failed\" for the desktop file.")
+            .returnsErr(),
+        luaFunction("flush", lua_engine_store_flush, "() -> ok:boolean?, err:string?",
                     "Write the store out: localStorage on the web, NVS on the device, the path "
-                    "file on desktop.")
-            .note("false on desktop until engine.store.path sets a file."),
-        luaFunction("path", lua_engine_store_path, "(filepath:string) -> nil",
-                    "Set the desktop save file and load what it holds.",
+                    "file on desktop. true, or nil and a reason.")
+            .note("err: \"write failed\", or \"no save file\" on desktop until "
+                  "engine.store.path sets one.")
+            .returnsErr(),
+        luaFunction("path", lua_engine_store_path, "(filepath:string) -> ok:boolean?, err:string?",
+                    "Set the desktop save file and load what it holds: true (no file yet is an "
+                    "empty store), or nil, \"bad save file\".",
                     "filepath: the JSON file")
-            .note("The web and the device ignore the path and reload the applet's saved store."),
+            .note("The web and the device ignore the path and reload the applet's saved store.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kStoreModule = luaApiModule(
         LuaApiScope::Table, "engine.store",
@@ -277,11 +294,14 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.sprite ---
     static constexpr LuaApiEntry kSprite[] = {
-        luaFunction("load", lua_loadSprite, "(name:string) -> handle:int",
-                    "Load <name>.njn from the asset folder into a sprite slot; -1 on failure.",
+        luaFunction("load", lua_loadSprite, "(name:string) -> handle:int?, err:string?",
+                    "Load <name>.njn from the asset folder into a sprite slot; nil and a "
+                    "reason when it cannot.",
                     "name: the file name without .njn, relative to the applet's asset folder")
-            .note("Fails when all 16 sprite slots are busy or the 64 KiB pixel arena is full. "
-                  "The sprite starts on frame 0, looping at 8 fps."),
+            .note("err: \"sprite slots full\" (16), \"asset buffer full\" (the 64 KiB pixel "
+                  "arena), \"file not found\", \"not a valid .njn\", or the pixel refusal. "
+                  "The sprite starts on frame 0, looping at 8 fps.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kSpriteModule = luaApiModule(
         LuaApiScope::Table, "engine.sprite", "Sprite sheets loaded from asset files.", kSprite);
@@ -289,13 +309,15 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.tilemap (ADR-0003 §6, #91; scene-free handle #256) ---
     static constexpr LuaApiEntry kTilemap[] = {
-        luaFunction("load", lua_loadTilemap, "(name:string) -> Tilemap",
+        luaFunction("load", lua_loadTilemap, "(name:string) -> map:Tilemap?, err:string?",
                     "Load <name>.njn (tileset and tile attributes) and <name>.njm (cells) into a "
-                    "new map.",
+                    "new map; nil and a reason when it cannot.",
                     "name: the file name without extension, relative to the applet's asset folder")
-            .note("Raises when a file is missing or invalid, or all 16 sprite slots are busy. The "
+            .note("err: \"sprite slots full\" (16), the tileset's reason (as engine.sprite.load), "
+                  "\"map file not found\", \"empty map file\" or \"not a valid .njm\". The "
                   "tileset holds its sprite slot until the next reload, even after the map is "
-                  "collected. Maps larger than 64x64 are cropped."),
+                  "collected. Maps larger than 64x64 are cropped.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kTilemapModule = luaApiModule(
         LuaApiScope::Table, "engine.tilemap", "Tile maps loaded from asset files.", kTilemap);
@@ -304,13 +326,15 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.event (Phase 42: pub/sub) ---
     static constexpr LuaApiEntry kEvent[] = {
-        luaFunction("on", lua_engine_event_on, "(name:string, fn:function) -> id:int",
-                    "Call fn() whenever name is emitted; returns the handler's id, 0 when a limit "
-                    "is reached.",
+        luaFunction("on", lua_engine_event_on,
+                    "(name:string, fn:function) -> id:int?, err:string?",
+                    "Call fn() whenever name is emitted; returns the handler's id, or nil, "
+                    "\"event handlers full\" when the channels or a channel's handlers are.",
                     "name: the event\n"
-                    "fn: the handler, called with no arguments"),
+                    "fn: the handler, called with no arguments")
+            .returnsErr(),
         luaFunction("off", lua_engine_event_off, "(id:int) -> nil",
-                    "Remove a handler; unknown ids are ignored.",
+                    "Remove a handler; an id already off does nothing.",
                     "id: the id engine.event.on returned"),
         luaFunction("emit", lua_engine_event_emit, "(name:string) -> nil",
                     "Call every handler of name now, with no arguments.",
@@ -378,22 +402,28 @@ void LuaBindings::registerEngineTable() {
     // --- engine.state (quick-007 API-07: named states with enter/exit callbacks) ---
     static constexpr LuaApiEntry kState[] = {
         luaFunction("switch", lua_engine_state_switch, "(name:string) -> nil",
-                    "Run the current state's on_exit, change state, then run the new state's "
-                    "on_enter.",
+                    "Run the current state's onExit, change state, then run the new state's "
+                    "onEnter.",
                     "name: the new state; it need not have callbacks")
             .note("An error inside a callback is discarded silently."),
         luaFunction("current", lua_engine_state_current, "() -> string",
                     "The current state's name; \"none\" after a reload."),
-        luaFunction("on_enter", lua_engine_state_on_enter, "(name:string, fn:function) -> nil",
-                    "Set the callback run when switching into a state, replacing any earlier one.",
+        luaFunction("onEnter", lua_engine_state_on_enter,
+                    "(name:string, fn:function) -> ok:boolean?, err:string?",
+                    "Set the callback run when switching into a state, replacing any earlier "
+                    "one: true, or nil, \"states full\".",
                     "name: the state; up to 63 bytes\n"
                     "fn: called with no arguments")
-            .note("Up to 16 states have callbacks; more are ignored."),
-        luaFunction("on_exit", lua_engine_state_on_exit, "(name:string, fn:function) -> nil",
-                    "Set the callback run when switching out of a state, replacing any earlier one.",
+            .note("Up to 16 states have callbacks.")
+            .returnsErr(),
+        luaFunction("onExit", lua_engine_state_on_exit,
+                    "(name:string, fn:function) -> ok:boolean?, err:string?",
+                    "Set the callback run when switching out of a state, replacing any earlier "
+                    "one: true, or nil, \"states full\".",
                     "name: the state; up to 63 bytes\n"
                     "fn: called with no arguments")
-            .note("Up to 16 states have callbacks; more are ignored."),
+            .note("Up to 16 states have callbacks.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kStateModule = luaApiModule(
         LuaApiScope::Table, "engine.state",
@@ -526,8 +556,8 @@ void LuaBindings::registerEngineTable() {
     // --- engine.tween (Phase 50: TWEEN-01..TWEEN-03) ---
     registerTweenSubtable(L);
 
-    // --- engine.ui (Phase 52: UI-01..UI-04) ---
-    registerUISubtable(L);
+    // --- the global ui (Phase 52: UI-01..UI-04; ADR-0030: not ui) ---
+    registerUITable(L);
 
     // --- engine.hud (#83: RollingCounter / Timer value objects) ---
     registerHudSubtable(L);
@@ -568,17 +598,17 @@ int LuaBindings::lua_engine_state_current(lua_State* L) {
 }
 
 // --- engine.state.switch(name) ---
-// Fires on_exit for current state, changes state, fires on_enter for new state.
+// Fires onExit for current state, changes state, fires onEnter for new state.
 int LuaBindings::lua_engine_state_switch(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
     const char* newState = luaL_checkstring(L, 1);
 
-    // Fire on_exit for current state
+    // Fire onExit for current state
     for (int i = 0; i < b->m_stateCount; ++i) {
         if (strcmp(b->m_stateNames[i], b->m_currentGameState) == 0) {
-            if (b->m_stateOnExitRefs[i] != LUA_NOREF) {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, b->m_stateOnExitRefs[i]);
+            if (b->m_stateOnExit[i].valid()) {
+                b->m_stateOnExit[i].push(L);
                 lua_pcall(L, 0, 0, 0);
             }
             break;
@@ -589,11 +619,11 @@ int LuaBindings::lua_engine_state_switch(lua_State* L) {
     strncpy(b->m_currentGameState, newState, sizeof(b->m_currentGameState) - 1);
     b->m_currentGameState[sizeof(b->m_currentGameState) - 1] = '\0';
 
-    // Fire on_enter for new state
+    // Fire onEnter for new state
     for (int i = 0; i < b->m_stateCount; ++i) {
         if (strcmp(b->m_stateNames[i], newState) == 0) {
-            if (b->m_stateOnEnterRefs[i] != LUA_NOREF) {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, b->m_stateOnEnterRefs[i]);
+            if (b->m_stateOnEnter[i].valid()) {
+                b->m_stateOnEnter[i].push(L);
                 lua_pcall(L, 0, 0, 0);
             }
             break;
@@ -603,10 +633,10 @@ int LuaBindings::lua_engine_state_switch(lua_State* L) {
     return 0;
 }
 
-// --- engine.state.on_enter(state_name, callback) ---
+// --- engine.state.onEnter(state_name, callback) ---
 int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) return 0;
+    if (!b) return lua::returnErr(L, "no engine");
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
 
@@ -616,27 +646,23 @@ int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
         if (strcmp(b->m_stateNames[i], name) == 0) { idx = i; break; }
     }
     if (idx < 0) {
-        if (b->m_stateCount >= MAX_GAME_STATES) return 0;  // full
+        if (b->m_stateCount >= MAX_GAME_STATES) return lua::returnErr(L, "states full");
         idx = b->m_stateCount++;
         strncpy(b->m_stateNames[idx], name, 63);
         b->m_stateNames[idx][63] = '\0';
-        b->m_stateOnEnterRefs[idx] = LUA_NOREF;
-        b->m_stateOnExitRefs[idx]  = LUA_NOREF;
+        b->m_stateOnEnter[idx].reset();
+        b->m_stateOnExit[idx].reset();
     }
 
-    // Unref existing callback if any
-    if (b->m_stateOnEnterRefs[idx] != LUA_NOREF) {
-        luaL_unref(L, LUA_REGISTRYINDEX, b->m_stateOnEnterRefs[idx]);
-    }
-    lua_pushvalue(L, 2);
-    b->m_stateOnEnterRefs[idx] = luaL_ref(L, LUA_REGISTRYINDEX);
-    return 0;
+    b->m_stateOnEnter[idx].assign(L, 2);   // releases the callback it replaces
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
-// --- engine.state.on_exit(state_name, callback) ---
+// --- engine.state.onExit(state_name, callback) ---
 int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) return 0;
+    if (!b) return lua::returnErr(L, "no engine");
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
 
@@ -646,21 +672,17 @@ int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
         if (strcmp(b->m_stateNames[i], name) == 0) { idx = i; break; }
     }
     if (idx < 0) {
-        if (b->m_stateCount >= MAX_GAME_STATES) return 0;  // full
+        if (b->m_stateCount >= MAX_GAME_STATES) return lua::returnErr(L, "states full");
         idx = b->m_stateCount++;
         strncpy(b->m_stateNames[idx], name, 63);
         b->m_stateNames[idx][63] = '\0';
-        b->m_stateOnEnterRefs[idx] = LUA_NOREF;
-        b->m_stateOnExitRefs[idx]  = LUA_NOREF;
+        b->m_stateOnEnter[idx].reset();
+        b->m_stateOnExit[idx].reset();
     }
 
-    // Unref existing callback if any
-    if (b->m_stateOnExitRefs[idx] != LUA_NOREF) {
-        luaL_unref(L, LUA_REGISTRYINDEX, b->m_stateOnExitRefs[idx]);
-    }
-    lua_pushvalue(L, 2);
-    b->m_stateOnExitRefs[idx] = luaL_ref(L, LUA_REGISTRYINDEX);
-    return 0;
+    b->m_stateOnExit[idx].assign(L, 2);   // releases the callback it replaces
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 // --- engine.scene.switch(id) — ENG-01 ---
@@ -671,7 +693,7 @@ int LuaBindings::lua_engine_scene_switch(lua_State* L) {
     auto** ssmPP = static_cast<SceneStateMachine**>(lua_touserdata(L, -1));
     lua_pop(L, 1);
     if (ssmPP == nullptr || *ssmPP == nullptr) { return 0; }  // no SSM installed — silent no-op
-    uint32_t id = static_cast<uint32_t>(luaL_checkinteger(L, 1));
+    uint32_t id = static_cast<uint32_t>(lua::checkInt(L, 1));
     (*ssmPP)->switchTo(id);
     return 0;
 }
@@ -720,25 +742,13 @@ int LuaBindings::lua_engine_scene_colliders(lua_State* L) {
 // Returns true on success, nil when pool is full or proxy is invalid.
 // Does NOT invalidate the proxy — object remains live as an external in the current scene.
 int LuaBindings::lua_engine_scene_persist(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ObjectProxy*>(
-        luaL_testudata(L, 1, "ObjectProxy"));
-    if (!proxy || !proxy->valid || !proxy->object) {
-        lua_pushnil(L);
-        return 1;
-    }
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(luaL_checkudata(L, 1, "ObjectProxy"));
+    if (!proxy->valid || !proxy->object) return lua::returnErr(L, "destroyed object");
 
     LuaBindings* b = getBindings(L);
-    if (!b || !b->m_ssm) {
-        printf("[enjin] WARNING: engine.scene.persist() called without SceneStateMachine context — no-op\n");
-        lua_pushnil(L);
-        return 1;
-    }
+    if (!b || !b->m_ssm) return lua::returnErr(L, "no scene state machine");
 
-    bool ok = b->m_ssm->persistObject(proxy->object);
-    if (!ok) {
-        lua_pushnil(L);
-        return 1;
-    }
+    if (!b->m_ssm->persistObject(proxy->object)) return lua::returnErr(L, "persist pool full");
     lua_pushboolean(L, 1);
     return 1;
 }
@@ -775,27 +785,37 @@ int LuaBindings::lua_engine_scene_spawn(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
     auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
     lua_pop(L, 1);
-    if (scenePP == nullptr || *scenePP == nullptr) { lua_pushnil(L); return 1; }
+    if (scenePP == nullptr || *scenePP == nullptr) return lua::returnErr(L, "no active scene");
     Scene* scene = *scenePP;
 
     // Create a plain Object (which auto-adds C_Position)
     Object* obj = scene->addObject<Object>();
-    if (!obj) {
-        lua_pushnil(L);
-        return 1;
-    }
+    if (!obj) return lua::returnErr(L, "objects full");
 
     // Optional name argument
     if (lua_gettop(L) >= 1 && lua_isstring(L, 1)) {
-        // Intern the string in the Lua registry so it lives as long as the Lua state
-        lua_pushvalue(L, 1);                                   // push the string
-        int ref = luaL_ref(L, LUA_REGISTRYINDEX);              // anchor it
-        // Retrieve the interned pointer (stable for the Lua state's lifetime)
-        lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
-        const char* interned = lua_tostring(L, -1);
-        lua_pop(L, 1);
-        obj->setName(interned);
-        (void)ref;  // ref keeps string alive; leaked intentionally (lives until lua_close)
+        // The Object keeps only the pointer, so the name must live as long as
+        // the Lua state: anchored in the registry's name table, one string per
+        // distinct name. A name seen before reuses the string already anchored
+        // (never replaced, so a pointer handed out stays valid).
+        if (lua_getfield(L, LUA_REGISTRYINDEX, "enjin_object_names") != LUA_TTABLE) {
+            lua_pop(L, 1);
+            lua_newtable(L);
+            lua_pushvalue(L, -1);
+            lua_setfield(L, LUA_REGISTRYINDEX, "enjin_object_names");
+        }                                                      // [names]
+        lua_pushvalue(L, 1);
+        lua_tostring(L, -1);                                   // [names, key]: a number becomes its string
+        lua_pushvalue(L, -1);
+        if (lua_rawget(L, -3) != LUA_TSTRING) {                // [names, key, names[key]]
+            lua_pop(L, 1);
+            lua_pushvalue(L, -1);
+            lua_pushvalue(L, -1);                              // [names, key, key, key]
+            lua_rawset(L, -4);                                 // names[key] = key
+            lua_pushvalue(L, -1);
+        }                                                      // [names, key, name]
+        obj->setName(lua_tostring(L, -1));
+        lua_pop(L, 3);
     }
 
     return pushObjectProxy(L, obj);
@@ -806,9 +826,10 @@ int LuaBindings::lua_engine_scene_spawn(lua_State* L) {
 // The Object destructor automatically sets proxy->valid = false.
 // Silently returns if the proxy is already invalid or no scene is active.
 int LuaBindings::lua_engine_scene_destroy(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ObjectProxy*>(
-        luaL_testudata(L, 1, "ObjectProxy"));
-    if (!proxy || !proxy->valid || !proxy->object) { return 0; }
+    // Not an object is a mistake and raises (ADR-0030); one already destroyed
+    // is gone, and destroying it again does nothing.
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(luaL_checkudata(L, 1, "ObjectProxy"));
+    if (!proxy->valid || !proxy->object) { return 0; }
 
     lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
     auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
@@ -881,26 +902,26 @@ int LuaBindings::lua_engine_collision_aabb(lua_State* L) {
         x2 = static_cast<float>(r2->x); y2 = static_cast<float>(r2->y);
         w2 = static_cast<float>(r2->width); h2 = static_cast<float>(r2->height);
     } else {
-        x1 = static_cast<float>(luaL_checknumber(L, 1));
-        y1 = static_cast<float>(luaL_checknumber(L, 2));
-        w1 = static_cast<float>(luaL_checknumber(L, 3));
-        h1 = static_cast<float>(luaL_checknumber(L, 4));
-        x2 = static_cast<float>(luaL_checknumber(L, 5));
-        y2 = static_cast<float>(luaL_checknumber(L, 6));
-        w2 = static_cast<float>(luaL_checknumber(L, 7));
-        h2 = static_cast<float>(luaL_checknumber(L, 8));
+        x1 = lua::checkFloat(L, 1);
+        y1 = lua::checkFloat(L, 2);
+        w1 = lua::checkFloat(L, 3);
+        h1 = lua::checkFloat(L, 4);
+        x2 = lua::checkFloat(L, 5);
+        y2 = lua::checkFloat(L, 6);
+        w2 = lua::checkFloat(L, 7);
+        h2 = lua::checkFloat(L, 8);
     }
     lua_pushboolean(L, enjin2::collision::aabb(x1, y1, w1, h1, x2, y2, w2, h2) ? 1 : 0);
     return 1;
 }
 
 int LuaBindings::lua_engine_collision_circleCircle(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float r1 = static_cast<float>(luaL_checknumber(L, 3));
-    float x2 = static_cast<float>(luaL_checknumber(L, 4));
-    float y2 = static_cast<float>(luaL_checknumber(L, 5));
-    float r2 = static_cast<float>(luaL_checknumber(L, 6));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float r1 = lua::checkFloat(L, 3);
+    float x2 = lua::checkFloat(L, 4);
+    float y2 = lua::checkFloat(L, 5);
+    float r2 = lua::checkFloat(L, 6);
     lua_pushboolean(L, enjin2::collision::circleCircle(x1, y1, r1, x2, y2, r2) ? 1 : 0);
     return 1;
 }
@@ -916,12 +937,12 @@ int LuaBindings::lua_engine_collision_pointInRect(lua_State* L) {
         rx = static_cast<float>(r->x); ry = static_cast<float>(r->y);
         rw = static_cast<float>(r->width); rh = static_cast<float>(r->height);
     } else {
-        px = static_cast<float>(luaL_checknumber(L, 1));
-        py = static_cast<float>(luaL_checknumber(L, 2));
-        rx = static_cast<float>(luaL_checknumber(L, 3));
-        ry = static_cast<float>(luaL_checknumber(L, 4));
-        rw = static_cast<float>(luaL_checknumber(L, 5));
-        rh = static_cast<float>(luaL_checknumber(L, 6));
+        px = lua::checkFloat(L, 1);
+        py = lua::checkFloat(L, 2);
+        rx = lua::checkFloat(L, 3);
+        ry = lua::checkFloat(L, 4);
+        rw = lua::checkFloat(L, 5);
+        rh = lua::checkFloat(L, 6);
     }
     lua_pushboolean(L, enjin2::collision::pointInRect(px, py, rx, ry, rw, rh) ? 1 : 0);
     return 1;
@@ -934,29 +955,29 @@ int LuaBindings::lua_engine_collision_pointInCircle(lua_State* L) {
     if (p || v) {
         px = p ? static_cast<float>(p->x) : v->x;
         py = p ? static_cast<float>(p->y) : v->y;
-        cx = static_cast<float>(luaL_checknumber(L, 2));
-        cy = static_cast<float>(luaL_checknumber(L, 3));
-        r  = static_cast<float>(luaL_checknumber(L, 4));
+        cx = lua::checkFloat(L, 2);
+        cy = lua::checkFloat(L, 3);
+        r  = lua::checkFloat(L, 4);
     } else {
-        px = static_cast<float>(luaL_checknumber(L, 1));
-        py = static_cast<float>(luaL_checknumber(L, 2));
-        cx = static_cast<float>(luaL_checknumber(L, 3));
-        cy = static_cast<float>(luaL_checknumber(L, 4));
-        r  = static_cast<float>(luaL_checknumber(L, 5));
+        px = lua::checkFloat(L, 1);
+        py = lua::checkFloat(L, 2);
+        cx = lua::checkFloat(L, 3);
+        cy = lua::checkFloat(L, 4);
+        r  = lua::checkFloat(L, 5);
     }
     lua_pushboolean(L, enjin2::collision::pointInCircle(px, py, cx, cy, r) ? 1 : 0);
     return 1;
 }
 
 int LuaBindings::lua_engine_collision_lineLine(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float x2 = static_cast<float>(luaL_checknumber(L, 3));
-    float y2 = static_cast<float>(luaL_checknumber(L, 4));
-    float x3 = static_cast<float>(luaL_checknumber(L, 5));
-    float y3 = static_cast<float>(luaL_checknumber(L, 6));
-    float x4 = static_cast<float>(luaL_checknumber(L, 7));
-    float y4 = static_cast<float>(luaL_checknumber(L, 8));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float x2 = lua::checkFloat(L, 3);
+    float y2 = lua::checkFloat(L, 4);
+    float x3 = lua::checkFloat(L, 5);
+    float y3 = lua::checkFloat(L, 6);
+    float x4 = lua::checkFloat(L, 7);
+    float y4 = lua::checkFloat(L, 8);
     float ix, iy;
     bool hit = enjin2::collision::lineLine(x1, y1, x2, y2, x3, y3, x4, y4, &ix, &iy);
     lua_pushboolean(L, hit ? 1 : 0);
@@ -969,13 +990,13 @@ int LuaBindings::lua_engine_collision_lineLine(lua_State* L) {
 }
 
 int LuaBindings::lua_engine_collision_lineCircle(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float x2 = static_cast<float>(luaL_checknumber(L, 3));
-    float y2 = static_cast<float>(luaL_checknumber(L, 4));
-    float cx = static_cast<float>(luaL_checknumber(L, 5));
-    float cy = static_cast<float>(luaL_checknumber(L, 6));
-    float r  = static_cast<float>(luaL_checknumber(L, 7));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float x2 = lua::checkFloat(L, 3);
+    float y2 = lua::checkFloat(L, 4);
+    float cx = lua::checkFloat(L, 5);
+    float cy = lua::checkFloat(L, 6);
+    float r  = lua::checkFloat(L, 7);
     lua_pushboolean(L, enjin2::collision::lineCircle(x1, y1, x2, y2, cx, cy, r) ? 1 : 0);
     return 1;
 }
@@ -1007,14 +1028,14 @@ int LuaBindings::lua_engine_lua_memory(lua_State* L) {
 // --- engine.collision.aabbOverlap(x1,y1,w1,h1, x2,y2,w2,h2) ---
 // Returns: hit, overlapX, overlapY, overlapW, overlapH
 int LuaBindings::lua_engine_collision_aabbOverlap(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float w1 = static_cast<float>(luaL_checknumber(L, 3));
-    float h1 = static_cast<float>(luaL_checknumber(L, 4));
-    float x2 = static_cast<float>(luaL_checknumber(L, 5));
-    float y2 = static_cast<float>(luaL_checknumber(L, 6));
-    float w2 = static_cast<float>(luaL_checknumber(L, 7));
-    float h2 = static_cast<float>(luaL_checknumber(L, 8));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float w1 = lua::checkFloat(L, 3);
+    float h1 = lua::checkFloat(L, 4);
+    float x2 = lua::checkFloat(L, 5);
+    float y2 = lua::checkFloat(L, 6);
+    float w2 = lua::checkFloat(L, 7);
+    float h2 = lua::checkFloat(L, 8);
     float ox, oy, ow, oh;
     bool hit = enjin2::collision::aabbOverlap(x1, y1, w1, h1, x2, y2, w2, h2,
                                               &ox, &oy, &ow, &oh);
@@ -1032,12 +1053,12 @@ int LuaBindings::lua_engine_collision_aabbOverlap(lua_State* L) {
 // --- engine.collision.circleResponse(x1,y1,r1, x2,y2,r2) ---
 // Returns: hit, normalX, normalY, depth
 int LuaBindings::lua_engine_collision_circleResponse(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float r1 = static_cast<float>(luaL_checknumber(L, 3));
-    float x2 = static_cast<float>(luaL_checknumber(L, 4));
-    float y2 = static_cast<float>(luaL_checknumber(L, 5));
-    float r2 = static_cast<float>(luaL_checknumber(L, 6));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float r1 = lua::checkFloat(L, 3);
+    float x2 = lua::checkFloat(L, 4);
+    float y2 = lua::checkFloat(L, 5);
+    float r2 = lua::checkFloat(L, 6);
     float nx, ny, depth;
     bool hit = enjin2::collision::circleCircleResponse(x1, y1, r1, x2, y2, r2,
                                                        &nx, &ny, &depth);
@@ -1054,10 +1075,10 @@ int LuaBindings::lua_engine_collision_circleResponse(lua_State* L) {
 // --- engine.collision.reflect(vx, vy, nx, ny) ---
 // Returns: reflectedVx, reflectedVy
 int LuaBindings::lua_engine_collision_reflect(lua_State* L) {
-    float vx = static_cast<float>(luaL_checknumber(L, 1));
-    float vy = static_cast<float>(luaL_checknumber(L, 2));
-    float nx = static_cast<float>(luaL_checknumber(L, 3));
-    float ny = static_cast<float>(luaL_checknumber(L, 4));
+    float vx = lua::checkFloat(L, 1);
+    float vy = lua::checkFloat(L, 2);
+    float nx = lua::checkFloat(L, 3);
+    float ny = lua::checkFloat(L, 4);
     float outVx, outVy;
     enjin2::collision::reflect(vx, vy, nx, ny, &outVx, &outVy);
     lua_pushnumber(L, static_cast<lua_Number>(outVx));
@@ -1109,17 +1130,16 @@ static LuaEventBus* getEventBus(lua_State* L) {
 // --- engine.event.on(name, callback) -- EVENT-01 ---
 // Returns subscription ID (integer > 0) on success, or 0 on failure.
 static int lua_engine_event_on(lua_State* L) {
-    LuaEventBus* bus = getEventBus(L);
-    if (!bus) { lua_pushinteger(L, 0); return 1; }
-
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
+    LuaEventBus* bus = getEventBus(L);
+    if (!bus) return lua::returnErr(L, "no event bus");
 
-    // Anchor the callback function in the Lua registry
-    lua_pushvalue(L, 2);
-    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua::ScriptRef callback;
+    callback.assign(L, 2);
 
-    int id = bus->subscribe(name, ref);
+    int id = bus->subscribe(name, std::move(callback));
+    if (id == 0) return lua::returnErr(L, "event handlers full");
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -1130,7 +1150,7 @@ static int lua_engine_event_off(lua_State* L) {
     LuaEventBus* bus = getEventBus(L);
     if (!bus) return 0;
 
-    int id = static_cast<int>(luaL_checkinteger(L, 1));
+    int id = lua::checkInt(L, 1);
     bus->unsubscribe(id);
     return 0;
 }
@@ -1160,8 +1180,8 @@ static C_Camera* getActiveCamera(lua_State* L) {
 static int lua_engine_camera_setPosition(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;  // silent no-op when no camera is active
-    float x = static_cast<float>(luaL_checknumber(L, 1));
-    float y = static_cast<float>(luaL_checknumber(L, 2));
+    float x = lua::checkFloat(L, 1);
+    float y = lua::checkFloat(L, 2);
     cam->setPosition(x, y);
     return 0;
 }
@@ -1180,9 +1200,9 @@ static int lua_engine_camera_getPosition(lua_State* L) {
 static int lua_engine_camera_lookAt(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;
-    float x = static_cast<float>(luaL_checknumber(L, 1));
-    float y = static_cast<float>(luaL_checknumber(L, 2));
-    float speed = lua_gettop(L) >= 3 ? static_cast<float>(luaL_checknumber(L, 3)) : 1.0f;
+    float x = lua::checkFloat(L, 1);
+    float y = lua::checkFloat(L, 2);
+    float speed = lua_gettop(L) >= 3 ? lua::checkFloat(L, 3) : 1.0f;
     cam->lookAt(x, y, speed);
     return 0;
 }
@@ -1191,8 +1211,8 @@ static int lua_engine_camera_lookAt(lua_State* L) {
 static int lua_engine_camera_shake(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;
-    float intensity = static_cast<float>(luaL_checknumber(L, 1));
-    float duration = static_cast<float>(luaL_checknumber(L, 2));
+    float intensity = lua::checkFloat(L, 1);
+    float duration = lua::checkFloat(L, 2);
     cam->shake(intensity, duration);
     return 0;
 }
@@ -1201,10 +1221,10 @@ static int lua_engine_camera_shake(lua_State* L) {
 static int lua_engine_camera_setBounds(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;
-    float minX = static_cast<float>(luaL_checknumber(L, 1));
-    float minY = static_cast<float>(luaL_checknumber(L, 2));
-    float maxX = static_cast<float>(luaL_checknumber(L, 3));
-    float maxY = static_cast<float>(luaL_checknumber(L, 4));
+    float minX = lua::checkFloat(L, 1);
+    float minY = lua::checkFloat(L, 2);
+    float maxX = lua::checkFloat(L, 3);
+    float maxY = lua::checkFloat(L, 4);
     cam->setBounds(minX, minY, maxX, maxY);
     return 0;
 }
@@ -1229,8 +1249,8 @@ static int lua_engine_camera_clearBounds(lua_State* L) {
 int LuaBindings::lua_engine_camera_setDeadZone(lua_State* L) {
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return 0;
-    float w = static_cast<float>(luaL_checknumber(L, 1));
-    float h = static_cast<float>(luaL_checknumber(L, 2));
+    float w = lua::checkFloat(L, 1);
+    float h = lua::checkFloat(L, 2);
     if (w < 0.0f) w = 0.0f;
     if (h < 0.0f) h = 0.0f;
     b->m_deadZoneW = w;
@@ -1254,7 +1274,7 @@ int LuaBindings::lua_engine_camera_follow(lua_State* L) {
         return 0;
     }
 
-    float speed = (lua_gettop(L) >= 2) ? static_cast<float>(luaL_optnumber(L, 2, 0.1)) : 0.1f;
+    float speed = (lua_gettop(L) >= 2) ? lua::optFloat(L, 2, 0.1) : 0.1f;
     b->m_followTargetProxy = proxy;
     b->m_followSpeed       = speed;
     return 0;

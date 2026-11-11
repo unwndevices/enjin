@@ -179,13 +179,16 @@ static void test_setFont_roundtrip() {
 }
 
 // ============================================================
-// setFont with unknown name keeps current
+// setFont with an unknown name raises and keeps current (ADR-0030)
 // ============================================================
 static void test_setFont_unknown_keeps_current() {
-    printf("--- setFont unknown name keeps current ---\n");
+    printf("--- setFont unknown name raises, keeps current ---\n");
     TextFixture f;
-    f.exec("gfx.setFont('default8'); gfx.setFont('nonexistent'); f = gfx.getFont()");
+    f.exec("gfx.setFont('default8'); ok, why = pcall(gfx.setFont, 'nonexistent'); f = gfx.getFont(); "
+           "raised = (not ok) and why:find(\"unknown font 'nonexistent'\", 1, true) ~= nil");
     ASSERT(f.getStr("f") == "default8", "gfx.setFont('nonexistent') should keep 'default8'");
+    f.exec("r = raised and 'yes' or 'no'");
+    ASSERT(f.getStr("r") == "yes", "gfx.setFont('nonexistent') raises, naming the font");
 }
 
 // ============================================================
@@ -267,6 +270,44 @@ static void test_text_state_reset_on_reload() {
 }
 
 // ============================================================
+// Native callers draw through the same state (Tomodachi #478 follow-up)
+// selectFont / setDrawColor / fillRect / drawText are gfx.setFont,
+// gfx.setColor, gfx.rectangle("fill") and gfx.textAligned: the same pixels,
+// and the script reads back what native code set.
+// ============================================================
+static void test_native_draw_is_gfx_draw() {
+    printf("--- native draw = gfx draw ---\n");
+    TextFixture lua;
+    lua.exec("gfx.setTextSize(2) gfx.setFont('default8') gfx.setColor(40) "
+             "gfx.rectangle('fill', 2, 2, 100, 30) gfx.setColor(200) "
+             "gfx.text('Hi', 4, 20) gfx.textAligned('Yo', 100, 20, 'right') "
+             "gfx.textAligned('c', 64, 50, 'center')");
+    TextFixture native;
+    native.exec("gfx.setTextSize(2)");
+    ASSERT(native.bindings.selectFont("default8"), "selectFont finds a registered face");
+    native.bindings.setDrawColor(40);
+    native.bindings.fillRect(2, 2, 100, 30);
+    native.bindings.setDrawColor(200);
+    native.bindings.drawText("Hi", 4, 20);
+    native.bindings.drawText("Yo", 100, 20, NumberAlign::Right);
+    native.bindings.drawText("c", 64, 50, NumberAlign::Center);
+    int differ = 0, inked = 0;
+    for (int16_t y = 0; y < 128; ++y)
+        for (int16_t x = 0; x < 128; ++x) {
+            differ += lua.canvas.getPixel(x, y) != native.canvas.getPixel(x, y);
+            inked += lua.canvas.getPixel(x, y) == 200;
+        }
+    ASSERT(inked > 20, "the reference drew text");
+    ASSERT(differ == 0, "native draw writes gfx's pixels");
+    native.exec("f = gfx.getFont() c = gfx.getColor()");
+    ASSERT(native.getStr("f") == "default8", "the script reads the face native code set");
+    ASSERT(native.getNum("c") == 200, "the script reads the colour native code set");
+    ASSERT(!native.bindings.selectFont("nope"), "an unregistered face is refused");
+    native.exec("f = gfx.getFont()");
+    ASSERT(native.getStr("f") == "default8", "a refused face keeps the current one");
+}
+
+// ============================================================
 // main
 // ============================================================
 int main() {
@@ -290,6 +331,7 @@ int main() {
     test_getTextWidth_default8();
     test_text_size2_larger();
     test_text_state_reset_on_reload();
+    test_native_draw_is_gfx_draw();
 
     printf("\nResults: %d passed, %d failed\n", passes, failures);
     return failures == 0 ? 0 : 1;

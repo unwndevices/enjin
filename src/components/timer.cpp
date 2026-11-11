@@ -2,6 +2,7 @@
 #include "../../include/enjin2/components/lua_script.hpp"
 #include "../../include/enjin2/core/object.hpp"
 #include <cstdio>
+#include <utility>
 
 namespace enjin2 {
 
@@ -14,10 +15,10 @@ C_Timer::~C_Timer() {
     clearTimers();
 }
 
-int C_Timer::scheduleInternal(float seconds, int callbackRef, bool repeating) {
+int C_Timer::scheduleInternal(float seconds, lua::ScriptRef callback, bool repeating) {
     for (int i = 0; i < MAX_TIMERS; ++i) {
         if (!m_timers[i].active) {
-            m_timers[i].callbackRef = callbackRef;
+            m_timers[i].callback    = std::move(callback);
             m_timers[i].interval    = seconds;
             m_timers[i].elapsed     = 0.0f;
             m_timers[i].repeating   = repeating;
@@ -26,29 +27,23 @@ int C_Timer::scheduleInternal(float seconds, int callbackRef, bool repeating) {
             return m_timers[i].id;
         }
     }
-    // No free slot — release the ref to avoid leak, return 0 (invalid ID)
-    if (m_L) {
-        luaL_unref(m_L, LUA_REGISTRYINDEX, callbackRef);
-    }
+    // No free slot: the callback is released as it goes out of scope.
     return 0;
 }
 
-int C_Timer::scheduleAfter(float seconds, int callbackRef) {
-    return scheduleInternal(seconds, callbackRef, false);
+int C_Timer::scheduleAfter(float seconds, lua::ScriptRef callback) {
+    return scheduleInternal(seconds, std::move(callback), false);
 }
 
-int C_Timer::scheduleEvery(float seconds, int callbackRef) {
-    return scheduleInternal(seconds, callbackRef, true);
+int C_Timer::scheduleEvery(float seconds, lua::ScriptRef callback) {
+    return scheduleInternal(seconds, std::move(callback), true);
 }
 
 void C_Timer::cancel(int timerId) {
     if (timerId == 0) return;  // 0 = invalid ID, no-op
     for (int i = 0; i < MAX_TIMERS; ++i) {
         if (m_timers[i].active && m_timers[i].id == timerId) {
-            if (m_L && m_timers[i].callbackRef != LUA_NOREF) {
-                luaL_unref(m_L, LUA_REGISTRYINDEX, m_timers[i].callbackRef);
-            }
-            m_timers[i].callbackRef = LUA_NOREF;
+            m_timers[i].callback.reset();
             m_timers[i].active = false;
             return;
         }
@@ -56,17 +51,12 @@ void C_Timer::cancel(int timerId) {
 }
 
 void C_Timer::clearTimers() {
-    if (m_L) {
-        for (int i = 0; i < MAX_TIMERS; ++i) {
-            if (m_timers[i].active && m_timers[i].callbackRef != LUA_NOREF) {
-                luaL_unref(m_L, LUA_REGISTRYINDEX, m_timers[i].callbackRef);
-            }
-            m_timers[i].callbackRef = LUA_NOREF;
-            m_timers[i].active = false;
-            m_timers[i].elapsed = 0.0f;
-        }
+    for (int i = 0; i < MAX_TIMERS; ++i) {
+        m_timers[i].callback.reset();
+        m_timers[i].active = false;
+        m_timers[i].elapsed = 0.0f;
     }
-    m_L = nullptr;  // Sentinel: prevents double-unref in destructor
+    m_L = nullptr;  // re-armed by the next timer:after/every
 }
 
 int C_Timer::getActiveCount() const {
@@ -77,13 +67,12 @@ int C_Timer::getActiveCount() const {
     return count;
 }
 
-void C_Timer::fireCallback(int cbRef) {
+void C_Timer::fireCallback(const lua::ScriptRef& callback) {
     if (!m_L) return;
 
-    // Push the Lua function from registry using the provided ref
-    // (NOT entry.callbackRef — for one-shot timers, entry.callbackRef is already LUA_NOREF
-    //  at this point because update() clears it before calling fireCallback)
-    lua_rawgeti(m_L, LUA_REGISTRYINDEX, cbRef);
+    // The callback is passed in, not read from the entry: a one-shot timer's
+    // entry has already given its callback up (update() moves it out first).
+    callback.push(m_L);
     if (!lua_isfunction(m_L, -1)) {
         lua_pop(m_L, 1);
         return;
@@ -121,25 +110,16 @@ void C_Timer::update(float dt) {
         if (e.elapsed < e.interval) continue;
 
         // Timer fires
-        int cbRef = e.callbackRef;
-        bool repeating = e.repeating;
-
-        if (!repeating) {
-            // Deactivate BEFORE calling — prevents re-entrant double-fire
+        if (!e.repeating) {
+            // Deactivate BEFORE calling (prevents re-entrant double-fire); the
+            // callback leaves the entry and is released after it runs.
             e.active = false;
-            e.callbackRef = LUA_NOREF;
+            lua::ScriptRef callback = std::move(e.callback);
+            fireCallback(callback);
         } else {
             // Reset elapsed for next interval — keep active
             e.elapsed = 0.0f;
-        }
-
-        // Fire the callback (pass cbRef directly — for one-shot timers, e.callbackRef
-        // is already LUA_NOREF at this point, so we must use the saved local copy)
-        fireCallback(cbRef);
-
-        // Release ref for one-shot timers AFTER fire (ref was copied before deactivation)
-        if (!repeating && m_L) {
-            luaL_unref(m_L, LUA_REGISTRYINDEX, cbRef);
+            fireCallback(e.callback);
         }
     }
 }

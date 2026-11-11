@@ -1,6 +1,7 @@
 #pragma once
 #include "../core/component.hpp"
 #include "../scripting/lua_platform.hpp"
+#include "../scripting/lua_ref.hpp"
 
 namespace enjin2 {
 
@@ -15,8 +16,8 @@ class C_LuaScript;
  *   timer:every(seconds, fn)  — repeating callback (TIMER-02)
  *   timer:cancel(id)          — cancel by ID (TIMER-03)
  *
- * Callbacks are stored as luaL_ref handles in the Lua registry. All refs are
- * released in clearTimers() (called by destructor and by C_LuaScript on hot-reload).
+ * Callbacks are held as lua::ScriptRefs. All are released in clearTimers()
+ * (called by destructor and by C_LuaScript on hot-reload).
  *
  * Zero dynamic allocation: fixed-size array of MAX_TIMERS entries.
  */
@@ -26,7 +27,7 @@ public:
 
     /** @brief Single timer slot entry */
     struct TimerEntry {
-        int     callbackRef{LUA_NOREF}; ///< luaL_ref handle; LUA_NOREF = inactive
+        lua::ScriptRef callback;        ///< The callback; empty = inactive
         float   interval{0.0f};         ///< Seconds between firings (or delay for one-shot)
         float   elapsed{0.0f};          ///< Accumulated time since arm
         int     id{0};                  ///< Cancellation ID returned to Lua
@@ -46,26 +47,26 @@ public:
     /**
      * @brief Schedule a one-shot callback after a delay
      * @param seconds  Delay in seconds
-     * @param callbackRef  luaL_ref handle for the callback
+     * @param callback  The callback (taken; released when no slot is free)
      * @return Timer ID for cancellation, or 0 if no slot available
      */
-    int  scheduleAfter(float seconds, int callbackRef);
+    int  scheduleAfter(float seconds, lua::ScriptRef callback);
     /**
      * @brief Schedule a repeating callback at a fixed interval
      * @param seconds  Interval in seconds
-     * @param callbackRef  luaL_ref handle for the callback
+     * @param callback  The callback (taken; released when no slot is free)
      * @return Timer ID for cancellation, or 0 if no slot available
      */
-    int  scheduleEvery(float seconds, int callbackRef);
+    int  scheduleEvery(float seconds, lua::ScriptRef callback);
     /** @brief Cancel a timer by ID
      *  @param timerId Timer ID returned by scheduleAfter/scheduleEvery */
     void cancel(int timerId);
 
     /**
-     * @brief Release all luaL_ref handles and deactivate all timer entries.
+     * @brief Release every callback and deactivate all timer entries.
      * Called by: ~C_Timer(), C_LuaScript::~C_LuaScript() (destruction-order safety),
      * and C_LuaScript::executeScript() / loadScriptFile() (hot-reload cleanup, TIMER-05).
-     * After this call, m_L is set to nullptr to prevent double-unref.
+     * After this call, m_L is nullptr until the next timer:after/every.
      */
     void clearTimers();
 
@@ -89,8 +90,8 @@ private:
     lua_State*  m_L{nullptr};           ///< Non-owning; valid while C_LuaScript Lua state is open
     int         m_nextId{1};            ///< Monotonically increasing ID counter
 
-    int scheduleInternal(float seconds, int callbackRef, bool repeating);
-    void fireCallback(int cbRef);
+    int scheduleInternal(float seconds, lua::ScriptRef callback, bool repeating);
+    void fireCallback(const lua::ScriptRef& callback);
 };
 
 } // namespace enjin2

@@ -75,6 +75,9 @@ namespace shape {
 /// A refusal, as text (slot + id where there is one).
 struct ShapeError {
     char text[120] = {0};
+    /// The world said no (the asset arena is full), not a bad Look: a Lua
+    /// binding returns it as nil, err rather than raising (ADR-0030).
+    bool world = false;
 };
 
 /// Where breathing squashes and stretches about.

@@ -8,7 +8,7 @@
  *   TIMER-03: timer:cancel(id) prevents the cancelled timer from firing
  *   TIMER-03b: cancel is ID-specific — does not cancel other timers
  *   TIMER-04: Timer callbacks receive ScriptProxy as first argument (self ~= nil)
- *   TIMER-05a: clearTimers() releases all luaL_ref handles on hot-reload
+ *   TIMER-05a: clearTimers() releases every callback on hot-reload
  *   TIMER-05b: clearTimers() via C_LuaScript destructor — no crash / ASAN clean
  */
 #include <enjin2/core/object.hpp>
@@ -239,7 +239,7 @@ static void test_timer04_callback_receives_self() {
 }
 
 // ============================================================
-// TIMER-05a: clearTimers() releases all luaL_ref handles on hot-reload
+// TIMER-05a: clearTimers() releases every callback on hot-reload
 // ============================================================
 static void test_timer05a_clear_on_reload() {
     printf("--- TIMER-05a: clearTimers on hot-reload ---\n");
@@ -267,7 +267,7 @@ static void test_timer05a_clear_on_reload() {
     ASSERT(activeCount == 1, "TIMER-05a: one timer should be active after init()");
 
     // Verify the timer slot has a valid ref
-    bool hasRef = (timerComp->getTimerEntry(0).callbackRef != LUA_NOREF);
+    bool hasRef = (timerComp->getTimerEntry(0).callback.valid());
     ASSERT(hasRef, "TIMER-05a: timer entry should have a valid Lua ref");
 
     // Hot-reload: loadScript() calls executeScript() which calls clearTimers()
@@ -283,15 +283,15 @@ static void test_timer05a_clear_on_reload() {
     int activeAfter = timerComp->getActiveCount();
     ASSERT(activeAfter == 0, "TIMER-05a: all timers should be cleared after hot-reload");
 
-    // All timer entry refs should be LUA_NOREF
+    // All timer entry refs should be empty
     bool allCleared = true;
     for (int i = 0; i < C_Timer::MAX_TIMERS; ++i) {
-        if (timerComp->getTimerEntry(i).callbackRef != LUA_NOREF) {
+        if (timerComp->getTimerEntry(i).callback.valid()) {
             allCleared = false;
             break;
         }
     }
-    ASSERT(allCleared, "TIMER-05a: all timer entries should have LUA_NOREF after clearTimers()");
+    ASSERT(allCleared, "TIMER-05a: all timer entries should be empty after clearTimers()");
 
     delete obj;
 }

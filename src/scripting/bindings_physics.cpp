@@ -29,8 +29,8 @@ namespace enjin2 {
 int LuaBindings::lua_engine_physics_setGravity(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
-    b->m_gravityX = static_cast<float>(luaL_checknumber(L, 1));
-    b->m_gravityY = static_cast<float>(luaL_checknumber(L, 2));
+    b->m_gravityX = lua::checkFloat(L, 1);
+    b->m_gravityY = lua::checkFloat(L, 2);
     return 0;
 }
 
@@ -76,29 +76,29 @@ int LuaBindings::lua_engine_physics_applyGravity(lua_State* L) {
         int nargs = lua_gettop(L);
         if (nargs >= 4) {
             // applyGravity(Vec2, gx, gy, dt) — override gravity
-            gx = static_cast<float>(luaL_checknumber(L, 2));
-            gy = static_cast<float>(luaL_checknumber(L, 3));
-            dt = static_cast<float>(luaL_checknumber(L, 4));
+            gx = lua::checkFloat(L, 2);
+            gy = lua::checkFloat(L, 3);
+            dt = lua::checkFloat(L, 4);
         } else {
             // applyGravity(Vec2, dt) — global gravity
             gx = b->m_gravityX;
             gy = b->m_gravityY;
-            dt = static_cast<float>(luaL_checknumber(L, 2));
+            dt = lua::checkFloat(L, 2);
         }
     } else {
-        vx = static_cast<float>(luaL_checknumber(L, 1));
-        vy = static_cast<float>(luaL_checknumber(L, 2));
+        vx = lua::checkFloat(L, 1);
+        vy = lua::checkFloat(L, 2);
         int nargs = lua_gettop(L);
         if (nargs >= 5) {
             // applyGravity(vx, vy, gx, gy, dt) — override gravity
-            gx = static_cast<float>(luaL_checknumber(L, 3));
-            gy = static_cast<float>(luaL_checknumber(L, 4));
-            dt = static_cast<float>(luaL_checknumber(L, 5));
+            gx = lua::checkFloat(L, 3);
+            gy = lua::checkFloat(L, 4);
+            dt = lua::checkFloat(L, 5);
         } else {
             // applyGravity(vx, vy, dt) — global gravity
             gx = b->m_gravityX;
             gy = b->m_gravityY;
-            dt = static_cast<float>(luaL_checknumber(L, 3));
+            dt = lua::checkFloat(L, 3);
         }
     }
 
@@ -134,18 +134,18 @@ int LuaBindings::lua_engine_physics_bounce(lua_State* L) {
         if (norm) {
             nx = norm->x;
             ny = norm->y;
-            restitution = static_cast<float>(luaL_checknumber(L, 3));
+            restitution = lua::checkFloat(L, 3);
         } else {
-            nx = static_cast<float>(luaL_checknumber(L, 2));
-            ny = static_cast<float>(luaL_checknumber(L, 3));
-            restitution = static_cast<float>(luaL_checknumber(L, 4));
+            nx = lua::checkFloat(L, 2);
+            ny = lua::checkFloat(L, 3);
+            restitution = lua::checkFloat(L, 4);
         }
     } else {
-        vx = static_cast<float>(luaL_checknumber(L, 1));
-        vy = static_cast<float>(luaL_checknumber(L, 2));
-        nx = static_cast<float>(luaL_checknumber(L, 3));
-        ny = static_cast<float>(luaL_checknumber(L, 4));
-        restitution = static_cast<float>(luaL_checknumber(L, 5));
+        vx = lua::checkFloat(L, 1);
+        vy = lua::checkFloat(L, 2);
+        nx = lua::checkFloat(L, 3);
+        ny = lua::checkFloat(L, 4);
+        restitution = lua::checkFloat(L, 5);
     }
 
     float outVx, outVy;
@@ -174,13 +174,13 @@ int LuaBindings::lua_engine_physics_applyDrag(lua_State* L) {
     if (v) {
         vx   = v->x;
         vy   = v->y;
-        drag = static_cast<float>(luaL_checknumber(L, 2));
-        dt   = static_cast<float>(luaL_checknumber(L, 3));
+        drag = lua::checkFloat(L, 2);
+        dt   = lua::checkFloat(L, 3);
     } else {
-        vx   = static_cast<float>(luaL_checknumber(L, 1));
-        vy   = static_cast<float>(luaL_checknumber(L, 2));
-        drag = static_cast<float>(luaL_checknumber(L, 3));
-        dt   = static_cast<float>(luaL_checknumber(L, 4));
+        vx   = lua::checkFloat(L, 1);
+        vy   = lua::checkFloat(L, 2);
+        drag = lua::checkFloat(L, 3);
+        dt   = lua::checkFloat(L, 4);
     }
 
     float outVx, outVy;
@@ -199,12 +199,12 @@ int LuaBindings::lua_engine_physics_springForce(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) { lua_pushnumber(L, 0.0); return 1; }
 
-    float pos       = static_cast<float>(luaL_checknumber(L, 1));
-    float target    = static_cast<float>(luaL_checknumber(L, 2));
-    float vel       = static_cast<float>(luaL_checknumber(L, 3));
-    float stiffness = static_cast<float>(luaL_checknumber(L, 4));
-    float damping   = static_cast<float>(luaL_checknumber(L, 5));
-    float dt        = static_cast<float>(luaL_checknumber(L, 6));
+    float pos       = lua::checkFloat(L, 1);
+    float target    = lua::checkFloat(L, 2);
+    float vel       = lua::checkFloat(L, 3);
+    float stiffness = lua::checkFloat(L, 4);
+    float damping   = lua::checkFloat(L, 5);
+    float dt        = lua::checkFloat(L, 6);
 
     float outVel;
     physics::springForce(pos, target, vel, stiffness, damping, dt, &outVel);
@@ -234,15 +234,15 @@ int LuaBindings::lua_engine_physics_attract(lua_State* L) {
         y        = p->y;
         ax       = a->x;
         ay       = a->y;
-        strength = static_cast<float>(luaL_checknumber(L, 3));
-        maxForce = static_cast<float>(luaL_checknumber(L, 4));
+        strength = lua::checkFloat(L, 3);
+        maxForce = lua::checkFloat(L, 4);
     } else {
-        x        = static_cast<float>(luaL_checknumber(L, 1));
-        y        = static_cast<float>(luaL_checknumber(L, 2));
-        ax       = static_cast<float>(luaL_checknumber(L, 3));
-        ay       = static_cast<float>(luaL_checknumber(L, 4));
-        strength = static_cast<float>(luaL_checknumber(L, 5));
-        maxForce = static_cast<float>(luaL_checknumber(L, 6));
+        x        = lua::checkFloat(L, 1);
+        y        = lua::checkFloat(L, 2);
+        ax       = lua::checkFloat(L, 3);
+        ay       = lua::checkFloat(L, 4);
+        strength = lua::checkFloat(L, 5);
+        maxForce = lua::checkFloat(L, 6);
     }
 
     float outFx, outFy;
@@ -274,13 +274,13 @@ int LuaBindings::lua_engine_physics_orbitVelocity(lua_State* L) {
         y     = body->y;
         cx    = center->x;
         cy    = center->y;
-        speed = static_cast<float>(luaL_checknumber(L, 3));
+        speed = lua::checkFloat(L, 3);
     } else {
-        x     = static_cast<float>(luaL_checknumber(L, 1));
-        y     = static_cast<float>(luaL_checknumber(L, 2));
-        cx    = static_cast<float>(luaL_checknumber(L, 3));
-        cy    = static_cast<float>(luaL_checknumber(L, 4));
-        speed = static_cast<float>(luaL_checknumber(L, 5));
+        x     = lua::checkFloat(L, 1);
+        y     = lua::checkFloat(L, 2);
+        cx    = lua::checkFloat(L, 3);
+        cy    = lua::checkFloat(L, 4);
+        speed = lua::checkFloat(L, 5);
     }
 
     float outVx, outVy;
@@ -312,13 +312,13 @@ int LuaBindings::lua_engine_physics_applyVelocity(lua_State* L) {
         y  = pos->y;
         vx = vel->x;
         vy = vel->y;
-        dt = static_cast<float>(luaL_checknumber(L, 3));
+        dt = lua::checkFloat(L, 3);
     } else {
-        x  = static_cast<float>(luaL_checknumber(L, 1));
-        y  = static_cast<float>(luaL_checknumber(L, 2));
-        vx = static_cast<float>(luaL_checknumber(L, 3));
-        vy = static_cast<float>(luaL_checknumber(L, 4));
-        dt = static_cast<float>(luaL_checknumber(L, 5));
+        x  = lua::checkFloat(L, 1);
+        y  = lua::checkFloat(L, 2);
+        vx = lua::checkFloat(L, 3);
+        vy = lua::checkFloat(L, 4);
+        dt = lua::checkFloat(L, 5);
     }
 
     float outX, outY;
@@ -345,10 +345,10 @@ int LuaBindings::lua_engine_physics_raycast(lua_State* L) {
         return 1;
     }
 
-    float rx1 = static_cast<float>(luaL_checknumber(L, 1));
-    float ry1 = static_cast<float>(luaL_checknumber(L, 2));
-    float rx2 = static_cast<float>(luaL_checknumber(L, 3));
-    float ry2 = static_cast<float>(luaL_checknumber(L, 4));
+    float rx1 = lua::checkFloat(L, 1);
+    float ry1 = lua::checkFloat(L, 2);
+    float rx2 = lua::checkFloat(L, 3);
+    float ry2 = lua::checkFloat(L, 4);
 
     Scene* scene = b->m_activeScene;
 

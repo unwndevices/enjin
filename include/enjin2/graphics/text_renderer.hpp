@@ -4,6 +4,7 @@
 #include "canvas.hpp"
 #include "effect.hpp"     // index-shader data model (Mask x Remap x phase)
 #include "palette.hpp"    // Palette roles: the text default, the bg outline
+#include "corner_watch.hpp"  // corner cuts: text a rounded screen hides (host only)
 #include "gfxfont.h"  // canonical GFXglyph/GFXfont definitions (Adafruit GFX layout)
 #include <string>
 #include <cstring>
@@ -255,6 +256,33 @@ public:
      * @param c Character to draw
      */
     void drawChar(ICanvas<TPixel>& canvas, int16_t x, int16_t y, unsigned char c) {
+        if (ink_) {
+            drawCharInk(canvas, x, y, c);
+            return;
+        }
+        // A char drawn on its own is a string of one (corner_watch.hpp).
+        const char one[2] = {static_cast<char>(c), '\0'};
+        inString(canvas, one, [&] { drawCharInk(canvas, x, y, c); });
+    }
+
+private:
+    // The ink scope of the string being drawn: every fill pixel goes through
+    // it, so the armed CornerWatch hears a string a rounded corner cuts.
+    TextInk* ink_ = nullptr;
+
+    template <typename F>
+    void inString(ICanvas<TPixel>& canvas, std::string_view text, F&& draw) {
+        if (ink_) {
+            draw();
+            return;
+        }
+        TextInk ink(canvas.getWidth(), canvas.getHeight(), text);
+        ink_ = &ink;
+        draw();
+        ink_ = nullptr;
+    }
+
+    void drawCharInk(ICanvas<TPixel>& canvas, int16_t x, int16_t y, unsigned char c) {
         if (!gfx_font) {
             // Built-in font (classic 5x7)
             if (c < 32 || c > 126) return; // Only printable ASCII
@@ -265,12 +293,14 @@ public:
                     if (line & 1) {
                         if (text_size_x == 1 && text_size_y == 1) {
                             canvas.setPixel(x + i, y + j, text_color);
+                            ink_->pixel(x + i, y + j);
                         } else {
                             // Draw scaled pixel
                             for (uint8_t sy = 0; sy < text_size_y; sy++) {
                                 for (uint8_t sx = 0; sx < text_size_x; sx++) {
                                     canvas.setPixel(x + i * text_size_x + sx, 
                                                   y + j * text_size_y + sy, text_color);
+                                    ink_->pixel(x + i * text_size_x + sx, y + j * text_size_y + sy);
                                 }
                             }
                         }
@@ -360,14 +390,19 @@ public:
             if (has_effect_) {
                 const uint8_t base = toIndex(text_color);
                 stamp(0, 0, [&](int16_t px, int16_t py) {
+                    ink_->pixel(px, py);
                     return fromIndex(effect_.shadePixel(base, px, py));
                 });
             } else {
-                stamp(0, 0, [&](int16_t, int16_t) { return text_color; });
+                stamp(0, 0, [&](int16_t px, int16_t py) {
+                    ink_->pixel(px, py);
+                    return text_color;
+                });
             }
         }
     }
 
+public:
     /**
      * @brief Draw a string
      * @param canvas Canvas to draw to
@@ -377,9 +412,11 @@ public:
      */
     void drawString(ICanvas<TPixel>& canvas, int16_t x, int16_t y, const char* str) {
         setCursor(x, y);
-        while (*str) {
-            writeChar(canvas, *str++);
-        }
+        inString(canvas, str, [&] {
+            while (*str) {
+                writeChar(canvas, *str++);
+            }
+        });
     }
 
     /**
@@ -394,7 +431,11 @@ public:
                           uint16_t width, const char* str) {
         setCursor(x, y);
         setTextWrap(true);
-        
+        inString(canvas, str, [&] { drawWrapped(canvas, x, width, str); });
+    }
+
+private:
+    void drawWrapped(ICanvas<TPixel>& canvas, int16_t x, uint16_t width, const char* str) {
         // Simple word wrapping implementation
         const char* word_start = str;
         const char* current = str;
@@ -434,6 +475,7 @@ public:
         }
     }
 
+public:
     /**
      * @brief Get text bounds for a string (Adafruit ink box)
      * @param str String to measure
