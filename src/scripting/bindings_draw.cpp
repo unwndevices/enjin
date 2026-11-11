@@ -339,7 +339,10 @@ int LuaBindings::lua_line(lua_State* L) {
 int LuaBindings::lua_polyline(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
     luaL_checktype(L, 1, LUA_TTABLE);
-    const int n = static_cast<int>(lua_rawlen(L, 1)) / 2;
+    const int count = static_cast<int>(lua_rawlen(L, 1));
+    // A lone x is a mistake (ADR-0030: it raises).
+    luaL_argcheck(L, count % 2 == 0, 1, "an odd count of numbers, not x, y pairs");
+    const int n = count / 2;
     if (n < 1) return 0;
     // Each number read and rounded once (lround is a software double on the
     // S3): the first kPoints points into a stack buffer.

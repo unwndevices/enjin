@@ -64,6 +64,8 @@ int main() {
     ASSERT(f.error("gfx.point('a', 1)") != "", "gfx.point: a non-number raises");
     ASSERT(says(f.error("gfx.freeSprite(3)"), "unknown sprite handle 3"), "gfx.freeSprite: a handle never loaded raises");
     ASSERT(says(f.error("gfx.drawSprite(3, 0, 0)"), "unknown sprite handle 3"), "gfx.drawSprite: a handle never loaded raises");
+    ASSERT(says(f.error("gfx.polyline({1, 2, 3})"), "odd count of numbers"),
+           "gfx.polyline: a lone x raises");
     ASSERT(says(f.error("engine.tween.to({x = 0}, {x = 1}, 1, 'bouncy')"), "unknown easing 'bouncy'"),
            "engine.tween.to: an unknown easing raises");
     // The right ones still run.

@@ -596,8 +596,8 @@ void LuaBindings::registerAll() {
         luaFunction("polyline", lua_polyline, "(points:table) -> nil",
                     "Draw lines through points in the draw colour, gfx.getLineWidth() pixels "
                     "wide: gfx.line from each point to the next, in one call.",
-                    "points: a flat list {x1, y1, x2, y2, ...}; fewer than two points draws one "
-                    "point, an odd last number is ignored"),
+                    "points: a flat list {x1, y1, x2, y2, ...}; one point draws that point, an "
+                    "empty list draws none; an odd count of numbers raises"),
         luaFunction("rectangle", lua_rectangle,
                     "(x:number, y:number, w:int, h:int) -> nil\n"
                     "(mode:ShapeMode, x:number, y:number, w:int, h:int) -> nil",
