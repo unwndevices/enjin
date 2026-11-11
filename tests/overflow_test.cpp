@@ -49,9 +49,10 @@ static void test_overflow01_eventbus_channel_overflow() {
         "    local id\n"
         "    for i = 0, 15 do\n"
         "        id = engine.event.on('ch' .. i, function() end)\n"
-        "        if id == 0 then all_valid = false end\n"
+        "        if not id then all_valid = false end\n"
         "    end\n"
-        "    overflow_id = engine.event.on('overflow_ch', function() end)\n"
+        "    local none, err = engine.event.on('overflow_ch', function() end)\n"
+        "    overflow_id = (none == nil and err == 'event handlers full') and 0 or -1\n"
         "end\n"
         "function update(self, dt) end\n"
     );
@@ -66,7 +67,7 @@ static void test_overflow01_eventbus_channel_overflow() {
 
     // The 17th subscription (on 'overflow_ch') should return 0 (channel table full)
     double overflowId = script->getScriptNumber("overflow_id", -1.0);
-    ASSERT(overflowId == 0.0, "OVERFLOW-01: 17th channel subscription should return 0 (bus full)");
+    ASSERT(overflowId == 0.0, "OVERFLOW-01: 17th channel subscription returns nil, event handlers full (bus full; ADR-0030)");
 
     delete obj;
 }
@@ -91,9 +92,10 @@ static void test_overflow02_eventbus_subscriber_overflow() {
         "    local id\n"
         "    for i = 1, 8 do\n"
         "        id = engine.event.on('same_channel', function() end)\n"
-        "        if id == 0 then all_subs_valid = false end\n"
+        "        if not id then all_subs_valid = false end\n"
         "    end\n"
-        "    ninth_id = engine.event.on('same_channel', function() end)\n"
+        "    local none, err = engine.event.on('same_channel', function() end)\n"
+        "    ninth_id = (none == nil and err == 'event handlers full') and 0 or -1\n"
         "end\n"
         "function update(self, dt) end\n"
     );
@@ -108,7 +110,7 @@ static void test_overflow02_eventbus_subscriber_overflow() {
 
     // The 9th subscription on the same channel should return 0 (slot full)
     double ninthId = script->getScriptNumber("ninth_id", -1.0);
-    ASSERT(ninthId == 0.0, "OVERFLOW-02: 9th subscriber on same channel should return 0 (full)");
+    ASSERT(ninthId == 0.0, "OVERFLOW-02: 9th subscriber on same channel returns nil, event handlers full (ADR-0030)");
 
     delete obj;
 }

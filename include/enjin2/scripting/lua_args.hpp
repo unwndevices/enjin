@@ -61,4 +61,13 @@ inline int checkFieldInt(lua_State* L, int table, const char* key) {
     return v;
 }
 
+// A world failure (ADR-0030): push nil, err and return their count, as
+// `return lua::returnErr(L, "pool full");`. err is a short lower-case message.
+// A programming mistake raises instead (luaL_error / luaL_argerror).
+inline int returnErr(lua_State* L, const char* err) {
+    lua_pushnil(L);
+    lua_pushstring(L, err);
+    return 2;
+}
+
 } // namespace enjin2::lua

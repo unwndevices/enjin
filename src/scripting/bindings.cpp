@@ -645,14 +645,17 @@ void LuaBindings::registerAll() {
             .note("The user picks the palette in Settings; an applet cannot change it."),
         // Sprites
         luaFunction("newSprite", lua_newSprite,
-                    "(data:userdata, cellW:int, cellH:int, cols:int, rows:int) -> handle:int",
-                    "Make a sprite sheet from host-owned pixels; -1 when all 16 slots are busy.",
+                    "(data:userdata, cellW:int, cellH:int, cols:int, rows:int) -> "
+                    "handle:int?, err:string?",
+                    "Make a sprite sheet from host-owned pixels; nil, \"sprite slots full\" "
+                    "when all 16 are taken.",
                     "data: light userdata the C host passes; Lua values cannot supply pixels\n"
                     "cellW: frame width\n"
                     "cellH: frame height\n"
                     "cols: frames per row\n"
                     "rows: rows of frames")
-            .note("The sprite starts on frame 0, looping at 8 fps."),
+            .note("The sprite starts on frame 0, looping at 8 fps.")
+            .returnsErr(),
         luaFunction("freeSprite", lua_freeSprite, "(handle:int) -> nil",
                     "Free a sprite slot; unknown handles are ignored.",
                     "handle: the sprite")
@@ -879,11 +882,13 @@ void LuaBindings::registerProxyMetatable() {
                     "The object's component of a type, as its proxy; nil when it has none.",
                     "type: a component name such as \"C_Position\"; an unknown name gives nil"),
         luaFunction("add", lua_proxy_add_component_impl,
-                    "(type:string, params:table?) -> proxy:userdata?",
-                    "Attach a component, or take the one already there, and set fields from params.",
+                    "(type:string, params:table?) -> proxy:userdata?, err:string?",
+                    "Attach a component, or take the one already there, and set fields from "
+                    "params; nil, \"components full\" when the object holds 16.",
                     "type: a component name; an unknown name raises\n"
                     "params: field = value pairs written through the proxy; unknown fields are "
-                    "ignored"),
+                    "ignored")
+            .returnsErr(),
         luaFunction("addTag", lua_proxy_addTag_impl, "(tag:string) -> nil",
                     "Tag the object.",
                     "tag: the tag"),

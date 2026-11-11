@@ -49,16 +49,22 @@ void LuaBindings::registerEngineTable() {
         luaFunction("find", lua_engine_scene_find, "(name:string) -> ObjectProxy?",
                     "The named object in the active scene, else a persisted one; nil when none.",
                     "name: the object's name"),
-        luaFunction("spawn", lua_engine_scene_spawn, "(name:string?) -> ObjectProxy?",
-                    "Add a new object, with a C_Position, to the active scene; nil without one.",
-                    "name: optional name, for engine.scene.find"),
+        luaFunction("spawn", lua_engine_scene_spawn,
+                    "(name:string?) -> obj:ObjectProxy?, err:string?",
+                    "Add a new object, with a C_Position, to the active scene; nil, \"objects "
+                    "full\" when the scene holds its most, nil, \"no active scene\" without one.",
+                    "name: optional name, for engine.scene.find")
+            .returnsErr(),
         luaFunction("destroy", lua_engine_scene_destroy, "(obj:ObjectProxy) -> nil",
                     "Remove an object from the active scene; a destroyed or foreign value is ignored.",
                     "obj: the object"),
-        luaFunction("persist", lua_engine_scene_persist, "(obj:ObjectProxy) -> boolean?",
-                    "Keep an object alive across scene switches: true, or nil when the pool is full.",
-                    "obj: the object; any other value gives nil")
-            .note("nil without a scene state machine."),
+        luaFunction("persist", lua_engine_scene_persist,
+                    "(obj:ObjectProxy) -> ok:boolean?, err:string?",
+                    "Keep an object alive across scene switches: true, or nil and a reason.",
+                    "obj: the object; any other value raises")
+            .note("err: \"persist pool full\", \"destroyed object\", or \"no scene state "
+                  "machine\".")
+            .returnsErr(),
         luaFunction("unpersist", lua_engine_scene_unpersist, "(obj:ObjectProxy) -> boolean?",
                     "Let a persisted object go at the next scene switch: true, or nil.",
                     "obj: the object; any other value gives nil")
@@ -239,15 +245,16 @@ void LuaBindings::registerEngineTable() {
     // --- engine.store (persistent key-value store) ---
     static constexpr LuaApiEntry kStore[] = {
         luaFunction("save", lua_engine_store_save,
-                    "(key:string, value:number|string|boolean|table) -> boolean",
-                    "Store a value under key; false when all 16 keys are taken or a table does "
-                    "not fit.",
+                    "(key:string, value:number|string|boolean|table) -> ok:boolean?, err:string?",
+                    "Store a value under key: true, or nil, \"store full\" when all 16 keys are "
+                    "taken or a table does not fit (\"write failed\" for the desktop file).",
                     "key: the name; up to 63 bytes (longer raises)\n"
                     "value: a number, a string (up to 127 bytes), a boolean, or a flat table of up "
                     "to 16 string keys holding numbers, strings or booleans (other values are "
                     "skipped); anything else raises")
             .note("Desktop hosts write the file at once when a path is set; the web and the "
-                  "device keep changes in memory until engine.store.flush()."),
+                  "device keep changes in memory until engine.store.flush().")
+            .returnsErr(),
         luaFunction("load", lua_engine_store_load,
                     "(key:string) -> value:number|string|boolean|table?",
                     "The value stored under key, or nil; a table comes back as a new table.",
@@ -255,18 +262,27 @@ void LuaBindings::registerEngineTable() {
         luaFunction("exists", lua_engine_store_exists, "(key:string) -> boolean",
                     "Whether key holds a value.",
                     "key: the name"),
-        luaFunction("delete", lua_engine_store_delete, "(key:string) -> boolean",
-                    "Remove a key; true when it existed.",
-                    "key: the name"),
-        luaFunction("clear", lua_engine_store_clear, "() -> nil", "Remove every key."),
-        luaFunction("flush", lua_engine_store_flush, "() -> boolean",
+        luaFunction("delete", lua_engine_store_delete,
+                    "(key:string) -> removed:boolean?, err:string?",
+                    "Remove a key: true when it existed, false when it did not; nil, \"write "
+                    "failed\" when the desktop file cannot be written.",
+                    "key: the name")
+            .returnsErr(),
+        luaFunction("clear", lua_engine_store_clear, "() -> ok:boolean?, err:string?",
+                    "Remove every key: true, or nil, \"write failed\" for the desktop file.")
+            .returnsErr(),
+        luaFunction("flush", lua_engine_store_flush, "() -> ok:boolean?, err:string?",
                     "Write the store out: localStorage on the web, NVS on the device, the path "
-                    "file on desktop.")
-            .note("false on desktop until engine.store.path sets a file."),
-        luaFunction("path", lua_engine_store_path, "(filepath:string) -> nil",
-                    "Set the desktop save file and load what it holds.",
+                    "file on desktop. true, or nil and a reason.")
+            .note("err: \"write failed\", or \"no save file\" on desktop until "
+                  "engine.store.path sets one.")
+            .returnsErr(),
+        luaFunction("path", lua_engine_store_path, "(filepath:string) -> ok:boolean?, err:string?",
+                    "Set the desktop save file and load what it holds: true (no file yet is an "
+                    "empty store), or nil, \"bad save file\".",
                     "filepath: the JSON file")
-            .note("The web and the device ignore the path and reload the applet's saved store."),
+            .note("The web and the device ignore the path and reload the applet's saved store.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kStoreModule = luaApiModule(
         LuaApiScope::Table, "engine.store",
@@ -277,11 +293,14 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.sprite ---
     static constexpr LuaApiEntry kSprite[] = {
-        luaFunction("load", lua_loadSprite, "(name:string) -> handle:int",
-                    "Load <name>.njn from the asset folder into a sprite slot; -1 on failure.",
+        luaFunction("load", lua_loadSprite, "(name:string) -> handle:int?, err:string?",
+                    "Load <name>.njn from the asset folder into a sprite slot; nil and a "
+                    "reason when it cannot.",
                     "name: the file name without .njn, relative to the applet's asset folder")
-            .note("Fails when all 16 sprite slots are busy or the 64 KiB pixel arena is full. "
-                  "The sprite starts on frame 0, looping at 8 fps."),
+            .note("err: \"sprite slots full\" (16), \"asset buffer full\" (the 64 KiB pixel "
+                  "arena), \"file not found\", \"not a valid .njn\", or the pixel refusal. "
+                  "The sprite starts on frame 0, looping at 8 fps.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kSpriteModule = luaApiModule(
         LuaApiScope::Table, "engine.sprite", "Sprite sheets loaded from asset files.", kSprite);
@@ -289,13 +308,15 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.tilemap (ADR-0003 §6, #91; scene-free handle #256) ---
     static constexpr LuaApiEntry kTilemap[] = {
-        luaFunction("load", lua_loadTilemap, "(name:string) -> Tilemap",
+        luaFunction("load", lua_loadTilemap, "(name:string) -> map:Tilemap?, err:string?",
                     "Load <name>.njn (tileset and tile attributes) and <name>.njm (cells) into a "
-                    "new map.",
+                    "new map; nil and a reason when it cannot.",
                     "name: the file name without extension, relative to the applet's asset folder")
-            .note("Raises when a file is missing or invalid, or all 16 sprite slots are busy. The "
+            .note("err: \"sprite slots full\" (16), the tileset's reason (as engine.sprite.load), "
+                  "\"map file not found\", \"empty map file\" or \"not a valid .njm\". The "
                   "tileset holds its sprite slot until the next reload, even after the map is "
-                  "collected. Maps larger than 64x64 are cropped."),
+                  "collected. Maps larger than 64x64 are cropped.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kTilemapModule = luaApiModule(
         LuaApiScope::Table, "engine.tilemap", "Tile maps loaded from asset files.", kTilemap);
@@ -304,11 +325,13 @@ void LuaBindings::registerEngineTable() {
 
     // --- engine.event (Phase 42: pub/sub) ---
     static constexpr LuaApiEntry kEvent[] = {
-        luaFunction("on", lua_engine_event_on, "(name:string, fn:function) -> id:int",
-                    "Call fn() whenever name is emitted; returns the handler's id, 0 when a limit "
-                    "is reached.",
+        luaFunction("on", lua_engine_event_on,
+                    "(name:string, fn:function) -> id:int?, err:string?",
+                    "Call fn() whenever name is emitted; returns the handler's id, or nil, "
+                    "\"event handlers full\" when the channels or a channel's handlers are.",
                     "name: the event\n"
-                    "fn: the handler, called with no arguments"),
+                    "fn: the handler, called with no arguments")
+            .returnsErr(),
         luaFunction("off", lua_engine_event_off, "(id:int) -> nil",
                     "Remove a handler; unknown ids are ignored.",
                     "id: the id engine.event.on returned"),
@@ -384,16 +407,22 @@ void LuaBindings::registerEngineTable() {
             .note("An error inside a callback is discarded silently."),
         luaFunction("current", lua_engine_state_current, "() -> string",
                     "The current state's name; \"none\" after a reload."),
-        luaFunction("onEnter", lua_engine_state_on_enter, "(name:string, fn:function) -> nil",
-                    "Set the callback run when switching into a state, replacing any earlier one.",
+        luaFunction("onEnter", lua_engine_state_on_enter,
+                    "(name:string, fn:function) -> ok:boolean?, err:string?",
+                    "Set the callback run when switching into a state, replacing any earlier "
+                    "one: true, or nil, \"states full\".",
                     "name: the state; up to 63 bytes\n"
                     "fn: called with no arguments")
-            .note("Up to 16 states have callbacks; more are ignored."),
-        luaFunction("onExit", lua_engine_state_on_exit, "(name:string, fn:function) -> nil",
-                    "Set the callback run when switching out of a state, replacing any earlier one.",
+            .note("Up to 16 states have callbacks.")
+            .returnsErr(),
+        luaFunction("onExit", lua_engine_state_on_exit,
+                    "(name:string, fn:function) -> ok:boolean?, err:string?",
+                    "Set the callback run when switching out of a state, replacing any earlier "
+                    "one: true, or nil, \"states full\".",
                     "name: the state; up to 63 bytes\n"
                     "fn: called with no arguments")
-            .note("Up to 16 states have callbacks; more are ignored."),
+            .note("Up to 16 states have callbacks.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kStateModule = luaApiModule(
         LuaApiScope::Table, "engine.state",
@@ -606,7 +635,7 @@ int LuaBindings::lua_engine_state_switch(lua_State* L) {
 // --- engine.state.onEnter(state_name, callback) ---
 int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) return 0;
+    if (!b) return lua::returnErr(L, "no engine");
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
 
@@ -616,7 +645,7 @@ int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
         if (strcmp(b->m_stateNames[i], name) == 0) { idx = i; break; }
     }
     if (idx < 0) {
-        if (b->m_stateCount >= MAX_GAME_STATES) return 0;  // full
+        if (b->m_stateCount >= MAX_GAME_STATES) return lua::returnErr(L, "states full");
         idx = b->m_stateCount++;
         strncpy(b->m_stateNames[idx], name, 63);
         b->m_stateNames[idx][63] = '\0';
@@ -625,13 +654,14 @@ int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
     }
 
     b->m_stateOnEnter[idx].assign(L, 2);   // releases the callback it replaces
-    return 0;
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 // --- engine.state.onExit(state_name, callback) ---
 int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) return 0;
+    if (!b) return lua::returnErr(L, "no engine");
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
 
@@ -641,7 +671,7 @@ int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
         if (strcmp(b->m_stateNames[i], name) == 0) { idx = i; break; }
     }
     if (idx < 0) {
-        if (b->m_stateCount >= MAX_GAME_STATES) return 0;  // full
+        if (b->m_stateCount >= MAX_GAME_STATES) return lua::returnErr(L, "states full");
         idx = b->m_stateCount++;
         strncpy(b->m_stateNames[idx], name, 63);
         b->m_stateNames[idx][63] = '\0';
@@ -650,7 +680,8 @@ int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
     }
 
     b->m_stateOnExit[idx].assign(L, 2);   // releases the callback it replaces
-    return 0;
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 // --- engine.scene.switch(id) — ENG-01 ---
@@ -710,25 +741,13 @@ int LuaBindings::lua_engine_scene_colliders(lua_State* L) {
 // Returns true on success, nil when pool is full or proxy is invalid.
 // Does NOT invalidate the proxy — object remains live as an external in the current scene.
 int LuaBindings::lua_engine_scene_persist(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ObjectProxy*>(
-        luaL_testudata(L, 1, "ObjectProxy"));
-    if (!proxy || !proxy->valid || !proxy->object) {
-        lua_pushnil(L);
-        return 1;
-    }
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(luaL_checkudata(L, 1, "ObjectProxy"));
+    if (!proxy->valid || !proxy->object) return lua::returnErr(L, "destroyed object");
 
     LuaBindings* b = getBindings(L);
-    if (!b || !b->m_ssm) {
-        printf("[enjin] WARNING: engine.scene.persist() called without SceneStateMachine context — no-op\n");
-        lua_pushnil(L);
-        return 1;
-    }
+    if (!b || !b->m_ssm) return lua::returnErr(L, "no scene state machine");
 
-    bool ok = b->m_ssm->persistObject(proxy->object);
-    if (!ok) {
-        lua_pushnil(L);
-        return 1;
-    }
+    if (!b->m_ssm->persistObject(proxy->object)) return lua::returnErr(L, "persist pool full");
     lua_pushboolean(L, 1);
     return 1;
 }
@@ -765,15 +784,12 @@ int LuaBindings::lua_engine_scene_spawn(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
     auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));
     lua_pop(L, 1);
-    if (scenePP == nullptr || *scenePP == nullptr) { lua_pushnil(L); return 1; }
+    if (scenePP == nullptr || *scenePP == nullptr) return lua::returnErr(L, "no active scene");
     Scene* scene = *scenePP;
 
     // Create a plain Object (which auto-adds C_Position)
     Object* obj = scene->addObject<Object>();
-    if (!obj) {
-        lua_pushnil(L);
-        return 1;
-    }
+    if (!obj) return lua::returnErr(L, "objects full");
 
     // Optional name argument
     if (lua_gettop(L) >= 1 && lua_isstring(L, 1)) {
@@ -1112,16 +1128,16 @@ static LuaEventBus* getEventBus(lua_State* L) {
 // --- engine.event.on(name, callback) -- EVENT-01 ---
 // Returns subscription ID (integer > 0) on success, or 0 on failure.
 static int lua_engine_event_on(lua_State* L) {
-    LuaEventBus* bus = getEventBus(L);
-    if (!bus) { lua_pushinteger(L, 0); return 1; }
-
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
+    LuaEventBus* bus = getEventBus(L);
+    if (!bus) return lua::returnErr(L, "no event bus");
 
     lua::ScriptRef callback;
     callback.assign(L, 2);
 
     int id = bus->subscribe(name, std::move(callback));
+    if (id == 0) return lua::returnErr(L, "event handlers full");
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }

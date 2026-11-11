@@ -134,7 +134,7 @@ int pushComponentGet(lua_State* L, Object* owner, const char* typeName) {
 }
 
 int pushComponentAdd(lua_State* L, Object* owner, const char* typeName, int paramsIdx) {
-    if (!owner) { lua_pushnil(L); return 1; }
+    if (!owner) return lua::returnErr(L, "no object");
     const ComponentRegistryEntry* e = findComponentEntry(typeName);
     if (!e) {
         luaL_error(L, "add: unknown component '%s'", typeName ? typeName : "?");
@@ -142,8 +142,12 @@ int pushComponentAdd(lua_State* L, Object* owner, const char* typeName, int para
     }
     // Attach-or-fetch: never duplicate a component already on the object.
     Component* comp = e->get(owner);
-    if (!comp) comp = e->add(owner);
-    pushComponentProxyUserdata(L, comp, e->proxyMeta);  // proxy (or nil) now on top
+    if (!comp) {
+        if (!owner->hasComponentRoom()) return lua::returnErr(L, "components full");
+        comp = e->add(owner);
+        if (!comp) return lua::returnErr(L, "components full");
+    }
+    pushComponentProxyUserdata(L, comp, e->proxyMeta);  // proxy now on top
 
     // Apply an optional params table by writing each field through the proxy's
     // __newindex — the writable-add half of ADR-0003 §2. Fields the component's
@@ -258,6 +262,7 @@ static int lua_timer_after(lua_State* L) {
     auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
     timer->setLuaState(callback.state());
     int id = timer->scheduleAfter(seconds, std::move(callback));
+    if (id == 0) return lua::returnErr(L, "timers full");
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -279,6 +284,7 @@ static int lua_timer_every(lua_State* L) {
     auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
     timer->setLuaState(callback.state());
     int id = timer->scheduleEvery(seconds, std::move(callback));
+    if (id == 0) return lua::returnErr(L, "timers full");
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -311,6 +317,8 @@ static int lua_fsm_addState(lua_State* L) {
     }
     const char* name = luaL_checkstring(L, 2);
     luaL_checktype(L, 3, LUA_TTABLE);
+    luaL_argcheck(L, std::strlen(name) < C_StateMachine::MAX_STATE_NAME, 2,
+                  "state name too long");
 
     auto* fsm = static_cast<enjin2::C_StateMachine*>(proxy->component);
     fsm->setLuaState(lua::ScriptRef::mainThread(L));
@@ -326,11 +334,12 @@ static int lua_fsm_addState(lua_State* L) {
     }
 
     if (!fsm->addState(name, std::move(callbacks))) {
-        // Name too long or array full: the callbacks were released by
-        // addState's by-value argument; nothing is left on the stack to free.
-        luaL_error(L, "C_StateMachine: too many states or name too long");
+        // The table is full (the name was checked above): the callbacks were
+        // released by addState's by-value argument.
+        return lua::returnErr(L, "states full");
     }
-    return 0;
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 // fsm:setState(name) — FSM-02, FSM-04 (deferred)
@@ -615,10 +624,8 @@ static int lua_tilemap_buildSolidRects(lua_State* L) {
 // Maps larger than 64×64 are cropped to the component's fixed grid.
 int LuaBindings::lua_loadTilemap(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushnil(L); return 1; }
-
     const char* name = luaL_checkstring(L, 1);
-    if (!name) { lua_pushnil(L); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Allocate the handle first: a Lua memory error then fails before any slot
     // is pinned, and an error below just leaves the empty handle to the GC.
@@ -631,8 +638,7 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     }
     if (slot < 0) {
         ++b->spriteLoadFailures_;
-        luaL_error(L, "engine.tilemap.load: sprite pool full (max %d)", LUA_SPRITE_POOL_SIZE);
-        return 0;
+        return lua::returnErr(L, "sprite slots full");
     }
 
     std::string base = b->assetPath_;
@@ -641,11 +647,7 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
 
     // Load the tileset .njn (sheet + inline ATTR).
     std::vector<TileAttr> attrs;
-    if (!b->loadNjnAsset(base + ".njn", slot, attrs)) {
-        luaL_error(L, "engine.tilemap.load: failed to load tileset '%s.njn'%s%s", name,
-                   *b->njnRefusal_ ? ": " : "", b->njnRefusal_);
-        return 0;
-    }
+    if (!b->loadNjnAsset(base + ".njn", slot, attrs)) return lua::returnErr(L, b->njnError_);
     // Give the pinned slot well-defined animation state (mirrors sprite.load) so
     // it never carries garbage from a prior occupant while marked active.
     {
@@ -673,8 +675,7 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     FILE* fp = fopen((base + ".njm").c_str(), "rb");
     if (!fp) {
         releaseSlot();
-        luaL_error(L, "engine.tilemap.load: failed to read '%s.njm'", name);
-        return 0;
+        return lua::returnErr(L, "map file not found");
     }
     fseek(fp, 0, SEEK_END);
     long njmSize = ftell(fp);
@@ -682,8 +683,7 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     if (njmSize <= 0) {
         fclose(fp);
         releaseSlot();
-        luaL_error(L, "engine.tilemap.load: empty '%s.njm'", name);
-        return 0;
+        return lua::returnErr(L, "empty map file");
     }
     std::string njm(static_cast<size_t>(njmSize), '\0');
     size_t got = fread(&njm[0], 1, static_cast<size_t>(njmSize), fp);
@@ -693,8 +693,7 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
     if (got != static_cast<size_t>(njmSize) ||
         !parseNjmHeader(njmData, njm.size(), mh)) {
         releaseSlot();
-        luaL_error(L, "engine.tilemap.load: invalid '%s.njm'", name);
-        return 0;
+        return lua::returnErr(L, "not a valid .njm");
     }
 
     // Unpack cells (clamped to the component's fixed grid).
@@ -1599,11 +1598,13 @@ void LuaBindings::registerObjectProxyMetatable() {
                     "The object's component of a type, as its proxy; nil when it has none.",
                     "type: a component name such as \"C_Position\"; an unknown name gives nil"),
         luaFunction("add", lua_objproxy_add_component_impl,
-                    "(type:string, params:table?) -> proxy:userdata?",
-                    "Attach a component, or take the one already there, and set fields from params.",
+                    "(type:string, params:table?) -> proxy:userdata?, err:string?",
+                    "Attach a component, or take the one already there, and set fields from "
+                    "params; nil, \"components full\" when the object holds 16.",
                     "type: a component name; an unknown name raises\n"
                     "params: field = value pairs written through the proxy; unknown fields are "
-                    "ignored"),
+                    "ignored")
+            .returnsErr(),
         luaFunction("destroy", lua_objproxy_destroy_impl, "() -> nil",
                     "Remove the object from the active scene; its proxies go stale."),
         luaFunction("hasTag", lua_objproxy_hasTag_impl, "(tag:string) -> boolean",
@@ -1683,14 +1684,18 @@ static void registerPositionProxy(lua_State* L) {
 // C_Timer_Proxy (Phase 40): timer:after/every/cancel.
 static void registerTimerProxy(lua_State* L) {
     static constexpr LuaApiEntry kMethods[] = {
-        luaFunction("after", lua_timer_after, "(seconds:number, fn:function) -> id:int",
-                    "Call fn(self) once after a delay; 0 when all 8 timers are busy.",
+        luaFunction("after", lua_timer_after,
+                    "(seconds:number, fn:function) -> id:int?, err:string?",
+                    "Call fn(self) once after a delay; nil, \"timers full\" when all 8 are taken.",
                     "seconds: the delay\n"
-                    "fn: the callback; self is the owning object's script"),
-        luaFunction("every", lua_timer_every, "(seconds:number, fn:function) -> id:int",
-                    "Call fn(self) at a fixed interval; 0 when all 8 timers are busy.",
+                    "fn: the callback; self is the owning object's script")
+            .returnsErr(),
+        luaFunction("every", lua_timer_every,
+                    "(seconds:number, fn:function) -> id:int?, err:string?",
+                    "Call fn(self) at a fixed interval; nil, \"timers full\" when all 8 are taken.",
                     "seconds: the interval\n"
-                    "fn: the callback; self is the owning object's script"),
+                    "fn: the callback; self is the owning object's script")
+            .returnsErr(),
         luaFunction("cancel", lua_timer_cancel, "(id:int) -> nil",
                     "Stop a timer; unknown ids are ignored.",
                     "id: the id after or every returned"),
@@ -1709,12 +1714,14 @@ static void registerTimerProxy(lua_State* L) {
 // C_StateMachine_Proxy (Phase 41): fsm:addState/setState/getState.
 static void registerStateMachineProxy(lua_State* L) {
     static constexpr LuaApiEntry kMethods[] = {
-        luaFunction("addState", lua_fsm_addState, "(name:string, callbacks:table) -> nil",
-                    "Add a state with optional enter, exit and update callbacks.",
-                    "name: the state; up to 31 bytes\n"
+        luaFunction("addState", lua_fsm_addState,
+                    "(name:string, callbacks:table) -> ok:boolean?, err:string?",
+                    "Add a state with optional enter, exit and update callbacks: true, or nil, "
+                    "\"states full\" when all 8 are used.",
+                    "name: the state; up to 31 bytes (longer raises)\n"
                     "callbacks: {enter = fn(self), exit = fn(self), update = fn(self, dt)}, each "
                     "optional")
-            .note("Raises when all 8 states are used or the name is too long."),
+            .returnsErr(),
         luaFunction("setState", lua_fsm_setState, "(name:string) -> nil",
                     "Switch state at the end of the next update.",
                     "name: the state"),

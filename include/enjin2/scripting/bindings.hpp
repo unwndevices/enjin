@@ -899,6 +899,9 @@ private:
     /// Why the last loadNjnAsset refused its file when the pixels were the reason
     /// ("pixel index 9 is not a Palette role ..."); empty otherwise.
     const char* njnRefusal_ = "";
+    /// Why the last loadNjnAsset failed, short and lower-case ("file not found",
+    /// "asset buffer full", the refusal): the err a loader returns (ADR-0030).
+    const char* njnError_ = "";
 
     // Canvas management functions
     static int lua_getWidth(lua_State* L);

@@ -54,6 +54,10 @@ public:
      * @brief Constructor
      */
     Object();
+
+    /// Whether addComponent has room for one more (a Lua add reports the
+    /// full object as nil, err; ADR-0030).
+    bool hasComponentRoom() const { return componentCount < MAX_COMPONENTS; }
     
     /**
      * @brief Destructor — invalidates associated ObjectProxy before Object is freed.

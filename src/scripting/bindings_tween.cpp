@@ -76,7 +76,7 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
     // arg 5: optional done callback (lua_isfunction check below)
 
     LuaBindings* b = LuaBindings::getBindings(L);
-    if (!b) { lua_pushnil(L); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Find a free slot via linear scan
     int freeIdx = -1;
@@ -86,11 +86,7 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
             break;
         }
     }
-    if (freeIdx < 0) {
-        // Pool full — return nil per spec (no Lua error)
-        lua_pushnil(L);
-        return 1;
-    }
+    if (freeIdx < 0) return lua::returnErr(L, "tween slots full");
 
     TweenSlot& slot = b->m_tweenPool[freeIdx];
 
@@ -370,7 +366,7 @@ int LuaBindings::lua_engine_tween_spring(lua_State* L) {
     // arg 4: optional { duration, bounce } table
 
     LuaBindings* b = LuaBindings::getBindings(L);
-    if (!b) { lua_pushnil(L); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Resolve (duration, bounce): the caller's table wins, else the pop preset.
     float durationS = springpreset::Pop.durationS;
@@ -405,7 +401,7 @@ int LuaBindings::lua_engine_tween_spring(lua_State* L) {
     for (int i = 0; i < SPRING_POOL_SIZE; ++i) {
         if (!b->m_springPool[i].active) { freeIdx = i; break; }
     }
-    if (freeIdx < 0) { lua_pushnil(L); return 1; } // pool full — nil per spec
+    if (freeIdx < 0) return lua::returnErr(L, "spring slots full");
 
     SpringSlot& slot = b->m_springPool[freeIdx];
 
@@ -480,8 +476,9 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
     static constexpr LuaApiEntry kTween[] = {
         luaFunction("to", lua_engine_tween_to,
                     "(target:table, props:table, duration:number, easing:Easing?=linear, "
-                    "done:function?) -> id:int?",
-                    "Animate numeric fields of a table to new values; nil when all 8 slots are busy.",
+                    "done:function?) -> id:int?, err:string?",
+                    "Animate numeric fields of a table to new values; nil, \"tween slots full\" "
+                    "when all 8 are taken.",
                     "target: the plain Lua table to animate (userdata is rejected)\n"
                     "props: field name -> end value; at most 4 string-keyed numbers are used\n"
                     "duration: seconds; a negative value finishes on the next tick\n"
@@ -489,7 +486,8 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
                     "done: called (under pcall) when the tween finishes")
             .withEnum(kEasing)
             .note("Start values are sampled now (a missing field starts at 0). Written values "
-                  "are floats. Cleared on reload and on a scene change."),
+                  "are floats. Cleared on reload and on a scene change.")
+            .returnsErr(),
         luaFunction("cancel", lua_engine_tween_cancel, "(id:int) -> nil",
                     "Stop a tween where it is, without calling done; unknown ids are ignored.",
                     "id: the id tween.to returned (springs are not cancelled here)"),
@@ -500,15 +498,17 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
                     "id: the id tween.to returned (spring ids are not awaitable)")
             .note("Raises outside a coroutine; call it from engine.async.start."),
         luaFunction("spring", lua_engine_tween_spring,
-                    "(target:table, key:string, goal:number, params:table?) -> id:int?",
+                    "(target:table, key:string, goal:number, params:table?) -> "
+                    "id:int?, err:string?",
                     "Spring one numeric field toward goal; a running spring on the same field is retargeted.",
                     "target: the plain Lua table holding the field\n"
                     "key: the field name\n"
                     "goal: the value to settle on\n"
                     "params: {duration = 0.34, bounce = 0.55} overrides (the Pop preset)")
             .note("Tuned for pixel-scale values: it settles within 0.5 and snaps exactly onto "
-                  "goal. Retargeting keeps the velocity and returns the existing id; nil when "
-                  "all 8 spring slots are busy."),
+                  "goal. Retargeting keeps the velocity and returns the existing id; nil, "
+                  "\"spring slots full\" when all 8 are taken.")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kTweenModule = luaApiModule(
         LuaApiScope::Table, "engine.tween",

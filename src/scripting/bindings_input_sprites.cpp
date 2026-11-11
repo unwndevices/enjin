@@ -44,19 +44,19 @@ int LuaBindings::lua_getAxis(lua_State* L) {
 // Sprite Pool Bindings (SPR-06)
 //==============================================================================
 
-// newSprite(data_lightuserdata, cell_w, cell_h, cols, rows) -> handle (0..15) or -1
+// newSprite(data_lightuserdata, cell_w, cell_h, cols, rows) -> handle (0..15)
 // data: lightuserdata pointing to const uint8_t* pixel array (caller owns lifetime)
-// Returns -1 if pool is full.
+// nil, "sprite slots full" when the pool is (ADR-0030).
 int LuaBindings::lua_newSprite(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b) { lua_pushinteger(L, -1); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Find first inactive slot
     int handle = -1;
     for (int i = 0; i < LUA_SPRITE_POOL_SIZE; ++i) {
         if (!b->spritePool[i].active) { handle = i; break; }
     }
-    if (handle < 0) { lua_pushinteger(L, -1); return 1; }  // pool full
+    if (handle < 0) return lua::returnErr(L, "sprite slots full");
 
     // Initialize slot from Lua arguments
     auto& s = b->spritePool[handle];

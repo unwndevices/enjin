@@ -132,6 +132,7 @@ static void testMalformed() {
 
 static int fnA(lua_State* L) { lua_pushinteger(L, 1); return 1; }
 static int fnB(lua_State* L) { lua_pushinteger(L, 2); return 1; }
+static int fnC(lua_State* L) { lua_pushinteger(L, 3); return 1; }
 
 static constexpr const char* kFruitNames[] = {"apple", "pear"};
 static constexpr LuaApiEnum kFruit = luaApiEnum("Fruit", kFruitNames);
@@ -154,7 +155,7 @@ static constexpr LuaApiModule kDemoModule =
     luaApiModule(LuaApiScope::Table, "demo", "A demo module.", kDemo);
 
 static constexpr LuaApiEntry kGlobalsEntries[] = {
-    luaFunction("demoGlobal", fnB, "() -> int", "A bare global."),
+    luaFunction("demoGlobal", fnC, "() -> int", "A bare global."),
 };
 static constexpr LuaApiModule kGlobalsModule =
     luaApiModule(LuaApiScope::Globals, "", "Demo globals.", kGlobalsEntries);
@@ -211,7 +212,7 @@ static void testModuleExposesExactlyItsEntries() {
     lua_pop(L, 1);
 
     luaApiSetGlobals(L, kGlobalsModule);
-    ASSERT(evalInt(L, "demoGlobal()") == 2, "Globals scope registers bare globals");
+    ASSERT(evalInt(L, "demoGlobal()") == 3, "Globals scope registers bare globals");
 
     // Registry lists what was registered, in order, once each.
     luaApiSetGlobals(L, kGlobalsModule);
@@ -347,6 +348,129 @@ static void testValidateCatchesDrift() {
     ASSERT(errors.find("noSummary") != std::string::npos, "reports a missing summary");
     ASSERT(errors.find("unusedEnum") != std::string::npos,
            "an enum counts as referenced only as a whole word");
+}
+
+//==============================================================================
+// ADR-0030: camelCase, one home per job, nil, err or raise
+//==============================================================================
+
+static void testValidateHoldsTheConvention() {
+    static constexpr LuaApiEntry kInner[] = {
+        luaConstant("DEEP_ONE", 1, "A constant may be UPPER_SNAKE."),
+    };
+    static constexpr LuaApiModule kInnerModule =
+        luaApiModule(LuaApiScope::Table, "good.INNER", "Constants.", kInner);
+    static constexpr LuaApiEntry kGood[] = {
+        luaFunction("loadThing", fnA, "(path:string) -> thing:int?, err:string?",
+                    "Load a thing; nil and a reason when the card says no.", "path: the file")
+            .returnsErr(),
+        luaFunction("Vec", fnA, "(_:nil, x:number) -> nil", "A constructor-style name.",
+                    "_: always nil\nx: a value"),
+        luaFunction("isBusy", fnB, "() -> boolean", "A query; nothing fails."),
+        luaConstant("LAYER_BG", 1, "A constant."),
+        luaTable("INNER", kInnerModule, "A table of constants."),
+    };
+    static constexpr LuaApiModule kGoodModule =
+        luaApiModule(LuaApiScope::Table, "good", "Good.", kGood);
+    std::string errors;
+    ASSERT(validateLuaApiModule(kGoodModule, &errors), "the convention validates: " + errors);
+
+    static constexpr LuaApiEntry kBad[] = {
+        luaFunction("play_note", fnA, "() -> nil", "A snake_case function."),
+        luaFunction("snakeArg", fnA, "(lo_end:number) -> nil", "A snake_case parameter.",
+                    "lo_end: low end"),
+        luaFunction("snakeResult", fnA, "() -> peak_db:number", "A snake_case result."),
+        luaFunction("errNoShape", fnA, "(path:string) -> int", "Says nil, err but returns one.",
+                    "path: the file")
+            .returnsErr(),
+        luaFunction("errNotLast", fnA, "() -> err:string?, x:int?", "err must come last.")
+            .returnsErr(),
+        luaFunction("errUndeclared", fnA, "() -> x:int?, err:string?",
+                    "Returns an err but is documented as raising."),
+        luaFunction("minusOne", fnA, "(path:string) -> handle:int",
+                    "Load a sample; -1 on failure.", "path: the file"),
+        luaFunction("nilWhenBusy", fnA, "() -> id:int?", "Start one; nil when all 8 slots are busy."),
+        luaFunction("printsIt", fnA, "() -> nil", "Do it.")
+            .note("The failure reason is printed to the log."),
+    };
+    static constexpr LuaApiModule kBadModule =
+        luaApiModule(LuaApiScope::Table, "bad_table", "Bad.", kBad);
+    errors.clear();
+    ASSERT(!validateLuaApiModule(kBadModule, &errors), "the convention's breaches fail validation");
+    for (const char* name : {"bad_table: ", "play_note", "snakeArg", "snakeResult", "errNoShape",
+                             "errNotLast", "errUndeclared", "minusOne", "nilWhenBusy", "printsIt"})
+        ASSERT(errors.find(name) != std::string::npos, std::string("reports ") + name + "\n" + errors);
+}
+
+static void testCensusFindsOneJobInTwoHomes() {
+    static constexpr LuaApiEntry kSensorEntries[] = {
+        luaFunction("tilt", fnA, "() -> number", "Tilt."),
+    };
+    static constexpr LuaApiModule kSensorGlobal =
+        luaApiModule(LuaApiScope::Table, "radar", "Radar.", kSensorEntries);
+    static constexpr LuaApiEntry kTwinEntries[] = {
+        luaFunction("lean", fnB, "() -> number", "Tilt again."),
+    };
+    static constexpr LuaApiModule kSensorEngine =
+        luaApiModule(LuaApiScope::Table, "engine.radar", "Radar again.", kTwinEntries);
+    static constexpr LuaApiEntry kAliasEntries[] = {
+        luaFunction("tilt", fnA, "() -> number", "Tilt under a second name."),
+    };
+    static constexpr LuaApiModule kAlias =
+        luaApiModule(LuaApiScope::Table, "motion", "An alias table.", kAliasEntries);
+
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    LuaPlatform::configureSecurityRestrictions(L);
+    const std::vector<std::string> before = luaApiCensus(L);
+    luaApiSetGlobalTable(L, kSensorGlobal);
+    lua_newtable(L);
+    lua_setglobal(L, "engine");
+    lua_getglobal(L, "engine");
+    luaApiSetSubtable(L, -1, kSensorEngine);
+    lua_pop(L, 1);
+    luaApiSetGlobalTable(L, kAlias);
+    std::vector<std::string> added;
+    for (const auto& p : luaApiCensus(L))
+        if (std::find(before.begin(), before.end(), p) == before.end()) added.push_back(p);
+    std::string got;
+    for (const auto& p : added) got += "\n  " + p;
+    ASSERT(std::find(added.begin(), added.end(),
+                     "engine.radar and radar hold one job: engine.* is enjin's, a product table "
+                     "is a global") != added.end(), "reports engine.X beside X:" + got);
+    ASSERT(std::find(added.begin(), added.end(),
+                     "motion.tilt and radar.tilt are one function in two homes") != added.end(),
+           "reports a function registered twice:" + got);
+    lua_close(L);
+}
+
+// One world failure per enjin subsystem without a test of its own: a full
+// pool or slot table is nil, err (sprite, store, event bus and tilemap have
+// theirs in their own tests).
+static void testWorldFailuresReturnNilErr() {
+    LuaEngine engine;
+    LuaBindings bindings(&engine);
+    engine.initialize();
+    bindings.registerAll();
+    lua_State* L = engine.getState();
+    auto check = [&](const char* code, const char* what) {
+        const LuaResult r = engine.executeString(code);
+        ASSERT(r.success, std::string(what) + ": " + r.error);
+    };
+    check("for i = 1, 8 do assert(engine.async.start(function() coroutine.yield() end)) end "
+          "local id, err = engine.async.start(function() end) "
+          "assert(id == nil and err == 'coroutine slots full', err)",
+          "engine.async.start full is nil, err");
+    check("for i = 1, 8 do assert(engine.tween.to({x = 0}, {x = 1}, 1)) end "
+          "local id, err = engine.tween.to({x = 0}, {x = 1}, 1) "
+          "assert(id == nil and err == 'tween slots full', err)",
+          "engine.tween.to full is nil, err");
+    check("for i = 1, 16 do assert(engine.state.onEnter('s' .. i, function() end) == true) end "
+          "local ok, err = engine.state.onExit('one more', function() end) "
+          "assert(ok == nil and err == 'states full', err)",
+          "engine.state.onExit full is nil, err");
+    check("local ok, err = pcall(engine.async.start, 42) assert(not ok)",
+          "a mistake still raises");
 }
 
 //==============================================================================
@@ -730,6 +854,9 @@ int main() {
     testViewMergesByPlace();
     testCensusFindsUndescribedNames();
     testValidateCatchesDrift();
+    testValidateHoldsTheConvention();
+    testCensusFindsOneJobInTwoHomes();
+    testWorldFailuresReturnNilErr();
     testEnjinCoreModules();
     testEngineTableDescribed();
     testEachFeatureSwitch();

@@ -34,12 +34,12 @@ static void clearSlot(Slot& slot, lua_State* /*L*/) {
 
 // ── ASYNC-01: engine.async.start(fn) ────────────────────────────────────────
 // Creates a new coroutine from fn and schedules it for this frame.
-// Returns an integer ID on success, or nil if the pool is full (no Lua error).
+// Returns an integer ID on success, or nil, err if the pool is full (ADR-0030).
 int LuaBindings::lua_engine_async_start(lua_State* L) {
     luaL_checktype(L, 1, LUA_TFUNCTION);
 
     LuaBindings* b = LuaBindings::getBindings(L);
-    if (!b) { lua_pushnil(L); return 1; }
+    if (!b) return lua::returnErr(L, "no engine");
 
     // Find a free slot via linear scan
     int freeIdx = -1;
@@ -49,11 +49,7 @@ int LuaBindings::lua_engine_async_start(lua_State* L) {
             break;
         }
     }
-    if (freeIdx < 0) {
-        // Pool full — return nil per plan spec (no Lua error)
-        lua_pushnil(L);
-        return 1;
-    }
+    if (freeIdx < 0) return lua::returnErr(L, "coroutine slots full");
 
     CoroutineSlot& slot = b->m_coroutinePool[freeIdx];
 
@@ -258,11 +254,14 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
 // ── registerAsyncSubtable: engine.async.* (called from registerEngineTable) ──
 void LuaBindings::registerAsyncSubtable(lua_State* L) {
     static constexpr LuaApiEntry kAsync[] = {
-        luaFunction("start", lua_engine_async_start, "(fn:function) -> id:int?",
-                    "Run fn as a coroutine at the next coroutine tick; nil when all 8 slots are busy.",
+        luaFunction("start", lua_engine_async_start, "(fn:function) -> id:int?, err:string?",
+                    "Run fn as a coroutine at the next coroutine tick; nil, \"coroutine slots "
+                    "full\" when all 8 are taken.",
                     "fn: the function to run; its return values are discarded")
             .note("Coroutines tick after update(), so fn started in update() first runs later "
-                  "that frame. Errors are printed as [async error] and free the slot."),
+                  "that frame. An error inside fn is printed as [async error] and frees the "
+                  "slot.")
+            .returnsErr(),
         luaFunction("wait", lua_engine_async_wait, "(seconds:number?=0) -> nil",
                     "Suspend the calling coroutine for a number of seconds.",
                     "seconds: how long to wait; negative counts as 0")
