@@ -206,21 +206,24 @@ namespace parity
     //     Exit question: border_stroke_test (solid/bevel/drop-shadow ring) and
     //     primitives_roundrect_test (edges/hollow/rounded-corner/r=0 square)
     //     pin the ratified span-walker.
+    //   * 2026-11-11: text_renderer.hpp's HEAD pin refreshed for the corner-cut
+    //     ink scope (9b2e6f7, Tomodachi ADR-0031), which reports ink and draws
+    //     no glyph differently.
     inline constexpr std::array<Waiver, 4> kWaivers{{
         {"text.drawChar", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 80,
          "canvas.hpp", 0x9b309bb96074ccb2ull,
-         "text_renderer.hpp", 0x1be17c58598a4462ull,
+         "text_renderer.hpp", 0xbaa4f18ee96aa8c6ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.print", WaiverStatus::Active,
          "font == 3 (glcd / no GFX font)", &coversGlcdFont, 1812,
          "canvas.hpp", 0x9b309bb96074ccb2ull,
-         "text_renderer.hpp", 0x1be17c58598a4462ull,
+         "text_renderer.hpp", 0xbaa4f18ee96aa8c6ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"text.println", WaiverStatus::Retired,
          "pair retired: HEAD '\\n' yAdvance ratified; no BASE call sites", nullptr, 0,
          "canvas.hpp", 0x9b309bb96074ccb2ull,
-         "text_renderer.hpp", 0x1be17c58598a4462ull,
+         "text_renderer.hpp", 0xbaa4f18ee96aa8c6ull,
          "unwndevices/unwn#168", "claude+ciro", "2026-08-02"},
         {"geom.drawRoundRect", WaiverStatus::Retired,
          "pair retired: HEAD replaces the corner-arc annulus with the #39 "
