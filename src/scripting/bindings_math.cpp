@@ -328,14 +328,6 @@ int LuaBindings::lua_Rect_newindex(lua_State* L) {
 
 // ── Math utility globals ────────────────────────────────────────────────────
 
-int LuaBindings::lua_math_clamp(lua_State* L) {
-    float val = lua::checkFloat(L, 1);
-    float lo  = lua::checkFloat(L, 2);
-    float hi  = lua::checkFloat(L, 3);
-    lua_pushnumber(L, enjin2::math::clamp(val, lo, hi));
-    return 1;
-}
-
 int LuaBindings::lua_math_lerp(lua_State* L) {
     float a = lua::checkFloat(L, 1);
     float b = lua::checkFloat(L, 2);
@@ -346,11 +338,11 @@ int LuaBindings::lua_math_lerp(lua_State* L) {
 
 int LuaBindings::lua_math_remap(lua_State* L) {
     float val    = lua::checkFloat(L, 1);
-    float in_lo  = lua::checkFloat(L, 2);
-    float in_hi  = lua::checkFloat(L, 3);
-    float out_lo = lua::checkFloat(L, 4);
-    float out_hi = lua::checkFloat(L, 5);
-    lua_pushnumber(L, enjin2::math::map(val, in_lo, in_hi, out_lo, out_hi));
+    float inLo  = lua::checkFloat(L, 2);
+    float inHi  = lua::checkFloat(L, 3);
+    float outLo = lua::checkFloat(L, 4);
+    float outHi = lua::checkFloat(L, 5);
+    lua_pushnumber(L, enjin2::math::map(val, inLo, inHi, outLo, outHi));
     return 1;
 }
 
@@ -555,11 +547,6 @@ void LuaBindings::registerMathBindings() {
                     "y: top edge\n"
                     "w: width (uint16; a negative value wraps)\n"
                     "h: height (uint16; a negative value wraps)"),
-        luaFunction("clamp", lua_math_clamp, "(v:number, lo:number, hi:number) -> number",
-                    "v limited to the range lo..hi.",
-                    "v: the value\n"
-                    "lo: lower bound\n"
-                    "hi: upper bound"),
         luaFunction("lerp", lua_math_lerp, "(a:number, b:number, t:number) -> number",
                     "Linear interpolation from a to b; t is not clamped.",
                     "a: value at t = 0\n"

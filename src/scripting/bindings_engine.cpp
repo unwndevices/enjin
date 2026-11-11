@@ -378,18 +378,18 @@ void LuaBindings::registerEngineTable() {
     // --- engine.state (quick-007 API-07: named states with enter/exit callbacks) ---
     static constexpr LuaApiEntry kState[] = {
         luaFunction("switch", lua_engine_state_switch, "(name:string) -> nil",
-                    "Run the current state's on_exit, change state, then run the new state's "
-                    "on_enter.",
+                    "Run the current state's onExit, change state, then run the new state's "
+                    "onEnter.",
                     "name: the new state; it need not have callbacks")
             .note("An error inside a callback is discarded silently."),
         luaFunction("current", lua_engine_state_current, "() -> string",
                     "The current state's name; \"none\" after a reload."),
-        luaFunction("on_enter", lua_engine_state_on_enter, "(name:string, fn:function) -> nil",
+        luaFunction("onEnter", lua_engine_state_on_enter, "(name:string, fn:function) -> nil",
                     "Set the callback run when switching into a state, replacing any earlier one.",
                     "name: the state; up to 63 bytes\n"
                     "fn: called with no arguments")
             .note("Up to 16 states have callbacks; more are ignored."),
-        luaFunction("on_exit", lua_engine_state_on_exit, "(name:string, fn:function) -> nil",
+        luaFunction("onExit", lua_engine_state_on_exit, "(name:string, fn:function) -> nil",
                     "Set the callback run when switching out of a state, replacing any earlier one.",
                     "name: the state; up to 63 bytes\n"
                     "fn: called with no arguments")
@@ -526,8 +526,8 @@ void LuaBindings::registerEngineTable() {
     // --- engine.tween (Phase 50: TWEEN-01..TWEEN-03) ---
     registerTweenSubtable(L);
 
-    // --- engine.ui (Phase 52: UI-01..UI-04) ---
-    registerUISubtable(L);
+    // --- the global ui (Phase 52: UI-01..UI-04; ADR-0030: not ui) ---
+    registerUITable(L);
 
     // --- engine.hud (#83: RollingCounter / Timer value objects) ---
     registerHudSubtable(L);
@@ -568,13 +568,13 @@ int LuaBindings::lua_engine_state_current(lua_State* L) {
 }
 
 // --- engine.state.switch(name) ---
-// Fires on_exit for current state, changes state, fires on_enter for new state.
+// Fires onExit for current state, changes state, fires onEnter for new state.
 int LuaBindings::lua_engine_state_switch(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
     const char* newState = luaL_checkstring(L, 1);
 
-    // Fire on_exit for current state
+    // Fire onExit for current state
     for (int i = 0; i < b->m_stateCount; ++i) {
         if (strcmp(b->m_stateNames[i], b->m_currentGameState) == 0) {
             if (b->m_stateOnExit[i].valid()) {
@@ -589,7 +589,7 @@ int LuaBindings::lua_engine_state_switch(lua_State* L) {
     strncpy(b->m_currentGameState, newState, sizeof(b->m_currentGameState) - 1);
     b->m_currentGameState[sizeof(b->m_currentGameState) - 1] = '\0';
 
-    // Fire on_enter for new state
+    // Fire onEnter for new state
     for (int i = 0; i < b->m_stateCount; ++i) {
         if (strcmp(b->m_stateNames[i], newState) == 0) {
             if (b->m_stateOnEnter[i].valid()) {
@@ -603,7 +603,7 @@ int LuaBindings::lua_engine_state_switch(lua_State* L) {
     return 0;
 }
 
-// --- engine.state.on_enter(state_name, callback) ---
+// --- engine.state.onEnter(state_name, callback) ---
 int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
@@ -628,7 +628,7 @@ int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
     return 0;
 }
 
-// --- engine.state.on_exit(state_name, callback) ---
+// --- engine.state.onExit(state_name, callback) ---
 int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;

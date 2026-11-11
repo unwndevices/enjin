@@ -48,7 +48,7 @@ static void test_setstyle_masks_present_keys() {
     StyleFixture f;
     const Style& def = kDefaultStyles[(int)StyleSlot::Panel];
 
-    LuaResult r = f.exec("engine.ui.setStyle('panel', { fill = 7, radius = 4 })");
+    LuaResult r = f.exec("ui.setStyle('panel', { fill = 7, radius = 4 })");
     ASSERT(r.success, "setStyle must not error");
 
     const Style& got = f.bindings.resolveStyle(StyleSlot::Panel);
@@ -62,7 +62,7 @@ static void test_setstyle_masks_present_keys() {
 static void test_reset_clears_mask() {
     printf("--- registerAll clears the override mask ---\n");
     StyleFixture f;
-    f.exec("engine.ui.setStyle('panel', { fill = 6 })");
+    f.exec("ui.setStyle('panel', { fill = 6 })");
     ASSERT(f.bindings.resolveStyle(StyleSlot::Panel).fill.value == 6, "override active");
 
     f.bindings.registerAll();  // applet boundary — fresh Lua state
@@ -75,10 +75,10 @@ static void test_reset_clears_mask() {
 static void test_settheme_clears_overrides() {
     printf("--- setTheme clears overrides ---\n");
     StyleFixture f;
-    f.exec("engine.ui.setStyle('sceneObject', { fill = 5 })");
+    f.exec("ui.setStyle('sceneObject', { fill = 5 })");
     ASSERT(f.bindings.resolveStyle(StyleSlot::SceneObject).fill.value == 5, "override active");
 
-    LuaResult r = f.exec("engine.ui.setTheme('default')");
+    LuaResult r = f.exec("ui.setTheme('default')");
     ASSERT(r.success, "setTheme('default') must not error");
     const Style& def = kDefaultStyles[(int)StyleSlot::SceneObject];
     ASSERT(f.bindings.resolveStyle(StyleSlot::SceneObject).fill.value == def.fill.value,
@@ -92,13 +92,13 @@ static void test_panel_dispatch() {
     const Style& def = kDefaultStyles[(int)StyleSlot::Panel];
 
     // String → style slot: interior takes the resolved fill, edge the border.
-    LuaResult r1 = f.exec("engine.ui.panel(2, 2, 10, 10, 'panel')");
+    LuaResult r1 = f.exec("ui.panel(2, 2, 10, 10, 'panel')");
     ASSERT(r1.success, "panel with slot name must not error");
     ASSERT(f.canvas.getPixel(6, 6).value == def.fill.value, "interior is the slot fill");
     ASSERT(f.canvas.getPixel(2, 2).value == def.border.value, "edge is the slot border");
 
     // Number → legacy explicit (bg, border).
-    LuaResult r2 = f.exec("engine.ui.panel(20, 20, 10, 10, 6, 3)");
+    LuaResult r2 = f.exec("ui.panel(20, 20, 10, 10, 6, 3)");
     ASSERT(r2.success, "panel with numeric bg must not error");
     ASSERT(f.canvas.getPixel(24, 24).value == 6, "interior is the legacy bg");
     ASSERT(f.canvas.getPixel(20, 20).value == 3, "edge is the legacy border");
@@ -108,9 +108,9 @@ static void test_panel_dispatch() {
 static void test_unknown_names_error() {
     printf("--- unknown slot / theme names error ---\n");
     StyleFixture f;
-    ASSERT(!f.exec("engine.ui.setStyle('nope', {})").success, "unknown slot errors");
-    ASSERT(!f.exec("engine.ui.setTheme('neon')").success, "unknown theme errors");
-    ASSERT(!f.exec("engine.ui.panel(0,0,4,4,'nope')").success, "unknown panel slot errors");
+    ASSERT(!f.exec("ui.setStyle('nope', {})").success, "unknown slot errors");
+    ASSERT(!f.exec("ui.setTheme('neon')").success, "unknown theme errors");
+    ASSERT(!f.exec("ui.panel(0,0,4,4,'nope')").success, "unknown panel slot errors");
 }
 
 int main() {

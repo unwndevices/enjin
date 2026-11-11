@@ -539,8 +539,8 @@ private:
     static constexpr int MAX_GAME_STATES = 16;  ///< Maximum named states
     char m_currentGameState[64]{"none"};         ///< Current game state name
     char m_stateNames[MAX_GAME_STATES][64]{};    ///< Registered state names
-    lua::ScriptRef m_stateOnEnter[MAX_GAME_STATES];  ///< on_enter callbacks (empty = none)
-    lua::ScriptRef m_stateOnExit[MAX_GAME_STATES];   ///< on_exit callbacks (empty = none)
+    lua::ScriptRef m_stateOnEnter[MAX_GAME_STATES];  ///< onEnter callbacks (empty = none)
+    lua::ScriptRef m_stateOnExit[MAX_GAME_STATES];   ///< onExit callbacks (empty = none)
     int  m_stateCount{0};                        ///< Number of registered states
 
     // -- Coroutine scheduler (Phase 49: ASYNC-01..ASYNC-03) -----------------------
@@ -1047,7 +1047,7 @@ private:
     void registerDebugSubtable(lua_State* L);  ///< engine.debug.* sub-table (called from registerEngineTable)
     void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
     void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
-    void registerUISubtable(lua_State* L);     ///< engine.ui.* sub-table (called from registerEngineTable)
+    void registerUITable(lua_State* L);        ///< the global ui table (called from registerEngineTable)
     void registerHudSubtable(lua_State* L);    ///< engine.hud.* sub-table (#83; called from registerEngineTable)
     void registerTilemapMethods(lua_State* L); ///< The engine.tilemap.load handle's metatable (called from registerEngineTable)
     void registerProxyMetatable();
@@ -1080,7 +1080,7 @@ private:
     // #38: retargetable chrome spring
     static int lua_engine_tween_spring(lua_State* L);
 
-    // engine.ui.* binding functions (Phase 52: UI-01..UI-04)
+    // ui.* binding functions (Phase 52: UI-01..UI-04)
     static int lua_engine_ui_progressBar(lua_State* L);
     static int lua_engine_ui_statBar(lua_State* L);
     static int lua_engine_ui_panel(lua_State* L);
@@ -1162,7 +1162,6 @@ private:
     static int lua_Rect_intersects(lua_State* L);
 
     // ── Math utility globals ────────────────────────────────────────────────
-    static int lua_math_clamp(lua_State* L);
     static int lua_math_lerp(lua_State* L);
     static int lua_math_remap(lua_State* L);
     static int lua_math_sign(lua_State* L);

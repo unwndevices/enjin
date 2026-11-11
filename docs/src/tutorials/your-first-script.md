@@ -77,8 +77,8 @@ Tomodachi exposes `input.button("a")`, `input.button("b")`, and `input.button("e
 -- tamagotchi.lua: feed by turning the wheel back
 if wheel < 0 then
     if stats.hunger > 0 then
-        stats.hunger = clamp(stats.hunger - 20, 0, 100)
-        stats.energy = clamp(stats.energy + 5, 0, 100)
+        stats.hunger = math.max(0, stats.hunger - 20)
+        stats.energy = math.min(100, stats.energy + 5)
         show_msg("YUM!", 1.0)
     else
         show_msg("FULL!", 1.0)
@@ -132,4 +132,4 @@ An optional `--fps N` flag caps the frame rate (default is uncapped).
 
 ## Next Steps
 
-[Async Coroutines](./async-coroutines.md) — write non-blocking timed sequences using `engine.async.wait`, `engine.async.wait_frames`, and `engine.tween.await` without managing frame counters manually.
+[Async Coroutines](./async-coroutines.md) — write non-blocking timed sequences using `engine.async.wait`, `engine.async.waitFrames`, and `engine.tween.await` without managing frame counters manually.

@@ -396,7 +396,10 @@ static void testEnjinCoreModules() {
     lua_getglobal(L, "gfx");
     expectDescribed(L, modulesAt(modules, LuaApiScope::Table, "gfx"), "gfx");
     lua_pop(L, 1);
-    for (const char* sub : {"async", "tween", "ui"}) {
+    lua_getglobal(L, "ui");   // a global, not engine.ui (ADR-0030)
+    expectDescribed(L, modulesAt(modules, LuaApiScope::Table, "ui"), "ui");
+    lua_pop(L, 1);
+    for (const char* sub : {"async", "tween"}) {
         lua_getglobal(L, "engine");
         lua_getfield(L, -1, sub);
         const std::string path = std::string("engine.") + sub;
@@ -405,7 +408,7 @@ static void testEnjinCoreModules() {
     }
 
     const auto globals = modulesAt(modules, LuaApiScope::Globals, "");
-    for (const char* name : {"print", "Vec2", "Point", "Rect", "clamp", "lerp", "remap", "sign",
+    for (const char* name : {"print", "Vec2", "Point", "Rect", "lerp", "remap", "sign",
                              "smoothstep", "distance"})
         ASSERT(describes(globals, name), std::string("global ") + name + " has a descriptor");
     for (const char* type : {"Vec2", "Point", "Rect"})
@@ -536,23 +539,11 @@ static void testEngineTableDescribed() {
     expectAllValidate(modules, "defaults");
     expectEngineDescribed(L, modules, "defaults");
 
-    // engine.graphics re-exports gfx functions with gfx's own descriptors.
-    const auto gfx = modulesAt(modules, LuaApiScope::Table, "gfx");
-    const auto graphics = modulesAt(modules, LuaApiScope::Table, "engine.graphics");
-    ASSERT(!graphics.empty(), "engine.graphics is a descriptor module");
-    for (const auto* m : graphics) {
-        for (size_t i = 0; i < m->count; ++i) {
-            const LuaApiEntry& alias = m->entries[i];
-            bool same = false;
-            for (const auto* g : gfx)
-                for (size_t j = 0; j < g->count; ++j)
-                    same = same || (std::strcmp(g->entries[j].name, alias.name) == 0 &&
-                                    g->entries[j].func == alias.func &&
-                                    std::strcmp(g->entries[j].signature, alias.signature) == 0 &&
-                                    std::strcmp(g->entries[j].summary, alias.summary) == 0);
-            ASSERT(same, std::string("engine.graphics.") + alias.name + " is gfx's entry");
-        }
-    }
+    // One table per job (ADR-0030): gfx has no second name, and ui is a global.
+    ASSERT(modulesAt(modules, LuaApiScope::Table, "engine.graphics").empty(), "no engine.graphics");
+    ASSERT(modulesAt(modules, LuaApiScope::Table, (std::string("engine") + ".ui").c_str()).empty(),
+           "no ui under engine");
+    ASSERT(!modulesAt(modules, LuaApiScope::Table, "ui").empty(), "ui is a global table");
 
     // The scene-free map handle (#256) and the HUD value objects (#83).
     expectMetatableDescribed(L, modules, "enjin2.Tilemap", "Tilemap");

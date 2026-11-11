@@ -92,12 +92,12 @@ end
 -- State Machine
 -- ═══════════════════════════════════════════════════════════════════════════
 
-engine.state.on_enter("serve", function()
+engine.state.onEnter("serve", function()
     reset_paddle()
     attach_ball()
 end)
 
-engine.state.on_enter("play", function()
+engine.state.onEnter("play", function()
     launch_ball()
 end)
 

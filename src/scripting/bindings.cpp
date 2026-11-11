@@ -795,30 +795,6 @@ void LuaBindings::registerAll() {
     // Register engine.* global table (ENG-06: must be before any script loads)
     registerEngineTable();
 
-    // engine.graphics: gfx drawing calls under a second name (quick-007 API-03).
-    // Built here, next to the gfx descriptors it re-exports, so each alias is
-    // gfx's own entry.
-    static constexpr LuaApiEntry kGraphics[] = {
-        luaApiAlias(kGfx, "clear"),         luaApiAlias(kGfx, "setColor"),
-        luaApiAlias(kGfx, "getColor"),      luaApiAlias(kGfx, "setLineWidth"),
-        luaApiAlias(kGfx, "getLineWidth"),  luaApiAlias(kGfx, "point"),
-        luaApiAlias(kGfx, "line"),          luaApiAlias(kGfx, "rectangle"),
-        luaApiAlias(kGfx, "circle"),        luaApiAlias(kGfx, "triangle"),
-        luaApiAlias(kGfx, "setPixel"),      luaApiAlias(kGfx, "getPixel"),
-        luaApiAlias(kGfx, "text"),          luaApiAlias(kGfx, "textWrapped"),
-        luaApiAlias(kGfx, "textCentered"),  luaApiAlias(kGfx, "textAligned"),
-        luaApiAlias(kGfx, "setTextSize"),   luaApiAlias(kGfx, "getTextSize"),
-        luaApiAlias(kGfx, "setFont"),       luaApiAlias(kGfx, "getFont"),
-        luaApiAlias(kGfx, "getTextWidth"),  luaApiAlias(kGfx, "getTextHeight"),
-        luaApiAlias(kGfx, "getWidth"),      luaApiAlias(kGfx, "getHeight"),
-    };
-    static constexpr LuaApiModule kGraphicsModule = luaApiModule(
-        LuaApiScope::Table, "engine.graphics",
-        "The same functions as gfx under a second name; prefer gfx.", kGraphics);
-    lua_getglobal(L, "engine");
-    luaApiSetSubtable(L, -1, kGraphicsModule);
-    lua_pop(L, 1);
-
     // Scene-object proxies (switchable, off by default): ScriptProxy for the
     // C_LuaScript self, ObjectProxy for engine.scene.find/spawn (Phase 37),
     // and the component proxies self:get() returns (Phase 39).

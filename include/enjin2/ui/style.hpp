@@ -94,7 +94,7 @@ constexpr Style kDefaultStyles[kStyleSlotCount] = {
 /**
  * @brief Slot names, indexed by StyleSlot: the lower-camel ids Lua passes.
  *
- * styleSlotFromName() matches against this array, and the engine.ui
+ * styleSlotFromName() matches against this array, and the ui
  * descriptors publish it as the StyleSlot enum.
  */
 inline constexpr const char* kStyleSlotNames[kStyleSlotCount] = {

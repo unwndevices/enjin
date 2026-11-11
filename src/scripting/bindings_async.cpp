@@ -219,13 +219,13 @@ void LuaBindings::clearCoroutines() {
     m_nextCoroutineId = 0;
 }
 
-// ── Phase 57 QOL-02: engine.async.wait_frames(n) ────────────────────────────
+// ── Phase 57 QOL-02: engine.async.waitFrames(n) ────────────────────────────
 // Yields the calling coroutine for exactly n frames before resuming.
-// wait_frames(0) and wait_frames(-1) return immediately without yielding.
+// waitFrames(0) and waitFrames(-1) return immediately without yielding.
 // Mutually exclusive with wait(seconds): setting waitFrames clears waitRemaining.
 int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
     if (!lua_isyieldable(L)) {
-        luaL_error(L, "engine.async.wait_frames() called outside a coroutine");
+        luaL_error(L, "engine.async.waitFrames() called outside a coroutine");
         return 0;
     }
     LuaBindings* b = LuaBindings::getBindings(L);
@@ -235,9 +235,9 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
     if (n <= 0) return 0;  // resume immediately — no yield
 
     // Find the calling coroutine in the pool and set waitFrames.
-    // Use n-1 because the tick where the coroutine calls wait_frames() counts as frame 1.
-    // Example: wait_frames(3) with tick counting:
-    //   Tick 1: coroutine starts, calls wait_frames(3) → waitFrames=2, yields
+    // Use n-1 because the tick where the coroutine calls waitFrames() counts as frame 1.
+    // Example: waitFrames(3) with tick counting:
+    //   Tick 1: coroutine starts, calls waitFrames(3) → waitFrames=2, yields
     //   Tick 2: waitFrames 2→1, skip
     //   Tick 3: waitFrames 1→0, resume (exactly 3 ticks from start)
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
@@ -272,7 +272,7 @@ void LuaBindings::registerAsyncSubtable(lua_State* L) {
                     "id: the id async.start returned"),
         luaFunction("cancelAll", lua_engine_async_cancelAll, "() -> nil",
                     "Stop every coroutine and restart the id counter."),
-        luaFunction("wait_frames", lua_engine_async_wait_frames, "(n:int?=0) -> nil",
+        luaFunction("waitFrames", lua_engine_async_wait_frames, "(n:int?=0) -> nil",
                     "Suspend the calling coroutine for n ticks, counting the current one.",
                     "n: ticks to wait; 0 or less returns without yielding")
             .note("Raises outside a coroutine."),
