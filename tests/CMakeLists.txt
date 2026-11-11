@@ -800,6 +800,20 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME lua_sandbox_test COMMAND lua_sandbox_test)
 
+    # lua::ScriptRef, the one holder of a Lua value across frames, and every
+    # binding that holds one releasing it on teardown (Tomodachi #481)
+    add_executable(lua_ref_test
+        lua_ref_test.cpp
+    )
+    target_include_directories(lua_ref_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(lua_ref_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME lua_ref_test COMMAND lua_ref_test)
+
     # Hot-reload state management test (resetSpritePool, registerAll reset, reload cycle)
     add_executable(hot_reload_test
         hot_reload_test.cpp

@@ -22,6 +22,7 @@
 #include "../core/name_index.hpp"
 #include "../graphics/numerals.hpp"
 #include "lua_api.hpp"
+#include "lua_args.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -51,15 +52,15 @@ inline RollingCounter* checkRolling(lua_State* L) {
 }
 
 inline int rc_set(lua_State* L) {
-    checkRolling(L)->set(static_cast<float>(luaL_checknumber(L, 2)));
+    checkRolling(L)->set(lua::checkFloat(L, 2));
     return 0;
 }
 inline int rc_snap(lua_State* L) {
-    checkRolling(L)->snap(static_cast<float>(luaL_checknumber(L, 2)));
+    checkRolling(L)->snap(lua::checkFloat(L, 2));
     return 0;
 }
 inline int rc_update(lua_State* L) {
-    checkRolling(L)->update(static_cast<float>(luaL_checknumber(L, 2)));
+    checkRolling(L)->update(lua::checkFloat(L, 2));
     return 0;
 }
 inline int rc_value(lua_State* L) {
@@ -81,9 +82,9 @@ inline int lua_newRollingCounter(lua_State* L) {
     // land at stack index 2 and be mistaken for the optional durationS.
     const float initial = lua_isnoneornil(L, 1)
                               ? 0.0f
-                              : static_cast<float>(luaL_checknumber(L, 1));
+                              : lua::checkFloat(L, 1);
     const bool hasDuration = !lua_isnoneornil(L, 2);
-    const float durationS = hasDuration ? static_cast<float>(luaL_checknumber(L, 2)) : 0.0f;
+    const float durationS = hasDuration ? lua::checkFloat(L, 2) : 0.0f;
 
     void* p = lua_newuserdata(L, sizeof(RollingCounter));
     if (hasDuration) {
@@ -102,7 +103,7 @@ inline Timer* checkTimer(lua_State* L) {
 }
 
 inline int tmr_update(lua_State* L) {
-    checkTimer(L)->update(static_cast<float>(luaL_checknumber(L, 2)));
+    checkTimer(L)->update(lua::checkFloat(L, 2));
     return 0;
 }
 inline int tmr_pause(lua_State* L)  { checkTimer(L)->pause();  return 0; }
@@ -133,7 +134,7 @@ inline int tmr_format(lua_State* L) {
 
 /// engine.hud.timer(ms [, "down"|"up"])
 inline int lua_newTimer(lua_State* L) {
-    const double ms = static_cast<double>(luaL_checknumber(L, 1));
+    const double ms = luaL_checknumber(L, 1);
     TimerMode mode = TimerMode::CountDown;
     if (!lua_isnoneornil(L, 2)) {
         const int m = nameIndex(luaL_checkstring(L, 2), kTimerModeNames);

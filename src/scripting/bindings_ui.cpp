@@ -26,11 +26,11 @@ namespace enjin2 {
 // bg fill covers full width; fg fill covers proportional width.
 int LuaBindings::lua_engine_ui_progressBar(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t  x     = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t  y     = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint16_t w     = static_cast<uint16_t>(luaL_checkinteger(L, 3));
-    uint16_t h     = static_cast<uint16_t>(luaL_checkinteger(L, 4));
-    float    value = static_cast<float>(luaL_checknumber(L, 5));  // float — do NOT use checkinteger
+    int16_t  x     = static_cast<int16_t>(lua::checkInt(L, 1));
+    int16_t  y     = static_cast<int16_t>(lua::checkInt(L, 2));
+    uint16_t w     = static_cast<uint16_t>(lua::checkInt(L, 3));
+    uint16_t h     = static_cast<uint16_t>(lua::checkInt(L, 4));
+    float    value = lua::checkFloat(L, 5);  // float — do NOT use checkinteger
     uint8_t  fg    = lua::checkCanvasColour(L, 6, indexedColours(b->currentCanvas));
     uint8_t  bg    = lua::checkCanvasColour(L, 7, indexedColours(b->currentCanvas));
 
@@ -57,12 +57,12 @@ int LuaBindings::lua_engine_ui_progressBar(lua_State* L) {
 // Division by zero is guarded: if max <= 0, fill is 0.
 int LuaBindings::lua_engine_ui_statBar(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t  x       = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t  y       = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint16_t w       = static_cast<uint16_t>(luaL_checkinteger(L, 3));
-    uint16_t h       = static_cast<uint16_t>(luaL_checkinteger(L, 4));
-    float    current = static_cast<float>(luaL_checknumber(L, 5));  // float — do NOT use checkinteger
-    float    max     = static_cast<float>(luaL_checknumber(L, 6));  // float — do NOT use checkinteger
+    int16_t  x       = static_cast<int16_t>(lua::checkInt(L, 1));
+    int16_t  y       = static_cast<int16_t>(lua::checkInt(L, 2));
+    uint16_t w       = static_cast<uint16_t>(lua::checkInt(L, 3));
+    uint16_t h       = static_cast<uint16_t>(lua::checkInt(L, 4));
+    float    current = lua::checkFloat(L, 5);  // float — do NOT use checkinteger
+    float    max     = lua::checkFloat(L, 6);  // float — do NOT use checkinteger
     uint8_t  fg      = lua::checkCanvasColour(L, 7, indexedColours(b->currentCanvas));
     uint8_t  bg      = lua::checkCanvasColour(L, 8, indexedColours(b->currentCanvas));
 
@@ -123,10 +123,10 @@ static void overlayColourKey(lua_State* L, int tableIdx, const char* key, Pixel4
 
 int LuaBindings::lua_engine_ui_panel(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t  x = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t  y = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint16_t w = static_cast<uint16_t>(luaL_checkinteger(L, 3));
-    uint16_t h = static_cast<uint16_t>(luaL_checkinteger(L, 4));
+    int16_t  x = static_cast<int16_t>(lua::checkInt(L, 1));
+    int16_t  y = static_cast<int16_t>(lua::checkInt(L, 2));
+    uint16_t w = static_cast<uint16_t>(lua::checkInt(L, 3));
+    uint16_t h = static_cast<uint16_t>(lua::checkInt(L, 4));
 
     uint8_t bg;
     BorderStyle bstyle;
@@ -213,8 +213,8 @@ int LuaBindings::lua_engine_ui_setTheme(lua_State* L) {
 // Draws text at the specified position with the given foreground color.
 int LuaBindings::lua_engine_ui_label(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t     x   = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t     y   = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t     x   = static_cast<int16_t>(lua::checkInt(L, 1));
+    int16_t     y   = static_cast<int16_t>(lua::checkInt(L, 2));
     const char* str = luaL_checkstring(L, 3);
     uint8_t     fg  = lua::checkCanvasColour(L, 4, indexedColours(b->currentCanvas));
 

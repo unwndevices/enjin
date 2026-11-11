@@ -577,8 +577,8 @@ int LuaBindings::lua_engine_state_switch(lua_State* L) {
     // Fire on_exit for current state
     for (int i = 0; i < b->m_stateCount; ++i) {
         if (strcmp(b->m_stateNames[i], b->m_currentGameState) == 0) {
-            if (b->m_stateOnExitRefs[i] != LUA_NOREF) {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, b->m_stateOnExitRefs[i]);
+            if (b->m_stateOnExit[i].valid()) {
+                b->m_stateOnExit[i].push(L);
                 lua_pcall(L, 0, 0, 0);
             }
             break;
@@ -592,8 +592,8 @@ int LuaBindings::lua_engine_state_switch(lua_State* L) {
     // Fire on_enter for new state
     for (int i = 0; i < b->m_stateCount; ++i) {
         if (strcmp(b->m_stateNames[i], newState) == 0) {
-            if (b->m_stateOnEnterRefs[i] != LUA_NOREF) {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, b->m_stateOnEnterRefs[i]);
+            if (b->m_stateOnEnter[i].valid()) {
+                b->m_stateOnEnter[i].push(L);
                 lua_pcall(L, 0, 0, 0);
             }
             break;
@@ -620,16 +620,11 @@ int LuaBindings::lua_engine_state_on_enter(lua_State* L) {
         idx = b->m_stateCount++;
         strncpy(b->m_stateNames[idx], name, 63);
         b->m_stateNames[idx][63] = '\0';
-        b->m_stateOnEnterRefs[idx] = LUA_NOREF;
-        b->m_stateOnExitRefs[idx]  = LUA_NOREF;
+        b->m_stateOnEnter[idx].reset();
+        b->m_stateOnExit[idx].reset();
     }
 
-    // Unref existing callback if any
-    if (b->m_stateOnEnterRefs[idx] != LUA_NOREF) {
-        luaL_unref(L, LUA_REGISTRYINDEX, b->m_stateOnEnterRefs[idx]);
-    }
-    lua_pushvalue(L, 2);
-    b->m_stateOnEnterRefs[idx] = luaL_ref(L, LUA_REGISTRYINDEX);
+    b->m_stateOnEnter[idx].assign(L, 2);   // releases the callback it replaces
     return 0;
 }
 
@@ -650,16 +645,11 @@ int LuaBindings::lua_engine_state_on_exit(lua_State* L) {
         idx = b->m_stateCount++;
         strncpy(b->m_stateNames[idx], name, 63);
         b->m_stateNames[idx][63] = '\0';
-        b->m_stateOnEnterRefs[idx] = LUA_NOREF;
-        b->m_stateOnExitRefs[idx]  = LUA_NOREF;
+        b->m_stateOnEnter[idx].reset();
+        b->m_stateOnExit[idx].reset();
     }
 
-    // Unref existing callback if any
-    if (b->m_stateOnExitRefs[idx] != LUA_NOREF) {
-        luaL_unref(L, LUA_REGISTRYINDEX, b->m_stateOnExitRefs[idx]);
-    }
-    lua_pushvalue(L, 2);
-    b->m_stateOnExitRefs[idx] = luaL_ref(L, LUA_REGISTRYINDEX);
+    b->m_stateOnExit[idx].assign(L, 2);   // releases the callback it replaces
     return 0;
 }
 
@@ -671,7 +661,7 @@ int LuaBindings::lua_engine_scene_switch(lua_State* L) {
     auto** ssmPP = static_cast<SceneStateMachine**>(lua_touserdata(L, -1));
     lua_pop(L, 1);
     if (ssmPP == nullptr || *ssmPP == nullptr) { return 0; }  // no SSM installed — silent no-op
-    uint32_t id = static_cast<uint32_t>(luaL_checkinteger(L, 1));
+    uint32_t id = static_cast<uint32_t>(lua::checkInt(L, 1));
     (*ssmPP)->switchTo(id);
     return 0;
 }
@@ -787,15 +777,28 @@ int LuaBindings::lua_engine_scene_spawn(lua_State* L) {
 
     // Optional name argument
     if (lua_gettop(L) >= 1 && lua_isstring(L, 1)) {
-        // Intern the string in the Lua registry so it lives as long as the Lua state
-        lua_pushvalue(L, 1);                                   // push the string
-        int ref = luaL_ref(L, LUA_REGISTRYINDEX);              // anchor it
-        // Retrieve the interned pointer (stable for the Lua state's lifetime)
-        lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
-        const char* interned = lua_tostring(L, -1);
-        lua_pop(L, 1);
-        obj->setName(interned);
-        (void)ref;  // ref keeps string alive; leaked intentionally (lives until lua_close)
+        // The Object keeps only the pointer, so the name must live as long as
+        // the Lua state: anchored in the registry's name table, one string per
+        // distinct name. A name seen before reuses the string already anchored
+        // (never replaced, so a pointer handed out stays valid).
+        if (lua_getfield(L, LUA_REGISTRYINDEX, "enjin_object_names") != LUA_TTABLE) {
+            lua_pop(L, 1);
+            lua_newtable(L);
+            lua_pushvalue(L, -1);
+            lua_setfield(L, LUA_REGISTRYINDEX, "enjin_object_names");
+        }                                                      // [names]
+        lua_pushvalue(L, 1);
+        lua_tostring(L, -1);                                   // [names, key]: a number becomes its string
+        lua_pushvalue(L, -1);
+        if (lua_rawget(L, -3) != LUA_TSTRING) {                // [names, key, names[key]]
+            lua_pop(L, 1);
+            lua_pushvalue(L, -1);
+            lua_pushvalue(L, -1);                              // [names, key, key, key]
+            lua_rawset(L, -4);                                 // names[key] = key
+            lua_pushvalue(L, -1);
+        }                                                      // [names, key, name]
+        obj->setName(lua_tostring(L, -1));
+        lua_pop(L, 3);
     }
 
     return pushObjectProxy(L, obj);
@@ -881,26 +884,26 @@ int LuaBindings::lua_engine_collision_aabb(lua_State* L) {
         x2 = static_cast<float>(r2->x); y2 = static_cast<float>(r2->y);
         w2 = static_cast<float>(r2->width); h2 = static_cast<float>(r2->height);
     } else {
-        x1 = static_cast<float>(luaL_checknumber(L, 1));
-        y1 = static_cast<float>(luaL_checknumber(L, 2));
-        w1 = static_cast<float>(luaL_checknumber(L, 3));
-        h1 = static_cast<float>(luaL_checknumber(L, 4));
-        x2 = static_cast<float>(luaL_checknumber(L, 5));
-        y2 = static_cast<float>(luaL_checknumber(L, 6));
-        w2 = static_cast<float>(luaL_checknumber(L, 7));
-        h2 = static_cast<float>(luaL_checknumber(L, 8));
+        x1 = lua::checkFloat(L, 1);
+        y1 = lua::checkFloat(L, 2);
+        w1 = lua::checkFloat(L, 3);
+        h1 = lua::checkFloat(L, 4);
+        x2 = lua::checkFloat(L, 5);
+        y2 = lua::checkFloat(L, 6);
+        w2 = lua::checkFloat(L, 7);
+        h2 = lua::checkFloat(L, 8);
     }
     lua_pushboolean(L, enjin2::collision::aabb(x1, y1, w1, h1, x2, y2, w2, h2) ? 1 : 0);
     return 1;
 }
 
 int LuaBindings::lua_engine_collision_circleCircle(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float r1 = static_cast<float>(luaL_checknumber(L, 3));
-    float x2 = static_cast<float>(luaL_checknumber(L, 4));
-    float y2 = static_cast<float>(luaL_checknumber(L, 5));
-    float r2 = static_cast<float>(luaL_checknumber(L, 6));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float r1 = lua::checkFloat(L, 3);
+    float x2 = lua::checkFloat(L, 4);
+    float y2 = lua::checkFloat(L, 5);
+    float r2 = lua::checkFloat(L, 6);
     lua_pushboolean(L, enjin2::collision::circleCircle(x1, y1, r1, x2, y2, r2) ? 1 : 0);
     return 1;
 }
@@ -916,12 +919,12 @@ int LuaBindings::lua_engine_collision_pointInRect(lua_State* L) {
         rx = static_cast<float>(r->x); ry = static_cast<float>(r->y);
         rw = static_cast<float>(r->width); rh = static_cast<float>(r->height);
     } else {
-        px = static_cast<float>(luaL_checknumber(L, 1));
-        py = static_cast<float>(luaL_checknumber(L, 2));
-        rx = static_cast<float>(luaL_checknumber(L, 3));
-        ry = static_cast<float>(luaL_checknumber(L, 4));
-        rw = static_cast<float>(luaL_checknumber(L, 5));
-        rh = static_cast<float>(luaL_checknumber(L, 6));
+        px = lua::checkFloat(L, 1);
+        py = lua::checkFloat(L, 2);
+        rx = lua::checkFloat(L, 3);
+        ry = lua::checkFloat(L, 4);
+        rw = lua::checkFloat(L, 5);
+        rh = lua::checkFloat(L, 6);
     }
     lua_pushboolean(L, enjin2::collision::pointInRect(px, py, rx, ry, rw, rh) ? 1 : 0);
     return 1;
@@ -934,29 +937,29 @@ int LuaBindings::lua_engine_collision_pointInCircle(lua_State* L) {
     if (p || v) {
         px = p ? static_cast<float>(p->x) : v->x;
         py = p ? static_cast<float>(p->y) : v->y;
-        cx = static_cast<float>(luaL_checknumber(L, 2));
-        cy = static_cast<float>(luaL_checknumber(L, 3));
-        r  = static_cast<float>(luaL_checknumber(L, 4));
+        cx = lua::checkFloat(L, 2);
+        cy = lua::checkFloat(L, 3);
+        r  = lua::checkFloat(L, 4);
     } else {
-        px = static_cast<float>(luaL_checknumber(L, 1));
-        py = static_cast<float>(luaL_checknumber(L, 2));
-        cx = static_cast<float>(luaL_checknumber(L, 3));
-        cy = static_cast<float>(luaL_checknumber(L, 4));
-        r  = static_cast<float>(luaL_checknumber(L, 5));
+        px = lua::checkFloat(L, 1);
+        py = lua::checkFloat(L, 2);
+        cx = lua::checkFloat(L, 3);
+        cy = lua::checkFloat(L, 4);
+        r  = lua::checkFloat(L, 5);
     }
     lua_pushboolean(L, enjin2::collision::pointInCircle(px, py, cx, cy, r) ? 1 : 0);
     return 1;
 }
 
 int LuaBindings::lua_engine_collision_lineLine(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float x2 = static_cast<float>(luaL_checknumber(L, 3));
-    float y2 = static_cast<float>(luaL_checknumber(L, 4));
-    float x3 = static_cast<float>(luaL_checknumber(L, 5));
-    float y3 = static_cast<float>(luaL_checknumber(L, 6));
-    float x4 = static_cast<float>(luaL_checknumber(L, 7));
-    float y4 = static_cast<float>(luaL_checknumber(L, 8));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float x2 = lua::checkFloat(L, 3);
+    float y2 = lua::checkFloat(L, 4);
+    float x3 = lua::checkFloat(L, 5);
+    float y3 = lua::checkFloat(L, 6);
+    float x4 = lua::checkFloat(L, 7);
+    float y4 = lua::checkFloat(L, 8);
     float ix, iy;
     bool hit = enjin2::collision::lineLine(x1, y1, x2, y2, x3, y3, x4, y4, &ix, &iy);
     lua_pushboolean(L, hit ? 1 : 0);
@@ -969,13 +972,13 @@ int LuaBindings::lua_engine_collision_lineLine(lua_State* L) {
 }
 
 int LuaBindings::lua_engine_collision_lineCircle(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float x2 = static_cast<float>(luaL_checknumber(L, 3));
-    float y2 = static_cast<float>(luaL_checknumber(L, 4));
-    float cx = static_cast<float>(luaL_checknumber(L, 5));
-    float cy = static_cast<float>(luaL_checknumber(L, 6));
-    float r  = static_cast<float>(luaL_checknumber(L, 7));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float x2 = lua::checkFloat(L, 3);
+    float y2 = lua::checkFloat(L, 4);
+    float cx = lua::checkFloat(L, 5);
+    float cy = lua::checkFloat(L, 6);
+    float r  = lua::checkFloat(L, 7);
     lua_pushboolean(L, enjin2::collision::lineCircle(x1, y1, x2, y2, cx, cy, r) ? 1 : 0);
     return 1;
 }
@@ -1007,14 +1010,14 @@ int LuaBindings::lua_engine_lua_memory(lua_State* L) {
 // --- engine.collision.aabbOverlap(x1,y1,w1,h1, x2,y2,w2,h2) ---
 // Returns: hit, overlapX, overlapY, overlapW, overlapH
 int LuaBindings::lua_engine_collision_aabbOverlap(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float w1 = static_cast<float>(luaL_checknumber(L, 3));
-    float h1 = static_cast<float>(luaL_checknumber(L, 4));
-    float x2 = static_cast<float>(luaL_checknumber(L, 5));
-    float y2 = static_cast<float>(luaL_checknumber(L, 6));
-    float w2 = static_cast<float>(luaL_checknumber(L, 7));
-    float h2 = static_cast<float>(luaL_checknumber(L, 8));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float w1 = lua::checkFloat(L, 3);
+    float h1 = lua::checkFloat(L, 4);
+    float x2 = lua::checkFloat(L, 5);
+    float y2 = lua::checkFloat(L, 6);
+    float w2 = lua::checkFloat(L, 7);
+    float h2 = lua::checkFloat(L, 8);
     float ox, oy, ow, oh;
     bool hit = enjin2::collision::aabbOverlap(x1, y1, w1, h1, x2, y2, w2, h2,
                                               &ox, &oy, &ow, &oh);
@@ -1032,12 +1035,12 @@ int LuaBindings::lua_engine_collision_aabbOverlap(lua_State* L) {
 // --- engine.collision.circleResponse(x1,y1,r1, x2,y2,r2) ---
 // Returns: hit, normalX, normalY, depth
 int LuaBindings::lua_engine_collision_circleResponse(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float r1 = static_cast<float>(luaL_checknumber(L, 3));
-    float x2 = static_cast<float>(luaL_checknumber(L, 4));
-    float y2 = static_cast<float>(luaL_checknumber(L, 5));
-    float r2 = static_cast<float>(luaL_checknumber(L, 6));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float r1 = lua::checkFloat(L, 3);
+    float x2 = lua::checkFloat(L, 4);
+    float y2 = lua::checkFloat(L, 5);
+    float r2 = lua::checkFloat(L, 6);
     float nx, ny, depth;
     bool hit = enjin2::collision::circleCircleResponse(x1, y1, r1, x2, y2, r2,
                                                        &nx, &ny, &depth);
@@ -1054,10 +1057,10 @@ int LuaBindings::lua_engine_collision_circleResponse(lua_State* L) {
 // --- engine.collision.reflect(vx, vy, nx, ny) ---
 // Returns: reflectedVx, reflectedVy
 int LuaBindings::lua_engine_collision_reflect(lua_State* L) {
-    float vx = static_cast<float>(luaL_checknumber(L, 1));
-    float vy = static_cast<float>(luaL_checknumber(L, 2));
-    float nx = static_cast<float>(luaL_checknumber(L, 3));
-    float ny = static_cast<float>(luaL_checknumber(L, 4));
+    float vx = lua::checkFloat(L, 1);
+    float vy = lua::checkFloat(L, 2);
+    float nx = lua::checkFloat(L, 3);
+    float ny = lua::checkFloat(L, 4);
     float outVx, outVy;
     enjin2::collision::reflect(vx, vy, nx, ny, &outVx, &outVy);
     lua_pushnumber(L, static_cast<lua_Number>(outVx));
@@ -1115,11 +1118,10 @@ static int lua_engine_event_on(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
 
-    // Anchor the callback function in the Lua registry
-    lua_pushvalue(L, 2);
-    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua::ScriptRef callback;
+    callback.assign(L, 2);
 
-    int id = bus->subscribe(name, ref);
+    int id = bus->subscribe(name, std::move(callback));
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -1130,7 +1132,7 @@ static int lua_engine_event_off(lua_State* L) {
     LuaEventBus* bus = getEventBus(L);
     if (!bus) return 0;
 
-    int id = static_cast<int>(luaL_checkinteger(L, 1));
+    int id = lua::checkInt(L, 1);
     bus->unsubscribe(id);
     return 0;
 }
@@ -1160,8 +1162,8 @@ static C_Camera* getActiveCamera(lua_State* L) {
 static int lua_engine_camera_setPosition(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;  // silent no-op when no camera is active
-    float x = static_cast<float>(luaL_checknumber(L, 1));
-    float y = static_cast<float>(luaL_checknumber(L, 2));
+    float x = lua::checkFloat(L, 1);
+    float y = lua::checkFloat(L, 2);
     cam->setPosition(x, y);
     return 0;
 }
@@ -1180,9 +1182,9 @@ static int lua_engine_camera_getPosition(lua_State* L) {
 static int lua_engine_camera_lookAt(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;
-    float x = static_cast<float>(luaL_checknumber(L, 1));
-    float y = static_cast<float>(luaL_checknumber(L, 2));
-    float speed = lua_gettop(L) >= 3 ? static_cast<float>(luaL_checknumber(L, 3)) : 1.0f;
+    float x = lua::checkFloat(L, 1);
+    float y = lua::checkFloat(L, 2);
+    float speed = lua_gettop(L) >= 3 ? lua::checkFloat(L, 3) : 1.0f;
     cam->lookAt(x, y, speed);
     return 0;
 }
@@ -1191,8 +1193,8 @@ static int lua_engine_camera_lookAt(lua_State* L) {
 static int lua_engine_camera_shake(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;
-    float intensity = static_cast<float>(luaL_checknumber(L, 1));
-    float duration = static_cast<float>(luaL_checknumber(L, 2));
+    float intensity = lua::checkFloat(L, 1);
+    float duration = lua::checkFloat(L, 2);
     cam->shake(intensity, duration);
     return 0;
 }
@@ -1201,10 +1203,10 @@ static int lua_engine_camera_shake(lua_State* L) {
 static int lua_engine_camera_setBounds(lua_State* L) {
     C_Camera* cam = getActiveCamera(L);
     if (!cam) return 0;
-    float minX = static_cast<float>(luaL_checknumber(L, 1));
-    float minY = static_cast<float>(luaL_checknumber(L, 2));
-    float maxX = static_cast<float>(luaL_checknumber(L, 3));
-    float maxY = static_cast<float>(luaL_checknumber(L, 4));
+    float minX = lua::checkFloat(L, 1);
+    float minY = lua::checkFloat(L, 2);
+    float maxX = lua::checkFloat(L, 3);
+    float maxY = lua::checkFloat(L, 4);
     cam->setBounds(minX, minY, maxX, maxY);
     return 0;
 }
@@ -1229,8 +1231,8 @@ static int lua_engine_camera_clearBounds(lua_State* L) {
 int LuaBindings::lua_engine_camera_setDeadZone(lua_State* L) {
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return 0;
-    float w = static_cast<float>(luaL_checknumber(L, 1));
-    float h = static_cast<float>(luaL_checknumber(L, 2));
+    float w = lua::checkFloat(L, 1);
+    float h = lua::checkFloat(L, 2);
     if (w < 0.0f) w = 0.0f;
     if (h < 0.0f) h = 0.0f;
     b->m_deadZoneW = w;
@@ -1254,7 +1256,7 @@ int LuaBindings::lua_engine_camera_follow(lua_State* L) {
         return 0;
     }
 
-    float speed = (lua_gettop(L) >= 2) ? static_cast<float>(luaL_optnumber(L, 2, 0.1)) : 0.1f;
+    float speed = (lua_gettop(L) >= 2) ? lua::optFloat(L, 2, 0.1) : 0.1f;
     b->m_followTargetProxy = proxy;
     b->m_followSpeed       = speed;
     return 0;

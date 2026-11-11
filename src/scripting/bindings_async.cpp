@@ -20,14 +20,11 @@
 
 namespace enjin2 {
 
-// ── Private helper: clear a single slot and unref its thread ─────────────────
+// ── Private helper: clear a single slot and release its thread ───────────────
 // Uses template so it works with the private CoroutineSlot type.
 template<typename Slot>
-static void clearSlot(Slot& slot, lua_State* L) {
-    if (L && slot.threadRef != LUA_NOREF) {
-        luaL_unref(L, LUA_REGISTRYINDEX, slot.threadRef);
-    }
-    slot.threadRef     = LUA_NOREF;
+static void clearSlot(Slot& slot, lua_State* /*L*/) {
+    slot.thread.reset();
     slot.waitRemaining = 0.0f;
     slot.waitFrames    = 0;          // Phase 57: QOL-02
     slot.waitTweenId   = 0;          // Phase 57: QOL-01
@@ -65,8 +62,9 @@ int LuaBindings::lua_engine_async_start(lua_State* L) {
     // Move the function from the calling thread into the new thread
     lua_pushvalue(L, 1);                        // [fn, thread, fn]
     lua_xmove(L, co, 1);                        // co=[fn]; L=[fn, thread]
-    // Anchor the thread in the registry to prevent GC
-    slot.threadRef     = luaL_ref(L, LUA_REGISTRYINDEX); // L=[fn]
+    // Anchor the thread to prevent GC
+    slot.thread.assign(L, -1);
+    lua_pop(L, 1);                              // L=[fn]
     slot.waitRemaining = 0.0f;   // runs immediately this tick
     slot.id            = ++b->m_nextCoroutineId;
     slot.active        = true;
@@ -96,10 +94,10 @@ int LuaBindings::lua_engine_async_wait(lua_State* L) {
     // Find the calling coroutine in the pool by comparing lua_State pointers
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
         CoroutineSlot& slot = b->m_coroutinePool[i];
-        if (!slot.active || slot.threadRef == LUA_NOREF) continue;
+        if (!slot.active || !slot.thread.valid()) continue;
 
         // Retrieve the thread from the registry and compare
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        slot.thread.push(L);
         lua_State* co = lua_tothread(L, -1);
         lua_pop(L, 1);
 
@@ -119,7 +117,7 @@ int LuaBindings::lua_engine_async_cancel(lua_State* L) {
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return 0;
 
-    int cancelId = static_cast<int>(luaL_checkinteger(L, 1));
+    int cancelId = lua::checkInt(L, 1);
     lua_State* mainL = b->engine->getState();
 
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
@@ -175,7 +173,7 @@ void LuaBindings::tickCoroutines(float dt) {
         }
 
         // Retrieve coroutine thread from registry
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        slot.thread.push(L);
         lua_State* co = lua_tothread(L, -1);
         lua_pop(L, 1);
 
@@ -233,7 +231,7 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) return lua_yield(L, 0);
 
-    int n = static_cast<int>(luaL_optinteger(L, 1, 0));
+    int n = lua::optInt(L, 1, 0);
     if (n <= 0) return 0;  // resume immediately — no yield
 
     // Find the calling coroutine in the pool and set waitFrames.
@@ -244,8 +242,8 @@ int LuaBindings::lua_engine_async_wait_frames(lua_State* L) {
     //   Tick 3: waitFrames 1→0, resume (exactly 3 ticks from start)
     for (int i = 0; i < COROUTINE_POOL_SIZE; ++i) {
         CoroutineSlot& slot = b->m_coroutinePool[i];
-        if (!slot.active || slot.threadRef == LUA_NOREF) continue;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, slot.threadRef);
+        if (!slot.active || !slot.thread.valid()) continue;
+        slot.thread.push(L);
         lua_State* co = lua_tothread(L, -1);
         lua_pop(L, 1);
         if (co == L) {

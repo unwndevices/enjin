@@ -16,6 +16,7 @@
 #include "../core/name_index.hpp"
 #include "../graphics/effect.hpp"
 #include "lua_api.hpp"
+#include "lua_args.hpp"
 #include "palette_arg.hpp"
 
 extern "C" {
@@ -61,11 +62,11 @@ inline Effect checkEffect(lua_State* L, int idx) {
 namespace detail {
 
 inline uint8_t argU8(lua_State* L, int idx) {
-    return static_cast<uint8_t>(luaL_checkinteger(L, idx));
+    return static_cast<uint8_t>(lua::checkInt(L, idx));
 }
 inline int16_t argI16(lua_State* L, int idx, int16_t def) {
     return lua_isnoneornil(L, idx) ? def
-                                   : static_cast<int16_t>(luaL_checkinteger(L, idx));
+                                   : static_cast<int16_t>(lua::checkInt(L, idx));
 }
 
 // The kind / preset names each constructor dispatches on, indexed by the enum

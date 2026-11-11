@@ -122,20 +122,20 @@ static int lua_proxy_newindex_impl(lua_State* L) {
     if (strcmp(key, "x") == 0) {
         enjin2::C_Position* pos = owner ? owner->getPosition() : nullptr;
         if (pos) {
-            int16_t newX = static_cast<int16_t>(luaL_checkinteger(L, 3));
+            int16_t newX = static_cast<int16_t>(lua::checkInt(L, 3));
             pos->setPosition(newX, pos->getPosition().y);
         }
     } else if (strcmp(key, "y") == 0) {
         enjin2::C_Position* pos = owner ? owner->getPosition() : nullptr;
         if (pos) {
-            int16_t newY = static_cast<int16_t>(luaL_checkinteger(L, 3));
+            int16_t newY = static_cast<int16_t>(lua::checkInt(L, 3));
             pos->setPosition(pos->getPosition().x, newY);
         }
     } else if (strcmp(key, "visible") == 0) {
         comp->SetVisibility(lua_toboolean(L, 3) != 0);
     } else if (strcmp(key, "layer") == 0) {
         // 1-indexed in Lua; convert to 0-indexed C++
-        int luaLayer = static_cast<int>(luaL_checkinteger(L, 3));
+        int luaLayer = lua::checkInt(L, 3);
         if (luaLayer >= 1) {
             comp->SetBufferIndex(static_cast<uint8_t>(luaLayer - 1));
         }
@@ -465,16 +465,12 @@ void LuaBindings::registerAll() {
     // Reset game state machine
     strncpy(m_currentGameState, "none", sizeof(m_currentGameState) - 1);
     m_currentGameState[sizeof(m_currentGameState) - 1] = '\0';
-    // Unref any previously registered callbacks (guard against double-registerAll without lua_close)
-    for (int i = 0; i < m_stateCount; ++i) {
-        // Note: we don't have L yet at this point; L is retrieved below.
-        // We'll defer the unref to after L is available.
-        (void)i;
-    }
+    // Release the previous load's engine.state callbacks (a second registerAll
+    // on the same state; LuaScriptSystem::shutdown released them before a close)
     m_stateCount = 0;
     for (int i = 0; i < MAX_GAME_STATES; ++i) {
-        m_stateOnEnterRefs[i] = LUA_NOREF;
-        m_stateOnExitRefs[i]  = LUA_NOREF;
+        m_stateOnEnter[i].reset();
+        m_stateOnExit[i].reset();
         m_stateNames[i][0]    = '\0';
     }
 
@@ -952,8 +948,11 @@ void LuaBindings::registerProxyMetatable() {
 void LuaBindings::setActiveScene(Scene* scene) {
     if (scene != m_activeScene) {
         // EVENT-04: Scene is changing -- clear event bus for the outgoing scene.
-        // This ensures no stale handlers carry over to the new scene.
+        // This ensures no stale handlers carry over to the new scene. The bus
+        // stays armed on the open state, so the new scene's script can
+        // subscribe (an applet's scene is set after registerAll, Tomodachi #481).
         m_eventBus.clearHandlers();
+        m_eventBus.setLuaState(engine ? engine->getState() : nullptr);
         // CAM-08: Clear cached camera pointer on scene change (Phase 44).
         m_activeCamera = nullptr;
         // ASYNC-03: clear coroutines on scene transition (prevent stale refs)
@@ -964,6 +963,16 @@ void LuaBindings::setActiveScene(Scene* scene) {
         m_deadZoneH = 0.0f;
     }
     m_activeScene = scene;
+}
+
+void LuaBindings::releaseScriptRefs() {
+    m_eventBus.clearHandlers();
+    clearCoroutines();
+    clearTweens();     // springs too
+    for (int i = 0; i < MAX_GAME_STATES; ++i) {
+        m_stateOnEnter[i].reset();
+        m_stateOnExit[i].reset();
+    }
 }
 
 } // namespace enjin2

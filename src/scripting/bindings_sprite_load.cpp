@@ -198,7 +198,7 @@ int LuaBindings::lua_freeSprite(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
 
-    int handle = static_cast<int>(luaL_checkinteger(L, 1));
+    int handle = lua::checkInt(L, 1);
     if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;
 
     auto& s = b->spritePool[handle];

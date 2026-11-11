@@ -87,8 +87,8 @@ int LuaBindings::lua_number(lua_State* L) {
     if (!b) { lua_pushinteger(L, 0); return 1; }
     b->checkDrawLayer(L);
 
-    const int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    const int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    const int16_t x = static_cast<int16_t>(lua::checkInt(L, 1));
+    const int16_t y = static_cast<int16_t>(lua::checkInt(L, 2));
     const lua_Integer raw = luaL_checkinteger(L, 3);
     const uint32_t value = raw < 0 ? 0u : static_cast<uint32_t>(raw);
     luaL_checktype(L, 4, LUA_TTABLE);
@@ -128,8 +128,8 @@ int LuaBindings::lua_timer(lua_State* L) {
     if (!b) { lua_pushinteger(L, 0); return 1; }
     b->checkDrawLayer(L);
 
-    const int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    const int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    const int16_t x = static_cast<int16_t>(lua::checkInt(L, 1));
+    const int16_t y = static_cast<int16_t>(lua::checkInt(L, 2));
     const lua_Integer rawMs = luaL_checkinteger(L, 3);
     const uint32_t ms = rawMs < 0 ? 0u : static_cast<uint32_t>(rawMs);
     luaL_checktype(L, 4, LUA_TTABLE);

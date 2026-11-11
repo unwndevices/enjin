@@ -228,11 +228,11 @@ static int lua_cposition_proxy_newindex_impl(lua_State* L) {
 
     auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
     if (strcmp(key, "x") == 0) {
-        pos->setPosition(static_cast<int16_t>(luaL_checkinteger(L, 3)),
+        pos->setPosition(static_cast<int16_t>(lua::checkInt(L, 3)),
                          pos->getPosition().y);
     } else if (strcmp(key, "y") == 0) {
         pos->setPosition(pos->getPosition().x,
-                         static_cast<int16_t>(luaL_checkinteger(L, 3)));
+                         static_cast<int16_t>(lua::checkInt(L, 3)));
     }
     return 0;
 }
@@ -249,16 +249,15 @@ static int lua_timer_after(lua_State* L) {
         luaL_error(L, "component has been destroyed");
         return 0;
     }
-    float seconds = static_cast<float>(luaL_checknumber(L, 2));
+    float seconds = lua::checkFloat(L, 2);
     luaL_checktype(L, 3, LUA_TFUNCTION);
 
-    // Anchor the callback in the Lua registry
-    lua_pushvalue(L, 3);
-    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua::ScriptRef callback;
+    callback.assign(L, 3);
 
     auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
-    timer->setLuaState(L);
-    int id = timer->scheduleAfter(seconds, ref);
+    timer->setLuaState(callback.state());
+    int id = timer->scheduleAfter(seconds, std::move(callback));
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -271,15 +270,15 @@ static int lua_timer_every(lua_State* L) {
         luaL_error(L, "component has been destroyed");
         return 0;
     }
-    float seconds = static_cast<float>(luaL_checknumber(L, 2));
+    float seconds = lua::checkFloat(L, 2);
     luaL_checktype(L, 3, LUA_TFUNCTION);
 
-    lua_pushvalue(L, 3);
-    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua::ScriptRef callback;
+    callback.assign(L, 3);
 
     auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
-    timer->setLuaState(L);
-    int id = timer->scheduleEvery(seconds, ref);
+    timer->setLuaState(callback.state());
+    int id = timer->scheduleEvery(seconds, std::move(callback));
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -292,7 +291,7 @@ static int lua_timer_cancel(lua_State* L) {
         luaL_error(L, "component has been destroyed");
         return 0;
     }
-    int timerId = static_cast<int>(luaL_checkinteger(L, 2));
+    int timerId = lua::checkInt(L, 2);
     auto* timer = static_cast<enjin2::C_Timer*>(proxy->component);
     timer->cancel(timerId);
     return 0;
@@ -314,28 +313,21 @@ static int lua_fsm_addState(lua_State* L) {
     luaL_checktype(L, 3, LUA_TTABLE);
 
     auto* fsm = static_cast<enjin2::C_StateMachine*>(proxy->component);
-    fsm->setLuaState(L);
+    fsm->setLuaState(lua::ScriptRef::mainThread(L));
 
     // Extract optional callbacks from table
-    int enterRef = LUA_NOREF, exitRef = LUA_NOREF, updateRef = LUA_NOREF;
+    C_StateMachine::Callbacks callbacks;
+    lua::ScriptRef* slots[] = {&callbacks.enter, &callbacks.exit, &callbacks.update};
+    const char* keys[] = {"enter", "exit", "update"};
+    for (int i = 0; i < 3; ++i) {
+        lua_getfield(L, 3, keys[i]);
+        if (lua_isfunction(L, -1)) slots[i]->assign(L, -1);
+        lua_pop(L, 1);
+    }
 
-    lua_getfield(L, 3, "enter");
-    if (lua_isfunction(L, -1)) enterRef = luaL_ref(L, LUA_REGISTRYINDEX);
-    else lua_pop(L, 1);
-
-    lua_getfield(L, 3, "exit");
-    if (lua_isfunction(L, -1)) exitRef = luaL_ref(L, LUA_REGISTRYINDEX);
-    else lua_pop(L, 1);
-
-    lua_getfield(L, 3, "update");
-    if (lua_isfunction(L, -1)) updateRef = luaL_ref(L, LUA_REGISTRYINDEX);
-    else lua_pop(L, 1);
-
-    if (!fsm->addState(name, enterRef, exitRef, updateRef)) {
-        // Cleanup refs if addState fails (name too long or array full)
-        if (enterRef  != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, enterRef);
-        if (exitRef   != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, exitRef);
-        if (updateRef != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, updateRef);
+    if (!fsm->addState(name, std::move(callbacks))) {
+        // Name too long or array full: the callbacks were released by
+        // addState's by-value argument; nothing is left on the stack to free.
         luaL_error(L, "C_StateMachine: too many states or name too long");
     }
     return 0;
@@ -380,9 +372,9 @@ static int lua_fsm_getState(lua_State* L) {
 // tile id 0-511 works as-is (band/flip/palbank = 0).
 static int lua_tilemap_setTile(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    uint8_t  tx   = static_cast<uint8_t>(luaL_checkinteger(L, 2));
-    uint8_t  ty   = static_cast<uint8_t>(luaL_checkinteger(L, 3));
-    uint16_t cell = static_cast<uint16_t>(luaL_checkinteger(L, 4) & 0xFFFF);
+    uint8_t  tx   = static_cast<uint8_t>(lua::checkInt(L, 2));
+    uint8_t  ty   = static_cast<uint8_t>(lua::checkInt(L, 3));
+    uint16_t cell = static_cast<uint16_t>(lua::checkInt(L, 4) & 0xFFFF);
     tm->setTile(tx, ty, cell);
     return 0;
 }
@@ -390,8 +382,8 @@ static int lua_tilemap_setTile(lua_State* L) {
 // tilemap:getTile(tx, ty) -> tileId — TMAP-05
 static int lua_tilemap_getTile(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    uint8_t tx = static_cast<uint8_t>(luaL_checkinteger(L, 2));
-    uint8_t ty = static_cast<uint8_t>(luaL_checkinteger(L, 3));
+    uint8_t tx = static_cast<uint8_t>(lua::checkInt(L, 2));
+    uint8_t ty = static_cast<uint8_t>(lua::checkInt(L, 3));
     lua_pushinteger(L, static_cast<lua_Integer>(tm->getTile(tx, ty)));
     return 1;
 }
@@ -400,8 +392,8 @@ static int lua_tilemap_getTile(lua_State* L) {
 static int lua_tilemap_setTiles(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
-    uint8_t w = static_cast<uint8_t>(luaL_checkinteger(L, 3));
-    uint8_t h = static_cast<uint8_t>(luaL_checkinteger(L, 4));
+    uint8_t w = static_cast<uint8_t>(lua::checkInt(L, 3));
+    uint8_t h = static_cast<uint8_t>(lua::checkInt(L, 4));
     if (w > 64) w = 64;
     if (h > 64) h = 64;
     uint8_t buf[64 * 64] = {};
@@ -419,7 +411,7 @@ static int lua_tilemap_setTiles(lua_State* L) {
 // handle is an integer index into the LuaBindings sprite pool.
 static int lua_tilemap_setSheet(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    int handle = static_cast<int>(luaL_checkinteger(L, 2));
+    int handle = lua::checkInt(L, 2);
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) {
         luaL_error(L, "C_Tilemap.setSheet: LuaBindings not available");
@@ -437,8 +429,8 @@ static int lua_tilemap_setSheet(lua_State* L) {
 // tilemap:setScroll(sx, sy) — TMAP-04/05
 static int lua_tilemap_setScroll(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    int16_t sx = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t sy = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t sx = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t sy = static_cast<int16_t>(lua::checkInt(L, 3));
     tm->setScroll(sx, sy);
     return 0;
 }
@@ -454,8 +446,8 @@ static int lua_tilemap_getScroll(lua_State* L) {
 // tilemap:pixelToTile(px, py) -> tx, ty — TMAP-06
 static int lua_tilemap_pixelToTile(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t px = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t py = static_cast<int16_t>(lua::checkInt(L, 3));
     int16_t tx = 0, ty = 0;
     tm->pixelToTile(px, py, tx, ty);
     lua_pushinteger(L, static_cast<lua_Integer>(tx));
@@ -466,8 +458,8 @@ static int lua_tilemap_pixelToTile(lua_State* L) {
 // tilemap:tileToPixel(tx, ty) -> px, py — TMAP-06
 static int lua_tilemap_tileToPixel(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    int16_t tx = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t ty = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t tx = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t ty = static_cast<int16_t>(lua::checkInt(L, 3));
     int16_t px = 0, py = 0;
     tm->tileToPixel(tx, ty, px, py);
     lua_pushinteger(L, static_cast<lua_Integer>(px));
@@ -478,8 +470,8 @@ static int lua_tilemap_tileToPixel(lua_State* L) {
 // tilemap:tileAtPixel(px, py) -> tileId — TMAP-06
 static int lua_tilemap_tileAtPixel(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t px = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t py = static_cast<int16_t>(lua::checkInt(L, 3));
     lua_pushinteger(L, static_cast<lua_Integer>(tm->tileAtPixel(px, py)));
     return 1;
 }
@@ -516,8 +508,8 @@ static int lua_tilemap_setAttrs(lua_State* L) {
 // tilemap:attrAt(tx, ty) -> flags, kind (DIR already flip-resolved)
 static int lua_tilemap_attrAt(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    const uint8_t tx = static_cast<uint8_t>(luaL_checkinteger(L, 2));
-    const uint8_t ty = static_cast<uint8_t>(luaL_checkinteger(L, 3));
+    const uint8_t tx = static_cast<uint8_t>(lua::checkInt(L, 2));
+    const uint8_t ty = static_cast<uint8_t>(lua::checkInt(L, 3));
     const TileAttr a = tm->attrAt(tx, ty);
     lua_pushinteger(L, a.flags);
     lua_pushinteger(L, a.kind);
@@ -527,8 +519,8 @@ static int lua_tilemap_attrAt(lua_State* L) {
 // tilemap:attrAtPixel(px, py) -> flags, kind
 static int lua_tilemap_attrAtPixel(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    const int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    const int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    const int16_t px = static_cast<int16_t>(lua::checkInt(L, 2));
+    const int16_t py = static_cast<int16_t>(lua::checkInt(L, 3));
     const TileAttr a = tm->attrAtPixel(px, py);
     lua_pushinteger(L, a.flags);
     lua_pushinteger(L, a.kind);
@@ -548,13 +540,13 @@ static void pushSweepResult(lua_State* L, const SweepResult& r) {
 // tilemap:sweepAabb(x, y, w, h, vx, vy, dt) -> x, y, t, nx, ny, hit
 static int lua_tilemap_sweepAabb(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    const float x  = static_cast<float>(luaL_checknumber(L, 2));
-    const float y  = static_cast<float>(luaL_checknumber(L, 3));
-    const float w  = static_cast<float>(luaL_checknumber(L, 4));
-    const float h  = static_cast<float>(luaL_checknumber(L, 5));
-    const float vx = static_cast<float>(luaL_checknumber(L, 6));
-    const float vy = static_cast<float>(luaL_checknumber(L, 7));
-    const float dt = static_cast<float>(luaL_checknumber(L, 8));
+    const float x  = lua::checkFloat(L, 2);
+    const float y  = lua::checkFloat(L, 3);
+    const float w  = lua::checkFloat(L, 4);
+    const float h  = lua::checkFloat(L, 5);
+    const float vx = lua::checkFloat(L, 6);
+    const float vy = lua::checkFloat(L, 7);
+    const float dt = lua::checkFloat(L, 8);
     pushSweepResult(L, tm->sweepAabb(x, y, w, h, vx, vy, dt));
     return 6;
 }
@@ -562,12 +554,12 @@ static int lua_tilemap_sweepAabb(lua_State* L) {
 // tilemap:sweepCircle(cx, cy, r, vx, vy, dt) -> x, y, t, nx, ny, hit
 static int lua_tilemap_sweepCircle(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    const float cx = static_cast<float>(luaL_checknumber(L, 2));
-    const float cy = static_cast<float>(luaL_checknumber(L, 3));
-    const float r  = static_cast<float>(luaL_checknumber(L, 4));
-    const float vx = static_cast<float>(luaL_checknumber(L, 5));
-    const float vy = static_cast<float>(luaL_checknumber(L, 6));
-    const float dt = static_cast<float>(luaL_checknumber(L, 7));
+    const float cx = lua::checkFloat(L, 2);
+    const float cy = lua::checkFloat(L, 3);
+    const float r  = lua::checkFloat(L, 4);
+    const float vx = lua::checkFloat(L, 5);
+    const float vy = lua::checkFloat(L, 6);
+    const float dt = lua::checkFloat(L, 7);
     pushSweepResult(L, tm->sweepCircle(cx, cy, r, vx, vy, dt));
     return 6;
 }
@@ -575,10 +567,10 @@ static int lua_tilemap_sweepCircle(lua_State* L) {
 // tilemap:forEachCellIn(x, y, w, h, fn) — calls fn(tx, ty, cell) per overlapped cell
 static int lua_tilemap_forEachCellIn(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    const float x = static_cast<float>(luaL_checknumber(L, 2));
-    const float y = static_cast<float>(luaL_checknumber(L, 3));
-    const float w = static_cast<float>(luaL_checknumber(L, 4));
-    const float h = static_cast<float>(luaL_checknumber(L, 5));
+    const float x = lua::checkFloat(L, 2);
+    const float y = lua::checkFloat(L, 3);
+    const float w = lua::checkFloat(L, 4);
+    const float h = lua::checkFloat(L, 5);
     luaL_checktype(L, 6, LUA_TFUNCTION);
     tm->forEachCellIn(x, y, w, h, [&](uint8_t tx, uint8_t ty, uint16_t cell) {
         lua_pushvalue(L, 6);                    // the callback (still at index 6)
@@ -841,8 +833,8 @@ static int lua_ccamera_proxy_setPosition(lua_State* L) {
         luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
     if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
     auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
-    float x = static_cast<float>(luaL_checknumber(L, 2));
-    float y = static_cast<float>(luaL_checknumber(L, 3));
+    float x = lua::checkFloat(L, 2);
+    float y = lua::checkFloat(L, 3);
     cam->setPosition(x, y);
     return 0;
 }
@@ -865,9 +857,9 @@ static int lua_ccamera_proxy_lookAt(lua_State* L) {
         luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
     if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
     auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
-    float x = static_cast<float>(luaL_checknumber(L, 2));
-    float y = static_cast<float>(luaL_checknumber(L, 3));
-    float speed = lua_gettop(L) >= 4 ? static_cast<float>(luaL_checknumber(L, 4)) : 1.0f;
+    float x = lua::checkFloat(L, 2);
+    float y = lua::checkFloat(L, 3);
+    float speed = lua_gettop(L) >= 4 ? lua::checkFloat(L, 4) : 1.0f;
     cam->lookAt(x, y, speed);
     return 0;
 }
@@ -878,8 +870,8 @@ static int lua_ccamera_proxy_shake(lua_State* L) {
         luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
     if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
     auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
-    float intensity = static_cast<float>(luaL_checknumber(L, 2));
-    float duration = static_cast<float>(luaL_checknumber(L, 3));
+    float intensity = lua::checkFloat(L, 2);
+    float duration = lua::checkFloat(L, 3);
     cam->shake(intensity, duration);
     return 0;
 }
@@ -890,10 +882,10 @@ static int lua_ccamera_proxy_setBounds(lua_State* L) {
         luaL_checkudata(L, 1, CCAMERA_PROXY_METATABLE));
     if (!proxy || !proxy->valid || !proxy->component) return luaL_error(L, "camera has been destroyed");
     auto* cam = static_cast<enjin2::C_Camera*>(proxy->component);
-    float minX = static_cast<float>(luaL_checknumber(L, 2));
-    float minY = static_cast<float>(luaL_checknumber(L, 3));
-    float maxX = static_cast<float>(luaL_checknumber(L, 4));
-    float maxY = static_cast<float>(luaL_checknumber(L, 5));
+    float minX = lua::checkFloat(L, 2);
+    float minY = lua::checkFloat(L, 3);
+    float maxX = lua::checkFloat(L, 4);
+    float maxY = lua::checkFloat(L, 5);
     cam->setBounds(minX, minY, maxX, maxY);
     return 0;
 }
@@ -955,7 +947,7 @@ static enjin2::NjnLoopMode parseLoopMode(lua_State* L, int idx) {
 // sprite:setSheet(handle) — bind a SpriteSheet from the LuaBindings sprite pool.
 static int lua_sprite_setSheet(lua_State* L) {
     CSPRITE_PROXY_CHECK(L, sp);
-    int handle = static_cast<int>(luaL_checkinteger(L, 2));
+    int handle = lua::checkInt(L, 2);
     LuaBindings* b = LuaBindings::getBindings(L);
     if (!b) { luaL_error(L, "C_Sprite.setSheet: LuaBindings not available"); return 0; }
     const enjin2::SpriteSheet* sheet = b->getSpriteSheet(handle);
@@ -1010,13 +1002,13 @@ static int lua_sprite_setClips(lua_State* L) {
                     int frIdx = lua_gettop(L);
                     enjin2::NjnFrameEntry fe{};
                     lua_getfield(L, frIdx, "frame");
-                    fe.frameIndex = static_cast<uint16_t>(luaL_optinteger(L, -1, 0) & 0xFFFF);
+                    fe.frameIndex = static_cast<uint16_t>(lua::optInt(L, -1, 0) & 0xFFFF);
                     lua_pop(L, 1);
                     lua_getfield(L, frIdx, "dur");
-                    fe.durationMs = static_cast<uint16_t>(luaL_optinteger(L, -1, 100) & 0xFFFF);
+                    fe.durationMs = static_cast<uint16_t>(lua::optInt(L, -1, 100) & 0xFFFF);
                     lua_pop(L, 1);
                     lua_getfield(L, frIdx, "event");
-                    fe.eventId = static_cast<uint8_t>(luaL_optinteger(L, -1, 0) & 0xFF);
+                    fe.eventId = static_cast<uint8_t>(lua::optInt(L, -1, 0) & 0xFF);
                     lua_pop(L, 1);
                     clip.frames.push_back(fe);
                 }
@@ -1050,23 +1042,23 @@ static int lua_sprite_setFlip(lua_State* L) {
 // sprite:setFrameForAngle(angle, minAngle, maxAngle)
 static int lua_sprite_setFrameForAngle(lua_State* L) {
     CSPRITE_PROXY_CHECK(L, sp);
-    sp->setFrameForAngle(static_cast<float>(luaL_checknumber(L, 2)),
-                         static_cast<float>(luaL_checknumber(L, 3)),
-                         static_cast<float>(luaL_checknumber(L, 4)));
+    sp->setFrameForAngle(lua::checkFloat(L, 2),
+                         lua::checkFloat(L, 3),
+                         lua::checkFloat(L, 4));
     return 0;
 }
 
 // sprite:setFrame(index)
 static int lua_sprite_setFrame(lua_State* L) {
     CSPRITE_PROXY_CHECK(L, sp);
-    sp->setFrame(static_cast<uint16_t>(luaL_checkinteger(L, 2) & 0xFFFF));
+    sp->setFrame(static_cast<uint16_t>(lua::checkInt(L, 2) & 0xFFFF));
     return 0;
 }
 
 // sprite:setFPS(fps) — legacy whole-sheet playback (no-clip path)
 static int lua_sprite_setFPS(lua_State* L) {
     CSPRITE_PROXY_CHECK(L, sp);
-    sp->setFPS(static_cast<float>(luaL_checknumber(L, 2)));
+    sp->setFPS(lua::checkFloat(L, 2));
     return 0;
 }
 
@@ -1151,22 +1143,22 @@ static int lua_csprite_proxy_newindex_impl(lua_State* L) {
 // body:step(dt)
 static int lua_body_step(lua_State* L) {
     CBODY_PROXY_CHECK(L, body);
-    body->step(static_cast<float>(luaL_checknumber(L, 2)));
+    body->step(lua::checkFloat(L, 2));
     return 0;
 }
 
 // body:setGravity(gx, gy)
 static int lua_body_setGravity(lua_State* L) {
     CBODY_PROXY_CHECK(L, body);
-    body->setGravity(static_cast<float>(luaL_checknumber(L, 2)),
-                     static_cast<float>(luaL_checknumber(L, 3)));
+    body->setGravity(lua::checkFloat(L, 2),
+                     lua::checkFloat(L, 3));
     return 0;
 }
 
 // body:setSubsteps(n)
 static int lua_body_setSubsteps(lua_State* L) {
     CBODY_PROXY_CHECK(L, body);
-    body->setSubsteps(static_cast<int>(luaL_checkinteger(L, 2)));
+    body->setSubsteps(lua::checkInt(L, 2));
     return 0;
 }
 
@@ -1189,7 +1181,7 @@ static int lua_body_numContacts(lua_State* L) {
 // body:contact(i) -> {kind, id, x, y, nx, ny, relSpeed} | nil
 static int lua_body_contact(lua_State* L) {
     CBODY_PROXY_CHECK(L, body);
-    const size_t i = static_cast<size_t>(luaL_checkinteger(L, 2));
+    const size_t i = static_cast<size_t>(lua::checkInt(L, 2));
     const enjin2::Contact* c = body->contact(i - 1);  // 1-based from Lua
     if (!c) { lua_pushnil(L); return 1; }
     lua_createtable(L, 0, 7);
@@ -1230,7 +1222,7 @@ static int lua_cbody_proxy_newindex_impl(lua_State* L) {
     const char* key = lua_tostring(L, 2);
     if (!key) return 0;
 
-    const float v = static_cast<float>(luaL_checknumber(L, 3));
+    const float v = lua::checkFloat(L, 3);
     if (strcmp(key, "x") == 0)           body->setPosition(v, body->getY());
     else if (strcmp(key, "y") == 0)      body->setPosition(body->getX(), v);
     else if (strcmp(key, "vx") == 0)     body->setVelocity(v, body->getVY());
@@ -1270,12 +1262,12 @@ static size_t luaFlipperIndex(lua_State* L, int arg, const enjin2::ColliderSet& 
 static int lua_colliders_addSeg(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
     const enjin2::ColliderId id = set->addSeg(
-        static_cast<float>(luaL_checknumber(L, 2)),
-        static_cast<float>(luaL_checknumber(L, 3)),
-        static_cast<float>(luaL_checknumber(L, 4)),
-        static_cast<float>(luaL_checknumber(L, 5)),
-        static_cast<float>(luaL_optnumber(L, 6, 0.5f)),
-        static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
+        lua::checkFloat(L, 2),
+        lua::checkFloat(L, 3),
+        lua::checkFloat(L, 4),
+        lua::checkFloat(L, 5),
+        lua::optFloat(L, 6, 0.5f),
+        static_cast<uint8_t>(lua::optInt(L, 7, enjin2::ColliderKinds::Wall)));
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -1284,11 +1276,11 @@ static int lua_colliders_addSeg(lua_State* L) {
 static int lua_colliders_addCircle(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
     const enjin2::ColliderId id = set->addCircle(
-        static_cast<float>(luaL_checknumber(L, 2)),
-        static_cast<float>(luaL_checknumber(L, 3)),
-        static_cast<float>(luaL_checknumber(L, 4)),
-        static_cast<float>(luaL_optnumber(L, 5, 0.5f)),
-        static_cast<uint8_t>(luaL_optinteger(L, 6, enjin2::ColliderKinds::Wall)));
+        lua::checkFloat(L, 2),
+        lua::checkFloat(L, 3),
+        lua::checkFloat(L, 4),
+        lua::optFloat(L, 5, 0.5f),
+        static_cast<uint8_t>(lua::optInt(L, 6, enjin2::ColliderKinds::Wall)));
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -1298,12 +1290,12 @@ static int lua_colliders_addCircle(lua_State* L) {
 static int lua_colliders_addAabb(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
     const enjin2::ColliderId id = set->addAabb(
-        static_cast<float>(luaL_checknumber(L, 2)),
-        static_cast<float>(luaL_checknumber(L, 3)),
-        static_cast<float>(luaL_checknumber(L, 4)),
-        static_cast<float>(luaL_checknumber(L, 5)),
-        static_cast<float>(luaL_optnumber(L, 6, 0.1f)),
-        static_cast<uint8_t>(luaL_optinteger(L, 7, enjin2::ColliderKinds::Wall)));
+        lua::checkFloat(L, 2),
+        lua::checkFloat(L, 3),
+        lua::checkFloat(L, 4),
+        lua::checkFloat(L, 5),
+        lua::optFloat(L, 6, 0.1f),
+        static_cast<uint8_t>(lua::optInt(L, 7, enjin2::ColliderKinds::Wall)));
     lua_pushinteger(L, static_cast<lua_Integer>(id));
     return 1;
 }
@@ -1315,8 +1307,8 @@ static int lua_colliders_addAabb(lua_State* L) {
 static int lua_colliders_addSolidRects(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
     auto* tm = lua::checkTilemap(L, 2);
-    const float restitution = static_cast<float>(luaL_optnumber(L, 3, 0.1f));
-    const auto kind = static_cast<uint8_t>(luaL_optinteger(L, 4, enjin2::ColliderKinds::Wall));
+    const float restitution = lua::optFloat(L, 3, 0.1f);
+    const auto kind = static_cast<uint8_t>(lua::optInt(L, 4, enjin2::ColliderKinds::Wall));
     // The set hands out consecutive ids, so the list is first..first+n-1; the
     // rect vector dies before any Lua allocation (which could longjmp past it).
     const enjin2::ColliderId first = set->lastId + 1;
@@ -1350,12 +1342,12 @@ static int lua_colliders_setEnabled(lua_State* L) {
 // colliders:addFlipper(pivotX, pivotY, length, restAngle, activeAngle, restitution) -> index (1-based)
 static int lua_colliders_addFlipper(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
-    const size_t i = set->addFlipper(static_cast<float>(luaL_checknumber(L, 2)),
-                                     static_cast<float>(luaL_checknumber(L, 3)),
-                                     static_cast<float>(luaL_checknumber(L, 4)),
-                                     static_cast<float>(luaL_checknumber(L, 5)),
-                                     static_cast<float>(luaL_checknumber(L, 6)),
-                                     static_cast<float>(luaL_optnumber(L, 7, 0.2f)));
+    const size_t i = set->addFlipper(lua::checkFloat(L, 2),
+                                     lua::checkFloat(L, 3),
+                                     lua::checkFloat(L, 4),
+                                     lua::checkFloat(L, 5),
+                                     lua::checkFloat(L, 6),
+                                     lua::optFloat(L, 7, 0.2f));
     lua_pushinteger(L, static_cast<lua_Integer>(i + 1));
     return 1;
 }
@@ -1372,7 +1364,7 @@ static int lua_colliders_setFlipperActive(lua_State* L) {
 static int lua_colliders_setFlipperTarget(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
     const size_t i = luaFlipperIndex(L, 2, *set, "setFlipperTarget");
-    set->setFlipperTarget(i, static_cast<float>(luaL_checknumber(L, 3)));
+    set->setFlipperTarget(i, lua::checkFloat(L, 3));
     return 0;
 }
 
@@ -1380,7 +1372,7 @@ static int lua_colliders_setFlipperTarget(lua_State* L) {
 static int lua_colliders_setFlipperAngle(lua_State* L) {
     COLLIDERSET_PROXY_CHECK(L, set);
     const size_t i = luaFlipperIndex(L, 2, *set, "setFlipperAngle");
-    set->setFlipperAngle(i, static_cast<float>(luaL_checknumber(L, 3)));
+    set->setFlipperAngle(i, lua::checkFloat(L, 3));
     return 0;
 }
 
@@ -1563,8 +1555,8 @@ static int lua_objproxy_newindex_impl(lua_State* L) {
         }
         lua_getfield(L, 3, "x");
         lua_getfield(L, 3, "y");
-        auto x = static_cast<int16_t>(luaL_optinteger(L, -2, 0));
-        auto y = static_cast<int16_t>(luaL_optinteger(L, -1, 0));
+        auto x = static_cast<int16_t>(lua::optInt(L, -2, 0));
+        auto y = static_cast<int16_t>(lua::optInt(L, -1, 0));
         lua_pop(L, 2);
         enjin2::C_Position* pos = proxy->object->getPosition();
         if (pos) pos->setPosition(x, y);

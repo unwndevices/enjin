@@ -382,10 +382,10 @@ int LuaBindings::lua_print(lua_State* L) {
 int LuaBindings::lua_fastFillRect(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    int x = static_cast<int>(luaL_checknumber(L, 1));
-    int y = static_cast<int>(luaL_checknumber(L, 2));
-    int w = static_cast<int>(luaL_checknumber(L, 3));
-    int h = static_cast<int>(luaL_checknumber(L, 4));
+    int x = static_cast<int>(lua::checkFloat(L, 1));
+    int y = static_cast<int>(lua::checkFloat(L, 2));
+    int w = static_cast<int>(lua::checkFloat(L, 3));
+    int h = static_cast<int>(lua::checkFloat(L, 4));
     uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast bulk fill - bypass individual pixel calls
@@ -411,10 +411,10 @@ int LuaBindings::lua_fastFillRect(lua_State* L) {
 int LuaBindings::lua_fastDrawLine(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    int x1 = static_cast<int>(luaL_checknumber(L, 1));
-    int y1 = static_cast<int>(luaL_checknumber(L, 2));
-    int x2 = static_cast<int>(luaL_checknumber(L, 3));
-    int y2 = static_cast<int>(luaL_checknumber(L, 4));
+    int x1 = static_cast<int>(lua::checkFloat(L, 1));
+    int y1 = static_cast<int>(lua::checkFloat(L, 2));
+    int x2 = static_cast<int>(lua::checkFloat(L, 3));
+    int y2 = static_cast<int>(lua::checkFloat(L, 4));
     uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast Bresenham line algorithm

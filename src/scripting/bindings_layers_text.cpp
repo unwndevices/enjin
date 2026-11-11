@@ -116,7 +116,7 @@ int LuaBindings::lua_textCentered(lua_State* L) {
     if (!b || !b->currentCanvas) return 0;
     b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
-    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 2));
+    int16_t y = static_cast<int16_t>(lua::checkInt(L, 2));
     uint8_t scale = b->currentTextSize;
     if (lua_gettop(L) >= 3 && lua_isnumber(L, 3)) {
         int s = static_cast<int>(lua_tointeger(L, 3));
@@ -133,8 +133,8 @@ int LuaBindings::lua_textAligned(lua_State* L) {
     if (!b || !b->currentCanvas) return 0;
     b->checkDrawLayer(L);
     const char* str = luaL_checkstring(L, 1);
-    int16_t x = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t y = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t x = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t y = static_cast<int16_t>(lua::checkInt(L, 3));
     const int align = nameIndex(luaL_optstring(L, 4, "left"), kNumberAlignNames);
     uint8_t scale = b->currentTextSize;
     if (lua_gettop(L) >= 5 && lua_isnumber(L, 5)) {
