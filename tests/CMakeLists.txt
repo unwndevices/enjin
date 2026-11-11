@@ -867,6 +867,19 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME text_binding_test COMMAND text_binding_test)
 
+    # ADR-0030: a mistake in gfx.* or engine.tween raises (the #478 review's sweep)
+    add_executable(mistakes_raise_test
+        mistakes_raise_test.cpp
+    )
+    target_include_directories(mistakes_raise_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(mistakes_raise_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME mistakes_raise_test COMMAND mistakes_raise_test)
+
     # Math binding test (Vec2, Point, Rect userdata + clamp, lerp, remap, sign, smoothstep, distance)
     add_executable(math_binding_test
         math_binding_test.cpp
