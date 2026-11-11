@@ -19,6 +19,7 @@
 #include "../graphics/sprite.hpp"
 #include "../graphics/sprite_asset.hpp"
 #include "../graphics/njn2.hpp"
+#include "../graphics/numerals.hpp"
 #include "../input/input_state.hpp"
 #include "../ui/style.hpp"
 #include "../ui/spring.hpp"
@@ -700,6 +701,26 @@ public:
      * and the API reference list its faces (Tomodachi #474).
      */
     static int lua_setFont(lua_State* L);
+
+    // ── The gfx draw state, from native code (Tomodachi #478 follow-up) ──────
+    // The face, colour and text size gfx.* draws with, for a host's native
+    // binding that draws as Lua would (libtomo's HUD row Prefab): its text is
+    // the same TextRenderer call on the same state as gfx.text, so there is
+    // one text route (ADR-0029), and what it sets is what the script reads
+    // back (gfx.getFont, gfx.getColor). The caller checks the layer
+    // (checkDrawLayer) and its colours; these draw on the active canvas and do
+    // nothing without one.
+
+    /// gfx.setFont: select a registered face; false (nothing changed) for a
+    /// face no host registered.
+    bool selectFont(const char* name);
+    /// gfx.setColor, with a colour the caller has checked.
+    void setDrawColor(uint8_t color) { currentColor = color; }
+    /// gfx.rectangle("fill", x, y, w, h) in the current colour.
+    void fillRect(int16_t x, int16_t y, uint16_t w, uint16_t h);
+    /// gfx.textAligned(s, x, y, align) in the current face, colour and text
+    /// size; Left is gfx.text(s, x, y).
+    void drawText(const char* str, int16_t x, int16_t y, NumberAlign align = NumberAlign::Left);
 
     /**
      * @brief Inject SceneStateMachine pointer for engine.scene.switch()

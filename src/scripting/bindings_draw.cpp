@@ -243,7 +243,7 @@ int LuaBindings::lua_rectangle(lua_State* L) {
         uint16_t height = static_cast<uint16_t>(lua_tointeger(L, startIdx + 3));
 
         if (isFillMode(mode)) {
-            bindings->currentCanvas->fillRect(x, y, width, height, bindings->currentColor);
+            bindings->fillRect(x, y, width, height);
         } else {
             strokeRect(*bindings->currentCanvas, x, y, width, height,
                        bindings->currentColor, bindings->lineWidth);
