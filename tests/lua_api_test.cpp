@@ -133,6 +133,7 @@ static void testMalformed() {
 static int fnA(lua_State* L) { lua_pushinteger(L, 1); return 1; }
 static int fnB(lua_State* L) { lua_pushinteger(L, 2); return 1; }
 static int fnC(lua_State* L) { lua_pushinteger(L, 3); return 1; }
+static int fnD(lua_State* L) { lua_pushinteger(L, 4); return 1; }
 
 static constexpr const char* kFruitNames[] = {"apple", "pear"};
 static constexpr LuaApiEnum kFruit = luaApiEnum("Fruit", kFruitNames);
@@ -459,6 +460,43 @@ static void testCensusFindsOneJobInTwoHomes() {
     ASSERT(std::find(added.begin(), added.end(),
                      "motion.tilt and radar.tilt are one function in two homes") != added.end(),
            "reports a function registered twice:" + got);
+    lua_close(L);
+}
+
+// One reading in two tables (Tomodachi #478 follow-up: input.tilt beside
+// sensor.tilt): a reading (no parameters, a result) under one name with one
+// signature in two tables reads one thing twice. A verb two tables share
+// (each one's clear) is each table's own job and is not reported.
+static void testCensusFindsOneReadingInTwoTables() {
+    static constexpr LuaApiEntry kRawEntries[] = {
+        luaFunction("lean", fnA, "() -> x:number, y:number", "Raw lean."),
+        luaFunction("clear", fnB, "() -> nil", "Clear the raw lean."),
+    };
+    static constexpr LuaApiModule kRaw =
+        luaApiModule(LuaApiScope::Table, "rawpad", "Raw pad.", kRawEntries);
+    static constexpr LuaApiEntry kSmoothEntries[] = {
+        luaFunction("lean", fnC, "() -> x:number, y:number", "Smoothed lean."),
+        luaFunction("clear", fnD, "() -> nil", "Clear the smoothed lean."),
+    };
+    static constexpr LuaApiModule kSmooth =
+        luaApiModule(LuaApiScope::Table, "smoothpad", "Smooth pad.", kSmoothEntries);
+
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    LuaPlatform::configureSecurityRestrictions(L);
+    const std::vector<std::string> before = luaApiCensus(L);
+    luaApiSetGlobalTable(L, kRaw);
+    luaApiSetGlobalTable(L, kSmooth);
+    std::vector<std::string> added;
+    for (const auto& p : luaApiCensus(L))
+        if (std::find(before.begin(), before.end(), p) == before.end()) added.push_back(p);
+    std::string got;
+    for (const auto& p : added) got += "\n  " + p;
+    ASSERT(std::find(added.begin(), added.end(),
+                     "rawpad.lean and smoothpad.lean are one reading in two tables (one name, "
+                     "one signature)") != added.end(),
+           "reports one name and signature in two tables:" + got);
+    ASSERT(added.size() == 1, "a verb two tables share is not reported:" + got);
     lua_close(L);
 }
 
@@ -874,6 +912,7 @@ int main() {
     testValidateCatchesDrift();
     testValidateHoldsTheConvention();
     testCensusFindsOneJobInTwoHomes();
+    testCensusFindsOneReadingInTwoTables();
     testWorldFailuresReturnNilErr();
     testEnjinCoreModules();
     testEngineTableDescribed();
