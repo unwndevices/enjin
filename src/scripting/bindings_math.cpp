@@ -411,7 +411,7 @@ void LuaBindings::registerMathBindings() {
         luaFunction("__index", lua_Vec2_index, "(v:Vec2, key:string) -> any",
                     "v.x and v.y read the components; other keys look up a Vec2 method.",
                     "v: the vector\n"
-                    "key: \"x\", \"y\" or a method name; unknown keys give nil"),
+                    "key: \"x\", \"y\" or a method name; any other key reads nil, as a table's does"),
         luaFunction("__newindex", lua_Vec2_newindex,
                     "(v:Vec2, key:string, value:number) -> nil",
                     "v.x = n and v.y = n write in place; any other key raises.",
@@ -500,7 +500,7 @@ void LuaBindings::registerMathBindings() {
         luaFunction("__index", lua_Rect_index, "(r:Rect, key:string) -> any",
                     "r.x, r.y, r.width and r.height read the fields; other keys look up a Rect method.",
                     "r: the rectangle\n"
-                    "key: a field or method name; unknown keys give nil"),
+                    "key: a field or method name; any other key reads nil, as a table's does"),
         luaFunction("__newindex", lua_Rect_newindex,
                     "(r:Rect, key:string, value:int) -> nil",
                     "r.x, r.y, r.width and r.height write in place; any other key raises.",

@@ -90,7 +90,9 @@ int LuaBindings::lua_drawSprite(lua_State* L) {
     b->checkDrawLayer(L);
 
     int handle = lua::checkInt(L, 1);
-    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;
+    // A handle never loaded, or freed, is a mistake (ADR-0030).
+    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active)
+        return luaL_argerror(L, 1, lua_pushfstring(L, "unknown sprite handle %d", handle));
 
     int16_t x = static_cast<int16_t>(lua::checkInt(L, 2));
     int16_t y = static_cast<int16_t>(lua::checkInt(L, 3));

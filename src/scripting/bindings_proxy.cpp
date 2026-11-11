@@ -129,7 +129,7 @@ static constexpr LuaApiEntry kComponentProxyGc =
 int pushComponentGet(lua_State* L, Object* owner, const char* typeName) {
     if (!owner) { lua_pushnil(L); return 1; }
     const ComponentRegistryEntry* e = findComponentEntry(typeName);
-    if (!e) { lua_pushnil(L); return 1; }
+    if (!e) return luaL_error(L, "get: unknown component '%s'", typeName ? typeName : "?");
     return pushComponentProxyUserdata(L, e->get(owner), e->proxyMeta);
 }
 
@@ -150,8 +150,8 @@ int pushComponentAdd(lua_State* L, Object* owner, const char* typeName, int para
     pushComponentProxyUserdata(L, comp, e->proxyMeta);  // proxy now on top
 
     // Apply an optional params table by writing each field through the proxy's
-    // __newindex — the writable-add half of ADR-0003 §2. Fields the component's
-    // proxy does not handle are silently dropped (matching its own __newindex).
+    // __newindex — the writable-add half of ADR-0003 §2. A field the component's
+    // proxy does not write raises, as its own __newindex does (ADR-0030).
     if (comp && paramsIdx > 0 && lua_istable(L, paramsIdx)) {
         int proxyIdx = lua_gettop(L);  // absolute index of the proxy userdata
         lua_pushnil(L);
@@ -218,8 +218,8 @@ static int lua_cposition_proxy_index_impl(lua_State* L) {
 }
 
 // __newindex for C_Position_Proxy: `p.x = N` / `p.y = M` route straight to the
-// C_Position setter — the writable-proxy half of ADR-0003 §2. Writes to any
-// other key are silently ignored, matching the object-level proxies.
+// C_Position setter — the writable-proxy half of ADR-0003 §2. A write to any
+// other key raises (ADR-0030), as on the object-level proxies.
 static int lua_cposition_proxy_newindex_impl(lua_State* L) {
     enjin2::ComponentProxy* proxy = static_cast<enjin2::ComponentProxy*>(
         luaL_checkudata(L, 1, CPOSITION_PROXY_METATABLE));
@@ -227,8 +227,7 @@ static int lua_cposition_proxy_newindex_impl(lua_State* L) {
         luaL_error(L, "component has been destroyed");
         return 0;
     }
-    const char* key = lua_tostring(L, 2);
-    if (!key) return 0;
+    const char* key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : "";
 
     auto* pos = static_cast<enjin2::C_Position*>(proxy->component);
     if (strcmp(key, "x") == 0) {
@@ -237,6 +236,8 @@ static int lua_cposition_proxy_newindex_impl(lua_State* L) {
     } else if (strcmp(key, "y") == 0) {
         pos->setPosition(pos->getPosition().x,
                          static_cast<int16_t>(lua::checkInt(L, 3)));
+    } else {
+        return raiseNotWritable(L, "C_Position", "x and y");
     }
     return 0;
 }
@@ -381,10 +382,14 @@ static int lua_fsm_getState(lua_State* L) {
 // tile id 0-511 works as-is (band/flip/palbank = 0).
 static int lua_tilemap_setTile(lua_State* L) {
     auto* tm = lua::checkTilemap(L, 1);
-    uint8_t  tx   = static_cast<uint8_t>(lua::checkInt(L, 2));
-    uint8_t  ty   = static_cast<uint8_t>(lua::checkInt(L, 3));
+    const int tx = lua::checkInt(L, 2);
+    const int ty = lua::checkInt(L, 3);
     uint16_t cell = static_cast<uint16_t>(lua::checkInt(L, 4) & 0xFFFF);
-    tm->setTile(tx, ty, cell);
+    // A cell off the map is a mistake (ADR-0030): it raises.
+    if (tx < 0 || tx >= tm->getMapWidth() || ty < 0 || ty >= tm->getMapHeight())
+        return luaL_error(L, "setTile: cell (%d, %d) is off the %dx%d map", tx, ty,
+                          tm->getMapWidth(), tm->getMapHeight());
+    tm->setTile(static_cast<uint8_t>(tx), static_cast<uint8_t>(ty), cell);
     return 0;
 }
 
@@ -721,7 +726,7 @@ int LuaBindings::lua_loadTilemap(lua_State* L) {
 // table built from this module.
 static constexpr LuaApiEntry kTilemapMethods[] = {
     luaFunction("setTile", lua_tilemap_setTile, "(tx:int, ty:int, cell:int) -> nil",
-                "Set one cell; cells outside the map are ignored.",
+                "Set one cell; a cell off the map raises.",
                 "tx: column, from 0\n"
                 "ty: row, from 0\n"
                 "cell: a tile id 0..511, or a packed cell (id in the low 9 bits, then palette "
@@ -1027,8 +1032,9 @@ static int lua_sprite_setClips(lua_State* L) {
 static int lua_sprite_play(lua_State* L) {
     CSPRITE_PROXY_CHECK(L, sp);
     const char* name = luaL_checkstring(L, 2);
-    lua_pushboolean(L, sp->play(name) ? 1 : 0);
-    return 1;
+    // A clip the sprite does not have (or one with no frames) is a mistake (ADR-0030).
+    if (!sp->play(name)) luaL_argerror(L, 2, lua_pushfstring(L, "no clip '%s' with frames", name));
+    return 0;
 }
 
 // sprite:setFlip(h, v)
@@ -1112,13 +1118,13 @@ static int lua_csprite_proxy_newindex_impl(lua_State* L) {
         luaL_error(L, "component has been destroyed");
         return 0;
     }
-    const char* key = lua_tostring(L, 2);
-    if (!key) return 0;
+    const char* key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : "";
 
     auto* sp = static_cast<enjin2::C_Sprite*>(proxy->component);
     if (strcmp(key, "hflip") == 0)        sp->setHFlip(lua_toboolean(L, 3) != 0);
     else if (strcmp(key, "vflip") == 0)   sp->setVFlip(lua_toboolean(L, 3) != 0);
     else if (strcmp(key, "visible") == 0) sp->SetVisibility(lua_toboolean(L, 3) != 0);
+    else return raiseNotWritable(L, "C_Sprite", "hflip, vflip and visible");
     return 0;
 }
 
@@ -1218,8 +1224,9 @@ static int lua_cbody_proxy_index_impl(lua_State* L) {
 // restitution=.8}) configures through the C++ setters (ADR-0003 §2).
 static int lua_cbody_proxy_newindex_impl(lua_State* L) {
     CBODY_PROXY_CHECK(L, body);
-    const char* key = lua_tostring(L, 2);
-    if (!key) return 0;
+    const char* key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : "";
+    static constexpr const char* kWrites =
+        "x, y, vx, vy, radius, restitution, drag and rollingResistance";
 
     const float v = lua::checkFloat(L, 3);
     if (strcmp(key, "x") == 0)           body->setPosition(v, body->getY());
@@ -1230,6 +1237,7 @@ static int lua_cbody_proxy_newindex_impl(lua_State* L) {
     else if (strcmp(key, "restitution") == 0) body->setRestitution(v);
     else if (strcmp(key, "drag") == 0)   body->setDrag(v);
     else if (strcmp(key, "rollingResistance") == 0) body->setRollingResistance(v);
+    else return raiseNotWritable(L, "C_Body", kWrites);
     return 0;
 }
 
@@ -1530,7 +1538,7 @@ static int lua_objproxy_index_impl(lua_State* L) {
 // Locked decisions (Phase 37 CONTEXT.md):
 //   - position write: proxy.position = {x=..., y=...} -> C_Position::setPosition()
 //   - enable write:   proxy.enable = bool -> C_LuaScript::setEnabled()
-//   - name write:     silently ignored (read-only)
+//   - name write:     raises (read-only), as any other key does (ADR-0030)
 //
 // Stack layout on entry: [1]=ObjectProxy userdata, [2]=key_string, [3]=value
 static int lua_objproxy_newindex_impl(lua_State* L) {
@@ -1542,8 +1550,7 @@ static int lua_objproxy_newindex_impl(lua_State* L) {
         return 0;  // unreachable — luaL_error longjmps
     }
 
-    const char* key = lua_tostring(L, 2);
-    if (!key) return 0;
+    const char* key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : "";
 
     if (strcmp(key, "position") == 0) {
         // Value at stack index 3 must be a table with x and y fields
@@ -1571,8 +1578,8 @@ static int lua_objproxy_newindex_impl(lua_State* L) {
         return 0;
     }
 
-    // All other property writes: silently ignore (name is read-only per design)
-    return 0;
+    // name is read-only; any other key is not the object's (ADR-0030).
+    return raiseNotWritable(L, "an object", "position and enable");
 }
 
 // __gc metamethod for ObjectProxy.
@@ -1596,14 +1603,14 @@ void LuaBindings::registerObjectProxyMetatable() {
     static constexpr LuaApiEntry kMethods[] = {
         luaFunction("get", lua_objproxy_get_component_impl, "(type:string) -> proxy:userdata?",
                     "The object's component of a type, as its proxy; nil when it has none.",
-                    "type: a component name such as \"C_Position\"; an unknown name gives nil"),
+                    "type: a component name such as \"C_Position\"; an unknown name raises"),
         luaFunction("add", lua_objproxy_add_component_impl,
                     "(type:string, params:table?) -> proxy:userdata?, err:string?",
                     "Attach a component, or take the one already there, and set fields from "
                     "params; nil, \"components full\" when the object holds 16.",
                     "type: a component name; an unknown name raises\n"
-                    "params: field = value pairs written through the proxy; unknown fields are "
-                    "ignored")
+                    "params: field = value pairs written through the proxy; a field it does "
+                    "not write raises")
             .returnsErr(),
         luaFunction("destroy", lua_objproxy_destroy_impl, "() -> nil",
                     "Remove the object from the active scene; its proxies go stale."),
@@ -1619,12 +1626,12 @@ void LuaBindings::registerObjectProxyMetatable() {
                     "obj.name, obj.position (an {x, y} copy) and obj.enable (its script runs; nil "
                     "without a script) read the object; other keys look up a method.",
                     "obj: the object\n"
-                    "key: a field or method name; unknown keys give nil")
+                    "key: a field or method name; any other key reads nil, as a table's does")
             .note("Raises once the object is destroyed."),
         luaFunction("__newindex", lua_objproxy_newindex_impl,
                     "(obj:ObjectProxy, key:string, value:any) -> nil",
                     "obj.position = {x = n, y = n} moves the object and obj.enable = b runs or "
-                    "pauses its script; other keys are ignored.",
+                    "pauses its script; name (read-only) and any other key raise.",
                     "obj: the object\n"
                     "key: the field\n"
                     "value: the new value; a position that is not a table raises"),
@@ -1665,11 +1672,11 @@ static void registerPositionProxy(lua_State* L) {
                     "(p:C_Position, key:string) -> any",
                     "p.x and p.y (int) read the position; other keys look up a method.",
                     "p: the component\n"
-                    "key: a field or method name; unknown keys give nil")
+                    "key: a field or method name; any other key reads nil, as a table's does")
             .note("Raises once the component is destroyed."),
         luaFunction("__newindex", lua_cposition_proxy_newindex_impl,
                     "(p:C_Position, key:string, value:int) -> nil",
-                    "p.x = n and p.y = n move the object; other keys are ignored.",
+                    "p.x = n and p.y = n move the object; any other key raises.",
                     "p: the component\n"
                     "key: \"x\" or \"y\"\n"
                     "value: the new coordinate"),
@@ -1697,7 +1704,7 @@ static void registerTimerProxy(lua_State* L) {
                     "fn: the callback; self is the owning object's script")
             .returnsErr(),
         luaFunction("cancel", lua_timer_cancel, "(id:int) -> nil",
-                    "Stop a timer; unknown ids are ignored.",
+                    "Stop a timer; an id that fired its last or was cancelled does nothing.",
                     "id: the id after or every returned"),
     };
     static constexpr LuaApiModule kMethodsModule = luaApiModule(
@@ -1797,9 +1804,9 @@ static void registerSpriteProxy(lua_State* L) {
                     "clips: clip tables; loop is a LoopMode name or 0..2, dur is milliseconds "
                     "(100 by default), event is a number polled through frameEvent")
             .withEnum(kLoopMode),
-        luaFunction("play", lua_sprite_play, "(name:string) -> boolean",
-                    "Start a clip from its first frame; false when there is no such clip or it is "
-                    "empty.",
+        luaFunction("play", lua_sprite_play, "(name:string) -> nil",
+                    "Start a clip from its first frame; a clip the sprite does not have, or one "
+                    "with no frames, raises.",
                     "name: the clip's name"),
         luaFunction("setFlip", lua_sprite_setFlip, "(h:boolean, v:boolean) -> nil",
                     "Mirror the sprite; nil counts as false.",
@@ -1831,11 +1838,11 @@ static void registerSpriteProxy(lua_State* L) {
                     "sp.justAdvanced, sp.justCompleted and sp.frameEvent read the sprite; other "
                     "keys look up a method.",
                     "sp: the component\n"
-                    "key: a field or method name; unknown keys give nil")
+                    "key: a field or method name; any other key reads nil, as a table's does")
             .note("Raises once the component is destroyed."),
         luaFunction("__newindex", lua_csprite_proxy_newindex_impl,
                     "(sp:C_Sprite, key:string, value:boolean) -> nil",
-                    "Writes hflip, vflip and visible; other keys are ignored.",
+                    "Writes hflip, vflip and visible; any other key raises.",
                     "sp: the component\n"
                     "key: the field\n"
                     "value: the new flag"),
@@ -1879,14 +1886,14 @@ static void registerBodyProxy(lua_State* L) {
                     "body.x, y, vx, vy, radius, restitution, drag and rollingResistance "
                     "(numbers) read the body; other keys look up a method.",
                     "body: the component\n"
-                    "key: a field or method name; unknown keys give nil")
+                    "key: a field or method name; any other key reads nil, as a table's does")
             .note("drag takes off a share of the speed per second; rollingResistance is a "
                   "constant deceleration in px/s² that holds the body still under a weaker pull. "
                   "Raises once the component is destroyed."),
         luaFunction("__newindex", lua_cbody_proxy_newindex_impl,
                     "(body:C_Body, key:string, value:number) -> nil",
-                    "Writes x, y, vx, vy, radius, restitution, drag and rollingResistance; other "
-                    "keys are ignored.",
+                    "Writes x, y, vx, vy, radius, restitution, drag and rollingResistance; any "
+                    "other key raises.",
                     "body: the component\n"
                     "key: the field\n"
                     "value: the new value; a non-number raises, whatever the key"),

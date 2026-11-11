@@ -203,7 +203,9 @@ int LuaBindings::lua_freeSprite(lua_State* L) {
     if (!b) return 0;
 
     int handle = lua::checkInt(L, 1);
-    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active) return 0;
+    // A handle never loaded, or freed already, is a mistake (ADR-0030).
+    if (handle < 0 || handle >= LUA_SPRITE_POOL_SIZE || !b->spritePool[handle].active)
+        return luaL_argerror(L, 1, lua_pushfstring(L, "unknown sprite handle %d", handle));
 
     auto& s = b->spritePool[handle];
     auto& asset = b->loadedAssets_[handle];

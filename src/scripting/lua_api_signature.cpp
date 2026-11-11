@@ -222,18 +222,76 @@ bool isUpperSnake(const std::string& s) {
     return true;
 }
 
-// Text that documents a failure other than nil, err or a raise (ADR-0030).
-const char* otherFailureIn(const char* text) {
-    if (!text) return nullptr;
-    std::string t(text);
-    for (auto& c : t) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    if (t.find("raise") != std::string::npos) return nullptr;
-    static const char* const kPhrases[] = {"on failure", "-1 when all", "0 when all", "are busy", "when a limit",
-                                           "pool is full", "are in use", "printed to the log",
-                                           "logs and"};
-    for (const char* p : kPhrases)
-        if (t.find(p) != std::string::npos) return p;
-    return nullptr;
+// ADR-0030's two failure forms, held as a whitelist. Each clause of a
+// descriptor's text (split at "; ", ". " and newlines) that names a failure
+// condition (an unknown name, an invalid or bad argument, a full pool, a
+// missing file, out of range, a printed reason, ignored, keeps the current
+// one, ...) must say which of the two forms it is: it raises, or (on a
+// returnsErr() entry) it returns `nil, "…"` / `nil, err` (or is that entry's
+// `err: "…"` list). Anything else
+// ("nil for an unknown id", "false when", "-1 on failure", "an unknown name is
+// forward", "is ignored", "logs") is not a failure report and fails the census.
+// Quoted text is a value the function hands back ("failed", "unknown", an err
+// message), not a condition. A reading is not a failure: "the clock is
+// unknown", a finished or stale id, an omitted argument. Returns the offending
+// clause, or "" when every failure clause is one of the two forms.
+std::string failureOutsideTheTwoForms(const char* text, bool nilErr) {
+    if (!text) return {};
+    static const char* const kConditions[] = {
+        "unknown", "invalid", "bad", "wrong", "fail", "fails", "failed", "failure",
+        "is full", "are full", "when all", "is busy", "are busy", "is in use", "are in use",
+        "missing", "not found", "no such", "out of range", "too long", "too many", "printed",
+        "logs and", "and logs", "ignored", "keeps the current", "unsupported", "not a",
+    };
+    static const char* const kNotAFailure[] = {"nothing fails", "never fails", "cannot fail",
+                                               "omitted", "is unknown"};
+    // Whole words: "invalid" is not in "invalidate", "bad" not in "badge".
+    auto has = [](const std::string& c, const char* w) {
+        const size_t len = std::strlen(w);
+        for (size_t at = c.find(w); at != std::string::npos; at = c.find(w, at + 1)) {
+            const bool startOk = at == 0 || !std::isalnum(static_cast<unsigned char>(c[at - 1]));
+            const bool endOk = at + len >= c.size() || !std::isalnum(static_cast<unsigned char>(c[at + len]));
+            if (startOk && endOk) return true;
+        }
+        return false;
+    };
+    auto judge = [&](const std::string& raw) -> bool {
+        std::string c, bare;  // lower-cased; and without its quoted values
+        bool quoted = false;
+        for (char ch : raw) {
+            const char lower = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+            c += lower;
+            if (ch == '"') { quoted = !quoted; bare += ' '; continue; }
+            bare += quoted ? ' ' : lower;
+        }
+        for (const char* w : kNotAFailure)
+            if (bare.find(w) != std::string::npos) return true;
+        bool condition = false;
+        for (const char* w : kConditions)
+            if (has(bare, w)) { condition = true; break; }
+        if (!condition) return true;
+        if (bare.find("raise") != std::string::npos) return true;
+        // A returnsErr() entry's own err list ("err: \"not found\" (a missing
+        // folder), ...") documents the second form.
+        const size_t lead = bare.find_first_not_of(' ');
+        if (nilErr && lead != std::string::npos && bare.compare(lead, 4, "err:") == 0) return true;
+        return nilErr && (c.find("nil, \"") != std::string::npos || c.find("nil, err") != std::string::npos);
+    };
+    std::string clause;
+    for (const char* q = text;; ++q) {
+        const bool end = *q == '\0';
+        // ". " and "; " end a clause ("1.5", "file.lua", "0..7" don't).
+        const bool stop = end || *q == '\n' ||
+                          ((*q == '.' || *q == ';') && (q[1] == ' ' || q[1] == '\0' || q[1] == '\n'));
+        if (!stop) { clause += *q; continue; }
+        if (!judge(clause)) {
+            const size_t first = clause.find_first_not_of(' ');
+            return first == std::string::npos ? clause : clause.substr(first);
+        }
+        clause.clear();
+        if (end) break;
+    }
+    return {};
 }
 
 void validateConvention(const LuaApiModule& module, const LuaApiEntry& e,
@@ -266,10 +324,12 @@ void validateConvention(const LuaApiModule& module, const LuaApiEntry& e,
             for (const auto& r : o.results)
                 if (r.name == "err")
                     problem("returns an err but is not marked returnsErr() (ADR-0030)");
-        for (const char* text : {e.summary, e.hostNote, e.args})
-            if (const char* phrase = otherFailureIn(text))
-                problem(std::string("documents a failure ('") + phrase +
-                        "') that is neither nil, err (returnsErr()) nor a raise (ADR-0030)");
+    }
+    for (const char* text : {e.summary, e.hostNote, e.args}) {
+        const std::string clause = failureOutsideTheTwoForms(text, e.failure == LuaApiFailure::NilErr);
+        if (!clause.empty())
+            problem("documents a failure ('" + clause +
+                    "') that is neither nil, err (returnsErr()) nor a raise (ADR-0030)");
     }
 }
 

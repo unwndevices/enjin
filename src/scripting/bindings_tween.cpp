@@ -72,7 +72,8 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);   // target table
     luaL_checktype(L, 2, LUA_TTABLE);   // props table
     float duration = lua::checkFloat(L, 3);  // duration in seconds
-    const char* easingStr = luaL_optstring(L, 4, "linear");        // easing name
+    // An unknown easing name is a mistake: it raises (ADR-0030).
+    const int easingIdx = lua::optName(L, 4, kTweenEasingNames, "easing", 0);
     // arg 5: optional done callback (lua_isfunction check below)
 
     LuaBindings* b = LuaBindings::getBindings(L);
@@ -101,13 +102,10 @@ int LuaBindings::lua_engine_tween_to(lua_State* L) {
         slot.doneCb.reset();
     }
 
-    // Parse easing string; "linear" and unknown strings default to Linear
     static_assert(static_cast<size_t>(TweenEasing::EaseOutBack) + 1 ==
                       sizeof(kTweenEasingNames) / sizeof(kTweenEasingNames[0]),
                   "kTweenEasingNames is indexed by TweenEasing");
-    const int easingIdx = nameIndex(easingStr, kTweenEasingNames);
-    const TweenEasing easing =
-        easingIdx < 0 ? TweenEasing::Linear : static_cast<TweenEasing>(easingIdx);
+    const TweenEasing easing = static_cast<TweenEasing>(easingIdx);
 
     // Iterate props table; sample start values from target table
     int propCount = 0;
@@ -482,14 +480,15 @@ void LuaBindings::registerTweenSubtable(lua_State* L) {
                     "target: the plain Lua table to animate (userdata is rejected)\n"
                     "props: field name -> end value; at most 4 string-keyed numbers are used\n"
                     "duration: seconds; a negative value finishes on the next tick\n"
-                    "easing: curve name; an unknown name falls back to linear\n"
+                    "easing: curve name (default linear); an unknown name raises\n"
                     "done: called (under pcall) when the tween finishes")
             .withEnum(kEasing)
-            .note("Start values are sampled now (a missing field starts at 0). Written values "
+            .note("Start values are sampled now (a field the target has not set starts at 0). Written values "
                   "are floats. Cleared on reload and on a scene change.")
             .returnsErr(),
         luaFunction("cancel", lua_engine_tween_cancel, "(id:int) -> nil",
-                    "Stop a tween where it is, without calling done; unknown ids are ignored.",
+                    "Stop a tween where it is, without calling done; an id that finished or was "
+                    "cancelled does nothing.",
                     "id: the id tween.to returned (springs are not cancelled here)"),
         luaFunction("cancelAll", lua_engine_tween_cancelAll, "() -> nil",
                     "Stop every tween and spring and restart the id counter."),

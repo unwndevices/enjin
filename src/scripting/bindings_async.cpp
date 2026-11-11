@@ -259,7 +259,7 @@ void LuaBindings::registerAsyncSubtable(lua_State* L) {
                     "full\" when all 8 are taken.",
                     "fn: the function to run; its return values are discarded")
             .note("Coroutines tick after update(), so fn started in update() first runs later "
-                  "that frame. An error inside fn is printed as [async error] and frees the "
+                  "that frame. An error fn raises is printed as [async error] and frees the "
                   "slot.")
             .returnsErr(),
         luaFunction("wait", lua_engine_async_wait, "(seconds:number?=0) -> nil",
@@ -267,7 +267,7 @@ void LuaBindings::registerAsyncSubtable(lua_State* L) {
                     "seconds: how long to wait; negative counts as 0")
             .note("Raises outside a coroutine."),
         luaFunction("cancel", lua_engine_async_cancel, "(id:int) -> nil",
-                    "Stop a coroutine; unknown ids are ignored.",
+                    "Stop a coroutine; an id that finished or was cancelled does nothing.",
                     "id: the id async.start returned"),
         luaFunction("cancelAll", lua_engine_async_cancelAll, "() -> nil",
                     "Stop every coroutine and restart the id counter."),

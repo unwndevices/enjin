@@ -56,7 +56,8 @@ void LuaBindings::registerEngineTable() {
                     "name: optional name, for engine.scene.find")
             .returnsErr(),
         luaFunction("destroy", lua_engine_scene_destroy, "(obj:ObjectProxy) -> nil",
-                    "Remove an object from the active scene; a destroyed or foreign value is ignored.",
+                    "Remove an object from the active scene; one already destroyed does nothing, and a "
+                    "value that is not an object raises.",
                     "obj: the object"),
         luaFunction("persist", lua_engine_scene_persist,
                     "(obj:ObjectProxy) -> ok:boolean?, err:string?",
@@ -202,7 +203,7 @@ void LuaBindings::registerEngineTable() {
     // --- engine.lua (GC-01, GC-02) ---
     static constexpr LuaApiEntry kLua[] = {
         luaFunction("collect", lua_engine_lua_collect, "() -> nil",
-                    "Run one small incremental garbage-collection step, not a full collection."),
+                    "Run one small incremental garbage-collection step, short of a full collection."),
         luaFunction("memory", lua_engine_lua_memory, "() -> number",
                     "Bytes the Lua heap uses now."),
     };
@@ -333,7 +334,7 @@ void LuaBindings::registerEngineTable() {
                     "fn: the handler, called with no arguments")
             .returnsErr(),
         luaFunction("off", lua_engine_event_off, "(id:int) -> nil",
-                    "Remove a handler; unknown ids are ignored.",
+                    "Remove a handler; an id already off does nothing.",
                     "id: the id engine.event.on returned"),
         luaFunction("emit", lua_engine_event_emit, "(name:string) -> nil",
                     "Call every handler of name now, with no arguments.",
@@ -825,9 +826,10 @@ int LuaBindings::lua_engine_scene_spawn(lua_State* L) {
 // The Object destructor automatically sets proxy->valid = false.
 // Silently returns if the proxy is already invalid or no scene is active.
 int LuaBindings::lua_engine_scene_destroy(lua_State* L) {
-    auto* proxy = static_cast<enjin2::ObjectProxy*>(
-        luaL_testudata(L, 1, "ObjectProxy"));
-    if (!proxy || !proxy->valid || !proxy->object) { return 0; }
+    // Not an object is a mistake and raises (ADR-0030); one already destroyed
+    // is gone, and destroying it again does nothing.
+    auto* proxy = static_cast<enjin2::ObjectProxy*>(luaL_checkudata(L, 1, "ObjectProxy"));
+    if (!proxy->valid || !proxy->object) { return 0; }
 
     lua_getfield(L, LUA_REGISTRYINDEX, "enjin_active_scene");
     auto** scenePP = static_cast<Scene**>(lua_touserdata(L, -1));

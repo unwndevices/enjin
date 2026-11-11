@@ -189,7 +189,7 @@ inline void registerEffectApi(lua_State* L) {
                     "(kind:RemapKind, from:int, to:int) -> Remap\n"
                     "(kind:RemapKind, first:Remap, second:Remap) -> Remap",
                     "Build a colour remap: a 16-entry table or a named kind.",
-                    "lut: lut[i + 1] is the new index for colour i; a missing entry maps to 0\n"
+                    "lut: lut[i + 1] is the new index for colour i; an entry left out maps to 0\n"
                     "kind: identity, towardBg or towardText alone (one step along the shade "
                     "chain bg, surface, muted, text; an accent steps to muted or text); "
                     "solid, recolor and compose take the arguments below; unknown kinds raise\n"

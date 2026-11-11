@@ -179,13 +179,16 @@ static void test_setFont_roundtrip() {
 }
 
 // ============================================================
-// setFont with unknown name keeps current
+// setFont with an unknown name raises and keeps current (ADR-0030)
 // ============================================================
 static void test_setFont_unknown_keeps_current() {
-    printf("--- setFont unknown name keeps current ---\n");
+    printf("--- setFont unknown name raises, keeps current ---\n");
     TextFixture f;
-    f.exec("gfx.setFont('default8'); gfx.setFont('nonexistent'); f = gfx.getFont()");
+    f.exec("gfx.setFont('default8'); ok, why = pcall(gfx.setFont, 'nonexistent'); f = gfx.getFont(); "
+           "raised = (not ok) and why:find(\"unknown font 'nonexistent'\", 1, true) ~= nil");
     ASSERT(f.getStr("f") == "default8", "gfx.setFont('nonexistent') should keep 'default8'");
+    f.exec("r = raised and 'yes' or 'no'");
+    ASSERT(f.getStr("r") == "yes", "gfx.setFont('nonexistent') raises, naming the font");
 }
 
 // ============================================================

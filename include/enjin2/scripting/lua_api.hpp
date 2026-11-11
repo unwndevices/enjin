@@ -350,9 +350,12 @@ std::vector<std::pair<std::string, std::string>> luaApiArgLines(const LuaApiEntr
  * results) is camelCase, no '_' (a constant, or a table of constants, may be
  * UPPER_SNAKE; a metamethod is __name; a lone '_' is a placeholder
  * parameter); a NilErr entry's results end in `err:string?`; a Raises entry
- * returns no err and documents no other failure (-1 / nil / false on
- * failure, a printed reason). Returns false with one line per problem in
- * `errors`.
+ * returns no err. The failure text is a whitelist of the two forms: every
+ * clause of an entry's text that speaks of a failure condition (unknown,
+ * invalid, full, missing, printed, ignored, ...) says it raises, or (on a
+ * NilErr entry) that it returns `nil, "…"`; "nil for an unknown id", "false
+ * when", "-1 on failure", "keeps the current one and logs" fail. Returns false
+ * with one line per problem in `errors`.
  */
 bool validateLuaApiModule(const LuaApiModule& module, std::string* errors = nullptr);
 

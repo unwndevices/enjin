@@ -102,9 +102,10 @@ int LuaBindings::lua_text(lua_State* L) {
     lua_Integer y = luaL_checkinteger(L, 3);
     // Optional 4th arg: per-call scale override — does NOT mutate currentTextSize
     uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 4 && lua_isnumber(L, 4)) {
-        int s = static_cast<int>(lua_tointeger(L, 4));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    if (!lua_isnoneornil(L, 4)) {   // off 1..255 raises (ADR-0030)
+        const int s = lua::checkInt(L, 4);
+        luaL_argcheck(L, s > 0 && s <= 255, 4, "scale is 1..255");
+        scale = static_cast<uint8_t>(s);
     }
     b->currentCanvas->drawText(str, static_cast<int16_t>(x), static_cast<int16_t>(y),
                               b->currentColor, scale, b->currentFont);
@@ -118,9 +119,10 @@ int LuaBindings::lua_textCentered(lua_State* L) {
     const char* str = luaL_checkstring(L, 1);
     int16_t y = static_cast<int16_t>(lua::checkInt(L, 2));
     uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 3 && lua_isnumber(L, 3)) {
-        int s = static_cast<int>(lua_tointeger(L, 3));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    if (!lua_isnoneornil(L, 3)) {   // off 1..255 raises (ADR-0030)
+        const int s = lua::checkInt(L, 3);
+        luaL_argcheck(L, s > 0 && s <= 255, 3, "scale is 1..255");
+        scale = static_cast<uint8_t>(s);
     }
     uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
     int16_t x = static_cast<int16_t>(((int)b->currentCanvas->getWidth() - (int)tw) / 2);
@@ -135,11 +137,13 @@ int LuaBindings::lua_textAligned(lua_State* L) {
     const char* str = luaL_checkstring(L, 1);
     int16_t x = static_cast<int16_t>(lua::checkInt(L, 2));
     int16_t y = static_cast<int16_t>(lua::checkInt(L, 3));
-    const int align = nameIndex(luaL_optstring(L, 4, "left"), kNumberAlignNames);
+    // An unknown align name or a scale off 1..255 is a mistake: it raises (ADR-0030).
+    const int align = lua::optName(L, 4, kNumberAlignNames, "align", static_cast<int>(NumberAlign::Left));
     uint8_t scale = b->currentTextSize;
-    if (lua_gettop(L) >= 5 && lua_isnumber(L, 5)) {
-        int s = static_cast<int>(lua_tointeger(L, 5));
-        if (s > 0 && s <= 255) scale = static_cast<uint8_t>(s);
+    if (!lua_isnoneornil(L, 5)) {
+        const int s = lua::checkInt(L, 5);
+        luaL_argcheck(L, s > 0 && s <= 255, 5, "scale is 1..255");
+        scale = static_cast<uint8_t>(s);
     }
     if (align == static_cast<int>(NumberAlign::Center)) {
         uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
@@ -148,7 +152,7 @@ int LuaBindings::lua_textAligned(lua_State* L) {
         uint16_t tw = b->currentCanvas->measureTextWidth(str, scale, b->currentFont);
         x = static_cast<int16_t>(x - static_cast<int16_t>(tw));
     }
-    // "left" and unknown names = no adjustment
+    // "left" = no adjustment
     b->currentCanvas->drawText(str, x, y, b->currentColor, scale, b->currentFont);
     return 0;
 }
@@ -170,10 +174,9 @@ int LuaBindings::lua_textWrapped(lua_State* L) {
 int LuaBindings::lua_setTextSize(lua_State* L) {
     LuaBindings* b = getBindings(L);
     if (!b) return 0;
-    if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        int s = static_cast<int>(lua_tointeger(L, 1));
-        b->currentTextSize = (s > 0 && s <= 255) ? static_cast<uint8_t>(s) : 1;
-    }
+    const int s = lua::checkInt(L, 1);
+    luaL_argcheck(L, s > 0 && s <= 255, 1, "size is 1..255");   // a mistake raises (ADR-0030)
+    b->currentTextSize = static_cast<uint8_t>(s);
     return 0;
 }
 
@@ -202,8 +205,8 @@ int LuaBindings::lua_setFont(lua_State* L) {
             return 0;
         }
     }
-    // Unknown font name: keep current
-    return 0;
+    // A font no host registered is a mistake: it raises (ADR-0030).
+    return luaL_argerror(L, 1, lua_pushfstring(L, "unknown font '%s'", name));
 }
 
 int LuaBindings::lua_getFont(lua_State* L) {

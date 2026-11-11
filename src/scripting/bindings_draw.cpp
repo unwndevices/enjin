@@ -157,9 +157,8 @@ int LuaBindings::lua_setColor(lua_State* L) {
         return 0;
     }
 
-    if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
-    }
+    // Not a colour (a non-number, 8-14) is a mistake: it raises (ADR-0030).
+    bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
 
     return 0;
 }
@@ -204,12 +203,10 @@ int LuaBindings::lua_getLineWidth(lua_State* L) {
 int LuaBindings::lua_point(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    if (lua_gettop(L) >= 2 && lua_isnumber(L, 1) && lua_isnumber(L, 2)) {
-        int16_t x = static_cast<int16_t>(lround(lua_tonumber(L, 1)));
-        int16_t y = static_cast<int16_t>(lround(lua_tonumber(L, 2)));
-
-        bindings->currentCanvas->setPixel(x, y, bindings->currentColor);
-    }
+    // Not a number is a mistake: it raises (ADR-0030).
+    int16_t x = static_cast<int16_t>(lround(luaL_checknumber(L, 1)));
+    int16_t y = static_cast<int16_t>(lround(luaL_checknumber(L, 2)));
+    bindings->currentCanvas->setPixel(x, y, bindings->currentColor);
 
     return 0;
 }

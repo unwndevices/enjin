@@ -114,8 +114,9 @@ static int lua_proxy_newindex_impl(lua_State* L) {
         return 0;  // unreachable — luaL_error longjmps
     }
 
-    const char* key = lua_tostring(L, 2);
-    if (!key) return 0;
+    static constexpr const char* kWrites = "x, y, visible, layer and active";
+    const char* key = lua_type(L, 2) == LUA_TSTRING ? lua_tostring(L, 2) : nullptr;
+    if (!key) return raiseNotWritable(L, "an object", kWrites);
 
     enjin2::C_LuaScript* comp = proxy->component;
     enjin2::Object* owner = comp->getOwner();
@@ -137,13 +138,14 @@ static int lua_proxy_newindex_impl(lua_State* L) {
     } else if (strcmp(key, "layer") == 0) {
         // 1-indexed in Lua; convert to 0-indexed C++
         int luaLayer = lua::checkInt(L, 3);
-        if (luaLayer >= 1) {
-            comp->SetBufferIndex(static_cast<uint8_t>(luaLayer - 1));
-        }
+        luaL_argcheck(L, luaLayer >= 1, 3, "layer is 1 or above");
+        comp->SetBufferIndex(static_cast<uint8_t>(luaLayer - 1));
     } else if (strcmp(key, "active") == 0) {
         if (owner) owner->setActive(lua_toboolean(L, 3) != 0);
+    } else {
+        // name is read-only; any other key is not the object's (ADR-0030).
+        return raiseNotWritable(L, "an object", kWrites);
     }
-    // "name" is intentionally read-only — silently ignore writes
 
     return 0;
 }
@@ -552,7 +554,7 @@ void LuaBindings::registerAll() {
         // Drawing state
         luaFunction("setColor", lua_setColor, "(color:int) -> nil",
                     "Set the draw colour the shapes and text use.",
-                    "color: a gfx.COLOR role or 15 (8-14 raise); a non-number is ignored")
+                    "color: a gfx.COLOR role or 15; 8-14 or a non-number raises")
             .note("Starts at gfx.COLOR.TEXT (3) after every reload."),
         luaFunction("getColor", lua_getColor, "() -> int", "The current draw colour."),
         luaFunction("setLineWidth", lua_setLineWidth, "(width:int) -> nil",
@@ -660,7 +662,7 @@ void LuaBindings::registerAll() {
             .note("The sprite starts on frame 0, looping at 8 fps.")
             .returnsErr(),
         luaFunction("freeSprite", lua_freeSprite, "(handle:int) -> nil",
-                    "Free a sprite slot; unknown handles are ignored.",
+                    "Free a sprite slot; a handle never loaded, or freed already, raises.",
                     "handle: the sprite")
             .note("Pixel memory comes back only when this was the newest loaded sprite; "
                   "otherwise at the next reload."),
@@ -668,7 +670,7 @@ void LuaBindings::registerAll() {
                     "(handle:int, x:int, y:int, flipH:boolean?=false, flipV:boolean?=false, "
                     "rotate90:boolean?=false, fx:Effect?) -> nil",
                     "Draw a sprite's current frame with its top-left at (x, y); index 15 is skipped.",
-                    "handle: the sprite; unknown handles draw nothing\n"
+                    "handle: the sprite; a handle never loaded, or freed, raises\n"
                     "x: left edge; a fractional number raises\n"
                     "y: top edge; a fractional number raises\n"
                     "flipH: mirror left to right\n"
@@ -747,16 +749,16 @@ void LuaBindings::registerAll() {
                     "str: the text\n"
                     "x: anchor column\n"
                     "y: vertical position\n"
-                    "align: which edge x anchors; an unknown name anchors left\n"
+                    "align: which edge x anchors; an unknown name raises\n"
                     "scale: size for this call only, 1..255")
             .withEnum(kAlign),
         luaFunction("setTextSize", lua_setTextSize, "(size:int) -> nil",
                     "Set the text scale factor.",
-                    "size: 1..255; other numbers reset it to 1")
+                    "size: 1..255; another raises")
             .note("Starts at 1 after every reload."),
         luaFunction("getTextSize", lua_getTextSize, "() -> int", "The current text scale factor."),
         luaFunction("setFont", lua_setFont, "(name:string) -> nil",
-                    "Switch the text font; an unknown name keeps the current one.",
+                    "Switch the text font; an unknown name raises.",
                     "name: \"default\", \"default8\", or a font the host registered")
             .note("A host that registers fonts may describe gfx.setFont again with a Font "
                   "enum of its names (Tomodachi's: body, display, monogram)."),
@@ -883,14 +885,14 @@ void LuaBindings::registerProxyMetatable() {
     static constexpr LuaApiEntry kMethods[] = {
         luaFunction("get", lua_proxy_get_component_impl, "(type:string) -> proxy:userdata?",
                     "The object's component of a type, as its proxy; nil when it has none.",
-                    "type: a component name such as \"C_Position\"; an unknown name gives nil"),
+                    "type: a component name such as \"C_Position\"; an unknown name raises"),
         luaFunction("add", lua_proxy_add_component_impl,
                     "(type:string, params:table?) -> proxy:userdata?, err:string?",
                     "Attach a component, or take the one already there, and set fields from "
                     "params; nil, \"components full\" when the object holds 16.",
                     "type: a component name; an unknown name raises\n"
-                    "params: field = value pairs written through the proxy; unknown fields are "
-                    "ignored")
+                    "params: field = value pairs written through the proxy; a field it does "
+                    "not write raises")
             .returnsErr(),
         luaFunction("addTag", lua_proxy_addTag_impl, "(tag:string) -> nil",
                     "Tag the object.",
@@ -909,14 +911,14 @@ void LuaBindings::registerProxyMetatable() {
                     "self.x and self.y (int), self.visible, self.layer (1-based), self.active and "
                     "self.name read the object; other keys look up a method.",
                     "self: the script's object\n"
-                    "key: a field or method name; unknown keys give nil")
+                    "key: a field or method name; any other key reads nil, as a table's does")
             .note("Raises once the object is destroyed."),
         luaFunction("__newindex", lua_proxy_newindex_impl,
                     "(self:ScriptProxy, key:string, value:any) -> nil",
-                    "Writes x, y, visible, layer and active; name and other keys are ignored.",
+                    "Writes x, y, visible, layer and active; name (read-only) and any other key raise.",
                     "self: the script's object\n"
                     "key: the field\n"
-                    "value: the new value; layer below 1 is ignored"),
+                    "value: the new value; a layer below 1 raises"),
     };
     static constexpr LuaApiModule kMetaModule = luaApiModule(
         LuaApiScope::Metatable, "ScriptProxy", "A scene script's self: its object's fields.",

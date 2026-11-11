@@ -367,6 +367,10 @@ static void testValidateHoldsTheConvention() {
         luaFunction("Vec", fnA, "(_:nil, x:number) -> nil", "A constructor-style name.",
                     "_: always nil\nx: a value"),
         luaFunction("isBusy", fnB, "() -> boolean", "A query; nothing fails."),
+        luaFunction("startOne", fnA, "(mode:string) -> id:int?, err:string?",
+                    "Start one; nil, \"slots full\" when all 8 are busy. An unknown mode raises.",
+                    "mode: how it runs; an unknown one raises")
+            .returnsErr(),
         luaConstant("LAYER_BG", 1, "A constant."),
         luaTable("INNER", kInnerModule, "A table of constants."),
     };
@@ -392,13 +396,27 @@ static void testValidateHoldsTheConvention() {
         luaFunction("nilWhenBusy", fnA, "() -> id:int?", "Start one; nil when all 8 slots are busy."),
         luaFunction("printsIt", fnA, "() -> nil", "Do it.")
             .note("The failure reason is printed to the log."),
+        luaFunction("nilForUnknown", fnA, "(id:int) -> value:number?",
+                    "The value; nil for an unknown id.", "id: the handle"),
+        luaFunction("falseForUnknown", fnA, "(id:int) -> ok:boolean",
+                    "Free it; false for an unknown handle.", "id: the handle"),
+        luaFunction("keepsCurrent", fnA, "(name:string) -> nil",
+                    "Pick one. An unknown name keeps the current one.", "name: the scale"),
+        luaFunction("unknownIsDefault", fnA, "(mode:string) -> nil", "Set the mode.",
+                    "mode: how it moves; an unknown mode is forward"),
+        luaFunction("errWithoutNilErr", fnA, "(path:string) -> x:int?, err:string?",
+                    "Load; nil, \"file not found\" when it is missing. A bad path is -1.",
+                    "path: the file")
+            .returnsErr(),
     };
     static constexpr LuaApiModule kBadModule =
         luaApiModule(LuaApiScope::Table, "bad_table", "Bad.", kBad);
     errors.clear();
     ASSERT(!validateLuaApiModule(kBadModule, &errors), "the convention's breaches fail validation");
     for (const char* name : {"bad_table: ", "play_note", "snakeArg", "snakeResult", "errNoShape",
-                             "errNotLast", "errUndeclared", "minusOne", "nilWhenBusy", "printsIt"})
+                             "errNotLast", "errUndeclared", "minusOne", "nilWhenBusy", "printsIt",
+                             "nilForUnknown", "falseForUnknown", "keepsCurrent", "unknownIsDefault",
+                             "errWithoutNilErr"})
         ASSERT(errors.find(name) != std::string::npos, std::string("reports ") + name + "\n" + errors);
 }
 

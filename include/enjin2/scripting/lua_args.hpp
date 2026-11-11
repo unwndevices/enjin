@@ -7,6 +7,10 @@
 // argument). Deliberately not a templated marshaller: the argument logic stays
 // visible at each call site.
 
+#include "../core/name_index.hpp"
+
+#include <cstddef>
+
 extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
@@ -39,6 +43,25 @@ inline bool checkBool(lua_State* L, int idx) {
     return lua_toboolean(L, idx) != 0;
 }
 
+// --- Names (a closed set: an enum's names, ADR-0030) ---------------------------
+//
+// The index of argument `idx` in `names` (the array its descriptor publishes,
+// core/name_index.hpp). An unknown name is a programming mistake: it raises,
+// naming the argument and the name ("unknown mode 'fwd'").
+
+template <size_t N>
+int checkName(lua_State* L, int idx, const char* const (&names)[N], const char* what) {
+    const char* s = luaL_checkstring(L, idx);
+    const int i = nameIndex(s, names);
+    if (i < 0) luaL_argerror(L, idx, lua_pushfstring(L, "unknown %s '%s'", what, s));
+    return i;
+}
+// checkName, or `def` when the argument is absent or nil.
+template <size_t N>
+int optName(lua_State* L, int idx, const char* const (&names)[N], const char* what, int def) {
+    return lua_isnoneornil(L, idx) ? def : checkName(L, idx, names, what);
+}
+
 // --- Option-table fields -----------------------------------------------------
 //
 // An integer field of the table at stack index `table`, for options tables
@@ -50,6 +73,22 @@ inline int optFieldInt(lua_State* L, int table, const char* key, int def) {
     if (table == 0) return def;
     lua_getfield(L, table, key);
     const int v = lua_isnil(L, -1) ? def : static_cast<int>(luaL_checkinteger(L, -1));
+    lua_pop(L, 1);
+    return v;
+}
+// table[key] as a name of `names` (checkName's rule); `def` when the field is
+// nil, or when table is 0.
+template <size_t N>
+int optFieldName(lua_State* L, int table, const char* key, const char* const (&names)[N],
+                 const char* what, int def) {
+    if (table == 0) return def;
+    lua_getfield(L, table, key);
+    int v = def;
+    if (!lua_isnil(L, -1)) {
+        const char* s = lua_tostring(L, -1);
+        v = s ? nameIndex(s, names) : -1;
+        if (v < 0) luaL_error(L, "bad field '%s' (unknown %s '%s')", key, what, s ? s : luaL_typename(L, -1));
+    }
     lua_pop(L, 1);
     return v;
 }
