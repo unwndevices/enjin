@@ -1462,6 +1462,15 @@ target_include_directories(text_shader_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(text_shader_test PRIVATE enjin2_core enjin2_graphics)
 add_test(NAME text_shader_test COMMAND text_shader_test)
 
+# Corner cuts (Tomodachi safe area): which pixels a rounded screen hides, and
+# the one report per string the text renderer gives the armed CornerWatch.
+add_executable(corner_watch_test
+    corner_watch_test.cpp
+)
+target_include_directories(corner_watch_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(corner_watch_test PRIVATE enjin2_core enjin2_graphics)
+add_test(NAME corner_watch_test COMMAND corner_watch_test)
+
 add_executable(remap_test
     remap_test.cpp
 )
