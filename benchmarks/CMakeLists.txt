@@ -50,12 +50,11 @@ target_link_libraries(bench_ecs PRIVATE
 
 # bench_lua — LuaEngine headless benchmarks (BENCH-04)
 # Only available when Lua is enabled (enjin2_lua target must exist)
-# enjin2_lua transitively carries LUA_LIBRARIES — no explicit Lua link needed
+# enjin2_lua carries Lua (lua54, PUBLIC): no explicit Lua link needed
 if(TARGET enjin2_lua)
     add_executable(bench_lua bench_lua.cpp)
     target_include_directories(bench_lua PRIVATE
         ${CMAKE_SOURCE_DIR}/include
-        ${LUA_INCLUDE_DIRS}
     )
     target_link_libraries(bench_lua PRIVATE
         nanobench_vendor
@@ -72,7 +71,6 @@ if(TARGET enjin2_lua)
     add_executable(bench_alloc bench_alloc.cpp)
     target_include_directories(bench_alloc PRIVATE
         ${CMAKE_SOURCE_DIR}/include
-        ${LUA_INCLUDE_DIRS}
     )
     target_link_libraries(bench_alloc PRIVATE
         nanobench_vendor
