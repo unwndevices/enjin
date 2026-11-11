@@ -113,27 +113,65 @@ int LuaBindings::lua_drawSprite(lua_State* L) {
     const int16_t cellW = static_cast<int16_t>(s.sheet.cellW);
     const int16_t cellH = static_cast<int16_t>(s.sheet.cellH);
 
-    // Blit frame via LuaCanvas::setPixel (type-erased path — works for 4-bit canvas)
     const uint8_t* frame_data = s.sheet.data
         + static_cast<uint16_t>(s.frame) * s.sheet.cellW * s.sheet.cellH;
 
-    for (int16_t fy = 0; fy < cellH; ++fy) {
-        for (int16_t fx = 0; fx < cellW; ++fx) {
-            // Source coordinate remapping for flip
-            int16_t srcX = flipH ? (cellW - 1 - fx) : fx;
-            int16_t srcY = flipV ? (cellH - 1 - fy) : fy;
-
-            uint8_t px = frame_data[srcY * cellW + srcX] & 0x0F;
-            if (px != 15) {  // index 15 = transparent
-                // Destination coordinate remapping for 90° rotation
-                int16_t dstX = rotate90 ? (cellH - 1 - fy) : fx;
-                int16_t dstY = rotate90 ? fx : fy;
-                const int16_t ax = static_cast<int16_t>(x + dstX);
-                const int16_t ay = static_cast<int16_t>(y + dstY);
-                const uint8_t out = hasShader ? shader.shadePixel(px, ax, ay) : px;
-                b->currentCanvas->setPixel(ax, ay, out);
+    // Walk the destination, clipped to the canvas, a row at a time: each
+    // run of opaque pixels goes to the canvas as one span (Tomodachi #488;
+    // a pixel at a time through the type-erased setPixel was ~0.45 us a
+    // pixel on the S3). Each destination pixel maps back to one source
+    // pixel, so the frame paints what the per-pixel walk did.
+    const int16_t dstW = rotate90 ? cellH : cellW;
+    const int16_t dstH = rotate90 ? cellW : cellH;
+    const int canvasW = b->currentCanvas->getWidth();
+    const int canvasH = b->currentCanvas->getHeight();
+    const int dx0 = std::max(0, -static_cast<int>(x));
+    const int dx1 = std::min(static_cast<int>(dstW), canvasW - x);
+    const int dy0 = std::max(0, -static_cast<int>(y));
+    const int dy1 = std::min(static_cast<int>(dstH), canvasH - y);
+    LuaCanvas* const canvas = b->currentCanvas;
+    if (!flipH && !flipV && !rotate90 && !hasShader && canvas->is4BitCanvas()) {
+        // The plain blit: each source row's opaque runs straight from the
+        // frame (the common case: a hand, a paddle, a gourd); the 4-bit
+        // canvas keeps each byte's low nibble, as the walk below does.
+        for (int dstY = dy0; dstY < dy1; ++dstY) {
+            const uint8_t* row = frame_data + dstY * cellW;
+            const int16_t ay = static_cast<int16_t>(y + dstY);
+            int dstX = dx0;
+            while (dstX < dx1) {
+                while (dstX < dx1 && (row[dstX] & 0x0F) == 15) ++dstX;
+                const int start = dstX;
+                while (dstX < dx1 && (row[dstX] & 0x0F) != 15) ++dstX;
+                if (dstX > start)
+                    canvas->setPixelSpan(static_cast<int16_t>(x + start), ay, row + start,
+                                         static_cast<int16_t>(dstX - start));
             }
         }
+        return 0;
+    }
+    uint8_t run[64];
+    for (int dstY = dy0; dstY < dy1; ++dstY) {
+        const int16_t ay = static_cast<int16_t>(y + dstY);
+        int n = 0;
+        int16_t runX = 0;
+        for (int dstX = dx0; dstX < dx1; ++dstX) {
+            // The inverse of the source walk: rotate90 sends (fx, fy) to
+            // (cellH - 1 - fy, fx); the flips mirror the source cell.
+            const int fx = rotate90 ? dstY : dstX;
+            const int fy = rotate90 ? (cellH - 1 - dstX) : dstY;
+            const int srcX = flipH ? (cellW - 1 - fx) : fx;
+            const int srcY = flipV ? (cellH - 1 - fy) : fy;
+            const uint8_t px = frame_data[srcY * cellW + srcX] & 0x0F;
+            const int16_t ax = static_cast<int16_t>(x + dstX);
+            if (px == 15 || n == 64) {  // index 15 = transparent
+                if (n) b->currentCanvas->setPixelSpan(runX, ay, run, static_cast<int16_t>(n));
+                n = 0;
+                if (px == 15) continue;
+            }
+            if (n == 0) runX = ax;
+            run[n++] = hasShader ? shader.shadePixel(px, ax, ay) : px;
+        }
+        if (n) b->currentCanvas->setPixelSpan(runX, ay, run, static_cast<int16_t>(n));
     }
     return 0;
 }

@@ -248,6 +248,25 @@ void LuaCanvas::setPixel(int16_t x, int16_t y, uint8_t color) {
     }
 }
 
+void LuaCanvas::setPixelSpan(int16_t x, int16_t y, const uint8_t* colors, int16_t count) {
+    if (is4Bit) {
+        auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
+        // Pixel4 is a bitfield: the run goes over in chunks of a stack buffer.
+        Pixel4 run[64];
+        while (count > 0) {
+            const int16_t n = count < 64 ? count : 64;
+            for (int16_t i = 0; i < n; ++i) run[i] = Pixel4(colors[i]);
+            canvas->setPixelSpan(x, y, run, n);
+            x = static_cast<int16_t>(x + n);
+            colors += n;
+            count = static_cast<int16_t>(count - n);
+        }
+    } else {
+        auto* canvas = static_cast<ICanvas<uint8_t>*>(canvasPtr);
+        canvas->setPixelSpan(x, y, colors, count);
+    }
+}
+
 uint8_t LuaCanvas::getPixel(int16_t x, int16_t y) const {
     if (is4Bit) {
         auto* canvas = static_cast<ICanvas<Pixel4>*>(canvasPtr);
@@ -573,6 +592,11 @@ void LuaBindings::registerAll() {
                     "y1: start row\n"
                     "x2: end column\n"
                     "y2: end row"),
+        luaFunction("polyline", lua_polyline, "(points:table) -> nil",
+                    "Draw lines through points in the draw colour, gfx.getLineWidth() pixels "
+                    "wide: gfx.line from each point to the next, in one call.",
+                    "points: a flat list {x1, y1, x2, y2, ...}; fewer than two points draws one "
+                    "point, an odd last number is ignored"),
         luaFunction("rectangle", lua_rectangle,
                     "(x:number, y:number, w:int, h:int) -> nil\n"
                     "(mode:ShapeMode, x:number, y:number, w:int, h:int) -> nil",

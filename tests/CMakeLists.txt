@@ -745,6 +745,20 @@ if(ENJIN2_BUILD_LUA)
     )
     add_test(NAME draw_state_binding_test COMMAND draw_state_binding_test)
 
+    # The span paths of gfx.rectangle, the wide gfx.line and gfx.drawSprite
+    # paint what their per-pixel walks did (Tomodachi #488)
+    add_executable(draw_spans_test
+        draw_spans_test.cpp
+    )
+    target_include_directories(draw_spans_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
+    target_link_libraries(draw_spans_test PRIVATE
+        enjin2
+        enjin2_lua
+    )
+    add_test(NAME draw_spans_test COMMAND draw_spans_test)
+
     # The palette contract's seal (Tomodachi ADR-0022, #426): gfx.*, the .njn
     # loaders and the palette refuse indices 8-14, naming them
     add_executable(palette_seal_test

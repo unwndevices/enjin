@@ -131,6 +131,13 @@ public:
      * @param color Pixel color
      */
     void setPixel(int16_t x, int16_t y, uint8_t color);
+
+    /**
+     * @brief Set a row's run of pixels, clipped: colors[0..count-1] to
+     *        x..x+count-1 on row y. What setPixel would paint a pixel, written
+     *        as one run where the canvas can (ICanvas::setPixelSpan, #488).
+     */
+    void setPixelSpan(int16_t x, int16_t y, const uint8_t* colors, int16_t count);
     
     /**
      * @brief Get pixel at coordinates
@@ -904,6 +911,7 @@ private:
     // Primitive drawing
     static int lua_point(lua_State* L);
     static int lua_line(lua_State* L);
+    static int lua_polyline(lua_State* L);
     static int lua_rectangle(lua_State* L);
     static int lua_circle(lua_State* L);
     static int lua_fillEllipse(lua_State* L);
