@@ -16,8 +16,13 @@ include_guard(GLOBAL)
 
 if(NOT TARGET lua54)
     include(FetchContent)
+    # lua.org first, then its PUC-Rio mirror (the same tarball, so the same
+    # hash), then lua.org again: CMake tries the URLs in order, and lua.org
+    # drops TLS connections often enough to fail a CI run on its own.
     FetchContent_Declare(lua54
         URL https://www.lua.org/ftp/lua-5.4.8.tar.gz
+            https://www.tecgraf.puc-rio.br/lua/ftp/lua-5.4.8.tar.gz
+            https://www.lua.org/ftp/lua-5.4.8.tar.gz
         URL_HASH SHA256=4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
