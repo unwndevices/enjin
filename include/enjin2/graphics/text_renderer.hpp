@@ -153,6 +153,35 @@ inline size_t wrapEnd(const Face& f, uint8_t size, std::string_view p, size_t st
     return p.size();
 }
 
+/// The head of @p line that Ellipsis keeps in a box @p boxW wide: the longest
+/// that leaves room for "...", its trailing spaces dropped. TextRenderer::draw
+/// cuts a line wider than its box here.
+inline std::string_view ellipsisHead(const Face& f, uint8_t size, std::string_view line, int boxW) {
+    if (!size) size = 1;
+    const int room = boxW - 3 * advance(f, '.') * size;
+    int w = 0;
+    size_t i = 0, fit = 0;
+    while (i < line.size()) {
+        const uint32_t cp = decodeUtf8(line, i);
+        if (cp == '\r') { fit = i; continue; }
+        const int adv = advance(f, cp) * size;
+        if (w + adv > room) break;
+        w += adv;
+        fit = i;
+    }
+    return trimRight(line.substr(0, fit));
+}
+
+/// The advance one line (no newline) is drawn at under @p overflow in a box
+/// @p boxW wide: its width, or with Ellipsis and too wide, its head's and the
+/// dots'. Clip draws the whole line's advance, cut at the box.
+inline int lineWidth(const Face& f, uint8_t size, TextOverflow overflow, std::string_view line, int boxW) {
+    if (!size) size = 1;
+    const int w = width(f, line, size);
+    if (overflow != TextOverflow::Ellipsis || w <= boxW) return w;
+    return width(f, ellipsisHead(f, size, line, boxW), size) + 3 * advance(f, '.') * size;
+}
+
 /**
  * @brief Split @p s into the lines TextRenderer::draw would draw, calling
  *        fn(line) for each: a newline ends a line; with Wrap, a paragraph wider
@@ -252,6 +281,12 @@ public:
     int width(std::string_view s) const { return text::width(face(), s, s_.size); }
     int lineHeight() const { return text::lineHeight(face(), s_.size); }
     int ascent() const { return face().ascent * s_.size; }
+    /// The advance @p line (one line) is drawn at in a box from x, under the
+    /// overflow rule: with Ellipsis, the cut head's and the dots'. For a plate
+    /// or a hit box under text that may be cut.
+    int lineWidth(std::string_view line, int x = 0, TextAlign align = TextAlign::Left) const {
+        return text::lineWidth(face(), s_.size, s_.overflow, line, boxWidth(x, align));
+    }
     /// The line top that puts the capitals' top at @p capTop (text::capOffset).
     int topForCap(int capTop) const { return capTop - text::capOffset(face(), s_.size); }
 
@@ -345,20 +380,7 @@ private:
         std::string_view body = line;
         int dots = 0;
         if (ellipsis) {
-            // The longest head that leaves room for "...".
-            const int dotsW = 3 * text::advance(f, '.') * size;
-            const int room = (right - left) - dotsW;
-            int w = 0;
-            size_t i = 0, fit = 0;
-            while (i < line.size()) {
-                const uint32_t cp = text::decodeUtf8(line, i);
-                if (cp == '\r') { fit = i; continue; }
-                const int adv = text::advance(f, cp) * size;
-                if (w + adv > room) break;
-                w += adv;
-                fit = i;
-            }
-            body = text::trimRight(line.substr(0, fit));
+            body = text::ellipsisHead(f, static_cast<uint8_t>(size), line, right - left);
             dots = 3;
         }
         const int lineW = text::width(f, body, s_.size) + dots * text::advance(f, '.') * size;

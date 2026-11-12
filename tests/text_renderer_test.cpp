@@ -359,7 +359,22 @@ static void test_missing_log_stops_after_64() {
     text::missingLog() = &text::defaultMissingLog;
 }
 
+static void test_line_width_under_the_rule() {
+    printf("--- lineWidth: the advance a line is drawn at, after the ellipsis ---\n");
+    Canvas c = blank();
+    TextRenderer<Pixel4> t(c);
+    ASSERT(t.lineWidth("abcdefgh") == 48, "wrap: the whole advance");
+    t.setTextWrap(TextOverflow::Ellipsis, 30);
+    ASSERT(t.lineWidth("abcdefgh") == 30, "ellipsis: 'ab...' is 5 advances");
+    ASSERT(t.lineWidth("abcde") == 30, "a line that fits is its own width");
+    ASSERT(t.lineWidth("ab  cdefgh") == 30 && text::ellipsisHead(faces::monogram, 1, "ab  cdefgh", 30) == "ab",
+           "the head drops its trailing spaces");
+    t.setTextWrap(TextOverflow::Clip, 30);
+    ASSERT(t.lineWidth("abcdefgh") == 48, "clip: the whole advance, cut when drawn");
+}
+
 int main() {
+    test_line_width_under_the_rule();
     test_y_is_the_top_of_the_line();
     test_width_is_the_advance();
     test_default_face_is_monogram_in_the_text_role();
