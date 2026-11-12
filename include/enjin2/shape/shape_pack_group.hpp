@@ -52,6 +52,17 @@
  *   there, no grab. moveTo() drags the feet line through the position
  *   spring; setPosition() snaps it.
  *
+ * - **The Feel, Reactions and Blinks** (ADR-0019, Tomodachi #365). The group
+ *   keeps a clock (µs, advanced by tick()) and owns how the pet answers a
+ *   finger: pointer() takes one sample a frame and runs the Feel
+ *   (shape_feel.hpp: tap, pull, loose-into-drag, throw) over the group's one
+ *   grab (hold / pullTo / letGo: a second hold lets go of the first). What a
+ *   slot shows is a stack: a Blink (shape_blink.hpp, the eyes' `closed` pose
+ *   while shut; off after build()) over a Reaction (react(): a pose for a
+ *   while, replacing any running on the slot; 0 cancels) over the base pose
+ *   setPose() sets. A new piece in a slot starts at its default base pose
+ *   with no Reaction, and a new Look lets go of the held pet.
+ *
  * A bad Look is refused before anything is read, naming slot + id: a missing
  * body, eyes or mouth; an id not in the pack (unknown or retired); a filled
  * slot the Body has no socket for; a colour that is not a Palette role (0..7,
@@ -67,6 +78,8 @@
 #include "../graphics/asset_arena.hpp"
 #include "../graphics/canvas.hpp"
 #include "../graphics/shape_pack.hpp"
+#include "shape_blink.hpp"
+#include "shape_feel.hpp"
 #include "shape_group.hpp"
 
 namespace enjin2 {
@@ -143,7 +156,7 @@ private:
 };
 
 /// One pet: a Look read into a Look buffer and drawn as a Shape group.
-class ShapePackGroup : private ShapeItemSource {
+class ShapePackGroup : private ShapeItemSource, private PetActions {
 public:
     /**
      * @brief Read `look` into the Look buffer, carving the buffer and the hit
@@ -164,9 +177,10 @@ public:
     bool setLook(const ShapeLook& look, ShapeError* err);
     const ShapeLook& look() const { return look_; }
 
-    /// Swap slot `s`'s Feature to the pose named `name` (whole-Feature).
+    /// Set slot `s`'s base pose by name (whole-Feature): what it shows when
+    /// no Reaction or Blink is over it.
     bool setPose(ShapeSlot s, const char* name, ShapeError* err);
-    /// Name of slot `s`'s current pose, or nullptr for an empty slot.
+    /// Name of the pose slot `s` shows now, or nullptr for an empty slot.
     const char* poseName(ShapeSlot s) const;
     /// The poses slot `s`'s Feature has (fixed-list names), up to `max`; 0 if empty.
     uint8_t poseNames(ShapeSlot s, const char** out, uint8_t max) const;
@@ -211,9 +225,39 @@ public:
     void stopBreathing();
     bool breathing() const { return breathing_; }
 
-    /// Advance the jelly by a frame of `dtMicros` (the host calls this before
-    /// flush()); true when the field moved and the pet needs a redraw.
-    bool tick(uint32_t dtMicros) { return group_.tick(dtMicros); }
+    // ── The Feel, Reactions and Blinks (ADR-0019, #365) ─────────────────────
+
+    /// One pointer sample a frame (layer pixels): what the finger meant. See
+    /// shape_feel.hpp. The caller keeps what comes after a Throw.
+    PetEvent pointer(FixedVec2 at, bool down) { return pointer_.sample(at, down, clock_, feel_, *this); }
+    /// The finger is held on the pet (a pull or a drag).
+    bool pointerHeld() const { return pointer_.holding(); }
+    void setFeel(const Feel& f) { feel_ = f; }
+    const Feel& feel() const { return feel_; }
+
+    /// The group's one grab: take hold at `at` (letting go of any other),
+    /// pull it, let go. pointer() drives these; a caller may too.
+    bool hold(FixedVec2 at) override;
+    void pullTo(FixedVec2 target) override;
+    void letGo(FixedVec2 velocity) override;
+    bool holding() const { return held_ >= 0; }
+
+    /// Show `name` on slot `s` for `micros`, over its base pose; replaces a
+    /// Reaction already running there (0 cancels). Refused like setPose().
+    bool react(ShapeSlot s, const char* name, uint32_t micros, ShapeError* err);
+
+    /// Blink from now on (`b.seed` 0: one is picked), or stop. Off after
+    /// build(). Refused when the eyes have no `closed` pose.
+    bool blink(const Blink& b, ShapeError* err);
+    void stopBlinking();
+    bool blinking() const { return blink_.enabled(); }
+    /// µs of tick() since build().
+    uint64_t clock() const { return clock_; }
+
+    /// Advance the clock, the Reactions, the Blink and the jelly by a frame
+    /// of `dtMicros` (the host calls this before flush()); true when the pet
+    /// needs a redraw.
+    bool tick(uint32_t dtMicros);
     /// Push the jelly at layer point `at` to `velocity` px/s; wakes it.
     void impulse(FixedVec2 at, FixedVec2 velocity) { group_.impulse(at, velocity); }
     /// Settled and snapped to rest: no sim steps, no redraws.
@@ -252,12 +296,28 @@ private:
         bool             loaded = false;
     };
 
+    /// A Reaction on a slot: a record pose shown until `until` (the clock).
+    struct Reaction {
+        uint8_t  pose = 0;
+        uint64_t until = 0;
+        bool     on = false;
+    };
+
     bool forEach(ShapeDrawScratch& scratch, ShapeEmit emit, void* ctx) const override;
+    // PetActions: what pointer() does to the pet.
+    void carryTo(FixedVec2 feet) override { moveTo(feet); }
+    void poke(FixedVec2 at, FixedVec2 velocity) override { impulse(at, velocity); }
+    FixedVec2 feet() const override { return position(); }
+
     bool validate(const ShapeLook& look, ShapeError* err) const;
     bool readSlot(ShapeSlot s, uint16_t id, ShapeError* err);
     void refreshBody();
     void refreshLattice();
     bool startBreath();
+    /// The record pose of slot `s`'s pose named `name`, or -1 with `err` set.
+    int findPose(ShapeSlot s, const char* name, const char* what, ShapeError* err) const;
+    /// Show what the stack (Blink, Reaction, base) says slot `s` shows now.
+    void refreshShown(ShapeSlot s);
 
     // The arena memory build() carved, kept across clear() for the next build().
     uint8_t*       buffer_ = nullptr;
@@ -273,6 +333,15 @@ private:
     FixedVec2  bodyMin_{}, bodyMax_{};  ///< The Body's rest box (closed rings).
     Breath     breath_;
     bool       breathing_ = false;
+
+    uint64_t       clock_ = 0;        ///< µs of tick() since build().
+    Feel           feel_;
+    PetPointer     pointer_;
+    int            held_ = -1;        ///< The one grab's handle.
+    BlinkScheduler blink_;
+    int            closedEyes_ = -1;  ///< The eyes' `closed` record pose, or -1.
+    uint8_t        base_[SHAPE_SLOT_COUNT] = {};  ///< Each slot's base record pose.
+    Reaction       reaction_[SHAPE_SLOT_COUNT];
 };
 
 } // namespace shape
