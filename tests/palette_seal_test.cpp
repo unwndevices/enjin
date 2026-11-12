@@ -74,8 +74,8 @@ static void test_SEAL_01_lua_colours() {
         "gfx.fastFillRect(0, 0, 2, 2, 9)",
         "gfx.getPaletteColor(9)",
         "gfx.setTextOutline(true, 9)",
-        "engine.ui.panel(0, 0, 4, 4, 9, 2)",
-        "engine.ui.setStyle('panel', { fill = 9 })",
+        "ui.panel(0, 0, 4, 4, 9, 2)",
+        "ui.setStyle('panel', { fill = 9 })",
         "gfx.remap('solid', 9)",
         "gfx.remap('recolor', 1, 9)",
         "gfx.remap({0, 1, 2, 3, 4, 5, 6, 9, 8, 9, 10, 11, 12, 13, 14, 15})",
@@ -131,14 +131,15 @@ static void test_SEAL_02_sheet_loader() {
     DrawFixture f;
     f.bindings.setAssetPath(".");
     const uint32_t before = f.bindings.spriteLoadFailures();
-    ASSERT(f.exec("bad = engine.sprite.load('seal_nine')").success, "SEAL-02 load runs");
-    ASSERT(f.exec("assert(bad == -1)").success, "SEAL-02 a sheet with pixel 9 is refused (-1)");
+    ASSERT(f.exec("bad, why = engine.sprite.load('seal_nine')").success, "SEAL-02 load runs");
+    ASSERT(f.exec("assert(bad == nil and why:find('pixel index 9 is not a Palette role'))").success,
+           "SEAL-02 a sheet with pixel 9 is refused: nil, the reason");
     ASSERT(f.bindings.spriteLoadFailures() == before + 1, "SEAL-02 the refusal is counted");
-    ASSERT(f.exec("ok = engine.sprite.load('seal_roles') assert(ok >= 0)").success,
+    ASSERT(f.exec("ok = engine.sprite.load('seal_roles') assert(ok and ok >= 0)").success,
            "SEAL-02 the same sheet in roles loads");
-    const LuaResult t = f.exec("engine.tilemap.load('seal_nine')");
-    ASSERT(!t.success && contains(t.error, "pixel index 9 is not a Palette role"),
-           "SEAL-02 a tileset with pixel 9 is refused, named: " + t.error);
+    ASSERT(f.exec("local m, err = engine.tilemap.load('seal_nine') "
+                  "assert(m == nil and err:find('pixel index 9 is not a Palette role'))").success,
+           "SEAL-02 a tileset with pixel 9 is refused: nil, the reason");
 }
 
 // ---------------------------------------------------------------------------

@@ -230,11 +230,14 @@ static void test_store_key_limit() {
         code += buf;
     }
     code += "ok_16 = engine.store.save('k16', 999)\n";
-    code += "overflow = (ok_16 == false) and 1 or 0\n";
+    code += "overflow = (ok_16 == nil) and 1 or 0\n";
+    code += "_, why = engine.store.save('k16', 999)\n";
+    code += "full = (why == 'store full') and 1 or 0\n";
 
     LuaResult r = f.exec(code.c_str());
     ASSERT(r.success, "16-key limit test should not error");
-    ASSERT(f.getNum("overflow") == 1.0, "17th save should return false (at capacity)");
+    ASSERT(f.getNum("overflow") == 1.0, "17th save returns nil (at capacity)");
+    ASSERT(f.getNum("full") == 1.0, "17th save's err is 'store full' (ADR-0030)");
 }
 
 // ============================================================
@@ -349,11 +352,11 @@ static void test_store_flush_no_path() {
 
     StoreFixture f;
     LuaResult r = f.exec(
-        "result = engine.store.flush()\n"
-        "ok = (result == false) and 1 or 0\n"
+        "result, err = engine.store.flush()\n"
+        "ok = (result == nil and err == 'no save file') and 1 or 0\n"
     );
     ASSERT(r.success, "flush() with no path should not error");
-    ASSERT(f.getNum("ok") == 1.0, "flush() with no path should return false");
+    ASSERT(f.getNum("ok") == 1.0, "flush() with no path returns nil, 'no save file'");
 }
 
 // ============================================================

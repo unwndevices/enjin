@@ -164,6 +164,7 @@ bool ShapePackGroup::build(ShapePack& pack, const ShapeLook& look, AssetArena& a
         if (!buf)
         {
             setError(err, "shape pack: the asset arena has no room for a %u-byte Look buffer", unsigned(total));
+            if (err) err->world = true;
             return fail();
         }
         buffer_ = buf;
@@ -184,6 +185,7 @@ bool ShapePackGroup::build(ShapePack& pack, const ShapeLook& look, AssetArena& a
         {
             setError(err, "shape pack: the asset arena has no room for the pet's hit masks (%u bytes)",
                      unsigned(sizeof(ShapeHitStore)));
+            if (err) err->world = true;
             return fail();
         }
         hits_ = reinterpret_cast<ShapeHitStore*>(hits);

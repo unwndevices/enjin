@@ -132,6 +132,8 @@ static void testMalformed() {
 
 static int fnA(lua_State* L) { lua_pushinteger(L, 1); return 1; }
 static int fnB(lua_State* L) { lua_pushinteger(L, 2); return 1; }
+static int fnC(lua_State* L) { lua_pushinteger(L, 3); return 1; }
+static int fnD(lua_State* L) { lua_pushinteger(L, 4); return 1; }
 
 static constexpr const char* kFruitNames[] = {"apple", "pear"};
 static constexpr LuaApiEnum kFruit = luaApiEnum("Fruit", kFruitNames);
@@ -154,7 +156,7 @@ static constexpr LuaApiModule kDemoModule =
     luaApiModule(LuaApiScope::Table, "demo", "A demo module.", kDemo);
 
 static constexpr LuaApiEntry kGlobalsEntries[] = {
-    luaFunction("demoGlobal", fnB, "() -> int", "A bare global."),
+    luaFunction("demoGlobal", fnC, "() -> int", "A bare global."),
 };
 static constexpr LuaApiModule kGlobalsModule =
     luaApiModule(LuaApiScope::Globals, "", "Demo globals.", kGlobalsEntries);
@@ -211,7 +213,7 @@ static void testModuleExposesExactlyItsEntries() {
     lua_pop(L, 1);
 
     luaApiSetGlobals(L, kGlobalsModule);
-    ASSERT(evalInt(L, "demoGlobal()") == 2, "Globals scope registers bare globals");
+    ASSERT(evalInt(L, "demoGlobal()") == 3, "Globals scope registers bare globals");
 
     // Registry lists what was registered, in order, once each.
     luaApiSetGlobals(L, kGlobalsModule);
@@ -350,6 +352,184 @@ static void testValidateCatchesDrift() {
 }
 
 //==============================================================================
+// ADR-0030: camelCase, one home per job, nil, err or raise
+//==============================================================================
+
+static void testValidateHoldsTheConvention() {
+    static constexpr LuaApiEntry kInner[] = {
+        luaConstant("DEEP_ONE", 1, "A constant may be UPPER_SNAKE."),
+    };
+    static constexpr LuaApiModule kInnerModule =
+        luaApiModule(LuaApiScope::Table, "good.INNER", "Constants.", kInner);
+    static constexpr LuaApiEntry kGood[] = {
+        luaFunction("loadThing", fnA, "(path:string) -> thing:int?, err:string?",
+                    "Load a thing; nil and a reason when the card says no.", "path: the file")
+            .returnsErr(),
+        luaFunction("Vec", fnA, "(_:nil, x:number) -> nil", "A constructor-style name.",
+                    "_: always nil\nx: a value"),
+        luaFunction("isBusy", fnB, "() -> boolean", "A query; nothing fails."),
+        luaFunction("startOne", fnA, "(mode:string) -> id:int?, err:string?",
+                    "Start one; nil, \"slots full\" when all 8 are busy. An unknown mode raises.",
+                    "mode: how it runs; an unknown one raises")
+            .returnsErr(),
+        luaConstant("LAYER_BG", 1, "A constant."),
+        luaTable("INNER", kInnerModule, "A table of constants."),
+    };
+    static constexpr LuaApiModule kGoodModule =
+        luaApiModule(LuaApiScope::Table, "good", "Good.", kGood);
+    std::string errors;
+    ASSERT(validateLuaApiModule(kGoodModule, &errors), "the convention validates: " + errors);
+
+    static constexpr LuaApiEntry kBad[] = {
+        luaFunction("play_note", fnA, "() -> nil", "A snake_case function."),
+        luaFunction("snakeArg", fnA, "(lo_end:number) -> nil", "A snake_case parameter.",
+                    "lo_end: low end"),
+        luaFunction("snakeResult", fnA, "() -> peak_db:number", "A snake_case result."),
+        luaFunction("errNoShape", fnA, "(path:string) -> int", "Says nil, err but returns one.",
+                    "path: the file")
+            .returnsErr(),
+        luaFunction("errNotLast", fnA, "() -> err:string?, x:int?", "err must come last.")
+            .returnsErr(),
+        luaFunction("errUndeclared", fnA, "() -> x:int?, err:string?",
+                    "Returns an err but is documented as raising."),
+        luaFunction("minusOne", fnA, "(path:string) -> handle:int",
+                    "Load a sample; -1 on failure.", "path: the file"),
+        luaFunction("nilWhenBusy", fnA, "() -> id:int?", "Start one; nil when all 8 slots are busy."),
+        luaFunction("printsIt", fnA, "() -> nil", "Do it.")
+            .note("The failure reason is printed to the log."),
+        luaFunction("nilForUnknown", fnA, "(id:int) -> value:number?",
+                    "The value; nil for an unknown id.", "id: the handle"),
+        luaFunction("falseForUnknown", fnA, "(id:int) -> ok:boolean",
+                    "Free it; false for an unknown handle.", "id: the handle"),
+        luaFunction("keepsCurrent", fnA, "(name:string) -> nil",
+                    "Pick one. An unknown name keeps the current one.", "name: the scale"),
+        luaFunction("unknownIsDefault", fnA, "(mode:string) -> nil", "Set the mode.",
+                    "mode: how it moves; an unknown mode is forward"),
+        luaFunction("errWithoutNilErr", fnA, "(path:string) -> x:int?, err:string?",
+                    "Load; nil, \"file not found\" when it is missing. A bad path is -1.",
+                    "path: the file")
+            .returnsErr(),
+    };
+    static constexpr LuaApiModule kBadModule =
+        luaApiModule(LuaApiScope::Table, "bad_table", "Bad.", kBad);
+    errors.clear();
+    ASSERT(!validateLuaApiModule(kBadModule, &errors), "the convention's breaches fail validation");
+    for (const char* name : {"bad_table: ", "play_note", "snakeArg", "snakeResult", "errNoShape",
+                             "errNotLast", "errUndeclared", "minusOne", "nilWhenBusy", "printsIt",
+                             "nilForUnknown", "falseForUnknown", "keepsCurrent", "unknownIsDefault",
+                             "errWithoutNilErr"})
+        ASSERT(errors.find(name) != std::string::npos, std::string("reports ") + name + "\n" + errors);
+}
+
+static void testCensusFindsOneJobInTwoHomes() {
+    static constexpr LuaApiEntry kSensorEntries[] = {
+        luaFunction("tilt", fnA, "() -> number", "Tilt."),
+    };
+    static constexpr LuaApiModule kSensorGlobal =
+        luaApiModule(LuaApiScope::Table, "radar", "Radar.", kSensorEntries);
+    static constexpr LuaApiEntry kTwinEntries[] = {
+        luaFunction("lean", fnB, "() -> number", "Tilt again."),
+    };
+    static constexpr LuaApiModule kSensorEngine =
+        luaApiModule(LuaApiScope::Table, "engine.radar", "Radar again.", kTwinEntries);
+    static constexpr LuaApiEntry kAliasEntries[] = {
+        luaFunction("tilt", fnA, "() -> number", "Tilt under a second name."),
+    };
+    static constexpr LuaApiModule kAlias =
+        luaApiModule(LuaApiScope::Table, "motion", "An alias table.", kAliasEntries);
+
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    LuaPlatform::configureSecurityRestrictions(L);
+    const std::vector<std::string> before = luaApiCensus(L);
+    luaApiSetGlobalTable(L, kSensorGlobal);
+    lua_newtable(L);
+    lua_setglobal(L, "engine");
+    lua_getglobal(L, "engine");
+    luaApiSetSubtable(L, -1, kSensorEngine);
+    lua_pop(L, 1);
+    luaApiSetGlobalTable(L, kAlias);
+    std::vector<std::string> added;
+    for (const auto& p : luaApiCensus(L))
+        if (std::find(before.begin(), before.end(), p) == before.end()) added.push_back(p);
+    std::string got;
+    for (const auto& p : added) got += "\n  " + p;
+    ASSERT(std::find(added.begin(), added.end(),
+                     "engine.radar and radar hold one job: engine.* is enjin's, a product table "
+                     "is a global") != added.end(), "reports engine.X beside X:" + got);
+    ASSERT(std::find(added.begin(), added.end(),
+                     "motion.tilt and radar.tilt are one function in two homes") != added.end(),
+           "reports a function registered twice:" + got);
+    lua_close(L);
+}
+
+// One reading in two tables (Tomodachi #478 follow-up: input.tilt beside
+// sensor.tilt): a reading (no parameters, a result) under one name with one
+// signature in two tables reads one thing twice. A verb two tables share
+// (each one's clear) is each table's own job and is not reported.
+static void testCensusFindsOneReadingInTwoTables() {
+    static constexpr LuaApiEntry kRawEntries[] = {
+        luaFunction("lean", fnA, "() -> x:number, y:number", "Raw lean."),
+        luaFunction("clear", fnB, "() -> nil", "Clear the raw lean."),
+    };
+    static constexpr LuaApiModule kRaw =
+        luaApiModule(LuaApiScope::Table, "rawpad", "Raw pad.", kRawEntries);
+    static constexpr LuaApiEntry kSmoothEntries[] = {
+        luaFunction("lean", fnC, "() -> x:number, y:number", "Smoothed lean."),
+        luaFunction("clear", fnD, "() -> nil", "Clear the smoothed lean."),
+    };
+    static constexpr LuaApiModule kSmooth =
+        luaApiModule(LuaApiScope::Table, "smoothpad", "Smooth pad.", kSmoothEntries);
+
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    LuaPlatform::configureSecurityRestrictions(L);
+    const std::vector<std::string> before = luaApiCensus(L);
+    luaApiSetGlobalTable(L, kRaw);
+    luaApiSetGlobalTable(L, kSmooth);
+    std::vector<std::string> added;
+    for (const auto& p : luaApiCensus(L))
+        if (std::find(before.begin(), before.end(), p) == before.end()) added.push_back(p);
+    std::string got;
+    for (const auto& p : added) got += "\n  " + p;
+    ASSERT(std::find(added.begin(), added.end(),
+                     "rawpad.lean and smoothpad.lean are one reading in two tables (one name, "
+                     "one signature)") != added.end(),
+           "reports one name and signature in two tables:" + got);
+    ASSERT(added.size() == 1, "a verb two tables share is not reported:" + got);
+    lua_close(L);
+}
+
+// One world failure per enjin subsystem without a test of its own: a full
+// pool or slot table is nil, err (sprite, store, event bus and tilemap have
+// theirs in their own tests).
+static void testWorldFailuresReturnNilErr() {
+    LuaEngine engine;
+    LuaBindings bindings(&engine);
+    engine.initialize();
+    bindings.registerAll();
+    lua_State* L = engine.getState();
+    auto check = [&](const char* code, const char* what) {
+        const LuaResult r = engine.executeString(code);
+        ASSERT(r.success, std::string(what) + ": " + r.error);
+    };
+    check("for i = 1, 8 do assert(engine.async.start(function() coroutine.yield() end)) end "
+          "local id, err = engine.async.start(function() end) "
+          "assert(id == nil and err == 'coroutine slots full', err)",
+          "engine.async.start full is nil, err");
+    check("for i = 1, 8 do assert(engine.tween.to({x = 0}, {x = 1}, 1)) end "
+          "local id, err = engine.tween.to({x = 0}, {x = 1}, 1) "
+          "assert(id == nil and err == 'tween slots full', err)",
+          "engine.tween.to full is nil, err");
+    check("for i = 1, 16 do assert(engine.state.onEnter('s' .. i, function() end) == true) end "
+          "local ok, err = engine.state.onExit('one more', function() end) "
+          "assert(ok == nil and err == 'states full', err)",
+          "engine.state.onExit full is nil, err");
+    check("local ok, err = pcall(engine.async.start, 42) assert(not ok)",
+          "a mistake still raises");
+}
+
+//==============================================================================
 // enjin core: every module registerAll() installs is described and valid
 //==============================================================================
 
@@ -396,7 +576,10 @@ static void testEnjinCoreModules() {
     lua_getglobal(L, "gfx");
     expectDescribed(L, modulesAt(modules, LuaApiScope::Table, "gfx"), "gfx");
     lua_pop(L, 1);
-    for (const char* sub : {"async", "tween", "ui"}) {
+    lua_getglobal(L, "ui");   // a global, not engine.ui (ADR-0030)
+    expectDescribed(L, modulesAt(modules, LuaApiScope::Table, "ui"), "ui");
+    lua_pop(L, 1);
+    for (const char* sub : {"async", "tween"}) {
         lua_getglobal(L, "engine");
         lua_getfield(L, -1, sub);
         const std::string path = std::string("engine.") + sub;
@@ -405,7 +588,7 @@ static void testEnjinCoreModules() {
     }
 
     const auto globals = modulesAt(modules, LuaApiScope::Globals, "");
-    for (const char* name : {"print", "Vec2", "Point", "Rect", "clamp", "lerp", "remap", "sign",
+    for (const char* name : {"print", "Vec2", "Point", "Rect", "lerp", "remap", "sign",
                              "smoothstep", "distance"})
         ASSERT(describes(globals, name), std::string("global ") + name + " has a descriptor");
     for (const char* type : {"Vec2", "Point", "Rect"})
@@ -536,8 +719,11 @@ static void testEngineTableDescribed() {
     expectAllValidate(modules, "defaults");
     expectEngineDescribed(L, modules, "defaults");
 
-    // One way to draw (ADR-0029): gfx, no engine.graphics second name.
-    ASSERT(modulesAt(modules, LuaApiScope::Table, "engine.graphics").empty(), "no engine.graphics module");
+    // One table per job (ADR-0030): gfx has no second name, and ui is a global.
+    ASSERT(modulesAt(modules, LuaApiScope::Table, "engine.graphics").empty(), "no engine.graphics");
+    ASSERT(modulesAt(modules, LuaApiScope::Table, (std::string("engine") + ".ui").c_str()).empty(),
+           "no ui under engine");
+    ASSERT(!modulesAt(modules, LuaApiScope::Table, "ui").empty(), "ui is a global table");
 
     // The scene-free map handle (#256).
     expectMetatableDescribed(L, modules, "enjin2.Tilemap", "Tilemap");
@@ -722,6 +908,10 @@ int main() {
     testViewMergesByPlace();
     testCensusFindsUndescribedNames();
     testValidateCatchesDrift();
+    testValidateHoldsTheConvention();
+    testCensusFindsOneJobInTwoHomes();
+    testCensusFindsOneReadingInTwoTables();
+    testWorldFailuresReturnNilErr();
     testEnjinCoreModules();
     testEngineTableDescribed();
     testEachFeatureSwitch();

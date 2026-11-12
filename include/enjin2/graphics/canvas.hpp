@@ -83,6 +83,19 @@ namespace enjin2
         virtual void fill(const Rect &rect, TPixel color) = 0;
 
         /**
+         * @brief Set a row's run of pixels: pixels[0..count-1] to
+         *        x..x+count-1 on row y, clipped to the canvas.
+         *
+         * The default is setPixel a pixel; a canvas with a packed buffer
+         * writes the run at once (Canvas4: setPixelBatch).
+         */
+        virtual void setPixelSpan(int16_t x, int16_t y, const TPixel *pixels, int16_t count)
+        {
+            for (int16_t i = 0; i < count; ++i)
+                setPixel(static_cast<int16_t>(x + i), y, pixels[i]);
+        }
+
+        /**
          * @brief Check if coordinates are within canvas bounds
          * @param x X coordinate to check
          * @param y Y coordinate to check
@@ -561,20 +574,30 @@ namespace enjin2
                 p->setLow(pixels[i]);
         }
 
+        /// The rect clipped to the canvas, a nibble-aware span a row
+        /// (@ref drawHLine): the pixels and dirty tiles setPixel would give,
+        /// without a virtual call a pixel. Every ICanvas fill (a Lua
+        /// gfx.rectangle, a wide gfx.line's spans) lands here (Tomodachi #488).
         void fill(const Rect &rect, Pixel4 color) override
         {
             int16_t x1 = std::max<int16_t>(0, rect.x);
             int16_t y1 = std::max<int16_t>(0, rect.y);
             int16_t x2 = std::min<int16_t>(WIDTH, rect.x + rect.width);
             int16_t y2 = std::min<int16_t>(HEIGHT, rect.y + rect.height);
+            if (x1 >= x2)
+                return;
 
             for (int16_t y = y1; y < y2; ++y)
             {
-                for (int16_t x = x1; x < x2; ++x)
-                {
-                    setPixel(x, y, color);
-                }
+                drawHLine(x1, y, static_cast<int16_t>(x2 - x1), color);
             }
+        }
+
+        /// A row of pixels from @p pixels (setPixelBatch): Canvas4's batch
+        /// write for the type-erased callers (Tomodachi #488).
+        void setPixelSpan(int16_t x, int16_t y, const Pixel4 *pixels, int16_t count) override
+        {
+            setPixelBatch(x, y, pixels, count);
         }
 
         /**

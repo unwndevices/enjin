@@ -323,7 +323,7 @@ static void test_sprite_load_v2(const std::string& dir) {
         "spr = o:add('C_Sprite')\n"
         "spr:setSheet(h)\n"
         "spr:setClips(h)\n"
-        "played = spr:play('walk') and 1 or 0\n"
+        "played = pcall(spr.play, spr, 'walk') and 1 or 0\n"
         "clip_ok = (spr.clip == 'walk') and 1 or 0\n"
         "frame0 = spr.frame\n"
     );

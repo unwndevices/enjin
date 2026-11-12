@@ -1,5 +1,6 @@
 #include "../../include/enjin2/scripting/lua_event_bus.hpp"
 #include <cstdio>
+#include <utility>
 
 namespace enjin2 {
 
@@ -29,26 +30,23 @@ LuaEventBus::Channel* LuaEventBus::findOrCreateChannel(const char* name) {
     return nullptr;  // No free channel slot
 }
 
-int LuaEventBus::subscribe(const char* name, int callbackRef) {
+int LuaEventBus::subscribe(const char* name, lua::ScriptRef callback) {
     if (!m_L || !name) { return 0; }
     Channel* ch = findOrCreateChannel(name);
     if (!ch) {
+        // The callback is released as it goes out of scope.
         printf("[EventBus] channel capacity exceeded for '%s'\n", name);
-        // Release the ref to avoid leak since we can't store it
-        luaL_unref(m_L, LUA_REGISTRYINDEX, callbackRef);
         return 0;
     }
     for (int i = 0; i < MAX_SUBS_PER_CH; ++i) {
         if (!ch->subs[i].active) {
-            ch->subs[i].callbackRef = callbackRef;
+            ch->subs[i].callback   = std::move(callback);
             ch->subs[i].id         = m_nextId++;
             ch->subs[i].active     = true;
             return ch->subs[i].id;
         }
     }
     printf("[EventBus] subscriber capacity exceeded for '%s'\n", name);
-    // Release the ref to avoid leak since we can't store it
-    luaL_unref(m_L, LUA_REGISTRYINDEX, callbackRef);
     return 0;
 }
 
@@ -62,27 +60,32 @@ void LuaEventBus::emit(const char* name) {
         // C++ code that calls emit() during this window silently drops the event
         // — this is intentional. If a C++ lifecycle hook must emit events during
         // scene setup, it must call setLuaState() first.
-        // INVARIANT: clearHandlers() must always be called BEFORE setLuaState()
-        // on hot-reload; reversing the order would cause luaL_unref on wrong state.
         return;
     }
     Channel* ch = findChannel(name);
     if (!ch) return;
 
-    // Snapshot active callback refs before any pcall (prevents re-entrant mutation).
-    // If a handler calls engine.event.off() or engine.event.on(), it modifies the
-    // channel's subscriber array but NOT this local snapshot. New on() calls from
-    // inside a handler are not included -- they fire starting from the next emit().
-    int refs[MAX_SUBS_PER_CH];
+    // Snapshot the active subscription ids before any pcall (prevents
+    // re-entrant mutation). If a handler calls engine.event.off() or
+    // engine.event.on(), it modifies the channel's subscriber array but NOT this
+    // snapshot: new on() calls from inside a handler fire starting from the
+    // next emit(), and a handler off()'d by an earlier one no longer fires.
+    int ids[MAX_SUBS_PER_CH];
     int count = 0;
     for (int i = 0; i < MAX_SUBS_PER_CH; ++i) {
-        if (ch->subs[i].active && ch->subs[i].callbackRef != LUA_NOREF) {
-            refs[count++] = ch->subs[i].callbackRef;
+        if (ch->subs[i].active && ch->subs[i].callback.valid()) {
+            ids[count++] = ch->subs[i].id;
         }
     }
 
     for (int i = 0; i < count; ++i) {
-        lua_rawgeti(m_L, LUA_REGISTRYINDEX, refs[i]);
+        if (!m_L || !ch->active) return;   // a handler cleared the bus
+        const Subscriber* sub = nullptr;
+        for (int k = 0; k < MAX_SUBS_PER_CH; ++k) {
+            if (ch->subs[k].active && ch->subs[k].id == ids[i]) { sub = &ch->subs[k]; break; }
+        }
+        if (!sub) continue;                // off()'d by an earlier handler
+        sub->callback.push(m_L);
         if (lua_isfunction(m_L, -1)) {
             // No arguments -- callbacks receive zero args (no payload, per REQUIREMENTS.md out-of-scope)
             if (lua_pcall(m_L, 0, 0, 0) != LUA_OK) {
@@ -103,11 +106,7 @@ void LuaEventBus::unsubscribe(int id) {
         if (!m_channels[c].active) continue;
         for (int s = 0; s < MAX_SUBS_PER_CH; ++s) {
             if (m_channels[c].subs[s].active && m_channels[c].subs[s].id == id) {
-                if (m_L && m_channels[c].subs[s].callbackRef != LUA_NOREF) {
-                    luaL_unref(m_L, LUA_REGISTRYINDEX,
-                               m_channels[c].subs[s].callbackRef);
-                }
-                m_channels[c].subs[s].callbackRef = LUA_NOREF;
+                m_channels[c].subs[s].callback.reset();
                 m_channels[c].subs[s].active = false;
                 m_channels[c].subs[s].id     = 0;
                 return;
@@ -117,25 +116,16 @@ void LuaEventBus::unsubscribe(int id) {
 }
 
 void LuaEventBus::clearHandlers() {
-    if (m_L) {
-        for (int c = 0; c < MAX_CHANNELS; ++c) {
-            if (!m_channels[c].active) continue;
-            for (int s = 0; s < MAX_SUBS_PER_CH; ++s) {
-                if (m_channels[c].subs[s].active &&
-                    m_channels[c].subs[s].callbackRef != LUA_NOREF) {
-                    luaL_unref(m_L, LUA_REGISTRYINDEX,
-                               m_channels[c].subs[s].callbackRef);
-                    m_channels[c].subs[s].callbackRef = LUA_NOREF;
-                }
-                m_channels[c].subs[s].active = false;
-                m_channels[c].subs[s].id     = 0;
-            }
-            m_channels[c].active = false;
-            m_channels[c].name[0] = '\0';
+    for (int c = 0; c < MAX_CHANNELS; ++c) {
+        for (int s = 0; s < MAX_SUBS_PER_CH; ++s) {
+            m_channels[c].subs[s].callback.reset();
+            m_channels[c].subs[s].active = false;
+            m_channels[c].subs[s].id     = 0;
         }
+        m_channels[c].active = false;
+        m_channels[c].name[0] = '\0';
     }
-    m_L = nullptr;  // safe sentinel — prevents double-unref on subsequent clearHandlers() call.
-                    // Must be set AFTER all luaL_unref calls above. setLuaState() re-arms it.
+    m_L = nullptr;  // no emit until setLuaState() re-arms the bus
 }
 
 int LuaEventBus::getActiveSubscriberCount() const {

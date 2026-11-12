@@ -1,5 +1,6 @@
 #include "bindings_internal.hpp"
 #include "../../include/enjin2/scripting/layer_claims.hpp"
+#include "../../include/enjin2/graphics/corner_watch.hpp"
 #include "../../include/enjin2/graphics/faces/faces.hpp"
 #include "../../include/enjin2/core/name_index.hpp"
 #include "../../include/enjin2/scripting/effect_lua.hpp"
@@ -99,12 +100,33 @@ int LuaBindings::lua_isLayerVisible(lua_State* L) {
 namespace {
 
 /// The active canvas's text state, or nullptr with no canvas.
-TextState* activeText(LuaBindings* b, LuaCanvas* canvas) {
-    (void)b;
-    return canvas ? canvas->textState() : nullptr;
+TextState* activeText(LuaBindings* b) {
+    return b && b->getCanvas() ? b->getCanvas()->textState() : nullptr;
 }
 
 }  // namespace
+
+// ── The gfx draw state, from native code (Tomodachi #478 follow-up) ──────────
+// gfx.text, gfx.setFont and the fill rectangle go through these, so a host's
+// native binding (libtomo's HUD row Prefab) draws on the same route.
+
+int LuaBindings::drawText(std::string_view str, int16_t x, int16_t y, TextAlign align) {
+    if (!currentCanvas) return 0;
+    CornerWatch::ScriptText scriptText;  // a cut here is the script's layout (corner_watch.hpp)
+    if (TextState* st = currentCanvas->textState()) st->color = currentColor;
+    return currentCanvas->drawText(str, x, y, align);
+}
+
+void LuaBindings::fillRect(int16_t x, int16_t y, uint16_t w, uint16_t h) {
+    if (currentCanvas) currentCanvas->fillRect(x, y, w, h, currentColor);
+}
+
+bool LuaBindings::selectFont(const char* name) {
+    const Face* face = name ? faces::find(name) : nullptr;
+    if (!face) return false;
+    if (TextState* st = activeText(this)) st->face = face;
+    return true;
+}
 
 // gfx.text(str, x, y [, align]) -> lines
 int LuaBindings::lua_text(lua_State* L) {
@@ -113,18 +135,12 @@ int LuaBindings::lua_text(lua_State* L) {
     b->checkDrawLayer(L);
     size_t len = 0;
     const char* str = luaL_checklstring(L, 1, &len);
-    const lua_Integer x = luaL_checkinteger(L, 2);
-    const lua_Integer y = luaL_checkinteger(L, 3);
-    TextAlign align = TextAlign::Left;
-    if (!lua_isnoneornil(L, 4)) {
-        const int a = nameIndex(luaL_checkstring(L, 4), kTextAlignNames);
-        if (a < 0) return luaL_argerror(L, 4, "align must be \"left\", \"center\" or \"right\"");
-        align = static_cast<TextAlign>(a);
-    }
-    if (TextState* st = b->currentCanvas->textState()) st->color = b->currentColor;
-    const int lines = b->currentCanvas->drawText(std::string_view(str, len), static_cast<int16_t>(x),
-                                                 static_cast<int16_t>(y), align);
-    lua_pushinteger(L, lines);
+    const int x = lua::checkInt(L, 2);
+    const int y = lua::checkInt(L, 3);
+    // An unknown align name is a mistake: it raises (ADR-0030).
+    const int align = lua::optName(L, 4, kTextAlignNames, "align", static_cast<int>(TextAlign::Left));
+    lua_pushinteger(L, b->drawText(std::string_view(str, len), static_cast<int16_t>(x),
+                                   static_cast<int16_t>(y), static_cast<TextAlign>(align)));
     return 1;
 }
 
@@ -132,23 +148,22 @@ int LuaBindings::lua_text(lua_State* L) {
 int LuaBindings::lua_setFont(lua_State* L) {
     LuaBindings* b = getBindings(L);
     const char* name = luaL_checkstring(L, 1);
-    const Face* face = faces::find(name);
-    if (!face) return luaL_argerror(L, 1, "font must be \"monogram\", \"body\" or \"display\"");
-    if (TextState* st = b ? activeText(b, b->currentCanvas) : nullptr) st->face = face;
+    if (!faces::find(name))  // a face no host has is a mistake: it raises (ADR-0030)
+        return luaL_argerror(L, 1, lua_pushfstring(L, "unknown font '%s' (monogram, body or display)", name));
+    if (b) b->selectFont(name);
     return 0;
 }
 
 // gfx.setTextWrap(overflow [, width])
 int LuaBindings::lua_setTextWrap(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    const int mode = nameIndex(luaL_checkstring(L, 1), kTextOverflowNames);
-    if (mode < 0) return luaL_argerror(L, 1, "overflow must be \"wrap\", \"clip\" or \"ellipsis\"");
-    lua_Integer width = 0;
+    const int mode = lua::checkName(L, 1, kTextOverflowNames, "overflow");
+    int width = 0;
     if (!lua_isnoneornil(L, 2)) {
-        width = luaL_checkinteger(L, 2);
-        if (width < 1 || width > INT16_MAX) return luaL_argerror(L, 2, "width must be 1 or more");
+        width = lua::checkInt(L, 2);
+        luaL_argcheck(L, width >= 1 && width <= INT16_MAX, 2, "width must be 1 or more");
     }
-    if (TextState* st = b ? activeText(b, b->currentCanvas) : nullptr) {
+    if (TextState* st = activeText(b)) {
         st->overflow = static_cast<TextOverflow>(mode);
         st->width = static_cast<int16_t>(width);
     }
@@ -158,10 +173,9 @@ int LuaBindings::lua_setTextWrap(lua_State* L) {
 // gfx.setTextSize(size)
 int LuaBindings::lua_setTextSize(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    if (!b || !lua_isnumber(L, 1)) return 0;
-    const lua_Integer s = lua_tointeger(L, 1);
-    if (TextState* st = activeText(b, b->currentCanvas))
-        st->size = (s > 0 && s <= 255) ? static_cast<uint8_t>(s) : 1;
+    const int s = lua::checkInt(L, 1);
+    luaL_argcheck(L, s > 0 && s <= 255, 1, "size is 1..255");  // a mistake raises (ADR-0030)
+    if (TextState* st = activeText(b)) st->size = static_cast<uint8_t>(s);
     return 0;
 }
 
@@ -179,7 +193,7 @@ int LuaBindings::lua_getTextWidth(lua_State* L) {
 int LuaBindings::lua_setTextOutline(lua_State* L) {
     LuaBindings* b = getBindings(L);
     const bool on = lua_toboolean(L, 1) != 0;
-    TextState* st = b ? activeText(b, b->currentCanvas) : nullptr;
+    TextState* st = activeText(b);
     const uint8_t color = lua::optCanvasColour(L, 2, ROLE_BG, b ? indexedColours(b->currentCanvas) : true);
     if (st) {
         st->outline = on;
@@ -191,7 +205,7 @@ int LuaBindings::lua_setTextOutline(lua_State* L) {
 // gfx.setTextEffect([effect])
 int LuaBindings::lua_setTextEffect(lua_State* L) {
     LuaBindings* b = getBindings(L);
-    TextState* st = b ? activeText(b, b->currentCanvas) : nullptr;
+    TextState* st = activeText(b);
     if (lua_isnoneornil(L, 1)) {
         if (st) { st->hasEffect = false; st->effect = Effect{}; }
         return 0;

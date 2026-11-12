@@ -53,6 +53,13 @@ inline bool pushProxyMethod(lua_State* L, const char* registryKey, int keyIdx) {
     return true;
 }
 
+// A write to a key a proxy does not write (the key at stack index 2): a
+// programming mistake, so it raises (ADR-0030), naming what it does write.
+inline int raiseNotWritable(lua_State* L, const char* type, const char* writes) {
+    const char* key = luaL_tolstring(L, 2, nullptr);
+    return luaL_error(L, "%s has no writable '%s' (it writes %s)", type, key, writes);
+}
+
 class Object;
 
 // Registry-generated component attach/fetch, shared by the ScriptProxy (self)

@@ -10,6 +10,8 @@
 #include <cstring>
 #include "lua_engine.hpp"
 #include "lua_platform.hpp"
+#include "lua_args.hpp"
+#include "lua_ref.hpp"
 #include "object_proxy.hpp"
 #include "../graphics/canvas.hpp"
 #include "../graphics/text_state.hpp"
@@ -132,6 +134,13 @@ public:
      * @param color Pixel color
      */
     void setPixel(int16_t x, int16_t y, uint8_t color);
+
+    /**
+     * @brief Set a row's run of pixels, clipped: colors[0..count-1] to
+     *        x..x+count-1 on row y. What setPixel would paint a pixel, written
+     *        as one run where the canvas can (ICanvas::setPixelSpan, #488).
+     */
+    void setPixelSpan(int16_t x, int16_t y, const uint8_t* colors, int16_t count);
     
     /**
      * @brief Get pixel at coordinates
@@ -496,14 +505,14 @@ private:
     static constexpr int MAX_GAME_STATES = 16;  ///< Maximum named states
     char m_currentGameState[64]{"none"};         ///< Current game state name
     char m_stateNames[MAX_GAME_STATES][64]{};    ///< Registered state names
-    int  m_stateOnEnterRefs[MAX_GAME_STATES]{};  ///< Lua registry refs for on_enter (LUA_NOREF = none)
-    int  m_stateOnExitRefs[MAX_GAME_STATES]{};   ///< Lua registry refs for on_exit
+    lua::ScriptRef m_stateOnEnter[MAX_GAME_STATES];  ///< onEnter callbacks (empty = none)
+    lua::ScriptRef m_stateOnExit[MAX_GAME_STATES];   ///< onExit callbacks (empty = none)
     int  m_stateCount{0};                        ///< Number of registered states
 
     // -- Coroutine scheduler (Phase 49: ASYNC-01..ASYNC-03) -----------------------
     static constexpr int COROUTINE_POOL_SIZE = 8;  ///< Fixed coroutine pool — zero alloc
     struct CoroutineSlot {
-        int   threadRef{LUA_NOREF};   ///< luaL_ref handle anchoring the coroutine thread; LUA_NOREF = inactive
+        lua::ScriptRef thread;        ///< the coroutine thread, anchored; empty = inactive
         float waitRemaining{0.0f};    ///< seconds until next resume (0 = ready now)
         int   waitFrames{0};          ///< frames remaining before resume (0 = not frame-waiting)  [Phase 57: QOL-02]
         int   waitTweenId{0};         ///< tween ID this coroutine is awaiting (0 = not waiting)   [Phase 57: QOL-01]
@@ -521,8 +530,8 @@ private:
     enum class TweenEasing : uint8_t { Linear = 0, EaseIn = 1, EaseOut = 2, EaseInOut = 3, EaseOutBack = 4 };
 
     struct TweenSlot {
-        int      targetRef{LUA_NOREF};                    ///< luaL_ref for the target Lua table
-        int      doneCbRef{LUA_NOREF};                    ///< luaL_ref for optional done callback (LUA_NOREF = none)
+        lua::ScriptRef target;                            ///< the target Lua table
+        lua::ScriptRef doneCb;                            ///< optional done callback (empty = none)
         char     keys[TWEEN_MAX_PROPS][TWEEN_KEY_MAX]{};  ///< Property key names to animate
         float    startVals[TWEEN_MAX_PROPS]{};             ///< Starting values sampled at tween creation
         float    endVals[TWEEN_MAX_PROPS]{};               ///< Target end values
@@ -544,7 +553,7 @@ private:
     static constexpr int SPRING_POOL_SIZE = 8; ///< Fixed spring pool — zero alloc
 
     struct SpringSlot {
-        int    targetRef{LUA_NOREF};       ///< luaL_ref for the target Lua table
+        lua::ScriptRef target;             ///< the target Lua table
         char   key[TWEEN_KEY_MAX]{};       ///< The single field name animated
         Spring spring{};                   ///< The scalar integrator (x, v, target, k, ζ)
         int    id{0};                      ///< Monotonically increasing cancel ID
@@ -571,6 +580,14 @@ public:
      * @brief Register all bindings with Lua engine
      */
     void registerAll();
+
+    /**
+     * @brief Release every Lua value the bindings hold (event handlers,
+     * coroutines, tweens, springs, engine.state callbacks) while the Lua state
+     * is still open. LuaScriptSystem::shutdown() calls it before closing the
+     * state; anyone closing the engine's state another way must call it first.
+     */
+    void releaseScriptRefs();
 
     /**
      * @brief Set current canvas for drawing operations
@@ -636,6 +653,26 @@ public:
     void setAssetPath(const std::string& path) { assetPath_ = path; }
 
 
+    // ── The gfx draw state, from native code (Tomodachi #478 follow-up) ──────
+    // The face, colour and text state gfx.* draws with, for a host's native
+    // binding that draws as Lua would (libtomo's HUD row Prefab): its text is
+    // the same TextRenderer call on the same layer state as gfx.text, so there
+    // is one text route (ADR-0029), and what it sets stays on the layer as the
+    // gfx calls it stands for would leave it. The caller checks the layer
+    // (checkDrawLayer) and its colours; these draw on the active canvas and do
+    // nothing without one.
+
+    /// gfx.setFont: the active layer's face; false (nothing changed) for a
+    /// name that is not one of the faces.
+    bool selectFont(const char* name);
+    /// gfx.setColor, with a colour the caller has checked.
+    void setDrawColor(uint8_t color) { currentColor = color; }
+    /// gfx.rectangle("fill", x, y, w, h) in the current colour.
+    void fillRect(int16_t x, int16_t y, uint16_t w, uint16_t h);
+    /// gfx.text(s, x, y, align) in the layer's text state and the draw
+    /// colour; y is the line's top. Returns the lines drawn.
+    int drawText(std::string_view str, int16_t x, int16_t y, TextAlign align = TextAlign::Left);
+
     /**
      * @brief Inject SceneStateMachine pointer for engine.scene.switch()
      * @param ssm Non-owning pointer; may be nullptr in SDL standalone mode
@@ -678,7 +715,7 @@ public:
     void tickCoroutines(float dt);
 
     /**
-     * @brief Cancel all active coroutines and unref their threads.
+     * @brief Cancel all active coroutines and release their threads.
      * Called on scene transition (setActiveScene) and hot-reload (registerAll).
      */
     void clearCoroutines();
@@ -691,7 +728,7 @@ public:
     void tickTweens(float dt);
 
     /**
-     * @brief Cancel all active tweens and unref their targets/callbacks.
+     * @brief Cancel all active tweens and release their targets/callbacks.
      * Called on scene transition (setActiveScene) and hot-reload (registerAll).
      *
      * Also clears the spring pool (see @ref tickSprings), so a hot-reload or
@@ -834,6 +871,9 @@ private:
     /// Why the last loadNjnAsset refused its file when the pixels were the reason
     /// ("pixel index 9 is not a Palette role ..."); empty otherwise.
     const char* njnRefusal_ = "";
+    /// Why the last loadNjnAsset failed, short and lower-case ("file not found",
+    /// "asset buffer full", the refusal): the err a loader returns (ADR-0030).
+    const char* njnError_ = "";
 
     // Canvas management functions
     static int lua_getWidth(lua_State* L);
@@ -849,6 +889,7 @@ private:
     // Primitive drawing
     static int lua_point(lua_State* L);
     static int lua_line(lua_State* L);
+    static int lua_polyline(lua_State* L);
     static int lua_rectangle(lua_State* L);
     static int lua_circle(lua_State* L);
     static int lua_fillEllipse(lua_State* L);
@@ -977,7 +1018,7 @@ private:
     void registerDebugSubtable(lua_State* L);  ///< engine.debug.* sub-table (called from registerEngineTable)
     void registerAsyncSubtable(lua_State* L);  ///< engine.async.* sub-table (called from registerEngineTable)
     void registerTweenSubtable(lua_State* L);  ///< engine.tween.* sub-table (called from registerEngineTable)
-    void registerUISubtable(lua_State* L);     ///< engine.ui.* sub-table (called from registerEngineTable)
+    void registerUITable(lua_State* L);        ///< the global ui table (called from registerEngineTable)
     void registerTilemapMethods(lua_State* L); ///< The engine.tilemap.load handle's metatable (called from registerEngineTable)
     void registerProxyMetatable();
 
@@ -1009,7 +1050,7 @@ private:
     // #38: retargetable chrome spring
     static int lua_engine_tween_spring(lua_State* L);
 
-    // engine.ui.* binding functions (Phase 52: UI-01..UI-04)
+    // ui.* binding functions (Phase 52: UI-01..UI-04)
     static int lua_engine_ui_progressBar(lua_State* L);
     static int lua_engine_ui_statBar(lua_State* L);
     static int lua_engine_ui_panel(lua_State* L);
@@ -1090,7 +1131,6 @@ private:
     static int lua_Rect_intersects(lua_State* L);
 
     // ── Math utility globals ────────────────────────────────────────────────
-    static int lua_math_clamp(lua_State* L);
     static int lua_math_lerp(lua_State* L);
     static int lua_math_remap(lua_State* L);
     static int lua_math_sign(lua_State* L);
@@ -1133,8 +1173,13 @@ public:
      */
     bool initialize();
     
+    /** @brief Shuts down first: every value the bindings hold is released
+     *  before the Lua state closes. */
+    ~LuaScriptSystem();
+
     /**
-     * @brief Shutdown the script system
+     * @brief Shutdown the script system: release the bindings' Lua values,
+     * then close the Lua state.
      */
     void shutdown();
     

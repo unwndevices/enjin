@@ -1,6 +1,6 @@
 /**
  * @file bindings_ui.cpp
- * @brief engine.ui.* Lua sub-table — immediate-mode UI component draw functions (Phase 52: UI-01..UI-04)
+ * @brief The global ui table — immediate-mode UI component draw functions (Phase 52: UI-01..UI-04)
  *
  * Provides four stateless draw functions that bypass C++ Label/FillUpGauge components,
  * drawing directly to the active layer canvas (currentCanvas) via LuaCanvas primitives.
@@ -21,16 +21,16 @@ namespace enjin2 {
     if (!(b) || !(b)->currentCanvas) return 0; \
     (b)->checkDrawLayer(L)
 
-// ── UI-01: engine.ui.progressBar(x, y, w, h, value, fg, bg) ──────────────────
+// ── UI-01: ui.progressBar(x, y, w, h, value, fg, bg) ──────────────────
 // Draws a filled progress bar. value is clamped to [0, 1].
 // bg fill covers full width; fg fill covers proportional width.
 int LuaBindings::lua_engine_ui_progressBar(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t  x     = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t  y     = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint16_t w     = static_cast<uint16_t>(luaL_checkinteger(L, 3));
-    uint16_t h     = static_cast<uint16_t>(luaL_checkinteger(L, 4));
-    float    value = static_cast<float>(luaL_checknumber(L, 5));  // float — do NOT use checkinteger
+    int16_t  x     = static_cast<int16_t>(lua::checkInt(L, 1));
+    int16_t  y     = static_cast<int16_t>(lua::checkInt(L, 2));
+    uint16_t w     = static_cast<uint16_t>(lua::checkInt(L, 3));
+    uint16_t h     = static_cast<uint16_t>(lua::checkInt(L, 4));
+    float    value = lua::checkFloat(L, 5);  // float — do NOT use checkinteger
     uint8_t  fg    = lua::checkCanvasColour(L, 6, indexedColours(b->currentCanvas));
     uint8_t  bg    = lua::checkCanvasColour(L, 7, indexedColours(b->currentCanvas));
 
@@ -52,17 +52,17 @@ int LuaBindings::lua_engine_ui_progressBar(lua_State* L) {
     return 0;
 }
 
-// ── UI-02: engine.ui.statBar(x, y, w, h, current, max, fg, bg) ───────────────
+// ── UI-02: ui.statBar(x, y, w, h, current, max, fg, bg) ───────────────
 // Draws a stat bar proportional to current/max.
 // Division by zero is guarded: if max <= 0, fill is 0.
 int LuaBindings::lua_engine_ui_statBar(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t  x       = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t  y       = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint16_t w       = static_cast<uint16_t>(luaL_checkinteger(L, 3));
-    uint16_t h       = static_cast<uint16_t>(luaL_checkinteger(L, 4));
-    float    current = static_cast<float>(luaL_checknumber(L, 5));  // float — do NOT use checkinteger
-    float    max     = static_cast<float>(luaL_checknumber(L, 6));  // float — do NOT use checkinteger
+    int16_t  x       = static_cast<int16_t>(lua::checkInt(L, 1));
+    int16_t  y       = static_cast<int16_t>(lua::checkInt(L, 2));
+    uint16_t w       = static_cast<uint16_t>(lua::checkInt(L, 3));
+    uint16_t h       = static_cast<uint16_t>(lua::checkInt(L, 4));
+    float    current = lua::checkFloat(L, 5);  // float — do NOT use checkinteger
+    float    max     = lua::checkFloat(L, 6);  // float — do NOT use checkinteger
     uint8_t  fg      = lua::checkCanvasColour(L, 7, indexedColours(b->currentCanvas));
     uint8_t  bg      = lua::checkCanvasColour(L, 8, indexedColours(b->currentCanvas));
 
@@ -87,7 +87,7 @@ int LuaBindings::lua_engine_ui_statBar(lua_State* L) {
     return 0;
 }
 
-// ── UI-03: engine.ui.panel(x, y, w, h, bg|slot [, border]) ───────────────────
+// ── UI-03: ui.panel(x, y, w, h, bg|slot [, border]) ───────────────────
 // Draws a filled rectangle with a border outline on top. The 5th arg dispatches
 // by lua_type (#19): a string is a style slot (fill/border resolved from the
 // theme), a number is the legacy explicit (bg, border) pair. Existing applets
@@ -99,7 +99,7 @@ static StyleSlot checkStyleSlotArg(lua_State* L, int idx) {
     const char* name = luaL_checkstring(L, idx);
     StyleSlot slot = StyleSlot::Panel;
     if (!styleSlotFromName(name, slot)) {
-        luaL_error(L, "engine.ui: unknown style slot '%s'", name);  // no return
+        luaL_error(L, "ui: unknown style slot '%s'", name);  // no return
     }
     return slot;
 }
@@ -123,10 +123,10 @@ static void overlayColourKey(lua_State* L, int tableIdx, const char* key, Pixel4
 
 int LuaBindings::lua_engine_ui_panel(lua_State* L) {
     REQUIRE_CANVAS(b, L);
-    int16_t  x = static_cast<int16_t>(luaL_checkinteger(L, 1));
-    int16_t  y = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    uint16_t w = static_cast<uint16_t>(luaL_checkinteger(L, 3));
-    uint16_t h = static_cast<uint16_t>(luaL_checkinteger(L, 4));
+    int16_t  x = static_cast<int16_t>(lua::checkInt(L, 1));
+    int16_t  y = static_cast<int16_t>(lua::checkInt(L, 2));
+    uint16_t w = static_cast<uint16_t>(lua::checkInt(L, 3));
+    uint16_t h = static_cast<uint16_t>(lua::checkInt(L, 4));
 
     uint8_t bg;
     BorderStyle bstyle;
@@ -157,7 +157,7 @@ int LuaBindings::lua_engine_ui_panel(lua_State* L) {
     return 0;
 }
 
-// ── UI-05: engine.ui.setStyle(slotName, { fill=…, border=…, radius=…, … }) ────
+// ── UI-05: ui.setStyle(slotName, { fill=…, border=…, radius=…, … }) ────
 // Overrides one style slot. Resolution starts from the theme default (so absent
 // keys inherit it), overlays only the keys present in the table, stores the
 // result and marks the slot's mask bit. Colours are Palette roles (ADR-0022; 8-14 raise);
@@ -193,7 +193,7 @@ static_assert(sizeof(kUiThemes) / sizeof(kUiThemes[0]) ==
                   sizeof(kUiThemeNames) / sizeof(kUiThemeNames[0]),
               "one name per theme");
 
-// ── UI-06: engine.ui.setTheme(name) ──────────────────────────────────────────
+// ── UI-06: ui.setTheme(name) ──────────────────────────────────────────
 // Swaps the active ROM theme base and clears every applet override (a new theme
 // is a fresh base). v1 ships one theme, "default".
 int LuaBindings::lua_engine_ui_setTheme(lua_State* L) {
@@ -202,7 +202,7 @@ int LuaBindings::lua_engine_ui_setTheme(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     const int theme = nameIndex(name, kUiThemeNames);
     if (theme < 0) {
-        return luaL_error(L, "engine.ui.setTheme: unknown theme '%s'", name);
+        return luaL_error(L, "ui.setTheme: unknown theme '%s'", name);
     }
     b->m_themeBase = kUiThemes[theme];
     b->m_styleSetMask = 0;  // a new theme is a fresh base — drop overrides
@@ -210,7 +210,7 @@ int LuaBindings::lua_engine_ui_setTheme(lua_State* L) {
 }
 
 // ── Sub-table registration (called from registerEngineTable) ──────────────────
-void LuaBindings::registerUISubtable(lua_State* L) {
+void LuaBindings::registerUITable(lua_State* L) {
     // Assumes engine table is at top of stack
     static constexpr LuaApiEnum kSlot = luaApiEnum("StyleSlot", kStyleSlotNames);
     static constexpr LuaApiEnum kTheme = luaApiEnum("Theme", kUiThemeNames);
@@ -262,9 +262,9 @@ void LuaBindings::registerUISubtable(lua_State* L) {
             .withEnum(kTheme),
     };
     static constexpr LuaApiModule kUIModule = luaApiModule(
-        LuaApiScope::Table, "engine.ui",
+        LuaApiScope::Table, "ui",
         "Immediate-mode UI draws onto the active layer.", kUI);
-    luaApiSetSubtable(L, -1, kUIModule);
+    luaApiSetGlobalTable(L, kUIModule);   // a global, the product's ui (ADR-0030)
 }
 
 } // namespace enjin2

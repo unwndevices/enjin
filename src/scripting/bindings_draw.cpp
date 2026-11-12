@@ -25,7 +25,115 @@ void fillSpan(LuaCanvas& c, int x, int y, int w, int h, uint8_t color) {
                static_cast<uint16_t>(w), static_cast<uint16_t>(h), color);
 }
 
-// A width x width square pen stamped centred on each Bresenham step.
+// A width x width square pen stamped centred on each Bresenham step: the
+// stamps as they were, for a pen wider than StrokeRows holds.
+void stampLine(LuaCanvas& c, int x1, int y1, int x2, int y2, uint8_t color, int width) {
+    const int off = (width - 1) / 2;
+    const int dx = std::abs(x2 - x1), dy = std::abs(y2 - y1);
+    const int sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
+    int err = dx - dy;
+    int x = x1, y = y1;
+    while (true) {
+        fillSpan(c, x - off, y - off, width, width, color);
+        if (x == x2 && y == y2) break;
+        const int e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x += sx; }
+        if (e2 < dx) { err += dx; y += sy; }
+    }
+}
+
+// The stamps' union, a row at a time (Tomodachi #488). The Bresenham points
+// are cut into runs of one y (x from a to b); a run's stamps cover rows
+// y - off .. y - off + width - 1 from a - off to b - off + width - 1. While y
+// only moves one way, a step at a time, and each point is next to the last,
+// a row's covering runs are the last `width` runs and their union is one
+// span. Each row is painted once, when no later run can reach it: the same
+// pixels as the stamps, with no row painted width times over.
+class StrokeRows {
+public:
+    static constexpr int kMaxWidth = 32;
+
+    StrokeRows(LuaCanvas& c, uint8_t color, int width, int sy)
+        : c_(c), color_(color), width_(width), off_((width - 1) / 2), sy_(sy) {}
+
+    // The next point of the walk.
+    void point(int x, int y) {
+        if (open_ && y == y_) {
+            a_ = x < a_ ? x : a_;
+            b_ = x > b_ ? x : b_;
+            return;
+        }
+        if (open_) run();
+        open_ = true;
+        y_ = y;
+        a_ = b_ = x;
+    }
+
+    // The walk is over: the last run, then the rows only the last runs
+    // still cover, in walk order (the k-th after the last run's row is
+    // covered by the last width - k runs).
+    void finish() {
+        if (!open_) return;
+        run();
+        for (int k = 1; k < width_; ++k) {
+            while (count_ > width_ - k) {
+                head_ = (head_ + 1) % kMaxWidth;
+                --count_;
+            }
+            emit(sy_ > 0 ? y_ - off_ + k : y_ - off_ + width_ - 1 - k);
+        }
+    }
+
+private:
+    struct Run { int a, b; };
+
+    void run() {
+        const int i = (head_ + count_) % kMaxWidth;
+        if (count_ == width_) {
+            head_ = (head_ + 1) % kMaxWidth;
+        } else {
+            ++count_;
+        }
+        runs_[i] = Run{a_, b_};
+        // The row this run finishes: no run after it reaches it.
+        emit(sy_ > 0 ? y_ - off_ : y_ - off_ + width_ - 1);
+    }
+
+    void emit(int row) {
+        int lo = runs_[head_].a, hi = runs_[head_].b;
+        for (int k = 1; k < count_; ++k) {
+            const Run& r = runs_[(head_ + k) % kMaxWidth];
+            lo = r.a < lo ? r.a : lo;
+            hi = r.b > hi ? r.b : hi;
+        }
+        fillSpan(c_, lo - off_, row, hi - lo + width_, 1, color_);
+    }
+
+    LuaCanvas& c_;
+    uint8_t color_;
+    int width_, off_, sy_;
+    Run runs_[kMaxWidth];
+    int head_ = 0, count_ = 0;
+    bool open_ = false;
+    int y_ = 0, a_ = 0, b_ = 0;
+};
+
+// Every Bresenham point of (x1, y1)-(x2, y2) but the first, to `rows`.
+void walkAfterFirst(StrokeRows& rows, int x1, int y1, int x2, int y2) {
+    const int dx = std::abs(x2 - x1), dy = std::abs(y2 - y1);
+    const int sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
+    int err = dx - dy;
+    int x = x1, y = y1;
+    while (!(x == x2 && y == y2)) {
+        const int e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x += sx; }
+        if (e2 < dx) { err += dx; y += sy; }
+        rows.point(x, y);
+    }
+}
+
+// A width x width square pen stamped centred on each Bresenham step, painted
+// as the stamps' union a row at a time (StrokeRows).
 void strokeLine(LuaCanvas& c, int x1, int y1, int x2, int y2, uint8_t color,
                 int width) {
     if (width <= 1) {
@@ -42,17 +150,14 @@ void strokeLine(LuaCanvas& c, int x1, int y1, int x2, int y2, uint8_t color,
         fillSpan(c, x1 - off, std::min(y1, y2) - off, width, std::abs(y2 - y1) + width, color);
         return;
     }
-    const int dx = std::abs(x2 - x1), dy = std::abs(y2 - y1);
-    const int sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
-    int err = dx - dy;
-    int x = x1, y = y1;
-    while (true) {
-        fillSpan(c, x - off, y - off, width, width, color);
-        if (x == x2 && y == y2) break;
-        const int e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; x += sx; }
-        if (e2 < dx) { err += dx; y += sy; }
+    if (width > StrokeRows::kMaxWidth) {
+        stampLine(c, x1, y1, x2, y2, color, width);
+        return;
     }
+    StrokeRows rows(c, color, width, y1 < y2 ? 1 : -1);
+    rows.point(x1, y1);
+    walkAfterFirst(rows, x1, y1, x2, y2);
+    rows.finish();
 }
 
 // Outline rectangle whose border grows inward, so the outer edge stays put:
@@ -157,9 +262,8 @@ int LuaBindings::lua_setColor(lua_State* L) {
         return 0;
     }
 
-    if (lua_gettop(L) >= 1 && lua_isnumber(L, 1)) {
-        bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
-    }
+    // Not a colour (a non-number, 8-14) is a mistake: it raises (ADR-0030).
+    bindings->currentColor = lua::checkCanvasColour(L, 1, indexedColours(bindings->currentCanvas));
 
     return 0;
 }
@@ -204,12 +308,10 @@ int LuaBindings::lua_getLineWidth(lua_State* L) {
 int LuaBindings::lua_point(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    if (lua_gettop(L) >= 2 && lua_isnumber(L, 1) && lua_isnumber(L, 2)) {
-        int16_t x = static_cast<int16_t>(lround(lua_tonumber(L, 1)));
-        int16_t y = static_cast<int16_t>(lround(lua_tonumber(L, 2)));
-
-        bindings->currentCanvas->setPixel(x, y, bindings->currentColor);
-    }
+    // Not a number is a mistake: it raises (ADR-0030).
+    int16_t x = static_cast<int16_t>(lround(luaL_checknumber(L, 1)));
+    int16_t y = static_cast<int16_t>(lround(luaL_checknumber(L, 2)));
+    bindings->currentCanvas->setPixel(x, y, bindings->currentColor);
 
     return 0;
 }
@@ -230,6 +332,65 @@ int LuaBindings::lua_line(lua_State* L) {
     return 0;
 }
 
+// polyline(points)  — gfx.line from each point to the next, points a flat
+// {x1, y1, x2, y2, ...} table (Tomodachi #488). One call for a whole stroke:
+// while y runs one way the stroke's rows are painted once each (StrokeRows),
+// otherwise segment by segment; either way the pixels of the gfx.line calls.
+int LuaBindings::lua_polyline(lua_State* L) {
+    REQUIRE_CANVAS(bindings, L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    const int count = static_cast<int>(lua_rawlen(L, 1));
+    // A lone x is a mistake (ADR-0030: it raises).
+    luaL_argcheck(L, count % 2 == 0, 1, "an odd count of numbers, not x, y pairs");
+    const int n = count / 2;
+    if (n < 1) return 0;
+    // Each number read and rounded once (lround is a software double on the
+    // S3): the first kPoints points into a stack buffer.
+    auto coord = [L](int i) {
+        lua_rawgeti(L, 1, i);
+        const int v = static_cast<int16_t>(lround(luaL_checknumber(L, -1)));
+        lua_pop(L, 1);
+        return v;
+    };
+    constexpr int kPoints = 128;
+    int16_t xy[2 * kPoints];
+    const int held = n < kPoints ? n : kPoints;
+    for (int i = 0; i < 2 * held; ++i) xy[i] = static_cast<int16_t>(coord(i + 1));
+    LuaCanvas& c = *bindings->currentCanvas;
+    const uint8_t color = bindings->currentColor;
+    const int width = bindings->lineWidth;
+    if (n == 1) {
+        strokeLine(c, xy[0], xy[1], xy[0], xy[1], color, width);
+        return 0;
+    }
+    // One way in y, and not flat: one walk.
+    int dir = 0;
+    bool oneWay = n == held && width > 1 && width <= StrokeRows::kMaxWidth;
+    for (int i = 1; oneWay && i < n; ++i) {
+        const int d = xy[2 * i + 1] - xy[2 * i - 1];
+        if (d == 0) continue;
+        if (dir == 0) dir = d > 0 ? 1 : -1;
+        else if ((d > 0 ? 1 : -1) != dir) oneWay = false;
+    }
+    if (oneWay && dir != 0) {
+        StrokeRows rows(c, color, width, dir);
+        rows.point(xy[0], xy[1]);
+        for (int i = 1; i < n; ++i)
+            walkAfterFirst(rows, xy[2 * i - 2], xy[2 * i - 1], xy[2 * i], xy[2 * i + 1]);
+        rows.finish();
+        return 0;
+    }
+    int x = xy[0], y = xy[1];
+    for (int i = 1; i < n; ++i) {
+        const int x2 = i < held ? xy[2 * i] : coord(2 * i + 1);
+        const int y2 = i < held ? xy[2 * i + 1] : coord(2 * i + 2);
+        strokeLine(c, x, y, x2, y2, color, width);
+        x = x2;
+        y = y2;
+    }
+    return 0;
+}
+
 int LuaBindings::lua_rectangle(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
@@ -246,7 +407,7 @@ int LuaBindings::lua_rectangle(lua_State* L) {
         uint16_t height = static_cast<uint16_t>(lua_tointeger(L, startIdx + 3));
 
         if (isFillMode(mode)) {
-            bindings->currentCanvas->fillRect(x, y, width, height, bindings->currentColor);
+            bindings->fillRect(x, y, width, height);
         } else {
             strokeRect(*bindings->currentCanvas, x, y, width, height,
                        bindings->currentColor, bindings->lineWidth);
@@ -382,10 +543,10 @@ int LuaBindings::lua_print(lua_State* L) {
 int LuaBindings::lua_fastFillRect(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    int x = static_cast<int>(luaL_checknumber(L, 1));
-    int y = static_cast<int>(luaL_checknumber(L, 2));
-    int w = static_cast<int>(luaL_checknumber(L, 3));
-    int h = static_cast<int>(luaL_checknumber(L, 4));
+    int x = static_cast<int>(lua::checkFloat(L, 1));
+    int y = static_cast<int>(lua::checkFloat(L, 2));
+    int w = static_cast<int>(lua::checkFloat(L, 3));
+    int h = static_cast<int>(lua::checkFloat(L, 4));
     uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast bulk fill - bypass individual pixel calls
@@ -411,10 +572,10 @@ int LuaBindings::lua_fastFillRect(lua_State* L) {
 int LuaBindings::lua_fastDrawLine(lua_State* L) {
     REQUIRE_CANVAS(bindings, L);
 
-    int x1 = static_cast<int>(luaL_checknumber(L, 1));
-    int y1 = static_cast<int>(luaL_checknumber(L, 2));
-    int x2 = static_cast<int>(luaL_checknumber(L, 3));
-    int y2 = static_cast<int>(luaL_checknumber(L, 4));
+    int x1 = static_cast<int>(lua::checkFloat(L, 1));
+    int y1 = static_cast<int>(lua::checkFloat(L, 2));
+    int x2 = static_cast<int>(lua::checkFloat(L, 3));
+    int y2 = static_cast<int>(lua::checkFloat(L, 4));
     uint8_t color = lua::optCanvasColour(L, 5, bindings->currentColor, indexedColours(bindings->currentCanvas));
 
     // Fast Bresenham line algorithm

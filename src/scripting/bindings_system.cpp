@@ -18,7 +18,12 @@ bool LuaScriptSystem::initialize() {
     return true;
 }
 
+LuaScriptSystem::~LuaScriptSystem() {
+    shutdown();
+}
+
 void LuaScriptSystem::shutdown() {
+    if (engine.getState()) bindings.releaseScriptRefs();
     engine.shutdown();
 }
 

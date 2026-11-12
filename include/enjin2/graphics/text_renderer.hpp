@@ -20,6 +20,7 @@
 // on that canvas until changed.
 
 #include "canvas.hpp"
+#include "corner_watch.hpp"  // corner cuts: text a rounded screen hides (host only)
 #include "effect.hpp"
 #include "faces/faces.hpp"
 #include "palette.hpp"
@@ -284,6 +285,10 @@ public:
         int endX = x;
         const bool wrap = s_.overflow == TextOverflow::Wrap;
         const bool ellipsis = s_.overflow == TextOverflow::Ellipsis;
+        // One ink scope per string, every line of it: the armed CornerWatch
+        // hears a string a rounded corner cuts once (corner_watch.hpp).
+        TextInk ink(canvas_.getWidth(), canvas_.getHeight(), s);
+        InkScope inkScope(ink_, ink);
         text::forEachLine(f, s_.size, s_.overflow, s, boxW, [&](std::string_view line) {
             endX = drawLine(f, line, x, align, lineTop, left, right,
                             !wrap && ellipsis && text::width(f, line, s_.size) > boxW);
@@ -301,6 +306,15 @@ public:
 private:
     ICanvas<TPixel>& canvas_;
     TextState& s_;
+    // The ink scope of the string being drawn: every fill pixel goes through it.
+    TextInk* ink_ = nullptr;
+
+    struct InkScope {
+        InkScope(TextInk*& slot, TextInk& ink) : slot_(slot), prev_(slot) { slot_ = &ink; }
+        ~InkScope() { slot_ = prev_; }
+        TextInk*& slot_;
+        TextInk* prev_;
+    };
 
     static constexpr uint8_t toIndex(TPixel p) {
         if constexpr (std::is_same_v<TPixel, uint8_t>) return p;
@@ -390,6 +404,7 @@ private:
         if (outlinePass) c = s_.outlineColor;
         else if (s_.hasEffect) c = s_.effect.shadePixel(s_.color, static_cast<int16_t>(px), static_cast<int16_t>(py));
         else c = s_.color;
+        if (!outlinePass && ink_) ink_->pixel(px, py);
         canvas_.setPixel(static_cast<int16_t>(px), static_cast<int16_t>(py), fromIndex(c));
     }
 

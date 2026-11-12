@@ -99,12 +99,29 @@
 // sets every text colour explicitly, so the glcd sub-ranges are re-affirmed
 // unchanged. The text_renderer.hpp head pin stays stale (see above).
 //
-// 2026-11-10 (Tomodachi #476, ADR-0029): the text pairs and their three
-// waivers (text.drawChar, text.print, text.println) are gone with Canvas8's
-// text and the built-in glcd font; enjin's TextRenderer is the one text route.
-// canvas.hpp base pin bumped to 0xa735c09dda6e27d4 (was 0x33889c14b3245c21):
-// Canvas8's text methods went and ICanvas gained its TextState; no geometry
-// changed (bench: 13 pairs, 0 failed).
+// Re-pin 2026-11-11 (Tomodachi #481): canvas.hpp base pin bumped to
+// 0x9b309bb96074ccb2 (was 0x33889c14b3245c21), text_renderer.hpp head pin to
+// 0x1be17c58598a4462 (was 0x25008f0e5f5a5650, stale since before #318) and
+// primitives.hpp to 0xd3cbba979cd8fed9 (was 0x7b4f2bcb50064a6b), all in
+// lockstep across the four entries. visual_parity_bench before the re-pin:
+// the only failures are the two glcd pairs, font == 3 alone, at max diff 80
+// and 1812, exactly the waived bounds, so the sub-ranges are re-affirmed
+// unchanged.
+//
+// Re-pin 2026-11-11 (Tomodachi #486, the merge of #488's draw-cost spans with
+// #481): canvas.hpp base pin bumped to 0x1d3a0ddcb7faba71 (was
+// 0x9b309bb96074ccb2) across the four entries; Canvas4::fill became a span
+// walk and ICanvas gained setPixelSpan, neither of them text. visual_parity_bench
+// before the re-pin: the only failures are the two glcd pairs, font == 3
+// alone, at max diff 80 and 1812, exactly the waived bounds, so the sub-ranges
+// are re-affirmed unchanged.
+//
+// 2026-11-12 (Tomodachi #476 meets #481/#486, ADR-0029): the text pairs and
+// their three waivers (text.drawChar, text.print, text.println) are gone with
+// Canvas8's text and the built-in glcd font; enjin's TextRenderer is the one
+// text route. canvas.hpp base pin bumped to 0x03dfba99577b673b (was
+// 0x1d3a0ddcb7faba71): Canvas8's text methods went and ICanvas gained its
+// TextState, over #486's spans; no geometry changed.
 
 #include <array>
 #include <cstddef>
@@ -201,8 +218,8 @@ namespace parity
         {"geom.drawRoundRect", WaiverStatus::Retired,
          "pair retired: HEAD replaces the corner-arc annulus with the #39 "
          "span-walker border stroke; the annulus is deleted", nullptr, 0,
-         "canvas.hpp", 0xa735c09dda6e27d4ull,
-         "primitives.hpp", 0x7b4f2bcb50064a6bull,
+         "canvas.hpp", 0x03dfba99577b673bull,
+         "primitives.hpp", 0xd3cbba979cd8fed9ull,
          "unwndevices/Tomodachi#39", "claude+ciro", "2026-09-07"},
     }};
 

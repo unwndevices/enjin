@@ -162,6 +162,52 @@ static void test_newline_and_utf8() {
     ASSERT(f.num("w") == text::tofuAdvance(faces::monogram), "a missing character measures one tofu");
 }
 
+static void test_mistakes_raise() {
+    printf("--- an unknown face or align, or a size off 1..255, raises (ADR-0030) ---\n");
+    TextFixture f;
+    f.exec("gfx.setFont('body'); ok, why = pcall(gfx.setFont, 'nonexistent'); "
+           "raised = (not ok) and why:find(\"unknown font 'nonexistent'\", 1, true) ~= nil");
+    ASSERT(f.exec("assert(raised)").success, "gfx.setFont('nonexistent') raises, naming the font");
+    ASSERT(f.layers[0].text().face == &faces::body, "and keeps the current face");
+    ASSERT(!f.exec("gfx.text('a', 0, 0, 'middle')").success, "an unknown align raises");
+    ASSERT(!f.exec("gfx.text('a', 0.5, 0)").success, "a fractional x raises");
+    ASSERT(!f.exec("gfx.setTextSize(0)").success, "size 0 raises");
+    ASSERT(!f.exec("gfx.setTextSize(256)").success, "size 256 raises");
+    ASSERT(f.layers[0].text().size == 1, "a refused size keeps the current one");
+}
+
+// Native callers draw through the same state (Tomodachi #478 follow-up):
+// selectFont / setDrawColor / fillRect / drawText are gfx.setFont,
+// gfx.setColor, gfx.rectangle("fill") and gfx.text: the same pixels, and the
+// state they set stays on the layer as the gfx calls would leave it.
+static void test_native_draw_is_gfx_draw() {
+    printf("--- native draw = gfx draw ---\n");
+    TextFixture lua;
+    lua.exec("gfx.setTextSize(2) gfx.setFont('body') gfx.setColor(gfx.COLOR.SURFACE) "
+             "gfx.rectangle('fill', 2, 2, 80, 30) gfx.setColor(gfx.COLOR.ACCENT) "
+             "gfx.text('Hi', 4, 10) gfx.text('Yo', 90, 10, 'right') "
+             "gfx.text('c', 48, 40, 'center')");
+    TextFixture native;
+    native.exec("gfx.setTextSize(2)");
+    ASSERT(native.bindings.selectFont("body"), "selectFont finds a face");
+    native.bindings.setDrawColor(ROLE_SURFACE);
+    native.bindings.fillRect(2, 2, 80, 30);
+    native.bindings.setDrawColor(ROLE_ACCENT);
+    ASSERT(native.bindings.drawText("Hi", 4, 10) == 1, "drawText returns the lines drawn");
+    native.bindings.drawText("Yo", 90, 10, TextAlign::Right);
+    native.bindings.drawText("c", 48, 40, TextAlign::Center);
+    int inked = 0;
+    for (int16_t y = 0; y < 64; ++y)
+        for (int16_t x = 0; x < 96; ++x) inked += lua.layers[0].getPixel(x, y).value == ROLE_ACCENT;
+    ASSERT(inked > 20, "the reference drew text");
+    ASSERT(same(lua.layers[0], native.layers[0]), "native draw writes gfx's pixels");
+    ASSERT(native.layers[0].text().face == &faces::body, "the face native code set is on the layer");
+    native.exec("c = gfx.getColor()");
+    ASSERT(native.num("c") == ROLE_ACCENT, "the script reads the colour native code set");
+    ASSERT(!native.bindings.selectFont("nope"), "a name that is not a face is refused");
+    ASSERT(native.layers[0].text().face == &faces::body, "a refused face keeps the current one");
+}
+
 int main() {
     test_text_is_the_native_draw();
     test_measure();
@@ -171,6 +217,8 @@ int main() {
     test_faces();
     test_outline_and_effect();
     test_newline_and_utf8();
+    test_mistakes_raise();
+    test_native_draw_is_gfx_draw();
     printf("\ntext_binding_test: %d passed, %d failed\n", passes, failures);
     return failures ? 1 : 0;
 }

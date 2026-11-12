@@ -104,9 +104,9 @@ TEST_F(SpriteAssetLoaderTest, LoadValidSpriteReturnsHandle) {
     EXPECT_EQ(handle, 0); // Should get first slot
 }
 
-TEST_F(SpriteAssetLoaderTest, LoadMissingSpriteReturnsNegOne) {
+TEST_F(SpriteAssetLoaderTest, LoadMissingSpriteReturnsNilErr) {
     const char* script = R"(
-        test_handle = engine.sprite.load("does_not_exist")
+        test_handle, test_err = engine.sprite.load("does_not_exist")
     )";
 
     LuaResult res = lua_.execute(script);
@@ -114,14 +114,14 @@ TEST_F(SpriteAssetLoaderTest, LoadMissingSpriteReturnsNegOne) {
 
     lua_State* L = lua_.getEngine().getState();
     lua_getglobal(L, "test_handle");
-    EXPECT_TRUE(lua_isinteger(L, -1));
-    int handle = lua_tointeger(L, -1);
+    EXPECT_TRUE(lua_isnil(L, -1));  // nil, err (ADR-0030)
     lua_pop(L, 1);
-
-    EXPECT_EQ(handle, -1);
+    lua_getglobal(L, "test_err");
+    EXPECT_STREQ(lua_tostring(L, -1), "file not found");
+    lua_pop(L, 1);
 }
 
-TEST_F(SpriteAssetLoaderTest, PoolFullReturnsNegOne) {
+TEST_F(SpriteAssetLoaderTest, PoolFullReturnsNilErr) {
     // Fill all 16 slots
     for (int i = 0; i < 16; ++i) {
         LuaResult res = lua_.execute("return engine.sprite.load('test_pikachu')");
@@ -129,16 +129,16 @@ TEST_F(SpriteAssetLoaderTest, PoolFullReturnsNegOne) {
     }
 
     // 17th should fail
-    LuaResult res = lua_.execute("test_handle = engine.sprite.load('test_pikachu')");
+    LuaResult res = lua_.execute("test_handle, test_err = engine.sprite.load('test_pikachu')");
     EXPECT_TRUE(res.success);
 
     lua_State* L = lua_.getEngine().getState();
     lua_getglobal(L, "test_handle");
-    EXPECT_TRUE(lua_isinteger(L, -1));
-    int handle = lua_tointeger(L, -1);
+    EXPECT_TRUE(lua_isnil(L, -1));  // nil, err (ADR-0030)
     lua_pop(L, 1);
-
-    EXPECT_EQ(handle, -1);
+    lua_getglobal(L, "test_err");
+    EXPECT_STREQ(lua_tostring(L, -1), "sprite slots full");
+    lua_pop(L, 1);
 }
 
 TEST_F(SpriteAssetLoaderTest, DrawLoadedSprite) {

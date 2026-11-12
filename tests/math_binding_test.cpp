@@ -242,15 +242,13 @@ static void test_Rect_binding() {
 }
 
 // ============================================================
-// Math utility globals: clamp, lerp, remap, sign, smoothstep, distance
+// Math utility globals: lerp, remap, sign, smoothstep, distance (clamp is util.clamp, ADR-0030)
 // ============================================================
 static void test_math_utilities() {
     printf("--- math utility globals ---\n");
     MathBindingFixture f;
     LuaResult r = f.exec(
-        "c1 = clamp(50, 0, 100)\n"
-        "c2 = clamp(-5, 0, 100)\n"
-        "c3 = clamp(150, 0, 100)\n"
+        "no_clamp = (clamp == nil) and 1 or 0\n"
         "lerp_val = lerp(0, 100, 0.5)\n"
         "remap_val = remap(0.5, 0, 1, 10, 20)\n"
         "sign_neg = sign(-7)\n"
@@ -260,9 +258,7 @@ static void test_math_utilities() {
         "dist = distance(0, 0, 3, 4)\n"
     );
     ASSERT(r.success, "math utilities script should succeed");
-    ASSERT(f.getNum("c1") == 50.0, "clamp(50,0,100) == 50");
-    ASSERT(f.getNum("c2") == 0.0, "clamp(-5,0,100) == 0");
-    ASSERT(f.getNum("c3") == 100.0, "clamp(150,0,100) == 100");
+    ASSERT(f.getNum("no_clamp") == 1.0, "no bare clamp global: one home, util.clamp");
     ASSERT(std::fabs(f.getNum("lerp_val") - 50.0) < EPS, "lerp(0,100,0.5) == 50");
     ASSERT(std::fabs(f.getNum("remap_val") - 15.0) < EPS, "remap(0.5,0,1,10,20) == 15");
     ASSERT(f.getNum("sign_neg") == -1.0, "sign(-7) == -1");

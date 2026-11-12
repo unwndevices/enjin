@@ -16,6 +16,7 @@
 #include "../core/name_index.hpp"
 #include "../graphics/effect.hpp"
 #include "lua_api.hpp"
+#include "lua_args.hpp"
 #include "palette_arg.hpp"
 
 extern "C" {
@@ -61,11 +62,11 @@ inline Effect checkEffect(lua_State* L, int idx) {
 namespace detail {
 
 inline uint8_t argU8(lua_State* L, int idx) {
-    return static_cast<uint8_t>(luaL_checkinteger(L, idx));
+    return static_cast<uint8_t>(lua::checkInt(L, idx));
 }
 inline int16_t argI16(lua_State* L, int idx, int16_t def) {
     return lua_isnoneornil(L, idx) ? def
-                                   : static_cast<int16_t>(luaL_checkinteger(L, idx));
+                                   : static_cast<int16_t>(lua::checkInt(L, idx));
 }
 
 // The kind / preset names each constructor dispatches on, indexed by the enum
@@ -188,7 +189,7 @@ inline void registerEffectApi(lua_State* L) {
                     "(kind:RemapKind, from:int, to:int) -> Remap\n"
                     "(kind:RemapKind, first:Remap, second:Remap) -> Remap",
                     "Build a colour remap: a 16-entry table or a named kind.",
-                    "lut: lut[i + 1] is the new index for colour i; a missing entry maps to 0\n"
+                    "lut: lut[i + 1] is the new index for colour i; an entry left out maps to 0\n"
                     "kind: identity, towardBg or towardText alone (one step along the shade "
                     "chain bg, surface, muted, text; an accent steps to muted or text); "
                     "solid, recolor and compose take the arguments below; unknown kinds raise\n"

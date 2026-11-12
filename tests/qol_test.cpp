@@ -6,9 +6,9 @@
  *   QOL-01: engine.tween.await(id) suspends coroutine until tween completes, resumes exactly once
  *   QOL-01: engine.tween.await(invalid_id) resumes immediately without yielding
  *   QOL-01: Two coroutines both awaiting same tween both resume on completion
- *   QOL-02: engine.async.wait_frames(n) resumes after exactly n frames
- *   QOL-02: engine.async.wait_frames(0) returns immediately without yielding
- *   QOL-02: engine.async.wait_frames(-1) returns immediately without yielding
+ *   QOL-02: engine.async.waitFrames(n) resumes after exactly n frames
+ *   QOL-02: engine.async.waitFrames(0) returns immediately without yielding
+ *   QOL-02: engine.async.waitFrames(-1) returns immediately without yielding
  *   QOL-03: engine.camera.setDeadZone(w, h) freezes camera when target is inside dead zone
  *   QOL-03: camera resumes follow when target exits dead zone
  *   QOL-03: engine.camera.setDeadZone(0, 0) does not freeze camera (dead zone disabled)
@@ -177,7 +177,7 @@ static void test_tween_await_resumes_exactly_once() {
 }
 
 // ============================================================
-// QOL-02 Test 4: wait_frames(n) resumes after exactly n frames
+// QOL-02 Test 4: waitFrames(n) resumes after exactly n frames
 // ============================================================
 static void test_wait_frames_yields_exactly_n() {
     printf("--- test_wait_frames_yields_exactly_n ---\n");
@@ -187,13 +187,13 @@ static void test_wait_frames_yields_exactly_n() {
     LuaResult r = f.exec(
         "g_resumed = 0\n"
         "engine.async.start(function()\n"
-        "    engine.async.wait_frames(3)\n"
+        "    engine.async.waitFrames(3)\n"
         "    g_resumed = 1\n"
         "end)\n"
     );
     ASSERT(r.success, "test_wait_frames_yields_exactly_n: setup must not error");
 
-    // Tick 1: coroutine starts, calls wait_frames(3) → sets waitFrames=2, yields
+    // Tick 1: coroutine starts, calls waitFrames(3) → sets waitFrames=2, yields
     f.tickCoroutines(0.016f);
     ASSERT(f.getNum("g_resumed") == 0.0, "should not resume after tick 1");
 
@@ -207,7 +207,7 @@ static void test_wait_frames_yields_exactly_n() {
 }
 
 // ============================================================
-// QOL-02 Test 5: wait_frames(0) returns immediately without yielding
+// QOL-02 Test 5: waitFrames(0) returns immediately without yielding
 // ============================================================
 static void test_wait_frames_zero_resumes_immediately() {
     printf("--- test_wait_frames_zero_resumes_immediately ---\n");
@@ -217,18 +217,18 @@ static void test_wait_frames_zero_resumes_immediately() {
     LuaResult r = f.exec(
         "g_resumed = 0\n"
         "engine.async.start(function()\n"
-        "    engine.async.wait_frames(0)\n"
+        "    engine.async.waitFrames(0)\n"
         "    g_resumed = 1\n"
         "end)\n"
     );
     ASSERT(r.success, "test_wait_frames_zero_resumes_immediately: setup must not error");
 
     f.tickCoroutines(0.016f);
-    ASSERT(f.getNum("g_resumed") == 1.0, "wait_frames(0) should resume in same tick");
+    ASSERT(f.getNum("g_resumed") == 1.0, "waitFrames(0) should resume in same tick");
 }
 
 // ============================================================
-// QOL-02 Test 6: wait_frames(-1) returns immediately without yielding
+// QOL-02 Test 6: waitFrames(-1) returns immediately without yielding
 // ============================================================
 static void test_wait_frames_negative_resumes_immediately() {
     printf("--- test_wait_frames_negative_resumes_immediately ---\n");
@@ -238,14 +238,14 @@ static void test_wait_frames_negative_resumes_immediately() {
     LuaResult r = f.exec(
         "g_resumed = 0\n"
         "engine.async.start(function()\n"
-        "    engine.async.wait_frames(-5)\n"
+        "    engine.async.waitFrames(-5)\n"
         "    g_resumed = 1\n"
         "end)\n"
     );
     ASSERT(r.success, "test_wait_frames_negative_resumes_immediately: setup must not error");
 
     f.tickCoroutines(0.016f);
-    ASSERT(f.getNum("g_resumed") == 1.0, "wait_frames(-5) should resume in same tick");
+    ASSERT(f.getNum("g_resumed") == 1.0, "waitFrames(-5) should resume in same tick");
 }
 
 // ============================================================

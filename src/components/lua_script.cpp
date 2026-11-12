@@ -39,7 +39,7 @@ C_LuaScript::~C_LuaScript() {
         }
         // TIMER-05: Release any pending timer callbacks before closing the Lua state.
         // This handles the destruction-order pitfall: if C_LuaScript destructs before
-        // C_Timer (components[0] before components[1]), we must release luaL_ref handles
+        // C_Timer (components[0] before components[1]), we must release its callbacks
         // while the Lua state is still alive.
         if (owner) {
             C_Timer* timer = owner->getComponent<C_Timer>();

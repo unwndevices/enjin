@@ -1,5 +1,6 @@
 #pragma once
 #include "lua_platform.hpp"
+#include "lua_ref.hpp"
 #include <cstring>
 
 namespace enjin2 {
@@ -8,8 +9,8 @@ namespace enjin2 {
  * @brief Scene-scoped Lua event bus for named publish/subscribe.
  *
  * Zero heap allocation. Fixed capacity for channels and subscribers.
- * All luaL_ref handles are released on clearHandlers() -- called on
- * scene deactivation (EVENT-04) and hot-reload (EVENT-05).
+ * Every callback (a lua::ScriptRef) is released on clearHandlers() -- called
+ * on scene deactivation (EVENT-04) and hot-reload (EVENT-05).
  */
 class LuaEventBus {
 public:
@@ -19,7 +20,7 @@ public:
 
     /** @brief A single subscriber callback entry */
     struct Subscriber {
-        int  callbackRef{LUA_NOREF}; ///< luaL_ref handle; LUA_NOREF = inactive
+        lua::ScriptRef callback;     ///< The callback; empty = inactive
         int  id{0};                  ///< Subscription ID returned to Lua (for off())
         bool active{false};          ///< Whether this subscriber slot is in use
     };
@@ -47,10 +48,10 @@ public:
     /**
      * @brief Register a callback for an event
      * @param name  Event name
-     * @param callbackRef  luaL_ref handle for the callback function
+     * @param callback  The callback function (taken; released on failure)
      * @return Subscription ID (>0) or 0 on failure
      */
-    int subscribe(const char* name, int callbackRef);
+    int subscribe(const char* name, lua::ScriptRef callback);
 
     /**
      * @brief Fire all active callbacks for the named event
@@ -63,14 +64,14 @@ public:
     /**
      * @brief Unregister a subscription by ID
      *
-     * Calls luaL_unref on the callback.
+     * Releases the callback.
      * @param id  Subscription ID returned by subscribe()
      */
     void unsubscribe(int id);
 
-    /// Release all luaL_ref handles and reset all slots.
+    /// Release every callback and reset all slots.
     /// Called on scene deactivation (EVENT-04) and hot-reload (EVENT-05).
-    /// Sets m_L = nullptr as safe sentinel to prevent double-unref.
+    /// Sets m_L = nullptr: no emit until setLuaState() re-arms it.
     void clearHandlers();
 
     /** @brief Get count of active subscribers across all channels (for testing)

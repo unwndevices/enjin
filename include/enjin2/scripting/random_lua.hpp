@@ -19,6 +19,7 @@
 #include <cstdint>
 
 #include "lua_api.hpp"
+#include "lua_args.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -64,8 +65,8 @@ inline uint32_t xorshift32(uint32_t& state) {
 /// Push a random integer from the bounds at `arg` and `arg + 1`, both
 /// included, in either order.
 inline int pushRandomInteger(lua_State* L, uint32_t& state, int arg) {
-    int a = static_cast<int>(luaL_checkinteger(L, arg));
-    int b = static_cast<int>(luaL_checkinteger(L, arg + 1));
+    int a = lua::checkInt(L, arg);
+    int b = lua::checkInt(L, arg + 1);
     if (a > b) { const int t = a; a = b; b = t; }
     const uint32_t r = xorshift32(state);
     const int range = b - a + 1;

@@ -1,9 +1,9 @@
 /**
  * @file ui_binding_test.cpp
- * @brief Lua integration test for engine.ui.* sub-table (Phase 52: UI-01..UI-04)
+ * @brief Lua integration test for ui.* sub-table (Phase 52: UI-01..UI-04)
  *
  * Verifies:
- * - engine.ui sub-table exists and has all four functions
+ * - ui sub-table exists and has all four functions
  * - All four functions callable without crash when canvas is null (null-canvas safety)
  * - progressBar draws correct fill pixels (pixel-level verification)
  * - statBar boundary values (0/0, 0/max, max/max, half)
@@ -85,27 +85,27 @@ struct UICanvas8Fixture {
 };
 
 // ============================================================
-// Test 1: engine.ui table exists and has all four functions
+// Test 1: ui table exists and has all four functions
 // ============================================================
 static void test_ui_table_exists() {
-    printf("--- Test 1: engine.ui table exists and has all functions ---\n");
+    printf("--- Test 1: ui table exists and has all functions ---\n");
 
     UIFixture f;
 
     LuaResult r = f.exec(
-        "ok_table        = (type(engine.ui) == 'table') and 1 or 0\n"
-        "ok_progressBar  = (type(engine.ui.progressBar) == 'function') and 1 or 0\n"
-        "ok_statBar      = (type(engine.ui.statBar) == 'function') and 1 or 0\n"
-        "ok_panel        = (type(engine.ui.panel) == 'function') and 1 or 0\n"
-        "ok_label        = (engine.ui.label == nil) and 1 or 0\n"
+        "ok_table        = (type(ui) == 'table') and 1 or 0\n"
+        "ok_progressBar  = (type(ui.progressBar) == 'function') and 1 or 0\n"
+        "ok_statBar      = (type(ui.statBar) == 'function') and 1 or 0\n"
+        "ok_panel        = (type(ui.panel) == 'function') and 1 or 0\n"
+        "ok_label        = (ui.label == nil) and 1 or 0\n"
     );
 
-    ASSERT(r.success,                          "engine.ui table checks must not error");
-    ASSERT(f.getNum("ok_table")       == 1.0, "engine.ui must be a table");
-    ASSERT(f.getNum("ok_progressBar") == 1.0, "engine.ui.progressBar must be a function");
-    ASSERT(f.getNum("ok_statBar")     == 1.0, "engine.ui.statBar must be a function");
-    ASSERT(f.getNum("ok_panel")       == 1.0, "engine.ui.panel must be a function");
-    ASSERT(f.getNum("ok_label")       == 1.0, "engine.ui.label is gone: gfx.text is the one way (ADR-0029)");
+    ASSERT(r.success,                          "ui table checks must not error");
+    ASSERT(f.getNum("ok_table")       == 1.0, "ui must be a table");
+    ASSERT(f.getNum("ok_progressBar") == 1.0, "ui.progressBar must be a function");
+    ASSERT(f.getNum("ok_statBar")     == 1.0, "ui.statBar must be a function");
+    ASSERT(f.getNum("ok_panel")       == 1.0, "ui.panel must be a function");
+    ASSERT(f.getNum("ok_label")       == 1.0, "ui.label is gone: gfx.text is the one way (ADR-0029)");
 }
 
 // ============================================================
@@ -116,15 +116,14 @@ static void test_null_canvas_safety() {
 
     UIFixture f;
 
-    LuaResult r1 = f.exec("engine.ui.progressBar(0, 0, 10, 4, 0.5, 7, 0)");
+    LuaResult r1 = f.exec("ui.progressBar(0, 0, 10, 4, 0.5, 7, 0)");
     ASSERT(r1.success, "progressBar must not crash with null canvas");
 
-    LuaResult r2 = f.exec("engine.ui.statBar(0, 0, 10, 4, 5, 10, 7, 0)");
+    LuaResult r2 = f.exec("ui.statBar(0, 0, 10, 4, 5, 10, 7, 0)");
     ASSERT(r2.success, "statBar must not crash with null canvas");
 
-    LuaResult r3 = f.exec("engine.ui.panel(0, 0, 10, 10, 3, 7)");
+    LuaResult r3 = f.exec("ui.panel(0, 0, 10, 10, 3, 7)");
     ASSERT(r3.success, "panel must not crash with null canvas");
-
 
 }
 
@@ -138,7 +137,7 @@ static void test_progressBar_pixel_fill() {
     UICanvasFixture f;
 
     // Draw progressBar: w=10, h=4, value=0.5, fg=7, bg=0
-    LuaResult r = f.exec("engine.ui.progressBar(0, 0, 10, 4, 0.5, 7, 0)");
+    LuaResult r = f.exec("ui.progressBar(0, 0, 10, 4, 0.5, 7, 0)");
     ASSERT(r.success, "progressBar draw call must succeed");
 
     // fillW = int(10 * 0.5) = 5 → pixels 0..4 are fg=7
@@ -164,20 +163,20 @@ static void test_statBar_boundary_values() {
 
     // statBar: 0/0 — division by zero guard, no crash, fill=0 (all bg=2)
     f.canvas.clear(Pixel4(0));
-    LuaResult r1 = f.exec("engine.ui.statBar(0, 0, 10, 1, 0, 0, 7, 2)");
+    LuaResult r1 = f.exec("ui.statBar(0, 0, 10, 1, 0, 0, 7, 2)");
     ASSERT(r1.success, "statBar(0,0) must not crash");
     ASSERT(f.canvas.getPixel(0, 0) == 2, "statBar 0/0: all bg=2");
 
     // statBar: current=0, max=10 — empty bar (all bg=2)
     f.canvas.clear(Pixel4(0));
-    LuaResult r2 = f.exec("engine.ui.statBar(0, 0, 10, 1, 0, 10, 7, 2)");
+    LuaResult r2 = f.exec("ui.statBar(0, 0, 10, 1, 0, 10, 7, 2)");
     ASSERT(r2.success, "statBar(0,10) must succeed");
     ASSERT(f.canvas.getPixel(0, 0) == 2, "statBar 0/10: pixel(0,0) must be bg=2");
     ASSERT(f.canvas.getPixel(9, 0) == 2, "statBar 0/10: pixel(9,0) must be bg=2");
 
     // statBar: current=max=10 — full bar (all fg=7)
     f.canvas.clear(Pixel4(0));
-    LuaResult r3 = f.exec("engine.ui.statBar(0, 0, 10, 1, 10, 10, 7, 2)");
+    LuaResult r3 = f.exec("ui.statBar(0, 0, 10, 1, 10, 10, 7, 2)");
     ASSERT(r3.success, "statBar(10,10) must succeed");
     ASSERT(f.canvas.getPixel(0, 0) == 7, "statBar 10/10: pixel(0,0) must be fg=7");
     ASSERT(f.canvas.getPixel(9, 0) == 7, "statBar 10/10: pixel(9,0) must be fg=7");
@@ -185,7 +184,7 @@ static void test_statBar_boundary_values() {
     // statBar: current=5, max=10 — half fill
     // fillW = int(10 * 0.5) = 5 → pixel(0,0)=7, pixel(5,0)=2
     f.canvas.clear(Pixel4(0));
-    LuaResult r4 = f.exec("engine.ui.statBar(0, 0, 10, 1, 5, 10, 7, 2)");
+    LuaResult r4 = f.exec("ui.statBar(0, 0, 10, 1, 5, 10, 7, 2)");
     ASSERT(r4.success, "statBar(5,10) must succeed");
     ASSERT(f.canvas.getPixel(0, 0) == 7, "statBar 5/10: pixel(0,0) must be fg=7");
     ASSERT(f.canvas.getPixel(5, 0) == 2, "statBar 5/10: pixel(5,0) must be bg=2");
@@ -201,7 +200,7 @@ static void test_progressBar_value_clamping() {
 
     // value=-1.0 → clamped to 0 → fillW=0 → all bg=0
     f.canvas.clear(Pixel4(1));  // clear to 1 so we can distinguish
-    LuaResult r1 = f.exec("engine.ui.progressBar(0, 0, 10, 1, -1.0, 7, 0)");
+    LuaResult r1 = f.exec("ui.progressBar(0, 0, 10, 1, -1.0, 7, 0)");
     ASSERT(r1.success, "progressBar with negative value must succeed");
     // bg=0 should cover full bar
     ASSERT(f.canvas.getPixel(0, 0) == 0, "progressBar value<0: pixel(0,0) must be bg=0");
@@ -209,7 +208,7 @@ static void test_progressBar_value_clamping() {
 
     // value=2.0 → clamped to 1 → fillW=10 → all fg=7
     f.canvas.clear(Pixel4(0));
-    LuaResult r2 = f.exec("engine.ui.progressBar(0, 0, 10, 1, 2.0, 7, 0)");
+    LuaResult r2 = f.exec("ui.progressBar(0, 0, 10, 1, 2.0, 7, 0)");
     ASSERT(r2.success, "progressBar with value > 1 must succeed");
     ASSERT(f.canvas.getPixel(0, 0) == 7, "progressBar value>1: pixel(0,0) must be fg=7");
     ASSERT(f.canvas.getPixel(9, 0) == 7, "progressBar value>1: pixel(9,0) must be fg=7");
@@ -224,7 +223,7 @@ static void test_panel_pixel_verification() {
     UICanvasFixture f;
 
     // panel: x=0, y=0, w=10, h=10, bg=3, border=7
-    LuaResult r = f.exec("engine.ui.panel(0, 0, 10, 10, 3, 7)");
+    LuaResult r = f.exec("ui.panel(0, 0, 10, 10, 3, 7)");
     ASSERT(r.success, "panel draw call must succeed");
 
     // Interior pixel (5,5) — fillRect covers all, drawRect only edges
@@ -242,7 +241,7 @@ static void test_panel_pixel_verification() {
 static void test_canvas8_panel_preserves_full_width_border_color() {
     UICanvas8Fixture f;
 
-    LuaResult r = f.exec("engine.ui.panel(0, 0, 10, 10, 3, 200)");
+    LuaResult r = f.exec("ui.panel(0, 0, 10, 10, 3, 200)");
     ASSERT(r.success, "Canvas8 panel draw call must succeed");
     ASSERT(f.canvas.getPixel(5, 5) == 3,
            "Canvas8 panel interior must use the background colour");

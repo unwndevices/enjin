@@ -3,6 +3,7 @@
 #include "../../include/enjin2/scripting/lua_api.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <cctype>
 #include <cstring>
 
@@ -211,6 +212,127 @@ std::vector<std::string> typeParts(const std::string& type) {
 
 void validateEntries(const LuaApiModule& module, std::string& errors);
 
+// ADR-0030 case: no '_' in a name; UPPER_SNAKE is a constant's.
+bool hasUnderscore(const std::string& s) { return s.find('_') != std::string::npos; }
+bool isUpperSnake(const std::string& s) {
+    if (s.empty() || !std::isupper(static_cast<unsigned char>(s[0]))) return false;
+    for (char c : s)
+        if (!(std::isupper(static_cast<unsigned char>(c)) || std::isdigit(static_cast<unsigned char>(c)) || c == '_'))
+            return false;
+    return true;
+}
+
+// ADR-0030's two failure forms, held as a whitelist. Each clause of a
+// descriptor's text (split at "; ", ". " and newlines) that names a failure
+// condition (an unknown name, an invalid or bad argument, a full pool, a
+// missing file, out of range, a printed reason, ignored, keeps the current
+// one, ...) must say which of the two forms it is: it raises, or (on a
+// returnsErr() entry) it returns `nil, "…"` / `nil, err` (or is that entry's
+// `err: "…"` list). Anything else
+// ("nil for an unknown id", "false when", "-1 on failure", "an unknown name is
+// forward", "is ignored", "logs") is not a failure report and fails the census.
+// Quoted text is a value the function hands back ("failed", "unknown", an err
+// message), not a condition. A reading is not a failure: "the clock is
+// unknown", a finished or stale id, an omitted argument. Returns the offending
+// clause, or "" when every failure clause is one of the two forms.
+std::string failureOutsideTheTwoForms(const char* text, bool nilErr) {
+    if (!text) return {};
+    static const char* const kConditions[] = {
+        "unknown", "invalid", "bad", "wrong", "fail", "fails", "failed", "failure",
+        "is full", "are full", "when all", "is busy", "are busy", "is in use", "are in use",
+        "missing", "not found", "no such", "out of range", "too long", "too many", "printed",
+        "logs and", "and logs", "ignored", "keeps the current", "unsupported", "not a",
+    };
+    static const char* const kNotAFailure[] = {"nothing fails", "never fails", "cannot fail",
+                                               "omitted", "is unknown"};
+    // Whole words: "invalid" is not in "invalidate", "bad" not in "badge".
+    auto has = [](const std::string& c, const char* w) {
+        const size_t len = std::strlen(w);
+        for (size_t at = c.find(w); at != std::string::npos; at = c.find(w, at + 1)) {
+            const bool startOk = at == 0 || !std::isalnum(static_cast<unsigned char>(c[at - 1]));
+            const bool endOk = at + len >= c.size() || !std::isalnum(static_cast<unsigned char>(c[at + len]));
+            if (startOk && endOk) return true;
+        }
+        return false;
+    };
+    auto judge = [&](const std::string& raw) -> bool {
+        std::string c, bare;  // lower-cased; and without its quoted values
+        bool quoted = false;
+        for (char ch : raw) {
+            const char lower = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+            c += lower;
+            if (ch == '"') { quoted = !quoted; bare += ' '; continue; }
+            bare += quoted ? ' ' : lower;
+        }
+        for (const char* w : kNotAFailure)
+            if (bare.find(w) != std::string::npos) return true;
+        bool condition = false;
+        for (const char* w : kConditions)
+            if (has(bare, w)) { condition = true; break; }
+        if (!condition) return true;
+        if (bare.find("raise") != std::string::npos) return true;
+        // A returnsErr() entry's own err list ("err: \"not found\" (a missing
+        // folder), ...") documents the second form.
+        const size_t lead = bare.find_first_not_of(' ');
+        if (nilErr && lead != std::string::npos && bare.compare(lead, 4, "err:") == 0) return true;
+        return nilErr && (c.find("nil, \"") != std::string::npos || c.find("nil, err") != std::string::npos);
+    };
+    std::string clause;
+    for (const char* q = text;; ++q) {
+        const bool end = *q == '\0';
+        // ". " and "; " end a clause ("1.5", "file.lua", "0..7" don't).
+        const bool stop = end || *q == '\n' ||
+                          ((*q == '.' || *q == ';') && (q[1] == ' ' || q[1] == '\0' || q[1] == '\n'));
+        if (!stop) { clause += *q; continue; }
+        if (!judge(clause)) {
+            const size_t first = clause.find_first_not_of(' ');
+            return first == std::string::npos ? clause : clause.substr(first);
+        }
+        clause.clear();
+        if (end) break;
+    }
+    return {};
+}
+
+void validateConvention(const LuaApiModule& module, const LuaApiEntry& e,
+                        const LuaApiSignature* sig, const std::function<void(const std::string&)>& problem) {
+    const std::string name = e.name ? e.name : "";
+    const bool constantLike = e.kind == LuaApiKind::Constant || e.kind == LuaApiKind::Table;
+    if (module.scope == LuaApiScope::Metatable) {
+        if (name.rfind("__", 0) != 0) problem("a metatable field is a __metamethod (ADR-0030)");
+    } else if (hasUnderscore(name) && !(constantLike && isUpperSnake(name))) {
+        problem("snake_case name; Lua names are camelCase (ADR-0030)");
+    }
+    if (!sig) return;
+    for (const auto& o : sig->overloads) {
+        for (const auto& prm : o.params)
+            if (prm.name != "_" && hasUnderscore(prm.name))
+                problem("snake_case parameter '" + prm.name + "' (ADR-0030)");
+        for (const auto& r : o.results)
+            if (hasUnderscore(r.name)) problem("snake_case result '" + r.name + "' (ADR-0030)");
+    }
+    if (e.kind != LuaApiKind::Function) return;
+    if (e.failure == LuaApiFailure::NilErr) {
+        for (const auto& o : sig->overloads) {
+            const auto& r = o.results;
+            if (r.size() < 2 || r.back().name != "err" || r.back().type != "string" ||
+                !r.back().optional || !r.front().optional)
+                problem("returns nil, err: its results end in 'x?, err:string?' (ADR-0030)");
+        }
+    } else {
+        for (const auto& o : sig->overloads)
+            for (const auto& r : o.results)
+                if (r.name == "err")
+                    problem("returns an err but is not marked returnsErr() (ADR-0030)");
+    }
+    for (const char* text : {e.summary, e.hostNote, e.args}) {
+        const std::string clause = failureOutsideTheTwoForms(text, e.failure == LuaApiFailure::NilErr);
+        if (!clause.empty())
+            problem("documents a failure ('" + clause +
+                    "') that is neither nil, err (returnsErr()) nor a raise (ADR-0030)");
+    }
+}
+
 void validateEntry(const LuaApiModule& module, const LuaApiEntry& e, std::string& errors) {
     const std::string where = std::string(module.path) + (*module.path ? "." : "") +
                               (e.name ? e.name : "");
@@ -221,8 +343,10 @@ void validateEntry(const LuaApiModule& module, const LuaApiEntry& e, std::string
 
     switch (e.kind) {
         case LuaApiKind::Constant:
+            validateConvention(module, e, nullptr, problem);
             return;
         case LuaApiKind::Table:
+            validateConvention(module, e, nullptr, problem);
             if (!e.table) {
                 problem("table entry without a module");
             } else {
@@ -242,6 +366,7 @@ void validateEntry(const LuaApiModule& module, const LuaApiEntry& e, std::string
         problem("signature does not parse: " + (e.signature ? err : std::string("missing")));
         return;
     }
+    validateConvention(module, e, &sig, problem);
 
     // Argument lines name exactly the distinct parameters, in first-appearance order.
     std::vector<std::string> names;
@@ -291,6 +416,21 @@ void validateEntries(const LuaApiModule& module, std::string& errors) {
     if (!module.path) {
         errors += "(module): missing path\n";
         return;
+    }
+    // The path's parts: camelCase, or UPPER_SNAKE for a table of constants
+    // (gfx.COLOR); a Methods / Metatable path names a userdata type.
+    if (module.scope == LuaApiScope::Table) {
+        std::string path = module.path;
+        size_t start = 0;
+        while (start <= path.size()) {
+            size_t dot = path.find('.', start);
+            if (dot == std::string::npos) dot = path.size();
+            const std::string part = path.substr(start, dot - start);
+            if (hasUnderscore(part) && !isUpperSnake(part))
+                errors += path + ": snake_case table name '" + part +
+                          "'; Lua names are camelCase (ADR-0030)\n";
+            start = dot + 1;
+        }
     }
     for (size_t i = 0; i < module.count; ++i) validateEntry(module, module.entries[i], errors);
     for (size_t i = 0; i < module.count; ++i)

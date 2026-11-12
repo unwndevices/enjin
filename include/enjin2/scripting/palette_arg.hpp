@@ -9,6 +9,7 @@
 #include <cstdint>
 
 #include "../graphics/palette.hpp"
+#include "lua_args.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -53,7 +54,7 @@ inline uint8_t optPaletteIndex(lua_State* L, int arg, uint8_t def) {
 /// is a palette index (checkPaletteIndex); on a byte canvas (Canvas8, a grey level)
 /// any 0..255 value, as before the palette had roles.
 inline uint8_t checkCanvasColour(lua_State* L, int arg, bool indexed) {
-    return indexed ? checkPaletteIndex(L, arg) : static_cast<uint8_t>(luaL_checkinteger(L, arg));
+    return indexed ? checkPaletteIndex(L, arg) : static_cast<uint8_t>(lua::checkInt(L, arg));
 }
 
 /// checkCanvasColour, or @p def when the argument is absent or nil.

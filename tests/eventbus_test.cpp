@@ -8,7 +8,7 @@
  *   EVENT-02b: emit with no handlers is a silent no-op
  *   EVENT-03: engine.event.off(id) prevents the callback from firing
  *   EVENT-03b: off(0) and off(invalid_id) are silent no-ops
- *   EVENT-04: clearHandlers() releases all luaL_ref handles (unit-level + scene-scoped)
+ *   EVENT-04: clearHandlers() releases every callback (unit-level + scene-scoped)
  *   EVENT-05: hot-reload (registerAll) calls clearHandlers() -- subscriber count zeroed
  *   Re-entrancy: handler calling emit() or off() inside a callback is safe
  */
@@ -17,6 +17,7 @@
 #include <enjin2/scripting/lua_engine.hpp>
 #include <enjin2/scripting/lua_event_bus.hpp>
 #include <cstdio>
+#include <utility>
 #include <cstring>
 #include <memory>
 
@@ -220,15 +221,17 @@ static void test_event04_clearhandlers_unit() {
     LuaEventBus bus;
     bus.setLuaState(L);
 
-    // Push a dummy function onto the Lua stack and anchor via luaL_ref
+    // Push a dummy function onto the Lua stack and hold it in a ScriptRef
+    lua::ScriptRef ref1, ref2;
     lua_pushcfunction(L, [](lua_State*) -> int { return 0; });
-    int ref1 = luaL_ref(L, LUA_REGISTRYINDEX);
-
+    ref1.assign(L, -1);
     lua_pushcfunction(L, [](lua_State*) -> int { return 0; });
-    int ref2 = luaL_ref(L, LUA_REGISTRYINDEX);
+    ref2.assign(L, -1);
+    lua_pop(L, 2);
+    const int liveBefore = lua::ScriptRef::liveCount();
 
-    int id1 = bus.subscribe("test", ref1);
-    int id2 = bus.subscribe("test", ref2);
+    int id1 = bus.subscribe("test", std::move(ref1));
+    int id2 = bus.subscribe("test", std::move(ref2));
 
     ASSERT(id1 > 0, "EVENT-04: first subscribe returns non-zero id");
     ASSERT(id2 > 0, "EVENT-04: second subscribe returns non-zero id");
@@ -237,6 +240,9 @@ static void test_event04_clearhandlers_unit() {
     bus.clearHandlers();
 
     ASSERT(bus.getActiveSubscriberCount() == 0, "EVENT-04: subscriber count == 0 after clearHandlers");
+    ASSERT(lua::ScriptRef::liveCount() == liveBefore - 2,
+           "EVENT-04: clearHandlers released both callbacks");
+    ASSERT(lua::ScriptRef::registryRefs(L) == 0, "EVENT-04: no ref left in the registry");
     ASSERT(bus.getLuaState() == nullptr, "EVENT-04: getLuaState() == nullptr after clearHandlers (sentinel set)");
 }
 

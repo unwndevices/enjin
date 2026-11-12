@@ -3,6 +3,7 @@
 #include "../../include/enjin2/core/object.hpp"
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 namespace enjin2 {
 
@@ -15,24 +16,17 @@ C_StateMachine::~C_StateMachine() {
     clearStates();
 }
 
-bool C_StateMachine::addState(const char* name, int enterRef, int exitRef, int updateRef) {
+bool C_StateMachine::addState(const char* name, Callbacks callbacks) {
     if (!name) return false;
 
     // Reject names that would be truncated (Pitfall 7 from research)
     if (strlen(name) >= static_cast<size_t>(MAX_STATE_NAME)) return false;
 
-    // Check for duplicate state name — overwrite if found
+    // Check for duplicate state name — overwrite if found (the old callbacks
+    // are released by the move)
     for (int i = 0; i < MAX_STATES; ++i) {
         if (m_states[i].active && strcmp(m_states[i].name, name) == 0) {
-            // Release old refs before overwriting
-            if (m_L) {
-                if (m_states[i].enterRef  != LUA_NOREF) luaL_unref(m_L, LUA_REGISTRYINDEX, m_states[i].enterRef);
-                if (m_states[i].exitRef   != LUA_NOREF) luaL_unref(m_L, LUA_REGISTRYINDEX, m_states[i].exitRef);
-                if (m_states[i].updateRef != LUA_NOREF) luaL_unref(m_L, LUA_REGISTRYINDEX, m_states[i].updateRef);
-            }
-            m_states[i].enterRef  = enterRef;
-            m_states[i].exitRef   = exitRef;
-            m_states[i].updateRef = updateRef;
+            m_states[i].callbacks = std::move(callbacks);
             return true;
         }
     }
@@ -42,9 +36,7 @@ bool C_StateMachine::addState(const char* name, int enterRef, int exitRef, int u
         if (!m_states[i].active) {
             strncpy(m_states[i].name, name, MAX_STATE_NAME - 1);
             m_states[i].name[MAX_STATE_NAME - 1] = '\0';
-            m_states[i].enterRef  = enterRef;
-            m_states[i].exitRef   = exitRef;
-            m_states[i].updateRef = updateRef;
+            m_states[i].callbacks = std::move(callbacks);
             m_states[i].active    = true;
             return true;
         }
@@ -79,10 +71,10 @@ C_StateMachine::StateEntry* C_StateMachine::findState(const char* name) {
     return nullptr;
 }
 
-void C_StateMachine::fireCallback(int ref, float dt, bool passDt) {
-    if (!m_L || ref == LUA_NOREF) return;
+void C_StateMachine::fireCallback(const lua::ScriptRef& callback, float dt, bool passDt) {
+    if (!m_L || !callback.valid()) return;
 
-    lua_rawgeti(m_L, LUA_REGISTRYINDEX, ref);
+    callback.push(m_L);
     if (!lua_isfunction(m_L, -1)) {
         lua_pop(m_L, 1);
         return;
@@ -113,8 +105,8 @@ void C_StateMachine::fireCallback(int ref, float dt, bool passDt) {
 void C_StateMachine::applyPendingTransition() {
     // Fire exit on current state (if any)
     StateEntry* current = findState(m_currentState);
-    if (current && current->exitRef != LUA_NOREF) {
-        fireCallback(current->exitRef, 0.0f, false);  // exit(self)
+    if (current) {
+        fireCallback(current->callbacks.exit, 0.0f, false);  // exit(self)
     }
 
     // Update current state name
@@ -124,8 +116,8 @@ void C_StateMachine::applyPendingTransition() {
 
     // Fire enter on new state (if any)
     StateEntry* next = findState(m_currentState);
-    if (next && next->enterRef != LUA_NOREF) {
-        fireCallback(next->enterRef, 0.0f, false);  // enter(self)
+    if (next) {
+        fireCallback(next->callbacks.enter, 0.0f, false);  // enter(self)
     }
 }
 
@@ -134,8 +126,8 @@ void C_StateMachine::update(float dt) {
 
     // Step 1: Fire active state's update callback (FSM-05)
     StateEntry* current = findState(m_currentState);
-    if (current && current->updateRef != LUA_NOREF) {
-        fireCallback(current->updateRef, dt, true);  // update(self, dt)
+    if (current) {
+        fireCallback(current->callbacks.update, dt, true);  // update(self, dt)
     }
 
     // Step 2: Apply pending transition AFTER update callback returns (FSM-04)
@@ -149,21 +141,16 @@ void C_StateMachine::update(float dt) {
 }
 
 void C_StateMachine::clearStates() {
-    if (m_L) {
-        for (int i = 0; i < MAX_STATES; ++i) {
-            StateEntry& e = m_states[i];
-            if (!e.active) continue;
-            if (e.enterRef  != LUA_NOREF) { luaL_unref(m_L, LUA_REGISTRYINDEX, e.enterRef);  e.enterRef  = LUA_NOREF; }
-            if (e.exitRef   != LUA_NOREF) { luaL_unref(m_L, LUA_REGISTRYINDEX, e.exitRef);   e.exitRef   = LUA_NOREF; }
-            if (e.updateRef != LUA_NOREF) { luaL_unref(m_L, LUA_REGISTRYINDEX, e.updateRef); e.updateRef = LUA_NOREF; }
-            e.active = false;
-            e.name[0] = '\0';
-        }
+    for (int i = 0; i < MAX_STATES; ++i) {
+        StateEntry& e = m_states[i];
+        e.callbacks = Callbacks{};
+        e.active = false;
+        e.name[0] = '\0';
     }
     m_currentState[0] = '\0';
     m_pendingState[0] = '\0';
     m_hasPending = false;
-    m_L = nullptr;  // Sentinel: prevents double-unref in destructor
+    m_L = nullptr;  // re-armed by the next fsm:addState
 }
 
 int C_StateMachine::getActiveStateCount() const {

@@ -871,7 +871,7 @@ engine.tween.* sub-table (called from registerEngineTable)
 
 ### `void registerUISubtable(lua_State *L)`
 
-engine.ui.* sub-table (called from registerEngineTable) 
+ui.* sub-table (called from registerEngineTable) 
 
 ---
 

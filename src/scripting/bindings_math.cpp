@@ -55,8 +55,8 @@ static enjin2::Rect* checkRect(lua_State* L, int idx) {
 // ── Vec2 constructor ────────────────────────────────────────────────────────
 
 int LuaBindings::lua_Vec2_new(lua_State* L) {
-    float x = static_cast<float>(luaL_optnumber(L, 1, 0.0));
-    float y = static_cast<float>(luaL_optnumber(L, 2, 0.0));
+    float x = lua::optFloat(L, 1, 0.0);
+    float y = lua::optFloat(L, 2, 0.0);
     pushVec2(L, x, y);
     return 1;
 }
@@ -84,7 +84,7 @@ int LuaBindings::lua_Vec2_mul(lua_State* L) {
         pushVec2(L, v->x * s, v->y * s);
     } else {
         auto* v = checkVec2(L, 1);
-        float s = static_cast<float>(luaL_checknumber(L, 2));
+        float s = lua::checkFloat(L, 2);
         pushVec2(L, v->x * s, v->y * s);
     }
     return 1;
@@ -92,7 +92,7 @@ int LuaBindings::lua_Vec2_mul(lua_State* L) {
 
 int LuaBindings::lua_Vec2_div(lua_State* L) {
     auto* v = checkVec2(L, 1);
-    float s = static_cast<float>(luaL_checknumber(L, 2));
+    float s = lua::checkFloat(L, 2);
     pushVec2(L, v->x / s, v->y / s);
     return 1;
 }
@@ -168,7 +168,7 @@ int LuaBindings::lua_Vec2_angle(lua_State* L) {
 
 int LuaBindings::lua_Vec2_rotate(lua_State* L) {
     auto* v = checkVec2(L, 1);
-    float rad = static_cast<float>(luaL_checknumber(L, 2));
+    float rad = lua::checkFloat(L, 2);
     enjin2::Vec2 r = v->rotated(rad);
     pushVec2(L, r.x, r.y);
     return 1;
@@ -194,8 +194,8 @@ int LuaBindings::lua_Vec2_newindex(lua_State* L) {
     auto* v = checkVec2(L, 1);
     const char* key = luaL_checkstring(L, 2);
 
-    if (key[0] == 'x' && key[1] == '\0') { v->x = static_cast<float>(luaL_checknumber(L, 3)); return 0; }
-    if (key[0] == 'y' && key[1] == '\0') { v->y = static_cast<float>(luaL_checknumber(L, 3)); return 0; }
+    if (key[0] == 'x' && key[1] == '\0') { v->x = lua::checkFloat(L, 3); return 0; }
+    if (key[0] == 'y' && key[1] == '\0') { v->y = lua::checkFloat(L, 3); return 0; }
 
     return luaL_error(L, "Vec2 has no writable field '%s'", key);
 }
@@ -203,8 +203,8 @@ int LuaBindings::lua_Vec2_newindex(lua_State* L) {
 // ── Point constructor ───────────────────────────────────────────────────────
 
 int LuaBindings::lua_Point_new(lua_State* L) {
-    int16_t x = static_cast<int16_t>(luaL_optinteger(L, 1, 0));
-    int16_t y = static_cast<int16_t>(luaL_optinteger(L, 2, 0));
+    int16_t x = static_cast<int16_t>(lua::optInt(L, 1, 0));
+    int16_t y = static_cast<int16_t>(lua::optInt(L, 2, 0));
     pushPoint(L, x, y);
     return 1;
 }
@@ -250,18 +250,18 @@ int LuaBindings::lua_Point_index(lua_State* L) {
 int LuaBindings::lua_Point_newindex(lua_State* L) {
     auto* p = checkPoint(L, 1);
     const char* key = luaL_checkstring(L, 2);
-    if (key[0] == 'x' && key[1] == '\0') { p->x = static_cast<int16_t>(luaL_checkinteger(L, 3)); return 0; }
-    if (key[0] == 'y' && key[1] == '\0') { p->y = static_cast<int16_t>(luaL_checkinteger(L, 3)); return 0; }
+    if (key[0] == 'x' && key[1] == '\0') { p->x = static_cast<int16_t>(lua::checkInt(L, 3)); return 0; }
+    if (key[0] == 'y' && key[1] == '\0') { p->y = static_cast<int16_t>(lua::checkInt(L, 3)); return 0; }
     return luaL_error(L, "Point has no writable field '%s'", key);
 }
 
 // ── Rect constructor ────────────────────────────────────────────────────────
 
 int LuaBindings::lua_Rect_new(lua_State* L) {
-    int16_t  x = static_cast<int16_t>(luaL_optinteger(L, 1, 0));
-    int16_t  y = static_cast<int16_t>(luaL_optinteger(L, 2, 0));
-    uint16_t w = static_cast<uint16_t>(luaL_optinteger(L, 3, 0));
-    uint16_t h = static_cast<uint16_t>(luaL_optinteger(L, 4, 0));
+    int16_t  x = static_cast<int16_t>(lua::optInt(L, 1, 0));
+    int16_t  y = static_cast<int16_t>(lua::optInt(L, 2, 0));
+    uint16_t w = static_cast<uint16_t>(lua::optInt(L, 3, 0));
+    uint16_t h = static_cast<uint16_t>(lua::optInt(L, 4, 0));
     pushRect(L, x, y, w, h);
     return 1;
 }
@@ -286,8 +286,8 @@ int LuaBindings::lua_Rect_tostring(lua_State* L) {
 
 int LuaBindings::lua_Rect_contains(lua_State* L) {
     auto* r = checkRect(L, 1);
-    int16_t px = static_cast<int16_t>(luaL_checkinteger(L, 2));
-    int16_t py = static_cast<int16_t>(luaL_checkinteger(L, 3));
+    int16_t px = static_cast<int16_t>(lua::checkInt(L, 2));
+    int16_t py = static_cast<int16_t>(lua::checkInt(L, 3));
     lua_pushboolean(L, r->contains(px, py) ? 1 : 0);
     return 1;
 }
@@ -318,61 +318,53 @@ int LuaBindings::lua_Rect_newindex(lua_State* L) {
     auto* r = checkRect(L, 1);
     const char* key = luaL_checkstring(L, 2);
 
-    if (strcmp(key, "x") == 0)      { r->x      = static_cast<int16_t>(luaL_checkinteger(L, 3));  return 0; }
-    if (strcmp(key, "y") == 0)      { r->y      = static_cast<int16_t>(luaL_checkinteger(L, 3));  return 0; }
-    if (strcmp(key, "width") == 0)  { r->width  = static_cast<uint16_t>(luaL_checkinteger(L, 3)); return 0; }
-    if (strcmp(key, "height") == 0) { r->height = static_cast<uint16_t>(luaL_checkinteger(L, 3)); return 0; }
+    if (strcmp(key, "x") == 0)      { r->x      = static_cast<int16_t>(lua::checkInt(L, 3));  return 0; }
+    if (strcmp(key, "y") == 0)      { r->y      = static_cast<int16_t>(lua::checkInt(L, 3));  return 0; }
+    if (strcmp(key, "width") == 0)  { r->width  = static_cast<uint16_t>(lua::checkInt(L, 3)); return 0; }
+    if (strcmp(key, "height") == 0) { r->height = static_cast<uint16_t>(lua::checkInt(L, 3)); return 0; }
 
     return luaL_error(L, "Rect has no writable field '%s'", key);
 }
 
 // ── Math utility globals ────────────────────────────────────────────────────
 
-int LuaBindings::lua_math_clamp(lua_State* L) {
-    float val = static_cast<float>(luaL_checknumber(L, 1));
-    float lo  = static_cast<float>(luaL_checknumber(L, 2));
-    float hi  = static_cast<float>(luaL_checknumber(L, 3));
-    lua_pushnumber(L, enjin2::math::clamp(val, lo, hi));
-    return 1;
-}
-
 int LuaBindings::lua_math_lerp(lua_State* L) {
-    float a = static_cast<float>(luaL_checknumber(L, 1));
-    float b = static_cast<float>(luaL_checknumber(L, 2));
-    float t = static_cast<float>(luaL_checknumber(L, 3));
+    float a = lua::checkFloat(L, 1);
+    float b = lua::checkFloat(L, 2);
+    float t = lua::checkFloat(L, 3);
     lua_pushnumber(L, enjin2::math::lerp(a, b, t));
     return 1;
 }
 
 int LuaBindings::lua_math_remap(lua_State* L) {
-    float val    = static_cast<float>(luaL_checknumber(L, 1));
-    float in_lo  = static_cast<float>(luaL_checknumber(L, 2));
-    float in_hi  = static_cast<float>(luaL_checknumber(L, 3));
-    float out_lo = static_cast<float>(luaL_checknumber(L, 4));
-    float out_hi = static_cast<float>(luaL_checknumber(L, 5));
-    lua_pushnumber(L, enjin2::math::map(val, in_lo, in_hi, out_lo, out_hi));
+    float val    = lua::checkFloat(L, 1);
+    float inLo  = lua::checkFloat(L, 2);
+    float inHi  = lua::checkFloat(L, 3);
+    float outLo = lua::checkFloat(L, 4);
+    float outHi = lua::checkFloat(L, 5);
+    lua_pushnumber(L, enjin2::math::map(val, inLo, inHi, outLo, outHi));
     return 1;
 }
 
 int LuaBindings::lua_math_sign(lua_State* L) {
-    float val = static_cast<float>(luaL_checknumber(L, 1));
+    float val = lua::checkFloat(L, 1);
     lua_pushnumber(L, enjin2::math::sign(val));
     return 1;
 }
 
 int LuaBindings::lua_math_smoothstep(lua_State* L) {
-    float e0 = static_cast<float>(luaL_checknumber(L, 1));
-    float e1 = static_cast<float>(luaL_checknumber(L, 2));
-    float x  = static_cast<float>(luaL_checknumber(L, 3));
+    float e0 = lua::checkFloat(L, 1);
+    float e1 = lua::checkFloat(L, 2);
+    float x  = lua::checkFloat(L, 3);
     lua_pushnumber(L, enjin2::math::smoothstep(e0, e1, x));
     return 1;
 }
 
 int LuaBindings::lua_math_distance(lua_State* L) {
-    float x1 = static_cast<float>(luaL_checknumber(L, 1));
-    float y1 = static_cast<float>(luaL_checknumber(L, 2));
-    float x2 = static_cast<float>(luaL_checknumber(L, 3));
-    float y2 = static_cast<float>(luaL_checknumber(L, 4));
+    float x1 = lua::checkFloat(L, 1);
+    float y1 = lua::checkFloat(L, 2);
+    float x2 = lua::checkFloat(L, 3);
+    float y2 = lua::checkFloat(L, 4);
     float dx = x2 - x1;
     float dy = y2 - y1;
     lua_pushnumber(L, std::sqrt(dx * dx + dy * dy));
@@ -419,7 +411,7 @@ void LuaBindings::registerMathBindings() {
         luaFunction("__index", lua_Vec2_index, "(v:Vec2, key:string) -> any",
                     "v.x and v.y read the components; other keys look up a Vec2 method.",
                     "v: the vector\n"
-                    "key: \"x\", \"y\" or a method name; unknown keys give nil"),
+                    "key: \"x\", \"y\" or a method name; any other key reads nil, as a table's does"),
         luaFunction("__newindex", lua_Vec2_newindex,
                     "(v:Vec2, key:string, value:number) -> nil",
                     "v.x = n and v.y = n write in place; any other key raises.",
@@ -508,7 +500,7 @@ void LuaBindings::registerMathBindings() {
         luaFunction("__index", lua_Rect_index, "(r:Rect, key:string) -> any",
                     "r.x, r.y, r.width and r.height read the fields; other keys look up a Rect method.",
                     "r: the rectangle\n"
-                    "key: a field or method name; unknown keys give nil"),
+                    "key: a field or method name; any other key reads nil, as a table's does"),
         luaFunction("__newindex", lua_Rect_newindex,
                     "(r:Rect, key:string, value:int) -> nil",
                     "r.x, r.y, r.width and r.height write in place; any other key raises.",
@@ -555,11 +547,6 @@ void LuaBindings::registerMathBindings() {
                     "y: top edge\n"
                     "w: width (uint16; a negative value wraps)\n"
                     "h: height (uint16; a negative value wraps)"),
-        luaFunction("clamp", lua_math_clamp, "(v:number, lo:number, hi:number) -> number",
-                    "v limited to the range lo..hi.",
-                    "v: the value\n"
-                    "lo: lower bound\n"
-                    "hi: upper bound"),
         luaFunction("lerp", lua_math_lerp, "(a:number, b:number, t:number) -> number",
                     "Linear interpolation from a to b; t is not clamped.",
                     "a: value at t = 0\n"

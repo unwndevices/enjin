@@ -9,7 +9,7 @@
  *   FSM-03: fsm:getState() returns active state name (empty string when no state)
  *   FSM-04: setState() from inside update/enter callback takes effect on the NEXT frame
  *   FSM-05: Active state's update(self, dt) is called each frame
- *   FSM-05b: clearStates() releases all luaL_ref handles on hot-reload
+ *   FSM-05b: clearStates() releases every callback on hot-reload
  *   FSM-05c: Object destruction does not crash (clearStates via C_LuaScript destructor)
  */
 #include <enjin2/core/object.hpp>
@@ -359,7 +359,7 @@ static void test_fsm05_update_each_frame() {
 }
 
 // ============================================================
-// FSM-05b: clearStates() releases all luaL_ref handles on hot-reload
+// FSM-05b: clearStates() releases every callback on hot-reload
 // ============================================================
 static void test_fsm05b_clear_on_reload() {
     printf("--- FSM-05b: clearStates on hot-reload releases refs ---\n");
@@ -409,16 +409,16 @@ static void test_fsm05b_clear_on_reload() {
     int activeAfter = fsmComp->getActiveStateCount();
     ASSERT(activeAfter == 0, "FSM-05b: all states should be cleared after hot-reload");
 
-    // All state entry refs should be LUA_NOREF
+    // All state entry refs should be empty
     bool allCleared = true;
     for (int i = 0; i < C_StateMachine::MAX_STATES; ++i) {
         const C_StateMachine::StateEntry& e = fsmComp->getStateEntry(i);
-        if (e.enterRef != LUA_NOREF || e.exitRef != LUA_NOREF || e.updateRef != LUA_NOREF) {
+        if (e.callbacks.enter.valid() || e.callbacks.exit.valid() || e.callbacks.update.valid()) {
             allCleared = false;
             break;
         }
     }
-    ASSERT(allCleared, "FSM-05b: all StateEntry refs should be LUA_NOREF after clearStates");
+    ASSERT(allCleared, "FSM-05b: all StateEntry refs should be empty after clearStates");
 
     delete obj;
 }
