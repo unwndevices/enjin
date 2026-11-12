@@ -355,7 +355,7 @@ bool ShapePackGroup::setLook(const ShapeLook& look, ShapeError* err)
 }
 
 // ---------------------------------------------------------------------------
-// The one grab, the Feel, Reactions and Blinks (ADR-0019, #365)
+// The one grab, the Feel, Reactions and Blinks (ADR-0033, #365)
 // ---------------------------------------------------------------------------
 
 bool ShapePackGroup::hold(FixedVec2 at)

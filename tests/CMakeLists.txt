@@ -552,7 +552,7 @@ if(TARGET enjin2_import)
     target_compile_definitions(shape_corpus_test PRIVATE
         ENJIN2_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
     add_test(NAME shape_corpus_test COMMAND shape_corpus_test)
-    # The Feel, Blinks and Reactions (ADR-0019, Tomodachi #365): the pointer
+    # The Feel, Blinks and Reactions (ADR-0033, Tomodachi #365): the pointer
     # machine, the blink scheduler, and both on the Star through the group.
     add_executable(shape_feel_test shape_feel_test.cpp)
     target_link_libraries(shape_feel_test PRIVATE enjin2_import enjin2_graphics enjin2_core)

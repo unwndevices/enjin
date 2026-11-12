@@ -1,6 +1,6 @@
 /**
  * @file shape_feel.hpp
- * @brief The Feel: how the pet answers a finger (ADR-0019, Tomodachi #365)
+ * @brief The Feel: how the pet answers a finger (ADR-0033, Tomodachi #365)
  *
  * One pointer a frame, in layer pixels, and the pet decides what the finger
  * meant. The machine is the pet demo's, made the group's (glossary › Feel):

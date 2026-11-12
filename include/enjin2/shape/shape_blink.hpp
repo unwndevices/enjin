@@ -1,6 +1,6 @@
 /**
  * @file shape_blink.hpp
- * @brief Blinks: the pet shutting its eyes on its own now and then (ADR-0019, Tomodachi #365)
+ * @brief Blinks: the pet shutting its eyes on its own now and then (ADR-0033, Tomodachi #365)
  *
  * The pet demo's scheduler, made the group's (glossary › Blink): a go every
  * `everyMin..everyMax` µs, each blink `shut` µs long, and `twicePermille` of

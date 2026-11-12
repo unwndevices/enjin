@@ -142,7 +142,7 @@ bool ShapeCorpus::step(ShapeCorpusLayer& layer, ShapeDrawScratch& scratch, Shape
             ShapeError e;
             pet_.breathe(Breath{}, &e);  // the defaults are in range
         }
-        // The Feel (ADR-0019): a tap, then a press that comes loose into a drag
+        // The Feel (ADR-0033): a tap, then a press that comes loose into a drag
         // and is let go, all through pointer() with the default tunables.
         if (f == kTap) {
             pet_.stopBreathing();

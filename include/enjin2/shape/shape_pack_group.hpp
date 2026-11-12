@@ -52,7 +52,7 @@
  *   there, no grab. moveTo() drags the feet line through the position
  *   spring; setPosition() snaps it.
  *
- * - **The Feel, Reactions and Blinks** (ADR-0019, Tomodachi #365). The group
+ * - **The Feel, Reactions and Blinks** (ADR-0033, Tomodachi #365). The group
  *   keeps a clock (µs, advanced by tick()) and owns how the pet answers a
  *   finger: pointer() takes one sample a frame and runs the Feel
  *   (shape_feel.hpp: tap, pull, loose-into-drag, throw) over the group's one
@@ -225,7 +225,7 @@ public:
     void stopBreathing();
     bool breathing() const { return breathing_; }
 
-    // ── The Feel, Reactions and Blinks (ADR-0019, #365) ─────────────────────
+    // ── The Feel, Reactions and Blinks (ADR-0033, #365) ─────────────────────
 
     /// One pointer sample a frame (layer pixels): what the finger meant. See
     /// shape_feel.hpp. The caller keeps what comes after a Throw.

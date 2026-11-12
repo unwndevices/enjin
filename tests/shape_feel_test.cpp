@@ -1,4 +1,4 @@
-// The Feel, Blinks and Reactions (ADR-0019, Tomodachi #365): the pointer
+// The Feel, Blinks and Reactions (ADR-0033, Tomodachi #365): the pointer
 // machine over a fake pet (its internal seam), the blink scheduler's clock and
 // seed, and the three on the Star through ShapePackGroup's interface.
 

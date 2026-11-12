@@ -162,7 +162,7 @@ static void testScript() {
     const uint32_t moved = last(ShapeCorpusPhase::Drag).crc;
     ASSERT(last(ShapeCorpusPhase::Pull).crc == moved, "pulled and thrown, it settles back to the moved rest frame");
 
-    // The Feel (ADR-0019): the tap wakes and settles back; the finger's pull
+    // The Feel (ADR-0033): the tap wakes and settles back; the finger's pull
     // comes loose into a drag that carries the feet from (110, 140) by
     // (+30, -30), clamped to the default bounds' right edge (136), and the
     // throw leaves them there.

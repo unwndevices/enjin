@@ -35,7 +35,7 @@
  * |         |           | pointer up: a throw (the finger had stopped, so at       |
  * |         |           | rest); the feet stay where the drag carried them         |
  *
- * The tap and feel phases run the Feel (ADR-0019, shape_feel.hpp) with its
+ * The tap and feel phases run the Feel (ADR-0033, shape_feel.hpp) with its
  * default tunables, so the one feel is locked across hosts too.
  * Every frame is dt = 33334 µs. A frame's record is taken after its flush.
  * On the Star the jelly sleeps 20+ frames before each phase ends (run
