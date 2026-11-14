@@ -1,7 +1,7 @@
 #include "../../include/enjin2/components/image_cache.hpp"
 #include "../../include/enjin2/core/object.hpp"
 #include <cstring>
-#include <iostream>
+#include <cstdio>
 
 namespace enjin2 {
 
@@ -177,7 +177,7 @@ void C_ImageCache::ValidateImageParameters(uint16_t width, uint16_t height, uint
 }
 
 void C_ImageCache::SerialLog(const char* message) {
-    std::cout << "[C_ImageCache] " << message << std::endl;
+    std::printf("[C_ImageCache] %s\n", message);
 }
 
 } // namespace enjin2

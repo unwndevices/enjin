@@ -7,7 +7,6 @@
 #include "../components/drawable.hpp"
 #include "../components/camera.hpp"
 #include <algorithm>
-#include <iostream>
 #include <type_traits>
 
 namespace enjin2 {

@@ -1,7 +1,6 @@
 #include "../../include/enjin2/scripting/lua_platform.hpp"
 #include "../../include/enjin2/core/psram.h"
 #include <cstring>
-#include <iostream>
 
 #ifdef VCV_RACK
     #include <fstream>

@@ -1,7 +1,7 @@
 #include "../../include/enjin2/scripting/lua_engine.hpp"
 #include "../../include/enjin2/scripting/lua_platform.hpp"
-#include <fstream>
-#include <iostream>
+#include <cstdio>
+#include <cstdlib>
 
 namespace enjin2 {
 
@@ -175,7 +175,7 @@ void LuaEngine::clearScripts() {
 
 int LuaEngine::luaPanic(lua_State* L) {
     const char* msg = lua_tostring(L, -1);
-    std::cerr << "Lua panic: " << (msg ? msg : "unknown error") << std::endl;
+    std::fprintf(stderr, "Lua panic: %s\n", msg ? msg : "unknown error");
     // In embedded systems, we might want to reset instead of aborting
     std::abort();
 }

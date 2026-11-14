@@ -1,6 +1,6 @@
 #include "../../include/enjin2/components/canvas.hpp"
 #include "../../include/enjin2/core/object.hpp"
-#include <iostream>
+#include <cstdio>
 
 namespace enjin2 {
 
@@ -39,7 +39,7 @@ void C_Canvas::awake() {
     // Get position component from owner (matches original Enjin pattern)
     position = owner->getComponent<C_Position>();
     if (!position) {
-        std::cerr << "[C_Canvas] Warning: C_Canvas requires C_Position component.\n";
+        std::fputs("[C_Canvas] Warning: C_Canvas requires C_Position component.\n", stderr);
     }
 }
 
