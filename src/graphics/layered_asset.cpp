@@ -7,9 +7,7 @@
 #include <limits>
 #include <vector>
 
-#ifdef ESP32
-#include <esp_heap_caps.h>
-#endif
+#include "../../include/enjin2/core/psram.h"
 
 namespace enjin2 {
 
@@ -18,25 +16,10 @@ namespace {
 /// File-read scratch buffer, preferring PSRAM on device so the transient copy
 /// never competes for scarce internal DRAM (#100).
 uint8_t* allocScratch(size_t bytes) {
-#ifdef ESP32
-    uint8_t* p = static_cast<uint8_t*>(
-        heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
-    if (p == nullptr) {
-        p = static_cast<uint8_t*>(heap_caps_malloc(bytes, MALLOC_CAP_8BIT));
-    }
-    return p;
-#else
-    return static_cast<uint8_t*>(std::malloc(bytes));
-#endif
+    return static_cast<uint8_t*>(psramAlloc(bytes));
 }
 
-void freeScratch(uint8_t* p) {
-#ifdef ESP32
-    if (p != nullptr) heap_caps_free(p);
-#else
-    std::free(p);
-#endif
-}
+void freeScratch(uint8_t* p) { psramFree(p); }
 
 /// Overflow-checked byte-count multiply. Saturates to SIZE_MAX so the arena
 /// capacity check rejects rather than wrapping to a small "successful" size.

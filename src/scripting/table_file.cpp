@@ -1,4 +1,5 @@
 #include "enjin2/scripting/table_file.hpp"
+#include "enjin2/core/psram.h"
 
 extern "C" {
 #include "lauxlib.h"
@@ -12,22 +13,9 @@ extern "C" {
 #include <cstring>
 #include <sys/stat.h>
 
-#ifdef ESP32
-#include <esp_heap_caps.h>
-#endif
-
 namespace enjin2 {
 
 namespace {
-
-void* reallocBlock(void* ptr, size_t nsize) {
-#ifdef ESP32
-    void* p = heap_caps_realloc(ptr, nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    return p ? p : heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
-#else
-    return std::realloc(ptr, nsize);
-#endif
-}
 
 bool fail(std::string* error, const std::string& msg) {
     if (error) *error = msg;
@@ -56,12 +44,12 @@ void* tableFileAlloc(void* ud, void* ptr, size_t osize, size_t nsize) {
     auto* budget = static_cast<Budget*>(ud);
     const size_t old = ptr ? osize : 0;  // without a block osize is the object's type
     if (nsize == 0) {
-        std::free(ptr);
+        psramFree(ptr);
         budget->used -= old;
         return nullptr;
     }
     if (nsize > old && budget->used - old + nsize > budget->limit) return nullptr;
-    void* p = reallocBlock(ptr, nsize);
+    void* p = psramRealloc(ptr, nsize);
     if (p) budget->used = budget->used - old + nsize;
     return p;
 }

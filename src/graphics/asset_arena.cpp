@@ -3,9 +3,7 @@
 #include <cstring>
 #include <new>
 
-#ifdef ESP32
-#include <esp_heap_caps.h>
-#endif
+#include "../../include/enjin2/core/psram.h"
 
 namespace enjin2 {
 
@@ -21,21 +19,9 @@ bool AssetArena::allocateBacking(size_t capacityBytes) {
     // subsequent aligned allocation.
     const size_t bytes = alignUp(capacityBytes, ALIGNMENT);
 
-#ifdef ESP32
     // Prefer PSRAM: asset data is cold and bulky, and internal DRAM is scarce.
-    // Fall back to internal heap when PSRAM is absent.
-    base_ = static_cast<uint8_t*>(
-        heap_caps_aligned_alloc(ALIGNMENT, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
-    if (base_ == nullptr) {
-        base_ = static_cast<uint8_t*>(
-            heap_caps_aligned_alloc(ALIGNMENT, bytes, MALLOC_CAP_8BIT));
-    }
+    base_ = static_cast<uint8_t*>(psramAlignedAlloc(ALIGNMENT, bytes));
     if (base_ == nullptr) return false;
-#else
-    base_ = static_cast<uint8_t*>(
-        ::operator new(bytes, std::align_val_t(ALIGNMENT), std::nothrow));
-    if (base_ == nullptr) return false;
-#endif
 
     capacity_ = bytes;
     used_ = 0;
@@ -45,11 +31,7 @@ bool AssetArena::allocateBacking(size_t capacityBytes) {
 
 void AssetArena::releaseBacking() {
     if (base_ == nullptr) return;
-#ifdef ESP32
-    heap_caps_free(base_);
-#else
-    ::operator delete(base_, std::align_val_t(ALIGNMENT));
-#endif
+    psramFree(base_);
     base_ = nullptr;
     capacity_ = 0;
     used_ = 0;

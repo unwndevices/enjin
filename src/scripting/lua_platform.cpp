@@ -1,4 +1,5 @@
 #include "../../include/enjin2/scripting/lua_platform.hpp"
+#include "../../include/enjin2/core/psram.h"
 #include <cstring>
 #include <iostream>
 
@@ -35,27 +36,10 @@ lua_State* LuaPlatform::createState(lua_Alloc allocator, void* ud) {
     if (!allocator) {
         allocator = [](void* ud, void* ptr, size_t osize, size_t nsize) -> void* {
             if (nsize == 0) {
-                if (ptr) {
-                    heap_caps_free(ptr);
-                }
+                psramFree(ptr);
                 return nullptr;
             }
-            
-            if (ptr == nullptr) {
-                void* new_ptr = heap_caps_malloc(
-                    nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-                if (!new_ptr) {
-                    new_ptr = heap_caps_malloc(nsize, MALLOC_CAP_8BIT);
-                }
-                return new_ptr;
-            } else {
-                void* new_ptr = heap_caps_realloc(
-                    ptr, nsize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-                if (!new_ptr) {
-                    new_ptr = heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT);
-                }
-                return new_ptr;
-            }
+            return ptr ? psramRealloc(ptr, nsize) : psramAlloc(nsize);
         };
     }
     

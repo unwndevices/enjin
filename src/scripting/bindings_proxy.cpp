@@ -14,14 +14,8 @@
 #include "../../include/enjin2/core/object.hpp"
 #include "../../include/enjin2/core/scene.hpp"
 #include <cctype>
-#ifdef ESP32
-#include "esp_attr.h"
-// Static scratch that is cold on device goes to PSRAM (zero-initialised
-// storage only; needs CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY).
-#define ENJIN2_PSRAM_BSS EXT_RAM_BSS_ATTR
-#else
-#define ENJIN2_PSRAM_BSS
-#endif
+// Static scratch that is cold on device goes to PSRAM (ENJIN2_PSRAM_BSS).
+#include "../../include/enjin2/core/psram.h"
 
 namespace enjin2 {
 
