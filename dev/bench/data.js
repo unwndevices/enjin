@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794503562589,
+  "lastUpdate": 1794706731994,
   "repoUrl": "https://github.com/unwndevices/enjin",
   "entries": {
     "enjin2 Benchmarks": [
@@ -10339,6 +10339,246 @@ window.BENCHMARK_DATA = {
             "name": "resting Star frame: redraw only (reference)",
             "value": 28679,
             "range": "± 0.51%",
+            "unit": "ns/op"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "committer": {
+            "email": "ciro@unwn.dev",
+            "name": "Ciro Caputo Viglione",
+            "username": "unwndevices"
+          },
+          "distinct": false,
+          "id": "70e3b0e78984a4d973f70787cea8e17bc0e51746",
+          "message": "perf(device): no <iostream> in device sources: libstdc++'s stream and locale statics leave the S3 link\n\nlua_engine.cpp's std::cerr pulled globals_io.o, ios_init.o and with them\nlocale_init.o and the whole stream/locale world into the product image.\nThe panic message, the canvas warning and the image cache log use <cstdio>;\nscene.hpp and lua_platform.cpp drop an unused <iostream>. bindings_store's\n<fstream> was already host-only; image_export.hpp is a host tool no device\nsource includes.\n\nTomodachi #558: product .dram0.bss 31888 -> 26224 B, .data 25716 -> 25572 B,\nthe app image about 200 KB smaller.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-14T15:47:18+01:00",
+          "tree_id": "2f437c410522a42e9cddb5c909c03b24ea09fa35",
+          "url": "https://github.com/unwndevices/enjin/commit/70e3b0e78984a4d973f70787cea8e17bc0e51746"
+        },
+        "date": 1794706731659,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "canvas4: setPixel",
+            "value": 25,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: clear",
+            "value": 65,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: fillRect 32x32",
+            "value": 106,
+            "range": "± 2.34%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: drawCircle r16",
+            "value": 210,
+            "range": "± 0.48%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas4: blit 128x128 sprite",
+            "value": 59884.5,
+            "range": "± 3.4%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: setPixel",
+            "value": 26,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "canvas8: fillRect 32x32",
+            "value": 739,
+            "range": "± 1.72%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: composite 4 layers",
+            "value": 2945,
+            "range": "± 0.32%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "compositor: compositeDirty full-frame (4 layers)",
+            "value": 22029,
+            "range": "± 0.17%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x1",
+            "value": 159,
+            "range": "± 0.63%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x8",
+            "value": 447.5167,
+            "range": "± 1.21%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x16",
+            "value": 752,
+            "range": "± 1.0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x32",
+            "value": 1809,
+            "range": "± 1.52%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::addObject x48",
+            "value": 3007.0589,
+            "range": "± 2.02%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::addComponent<C_Position>",
+            "value": 51,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "object::removeComponent<C_Position>",
+            "value": 55,
+            "range": "± 0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x1 objects",
+            "value": 31,
+            "range": "± 1.56%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x8 objects",
+            "value": 53,
+            "range": "± 1.85%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x16 objects",
+            "value": 78,
+            "range": "± 1.3%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x32 objects",
+            "value": 129,
+            "range": "± 0.77%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "scene::update x48 objects",
+            "value": 177,
+            "range": "± 0.56%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: init+shutdown",
+            "value": 23343,
+            "range": "± 1.0%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua engine: executeString (noop script)",
+            "value": 618.5,
+            "range": "± 12.76%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: engine.time.delta call",
+            "value": 983,
+            "range": "± 6.1%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua binding: math.clamp call",
+            "value": 1502.5,
+            "range": "± 4.77%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua proxy: find+field round-trip",
+            "value": 1730,
+            "range": "± 6.13%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua event: emit dispatch",
+            "value": 940.5,
+            "range": "± 5.61%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "lua GC: full collect",
+            "value": 3364,
+            "range": "± 0.95%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star body: fill",
+            "value": 9911.5971,
+            "range": "± 0.92%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star body: paint",
+            "value": 796,
+            "range": "± 0.63%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star (13 Shapes): fill",
+            "value": 21106,
+            "range": "± 0.95%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "star (13 Shapes): fill + paint",
+            "value": 22890.5,
+            "range": "± 1.13%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "5x5 sim: one 30 Hz tick (4 sub-steps)",
+            "value": 1179,
+            "range": "± 2.8%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "warp: the Star's points (13 Shapes)",
+            "value": 1380,
+            "range": "± 0.36%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "moving Star frame: tick + warp + fill + paint",
+            "value": 29733.5,
+            "range": "± 3.3%",
+            "unit": "ns/op"
+          },
+          {
+            "name": "resting Star frame: redraw only (reference)",
+            "value": 26759.5,
+            "range": "± 0.94%",
             "unit": "ns/op"
           }
         ]
