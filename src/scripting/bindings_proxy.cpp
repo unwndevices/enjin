@@ -954,6 +954,22 @@ static int lua_sprite_setSheet(lua_State* L) {
     return 0;
 }
 
+// One frame of a setClips table (the frame table at frIdx): frame, dur and
+// event, each an optional integer; raises on one that is not.
+static enjin2::NjnFrameEntry readClipFrame(lua_State* L, int frIdx) {
+    enjin2::NjnFrameEntry fe{};
+    lua_getfield(L, frIdx, "frame");
+    fe.frameIndex = static_cast<uint16_t>(lua::optInt(L, -1, 0) & 0xFFFF);
+    lua_pop(L, 1);
+    lua_getfield(L, frIdx, "dur");
+    fe.durationMs = static_cast<uint16_t>(lua::optInt(L, -1, 100) & 0xFFFF);
+    lua_pop(L, 1);
+    lua_getfield(L, frIdx, "event");
+    fe.eventId = static_cast<uint8_t>(lua::optInt(L, -1, 0) & 0xFF);
+    lua_pop(L, 1);
+    return fe;
+}
+
 // sprite:setClips(handle)  — pull the CLIP table decoded from a v2 .njn (#91), or
 // sprite:setClips({ {name=, loop=, frames={ {frame=,dur=,event=}, ... }}, ... })
 static int lua_sprite_setClips(lua_State* L) {
@@ -972,8 +988,28 @@ static int lua_sprite_setClips(lua_State* L) {
 
     luaL_checktype(L, 2, LUA_TTABLE);
 
-    std::vector<enjin2::NjnClip> clips;
+    // Every frame's fields are checked before a vector is built: a bad one
+    // raises, and a raise longjmps past C++ destructors (#523).
     const int nClips = static_cast<int>(lua_rawlen(L, 2));
+    for (int ci = 1; ci <= nClips; ++ci) {
+        lua_rawgeti(L, 2, ci);
+        if (lua_istable(L, -1)) {
+            lua_getfield(L, -1, "frames");
+            if (lua_istable(L, -1)) {
+                const int framesIdx = lua_gettop(L);
+                const int nFrames = static_cast<int>(lua_rawlen(L, framesIdx));
+                for (int fi = 1; fi <= nFrames; ++fi) {
+                    lua_rawgeti(L, framesIdx, fi);
+                    if (lua_istable(L, -1)) (void)readClipFrame(L, lua_gettop(L));
+                    lua_pop(L, 1);
+                }
+            }
+            lua_pop(L, 1);  // frames
+        }
+        lua_pop(L, 1);  // clip table
+    }
+
+    std::vector<enjin2::NjnClip> clips;
     for (int ci = 1; ci <= nClips; ++ci) {
         lua_rawgeti(L, 2, ci);            // clip table at top
         if (!lua_istable(L, -1)) { lua_pop(L, 1); continue; }
@@ -996,20 +1032,7 @@ static int lua_sprite_setClips(lua_State* L) {
             const int nFrames = static_cast<int>(lua_rawlen(L, framesIdx));
             for (int fi = 1; fi <= nFrames; ++fi) {
                 lua_rawgeti(L, framesIdx, fi);   // frame table at top
-                if (lua_istable(L, -1)) {
-                    int frIdx = lua_gettop(L);
-                    enjin2::NjnFrameEntry fe{};
-                    lua_getfield(L, frIdx, "frame");
-                    fe.frameIndex = static_cast<uint16_t>(lua::optInt(L, -1, 0) & 0xFFFF);
-                    lua_pop(L, 1);
-                    lua_getfield(L, frIdx, "dur");
-                    fe.durationMs = static_cast<uint16_t>(lua::optInt(L, -1, 100) & 0xFFFF);
-                    lua_pop(L, 1);
-                    lua_getfield(L, frIdx, "event");
-                    fe.eventId = static_cast<uint8_t>(lua::optInt(L, -1, 0) & 0xFF);
-                    lua_pop(L, 1);
-                    clip.frames.push_back(fe);
-                }
+                if (lua_istable(L, -1)) clip.frames.push_back(readClipFrame(L, lua_gettop(L)));
                 lua_pop(L, 1);  // frame table
             }
         }
